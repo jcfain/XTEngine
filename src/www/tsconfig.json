@@ -1,0 +1,20 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+      "outDir": "./deploy",
+      "allowJs": true,
+      "target": "es5",
+      "allowUnreachableCode": false,
+      "noImplicitReturns": true,
+      "noImplicitAny": true,
+      "outFile": "./built/index.min.js"
+  },
+  "include": [
+      "./**/*"
+  ],
+  "exclude": [
+      "./plugins/**/*",
+      "./typings/**/*",
+      "./deploy/**/*" // This is what fixed it!
+  ]
+}
