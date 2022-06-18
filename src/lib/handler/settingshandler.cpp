@@ -13,6 +13,10 @@ SettingsHandler::~SettingsHandler()
     delete settings;
 }
 #include <QJsonArray>
+void SettingsHandler::setSaveOnExit(bool enabled)
+{
+    _saveOnExit = enabled;
+}
 void SettingsHandler::Load(QString applicationDirPath, QSettings* settingsToLoadFrom)
 {
     QMutexLocker locker(&mutex);
@@ -32,7 +36,7 @@ void SettingsHandler::Load(QString applicationDirPath, QSettings* settingsToLoad
         }
         else
         {
-            settings = new QSettings("cUrbSide prOd", "XTPlayer");
+            settings = new QSettings("cUrbSide prOd", "XTEngine");
         }
         settingsToLoadFrom = settings;
     }
@@ -302,7 +306,7 @@ void SettingsHandler::Load(QString applicationDirPath, QSettings* settingsToLoad
 void SettingsHandler::Save(QSettings* settingsToSaveTo)
 {
     QMutexLocker locker(&mutex);
-    if (!defaultReset)
+    if (_saveOnExit)
     {
         if(settingsToSaveTo == nullptr)
             settingsToSaveTo = settings;
@@ -456,63 +460,10 @@ void SettingsHandler::SaveLinkedFunscripts(QSettings* settingsToSaveTo)
     settingsToSaveTo->sync();
 }
 
-//void SettingsHandler::Export(QWidget* parent)
-//{
-//    QString selectedFile = QFileDialog::getSaveFileName(parent, QApplication::applicationDirPath() + "/Save settings ini", "settings_export.ini", "INI Files (*.ini)");
-//    if(!selectedFile.isEmpty())
-//    {
-//        QSettings* settingsExport = new QSettings(selectedFile, QSettings::Format::IniFormat);
-//        Save(settingsExport);
-//        delete settingsExport;
-//        emit instance().messageSend("Settings saved to "+ selectedFile, XLogLevel::Information);
-//    }
-//}
-
-//void SettingsHandler::Import(QWidget* parent)
-//{
-//    QString selectedFile = QFileDialog::getOpenFileName(parent, "Choose settings ini", QApplication::applicationDirPath(), "INI Files (*.ini)");
-//    if(!selectedFile.isEmpty())
-//    {
-//        QSettings* settingsImport = new QSettings(selectedFile, QSettings::Format::IniFormat);
-//        Load(settingsImport);
-//        Save();
-//        defaultReset = true;
-//        delete settingsImport;
-//        requestRestart(parent);
-//    }
-//}
-
-//void SettingsHandler::requestRestart(QWidget* parent)
-//{
-//    int value = QMessageBox::question(parent, "Restart Application", "Changes will take effect on application restart.",
-//                                  "Exit XTP", "Restart now", 0, 1);
-//    quit(value);
-//}
-//void SettingsHandler::askRestart(QWidget* parent, QString message)
-//{
-//    QMessageBox::StandardButton reply;
-//    reply = QMessageBox::question(parent, "Restart?", message,
-//                                  QMessageBox::Yes|QMessageBox::No);
-//    if (reply == QMessageBox::Yes)
-//        quit(true);
-//}
-//void SettingsHandler::quit(bool restart)
-//{
-//    QApplication::quit();
-//    if(restart)
-//        QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
-//}
-
-//void SettingsHandler::restart()
-//{
-//    QApplication::quit();
-//    QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
-//}
-
 void SettingsHandler::Clear()
 {
     QMutexLocker locker(&mutex);
-    defaultReset = true;
+    _saveOnExit = false;
     settings->clear();
     settingsChangedEvent(true);
 }
@@ -913,22 +864,16 @@ QString SettingsHandler::getSelectedThumbsDir()
     auto customThumbDirExists  = !_selectedThumbsDir.isEmpty() && QFileInfo::exists(_selectedThumbsDir);
     return (customThumbDirExists ? _selectedThumbsDir + "/" : _appdataLocation + "/thumbs/");
 }
-//void SettingsHandler::setSelectedThumbsDir(QWidget* parent)
-//{
-//    auto customThumbDirExists  = !_selectedThumbsDir.isEmpty() && QFileInfo::exists(_selectedThumbsDir);
-//    QString selectedDir = QFileDialog::getExistingDirectory(parent, QFileDialog::tr("Choose thumbnail storage directory"), customThumbDirExists ? _selectedThumbsDir : _appdataLocation + "/thumbs/", QFileDialog::ReadOnly);
-//    if (selectedDir != Q_NULLPTR)
-//    {
-//        _selectedThumbsDir = selectedDir;
-//        Save();
-//        requestRestart(parent);
-//    }
-//}
-//void SettingsHandler::setSelectedThumbsDirDefault(QWidget* parent)
-//{
-//    _selectedThumbsDir = nullptr;
-//    requestRestart(parent);
-//}
+void SettingsHandler::setSelectedThumbsDir(QString thumbDir)
+{
+    QMutexLocker locker(&mutex);
+   _selectedThumbsDir = thumbDir;
+}
+void SettingsHandler::setSelectedThumbsDirDefault()
+{
+    QMutexLocker locker(&mutex);
+    _selectedThumbsDir = nullptr;
+}
 void SettingsHandler::setUseMediaDirForThumbs(bool value)
 {
     QMutexLocker locker(&mutex);
@@ -2071,7 +2016,7 @@ QString SettingsHandler::whirligigAddress;
 QString SettingsHandler::whirligigPort;
 bool SettingsHandler::whirligigEnabled;
 bool SettingsHandler::_xtpWebSyncEnabled;
-bool SettingsHandler::defaultReset = false;
+bool SettingsHandler::_saveOnExit = true;
 bool SettingsHandler::disableSpeechToText;
 bool SettingsHandler::_disableVRScriptSelect;
 bool SettingsHandler::_disableNoScriptFound;

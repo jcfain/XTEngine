@@ -2,8 +2,9 @@
 #define IMAGEFACTORY_H
 
 #include <QPixmap>
+#include "XTEngine_global.h"
 
-class ImageFactory
+class XTENGINE_EXPORT ImageFactory
 {
 public:
     ImageFactory();

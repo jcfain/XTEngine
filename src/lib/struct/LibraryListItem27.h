@@ -7,6 +7,7 @@
 #include <QDataStream>
 #include <QJsonObject>
 #include "../lookup/Constants.h"
+#include "XTEngine_global.h"
 
 enum LibraryListItemType {
     PlaylistInternal,
@@ -16,7 +17,7 @@ enum LibraryListItemType {
     VR
 };
 
-class LibraryListItem27
+struct  XTENGINE_EXPORT LibraryListItem27
 {
 public:
     //    LibraryListItem() {}

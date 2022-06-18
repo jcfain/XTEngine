@@ -1,9 +1,9 @@
 #include "synchandler.h"
 
-SyncHandler::SyncHandler(TCodeHandler* tcodeHandler, QObject* parent):
+SyncHandler::SyncHandler(QObject* parent):
     QObject(parent)
 {
-    _tcodeHandler = tcodeHandler;
+    _tcodeHandler = new TCodeHandler(parent);
     _funscriptHandler = new FunscriptHandler(TCodeChannelLookup::Stroke());
 }
 
@@ -387,9 +387,9 @@ void SyncHandler::syncVRFunscript(QString funscript)
         QString videoPath;
         qint64 duration;
         qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
-        while (_isVRFunscriptPlaying && _isDeviceConnected && !_isLocalVideoPlaying)
+        while (_isVRFunscriptPlaying && _connectedVRDeviceHandler && _connectedVRDeviceHandler->isConnected() && _isDeviceConnected && !_isLocalVideoPlaying)
         {
-            //currentVRPacket = _xSettings->getConnectedVRDeviceHandler()->getCurrentPacket();
+            currentVRPacket = _connectedVRDeviceHandler->getCurrentPacket();
             //timer.start();
             if(!_isPaused && !SettingsHandler::getLiveActionPaused() && _isDeviceConnected && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
             {
@@ -534,10 +534,15 @@ void SyncHandler::sendPulse(qint64 currentMsecs, qint64 &nextPulseTime)
     }
 }
 
-void SyncHandler::on_device_status_change(bool connected) {
-    _isDeviceConnected = connected;
+void SyncHandler::on_vr_device_status_change(VRDeviceHandler* connectedVRDeviceHandler) {
+    _connectedVRDeviceHandler = connectedVRDeviceHandler;
 }
 
-void SyncHandler::on_local_video_status_change(XMediaState state) {
-    _isLocalVideoPlaying = state == XMediaState::Playing || XMediaState::Paused;
+void SyncHandler::on_device_status_change(ConnectionChangedSignal state) {
+    if(state.deviceType == DeviceType::Network || state.deviceType == DeviceType::Serial)
+        _isDeviceConnected = state.status == ConnectionStatus::Connected;
+}
+
+void SyncHandler::on_local_video_state_change(XMediaState state) {
+    _isLocalVideoPlaying = state == XMediaState::Playing || state ==  XMediaState::Paused;
 }

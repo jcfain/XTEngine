@@ -9,8 +9,9 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include "vrdevicehandler.h"
+#include "XTEngine_global.h"
 
-class DeoHandler : public VRDeviceHandler
+class XTENGINE_EXPORT DeoHandler : public VRDeviceHandler
 {
 
     Q_OBJECT

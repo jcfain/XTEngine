@@ -11,11 +11,14 @@
 #include "loghandler.h"
 #include <QMap>
 #include <QPair>
+#include "XTEngine_global.h"
 
-class TCodeHandler
+class XTENGINE_EXPORT TCodeHandler : QObject
 {
+    Q_OBJECT
 public:
-    TCodeHandler();
+    TCodeHandler(QObject* parent = nullptr);
+    ~TCodeHandler();
     QString funscriptToTCode(std::shared_ptr<FunscriptAction> action, QMap<QString, std::shared_ptr<FunscriptAction>> otherActions);
 
     int calculateRange(const char* channel, int rawValue);

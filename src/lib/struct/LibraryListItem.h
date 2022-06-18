@@ -7,8 +7,9 @@
 #include <QDataStream>
 #include <QJsonObject>
 #include "LibraryListItem27.h"
+#include "XTEngine_global.h"
 
-struct LibraryListItem
+struct XTENGINE_EXPORT LibraryListItem
 {
     LibraryListItemType type;
     QString path;

@@ -6,9 +6,9 @@
 #include "../tool/tcodefactory.h"
 #include "../lookup/MediaActions.h"
 #include "../tool/xtimer.h"
+#include "XTEngine_global.h"
 
-
-class GamepadHandler : public DeviceHandler
+class XTENGINE_EXPORT GamepadHandler : public DeviceHandler
 {
 public:
     GamepadHandler(QObject *parent = nullptr);

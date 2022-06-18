@@ -8,9 +8,9 @@
 #include "loghandler.h"
 #include "../lookup/enum.h"
 #include "../struct/ConnectionChangedSignal.h"
+#include "XTEngine_global.h"
 
-
-class DeviceHandler : public QThread
+class XTENGINE_EXPORT DeviceHandler : public QThread
 {
     Q_OBJECT
 

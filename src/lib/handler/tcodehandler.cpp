@@ -1,9 +1,13 @@
 #include "tcodehandler.h"
 
-TCodeHandler::TCodeHandler()
+TCodeHandler::TCodeHandler(QObject* parent) : QObject(parent)
 {
 }
 
+
+TCodeHandler::~TCodeHandler() {
+
+}
 
 QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, QMap<QString, std::shared_ptr<FunscriptAction>> otherActions)
 {

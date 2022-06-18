@@ -7,9 +7,9 @@
 #include "../struct/NetworkAddress.h"
 #include "../struct/ConnectionChangedSignal.h"
 #include "../struct/VRPacket.h"
+#include "XTEngine_global.h"
 
-
-class VRDeviceHandler : public QObject
+class XTENGINE_EXPORT VRDeviceHandler : public QObject
 {
     Q_OBJECT
 public:

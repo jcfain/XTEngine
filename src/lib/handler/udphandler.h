@@ -11,8 +11,9 @@
 #include "devicehandler.h"
 #include "settingshandler.h"
 #include "../struct/NetworkAddress.h"
+#include "XTEngine_global.h"
 
-class UdpHandler : public DeviceHandler
+class XTENGINE_EXPORT  UdpHandler : public DeviceHandler
 {
 
 public:

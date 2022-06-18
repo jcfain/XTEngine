@@ -8,8 +8,9 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include "Bookmark.h"
+#include "XTEngine_global.h"
 
-struct LibraryListItemMetaData258
+struct XTENGINE_EXPORT LibraryListItemMetaData258
 {
     QString libraryItemPath;
     qint64 lastPlayPosition;

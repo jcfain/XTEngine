@@ -101,11 +101,10 @@ unix {
 
 # LIBS       += -lVLCQtCore -lVLCQtWidgets
 unix:!mac {
-    LIBS += -L$$QT.core.libs -lQtAV
     QMAKE_RPATHDIR += lib
-    LIBS += -L$$PWD/../build-HttpServer-Desktop_Qt_5_15_0_GCC_64bit-Release/src/release -lhttpServer
-    INCLUDEPATH += $$PWD/../HttpServer/src
-    DEPENDPATH += $$PWD/../build-HttpServer-Desktop_Qt_5_15_0_GCC_64bit-Release/src/release
+    LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_0_GCC_64bit-Release/src/release -lhttpServer
+    INCLUDEPATH += $$PWD/../../HttpServer/src
+    DEPENDPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_0_GCC_64bit-Release/src/release
 }
 unix:mac {
 
@@ -145,9 +144,9 @@ win32{
 
         #include($$PWD/../../HttpServer/HttpServer.pro)
         #LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/debug -lhttpServer
-        LIBS += -L$$PWD/../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug -lhttpServer
-        INCLUDEPATH += $$PWD/../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug
-        DEPENDPATH += $$PWD/../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug
+        LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug -lhttpServer
+        INCLUDEPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug
+        DEPENDPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug
 #        TEMPLATE = subdirs
 #        #SOURCE_ROOT += ../../
 #        SUBDIRS += libQtAV
@@ -156,18 +155,18 @@ win32{
 #        include(../../QtAV/root.pri)
 #        include(../../QtAV/src/libQtAV.pri)
     }
-    else: build_pass {
+    else:win32:CONFIG(release, debug|release): {
         DESTDIR = $$shell_path($$OUT_PWD/release)
         #LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/release -lhttpServer
-        LIBS += -L$$PWD/../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release -lhttpServer
-        INCLUDEPATH += $$PWD/../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release
+        LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release -lhttpServer
+        INCLUDEPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release
         DEPENDPATH += $$PWD/../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release
         #INCLUDEPATH += ../../QtAV-Builds/Release/x64/include
     }
-    INCLUDEPATH += $$PWD/../HttpServer/src
+    INCLUDEPATH += $$PWD/../../HttpServer/src
 }
 
-include($$PWD/../HttpServer/3rdparty/qtpromise/qtpromise.pri)
+include($$PWD/../../HttpServer/3rdparty/qtpromise/qtpromise.pri)
 #mkspecs_features.files    = $$PWD/qss/default.qss
 #mkspecs_features.path     = $$OUT_PWD/qss
 #INSTALLS                  += mkspecs_features

@@ -5,6 +5,7 @@
 #include <QMutex>
 #include <QFile>
 #include <QDateTime>
+#include "XTEngine_global.h"
 
 
 enum XLogLevel
@@ -15,7 +16,8 @@ enum XLogLevel
     Critical
 };
 
-class LogHandler
+
+class XTENGINE_EXPORT LogHandler
 {
 public:
 
@@ -23,13 +25,10 @@ public:
     static void Info(QString message);
     static void Error(QString message);
     static void Warn(QString message);
-    //static void Dialog(QWidget* parent, QString message, XLogLevel level);
     static QString getLevel(XLogLevel level);
     static void setUserDebug(bool on);
     static bool getUserDebug();
     static void ExportDebug();
-//    static void Loading(QWidget* parent, QString message);
-//    static void LoadingClose();
 
 private:
     LogHandler();

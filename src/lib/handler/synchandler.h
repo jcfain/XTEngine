@@ -9,10 +9,13 @@
 #include "funscripthandler.h"
 #include "lib/lookup/XMedia.h"
 #include "lib/struct/VRPacket.h"
+#include "lib/struct/ConnectionChangedSignal.h"
 #include <QtConcurrent/QtConcurrent>
 #include <QElapsedTimer>
+#include "lib/handler/vrdevicehandler.h"
+#include "XTEngine_global.h"
 
-class SyncHandler: public QObject
+class XTENGINE_EXPORT SyncHandler: public QObject
 {
     Q_OBJECT
 signals:
@@ -26,10 +29,11 @@ signals:
     void sendTCode(QString tcode);
     void channelPositionChange(QString channel, int position);
 public slots:
-    void on_device_status_change(bool connected);
-    void on_local_video_status_change(XMediaState state);
+    void on_device_status_change(ConnectionChangedSignal state);
+    void on_vr_device_status_change(VRDeviceHandler* connectedVRDeviceHandler);
+    void on_local_video_state_change(XMediaState state);
 public:
-    SyncHandler(TCodeHandler* tcodeHandler, QObject *parent = nullptr);
+    SyncHandler(QObject *parent = nullptr);
     ~SyncHandler();
     void togglePause();
     void setPause(bool paused);
@@ -76,7 +80,7 @@ private:
     FunscriptHandler* _funscriptHandler;
     QList<FunscriptHandler*> _funscriptHandlers;
     QList<QString> _invalidScripts;
-
+    VRDeviceHandler* _connectedVRDeviceHandler = 0;
     bool load(QByteArray funscript);
     void loadMFS(QString funscript);
     bool loadMFS(QString channel, QString funscript);

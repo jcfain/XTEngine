@@ -12,16 +12,16 @@
 #include <QFile>
 #include "settingshandler.h"
 #include "loghandler.h"
-
 #include "../struct/Funscript.h"
+#include "XTEngine_global.h"
 
-class FunscriptHandler : public QObject
+class XTENGINE_EXPORT FunscriptHandler : public QObject
 {
     Q_OBJECT
 signals:
 
 public:
-    FunscriptHandler(QString name);
+    FunscriptHandler(QString name , QObject* parent = nullptr);
     ~FunscriptHandler();
     bool load(QString funscript);
     bool load(QByteArray funscript);

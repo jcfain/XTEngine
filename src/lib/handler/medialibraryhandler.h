@@ -8,8 +8,9 @@
 #include "../handler/settingshandler.h"
 #include "../handler/xvideopreview.h"
 #include "../struct/LibraryListItem.h"
+#include "XTEngine_global.h"
 
-class MediaLibraryHandler : public QObject
+class XTENGINE_EXPORT MediaLibraryHandler : public QObject
 {
     Q_OBJECT
 signals:

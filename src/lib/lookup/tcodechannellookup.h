@@ -5,8 +5,9 @@
 #include "AxisNames.h"
 #include "TCodeVersion.h"
 #include <QHash>
+#include "XTEngine_global.h"
 
-class TCodeChannelLookup
+class XTENGINE_EXPORT TCodeChannelLookup
 {
 public:
     static QString PositiveModifier;

@@ -14,9 +14,9 @@
 #include "../struct/ConnectionChangedSignal.h"
 #include "../struct/VRPacket.h"
 #include "vrdevicehandler.h"
+#include "XTEngine_global.h"
 
-
-class WhirligigHandler : public VRDeviceHandler
+class XTENGINE_EXPORT WhirligigHandler : public VRDeviceHandler
 {
     Q_OBJECT
 signals:

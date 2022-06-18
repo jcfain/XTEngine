@@ -23,8 +23,9 @@
 #include "../struct/LibraryListItem27.h"
 #include "../struct/LibraryListItemMetaData.h"
 #include "../struct/LibraryListItemMetaData258.h"
+#include "XTEngine_global.h"
 
-class SettingsHandler: public QObject
+class XTENGINE_EXPORT SettingsHandler: public QObject
 {
     Q_OBJECT
 signals:
@@ -51,8 +52,8 @@ public:
     static QString getSelectedTheme();
     static QString getSelectedLibrary();
     static QString getSelectedThumbsDir();
-//    static void setSelectedThumbsDir(QWidget* parent);
-//    static void setSelectedThumbsDirDefault(QWidget* parent);
+    static void setSelectedThumbsDir(QString thumbDir);
+    static void setSelectedThumbsDirDefault();
     static void setUseMediaDirForThumbs(bool value);
     static bool getUseMediaDirForThumbs();
     static QString getSelectedFunscriptLibrary();
@@ -255,18 +256,13 @@ public:
 
     static void SetChannelMapDefaults();
     static void SetGamepadMapDefaults();
+    static void setSaveOnExit(bool enabled);
     static void Load(QString applicationDirPath = nullptr, QSettings* settingsToLoadFrom = nullptr);
     static void Save(QSettings* settingsToSaveTo = nullptr);
     static void SaveLinkedFunscripts(QSettings* settingsToSaveTo = nullptr);
     static void PersistSelectSettings();
     static void Default();
     static void Clear();
-//    static void Export(QWidget* parent);
-//    static void Import(QWidget* parent);
-//    static void requestRestart(QWidget* parent);
-//    static void askRestart(QWidget* parent, QString message);
-//    static void quit(bool restart);
-//    static void restart();
 
 
     static QStringList getVideoExtensions()
@@ -386,7 +382,7 @@ private:
     static bool _disableVRScriptSelect;
     static bool _disableNoScriptFound;
     static bool disableSpeechToText;
-    static bool defaultReset;
+    static bool _saveOnExit;
     static QString _hashedPass;
 
     static bool _skipToMoneyShotPlaysFunscript;

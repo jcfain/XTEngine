@@ -6,8 +6,9 @@
 #include <QTimer>
 #include "vrdevicehandler.h"
 #include "httphandler.h"
+#include "XTEngine_global.h"
 
-class XTPWebHandler : public VRDeviceHandler
+class XTENGINE_EXPORT XTPWebHandler : public VRDeviceHandler
 {
     Q_OBJECT
 signals:

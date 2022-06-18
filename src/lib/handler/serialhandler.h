@@ -6,8 +6,9 @@
 #include "../struct/SerialComboboxItem.h"
 #include "devicehandler.h"
 #include "../tool/boolinq.h"
+#include "XTEngine_global.h"
 
-class SerialHandler : public DeviceHandler
+class XTENGINE_EXPORT SerialHandler : public DeviceHandler
 {
 
 public:

@@ -4,8 +4,9 @@
 #include <random>
 #include <chrono>
 #include "../handler/loghandler.h"
+#include "XTEngine_global.h"
 
-class XMath
+class XTENGINE_EXPORT XMath
 {
 public:
     static int mapRange(int value, int inStart, int inEnd, int outStart, int outEnd);

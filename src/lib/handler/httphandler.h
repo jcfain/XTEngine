@@ -19,8 +19,9 @@
 #include "medialibraryhandler.h"
 #include "../struct/ConnectionChangedSignal.h"
 #include "../tool/videoformat.h"
+#include "XTEngine_global.h"
 
-class HttpHandler : public HttpRequestHandler
+class XTENGINE_EXPORT HttpHandler : public HttpRequestHandler
 {
     Q_OBJECT
 signals:

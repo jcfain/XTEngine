@@ -1,6 +1,6 @@
 #include "funscripthandler.h"
 
-FunscriptHandler::FunscriptHandler(QString channel)
+FunscriptHandler::FunscriptHandler(QString channel, QObject* parent) : QObject(parent)
 {
     _channel = channel;
 }

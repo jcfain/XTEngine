@@ -4,8 +4,9 @@
 #include <QMediaPlayer>
 #include "xvideosurface.h"
 #include "loghandler.h"
+#include "XTEngine_global.h"
 
-class XVideoPreview : public QObject
+class XTENGINE_EXPORT XVideoPreview : public QObject
 {
     Q_OBJECT
 signals:

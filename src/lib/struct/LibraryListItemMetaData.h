@@ -6,8 +6,9 @@
 #include <QVariant>
 #include <QDataStream>
 #include "Bookmark.h"
+#include "XTEngine_global.h"
 
-struct LibraryListItemMetaData
+struct XTENGINE_EXPORT LibraryListItemMetaData
 {
     QString libraryItemPath;
     qint64 lastPlayPosition;
