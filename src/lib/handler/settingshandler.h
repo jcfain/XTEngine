@@ -38,8 +38,8 @@ public:
         return m_instance;
     }
     static const QMap<TCodeVersion, QString> SupportedTCodeVersions;
-    static const QString XTPVersion;
-    static const float XTPVersionNum;
+    static const QString XTEVersion;
+    static const float XTEVersionNum;
     static bool getSettingsChanged();
     static bool getHideWelcomeScreen();
     static void setHideWelcomeScreen(bool value);
@@ -57,7 +57,10 @@ public:
     static void setUseMediaDirForThumbs(bool value);
     static bool getUseMediaDirForThumbs();
     static QString getSelectedFunscriptLibrary();
-    static int getSelectedDevice();
+    static DeviceName getSelectedOutputDevice();
+    static void setSelectedOutputDevice(DeviceName deviceName);
+    static DeviceName getSelectedInputDevice();
+    static void setSelectedInputDevice(DeviceName deviceName);
     static QString getSerialPort();
     static QString getServerAddress();
     static QString getServerPort();
@@ -109,20 +112,13 @@ public:
 
     static QString getDeoAddress();
     static QString getDeoPort();
-    static bool getDeoEnabled();
     static void setDeoAddress(QString value);
     static void setDeoPort(QString value);
-    static void setDeoEnabled(bool value);
 
     static QString getWhirligigAddress();
     static QString getWhirligigPort();
-    static bool getWhirligigEnabled();
     static void setWhirligigAddress(QString value);
     static void setWhirligigPort(QString value);
-    static void setWhirligigEnabled(bool value);
-
-    static void setXTPWebSyncEnabled(bool value);
-    static bool getXTPWebSyncEnabled();
 
     static void setPlayerVolume(int value);
     static void setoffSet(int value);
@@ -317,6 +313,7 @@ private:
     static void MigrateToQVariant2(QSettings* settingsToLoadFrom);
     static void MigrateTo281();
     static void DeMigrateLibraryMetaDataTo258();
+
     static QString _appdataLocation;
     static TCodeVersion _selectedTCodeVersion;
     static GamepadAxisNames gamepadAxisNames;

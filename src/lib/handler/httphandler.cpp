@@ -6,7 +6,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
 {
     _mediaLibraryHandler = mediaLibraryHandler;
     _webSocketHandler = new WebSocketHandler(this);
-    connect(_webSocketHandler, &WebSocketHandler::connectOutputDevice, this, &HttpHandler::connectTCodeDevice);
+    connect(_webSocketHandler, &WebSocketHandler::connectOutputDevice, this, &HttpHandler::connectOutputDevice);
     connect(_webSocketHandler, &WebSocketHandler::connectInputDevice, this, &HttpHandler::connectInputDevice);
     connect(_webSocketHandler, &WebSocketHandler::tcode, this, &HttpHandler::tcode);
     connect(_webSocketHandler, &WebSocketHandler::newWebSocketConnected, this, &HttpHandler::on_webSocketClient_Connected);
@@ -117,7 +117,7 @@ HttpPromise HttpHandler::handleWebTimeUpdate(HttpDataPtr data)
 {
     auto body = data->request->body();
     LogHandler::Debug("HTTP time sync update: "+QString(body));
-    emit readyRead(body);
+    emit xtpWebPacketRecieve(body);
     data->response->setStatus(HttpStatus::Ok);
     return HttpPromise::resolve(data);
 }
@@ -162,20 +162,13 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     QJsonObject connectionSettingsJson;
     QJsonObject connectionInputSettingsJson;
     QJsonObject connectionOutputSettingsJson;
-    DeviceType deviceType = DeviceType::None;
-    if(SettingsHandler::getDeoEnabled())
-        deviceType = DeviceType::Deo;
-    else if(SettingsHandler::getWhirligigEnabled())
-        deviceType = DeviceType::Whirligig;
-    else if(SettingsHandler::getXTPWebSyncEnabled())
-        deviceType = DeviceType::XTPWeb;
-    connectionInputSettingsJson["selectedDevice"] = deviceType;
+    connectionInputSettingsJson["selectedDevice"] = SettingsHandler::getSelectedInputDevice();
     connectionInputSettingsJson["gamePadEnabled"] = SettingsHandler::getGamepadEnabled();
     connectionInputSettingsJson["deoAddress"] = SettingsHandler::getDeoAddress();
     connectionInputSettingsJson["deoPort"] = SettingsHandler::getDeoPort();
     connectionSettingsJson["input"] = connectionInputSettingsJson;
 
-    connectionOutputSettingsJson["selectedDevice"] = SettingsHandler::getSelectedDevice();
+    connectionOutputSettingsJson["selectedDevice"] = SettingsHandler::getSelectedOutputDevice();
     connectionOutputSettingsJson["networkAddress"] = SettingsHandler::getServerAddress();
     connectionOutputSettingsJson["networkPort"] = SettingsHandler::getServerPort();
     connectionOutputSettingsJson["serialPort"] = SettingsHandler::getSerialPort();
@@ -238,15 +231,15 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
         QJsonObject input = connection["input"].toObject();
         QJsonObject output = connection["output"].toObject();
 
-        DeviceType selectedSyncDevice = (DeviceType)input["selectedDevice"].toInt();
+        DeviceName selectedSyncDevice = (DeviceName)input["selectedDevice"].toInt();
         QString deoAddress = input["deoAddress"].toString();
         QString deoPort = input["deoPort"].toString();
         if(deoAddress != SettingsHandler::getDeoAddress() || deoPort != SettingsHandler::getDeoPort())
         {
             SettingsHandler::setDeoAddress(deoAddress);
             SettingsHandler::setDeoPort(deoPort);
-            if(selectedSyncDevice == DeviceType::Deo)
-                emit connectInputDevice(DeviceType::Deo, true);
+            if(selectedSyncDevice == DeviceName::Deo)
+                emit connectInputDevice(DeviceName::Deo, true);
         }
 //        output["selectedTCodeDevice"] = SettingsHandler::getSelectedDevice();
 //        output["networkAddress"] = SettingsHandler::getServerAddress();

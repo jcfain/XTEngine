@@ -17,7 +17,7 @@ GamepadHandler::~GamepadHandler()
 void GamepadHandler::init()
 {
     _stop = false;
-    emit connectionChange({DeviceType::Gamepad, ConnectionStatus::Connecting, "Connecting..."});
+    emit connectionChange({DeviceType::Input, DeviceName::Gamepad, ConnectionStatus::Connecting, "Connecting..."});
     connect(QGamepadManager::instance(), &QGamepadManager::connectedGamepadsChanged, this, &GamepadHandler::connectedGamepadsChanged);
     connectedGamepadsChanged();
 }
@@ -32,7 +32,7 @@ void GamepadHandler::connectedGamepadsChanged()
         _stop = false;
         _isConnected = true;
         _gamepad = new QGamepad(*_gamepads.begin(), this);
-        emit connectionChange({DeviceType::Gamepad, ConnectionStatus::Connected, "Connected"});
+        emit connectionChange({DeviceType::Input, DeviceName::Gamepad, ConnectionStatus::Connected, "Connected"});
         connect(_gamepad, &QGamepad::connectedChanged, this, &GamepadHandler::gamePadConnectionChanged);
         if(!isRunning())
             start();
@@ -56,7 +56,7 @@ void GamepadHandler::gamePadConnectionChanged(bool connected)
     {
         LogHandler::Debug("Gamepads connected event");
 //        _stop = false;
-//        emit connectionChange({DeviceType::Gamepad, ConnectionStatus::Connected, "Connected"});
+//        emit connectionChange({DeviceName::Gamepad, ConnectionStatus::Connected, "Connected"});
 //        start();
     }
     else
@@ -414,7 +414,7 @@ void GamepadHandler::disposeInternal()
         disconnect(_gamepad, &QGamepad::connectedChanged, this, &GamepadHandler::gamePadConnectionChanged);
     _mutex.unlock();
 
-    emit connectionChange({DeviceType::Gamepad, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({DeviceType::Input, DeviceName::Gamepad, ConnectionStatus::Disconnected, "Disconnected"});
     if(isRunning())
     {
         quit();

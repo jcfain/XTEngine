@@ -19,10 +19,8 @@
 class XTENGINE_EXPORT WhirligigHandler : public VRDeviceHandler
 {
     Q_OBJECT
-signals:
-    void errorOccurred(QString error);
-    void connectionChange(ConnectionChangedSignal status);
-    void messageRecieved(VRPacket message);
+public slots:
+    void messageSend(QByteArray message) override;
 
 public:
     explicit WhirligigHandler(QObject *parent = nullptr);

@@ -17,7 +17,7 @@ void WhirligigHandler::init(NetworkAddress address, int waitTimeout)
 {
     qRegisterMetaType<ConnectionChangedSignal>();
     qRegisterMetaType<VRPacket>();
-    emit connectionChange({DeviceType::Whirligig, ConnectionStatus::Connecting, "Waiting..."});
+    emit connectionChange({DeviceType::Input, DeviceName::Whirligig, ConnectionStatus::Connecting, "Waiting..."});
     _waitTimeout = waitTimeout;
     _address = address;
 
@@ -54,7 +54,7 @@ void WhirligigHandler::dispose()
     LogHandler::Debug("Whirligig: dispose");
     _isConnected = false;
     _isPlaying = false;
-    emit connectionChange({DeviceType::Whirligig, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({DeviceType::Input, DeviceName::Whirligig, ConnectionStatus::Disconnected, "Disconnected"});
     if (tcpSocket != nullptr)
     {
         disconnect(tcpSocket, &QTcpSocket::stateChanged, this, &WhirligigHandler::onSocketStateChange);
@@ -62,6 +62,10 @@ void WhirligigHandler::dispose()
         if (tcpSocket->isOpen())
             tcpSocket->disconnectFromHost();
     }
+}
+
+void WhirligigHandler::messageSend(QByteArray message) {
+    //readData(message);
 }
 
 void WhirligigHandler::readData()
@@ -178,7 +182,7 @@ void WhirligigHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             //_mutex.unlock();
             //connect(keepAliveTimer, &QTimer::timeout, this, &WhirligigHandler::sendKeepAlive);
             //keepAliveTimer->start(1000);
-            emit connectionChange({DeviceType::Whirligig, ConnectionStatus::Connected, "Connected"});
+            emit connectionChange({DeviceType::Input, DeviceName::Whirligig, ConnectionStatus::Connected, "Connected"});
             break;
         }
         case QAbstractSocket::SocketState::UnconnectedState:
@@ -189,7 +193,7 @@ void WhirligigHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             //_mutex.unlock();
             //if (keepAliveTimer != nullptr && keepAliveTimer->isActive())
                 //keepAliveTimer->stop();
-            if(SettingsHandler::getWhirligigEnabled())
+            if(SettingsHandler::getSelectedInputDevice() == DeviceName::Whirligig)
             {
                 LogHandler::Debug("Whirligig retrying: " + _address.address);
                 LogHandler::Debug("port: " + QString::number(_address.port));
@@ -200,14 +204,14 @@ void WhirligigHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             else
             {
                 LogHandler::Debug("Whirligig disconnected");
-                emit connectionChange({DeviceType::Whirligig, ConnectionStatus::Disconnected, "Disconnected"});
+                emit connectionChange({DeviceType::Input, DeviceName::Whirligig, ConnectionStatus::Disconnected, "Disconnected"});
             }
             break;
         }
         case QAbstractSocket::SocketState::ConnectingState:
         {
             LogHandler::Debug("Whirligig connecting");
-            emit connectionChange({DeviceType::Whirligig, ConnectionStatus::Connecting, "Waiting..."});
+            emit connectionChange({DeviceType::Input, DeviceName::Whirligig, ConnectionStatus::Connecting, "Waiting..."});
             break;
         }
         case QAbstractSocket::SocketState::BoundState:

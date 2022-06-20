@@ -7,7 +7,8 @@
 
 struct ConnectionChangedSignal
 {
-    DeviceType deviceType;
+    DeviceType type;
+    DeviceName deviceName;
     ConnectionStatus status;
     QString message;
 };

@@ -2,6 +2,12 @@
 #define ENUM_H
 enum DeviceType
 {
+    Input,
+    Output
+};
+
+enum DeviceName
+{
     Serial,
     Network,
     Deo,

@@ -11,6 +11,7 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    lib/handler/connectionhandler.cpp \
     lib/handler/deohandler.cpp \
     lib/handler/devicehandler.cpp \
     lib/handler/funscripthandler.cpp \
@@ -40,6 +41,7 @@ SOURCES += \
 
 HEADERS += \
     XTEngine_global.h \
+    lib/handler/connectionhandler.h \
     lib/handler/deohandler.h \
     lib/handler/devicehandler.h \
     lib/handler/funscripthandler.h \

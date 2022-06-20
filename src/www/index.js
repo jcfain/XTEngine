@@ -169,7 +169,7 @@ function onSyncDeviceConnectionChange(input, device) {
 }
 
 function tcodeDeviceConnectRetry() {
-	sendMessageXTP("connectOutputDevice");
+	sendMessageXTP("connectOutputDevice", {deviceType: remoteUserSettings.connection.output.selectedDevice});
 }
 
 function sendTCode(tcode) {

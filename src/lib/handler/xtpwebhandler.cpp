@@ -18,12 +18,11 @@ void XTPWebHandler::init(NetworkAddress address, int waitTimeout)
 {
 }
 
-void XTPWebHandler::init(HttpHandler* httpHandler)
+void XTPWebHandler::init()
 {
-    _httpHandler = httpHandler;
     qRegisterMetaType<ConnectionChangedSignal>();
     qRegisterMetaType<VRPacket>();
-    emit connectionChange({DeviceType::XTPWeb, ConnectionStatus::Connecting, "Waiting..."});
+    emit connectionChange({DeviceType::Input, DeviceName::XTPWeb, ConnectionStatus::Connecting, "Waiting..."});
 
     _currentPacket = new VRPacket
     {
@@ -33,7 +32,6 @@ void XTPWebHandler::init(HttpHandler* httpHandler)
         0,
         0
     };
-    connect(_httpHandler, &HttpHandler::readyRead, this, &XTPWebHandler::readData);
 }
 
 void XTPWebHandler::send(const QString &command)
@@ -45,17 +43,20 @@ void XTPWebHandler::dispose()
 {
     LogHandler::Debug("XTP Web: dispose");
     _isConnected = false;
-    emit connectionChange({DeviceType::XTPWeb, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({DeviceType::Input, DeviceName::XTPWeb, ConnectionStatus::Disconnected, "Disconnected"});
 //    if(_httpHandler)
 //        disconnect(_httpHandler, &HttpHandler::readyRead, this, &XTPWebHandler::readData);
 }
 
+void XTPWebHandler::messageSend(QByteArray message) {
+    readData(message);
+}
 void XTPWebHandler::readData(QByteArray data)
 {
     if(!_isConnected)
     {
         _isConnected = true;
-        emit connectionChange({DeviceType::XTPWeb, ConnectionStatus::Connected, "Connected"});
+        emit connectionChange({DeviceType::Input, DeviceName::XTPWeb, ConnectionStatus::Connected, "Connected"});
     }
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(data, &error);

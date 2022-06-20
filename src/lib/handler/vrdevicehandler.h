@@ -25,6 +25,8 @@ signals:
     void errorOccurred(QString error);
     void connectionChange(ConnectionChangedSignal status);
     void messageRecieved(VRPacket message);
+public slots:
+    virtual void messageSend(QByteArray message);
 };
 
 #endif // VRDEVICEHANDLER_H

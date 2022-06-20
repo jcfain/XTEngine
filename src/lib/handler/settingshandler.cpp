@@ -4,8 +4,9 @@ const QMap<TCodeVersion, QString> SettingsHandler::SupportedTCodeVersions = {
     {TCodeVersion::v2, "TCode v0.2"},
     {TCodeVersion::v3, "TCode v0.3"}
 };
-const QString SettingsHandler::XTPVersion = "0.311a";
-const float SettingsHandler::XTPVersionNum = 0.311f;
+
+const QString SettingsHandler::XTEVersion = QString("0.32a_%1T%2").arg(__DATE__).arg(__TIME__);
+const float SettingsHandler::XTEVersionNum = 0.32f;
 
 SettingsHandler::SettingsHandler(){}
 SettingsHandler::~SettingsHandler()
@@ -313,8 +314,8 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         float currentVersion = settingsToSaveTo->value("version").toFloat();
 
-        if(XTPVersionNum > currentVersion)
-            settingsToSaveTo->setValue("version", XTPVersionNum);
+        if(XTEVersionNum > currentVersion)
+            settingsToSaveTo->setValue("version", XTEVersionNum);
         settingsToSaveTo->setValue("selectedTCodeVersion", ((int)_selectedTCodeVersion));
         settingsToSaveTo->setValue("hideWelcomeScreen", ((int)_hideWelcomeScreen));
         settingsToSaveTo->setValue("selectedLibrary", selectedLibrary);
@@ -883,11 +884,38 @@ bool SettingsHandler::getUseMediaDirForThumbs()
 {
     return _useMediaDirForThumbs;
 }
-int SettingsHandler::getSelectedDevice()
+
+DeviceName SettingsHandler::getSelectedOutputDevice()
 {
     QMutexLocker locker(&mutex);
-    return selectedDevice;
+    return (DeviceName)selectedDevice;
 }
+
+void SettingsHandler::setSelectedOutputDevice(DeviceName deviceName)
+{
+    QMutexLocker locker(&mutex);
+    selectedDevice = deviceName;
+}
+
+DeviceName SettingsHandler::getSelectedInputDevice()
+{
+    QMutexLocker locker(&mutex);
+    if(deoEnabled)
+        return DeviceName::Deo;
+    else if(whirligigEnabled)
+        return DeviceName::Whirligig;
+    else if(_xtpWebSyncEnabled)
+        return DeviceName::XTPWeb;
+    return DeviceName::None;
+}
+
+void SettingsHandler::setSelectedInputDevice(DeviceName deviceName)
+{
+    deoEnabled = deviceName == DeviceName::Deo;
+    whirligigEnabled = deviceName == DeviceName::Whirligig;
+    _xtpWebSyncEnabled = deviceName == DeviceName::XTPWeb;
+}
+
 QString SettingsHandler::getSerialPort()
 {
     QMutexLocker locker(&mutex);
@@ -1359,12 +1387,6 @@ void SettingsHandler::setDeoPort(QString value)
     deoPort = value;
     settingsChangedEvent(true);
 }
-void SettingsHandler::setDeoEnabled(bool value)
-{
-    QMutexLocker locker(&mutex);
-    deoEnabled = value;
-    settingsChangedEvent(true);
-}
 QString SettingsHandler::getDeoAddress()
 {
     QMutexLocker locker(&mutex);
@@ -1375,12 +1397,6 @@ QString SettingsHandler::getDeoPort()
     QMutexLocker locker(&mutex);
     return deoPort;
 }
-bool SettingsHandler::getDeoEnabled()
-{
-    QMutexLocker locker(&mutex);
-    return deoEnabled;
-}
-
 void SettingsHandler::setWhirligigAddress(QString value)
 {
     QMutexLocker locker(&mutex);
@@ -1393,12 +1409,6 @@ void SettingsHandler::setWhirligigPort(QString value)
     whirligigPort = value;
     settingsChangedEvent(true);
 }
-void SettingsHandler::setWhirligigEnabled(bool value)
-{
-    QMutexLocker locker(&mutex);
-    whirligigEnabled = value;
-    settingsChangedEvent(true);
-}
 QString SettingsHandler::getWhirligigAddress()
 {
     QMutexLocker locker(&mutex);
@@ -1408,22 +1418,6 @@ QString SettingsHandler::getWhirligigPort()
 {
     QMutexLocker locker(&mutex);
     return whirligigPort;
-}
-bool SettingsHandler::getWhirligigEnabled()
-{
-    QMutexLocker locker(&mutex);
-    return whirligigEnabled;
-}
-
-void SettingsHandler::setXTPWebSyncEnabled(bool value)
-{
-    QMutexLocker locker(&mutex);
-    _xtpWebSyncEnabled = value;
-}
-bool SettingsHandler::getXTPWebSyncEnabled()
-{
-    QMutexLocker locker(&mutex);
-    return _xtpWebSyncEnabled;
 }
 
 void SettingsHandler::setPlayerVolume(int value)

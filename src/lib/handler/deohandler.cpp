@@ -20,7 +20,7 @@ void DeoHandler::init(NetworkAddress address, int waitTimeout)
 {
     qRegisterMetaType<ConnectionChangedSignal>();
     qRegisterMetaType<VRPacket>();
-    emit connectionChange({DeviceType::Deo, ConnectionStatus::Connecting, "Waiting..."});
+    emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Connecting, "Waiting..."});
     _waitTimeout = waitTimeout;
     _address = address;
 
@@ -77,7 +77,7 @@ void DeoHandler::dispose()
 {
     LogHandler::Debug("Deo: dispose");
     tearDown();
-    emit connectionChange({DeviceType::Deo, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Disconnected, "Disconnected"});
 }
 
 void DeoHandler::tearDown()
@@ -98,6 +98,9 @@ void DeoHandler::tearDown()
     }
 }
 
+void DeoHandler::messageSend(QByteArray message) {
+    //readData(message);
+}
 void DeoHandler::readData()
 {
     QByteArray datagram = tcpSocket->readAll();
@@ -109,7 +112,7 @@ void DeoHandler::readData()
     {
         LogHandler::Error("Settings json response error: "+error.errorString());
         LogHandler::Error("datagram: "+datagram);
-        //emit connectionChange({DeviceType::Deo, ConnectionStatus::Error, "Read error: " + error.errorString()});
+        //emit connectionChange({DeviceName::Deo, ConnectionStatus::Error, "Read error: " + error.errorString()});
 //        if(currentPacket != nullptr)
 //        {
 //            currentPacket->playing = false;
@@ -200,7 +203,7 @@ void DeoHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             connect(keepAliveTimer, &QTimer::timeout, this, &DeoHandler::sendKeepAlive);
             keepAliveTimer->start(1000);
             connect(tcpSocket, &QTcpSocket::readyRead, this, &DeoHandler::readData);
-            emit connectionChange({DeviceType::Deo, ConnectionStatus::Connected, "Connected"});
+            emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Connected, "Connected"});
             break;
         }
         case QAbstractSocket::SocketState::UnconnectedState:
@@ -217,7 +220,7 @@ void DeoHandler::onSocketStateChange (QAbstractSocket::SocketState state)
 //            {
 //                keepAliveTimer->stop();
 //            }
-            if(SettingsHandler::getDeoEnabled())
+            if(SettingsHandler::getSelectedInputDevice() == DeviceName::Deo)
             {
                 LogHandler::Debug("DeoVR retrying: " + _address.address);
 //                LogHandler::Debug("port: " + QString::number(_address.port));
@@ -232,14 +235,14 @@ void DeoHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             else
             {
                 LogHandler::Debug("Deo disconnected");
-                emit connectionChange({DeviceType::Deo, ConnectionStatus::Disconnected, "Disconnected"});
+                emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Disconnected, "Disconnected"});
             }
             break;
         }
         case QAbstractSocket::SocketState::ConnectingState:
         {
             LogHandler::Debug("Deo connecting");
-            emit connectionChange({DeviceType::Deo, ConnectionStatus::Connecting, "Waiting..."});
+            emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Connecting, "Waiting..."});
             break;
         }
         case QAbstractSocket::SocketState::BoundState:

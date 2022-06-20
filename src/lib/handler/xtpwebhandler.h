@@ -5,28 +5,27 @@
 #include <QMutex>
 #include <QTimer>
 #include "vrdevicehandler.h"
-#include "httphandler.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT XTPWebHandler : public VRDeviceHandler
 {
     Q_OBJECT
-signals:
+public slots:
+    void messageSend(QByteArray message) override;
 public:
     explicit XTPWebHandler(QObject *parent = nullptr);
     ~XTPWebHandler();
     void init(NetworkAddress _address, int waitTimeout = 5000) override;
-    void init(HttpHandler* httpHandler);
+    void init();
     void dispose() override;
     void send(const QString &command) override;
     bool isConnected() override;
     bool isPlaying() override;
     //void togglePause();
     VRPacket getCurrentPacket() override;
+    void readData(QByteArray data);
 
 private:
-    void readData(QByteArray data);
-    HttpHandler* _httpHandler = 0;
     VRPacket* _currentPacket = 0;
     QMutex _mutex;
     NetworkAddress _address;

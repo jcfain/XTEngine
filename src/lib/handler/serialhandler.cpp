@@ -34,10 +34,10 @@ void SerialHandler::init(const QString &portName, int waitTimeout)
     else if(portName.isEmpty() || available.length() == 0)
     {
         //LogHandler::Dialog("No portname specified", XLogLevel::Critical);
-        emit connectionChange({DeviceType::Serial, ConnectionStatus::Disconnected, "No COM"});
+        emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Disconnected, "No COM"});
         return;
     }
-    emit connectionChange({DeviceType::Serial, ConnectionStatus::Connecting, "Connecting..."});
+    emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Connecting, "Connecting..."});
     _mutex.lock();
     _stop = false;
     _waitTimeout = waitTimeout;
@@ -63,7 +63,7 @@ void SerialHandler::init(const QString &portName, int waitTimeout)
 //    {
 //        _stop = true;
 //        _isConnected = false;
-//        emit connectionChange({DeviceType::Serial, ConnectionStatus::Error, "Timed out"});
+//        emit connectionChange({DeviceName::Serial, ConnectionStatus::Error, "Timed out"});
 //    }
 }
 
@@ -176,7 +176,7 @@ void SerialHandler::run()
                     {
                         if(!_isConnected) //temp
                         { // temp
-                                    emit connectionChange({DeviceType::Serial, ConnectionStatus::Connected, "Connected: "+version});
+                                    emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Connected, "Connected: "+version});
                                     _mutex.lock();
                                     _isConnected = true;
                                     _mutex.unlock();
@@ -184,9 +184,9 @@ void SerialHandler::run()
                     }
                     else
                     {
-                        //emit connectionChange({DeviceType::Serial, ConnectionStatus::Error, "No TCode"});
+                        //emit connectionChange({DeviceName::Serial, ConnectionStatus::Error, "No TCode"});
                         // Due to issue with connecting to some romeos with validation. Do not block them from using it.
-                        emit connectionChange({DeviceType::Serial, ConnectionStatus::Connected, "Connected: "+version});
+                        emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Connected, "Connected: "+version});
                         _mutex.lock();
                         _isConnected = true;
                         _mutex.unlock();
@@ -201,7 +201,7 @@ void SerialHandler::run()
                     LogHandler::Error(tr("Read serial handshake timeout %1")
                                  .arg(QTime::currentTime().toString()));
                     // Due to issue with connecting to some romeos with validation. Do not block them from using it.
-                    emit connectionChange({DeviceType::Serial, ConnectionStatus::Connected, "Connected: V?"});
+                    emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Connected, "Connected: V?"});
                     _mutex.lock();
                     _isConnected = true;
                     _mutex.unlock();
@@ -210,7 +210,7 @@ void SerialHandler::run()
             }
             else
             {
-                emit connectionChange({DeviceType::Serial, ConnectionStatus::Connected, "Connected: No Validate"});
+                emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Connected, "Connected: No Validate"});
                 _mutex.lock();
                 _isConnected = true;
                 _mutex.unlock();
@@ -258,7 +258,7 @@ void SerialHandler::dispose()
     _isConnected = false;
     _mutex.unlock();
     _cond.wakeOne();
-    emit connectionChange({DeviceType::Serial, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Disconnected, "Disconnected"});
     if(isRunning())
     {
         quit();

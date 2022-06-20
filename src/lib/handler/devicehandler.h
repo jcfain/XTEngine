@@ -6,8 +6,8 @@
 #include <QWaitCondition>
 #include "settingshandler.h"
 #include "loghandler.h"
-#include "../lookup/enum.h"
-#include "../struct/ConnectionChangedSignal.h"
+#include "lib/lookup/enum.h"
+#include "lib/struct/ConnectionChangedSignal.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT DeviceHandler : public QThread

@@ -14,6 +14,10 @@ void VRDeviceHandler::dispose()
 {
 
 }
+
+void VRDeviceHandler::messageSend(QByteArray message) {
+
+}
 void VRDeviceHandler::send(const QString &command)
 {
 

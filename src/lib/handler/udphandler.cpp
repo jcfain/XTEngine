@@ -11,7 +11,7 @@ UdpHandler::~UdpHandler()
 
 void UdpHandler::init(NetworkAddress address, int waitTimeout)
 {
-    emit connectionChange({DeviceType::Network, ConnectionStatus::Connecting, "Connecting..."});
+    emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connecting, "Connecting..."});
     //_mutex.lock();
     _stop = false;
     _isSelected = true;
@@ -42,7 +42,7 @@ void UdpHandler::init(NetworkAddress address, int waitTimeout)
     {
         _stop = true;
         _isConnected = false;
-        emit connectionChange({DeviceType::Network, ConnectionStatus::Error, "Timed out"});
+        emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "Timed out"});
     }
 }
 
@@ -82,7 +82,7 @@ void UdpHandler::run()
     //QScopedPointer<QUdpSocket> udpSocketRecieve(new QUdpSocket(this));
     //if (!udpSocketSend->bind(QHostAddress::Any, 54000))
     //{
-        //emit connectionChange({DeviceType::Network, ConnectionStatus::Error, "Error opening handshake"});
+        //emit connectionChange({DeviceName::Network, ConnectionStatus::Error, "Error opening handshake"});
     //}
     while (!_stop)
     {
@@ -91,7 +91,7 @@ void UdpHandler::run()
             udpSocketSend->connectToHost(currentAddress, currentPort);
             if(!udpSocketSend->waitForConnected(_waitTimeout))
             {
-                emit connectionChange({DeviceType::Network, ConnectionStatus::Error, "Can't connect"});
+                emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "Can't connect"});
             }
         }
         if(udpSocketSend->isWritable())
@@ -120,20 +120,20 @@ void UdpHandler::run()
                         }
                         if (validated)
                         {
-                            emit connectionChange({DeviceType::Network, ConnectionStatus::Connected, "Connected: "+version});
+                            emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: "+version});
                             _mutex.lock();
                             _isConnected = true;
                             _mutex.unlock();
                         }
                         else
                         {
-                            emit connectionChange({DeviceType::Network, ConnectionStatus::Error, "No " + SettingsHandler::getSelectedTCodeVersion()});
+                            emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "No " + SettingsHandler::getSelectedTCodeVersion()});
                         }
                     }
                 }
                 else
                 {
-                    emit connectionChange({DeviceType::Network, ConnectionStatus::Connected, "Connected: "+version});
+                    emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: "+version});
                     _mutex.lock();
                     _isConnected = true;
                     _mutex.unlock();
@@ -174,7 +174,7 @@ void UdpHandler::dispose()
     _stop = true;
     _mutex.unlock();
     _cond.wakeOne();
-    emit connectionChange({DeviceType::Network, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Disconnected, "Disconnected"});
     if(isRunning())
     {
         quit();

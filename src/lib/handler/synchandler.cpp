@@ -539,7 +539,7 @@ void SyncHandler::on_vr_device_status_change(VRDeviceHandler* connectedVRDeviceH
 }
 
 void SyncHandler::on_device_status_change(ConnectionChangedSignal state) {
-    if(state.deviceType == DeviceType::Network || state.deviceType == DeviceType::Serial)
+    if(state.deviceName == DeviceName::Network || state.deviceName == DeviceName::Serial)
         _isDeviceConnected = state.status == ConnectionStatus::Connected;
 }
 

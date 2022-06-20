@@ -13,6 +13,7 @@
 
 #include "settingshandler.h"
 #include "websockethandler.h"
+#include "xtpwebhandler.h"
 #include "httpServer/httpServer.h"
 #include "httpServer/httpRequestHandler.h"
 #include "httpServer/httpRequestRouter.h"
@@ -26,10 +27,10 @@ class XTENGINE_EXPORT HttpHandler : public HttpRequestHandler
     Q_OBJECT
 signals:
     void error(QString error);
-    void readyRead(QByteArray data);
+    void xtpWebPacketRecieve(QByteArray data);
     void tcode(QString tcode);
-    void connectTCodeDevice();
-    void connectInputDevice(DeviceType deviceType, bool checked);
+    void connectOutputDevice(DeviceName deviceName);
+    void connectInputDevice(DeviceName deviceName, bool checked);
     void restartService();
 public slots:
     void on_DeviceConnection_StateChange(ConnectionChangedSignal status);
