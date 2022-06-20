@@ -1,7 +1,7 @@
 #include "whirligighandler.h"
 
 WhirligigHandler::WhirligigHandler(QObject *parent) :
-    VRDeviceHandler(parent)
+    InputDeviceHandler(parent)
 {
 }
 
@@ -16,7 +16,7 @@ WhirligigHandler::~WhirligigHandler()
 void WhirligigHandler::init(NetworkAddress address, int waitTimeout)
 {
     qRegisterMetaType<ConnectionChangedSignal>();
-    qRegisterMetaType<VRPacket>();
+    qRegisterMetaType<InputDevicePacket>();
     emit connectionChange({DeviceType::Input, DeviceName::Whirligig, ConnectionStatus::Connecting, "Waiting..."});
     _waitTimeout = waitTimeout;
     _address = address;
@@ -110,7 +110,7 @@ void WhirligigHandler::readData()
     _mutex.lock();
     _isPlaying = playing;
     //LogHandler::Debug("Whirligig current time: "+QString::number(currentTime));
-    currentVRPacket = new VRPacket
+    currentVRPacket = new InputDevicePacket
     {
         path,
         duration,
@@ -151,10 +151,10 @@ bool WhirligigHandler::isPlaying()
 //    QJsonDocument jsonResponse = QJsonDocument(pausePacket);
 //    send(QString::fromLatin1(jsonResponse.toJson()));
 //}
-VRPacket WhirligigHandler::getCurrentPacket()
+InputDevicePacket WhirligigHandler::getCurrentPacket()
 {
     const QMutexLocker locker(&_mutex);
-    VRPacket blankPacket = {
+    InputDevicePacket blankPacket = {
         NULL,
         0,
         0,

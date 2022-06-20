@@ -4,10 +4,10 @@
 #include <QJsonDocument>
 #include <QMutex>
 #include <QTimer>
-#include "vrdevicehandler.h"
+#include "inputdevicehandler.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT XTPWebHandler : public VRDeviceHandler
+class XTENGINE_EXPORT XTPWebHandler : public InputDeviceHandler
 {
     Q_OBJECT
 public slots:
@@ -22,11 +22,11 @@ public:
     bool isConnected() override;
     bool isPlaying() override;
     //void togglePause();
-    VRPacket getCurrentPacket() override;
+    InputDevicePacket getCurrentPacket() override;
     void readData(QByteArray data);
 
 private:
-    VRPacket* _currentPacket = 0;
+    InputDevicePacket* _currentPacket = 0;
     QMutex _mutex;
     NetworkAddress _address;
     QString _sendCommand;

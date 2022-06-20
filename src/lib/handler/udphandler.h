@@ -8,12 +8,12 @@
 #include <QWaitCondition>
 #include <math.h>
 #include "loghandler.h"
-#include "devicehandler.h"
+#include "outputdevicehandler.h"
 #include "settingshandler.h"
 #include "../struct/NetworkAddress.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT  UdpHandler : public DeviceHandler
+class XTENGINE_EXPORT  UdpHandler : public OutputDeviceHandler
 {
 
 public:

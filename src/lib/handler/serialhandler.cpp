@@ -1,6 +1,6 @@
 #include "serialhandler.h"
 SerialHandler::SerialHandler(QObject *parent) :
-    DeviceHandler(parent)
+    OutputDeviceHandler(parent)
 {
     qRegisterMetaType<ConnectionChangedSignal>();
 }

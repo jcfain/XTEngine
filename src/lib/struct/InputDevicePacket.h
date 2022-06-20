@@ -3,7 +3,7 @@
 #include <QString>
 #include <QMetaType>
 
-struct VRPacket
+struct InputDevicePacket
 {
     QString path;
     qint64 duration;
@@ -12,5 +12,5 @@ struct VRPacket
     bool playing;
 };
 
-Q_DECLARE_METATYPE(VRPacket);
+Q_DECLARE_METATYPE(InputDevicePacket);
 #endif // DEOPACKET_H

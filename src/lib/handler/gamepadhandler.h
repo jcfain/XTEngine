@@ -2,13 +2,13 @@
 #define GAMEPADHANDLER_H
 
 #include <QGamepad>
-#include "devicehandler.h"
+#include "outputdevicehandler.h"
 #include "../tool/tcodefactory.h"
 #include "../lookup/MediaActions.h"
 #include "../tool/xtimer.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT GamepadHandler : public DeviceHandler
+class XTENGINE_EXPORT GamepadHandler : public OutputDeviceHandler
 {
 public:
     GamepadHandler(QObject *parent = nullptr);

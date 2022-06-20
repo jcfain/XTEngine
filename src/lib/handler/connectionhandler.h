@@ -5,7 +5,7 @@
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
 
-#include "devicehandler.h"
+#include "outputdevicehandler.h"
 #include "deohandler.h"
 #include "whirligighandler.h"
 #include "xtpwebhandler.h"
@@ -13,6 +13,7 @@
 #include "serialhandler.h"
 #include "gamepadhandler.h"
 #include "lib/struct/ConnectionChangedSignal.h"
+#include "lib/struct/InputDevicePacket.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT ConnectionHandler : public QObject
@@ -24,7 +25,7 @@ signals:
     void inputConnectionError(QString error);
     void outputConnectionChange(ConnectionChangedSignal status);
     void outputConnectionError(QString error);
-    void messageRecieved(VRPacket packet);
+    void messageRecieved(InputDevicePacket packet);
     void gamepadAction(QString action);
     void gamepadTCode(QString tcode);
 //    void serialDeviceError(QString error);
@@ -65,13 +66,13 @@ public:
     XTPWebHandler* getXTPWebHandler();
     WhirligigHandler* getWhirligigHandler();
     GamepadHandler* getGamepadHandler();
-    DeviceHandler* getSelectedOutputDevice();
-    VRDeviceHandler* getSelectedInputDevice();
+    OutputDeviceHandler* getSelectedOutputDevice();
+    InputDeviceHandler* getSelectedInputDevice();
 
 private:
     QFuture<void> _initFuture;
-    DeviceHandler* _outputDevice = 0;
-    VRDeviceHandler* _inputDevice = 0;
+    OutputDeviceHandler* _outputDevice = 0;
+    InputDeviceHandler* _inputDevice = 0;
     SerialHandler* _serialHandler;
     UdpHandler* _udpHandler;
     DeoHandler* _deoHandler;
@@ -85,8 +86,8 @@ private:
     ConnectionStatus _gamepadConnectionStatus = ConnectionStatus::Disconnected;
 
 
-    void setOutputDevice(DeviceHandler* device);
-    void setInputDevice(VRDeviceHandler* device);
+    void setOutputDevice(OutputDeviceHandler* device);
+    void setInputDevice(InputDeviceHandler* device);
 };
 
 #endif // CONNECTIONHANDLER_H

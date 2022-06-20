@@ -1,5 +1,5 @@
-#ifndef DEVICEHANDLER_H
-#define DEVICEHANDLER_H
+#ifndef OUTPUTDEVICEHANDLER_H
+#define OUTPUTDEVICEHANDLER_H
 #include <QTime>
 #include <QMutex>
 #include <QThread>
@@ -10,7 +10,7 @@
 #include "lib/struct/ConnectionChangedSignal.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT DeviceHandler : public QThread
+class XTENGINE_EXPORT OutputDeviceHandler : public QThread
 {
     Q_OBJECT
 
@@ -21,8 +21,8 @@ signals:
     void emitAction(QString tcode);
 
 public:
-    explicit DeviceHandler(QObject *parent = nullptr);
-    ~DeviceHandler();
+    explicit OutputDeviceHandler(QObject *parent = nullptr);
+    ~OutputDeviceHandler();
     virtual void sendTCode(const QString &tcode);
     virtual void dispose();
     virtual bool isConnected();
@@ -31,4 +31,4 @@ private:
     virtual void run() override;
 };
 
-#endif // DEVICEHANDLER_H
+#endif // OUTPUTDEVICEHANDLER_H

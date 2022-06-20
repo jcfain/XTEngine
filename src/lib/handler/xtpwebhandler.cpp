@@ -1,7 +1,7 @@
 #include "xtpwebhandler.h"
 
 XTPWebHandler::XTPWebHandler(QObject *parent) :
-    VRDeviceHandler(parent)
+    InputDeviceHandler(parent)
 {
 }
 
@@ -21,10 +21,10 @@ void XTPWebHandler::init(NetworkAddress address, int waitTimeout)
 void XTPWebHandler::init()
 {
     qRegisterMetaType<ConnectionChangedSignal>();
-    qRegisterMetaType<VRPacket>();
+    qRegisterMetaType<InputDevicePacket>();
     emit connectionChange({DeviceType::Input, DeviceName::XTPWeb, ConnectionStatus::Connecting, "Waiting..."});
 
-    _currentPacket = new VRPacket
+    _currentPacket = new InputDevicePacket
     {
         nullptr,
         0,
@@ -80,7 +80,7 @@ void XTPWebHandler::readData(QByteArray data)
 //        LogHandler::Debug("XTP Web playbackSpeed: "+QString::number(playbackSpeed));
 //        LogHandler::Debug("XTP Web playing: "+QString::number(playing));
         _mutex.lock();
-        _currentPacket = new VRPacket
+        _currentPacket = new InputDevicePacket
         {
             path,
             duration,
@@ -109,10 +109,10 @@ bool XTPWebHandler::isPlaying()
     return _isPlaying;
 }
 
-VRPacket XTPWebHandler::getCurrentPacket()
+InputDevicePacket XTPWebHandler::getCurrentPacket()
 {
     const QMutexLocker locker(&_mutex);
-    VRPacket blankPacket = {
+    InputDevicePacket blankPacket = {
         NULL,
         0,
         0,

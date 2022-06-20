@@ -1,7 +1,7 @@
 #include "udphandler.h"
 
 UdpHandler::UdpHandler(QObject *parent) :
-    DeviceHandler(parent)
+    OutputDeviceHandler(parent)
 {
     qRegisterMetaType<ConnectionChangedSignal>();
 }

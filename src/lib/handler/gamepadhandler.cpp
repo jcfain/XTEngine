@@ -1,7 +1,7 @@
 #include "gamepadhandler.h"
 
 GamepadHandler::GamepadHandler(QObject *parent):
-    DeviceHandler(parent)
+    OutputDeviceHandler(parent)
 {
     qRegisterMetaType<ConnectionChangedSignal>();
 }

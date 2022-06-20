@@ -8,15 +8,15 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include "loghandler.h"
-#include "devicehandler.h"
+#include "outputdevicehandler.h"
 #include "settingshandler.h"
 #include "../struct/NetworkAddress.h"
 #include "../struct/ConnectionChangedSignal.h"
-#include "../struct/VRPacket.h"
-#include "vrdevicehandler.h"
+#include "../struct/InputDevicePacket.h"
+#include "inputdevicehandler.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT WhirligigHandler : public VRDeviceHandler
+class XTENGINE_EXPORT WhirligigHandler : public InputDeviceHandler
 {
     Q_OBJECT
 public slots:
@@ -31,14 +31,14 @@ public:
     bool isConnected() override;
     bool isPlaying() override;
     //void togglePause();
-    VRPacket getCurrentPacket() override;
+    InputDevicePacket getCurrentPacket() override;
 
 private:
     void readData();
     void onSocketStateChange (QAbstractSocket::SocketState state);
     void tcpErrorOccured(QAbstractSocket::SocketError);
 
-    VRPacket* currentVRPacket = nullptr;
+    InputDevicePacket* currentVRPacket = nullptr;
     QTcpSocket* tcpSocket = nullptr;
     QMutex _mutex;
     NetworkAddress _address;

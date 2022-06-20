@@ -1,7 +1,7 @@
 #include "deohandler.h"
 
 DeoHandler::DeoHandler(QObject *parent) :
-    VRDeviceHandler(parent)
+    InputDeviceHandler(parent)
 {
 }
 
@@ -19,7 +19,7 @@ DeoHandler::~DeoHandler()
 void DeoHandler::init(NetworkAddress address, int waitTimeout)
 {
     qRegisterMetaType<ConnectionChangedSignal>();
-    qRegisterMetaType<VRPacket>();
+    qRegisterMetaType<InputDevicePacket>();
     emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Connecting, "Waiting..."});
     _waitTimeout = waitTimeout;
     _address = address;
@@ -30,7 +30,7 @@ void DeoHandler::init(NetworkAddress address, int waitTimeout)
     connect(tcpSocket, &QTcpSocket::stateChanged, this, &DeoHandler::onSocketStateChange);
     connect(tcpSocket, &QTcpSocket::errorOccurred, this, &DeoHandler::tcpErrorOccured);
     tcpSocket->connectToHost(addressObj, _address.port);
-    currentPacket = new VRPacket
+    currentPacket = new InputDevicePacket
     {
         nullptr,
         0,
@@ -133,7 +133,7 @@ void DeoHandler::readData()
 //        LogHandler::Debug("Deo playbackSpeed: "+QString::number(playbackSpeed));
 //        LogHandler::Debug("Deo playing: "+QString::number(playing));
         _mutex.lock();
-        currentPacket = new VRPacket
+        currentPacket = new InputDevicePacket
         {
             path,
             duration,
@@ -173,10 +173,10 @@ bool DeoHandler::isPlaying()
 //    QJsonDocument jsonResponse = QJsonDocument(pausePacket);
 //    send(QString::fromLatin1(jsonResponse.toJson()));
 //}
-VRPacket DeoHandler::getCurrentPacket()
+InputDevicePacket DeoHandler::getCurrentPacket()
 {
     const QMutexLocker locker(&_mutex);
-    VRPacket blankPacket = {
+    InputDevicePacket blankPacket = {
         NULL,
         0,
         0,

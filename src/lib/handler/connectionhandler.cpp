@@ -59,23 +59,23 @@ bool ConnectionHandler::isInputDeviceConnected()
     return _inputDevice->isConnected();
 }
 
-void ConnectionHandler::setOutputDevice(DeviceHandler* device)
+void ConnectionHandler::setOutputDevice(OutputDeviceHandler* device)
 {
     _outputDevice = device;
-    connect(_outputDevice, &DeviceHandler::connectionChange, this, &ConnectionHandler::on_output_connectionChanged);
+    connect(_outputDevice, &OutputDeviceHandler::connectionChange, this, &ConnectionHandler::on_output_connectionChanged);
 }
-void ConnectionHandler::setInputDevice(VRDeviceHandler* device)
+void ConnectionHandler::setInputDevice(InputDeviceHandler* device)
 {
     _inputDevice = device;
-    connect(_inputDevice, &VRDeviceHandler::connectionChange, this, &ConnectionHandler::on_input_connectionChanged);
-    connect(_inputDevice, &VRDeviceHandler::messageRecieved, this, [this](VRPacket packet){
+    connect(_inputDevice, &InputDeviceHandler::connectionChange, this, &ConnectionHandler::on_input_connectionChanged);
+    connect(_inputDevice, &InputDeviceHandler::messageRecieved, this, [this](InputDevicePacket packet){
         emit messageRecieved(packet);
     });
 }
-DeviceHandler* ConnectionHandler::getSelectedOutputDevice() {
+OutputDeviceHandler* ConnectionHandler::getSelectedOutputDevice() {
     return _outputDevice;
 }
-VRDeviceHandler* ConnectionHandler::getSelectedInputDevice() {
+InputDeviceHandler* ConnectionHandler::getSelectedInputDevice() {
     return _inputDevice;
 }
 UdpHandler* ConnectionHandler::getNetworkHandler() {

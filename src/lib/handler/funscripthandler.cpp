@@ -263,6 +263,7 @@ qint64 FunscriptHandler::findClosest(qint64 value, QList<qint64> a) {
       return (a[lo] - value) < (value - a[hi]) ? a[lo] : a[hi];
   }
 
+
 //static
 bool FunscriptHandler::getInverted()
 {

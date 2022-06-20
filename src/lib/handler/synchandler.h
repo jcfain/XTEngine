@@ -8,11 +8,11 @@
 #include "tcodehandler.h"
 #include "funscripthandler.h"
 #include "lib/lookup/XMedia.h"
-#include "lib/struct/VRPacket.h"
+#include "lib/struct/InputDevicePacket.h"
 #include "lib/struct/ConnectionChangedSignal.h"
 #include <QtConcurrent/QtConcurrent>
 #include <QElapsedTimer>
-#include "lib/handler/vrdevicehandler.h"
+#include "lib/handler/inputdevicehandler.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT SyncHandler: public QObject
@@ -28,10 +28,14 @@ signals:
     void togglePaused(bool paused);
     void sendTCode(QString tcode);
     void channelPositionChange(QString channel, int position);
+    void funscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
+
 public slots:
-    void on_device_status_change(ConnectionChangedSignal state);
-    void on_vr_device_status_change(VRDeviceHandler* connectedVRDeviceHandler);
-    void on_local_video_state_change(XMediaState state);
+    void on_output_device_status_change(ConnectionChangedSignal state);
+    void on_input_device_change(InputDeviceHandler* connectedVRDeviceHandler);
+    void on_other_media_state_change(XMediaState state);
+    void searchForFunscript(InputDevicePacket packet);
+
 public:
     SyncHandler(QObject *parent = nullptr);
     ~SyncHandler();
@@ -41,15 +45,15 @@ public:
     void playStandAlone(QString funscript = nullptr);
     void skipToMoneyShot();
     void setStandAloneLoop(bool enabled);
-    void syncVRFunscript(QString funscript);
-    void syncFunscript();
+    void syncInputDeviceFunscript(QString funscript, InputDeviceHandler* connectedInputDeviceHandler);
+    void syncOtherMediaFunscript(std::function<qint64()> getMediaPosition);
     void setFunscriptTime(qint64 secs);
     qint64 getFunscriptTime();
     qint64 getFunscriptMin();
     qint64 getFunscriptMax();
     void stopStandAloneFunscript();
-    void stopMediaFunscript();
-    void stopVRFunscript();
+    void stopOtherMediaFunscript();
+    void stopInputDeviceFunscript();
     void stopAll();
     void clear();
     void reset();
@@ -61,10 +65,13 @@ public:
     QString getPlayingStandAloneScript();
 private:
     TCodeHandler* _tcodeHandler;
+    FunscriptHandler* _funscriptHandler;
+    QList<FunscriptHandler*> _funscriptHandlers;
+    InputDeviceHandler* _connectedInputDeviceHandler = 0;
 
     QMutex _mutex;
     QString _playingStandAloneFunscript;
-    bool _isLocalVideoPlaying = false;
+    bool _isOtherMediaPlaying = false;
     bool _isDeviceConnected = false;
     bool _isMediaFunscriptPlaying = false;
     bool _isVRFunscriptPlaying = false;
@@ -74,13 +81,16 @@ private:
     qint64 _currentTime = 0;
     qint64 _currentPulseTime = 0;
     qint64 _seekTime = -1;
+    qint64 _currentLocalVideoTime = 0;
     QFuture<void> _funscriptMediaFuture;
     QFuture<void> _funscriptVRFuture;
     QFuture<void> _funscriptStandAloneFuture;
-    FunscriptHandler* _funscriptHandler;
-    QList<FunscriptHandler*> _funscriptHandlers;
     QList<QString> _invalidScripts;
-    VRDeviceHandler* _connectedVRDeviceHandler = 0;
+
+    bool _funscriptSearchRunning = false;
+    bool _funscriptSearchNotFound = false;
+    QString _lastSearchedMediaPath;
+
     bool load(QByteArray funscript);
     void loadMFS(QString funscript);
     bool loadMFS(QString channel, QString funscript);

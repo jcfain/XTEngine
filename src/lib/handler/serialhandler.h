@@ -4,11 +4,11 @@
 #include <QSerialPortInfo>
 #include <math.h>
 #include "../struct/SerialComboboxItem.h"
-#include "devicehandler.h"
+#include "outputdevicehandler.h"
 #include "../tool/boolinq.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT SerialHandler : public DeviceHandler
+class XTENGINE_EXPORT SerialHandler : public OutputDeviceHandler
 {
 
 public:

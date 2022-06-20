@@ -8,10 +8,10 @@
 #include <QTimer>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include "vrdevicehandler.h"
+#include "inputdevicehandler.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT DeoHandler : public VRDeviceHandler
+class XTENGINE_EXPORT DeoHandler : public InputDeviceHandler
 {
 
     Q_OBJECT
@@ -27,7 +27,7 @@ public:
     bool isConnected() override;
     bool isPlaying() override;
     //void togglePause();
-    VRPacket getCurrentPacket() override;
+    InputDevicePacket getCurrentPacket() override;
 
 private:
     void readData();
@@ -36,7 +36,7 @@ private:
     void sendKeepAlive();
     void tearDown();
 
-    VRPacket* currentPacket = nullptr;
+    InputDevicePacket* currentPacket = nullptr;
     QTcpSocket* tcpSocket = nullptr;
     QTimer* keepAliveTimer = nullptr;
     QMutex _mutex;

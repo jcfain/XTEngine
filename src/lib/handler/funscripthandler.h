@@ -13,13 +13,12 @@
 #include "settingshandler.h"
 #include "loghandler.h"
 #include "../struct/Funscript.h"
+#include "../struct/InputDevicePacket.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT FunscriptHandler : public QObject
 {
     Q_OBJECT
-signals:
-
 public:
     FunscriptHandler(QString name , QObject* parent = nullptr);
     ~FunscriptHandler();

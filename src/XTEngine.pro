@@ -13,18 +13,18 @@ CONFIG += c++11
 SOURCES += \
     lib/handler/connectionhandler.cpp \
     lib/handler/deohandler.cpp \
-    lib/handler/devicehandler.cpp \
     lib/handler/funscripthandler.cpp \
     lib/handler/gamepadhandler.cpp \
     lib/handler/httphandler.cpp \
+    lib/handler/inputdevicehandler.cpp \
     lib/handler/loghandler.cpp \
     lib/handler/medialibraryhandler.cpp \
+    lib/handler/outputdevicehandler.cpp \
     lib/handler/serialhandler.cpp \
     lib/handler/settingshandler.cpp \
     lib/handler/synchandler.cpp \
     lib/handler/tcodehandler.cpp \
     lib/handler/udphandler.cpp \
-    lib/handler/vrdevicehandler.cpp \
     lib/handler/websockethandler.cpp \
     lib/handler/whirligighandler.cpp \
     lib/handler/xtpwebhandler.cpp \
@@ -43,18 +43,18 @@ HEADERS += \
     XTEngine_global.h \
     lib/handler/connectionhandler.h \
     lib/handler/deohandler.h \
-    lib/handler/devicehandler.h \
     lib/handler/funscripthandler.h \
     lib/handler/gamepadhandler.h \
     lib/handler/httphandler.h \
+    lib/handler/inputdevicehandler.h \
     lib/handler/loghandler.h \
     lib/handler/medialibraryhandler.h \
+    lib/handler/outputdevicehandler.h \
     lib/handler/serialhandler.h \
     lib/handler/settingshandler.h \
     lib/handler/synchandler.h \
     lib/handler/tcodehandler.h \
     lib/handler/udphandler.h \
-    lib/handler/vrdevicehandler.h \
     lib/handler/websockethandler.h \
     lib/handler/whirligighandler.h \
     lib/handler/xtpwebhandler.h \
@@ -78,13 +78,14 @@ HEADERS += \
     lib/struct/DecoderModel.h \
     lib/struct/Funscript.h \
     lib/struct/GamepadState.h \
+    lib/struct/InputDevicePacket.h \
     lib/struct/LibraryListItem.h \
     lib/struct/LibraryListItem27.h \
     lib/struct/LibraryListItemMetaData.h \
     lib/struct/LibraryListItemMetaData258.h \
     lib/struct/NetworkAddress.h \
     lib/struct/SerialComboboxItem.h \
-    lib/struct/VRPacket.h \
+    lib/struct/InputDevicePacket.h \
     lib/tool/boolinq.h \
     lib/tool/imagefactory.h \
     lib/tool/simplecrypt.h \
