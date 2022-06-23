@@ -13,6 +13,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QElapsedTimer>
 #include "lib/handler/inputdevicehandler.h"
+#include "lib/handler/outputdevicehandler.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT SyncHandler: public QObject
@@ -31,8 +32,8 @@ signals:
     void funscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
 
 public slots:
-    void on_output_device_status_change(ConnectionChangedSignal state);
-    void on_input_device_change(InputDeviceHandler* connectedVRDeviceHandler);
+    void on_output_device_change(OutputDeviceHandler* outputDeviceHandler);
+    void on_input_device_change(InputDeviceHandler* inputDeviceHandler);
     void on_other_media_state_change(XMediaState state);
     void searchForFunscript(InputDevicePacket packet);
 
@@ -45,7 +46,7 @@ public:
     void playStandAlone(QString funscript = nullptr);
     void skipToMoneyShot();
     void setStandAloneLoop(bool enabled);
-    void syncInputDeviceFunscript(QString funscript, InputDeviceHandler* connectedInputDeviceHandler);
+    void syncInputDeviceFunscript(QString funscript);
     void syncOtherMediaFunscript(std::function<qint64()> getMediaPosition);
     void setFunscriptTime(qint64 secs);
     qint64 getFunscriptTime();
@@ -67,17 +68,18 @@ private:
     TCodeHandler* _tcodeHandler;
     FunscriptHandler* _funscriptHandler;
     QList<FunscriptHandler*> _funscriptHandlers;
-    InputDeviceHandler* _connectedInputDeviceHandler = 0;
+    InputDeviceHandler* _inputDeviceHandler = 0;
+    OutputDeviceHandler* _outputDeviceHandler = 0;
+
 
     QMutex _mutex;
     QString _playingStandAloneFunscript;
-    bool _isOtherMediaPlaying = false;
-    bool _isDeviceConnected = false;
     bool _isMediaFunscriptPlaying = false;
     bool _isVRFunscriptPlaying = false;
     bool _isStandAloneFunscriptPlaying = false;
     bool _isPaused = false;
     bool _standAloneLoop;
+    bool _isOtherMediaPlaying = false;
     qint64 _currentTime = 0;
     qint64 _currentPulseTime = 0;
     qint64 _seekTime = -1;

@@ -152,10 +152,10 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
                 }
 
             }
-            else
-            {
-                getChannelHome(channel, tcode);
-            }
+//            else
+//            {
+//                getChannelHome(channel, tcode);
+//            }
         }
     }
     return tcode.isEmpty() ? nullptr : tcode;
@@ -218,6 +218,15 @@ QString TCodeHandler::getSwitchedHome()
             continue;
         getChannelHome(channel, tcode);
     }
+    return tcode;
+}
+
+QString TCodeHandler::getChannelHome(QString channel)
+{
+    QString tcode = "";
+    auto availibleAxis = SettingsHandler::getAvailableAxis();
+    ChannelModel channelModel = availibleAxis->value(channel);
+    getChannelHome(channelModel, tcode);
     return tcode;
 }
 

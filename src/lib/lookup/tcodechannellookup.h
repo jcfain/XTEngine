@@ -5,6 +5,7 @@
 #include "AxisNames.h"
 #include "TCodeVersion.h"
 #include <QHash>
+#include "../struct/ChannelModel.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT TCodeChannelLookup

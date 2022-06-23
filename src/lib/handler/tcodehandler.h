@@ -25,6 +25,7 @@ public:
     QString getRunningHome();
     QString getAllHome();
     QString getSwitchedHome();
+    QString getChannelHome(QString channel);
 
 private:
     QMutex mutex;

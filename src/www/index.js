@@ -166,6 +166,7 @@ function onSyncDeviceConnectionChange(input, device) {
 	selectedInputDevice = device;
 	sendSyncDeviceConnectionChange(device, input.checked);
 	window.localStorage.setItem("selectedSyncConnection", parseInt(device, 10));
+	sendMediaState();
 }
 
 function tcodeDeviceConnectRetry() {
@@ -200,11 +201,6 @@ function wsCallBackFunction(evt) {
 				var status = data["message"];
 				var deviceType = status["deviceType"];
 				setInputConnectionStatus(deviceType, status["status"], status["message"]);
-				break;
-			case "connectionClosed":
-				xtpConnected = false;
-				setMediaLoading();
-				setMediaLoadingStatus("Looks like XTP was shut down.\nWaiting for reconnect...");
 				break;
 			case "mediaLoaded":
 				var mediaLoadingElement = document.getElementById("mediaLoading");
@@ -381,6 +377,7 @@ function initWebSocket() {
 				clearTimeout(serverRetryTimeout);
 			debug("CONNECTED");
 			updateSettingsUI();
+			sendMediaState();
 		};
 		websocket.onmessage = function (evt) {
 			wsCallBackFunction(evt);
@@ -404,6 +401,8 @@ function initWebSocket() {
 }
 
 function startServerConnectionRetry() {
+	setMediaLoading();
+	setMediaLoadingStatus("Looks like XTP was shut down.\nWaiting for reconnect...");
 	serverRetryTimeoutTries++;
 	if(serverRetryTimeoutTries < 100) {
 		serverRetryTimeout = setTimeout(() => {
@@ -1069,14 +1068,26 @@ function setThumbSize(value, userClick) {
 
 function sendMediaState() {
 	//console.log("sendMediaState")
-	if(playingmediaItem)
-		postMediaState({
-			"path": playingmediaItem.path,
-			"playing": playingmediaItem.playing, 
-			"currentTime": videoNode.currentTime, 
-			"duration": videoNode.duration,
-			"playbackSpeed": videoNode.speed
-		});
+	if(selectedInputDevice == DeviceType.XTPWeb)
+	{
+		if(playingmediaItem) {
+			postMediaState({
+				"path": playingmediaItem.path,
+				"playing": playingmediaItem.playing, 
+				"currentTime": videoNode.currentTime, 
+				"duration": videoNode.duration,
+				"playbackSpeed": videoNode.speed
+			});
+		} else {
+			postMediaState({
+				"path": undefined,
+				"playing": false, 
+				"currentTime": 0, 
+				"duration": 0,
+				"playbackSpeed": 1
+			});
+		}
+	}
 }
 
 function onFunscriptWorkerThreadRecieveMessage(e) {

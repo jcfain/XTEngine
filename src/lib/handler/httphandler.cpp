@@ -440,7 +440,8 @@ HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
     QString thumbDirFile = SettingsHandler::getSelectedThumbsDir() + thumbName;
     QString libraryThumbDirFile = SettingsHandler::getSelectedLibrary() + "/" + thumbName;
     QString thumbToSend;
-    if(thumbName.startsWith(":") || (thumbName.startsWith(SettingsHandler::getSelectedLibrary()) && QFileInfo::exists(thumbName)))
+    if(thumbName.startsWith(":") || (thumbName.startsWith(SettingsHandler::getSelectedLibrary()) && QFileInfo::exists(thumbName)) ||
+            (thumbName.startsWith(SettingsHandler::getVRLibrary()) && QFileInfo::exists(thumbName)))
     {
         // System resource thumbs
         thumbToSend = thumbName;

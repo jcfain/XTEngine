@@ -51,26 +51,33 @@ void ConnectionHandler::dispose()
 
 bool ConnectionHandler::isOutputDeviceConnected()
 {
-    return _outputDevice->isConnected();
+    return _outputDevice && _outputDevice->isConnected();
 }
 
 bool ConnectionHandler::isInputDeviceConnected()
 {
-    return _inputDevice->isConnected();
+    return _inputDevice && _inputDevice->isConnected();
 }
 
 void ConnectionHandler::setOutputDevice(OutputDeviceHandler* device)
 {
+    if(!device && _outputDevice)
+        disconnect(_outputDevice, nullptr, nullptr, nullptr);
     _outputDevice = device;
-    connect(_outputDevice, &OutputDeviceHandler::connectionChange, this, &ConnectionHandler::on_output_connectionChanged);
+    if(_outputDevice)
+        connect(_outputDevice, &OutputDeviceHandler::connectionChange, this, &ConnectionHandler::on_output_connectionChanged, Qt::UniqueConnection);
 }
 void ConnectionHandler::setInputDevice(InputDeviceHandler* device)
 {
+    if(!device && _inputDevice)
+        disconnect(_inputDevice, nullptr, nullptr, nullptr);
     _inputDevice = device;
-    connect(_inputDevice, &InputDeviceHandler::connectionChange, this, &ConnectionHandler::on_input_connectionChanged);
-    connect(_inputDevice, &InputDeviceHandler::messageRecieved, this, [this](InputDevicePacket packet){
-        emit messageRecieved(packet);
-    });
+    if(_inputDevice) {
+        connect(_inputDevice, &InputDeviceHandler::connectionChange, this, &ConnectionHandler::on_input_connectionChanged, Qt::UniqueConnection);
+        connect(_inputDevice, &InputDeviceHandler::messageRecieved, this, [this](InputDevicePacket packet){
+            emit messageRecieved(packet);
+        });
+    }
 }
 OutputDeviceHandler* ConnectionHandler::getSelectedOutputDevice() {
     return _outputDevice;
@@ -103,7 +110,7 @@ void ConnectionHandler::inputMessageSend(QByteArray message) {
 }
 void ConnectionHandler::sendTCode(QString tcode)
 {
-    if(_outputDevice && _outputDevice->isConnected())
+    if(!tcode.isEmpty() && _outputDevice && _outputDevice->isConnected())
         _outputDevice->sendTCode(tcode);
 }
 

@@ -41,7 +41,7 @@ bool SyncHandler::isPaused()
 }
 bool SyncHandler::isPlaying()
 {
-    return (_isVRFunscriptPlaying || _isMediaFunscriptPlaying || _isStandAloneFunscriptPlaying) && !_isPaused && !SettingsHandler::getLiveActionPaused();
+    return _isVRFunscriptPlaying || _isMediaFunscriptPlaying || _isStandAloneFunscriptPlaying;
 }
 bool SyncHandler::isPlayingStandAlone()
 {
@@ -224,7 +224,7 @@ void SyncHandler::playStandAlone(QString funscript) {
             if (timer2 - timer1 >= 1)
             {
                 timer1 = timer2;
-                if(!_isPaused && !SettingsHandler::getLiveActionPaused() && _isDeviceConnected)
+                if(!_isPaused && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected())
                 {
                     if(_seekTime > -1)
                     {
@@ -334,7 +334,7 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
             if (timer2 - timer1 >= 1)
             {
                 timer1 = timer2;
-                if(!_isPaused && !SettingsHandler::getLiveActionPaused() && _isDeviceConnected)
+                if(!_isPaused && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected())
                 {
                     qint64 currentTime = getMediaPosition();//_videoHandler->position();
                     actionPosition = _funscriptHandler->getPosition(currentTime);
@@ -366,13 +366,11 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
     });
 }
 
-void SyncHandler::syncInputDeviceFunscript(QString funscript, InputDeviceHandler* connectedInputDeviceHandler)
+void SyncHandler::syncInputDeviceFunscript(QString funscript)
 {
     load(funscript);
     QMutexLocker locker(&_mutex);
     _isVRFunscriptPlaying = true;
-    if(connectedInputDeviceHandler)
-        _connectedInputDeviceHandler = connectedInputDeviceHandler;
     LogHandler::Debug("syncVRFunscript start thread");
     _funscriptVRFuture = QtConcurrent::run([this, funscript]()
     {
@@ -389,11 +387,11 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript, InputDeviceHandler
         QString videoPath;
         qint64 duration;
         qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
-        while (_isVRFunscriptPlaying && _connectedInputDeviceHandler && _connectedInputDeviceHandler->isConnected() && _isDeviceConnected && !_isOtherMediaPlaying)
+        while (_isVRFunscriptPlaying && _inputDeviceHandler && _inputDeviceHandler->isConnected() && _outputDeviceHandler && _outputDeviceHandler->isConnected() && !_isOtherMediaPlaying)
         {
-            currentVRPacket = _connectedInputDeviceHandler->getCurrentPacket();
+            currentVRPacket = _inputDeviceHandler->getCurrentPacket();
             //timer.start();
-            if(!_isPaused && !SettingsHandler::getLiveActionPaused() && _isDeviceConnected && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
+            if(!_isPaused && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
             {
                 if(videoPath.isEmpty())
                     videoPath = currentVRPacket.path;
@@ -536,13 +534,12 @@ void SyncHandler::sendPulse(qint64 currentMsecs, qint64 &nextPulseTime)
     }
 }
 
-void SyncHandler::on_input_device_change(InputDeviceHandler* connectedVRDeviceHandler) {
-    _connectedInputDeviceHandler = connectedVRDeviceHandler;
+void SyncHandler::on_input_device_change(InputDeviceHandler* inputDeviceHandler) {
+    _inputDeviceHandler = inputDeviceHandler;
 }
 
-void SyncHandler::on_output_device_status_change(ConnectionChangedSignal state) {
-    if(state.deviceName == DeviceName::Network || state.deviceName == DeviceName::Serial)
-        _isDeviceConnected = state.status == ConnectionStatus::Connected;
+void SyncHandler::on_output_device_change(OutputDeviceHandler* outputDeviceHandler) {
+    _outputDeviceHandler = outputDeviceHandler;
 }
 
 void SyncHandler::on_other_media_state_change(XMediaState state) {
