@@ -248,6 +248,17 @@ select:hover, button:hover, input:hover {
     contain-intrinsic-size: 1px 500px;
 
 }
+.media-filter-container {
+    display: flex;
+    flex-flow: column;
+    align-items: flex-end;
+    margin-bottom: 8px;
+}
+.media-filter-input {
+    width: 20vw;
+    border-radius: 5px;
+    height: 24px;
+}
 .media-item:hover
 {
     cursor: pointer;
@@ -539,6 +550,9 @@ section > .range-values {
     }
     .formElement {
         grid-template-columns: 40% 60%;
+    }
+    .media-filter-input {
+        width: 100vw;
     }
 }
 /* @media only screen and (-webkit-min-device-pixel-ratio: 2.75)

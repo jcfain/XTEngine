@@ -47,7 +47,7 @@ var userAgentIsDeo = false;
 var userAgentIsHereSphere = false;
 var remoteUserSettings;
 var mediaListGlobal = [];
-var filteredMedia = [];
+var sortedMedia = [];
 var playingmediaItem;
 var playingmediaItemNode;
 var thumbsContainerNode;
@@ -72,6 +72,8 @@ var deviceConnectionStatusRetryButtonNodes;
 var deviceConnectionStatusRetryButtonImageNodes;
 var serverRetryTimeout;
 var serverRetryTimeoutTries = 0;
+var userFilterCriteria;
+var filterDebounce;
 //var funscriptSyncWorker;
 //var useDeoWeb;
 //var deoVideoNode;
@@ -694,8 +696,8 @@ function onSaveFail(error) {
 function updateMediaUI() {
 	setThumbSize(thumbSizeGlobal, false);
 	sort(sortByGlobal, false);
-	filteredMedia = show(showGlobal, false);
-	loadMedia(filteredMedia)
+	sortedMedia = show(showGlobal, false);
+	loadMedia(sortedMedia)
 }
 function clearMediaList() {
 	var medialistNode = document.getElementById("mediaList");
@@ -775,9 +777,11 @@ function loadMedia(mediaList) {
 		divnode.appendChild(anode);
 		anode.appendChild(image);
 		anode.appendChild(namenode);
+		divnode.hidden = isFiltered(userFilterCriteria, divnode.innerText);
 		medialistNode.appendChild(divnode);
 		if(playingmediaItem && playingmediaItem.id === obj.id)
 			setPlayingMediaItem(obj);
+
 	}
 }
 
@@ -875,6 +879,27 @@ function show(value, userClick) {
 	return filteredMedia;
 }
 
+function filter(criteria) {
+	if(filterDebounce)
+		clearTimeout(filterDebounce);
+	filterDebounce = setTimeout(function() {
+		var filterInput = document.getElementById("filterInput");
+		filterInput.enabled = false;
+		userFilterCriteria = criteria;
+		var mediaItems = document.getElementsByClassName("media-item");
+		for (var item of mediaItems) {
+			item.hidden = isFiltered(criteria, item.textContent);
+		};
+		filterInput.enabled = true;
+	}, 1000);
+}
+
+function isFiltered(criteria, textToSearch) {
+	if(!criteria || criteria.trim().length == 0)
+		return false;
+	else 
+		return  !textToSearch.trim().toUpperCase().includes(criteria.trim().toUpperCase());
+}
 /* 
 function onClickUseDeoWebCheckbox(checkbox)
 {
@@ -1033,12 +1058,12 @@ function onVideoEnd(event) {
 	// if(funscriptSyncWorker) {
 	// 	funscriptSyncWorker.postMessage(JSON.stringify({"command": "terminate"}));
 	// }
-	var playingIndex = filteredMedia.findIndex(x => x.path === playingmediaItem.path);
+	var playingIndex = sortedMedia.findIndex(x => x.path === playingmediaItem.path);
 	playingIndex++;
-	if(playingIndex < filteredMedia.length)
-		playVideo(filteredMedia[playingIndex]);
+	if(playingIndex < sortedMedia.length)
+		playVideo(sortedMedia[playingIndex]);
 	else
-		playVideo(filteredMedia[0]);
+		playVideo(sortedMedia[0]);
 }
 function setThumbSize(value, userClick) {
 	if(!userClick) {
@@ -1146,20 +1171,20 @@ function tabClick(tab, tabNumber) {
 
 function showChange(value) {
 	sort(sortByGlobal, true);
-	filteredMedia = show(value, true);
-	loadMedia(filteredMedia);
+	sortedMedia = show(value, true);
+	loadMedia(sortedMedia);
 }
 
 function sortChange(value) {
 	sort(value, true);
-	filteredMedia = show(showGlobal, true);
-	loadMedia(filteredMedia);
+	sortedMedia = show(showGlobal, true);
+	loadMedia(sortedMedia);
 }
 
 function thumbSizeChange(value) {
 	setThumbSize(value, true);
-	filteredMedia = show(showGlobal, true);
-	loadMedia(filteredMedia);
+	sortedMedia = show(showGlobal, true);
+	loadMedia(sortedMedia);
 }
 
 var sendTcodeDebouncer;

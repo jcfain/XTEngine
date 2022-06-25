@@ -1,0 +1,1 @@
+{"eslint.enable":true,"MinifyAll.openMinifiedDocument":false,"MinifyAll.minifyOnSaveToNewFile":true,"MinifyAll.disableJavascript":false,"MinifyAll.terserMinifyOptions":{"mangle":true,"compress":{"drop_console":true,"dead_code":false,"keep_fnames":false,"keep_classnames":false}}}
