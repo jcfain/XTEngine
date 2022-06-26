@@ -17,6 +17,7 @@ signals:
 
 public:
     XVideoPreview(QObject* parent = nullptr);
+    ~XVideoPreview();
     void extract(QString videoPath, qint64 time = -1);
     void load(QString file);
 

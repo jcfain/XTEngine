@@ -25,7 +25,6 @@ private:
     QImage imageCaptured;
     QRect targetRect;
     QRect sourceRect;
-    QVideoFrame currentFrame;
 
     QList<QVideoFrame::PixelFormat> supportedPixelFormats(
             QAbstractVideoBuffer::HandleType handleType = QAbstractVideoBuffer::NoHandle) const;

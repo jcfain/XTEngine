@@ -12,7 +12,9 @@ XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent), _thumbNailVideo
     connect(_thumbNailVideoSurface, &XVideoSurface::frameCaptureError, this, &XVideoPreview::on_thumbError);
     connect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
 }
-
+XVideoPreview::~XVideoPreview() {
+    tearDownPlayer();
+}
 void XVideoPreview::setUpThumbPlayer()
 {
     LogHandler::Debug("setUpThumbPlayer");
@@ -34,6 +36,8 @@ void XVideoPreview::tearDownPlayer()
 //        disconnect(_thumbNailVideoSurface, &XVideoSurface::frameCapture, this, &XVideoPreview::on_thumbCapture);
 //        disconnect(_thumbNailVideoSurface, &XVideoSurface::frameCaptureError, this, &XVideoPreview::on_thumbError);
 //        disconnect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
+        if(_thumbNailVideoSurface->isActive())
+            _thumbNailVideoSurface->stop();
         if(_thumbPlayer->state() == QMediaPlayer::PlayingState)
             _thumbPlayer->stop();
 //        else {
@@ -119,8 +123,6 @@ void XVideoPreview::on_mediaStateChange(QMediaPlayer::State state)
     }
     else if(state == QMediaPlayer::State::StoppedState)
     {
-        if(_thumbNailVideoSurface->isActive())
-            _thumbNailVideoSurface->stop();
     }
 }
 

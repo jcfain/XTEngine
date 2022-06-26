@@ -403,7 +403,6 @@ void MediaLibraryHandler::startThumbProcess(bool vrMode)
     stopThumbProcess();
     LogHandler::Debug("Start thumb process, vrMode: " + QString::number(vrMode));
     _thumbProcessIsRunning = true;
-    _extractor = new XVideoPreview(this);
     saveNewThumbs(vrMode);
     emit thumbProcessBegin();
 }
@@ -413,9 +412,6 @@ void MediaLibraryHandler::stopThumbProcess()
     if(_thumbProcessIsRunning)
     {
         LogHandler::Debug("Stop thumb process");
-        disconnect(_extractor, &XVideoPreview::frameExtracted,  nullptr, nullptr);
-        disconnect(_extractor, &XVideoPreview::frameExtractionError,  nullptr, nullptr);
-        disconnect(_extractor, &XVideoPreview::mediaLoaded,  nullptr, nullptr);
         _thumbNailSearchIterator = 0;
         _thumbProcessIsRunning = false;
         if(_thumbTimeoutTimer.isActive())
@@ -423,7 +419,11 @@ void MediaLibraryHandler::stopThumbProcess()
             _thumbTimeoutTimer.stop();
             disconnect(&_thumbTimeoutTimer, &QTimer::timeout, nullptr, nullptr);
         }
-        delete _extractor;
+        if(_extractor) {
+            disconnect(_extractor, nullptr,  nullptr, nullptr);
+            delete _extractor;
+            _extractor = 0;
+        }
 //        delete _thumbNailPlayer;
     }
 }
@@ -432,7 +432,6 @@ void MediaLibraryHandler::saveSingleThumb(LibraryListItem27 item, qint64 positio
 {
     if(!_thumbProcessIsRunning && !item.thumbFile.contains(".lock."))
     {
-        _extractor = new XVideoPreview(this);
         saveThumb(item, position);
     }
 }
@@ -476,7 +475,7 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 cachedListItem, qint64 pos
     {
         _thumbTimeoutTimer.stop();
         disconnect(&_thumbTimeoutTimer, &QTimer::timeout, nullptr, nullptr);
-        disconnect(_extractor, nullptr,  nullptr, nullptr);
+        _extractor = new XVideoPreview(this);
         connect(&_thumbTimeoutTimer, &QTimer::timeout, &_thumbTimeoutTimer, [this, cachedListItem, vrMode]() {
             if(_thumbProcessIsRunning)
             {
@@ -587,6 +586,11 @@ void MediaLibraryHandler::onSaveThumb(LibraryListItem27 item, bool vrMode, QStri
         LogHandler::Debug("Thumb saved: " + item.thumbFile);
         emit saveNewThumb(item, vrMode, item.thumbFile);
     }
+
+    disconnect(_extractor, nullptr,  nullptr, nullptr);
+    delete _extractor;
+    _extractor = 0;
+
     if(_thumbProcessIsRunning)
         saveNewThumbs(vrMode);
 }
