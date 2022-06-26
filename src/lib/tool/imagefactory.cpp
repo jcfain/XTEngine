@@ -10,28 +10,27 @@ ImageFactory::ImageFactory()
 
 }
 
-QPixmap* ImageFactory::resize(QString filepath, QSize thumbSize)
+QPixmap ImageFactory::resize(QString filepath, QSize thumbSize)
 {
     QFileInfo thumbFile = QFileInfo(filepath);
     if(!thumbFile.exists())
         filepath = LibraryThumbNail::ERROR_IMAGE;
-    QPixmap* bgPixmap = new QPixmap(filepath);
-    if(bgPixmap->width() == thumbSize.width())
+    QPixmap bgPixmap(filepath);
+    if(bgPixmap.width() == thumbSize.width())
         return bgPixmap;
     //QSize maxThumbSize = SettingsHandler::getMaxThumbnailSize();
     //int newHeight = round((float)bgPixmap.height() / bgPixmap.width() * 1080);
     //QSize newSize = calculateSize(thumbSize);
-    QPixmap scaled = bgPixmap->scaled(thumbSize, Qt::AspectRatioMode::KeepAspectRatio);
+    QPixmap scaled = bgPixmap.scaled(thumbSize, Qt::AspectRatioMode::KeepAspectRatio);
     QSize maxHeight = calculateMaxSize(thumbSize);
 
     if(scaled.height() > maxHeight.height())
     {
-        scaled = bgPixmap->scaled(maxHeight, Qt::AspectRatioMode::KeepAspectRatio);
+        scaled = bgPixmap.scaled(maxHeight, Qt::AspectRatioMode::KeepAspectRatio);
 //        QRect rect(0,0,scaled.width(), newHeight);
 //        scaled = scaled.copy(rect);
     }
-    delete bgPixmap;
-    return new QPixmap(scaled);
+    return scaled;
 }
 
 

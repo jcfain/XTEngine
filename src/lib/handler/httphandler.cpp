@@ -464,16 +464,15 @@ HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
     int quality = SettingsHandler::getHttpThumbQuality();
     if(quality > -1)
     {
-        QPixmap* pixmap = ImageFactory::resize(thumbToSend, {500, 500});
+        QPixmap pixmap = ImageFactory::resize(thumbToSend, {500, 500});
         QByteArray bytes;
         QBuffer buffer(&bytes);
         buffer.open(QIODevice::ReadWrite);
-        pixmap->save(&buffer, "WEBP", quality);
+        pixmap.save(&buffer, "WEBP", quality);
         auto newObj = new QBuffer(&bytes);
-        LogHandler::Debug("Image resized: "+QString::number(bytes.length()));
+        //LogHandler::Debug("Image resized: "+QString::number(bytes.length()));
         newObj->open(QIODevice::ReadOnly);
         data->response->sendFile(newObj, "image/webp", "", -1, Z_DEFAULT_COMPRESSION);
-        delete pixmap;
         buffer.close();
         newObj->close();
         delete newObj;

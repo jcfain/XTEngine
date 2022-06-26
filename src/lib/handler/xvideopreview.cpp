@@ -1,6 +1,6 @@
 #include "xvideopreview.h"
 
-XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent), _thumbPlayer(0)
+XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent), _thumbNailVideoSurface(0), _thumbPlayer(0)
 {
     _thumbPlayer = new QMediaPlayer(this, QMediaPlayer::VideoSurface);
     _thumbNailVideoSurface = new XVideoSurface(_thumbPlayer);
@@ -25,15 +25,28 @@ void XVideoPreview::setUpInfoPlayer() {
 void XVideoPreview::tearDownPlayer()
 {
     LogHandler::Debug("tearDownPlayer");
-    if(_thumbPlayer)
-    {
-        delete _thumbPlayer;
-        _thumbPlayer = 0;
-    }
+//    if(_thumbPlayer)
+//    {
+//        disconnect(_thumbPlayer, nullptr, nullptr, nullptr);
+//        disconnect(_thumbNailVideoSurface, nullptr, nullptr,nullptr);
+//        disconnect(_thumbPlayer, &QMediaPlayer::stateChanged, this, &XVideoPreview::on_mediaStateChange);
+//        disconnect(_thumbPlayer, &QMediaPlayer::mediaStatusChanged, this, &XVideoPreview::on_mediaStatusChanged);
+//        disconnect(_thumbNailVideoSurface, &XVideoSurface::frameCapture, this, &XVideoPreview::on_thumbCapture);
+//        disconnect(_thumbNailVideoSurface, &XVideoSurface::frameCaptureError, this, &XVideoPreview::on_thumbError);
+//        disconnect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
+        if(_thumbPlayer->state() == QMediaPlayer::PlayingState)
+            _thumbPlayer->stop();
+//        else {
+//            delete _thumbPlayer;
+//            _thumbPlayer = 0;
+//            _thumbNailVideoSurface = 0;
+//        }
+//    }
 }
 
 void XVideoPreview::extract(QString file, qint64 time)
 {
+    setUpThumbPlayer();
     _file = file;
     if(_file.isNull()) {
         emit frameExtractionError("In valid file path.");
@@ -72,11 +85,12 @@ void XVideoPreview::load(QString file)
 }
 
 // Private
-void XVideoPreview::on_thumbCapture(QPixmap frame)
+void XVideoPreview::on_thumbCapture(QImage frame)
 {
     if(_extracting) {
         LogHandler::Debug("on_thumbCapture: "+ _file);
         _extracting = false;
+        tearDownPlayer();
         emit frameExtracted(frame);
     }
 }
@@ -85,6 +99,7 @@ void XVideoPreview::on_thumbError(QString error)
 {
     if(_extracting) {
         LogHandler::Debug("on_thumbError: "+ _file);
+        tearDownPlayer();
         emit frameExtractionError(error);
     }
 }
@@ -92,6 +107,8 @@ void XVideoPreview::on_thumbError(QString error)
 void XVideoPreview::on_mediaStatusChanged(QMediaPlayer::MediaStatus status)
 {
     if(status == QMediaPlayer::MediaStatus::LoadedMedia) {
+        if(_thumbNailVideoSurface && !_loadingInfo)
+            _thumbNailVideoSurface->start(m_format);
     }
 }
 void XVideoPreview::on_mediaStateChange(QMediaPlayer::State state)
@@ -102,7 +119,8 @@ void XVideoPreview::on_mediaStateChange(QMediaPlayer::State state)
     }
     else if(state == QMediaPlayer::State::StoppedState)
     {
-        _thumbNailVideoSurface->fnClearPixmap();
+        if(_thumbNailVideoSurface->isActive())
+            _thumbNailVideoSurface->stop();
     }
 }
 
@@ -114,6 +132,7 @@ void XVideoPreview::on_durationChanged(qint64 duration)
         LogHandler::Debug("on_durationChanged: "+ QString::number(duration));
         _loadingInfo = false;
         _lastDuration = duration;
+        tearDownPlayer();
         emit durationChanged(duration);
     }
 }

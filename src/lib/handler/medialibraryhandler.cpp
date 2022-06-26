@@ -510,23 +510,13 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 cachedListItem, qint64 pos
 
 
         connect(_extractor, &XVideoPreview::frameExtracted, this,
-           [this, cachedListItem, vrMode](QPixmap frame)
+           [this, cachedListItem, vrMode](QImage frame)
             {
                 disconnect(_extractor, &XVideoPreview::frameExtracted,  nullptr, nullptr);
                 disconnect(_extractor, &XVideoPreview::frameExtractionError,  nullptr, nullptr);
                 if(!frame.isNull())
                 {
-                    bool error = false;
-                    QImage img;
-                    try{
-                        LogHandler::Debug("Saving thumbnail");
-                        img = frame.toImage();
-                    }
-                    catch (...) {
-                        error = true;
-                    }
-                    QString errorMessage;
-                    bool hasError = error || img.isNull() || !img.save(cachedListItem.thumbFile, nullptr, 15);
+                    bool hasError = frame.isNull() || !frame.save(cachedListItem.thumbFile, nullptr, 15);
                     if (hasError)
                     {
                        onSaveThumb(cachedListItem, vrMode, "Error saving thumbnail");

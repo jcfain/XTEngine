@@ -12,7 +12,7 @@ class XTENGINE_EXPORT XVideoPreview : public QObject
 signals:
     void mediaLoaded();
     void durationChanged(qint64 duration);
-    void frameExtracted(QPixmap frame);
+    void frameExtracted(QImage frame);
     void frameExtractionError(QString error);
 
 public:
@@ -28,11 +28,12 @@ private:
     bool _loadingInfo = false;
     bool _extracting = false;
     qint64 _lastDuration;
+    QVideoSurfaceFormat m_format;
 
     void setUpThumbPlayer();
     void setUpInfoPlayer();
     void tearDownPlayer();
-    void on_thumbCapture(QPixmap thumb);
+    void on_thumbCapture(QImage thumb);
     void on_mediaStatusChanged(QMediaPlayer::MediaStatus status);
     void on_mediaStateChange(QMediaPlayer::State state);
     void on_thumbError(QString error);

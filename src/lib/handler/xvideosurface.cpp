@@ -31,8 +31,10 @@ bool XVideoSurface::isFormatSupported(const QVideoSurfaceFormat &format) const
             && format.handleType() == QAbstractVideoBuffer::NoHandle;
 }
 
+bool isStopped = false;
 bool XVideoSurface::start(const QVideoSurfaceFormat &format)
 {
+    isStopped = false;
     const QImage::Format imageFormat = QVideoFrame::imageFormatFromPixelFormat(format.pixelFormat());
     const QSize size = format.frameSize();
 
@@ -48,16 +50,18 @@ bool XVideoSurface::start(const QVideoSurfaceFormat &format)
 
 void XVideoSurface::stop()
 {
+    isStopped = true;
     QAbstractVideoSurface::stop();
+    fnClearPixmap();
 }
 
 void XVideoSurface::fnClearPixmap()
 {
-    imageCaptured = QPixmap();
+    imageCaptured = QImage();
 }
-
 bool XVideoSurface::present(const QVideoFrame &frame)
 {
+    if(!isStopped) {
     if (surfaceFormat().pixelFormat() != frame.pixelFormat()
             || surfaceFormat().frameSize() != frame.size()) {
         setError(IncorrectFormatError);
@@ -67,25 +71,27 @@ bool XVideoSurface::present(const QVideoFrame &frame)
 //            qDebug() << "image captured: "+ QString::number(frame.endTime());
 //            emit fnSurfaceStopped(imageCaptured);
 //        }
-        QVideoFrame currentFrame(frame);
+        currentFrame = QVideoFrame(frame);
 
         if(!currentFrame.map(QAbstractVideoBuffer::ReadOnly))
         {
            setError(ResourceError);
            return false;
         }
-        QImage image(
-                currentFrame.bits(),
-                currentFrame.width(),
-                currentFrame.height(),
-                currentFrame.bytesPerLine(),
-                imageFormat);
         if(imageCaptured.isNull()){
-            imageCaptured = QPixmap::fromImage(image.copy(image.rect()));
+            imageCaptured = QImage(
+                    currentFrame.bits(),
+                    currentFrame.width(),
+                    currentFrame.height(),
+                    currentFrame.bytesPerLine(),
+                    imageFormat);
             //qDebug() << "image captured: "+ QString::number(frame.endTime());
             emit frameCapture(imageCaptured);
         }
         currentFrame.unmap();
         return true;
     }
+
+    }
+    return false;
 }
