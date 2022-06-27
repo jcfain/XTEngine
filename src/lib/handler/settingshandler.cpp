@@ -151,9 +151,9 @@ void SettingsHandler::Load(QString applicationDirPath, QSettings* settingsToLoad
 #if defined(Q_OS_WIN)
         _httpServerRoot = "www";
 #elif defined(Q_OS_MAC)
-        _httpServerRoot = QApplication::applicationDirPath() + "/www";
+        _httpServerRoot = applicationDirPath + "/www";
 #elif defined(Q_OS_LINUX)
-        _httpServerRoot = QApplication::applicationDirPath() + "/www";
+        _httpServerRoot = applicationDirPath + "/www";
 #endif
     }
     _vrLibrary = settingsToLoadFrom->value("vrLibrary").toString();

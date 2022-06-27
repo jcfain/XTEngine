@@ -1,6 +1,7 @@
 QT -= gui
 QT += core serialport network gamepad texttospeech compress websockets multimedia
 
+TARGET = xtengine
 TEMPLATE = lib
 DEFINES += XTENGINE_LIBRARY
 
@@ -61,7 +62,6 @@ HEADERS += \
     lib/handler/xvideopreview.h \
     lib/handler/xvideosurface.h \
     lib/lookup/AxisDimension.h \
-    lib/lookup/AxisNames - Copy.h \
     lib/lookup/AxisNames.h \
     lib/lookup/AxisType.h \
     lib/lookup/Constants.h \
@@ -78,7 +78,6 @@ HEADERS += \
     lib/struct/DecoderModel.h \
     lib/struct/Funscript.h \
     lib/struct/GamepadState.h \
-    lib/struct/InputDevicePacket.h \
     lib/struct/LibraryListItem.h \
     lib/struct/LibraryListItem27.h \
     lib/struct/LibraryListItemMetaData.h \
@@ -95,22 +94,31 @@ HEADERS += \
     lib/tool/xtimer.h \
     xtengine.h
 
-# Default rules for deployment.
-unix {
-    target.path = /usr/lib
-}
-!isEmpty(target.path): INSTALLS += target
 
+#unix {
+#    target.path = /usr/lib
+#}
+## Default rules for deployment.
+#!isEmpty(target.path): INSTALLS += target
 
-# LIBS       += -lVLCQtCore -lVLCQtWidgets
 unix:!mac {
-    QMAKE_RPATHDIR += lib
-    LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_0_GCC_64bit-Release/src/release -lhttpServer
+CONFIG += shared
+    #QMAKE_PREFIX_SHLIB = so
+    #QMAKE_RPATHDIR += ../lib
     INCLUDEPATH += $$PWD/../../HttpServer/src
-    DEPENDPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_0_GCC_64bit-Release/src/release
+    DEPENDPATH += $$PWD/../../HttpServer/src
+    CONFIG(debug, debug|release) {
+        DESTDIR = $$shell_path($$OUT_PWD/debug)
+        LIBS += -L$$PWD/../../HttpServer/src/build/debug -lhttpServer
+    }
+    else:CONFIG(release, debug|release): {
+        DESTDIR = $$shell_path($$OUT_PWD/release)
+        LIBS += -L$$PWD/../../HttpServer/src/build/release -lhttpServer
+    }
 }
-unix:mac {
 
+unix:mac {
+    DESTDIR = $$shell_path($$OUT_PWD)
 #    #INCLUDEPATH += $$QT.core.libs/QtCompress.framework/Versions/5/Headers
 #    QMAKE_LFLAGS += -F$$QT.core.libs
 ##    RPATHDIR *= @loader_path/../Frameworks
@@ -123,10 +131,12 @@ unix:mac {
 #    images.path = Contents/MacOS
 #    QMAKE_BUNDLE_DATA += images;
 #    #LIBS += -framework QtCompress
-LIBS += -L$$PWD/../HttpServer/src/build/release -lhttpServer
-INCLUDEPATH += $$PWD/../HttpServer/src/build/release
-DEPENDPATH += $$PWD/../HttpServer/src/build/release
-INCLUDEPATH += $$PWD/../HttpServer/src
+#https://stackoverflow.com/questions/12977739/qt-creator-or-qmake-on-macosx-build-library-as-so-not-dylib
+#QMAKE_LFLAGS_PLUGIN -= -dynamiclib
+#QMAKE_LFLAGS_PLUGIN += -bundle
+LIBS += -L$$PWD/../../HttpServer/src/build/release -lhttpServer
+DEPENDPATH += $$PWD/../../HttpServer/src
+INCLUDEPATH += $$PWD/../../HttpServer/src
 
     RPATHDIR *= @loader_path/../Frameworks @executable_path/../Frameworks
     QMAKE_LFLAGS_SONAME = -W1,-install_name,@rpath,
@@ -136,37 +146,19 @@ INCLUDEPATH += $$PWD/../HttpServer/src
     }
     ICON = $$PWD/images/icons/XTP-icon.icns
 }
-unix {
-    DESTDIR = $$shell_path($$OUT_PWD)
-}
 win32{
-    #LIBS += -L$$QT.core.libs -lQtAV1 -lQtAVWidgets1
     build_pass: CONFIG(debug, debug|release) {
         DESTDIR = $$shell_path($$OUT_PWD/debug)
-        #CONFIG(release, debug|release):
-
-        #include($$PWD/../../HttpServer/HttpServer.pro)
-        #LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/debug -lhttpServer
         LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug -lhttpServer
         INCLUDEPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug
-        DEPENDPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug
-#        TEMPLATE = subdirs
-#        #SOURCE_ROOT += ../../
-#        SUBDIRS += libQtAV
-#        depends += libQtAV
-#        libQtAV.file = ../../QtAV/QtAV.pro
-#        include(../../QtAV/root.pri)
-#        include(../../QtAV/src/libQtAV.pri)
     }
     else:win32:CONFIG(release, debug|release): {
         DESTDIR = $$shell_path($$OUT_PWD/release)
-        #LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/release -lhttpServer
         LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release -lhttpServer
         INCLUDEPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release
-        DEPENDPATH += $$PWD/../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release
-        #INCLUDEPATH += ../../QtAV-Builds/Release/x64/include
     }
     INCLUDEPATH += $$PWD/../../HttpServer/src
+    DEPENDPATH += $$PWD/../../HttpServer/src
 }
 
 include($$PWD/../../HttpServer/3rdparty/qtpromise/qtpromise.pri)
