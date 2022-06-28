@@ -61,16 +61,20 @@ bool ConnectionHandler::isInputDeviceConnected()
 
 void ConnectionHandler::setOutputDevice(OutputDeviceHandler* device)
 {
-    if(!device && _outputDevice)
+    if(!device && _outputDevice) {
         disconnect(_outputDevice, nullptr, nullptr, nullptr);
+        _outputDevice->dispose();
+    }
     _outputDevice = device;
     if(_outputDevice)
         connect(_outputDevice, &OutputDeviceHandler::connectionChange, this, &ConnectionHandler::on_output_connectionChanged, Qt::UniqueConnection);
 }
 void ConnectionHandler::setInputDevice(InputDeviceHandler* device)
 {
-    if(!device && _inputDevice)
+    if(!device && _inputDevice) {
         disconnect(_inputDevice, nullptr, nullptr, nullptr);
+        _inputDevice->dispose();
+    }
     _inputDevice = device;
     if(_inputDevice) {
         connect(_inputDevice, &InputDeviceHandler::connectionChange, this, &ConnectionHandler::on_input_connectionChanged, Qt::UniqueConnection);

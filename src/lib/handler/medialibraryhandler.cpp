@@ -524,7 +524,7 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 cachedListItem, qint64 pos
                     }
 
                 }
-
+                frame = QImage();
                 onSaveThumb(cachedListItem, vrMode);
             });
 

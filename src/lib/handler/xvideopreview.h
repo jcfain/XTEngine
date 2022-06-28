@@ -29,6 +29,8 @@ private:
     bool _loadingInfo = false;
     bool _extracting = false;
     qint64 _lastDuration;
+    QImage _lastImage;
+    QString _lastError;
     QVideoSurfaceFormat m_format;
 
     void setUpThumbPlayer();

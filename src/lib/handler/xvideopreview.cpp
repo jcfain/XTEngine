@@ -93,9 +93,9 @@ void XVideoPreview::on_thumbCapture(QImage frame)
 {
     if(_extracting) {
         LogHandler::Debug("on_thumbCapture: "+ _file);
-        _extracting = false;
+        _lastImage = frame;
+        frame = QImage();
         tearDownPlayer();
-        emit frameExtracted(frame);
     }
 }
 
@@ -103,8 +103,8 @@ void XVideoPreview::on_thumbError(QString error)
 {
     if(_extracting) {
         LogHandler::Debug("on_thumbError: "+ _file);
+        _lastError = error;
         tearDownPlayer();
-        emit frameExtractionError(error);
     }
 }
 
@@ -123,6 +123,24 @@ void XVideoPreview::on_mediaStateChange(QMediaPlayer::State state)
     }
     else if(state == QMediaPlayer::State::StoppedState)
     {
+        if(_extracting) {
+            _extracting = false;
+            if(!_lastError.isNull()) {
+                emit frameExtractionError(_lastError);
+                _lastError.clear();
+            }
+            else if(!_lastImage.isNull()) {
+                emit frameExtracted(_lastImage);
+                //_lastImage = QImage();
+            }
+        }
+        else
+        {
+            _loadingInfo = false;
+            emit durationChanged(_lastDuration);
+            _lastDuration = 0;
+        }
+
     }
 }
 
@@ -132,9 +150,7 @@ void XVideoPreview::on_durationChanged(qint64 duration)
     {
         LogHandler::Debug("on_durationChanged: "+ _file);
         LogHandler::Debug("on_durationChanged: "+ QString::number(duration));
-        _loadingInfo = false;
         _lastDuration = duration;
         tearDownPlayer();
-        emit durationChanged(duration);
     }
 }
