@@ -21,15 +21,16 @@ QPixmap ImageFactory::resize(QString filepath, QSize thumbSize)
     //QSize maxThumbSize = SettingsHandler::getMaxThumbnailSize();
     //int newHeight = round((float)bgPixmap.height() / bgPixmap.width() * 1080);
     //QSize newSize = calculateSize(thumbSize);
-    QPixmap scaled = bgPixmap.scaled(thumbSize, Qt::AspectRatioMode::KeepAspectRatio);
-    QSize maxHeight = calculateMaxSize(thumbSize);
+    QPixmap scaled = bgPixmap.scaledToHeight(thumbSize.height(), Qt::TransformationMode::SmoothTransformation);
+    //QSize maxHeight = calculateMaxSize(thumbSize);
 
-    if(scaled.height() > maxHeight.height())
-    {
-        scaled = bgPixmap.scaled(maxHeight, Qt::AspectRatioMode::KeepAspectRatio);
-//        QRect rect(0,0,scaled.width(), newHeight);
-//        scaled = scaled.copy(rect);
-    }
+//    if(scaled.height() > maxHeight.height())
+//    {
+//        scaled = bgPixmap.scaled(maxHeight, Qt::AspectRatioMode::KeepAspectRatio);
+////        QRect rect(0,0,scaled.width(), newHeight);
+////        scaled = scaled.copy(rect);
+//    }
+    bgPixmap = QPixmap();
     return scaled;
 }
 
