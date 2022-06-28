@@ -475,7 +475,8 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 cachedListItem, qint64 pos
     {
         _thumbTimeoutTimer.stop();
         disconnect(&_thumbTimeoutTimer, &QTimer::timeout, nullptr, nullptr);
-        _extractor = new XVideoPreview(this);
+        if(!_extractor)
+            _extractor = new XVideoPreview(this);
         connect(&_thumbTimeoutTimer, &QTimer::timeout, &_thumbTimeoutTimer, [this, cachedListItem, vrMode]() {
             if(_thumbProcessIsRunning)
             {
@@ -587,12 +588,14 @@ void MediaLibraryHandler::onSaveThumb(LibraryListItem27 item, bool vrMode, QStri
         emit saveNewThumb(item, vrMode, item.thumbFile);
     }
 
-    disconnect(_extractor, nullptr,  nullptr, nullptr);
-    delete _extractor;
-    _extractor = 0;
 
     if(_thumbProcessIsRunning)
         saveNewThumbs(vrMode);
+    else {
+        disconnect(_extractor, nullptr,  nullptr, nullptr);
+        delete _extractor;
+        _extractor = 0;
+    }
 }
 
 QList<LibraryListItem27> MediaLibraryHandler::getLibraryCache()
