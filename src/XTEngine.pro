@@ -134,10 +134,19 @@ unix:mac {
 #https://stackoverflow.com/questions/12977739/qt-creator-or-qmake-on-macosx-build-library-as-so-not-dylib
 #QMAKE_LFLAGS_PLUGIN -= -dynamiclib
 #QMAKE_LFLAGS_PLUGIN += -bundle
-LIBS += -L$$PWD/../../HttpServer/src/build/release -lhttpServer
-DEPENDPATH += $$PWD/../../HttpServer/src
-INCLUDEPATH += $$PWD/../../HttpServer/src
-
+CONFIG += shared
+    #QMAKE_PREFIX_SHLIB = so
+    #QMAKE_RPATHDIR += ../lib
+    INCLUDEPATH += $$PWD/../../HttpServer/src
+    DEPENDPATH += $$PWD/../../HttpServer/src
+    CONFIG(debug, debug|release) {
+        DESTDIR = $$shell_path($$OUT_PWD/debug)
+        LIBS += -L$$PWD/../../HttpServer/src/build/debug -lhttpServer
+    }
+    else:CONFIG(release, debug|release): {
+        DESTDIR = $$shell_path($$OUT_PWD/release)
+        LIBS += -L$$PWD/../../HttpServer/src/build/release -lhttpServer
+    }
     RPATHDIR *= @loader_path/../Frameworks @executable_path/../Frameworks
     QMAKE_LFLAGS_SONAME = -W1,-install_name,@rpath,
     isEmpty(QMAKE_LFLAGS_RPATH): QMAKE_LFLAGS_RPATH=-Wl,-rpath,
