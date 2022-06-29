@@ -111,8 +111,8 @@ void XVideoPreview::on_thumbError(QString error)
 void XVideoPreview::on_mediaStatusChanged(QMediaPlayer::MediaStatus status)
 {
     if(status == QMediaPlayer::MediaStatus::LoadedMedia) {
-        if(_thumbNailVideoSurface && !_loadingInfo)
-            _thumbNailVideoSurface->start(m_format);
+//        if(_thumbNailVideoSurface && !_thumbNailVideoSurface->isActive() && !_loadingInfo)
+//            _thumbNailVideoSurface->start(m_format);
     }
 }
 void XVideoPreview::on_mediaStateChange(QMediaPlayer::State state)

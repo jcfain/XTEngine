@@ -1,5 +1,6 @@
 #ifndef SETTINGSHANDLER_H
 #define SETTINGSHANDLER_H
+#include <QCoreApplication>
 #include <QSettings>
 #include <QObject>
 #include <QMutex>
@@ -253,7 +254,7 @@ public:
     static void SetChannelMapDefaults();
     static void SetGamepadMapDefaults();
     static void setSaveOnExit(bool enabled);
-    static void Load(QString applicationDirPath = nullptr, QSettings* settingsToLoadFrom = nullptr);
+    static void Load(QSettings* settingsToLoadFrom = nullptr);
     static void Save(QSettings* settingsToSaveTo = nullptr);
     static void SaveLinkedFunscripts(QSettings* settingsToSaveTo = nullptr);
     static void PersistSelectSettings();

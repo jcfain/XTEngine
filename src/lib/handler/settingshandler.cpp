@@ -18,10 +18,10 @@ void SettingsHandler::setSaveOnExit(bool enabled)
 {
     _saveOnExit = enabled;
 }
-void SettingsHandler::Load(QString applicationDirPath, QSettings* settingsToLoadFrom)
+void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 {
     QMutexLocker locker(&mutex);
-    _applicationDirPath = applicationDirPath;
+    _applicationDirPath = QCoreApplication::applicationDirPath();
     _appdataLocation = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
     if(_appdataLocation.isEmpty())
         _appdataLocation = _applicationDirPath;
@@ -151,9 +151,9 @@ void SettingsHandler::Load(QString applicationDirPath, QSettings* settingsToLoad
 #if defined(Q_OS_WIN)
         _httpServerRoot = "www";
 #elif defined(Q_OS_MAC)
-        _httpServerRoot = applicationDirPath + "/www";
+        _httpServerRoot = _applicationDirPath + "/www";
 #elif defined(Q_OS_LINUX)
-        _httpServerRoot = applicationDirPath + "/www";
+        _httpServerRoot = _applicationDirPath + "/www";
 #endif
     }
     _vrLibrary = settingsToLoadFrom->value("vrLibrary").toString();

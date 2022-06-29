@@ -593,8 +593,8 @@ void MediaLibraryHandler::onSaveThumb(LibraryListItem27 item, bool vrMode, QStri
         saveNewThumbs(vrMode);
     else {
         disconnect(_extractor, nullptr,  nullptr, nullptr);
-        delete _extractor;
-        _extractor = 0;
+//        delete _extractor;
+//        _extractor = 0;
     }
 }
 

@@ -12,8 +12,7 @@ ImageFactory::ImageFactory()
 
 QPixmap ImageFactory::resize(QString filepath, QSize thumbSize)
 {
-    QFileInfo thumbFile = QFileInfo(filepath);
-    if(!thumbFile.exists())
+    if(!QFileInfo::exists(filepath))
         filepath = LibraryThumbNail::ERROR_IMAGE;
     QPixmap bgPixmap(filepath);
     if(bgPixmap.width() == thumbSize.width())
@@ -21,7 +20,7 @@ QPixmap ImageFactory::resize(QString filepath, QSize thumbSize)
     //QSize maxThumbSize = SettingsHandler::getMaxThumbnailSize();
     //int newHeight = round((float)bgPixmap.height() / bgPixmap.width() * 1080);
     //QSize newSize = calculateSize(thumbSize);
-    QPixmap scaled = bgPixmap.scaledToHeight(thumbSize.height(), Qt::TransformationMode::SmoothTransformation);
+    //QPixmap scaled = bgPixmap.scaledToHeight(thumbSize.height(), Qt::TransformationMode::SmoothTransformation);
     //QSize maxHeight = calculateMaxSize(thumbSize);
 
 //    if(scaled.height() > maxHeight.height())
@@ -30,8 +29,8 @@ QPixmap ImageFactory::resize(QString filepath, QSize thumbSize)
 ////        QRect rect(0,0,scaled.width(), newHeight);
 ////        scaled = scaled.copy(rect);
 //    }
-    bgPixmap = QPixmap();
-    return scaled;
+    //bgPixmap = QPixmap();
+    return bgPixmap.scaledToHeight(thumbSize.height(), Qt::TransformationMode::SmoothTransformation);;
 }
 
 
