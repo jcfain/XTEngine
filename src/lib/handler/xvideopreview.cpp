@@ -36,8 +36,8 @@ void XVideoPreview::tearDownPlayer()
 //        disconnect(_thumbNailVideoSurface, &XVideoSurface::frameCapture, this, &XVideoPreview::on_thumbCapture);
 //        disconnect(_thumbNailVideoSurface, &XVideoSurface::frameCaptureError, this, &XVideoPreview::on_thumbError);
 //        disconnect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
-        if(_thumbNailVideoSurface->isActive())
-            _thumbNailVideoSurface->stop();
+//        if(_thumbNailVideoSurface->isActive())
+//            _thumbNailVideoSurface->stop();
         if(_thumbPlayer->state() == QMediaPlayer::PlayingState)
             _thumbPlayer->stop();
 //        else {
@@ -134,11 +134,10 @@ void XVideoPreview::on_mediaStateChange(QMediaPlayer::State state)
                 //_lastImage = QImage();
             }
         }
-        else
+        else if(_loadingInfo && _lastDuration > 0)
         {
             _loadingInfo = false;
             emit durationChanged(_lastDuration);
-            _lastDuration = 0;
         }
 
     }
