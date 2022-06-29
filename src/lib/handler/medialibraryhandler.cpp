@@ -473,6 +473,8 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 cachedListItem, qint64 pos
     }
     else
     {
+        QDir dir; // Make thumb path if doesnt exist
+        dir.mkpath(SettingsHandler::getSelectedThumbsDir());
         _thumbTimeoutTimer.stop();
         disconnect(&_thumbTimeoutTimer, &QTimer::timeout, nullptr, nullptr);
         if(!_extractor)
