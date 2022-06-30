@@ -80,8 +80,8 @@ public:
     static int getVideoIncrement();
 
     static bool getGamepadEnabled();
-    static QMap<QString, QString>* getGamePadMap();
-    static QString getGamePadMapButton(QString gamepadButton);
+    static QMap<QString, QStringList>* getGamePadMap();
+    static QStringList getGamePadMapButton(QString gamepadButton);
     static QMap<QString, ChannelModel>* getAvailableAxis();
     static ChannelModel getAxis(QString axis);
     static bool getInverseTcXL0();
@@ -150,6 +150,7 @@ public:
 
     static void setGamepadEnabled(bool value);
     static void setGamePadMapButton(QString gamePadButton, QString axis);
+    static void removeGamePadMapButton(QString gamePadButton, QString axis);
     static void setAxis(QString axis, ChannelModel channel);
     static void addAxis(ChannelModel channel);
     static void deleteAxis(QString axis);
@@ -314,6 +315,7 @@ private:
     static void MigrateToQVariant2(QSettings* settingsToLoadFrom);
     static void MigrateTo281();
     static void DeMigrateLibraryMetaDataTo258();
+    static void MigrateTo32a(QSettings* settingsToLoadFrom);
 
     static QString _appdataLocation;
     static TCodeVersion _selectedTCodeVersion;
@@ -346,7 +348,7 @@ private:
     static QList<int> _mainWindowPos;
 
     static bool _gamePadEnabled;
-    static QMap<QString, QString> _gamepadButtonMap;
+    static QMap<QString, QStringList> _gamepadButtonMap;
     static QMap<QString, ChannelModel> _availableAxis;
     static bool _inverseStroke;
     static bool _inversePitch;

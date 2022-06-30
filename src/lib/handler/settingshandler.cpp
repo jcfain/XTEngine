@@ -120,7 +120,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _gamepadButtonMap.clear();
     foreach(auto button, gamepadButtonMap.keys())
     {
-        _gamepadButtonMap.insert(button, gamepadButtonMap[button].toString());
+        _gamepadButtonMap.insert(button, gamepadButtonMap[button].toStringList());
     }
     _inverseStroke = settingsToLoadFrom->value("inverseTcXL0").toBool();
     _inversePitch = settingsToLoadFrom->value("inverseTcXRollR2").toBool();
@@ -296,6 +296,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             locker.unlock();
             _httpThumbQuality = -1;
             setupAvailableAxis();
+            Save();
+            Load();
+        }
+        if(currentVersion < 0.32f) {
+            locker.unlock();
+            MigrateTo32a(settingsToLoadFrom);
             Save();
             Load();
         }
@@ -685,6 +691,16 @@ void SettingsHandler::MigrateToQVariant2(QSettings* settingsToLoadFrom)
 void SettingsHandler::MigrateTo281()
 {
 
+}
+
+void SettingsHandler::MigrateTo32a(QSettings* settingsToLoadFrom)
+{
+    QVariantMap gamepadButtonMap = settingsToLoadFrom->value("gamepadButtonMap").toMap();
+    _gamepadButtonMap.clear();
+    foreach(auto button, gamepadButtonMap.keys())
+    {
+        _gamepadButtonMap.insert(button, QStringList(gamepadButtonMap[button].toString()));
+    }
 }
 
 QString SettingsHandler::getSelectedTCodeVersion()
@@ -1318,7 +1334,7 @@ ChannelModel SettingsHandler::getAxis(QString axis)
     QMutexLocker locker(&mutex);
     return _availableAxis[axis];
 }
-QMap<QString, QString>*  SettingsHandler::getGamePadMap()
+QMap<QString, QStringList>*  SettingsHandler::getGamePadMap()
 {
     return &_gamepadButtonMap;
 }
@@ -1326,11 +1342,11 @@ QMap<QString, ChannelModel>*  SettingsHandler::getAvailableAxis()
 {
     return &_availableAxis;
 }
-QString SettingsHandler::getGamePadMapButton(QString gamepadAxis)
+QStringList SettingsHandler::getGamePadMapButton(QString gamepadButton)
 {
-    if (_gamepadButtonMap.contains(gamepadAxis))
-        return _gamepadButtonMap[gamepadAxis];
-    return nullptr;
+    if (_gamepadButtonMap.contains(gamepadButton))
+        return _gamepadButtonMap[gamepadButton];
+    return QStringList();
 }
 void SettingsHandler::setSelectedTheme(QString value)
 {
@@ -1541,8 +1557,19 @@ void SettingsHandler::deleteAxis(QString axis)
 void SettingsHandler::setGamePadMapButton(QString gamePadButton, QString axis)
 {
     QMutexLocker locker(&mutex);
-    _gamepadButtonMap[gamePadButton] = axis;
+    _gamepadButtonMap[gamePadButton].clear(); // TODO: Rmove when multiple actions are implemented
+    if(axis != TCodeChannelLookup::None())
+        _gamepadButtonMap[gamePadButton] << axis;
+    else
+        _gamepadButtonMap[gamePadButton].clear();
     settingsChangedEvent(true);
+}
+
+void SettingsHandler::removeGamePadMapButton(QString gamePadButton, QString axis) {
+    if(axis != TCodeChannelLookup::None())
+        _gamepadButtonMap[gamePadButton].removeOne(axis);
+    else
+        _gamepadButtonMap[gamePadButton].clear();
 }
 
 void SettingsHandler::setInverseTcXL0(bool value)
@@ -1691,29 +1718,29 @@ void SettingsHandler::setupAvailableAxis()
 void SettingsHandler::setupGamepadButtonMap()
 {
     _gamepadButtonMap = {
-        { "None", TCodeChannelLookup::None() },
-        { gamepadAxisNames.LeftXAxis, TCodeChannelLookup::Twist() },
-        { gamepadAxisNames.LeftYAxis, TCodeChannelLookup::Stroke() },
-        { gamepadAxisNames.RightYAxis, TCodeChannelLookup::Pitch()  },
-        { gamepadAxisNames.RightXAxis, TCodeChannelLookup::Roll()  },
-        { gamepadAxisNames.RightTrigger, mediaActions.IncreaseXRange },
-        { gamepadAxisNames.LeftTrigger, mediaActions.DecreaseXRange },
-        { gamepadAxisNames.RightBumper, mediaActions.FastForward },
-        { gamepadAxisNames.LeftBumper, mediaActions.Rewind },
-        { gamepadAxisNames.Select, mediaActions.FullScreen },
-        { gamepadAxisNames.Start, mediaActions.TogglePause },
-        { gamepadAxisNames.X, mediaActions.TogglePauseAllDeviceActions },
-        { gamepadAxisNames.Y, mediaActions.Loop },
-        { gamepadAxisNames.B, mediaActions.Stop },
-        { gamepadAxisNames.A, mediaActions.Mute },
-        { gamepadAxisNames.DPadUp, mediaActions.IncreaseXRange },
-        { gamepadAxisNames.DPadDown, mediaActions.DecreaseXRange },
-        { gamepadAxisNames.DPadLeft, mediaActions.TCodeSpeedDown },
-        { gamepadAxisNames.DPadRight, mediaActions.TCodeSpeedUp },
-        { gamepadAxisNames.RightAxisButton, mediaActions.ToggleAxisMultiplier },
-        { gamepadAxisNames.LeftAxisButton, TCodeChannelLookup::None() },
-        { gamepadAxisNames.Center, TCodeChannelLookup::None() },
-        { gamepadAxisNames.Guide, TCodeChannelLookup::None() }
+        { "None", QStringList() },
+        { gamepadAxisNames.LeftXAxis, QStringList(TCodeChannelLookup::Twist()) },
+        { gamepadAxisNames.LeftYAxis, QStringList(TCodeChannelLookup::Stroke()) },
+        { gamepadAxisNames.RightYAxis, QStringList(TCodeChannelLookup::Pitch())  },
+        { gamepadAxisNames.RightXAxis, QStringList(TCodeChannelLookup::Roll())  },
+        { gamepadAxisNames.RightTrigger, QStringList(mediaActions.IncreaseXRange) },
+        { gamepadAxisNames.LeftTrigger, QStringList(mediaActions.DecreaseXRange) },
+        { gamepadAxisNames.RightBumper, QStringList(mediaActions.FastForward) },
+        { gamepadAxisNames.LeftBumper, QStringList(mediaActions.Rewind) },
+        { gamepadAxisNames.Select, QStringList(mediaActions.FullScreen) },
+        { gamepadAxisNames.Start, QStringList(mediaActions.TogglePause) },
+        { gamepadAxisNames.X, QStringList(mediaActions.TogglePauseAllDeviceActions) },
+        { gamepadAxisNames.Y, QStringList(mediaActions.Loop) },
+        { gamepadAxisNames.B, QStringList(mediaActions.Stop) },
+        { gamepadAxisNames.A, QStringList(mediaActions.Mute) },
+        { gamepadAxisNames.DPadUp, QStringList(mediaActions.IncreaseXRange) },
+        { gamepadAxisNames.DPadDown, QStringList(mediaActions.DecreaseXRange) },
+        { gamepadAxisNames.DPadLeft, QStringList(mediaActions.TCodeSpeedDown) },
+        { gamepadAxisNames.DPadRight, QStringList(mediaActions.TCodeSpeedUp) },
+        { gamepadAxisNames.RightAxisButton, QStringList(mediaActions.ToggleAxisMultiplier) },
+        { gamepadAxisNames.LeftAxisButton, QStringList() },
+        { gamepadAxisNames.Center, QStringList() },
+        { gamepadAxisNames.Guide, QStringList() }
     };
 }
 
@@ -1979,7 +2006,7 @@ int SettingsHandler::thumbSizeList = 50;
 int SettingsHandler::videoIncrement = 10;
 
 bool SettingsHandler::_gamePadEnabled;
-QMap<QString, QString> SettingsHandler::_gamepadButtonMap;
+QMap<QString, QStringList> SettingsHandler::_gamepadButtonMap;
 QMap<QString, ChannelModel> SettingsHandler::_availableAxis;
 bool SettingsHandler::_inverseStroke;
 bool SettingsHandler::_inversePitch;

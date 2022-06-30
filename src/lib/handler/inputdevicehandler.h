@@ -25,6 +25,10 @@ signals:
     void errorOccurred(QString error);
     void connectionChange(ConnectionChangedSignal status);
     void messageRecieved(InputDevicePacket message);
+    // For gamepad
+    void emitTCode(QString tcode);
+    void emitAction(QStringList actions);
+    ///
 public slots:
     virtual void messageSend(QByteArray message);
 };
