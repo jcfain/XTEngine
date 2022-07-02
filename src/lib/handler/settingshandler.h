@@ -80,7 +80,10 @@ public:
     static int getVideoIncrement();
 
     static bool getGamepadEnabled();
-    static QMap<QString, QStringList>* getGamePadMap();
+    ///Returns assigned actions per gamepad button
+    static QMap<QString, QStringList> getGamePadMap();
+    ///Returns assigned gamepad buttons per action
+    static QMap<QString, QStringList> getGamePadMapInverse();
     static QStringList getGamePadMapButton(QString gamepadButton);
     static QMap<QString, ChannelModel>* getAvailableAxis();
     static ChannelModel getAxis(QString axis);
@@ -349,6 +352,7 @@ private:
 
     static bool _gamePadEnabled;
     static QMap<QString, QStringList> _gamepadButtonMap;
+    static QMap<QString, QStringList> _inverseGamePadMap;
     static QMap<QString, ChannelModel> _availableAxis;
     static bool _inverseStroke;
     static bool _inversePitch;

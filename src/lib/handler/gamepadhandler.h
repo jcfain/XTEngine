@@ -25,6 +25,7 @@ public:
     void dispose();
     bool isConnected();
     void listenForInput();
+    void listenForInputAxisChange(double axisValue, QString channel);
     void cancelListenForInput();
 
 private:

@@ -13,12 +13,12 @@ class XTENGINE_EXPORT TCodeChannelLookup
 public:
     static QString PositiveModifier;
     static QString NegativeModifier;
-    static QHash<TCodeVersion,  QMap<AxisNames,  QString>> TCodeVersionMap;
+    static QHash<TCodeVersion,  QMap<AxisName,  QString>> TCodeVersionMap;
     static void setSelectedTCodeVersion(TCodeVersion version);
-    static QMap<AxisNames,  QString> GetSelectedVersionMap();
+    static QMap<AxisName,  QString> GetSelectedVersionMap();
     static void AddUserAxis(QString channel);
     static bool ChannelExists(QString channel);
-    static QString ToString(AxisNames channel);
+    static QString ToString(AxisName channel);
     static QString None();
     static QString Stroke();
     static QString StrokeUp();
@@ -48,7 +48,7 @@ public:
     static QString SuckLessPosition();
 private:
     static int _channelCount;
-    static QMap<AxisNames,  QString> _selectedTCodeVersionMap;
+    static QMap<AxisName,  QString> _selectedTCodeVersionMap;
     static QString NA;
     static QString L0;
     static QString L2;

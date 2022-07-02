@@ -4,17 +4,18 @@ void TCodeChannelLookup::setSelectedTCodeVersion(TCodeVersion version)
 {
     _selectedTCodeVersionMap = TCodeVersionMap.value(version);
 }
-QMap<AxisNames,  QString> TCodeChannelLookup::GetSelectedVersionMap()
+QMap<AxisName,  QString> TCodeChannelLookup::GetSelectedVersionMap()
 {
     return _selectedTCodeVersionMap;
 }
-QString TCodeChannelLookup::ToString(AxisNames axisName)
+
+QString TCodeChannelLookup::ToString(AxisName axisName)
 {
     return _selectedTCodeVersionMap.value(axisName);
 }
 void TCodeChannelLookup::AddUserAxis(QString channel)
 {
-    _selectedTCodeVersionMap.insert((AxisNames)_channelCount, channel);
+    _selectedTCodeVersionMap.insert((AxisName)_channelCount, channel);
     _channelCount++;
 }
 bool TCodeChannelLookup::ChannelExists(QString channel)
@@ -23,114 +24,114 @@ bool TCodeChannelLookup::ChannelExists(QString channel)
 }
 QString TCodeChannelLookup::None()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::None);
+    return _selectedTCodeVersionMap.value(AxisName::None);
 }
 QString TCodeChannelLookup::Stroke()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::Stroke);
+    return _selectedTCodeVersionMap.value(AxisName::Stroke);
 }
 QString TCodeChannelLookup::StrokeUp()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::StrokeUp);
+    return _selectedTCodeVersionMap.value(AxisName::StrokeUp);
 }
 QString TCodeChannelLookup::StrokeDown()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::StrokeDown);
+    return _selectedTCodeVersionMap.value(AxisName::StrokeDown);
 }
 QString TCodeChannelLookup::Sway()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::Sway);
+    return _selectedTCodeVersionMap.value(AxisName::Sway);
 }
 QString TCodeChannelLookup::SwayRight()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::SwayRight);
+    return _selectedTCodeVersionMap.value(AxisName::SwayRight);
 }
 QString TCodeChannelLookup::SwayLeft()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::SwayLeft);
+    return _selectedTCodeVersionMap.value(AxisName::SwayLeft);
 }
 QString TCodeChannelLookup::Surge()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::Surge);
+    return _selectedTCodeVersionMap.value(AxisName::Surge);
 }
 QString TCodeChannelLookup::SurgeForward()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::SurgeForward);
+    return _selectedTCodeVersionMap.value(AxisName::SurgeForward);
 }
 QString TCodeChannelLookup::SurgeBack()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::SurgeBack);
+    return _selectedTCodeVersionMap.value(AxisName::SurgeBack);
 }
 QString TCodeChannelLookup::Twist()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::Twist);
+    return _selectedTCodeVersionMap.value(AxisName::Twist);
 }
 QString TCodeChannelLookup::TwistCounterClockwise()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::TwistCounterClockwise);
+    return _selectedTCodeVersionMap.value(AxisName::TwistCounterClockwise);
 }
 QString TCodeChannelLookup::TwistClockwise()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::TwistClockwise);
+    return _selectedTCodeVersionMap.value(AxisName::TwistClockwise);
 }
 QString TCodeChannelLookup::Roll()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::Roll);
+    return _selectedTCodeVersionMap.value(AxisName::Roll);
 }
 QString TCodeChannelLookup::RollRight()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::RollRight);
+    return _selectedTCodeVersionMap.value(AxisName::RollRight);
 }
 QString TCodeChannelLookup::RollLeft()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::RollLeft);
+    return _selectedTCodeVersionMap.value(AxisName::RollLeft);
 }
 QString TCodeChannelLookup::Pitch()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::Pitch);
+    return _selectedTCodeVersionMap.value(AxisName::Pitch);
 }
 QString TCodeChannelLookup::PitchForward()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::PitchForward);
+    return _selectedTCodeVersionMap.value(AxisName::PitchForward);
 }
 QString TCodeChannelLookup::PitchBack()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::PitchBack);
+    return _selectedTCodeVersionMap.value(AxisName::PitchBack);
 }
 QString TCodeChannelLookup::Vib()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::Vib);
+    return _selectedTCodeVersionMap.value(AxisName::Vib);
 }
 QString TCodeChannelLookup::Lube()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::Lube);
+    return _selectedTCodeVersionMap.value(AxisName::Lube);
 }
 QString TCodeChannelLookup::Suck()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::Suck);
+    return _selectedTCodeVersionMap.value(AxisName::Suck);
 }
 QString TCodeChannelLookup::SuckMore()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::SuckMore);
+    return _selectedTCodeVersionMap.value(AxisName::SuckMore);
 }
 QString TCodeChannelLookup::SuckLess()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::SuckLess);
+    return _selectedTCodeVersionMap.value(AxisName::SuckLess);
 }
 QString TCodeChannelLookup::SuckPosition()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::SuckPosition);
+    return _selectedTCodeVersionMap.value(AxisName::SuckPosition);
 }
 QString TCodeChannelLookup::SuckMorePosition()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::SuckMorePosition);
+    return _selectedTCodeVersionMap.value(AxisName::SuckMorePosition);
 }
 QString TCodeChannelLookup::SuckLessPosition()
 {
-    return _selectedTCodeVersionMap.value(AxisNames::SuckLessPosition);
+    return _selectedTCodeVersionMap.value(AxisName::SuckLessPosition);
 }
 
-int TCodeChannelLookup::_channelCount = (int)AxisNames::AXIS_NAMES_LENGTH;
+int TCodeChannelLookup::_channelCount = (int)AxisName::AXIS_NAMES_LENGTH;
 QString TCodeChannelLookup::PositiveModifier = "+";
 QString TCodeChannelLookup::NegativeModifier = "-";
 QString TCodeChannelLookup::NA = "None";
@@ -146,68 +147,68 @@ QString TCodeChannelLookup::L3 = "L3";
 QString TCodeChannelLookup::A0 = "A0";
 QString TCodeChannelLookup::A1 = "A1";
 QString TCodeChannelLookup::A2 = "A2";
-QMap<AxisNames, QString> TCodeChannelLookup::_selectedTCodeVersionMap;
-QHash<TCodeVersion, QMap<AxisNames, QString>> TCodeChannelLookup::TCodeVersionMap =
+QMap<AxisName, QString> TCodeChannelLookup::_selectedTCodeVersionMap;
+QHash<TCodeVersion, QMap<AxisName, QString>> TCodeChannelLookup::TCodeVersionMap =
 {
     {
         TCodeVersion::v2,
         {
-            {AxisNames::None, NA},
-            {AxisNames::Stroke, L0},
-            {AxisNames::StrokeUp, L0 + PositiveModifier},
-            {AxisNames::StrokeDown, L0 + NegativeModifier},
-            {AxisNames::Roll, R1},
-            {AxisNames::RollRight, R1 + PositiveModifier},
-            {AxisNames::RollLeft, R1 + NegativeModifier},
-            {AxisNames::Pitch, R2},
-            {AxisNames::PitchForward, R2 + PositiveModifier},
-            {AxisNames::PitchBack, R2 + NegativeModifier},
-            {AxisNames::Twist, R0},
-            {AxisNames::TwistClockwise, R0 + PositiveModifier},
-            {AxisNames::TwistCounterClockwise, R0 + NegativeModifier},
-            {AxisNames::Surge, L1},
-            {AxisNames::SurgeForward, L1 + PositiveModifier},
-            {AxisNames::SurgeBack, L1 + NegativeModifier},
-            {AxisNames::Sway, L2},
-            {AxisNames::SwayLeft, L2 + PositiveModifier},
-            {AxisNames::SwayRight, L2 + NegativeModifier},
-            {AxisNames::Vib, V0},
-            {AxisNames::Lube, V1},
-            {AxisNames::Suck, L3},
-            {AxisNames::SuckMore, L3 + NegativeModifier},
-            {AxisNames::SuckLess, L3 + PositiveModifier}
+            {AxisName::None, NA},
+            {AxisName::Stroke, L0},
+            {AxisName::StrokeUp, L0 + PositiveModifier},
+            {AxisName::StrokeDown, L0 + NegativeModifier},
+            {AxisName::Roll, R1},
+            {AxisName::RollRight, R1 + PositiveModifier},
+            {AxisName::RollLeft, R1 + NegativeModifier},
+            {AxisName::Pitch, R2},
+            {AxisName::PitchForward, R2 + PositiveModifier},
+            {AxisName::PitchBack, R2 + NegativeModifier},
+            {AxisName::Twist, R0},
+            {AxisName::TwistClockwise, R0 + PositiveModifier},
+            {AxisName::TwistCounterClockwise, R0 + NegativeModifier},
+            {AxisName::Surge, L1},
+            {AxisName::SurgeForward, L1 + PositiveModifier},
+            {AxisName::SurgeBack, L1 + NegativeModifier},
+            {AxisName::Sway, L2},
+            {AxisName::SwayLeft, L2 + PositiveModifier},
+            {AxisName::SwayRight, L2 + NegativeModifier},
+            {AxisName::Vib, V0},
+            {AxisName::Lube, V1},
+            {AxisName::Suck, L3},
+            {AxisName::SuckMore, L3 + NegativeModifier},
+            {AxisName::SuckLess, L3 + PositiveModifier}
         }
     },
     {
         TCodeVersion::v3,
         {
-            {AxisNames::None, NA},
-            {AxisNames::Stroke, L0},
-            {AxisNames::StrokeUp, L0 + PositiveModifier},
-            {AxisNames::StrokeDown, L0 + NegativeModifier},
-            {AxisNames::Roll, R1},
-            {AxisNames::RollRight, R1 + PositiveModifier},
-            {AxisNames::RollLeft, R1 + NegativeModifier},
-            {AxisNames::Pitch, R2},
-            {AxisNames::PitchForward, R2 + PositiveModifier},
-            {AxisNames::PitchBack, R2 + NegativeModifier},
-            {AxisNames::Twist, R0},
-            {AxisNames::TwistClockwise, R0 + PositiveModifier},
-            {AxisNames::TwistCounterClockwise, R0 + NegativeModifier},
-            {AxisNames::Surge, L1},
-            {AxisNames::SurgeForward, L1 + PositiveModifier},
-            {AxisNames::SurgeBack, L1 + NegativeModifier},
-            {AxisNames::Sway, L2},
-            {AxisNames::SwayLeft, L2 + PositiveModifier},
-            {AxisNames::SwayRight, L2 + NegativeModifier},
-            {AxisNames::Vib, V0},
-            {AxisNames::Suck, A1},
-            {AxisNames::SuckMore, A1 + NegativeModifier},
-            {AxisNames::SuckLess, A1 + PositiveModifier},
-            {AxisNames::SuckPosition, A0},
-            {AxisNames::SuckMorePosition, A0 + NegativeModifier},
-            {AxisNames::SuckLessPosition, A0 + PositiveModifier},
-            {AxisNames::Lube, A2}
+            {AxisName::None, NA},
+            {AxisName::Stroke, L0},
+            {AxisName::StrokeUp, L0 + PositiveModifier},
+            {AxisName::StrokeDown, L0 + NegativeModifier},
+            {AxisName::Roll, R1},
+            {AxisName::RollRight, R1 + PositiveModifier},
+            {AxisName::RollLeft, R1 + NegativeModifier},
+            {AxisName::Pitch, R2},
+            {AxisName::PitchForward, R2 + PositiveModifier},
+            {AxisName::PitchBack, R2 + NegativeModifier},
+            {AxisName::Twist, R0},
+            {AxisName::TwistClockwise, R0 + PositiveModifier},
+            {AxisName::TwistCounterClockwise, R0 + NegativeModifier},
+            {AxisName::Surge, L1},
+            {AxisName::SurgeForward, L1 + PositiveModifier},
+            {AxisName::SurgeBack, L1 + NegativeModifier},
+            {AxisName::Sway, L2},
+            {AxisName::SwayLeft, L2 + PositiveModifier},
+            {AxisName::SwayRight, L2 + NegativeModifier},
+            {AxisName::Vib, V0},
+            {AxisName::Suck, A1},
+            {AxisName::SuckMore, A1 + NegativeModifier},
+            {AxisName::SuckLess, A1 + PositiveModifier},
+            {AxisName::SuckPosition, A0},
+            {AxisName::SuckMorePosition, A0 + NegativeModifier},
+            {AxisName::SuckLessPosition, A0 + PositiveModifier},
+            {AxisName::Lube, A2}
         }
     }
 };

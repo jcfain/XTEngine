@@ -168,6 +168,19 @@
 						<input type="radio" id="500" name="thumbSize" value="500" onclick="thumbSizeChange(this.value)" /><label for="500">500px</label>
 					</div>
 				</div>
+				<div class="formElement">
+					<label title="If checked, a voice will play with certain actions" 
+						for="enableTextToSpeech">Voice enabled
+					</label>
+					<input id="enableTextToSpeech" type="checkbox" onclick="onEnableTextToSpeechClick(this)"/>
+				</div>
+				<div class="formElement" id="voiceSelectFormElement">
+					<label for="voiceSelect">
+						<span class="formLabel">Voice</span>
+					</label>
+					<select name="voiceSelect" id="voiceSelect" onchange="onVoiceSelect(this.value)">
+					</select>
+				</div>
 			</div>
 			<div id="tabConnections" class="tab-content">
 				<div class="formElement">

@@ -1334,10 +1334,29 @@ ChannelModel SettingsHandler::getAxis(QString axis)
     QMutexLocker locker(&mutex);
     return _availableAxis[axis];
 }
-QMap<QString, QStringList>*  SettingsHandler::getGamePadMap()
+QMap<QString, QStringList>  SettingsHandler::getGamePadMap()
 {
-    return &_gamepadButtonMap;
+    return _gamepadButtonMap;
 }
+
+QMap<QString, QStringList> SettingsHandler::getGamePadMapInverse()
+{
+    _inverseGamePadMap.clear();
+    foreach (auto key, _gamepadButtonMap.keys())
+    {
+        QStringList actions = _gamepadButtonMap.value(key);
+        foreach(auto action, actions) {
+            QStringList existingKeys;
+            if(_inverseGamePadMap.contains(action)) {
+                existingKeys = _inverseGamePadMap.value(action);
+            }
+            existingKeys << key;
+            _inverseGamePadMap.insert(action, existingKeys);
+        }
+    }
+    return _inverseGamePadMap;
+}
+
 QMap<QString, ChannelModel>*  SettingsHandler::getAvailableAxis()
 {
     return &_availableAxis;
@@ -1713,13 +1732,13 @@ void SettingsHandler::setupAvailableAxis()
        _availableAxis.insert(TCodeChannelLookup::SuckLessPosition(), suctionLessPositionModel);
     } else {
         auto v3ChannelMap = TCodeChannelLookup::TCodeVersionMap.value(TCodeVersion::v3);
-        auto suckPositionV3Channel = v3ChannelMap.value(AxisNames::SuckPosition);
+        auto suckPositionV3Channel = v3ChannelMap.value(AxisName::SuckPosition);
         _availableAxis.remove(suckPositionV3Channel);
 
-        auto suckMorePositionV3Channel = v3ChannelMap.value(AxisNames::SuckMorePosition);
+        auto suckMorePositionV3Channel = v3ChannelMap.value(AxisName::SuckMorePosition);
         _availableAxis.remove(suckMorePositionV3Channel);
 
-        auto suckLessPositionV3Channel = v3ChannelMap.value(AxisNames::SuckLessPosition);
+        auto suckLessPositionV3Channel = v3ChannelMap.value(AxisName::SuckLessPosition);
         _availableAxis.remove(suckLessPositionV3Channel);
     }
 }
@@ -2017,6 +2036,7 @@ int SettingsHandler::videoIncrement = 10;
 
 bool SettingsHandler::_gamePadEnabled;
 QMap<QString, QStringList> SettingsHandler::_gamepadButtonMap;
+QMap<QString, QStringList> SettingsHandler::_inverseGamePadMap;
 QMap<QString, ChannelModel> SettingsHandler::_availableAxis;
 bool SettingsHandler::_inverseStroke;
 bool SettingsHandler::_inversePitch;

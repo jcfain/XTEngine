@@ -180,10 +180,10 @@ void GamepadHandler::listenForInput()
 {
     _listeningForInput = true;
     GamepadAxisName gamepadAxisName;
-    connect(_gamepad, &QGamepad::axisLeftXChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.LeftXAxis); });
-    connect(_gamepad, &QGamepad::axisLeftYChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.LeftYAxis); });
-    connect(_gamepad, &QGamepad::axisRightXChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.RightXAxis); });
-    connect(_gamepad, &QGamepad::axisRightYChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.RightYAxis); });
+    connect(_gamepad, &QGamepad::axisLeftXChanged, this, [this, gamepadAxisName](double value) { listenForInputAxisChange(value, gamepadAxisName.LeftXAxis); });
+    connect(_gamepad, &QGamepad::axisLeftYChanged, this, [this, gamepadAxisName](double value) { listenForInputAxisChange(value, gamepadAxisName.LeftYAxis); });
+    connect(_gamepad, &QGamepad::axisRightXChanged, this, [this, gamepadAxisName](double value) { listenForInputAxisChange(value, gamepadAxisName.RightXAxis); });
+    connect(_gamepad, &QGamepad::axisRightYChanged, this, [this, gamepadAxisName](double value) { listenForInputAxisChange(value, gamepadAxisName.RightYAxis); });
     connect(_gamepad, &QGamepad::buttonR2Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.RightTrigger); });
     connect(_gamepad, &QGamepad::buttonL2Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.LeftTrigger); });
     connect(_gamepad, &QGamepad::buttonAChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.A); });
@@ -203,7 +203,11 @@ void GamepadHandler::listenForInput()
     connect(_gamepad, &QGamepad::buttonCenterChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.Center); });
     connect(_gamepad, &QGamepad::buttonGuideChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.Guide); });
 }
-
+void GamepadHandler::listenForInputAxisChange(double axisValue, QString channel)
+{
+    if(axisValue > 0.5 || axisValue < -0.5)
+        onListenForInput(channel);
+}
 void GamepadHandler::cancelListenForInput()
 {
     disconnect(_gamepad, &QGamepad::axisLeftXChanged, nullptr, nullptr);

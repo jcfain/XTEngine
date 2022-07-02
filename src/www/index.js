@@ -74,6 +74,9 @@ var serverRetryTimeout;
 var serverRetryTimeoutTries = 0;
 var userFilterCriteria;
 var filterDebounce;
+var enableTextToSpeech = true;
+var systemVoices;
+var selectedVoiceIndex;
 //var funscriptSyncWorker;
 //var useDeoWeb;
 //var deoVideoNode;
@@ -100,7 +103,6 @@ function loadPage()
 		thumbSizeGlobal = 400;
 	} */
 	var volume = JSON.parse(window.localStorage.getItem("volume"));
-	externalStreaming = JSON.parse(window.localStorage.getItem("externalStreaming"));
 	//deviceAddress =  JSON.parse(window.localStorage.getItem("webSocketAddress"));
 	// if(!deviceAddress)
 	// 	deviceAddress = "tcode.local";
@@ -119,6 +121,8 @@ function loadPage()
 	videoNode.addEventListener("volumechange", onVolumeChange); 
 	videoNode.addEventListener("ended", onVideoEnd); 
 	videoNode.volume = volume ? volume : 0.5;
+	externalStreaming = JSON.parse(window.localStorage.getItem("externalStreaming"));
+	toggleExternalStreaming(externalStreaming, false);
 	// Fires on load?
 	// videoSourceNode.addEventListener('error', function(event) { 
 	// 	alert("There was an issue loading media.");
@@ -130,7 +134,6 @@ function loadPage()
 	saveStateNode = document.getElementById("saveState");
 	deviceConnectionStatusRetryButtonNodes = document.getElementsByName("deviceStatusRetryButton");
 	deviceConnectionStatusRetryButtonImageNodes = document.getElementsByName("connectionStatusIconImage");
-	toggleExternalStreaming(externalStreaming, false);
 	
 /* 	
 	deoVideoNode = document.getElementById("deoVideoPlayer");
@@ -143,6 +146,8 @@ function loadPage()
 		new ResizeObserver(onResizeDeo).observe(deoVideoNode)
 	} 
 */
+
+	setupTextToSpeech();
 	getServerSettings();
 }
 
@@ -228,6 +233,19 @@ function wsCallBackFunction(evt) {
 					mediaListGlobal[index].thumbFileExists = true;
 				}
 				break;
+			case "textToSpeech":
+				if (enableTextToSpeech && 'speechSynthesis' in window) {
+					var message = data["message"];
+					var msg = new SpeechSynthesisUtterance();
+					msg.voice = systemVoices[selectedVoiceIndex]; 
+					msg.volume = 1; // From 0 to 1
+					msg.rate = 1; // From 0.1 to 10
+					msg.pitch = 1; // From 0 to 2
+					msg.lang = 'en';
+					msg.text = message;
+					window.speechSynthesis.speak(msg);
+				}
+				break;
 				
 		}
 	}
@@ -252,6 +270,44 @@ function setMediaLoadingStatus(status) {
 function onResizeVideo() {
 	thumbsContainerNode.style.maxHeight = "calc(100vh - "+ (+videoNode.offsetHeight + 165) + "px)";
 } 
+
+function setupTextToSpeech() {
+	if(typeof speechSynthesis === 'undefined') {
+		disableTextToSpeech();
+	  	return;
+	}
+	enableTextToSpeech = JSON.parse(window.localStorage.getItem("enableTextToSpeech"));
+	if(enableTextToSpeech === null) {
+		enableTextToSpeech = true;
+		window.localStorage.setItem("enableTextToSpeech", JSON.stringify(enableTextToSpeech));
+	}
+	toggleEnableTextToSpeech(enableTextToSpeech, false);
+	selectedVoiceIndex = JSON.parse(window.localStorage.getItem("selectedVoiceIndex")) || 0;
+	window.speechSynthesis.onvoiceschanged = function() {
+		systemVoices = speechSynthesis.getVoices();
+		var voiceSelect = document.getElementById("voiceSelect");
+		for(var i = 0; i < systemVoices.length; i++) {
+			var option = document.createElement('option');
+			option.textContent = systemVoices[i].name + ' (' + systemVoices[i].lang + ')';
+			option.value = i;
+		
+			if(systemVoices[i].default) {
+				option.textContent += ' — DEFAULT';
+			}
+		
+			option.setAttribute('data-lang', systemVoices[i].lang);
+			option.setAttribute('data-name', systemVoices[i].name);
+			voiceSelect.appendChild(option);
+		}
+		voiceSelect.value = selectedVoiceIndex;
+	}.bind(this);
+}
+
+function onVoiceSelect(index) {
+	selectedVoiceIndex = index;
+	window.localStorage.setItem("selectedVoiceIndex", JSON.stringify(selectedVoiceIndex));
+}
+
 function getBrowserInformation() {
 	var nAgt = navigator.userAgent;
 	var browserName;
@@ -941,6 +997,7 @@ function onClickExternalStreamingCheckbox(checkbox)
 {
 	toggleExternalStreaming(checkbox.checked, true);
 }
+
 function toggleExternalStreaming(value, userClicked)
 {
 	if(userClicked) {
@@ -963,6 +1020,29 @@ function toggleExternalStreaming(value, userClicked)
 		resizeObserver.observe(videoNode);
 	}
 }
+
+function onEnableTextToSpeechClick(checkbox)
+{
+	toggleEnableTextToSpeech(checkbox.checked, true);
+}
+function toggleEnableTextToSpeech(value, userClicked)
+{
+	if(userClicked) {
+		enableTextToSpeech = value;
+		window.localStorage.setItem("enableTextToSpeech", JSON.stringify(value));
+	}
+	else
+		document.getElementById("enableTextToSpeech").checked = value;
+}
+function disableTextToSpeech() {
+	var enableTTSCheckbox = document.getElementById("enableTextToSpeech");
+	document.getElementById("voiceSelectFormElement").hidden = true;
+	enableTTSCheckbox.title = "Text to speech is not available in your browser."
+	enableTTSCheckbox.enabled = false;
+	enableTTSCheckbox.checked = false;
+	toggleEnableTextToSpeech(false, true);
+}
+
 
 function playVideo(obj) {
 	if(!externalStreaming) {
