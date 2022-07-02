@@ -15,6 +15,8 @@ signals:
     void connectionChange(ConnectionChangedSignal status);
     void emitTCode(QString tcode);
     void emitAction(QString action);
+    void onListenForInputRecieve(QString gamepadAxisName);
+
 public:
     GamepadHandler(QObject *parent = nullptr);
     ~GamepadHandler();
@@ -22,7 +24,8 @@ public:
     void init();
     void dispose();
     bool isConnected();
-
+    void listenForInput();
+    void cancelListenForInput();
 
 private:
     void run() override;
@@ -31,8 +34,7 @@ private:
     void disposeInternal();
     double calculateDeadZone(double gpIn);
     void executeAction(QString axisName, double gamepadValue, QVector<ChannelValueModel> &axisValues, MediaActions &mediaActions, XTimer &actionTimer);
-    QStringList subtract(QList<QString> isIn, QList<QString> contains);
-
+    void onListenForInput(QString button);
 
     TCodeFactory* _tcodeFactory;
     QList<int> _gamepads;
@@ -44,6 +46,7 @@ private:
     bool _stop = false;
     bool _isConnected = false;
     double _deadzone = 0.2;
+    bool _listeningForInput = false;
 };
 
 #endif // GAMEPADHANDLER_H

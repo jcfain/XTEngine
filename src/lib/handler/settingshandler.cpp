@@ -5,8 +5,8 @@ const QMap<TCodeVersion, QString> SettingsHandler::SupportedTCodeVersions = {
     {TCodeVersion::v3, "TCode v0.3"}
 };
 
-const QString SettingsHandler::XTEVersion = QString("0.32a_%1T%2").arg(__DATE__).arg(__TIME__);
-const float SettingsHandler::XTEVersionNum = 0.32f;
+const QString SettingsHandler::XTEVersion = QString("0.321a_%1T%2").arg(__DATE__).arg(__TIME__);
+const float SettingsHandler::XTEVersionNum = 0.321f;
 
 SettingsHandler::SettingsHandler(){}
 SettingsHandler::~SettingsHandler()
@@ -1557,17 +1557,27 @@ void SettingsHandler::deleteAxis(QString axis)
 void SettingsHandler::setGamePadMapButton(QString gamePadButton, QString axis)
 {
     QMutexLocker locker(&mutex);
-    _gamepadButtonMap[gamePadButton].clear(); // TODO: Rmove when multiple actions are implemented
     if(axis != TCodeChannelLookup::None())
-        _gamepadButtonMap[gamePadButton] << axis;
+    {
+        if(!_gamepadButtonMap[gamePadButton].contains(axis))
+        {
+            _gamepadButtonMap[gamePadButton] << axis;
+        }
+    }
     else
         _gamepadButtonMap[gamePadButton].clear();
     settingsChangedEvent(true);
 }
 
 void SettingsHandler::removeGamePadMapButton(QString gamePadButton, QString axis) {
+    QMutexLocker locker(&mutex);
     if(axis != TCodeChannelLookup::None())
-        _gamepadButtonMap[gamePadButton].removeOne(axis);
+    {
+        if(_gamepadButtonMap[gamePadButton].contains(axis))
+        {
+            _gamepadButtonMap[gamePadButton].removeAll(axis);
+        }
+    }
     else
         _gamepadButtonMap[gamePadButton].clear();
 }
@@ -1987,7 +1997,7 @@ QString SettingsHandler::_appdataLocation;
 QHash<QString, bool> SettingsHandler::_funscriptLoaded;
 QList<int> SettingsHandler::_mainWindowPos;
 QSize SettingsHandler::_maxThumbnailSize = {500, 500};
-GamepadAxisNames SettingsHandler::gamepadAxisNames;
+GamepadAxisName SettingsHandler::gamepadAxisNames;
 MediaActions SettingsHandler::mediaActions;
 QHash<QString, QVariant> SettingsHandler::deoDnlaFunscriptLookup;
 QString SettingsHandler::selectedTheme;

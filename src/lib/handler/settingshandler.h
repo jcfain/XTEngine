@@ -319,7 +319,7 @@ private:
 
     static QString _appdataLocation;
     static TCodeVersion _selectedTCodeVersion;
-    static GamepadAxisNames gamepadAxisNames;
+    static GamepadAxisName gamepadAxisNames;
     static MediaActions mediaActions;
     static QSize _maxThumbnailSize;
     static bool _hideWelcomeScreen;

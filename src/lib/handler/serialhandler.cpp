@@ -148,7 +148,7 @@ void SerialHandler::run()
         if (serial.waitForBytesWritten(_waitTimeout))
         {
             serial.flush();
-            if (!SettingsHandler::getDisableTCodeValidation())
+            if (!SettingsHandler::getDisableTCodeValidation() && !_isConnected)
             {
                 // read response
                 if ((currentPortNameChanged || !_isConnected) && serial.waitForReadyRead(currentWaitTimeout))
@@ -208,7 +208,7 @@ void SerialHandler::run()
                     emit errorOccurred("Warning! You should be able to keep using the program if you have the correct port selected\n\nIt would be greatly appreciated if you could run the program in debug mode.\nSend the console output file to Khrull on patreon or discord. Thanks!");
                 }
             }
-            else
+            else if(!_isConnected)
             {
                 emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Connected, "Connected: No Validate"});
                 _mutex.lock();

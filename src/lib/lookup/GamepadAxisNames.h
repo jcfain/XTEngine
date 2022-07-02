@@ -1,7 +1,7 @@
 #ifndef GAMEPADAXISNAMES_H
 #define GAMEPADAXISNAMES_H
 #include <QString>
-struct GamepadAxisNames
+struct GamepadAxisName
 {
     const QString Select = "Select";
     const QString Start = "Start";

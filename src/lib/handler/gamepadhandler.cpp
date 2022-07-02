@@ -71,7 +71,7 @@ void GamepadHandler::run()
     QString lastTCode;
     MediaActions mediaActions;
     QVector<ChannelValueModel> axisValues;
-    GamepadAxisNames gamepadAxisNames;
+    GamepadAxisName gamepadAxisName;
     XTimer leftXAxisTimer;
     XTimer leftYAxisTimer;
     XTimer rightXAxisTimer;
@@ -98,36 +98,39 @@ void GamepadHandler::run()
     while(!_stop)
     {
         axisValues.clear();
-        executeAction(gamepadAxisNames.LeftXAxis, _gamepad->axisLeftX(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.LeftYAxis, _gamepad->axisLeftY(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.RightXAxis, _gamepad->axisRightX(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.RightYAxis, _gamepad->axisRightY(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.RightTrigger, _gamepad->buttonR2(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.LeftTrigger, _gamepad->buttonL2(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.A, _gamepad->buttonA(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.B, _gamepad->buttonB(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.X, _gamepad->buttonX(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.Y, _gamepad->buttonY(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.RightBumper, _gamepad->buttonR1(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.LeftBumper, _gamepad->buttonL1(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.Start, _gamepad->buttonStart(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.Select, _gamepad->buttonSelect(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.DPadUp, _gamepad->buttonUp(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.DPadDown, _gamepad->buttonDown(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.DPadLeft, _gamepad->buttonLeft(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.DPadRight, _gamepad->buttonRight(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.RightAxisButton, _gamepad->buttonR3(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.LeftAxisButton, _gamepad->buttonL3(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.Center, _gamepad->buttonCenter(), axisValues, mediaActions, leftXAxisTimer);
-        executeAction(gamepadAxisNames.Guide, _gamepad->buttonGuide(), axisValues, mediaActions, leftXAxisTimer);
+        if(!_listeningForInput) {
+            executeAction(gamepadAxisName.LeftXAxis, _gamepad->axisLeftX(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.LeftYAxis, _gamepad->axisLeftY(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.RightXAxis, _gamepad->axisRightX(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.RightYAxis, _gamepad->axisRightY(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.RightTrigger, _gamepad->buttonR2(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.LeftTrigger, _gamepad->buttonL2(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.A, _gamepad->buttonA(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.B, _gamepad->buttonB(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.X, _gamepad->buttonX(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.Y, _gamepad->buttonY(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.RightBumper, _gamepad->buttonR1(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.LeftBumper, _gamepad->buttonL1(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.Start, _gamepad->buttonStart(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.Select, _gamepad->buttonSelect(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.DPadUp, _gamepad->buttonUp(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.DPadDown, _gamepad->buttonDown(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.DPadLeft, _gamepad->buttonLeft(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.DPadRight, _gamepad->buttonRight(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.RightAxisButton, _gamepad->buttonR3(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.LeftAxisButton, _gamepad->buttonL3(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.Center, _gamepad->buttonCenter(), axisValues, mediaActions, leftXAxisTimer);
+            executeAction(gamepadAxisName.Guide, _gamepad->buttonGuide(), axisValues, mediaActions, leftXAxisTimer);
 
-        QString currentTCode = _tcodeFactory->formatTCode(&axisValues);
-        if (lastTCode != currentTCode)
-        {
-            lastTCode = currentTCode;
-            emit emitTCode(currentTCode);
+            QString currentTCode = _tcodeFactory->formatTCode(&axisValues);
+            if (lastTCode != currentTCode)
+            {
+                lastTCode = currentTCode;
+                emit emitTCode(currentTCode);
+            }
         }
         msleep(1);
+
     }
     leftXAxisTimer.stop();
     leftYAxisTimer.stop();
@@ -156,21 +159,8 @@ void GamepadHandler::run()
 void GamepadHandler::executeAction(QString axisName, double gamepadValue, QVector<ChannelValueModel> &axisValues, MediaActions &mediaActions, XTimer &actionTimer) {
 
     QStringList AxisActions = SettingsHandler::getGamePadMapButton(axisName);
-    if (!AxisActions.empty())
+    if (!AxisActions.empty() && calculateDeadZone(gamepadValue) != 0.0)
     {
-//        QStringList currentTCodeActions = subtract(AxisActions, mediaActions.Values.keys());
-//        foreach(QString action, currentTCodeActions) {
-//            _tcodeFactory->calculate(action, calculateDeadZone(gamepadValue), axisValues);
-//        }
-
-//        if(actionTimer.remainingTime() <= 0 && gamepadValue != 0)
-//        {
-//            foreach(QString action, AxisActions) {
-//                if(mediaActions.Values.contains(axisName))
-//                    emit emitAction(action);
-//            }
-//            actionTimer.init(500);
-//        }
         bool actionExecuted = false;
         foreach(QString action, AxisActions) {
           if (!mediaActions.Values.contains(action))
@@ -186,16 +176,68 @@ void GamepadHandler::executeAction(QString axisName, double gamepadValue, QVecto
     }
 }
 
-QStringList GamepadHandler::subtract(QList<QString> minuend, QList<QString> subtrahend)
+void GamepadHandler::listenForInput()
 {
-    QStringList equal;
-    foreach(QString action, minuend)
-    {
-        if(!subtrahend.contains(action))
-            equal << action;
-    }
-    return equal;
+    _listeningForInput = true;
+    GamepadAxisName gamepadAxisName;
+    connect(_gamepad, &QGamepad::axisLeftXChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.LeftXAxis); });
+    connect(_gamepad, &QGamepad::axisLeftYChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.LeftYAxis); });
+    connect(_gamepad, &QGamepad::axisRightXChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.RightXAxis); });
+    connect(_gamepad, &QGamepad::axisRightYChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.RightYAxis); });
+    connect(_gamepad, &QGamepad::buttonR2Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.RightTrigger); });
+    connect(_gamepad, &QGamepad::buttonL2Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.LeftTrigger); });
+    connect(_gamepad, &QGamepad::buttonAChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.A); });
+    connect(_gamepad, &QGamepad::buttonBChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.B); });
+    connect(_gamepad, &QGamepad::buttonXChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.X); });
+    connect(_gamepad, &QGamepad::buttonYChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.Y); });
+    connect(_gamepad, &QGamepad::buttonL1Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.RightBumper); });
+    connect(_gamepad, &QGamepad::buttonR1Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.LeftBumper); });
+    connect(_gamepad, &QGamepad::buttonStartChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.Start); });
+    connect(_gamepad, &QGamepad::buttonSelectChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.Select); });
+    connect(_gamepad, &QGamepad::buttonUpChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.DPadUp); });
+    connect(_gamepad, &QGamepad::buttonDownChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.DPadDown); });
+    connect(_gamepad, &QGamepad::buttonLeftChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.DPadLeft); });
+    connect(_gamepad, &QGamepad::buttonRightChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.DPadRight); });
+    connect(_gamepad, &QGamepad::buttonR3Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.RightAxisButton); });
+    connect(_gamepad, &QGamepad::buttonL3Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.LeftAxisButton); });
+    connect(_gamepad, &QGamepad::buttonCenterChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.Center); });
+    connect(_gamepad, &QGamepad::buttonGuideChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.Guide); });
 }
+
+void GamepadHandler::cancelListenForInput()
+{
+    disconnect(_gamepad, &QGamepad::axisLeftXChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::axisLeftYChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::axisRightXChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::axisRightYChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonR2Changed, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonL2Changed, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonAChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonBChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonXChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonYChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonL1Changed, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonR1Changed, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonStartChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonSelectChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonUpChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonDownChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonLeftChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonRightChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonR3Changed, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonL3Changed, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonCenterChanged, nullptr, nullptr);
+    disconnect(_gamepad, &QGamepad::buttonGuideChanged, nullptr, nullptr);
+    _listeningForInput = false;
+}
+
+void GamepadHandler::onListenForInput(QString button)
+{
+    emit onListenForInputRecieve(button);
+    cancelListenForInput();
+}
+
+
 double GamepadHandler::calculateDeadZone(double gpIn)
 {
     if ((gpIn < _deadzone && gpIn > 0) || (gpIn > -_deadzone && gpIn < 0))
