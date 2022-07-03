@@ -14,7 +14,7 @@
 <div id="bodyContainer" class="body-container">
 	<div class="header">
 		<div class="headerSection toolBar">
-			<div class="toolBarGroup">
+			<div class="toolBarGroup toolBarGroupEnd">
 				<button name="deviceStatusRetryButton" class="icon-button device-status-retry-button" onclick="tcodeDeviceConnectRetry()">
 					<img name="connectionStatusIconImage" class="buttonImage" src="://images/icons/reload.svg"/>
 				</button>
@@ -173,13 +173,32 @@
 						for="enableTextToSpeech">Voice enabled
 					</label>
 					<input id="enableTextToSpeech" type="checkbox" onclick="onEnableTextToSpeechClick(this)"/>
+					<span id="textToSpeechUnavailable" hidden="true" style="color:red">Unavailable in this browser</span>
 				</div>
-				<div class="formElement" id="voiceSelectFormElement">
+				<div class="formElement" name="voiceFormElement">
 					<label for="voiceSelect">
 						<span class="formLabel">Voice</span>
 					</label>
 					<select name="voiceSelect" id="voiceSelect" onchange="onVoiceSelect(this.value)">
 					</select>
+				</div>
+				<div class="formElement" name="voiceFormElement">
+					<label for="speechPitch">
+						<span class="formLabel">Voice pitch</span>
+					</label>
+					<input id="speechPitch" type="range" min="0" max="2" value="1" step="0.1" onchange="onSpeechPitchChange(this.value)">
+				</div>
+				<div class="formElement" name="voiceFormElement">
+					<label for="speechRate">
+						<span class="formLabel">Voice rate</span>
+					</label>
+					<input id="speechRate" type="range" min="0.1" max="10" value="5" step="0.1" onchange="onSpeechRateChange(this.value)">
+				</div>
+				<div class="formElement" name="voiceFormElement">
+					<label for="speechVolume">
+						<span class="formLabel">Voice volume</span>
+					</label>
+					<input id="speechVolume" type="range" min="0" max="1" value="0.5" step="0.1" onchange="onSpeechVolumeChange(this.value)">
 				</div>
 			</div>
 			<div id="tabConnections" class="tab-content">
