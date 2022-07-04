@@ -41,24 +41,13 @@ var wsUri;
 var websocket = null;
 var xtpConnected = false;
 var xtpFormDirty = false;
-var saveStateNode;
 var userAgent;
-var userAgentIsDeo = false;
-var userAgentIsHereSphere = false;
 var remoteUserSettings;
 var mediaListGlobal = [];
 var sortedMedia = [];
 var playingmediaItem;
 var playingmediaItemNode;
 var thumbsContainerNode;
-var sortByGlobal = "nameAsc";
-var showGlobal = "All";
-var settingsNode;
-var thumbSizeGlobal = 0;
-var selectedSyncConnectionGlobal;
-var videoNode;
-var videoSourceNode;
-var externalStreaming;
 var resizeObserver;
 var webSocket;
 var deviceAddress;
@@ -68,8 +57,6 @@ var currentChannelIndex = 0;
 var outputConnectionStatus = ConnectionStatus.Disconnected;
 var selectedInputDevice;
 var deviceConnectionStatusInterval;
-var deviceConnectionStatusRetryButtonNodes;
-var deviceConnectionStatusRetryButtonImageNodes;
 var serverRetryTimeout;
 var serverRetryTimeoutTries = 0;
 var userFilterCriteria;
@@ -87,73 +74,72 @@ var speechVolume = 0.5;
 //var deoSourceNode;
 
 
-//document.addEventListener("DOMContentLoaded", function() {
-loadPage();
-//});
-function loadPage() {
-	getBrowserInformation();
-	userAgentIsDeo = userAgent.indexOf("Deo VR") != -1;
-	userAgentIsHereSphere = userAgent.indexOf("HereSphere") != -1;
-	setDeoStyles(userAgentIsDeo);
-	settingsNode = document.getElementById("settingsModal");
-	thumbsContainerNode = document.getElementById("thumbsContainer");
+document.addEventListener('keyup', keyboardShortcuts);
 
-	sortByGlobal = JSON.parse(window.localStorage.getItem("sortBy"));
-	showGlobal = JSON.parse(window.localStorage.getItem("show"));
-	thumbSizeGlobal = JSON.parse(window.localStorage.getItem("thumbSize"));
-	selectedSyncConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedSyncConnection"));
-	/* 	if(!thumbSizeGlobal && window.devicePixelRatio == 2.75) {
-			thumbSizeGlobal = 400;
-		} */
-	var volume = JSON.parse(window.localStorage.getItem("volume"));
-	//deviceAddress =  JSON.parse(window.localStorage.getItem("webSocketAddress"));
-	// if(!deviceAddress)
-	// 	deviceAddress = "tcode.local";
+getBrowserInformation();
+var userAgentIsDeo = userAgent.indexOf("Deo VR") != -1;
+var userAgentIsHereSphere = userAgent.indexOf("HereSphere") != -1;
+setDeoStyles(userAgentIsDeo);
+var settingsNode = document.getElementById("settingsModal");
+var thumbsContainerNode = document.getElementById("thumbsContainer");
 
-	//document.getElementById("webSocketAddress").value = deviceAddress;
+var sortByGlobal = JSON.parse(window.localStorage.getItem("sortBy"));
+var showGlobal = JSON.parse(window.localStorage.getItem("show"));
+var thumbSizeGlobal = JSON.parse(window.localStorage.getItem("thumbSize"));
+var selectedSyncConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedSyncConnection"));
+/* 	if(!thumbSizeGlobal && window.devicePixelRatio == 2.75) {
+		thumbSizeGlobal = 400;
+	} */
+//deviceAddress =  JSON.parse(window.localStorage.getItem("webSocketAddress"));
+// if(!deviceAddress)
+// 	deviceAddress = "tcode.local";
 
-	videoNode = document.getElementById("videoPlayer");
-	videoSourceNode = document.getElementById("videoSource");
-	videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
-	videoNode.addEventListener("loadeddata", onVideoLoad);
-	videoNode.addEventListener("play", onVideoPlay);
-	videoNode.addEventListener("playing", onVideoPlaying);
-	videoNode.addEventListener("stalled", onVideoStall);
-	videoNode.addEventListener("waiting", onVideoStall);
-	videoNode.addEventListener("pause", onVideoPause);
-	videoNode.addEventListener("volumechange", onVolumeChange);
-	videoNode.addEventListener("ended", onVideoEnd);
-	videoNode.volume = volume ? volume : 0.5;
-	externalStreaming = JSON.parse(window.localStorage.getItem("externalStreaming"));
-	toggleExternalStreaming(externalStreaming, false);
+//document.getElementById("webSocketAddress").value = deviceAddress;
 
-	// Fires on load?
-	// videoSourceNode.addEventListener('error', function(event) { 
-	// 	alert("There was an issue loading media.");
-	// }, true);
-	// videoNode.addEventListener('error', function(event) { 
-	// 	alert("There was an issue loading media.");
-	// }, true);
+var externalStreaming = JSON.parse(window.localStorage.getItem("externalStreaming"));
+toggleExternalStreaming(externalStreaming, false);
 
-	saveStateNode = document.getElementById("saveState");
-	deviceConnectionStatusRetryButtonNodes = document.getElementsByName("deviceStatusRetryButton");
-	deviceConnectionStatusRetryButtonImageNodes = document.getElementsByName("connectionStatusIconImage");
+videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
+videoNode.addEventListener("loadeddata", onVideoLoad);
+videoNode.addEventListener("play", onVideoPlay);
+videoNode.addEventListener("playing", onVideoPlaying);
+videoNode.addEventListener("stalled", onVideoStall);
+videoNode.addEventListener("waiting", onVideoStall);
+videoNode.addEventListener("pause", onVideoPause);
+videoNode.addEventListener("volumechange", onVolumeChange);
+videoNode.addEventListener("ended", onVideoEnd);
 
-	/* 	
-		deoVideoNode = document.getElementById("deoVideoPlayer");
-		deoSourceNode = document.getElementById("deoVideoSource");
-		deoVideoNode.addEventListener("end", onVideoStop); 
-		useDeoWeb = JSON.parse(window.localStorage.getItem("useDeoWeb"));
-	
-		if(useDeoWeb) {
-			toggleUseDeo(useDeoWeb, false);
-			new ResizeObserver(onResizeDeo).observe(deoVideoNode)
-		} 
-	*/
+const playNextButton = document.getElementById('play-next');
+playNextButton.addEventListener('click', playNextVideo);
+const playPreviousButton = document.getElementById('play-previous');
+playPreviousButton.addEventListener('click', playPreviousVideo);
 
-	setupTextToSpeech();
-	getServerSettings();
-}
+// Fires on load?
+// videoSourceNode.addEventListener('error', function(event) { 
+// 	alert("There was an issue loading media.");
+// }, true);
+// videoNode.addEventListener('error', function(event) { 
+// 	alert("There was an issue loading media.");
+// }, true);
+
+var saveStateNode = document.getElementById("saveState");
+var deviceConnectionStatusRetryButtonNodes = document.getElementsByName("deviceStatusRetryButton");
+var deviceConnectionStatusRetryButtonImageNodes = document.getElementsByName("connectionStatusIconImage");
+
+/* 	
+	deoVideoNode = document.getElementById("deoVideoPlayer");
+	deoSourceNode = document.getElementById("deoVideoSource");
+	deoVideoNode.addEventListener("end", onVideoStop); 
+	useDeoWeb = JSON.parse(window.localStorage.getItem("useDeoWeb"));
+
+	if(useDeoWeb) {
+		toggleUseDeo(useDeoWeb, false);
+		new ResizeObserver(onResizeDeo).observe(deoVideoNode)
+	} 
+*/
+
+setupTextToSpeech();
+getServerSettings();
 
 debugMode = true;
 function debug(message) {
@@ -976,11 +962,11 @@ function setupTextToSpeech() {
 		disableTextToSpeech();
 		return;
 	}
-	
+
 	if (speechSynthesis.onvoiceschanged !== undefined) {
 		speechSynthesis.onvoiceschanged = setupVoices;
 	} else {
-		setTimeout(function() {
+		setTimeout(function () {
 			setupVoices();
 		}, 1000);
 	}
@@ -1044,7 +1030,7 @@ function onTextToSpeech(message) {
 	if (!message || !enableTextToSpeech || typeof speechSynthesis === 'undefined') {
 		return;
 	}
-	if(systemVoices && systemVoices.length > 0) {
+	if (systemVoices && systemVoices.length > 0) {
 		var msg = new SpeechSynthesisUtterance();
 		msg.voice = systemVoices[selectedVoiceIndex];
 		msg.volume = speechVolume; // From 0 to 1
@@ -1111,7 +1097,7 @@ function toggleSpeechVolumeChange(value, userClicked) {
 function disableTextToSpeech(message) {
 	var textToSpeechUnavailable = document.getElementById("textToSpeechUnavailable");
 	textToSpeechUnavailable.hidden = false;
-	if(message) {
+	if (message) {
 		textToSpeechUnavailable.innerText = message;
 	}
 	var enableTTSCheckbox = document.getElementById("enableTextToSpeech");
@@ -1214,12 +1200,24 @@ function onVideoEnd(event) {
 	// if(funscriptSyncWorker) {
 	// 	funscriptSyncWorker.postMessage(JSON.stringify({"command": "terminate"}));
 	// }
+	playNextVideo();
+}
+
+function playNextVideo() {
 	var playingIndex = sortedMedia.findIndex(x => x.path === playingmediaItem.path);
 	playingIndex++;
 	if (playingIndex < sortedMedia.length)
 		playVideo(sortedMedia[playingIndex]);
 	else
 		playVideo(sortedMedia[0]);
+}
+function playPreviousVideo() {
+	var playingIndex = sortedMedia.findIndex(x => x.path === playingmediaItem.path);
+	playingIndex--;
+	if (playingIndex < 0)
+		playVideo(sortedMedia[sortedMedia.length - 1]);
+	else
+		playVideo(sortedMedia[playingIndex]);
 }
 function setThumbSize(value, userClick) {
 	if (!userClick) {
@@ -1295,7 +1293,7 @@ function openSettings() {
 	settingsNode.style.visibility = "visible";
 	settingsNode.style.opacity = 1;
 	document.getElementById("settingsTabs").style.display = "block";
-	if(!speechNotInbrowser && (!systemVoices || systemVoices.length === 0))
+	if (!speechNotInbrowser && (!systemVoices || systemVoices.length === 0))
 		disableTextToSpeech("No voices found");
 }
 
@@ -1798,3 +1796,37 @@ function onDeoVRPortChange(input) {
 // }
 
 
+// keyboardShortcuts executes the relevant functions for
+// each supported shortcut key
+function keyboardShortcuts(event) {
+	const { key } = event;
+	switch (key) {
+		case 'k':
+			togglePlay();
+			animatePlayback();
+			if (videoNode.paused) {
+				showControls();
+			} else {
+				setTimeout(() => {
+					hideControls();
+				}, 2000);
+			}
+			break;
+		case 'm':
+			toggleMute();
+			break;
+		case 'f':
+			toggleFullScreen();
+			break;
+		case 'p':
+			togglePip();
+			break;
+        case 'ArrowRight':
+			playNextVideo();
+			break;
+        case 'ArrowLeft':
+			playPreviousVideo();
+            break;
+        
+	}
+}

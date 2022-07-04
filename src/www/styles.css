@@ -10,6 +10,10 @@ body {
     flex-direction: column;
 }
 
+.hidden {
+  display: none;
+}
+
 .header {
     display: flex;
     flex-wrap: nowrap;
@@ -87,8 +91,8 @@ select:disabled {
 }
 
 .formElement select,
-.formElement button,
-.formElement input:not([type='checkbox']):not([type='range']):not([type='radio']) {
+.formElement button:not(.video-control),
+.formElement input:not([type='checkbox']):not([type='range']):not([type='radio']):not(.video-control) {
     flex-grow: 1;
     border-radius: 5px;
     height: 24px;
@@ -133,7 +137,7 @@ select:disabled {
     text-align: center;
 }
 
-button:not(.icon-button):not(.tab-section-tab) {
+button:not(.icon-button):not(.tab-section-tab):not(.video-control) {
     border-radius: 5px;
     height: 24px;
 }
@@ -143,7 +147,7 @@ select {
 }
 
 select:hover,
-button:hover,
+button:hover:not(.video-control),
 input:hover {
     background-color: lightblue;
 }
