@@ -47,7 +47,6 @@ var mediaListGlobal = [];
 var sortedMedia = [];
 var playingmediaItem;
 var playingmediaItemNode;
-var thumbsContainerNode;
 var resizeObserver;
 var webSocket;
 var deviceAddress;
