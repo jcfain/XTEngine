@@ -18,6 +18,8 @@ signals:
     void tcode(QString tcode);
     void newWebSocketConnected(QWebSocket* client);
     void restartService();
+    void skipToMoneyShot();
+    void skipToNextAction();
 public:
     WebSocketHandler(QObject *parent = nullptr);
     ~WebSocketHandler();

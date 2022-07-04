@@ -22,12 +22,11 @@ class XTENGINE_EXPORT ConnectionHandler : public QObject
 signals:
     void connectionChange(ConnectionChangedSignal status);
     void inputConnectionChange(ConnectionChangedSignal status);
-    void inputConnectionError(QString error);
     void outputConnectionChange(ConnectionChangedSignal status);
-    void outputConnectionError(QString error);
     void messageRecieved(InputDevicePacket packet);
     void gamepadAction(QString action);
     void gamepadTCode(QString tcode);
+    void serialPortFound(QString portFriendlyName, QString portName);
 //    void serialDeviceError(QString error);
 //    void serialDeviceConnectionChange(ConnectionChangedSignal event);
 //    void udpDeviceError(QString error);
@@ -43,9 +42,7 @@ public slots:
     void inputMessageSend(QByteArray message);
 private slots:
     void on_output_connectionChanged(ConnectionChangedSignal event);
-    void on_output_error(QString error);
     void on_input_connectionChanged(ConnectionChangedSignal event);
-    void on_input_error(QString error);
     void on_gamepad_connectionChanged(ConnectionChangedSignal event);
 
 public:
@@ -55,7 +52,9 @@ public:
 
     bool isOutputDeviceConnected();
     bool isInputDeviceConnected();
+    /** @brief Initializes the device that is stored in SettingsHandler */
     void initOutputDevice(DeviceName outputDevice);
+    /** @brief Initializes the device that is stored in SettingsHandler */
     void initInputDevice(DeviceName inputDevice);
     void disposeOutputDevice(DeviceName outputDevice);
     void disposeInputDevice(DeviceName inputDevice);

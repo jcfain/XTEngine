@@ -32,6 +32,9 @@ signals:
     void connectOutputDevice(DeviceName deviceName);
     void connectInputDevice(DeviceName deviceName, bool checked);
     void restartService();
+    void skipToMoneyShot();
+    void skipToNextAction();
+
 public slots:
     void on_DeviceConnection_StateChange(ConnectionChangedSignal status);
 

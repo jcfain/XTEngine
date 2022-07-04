@@ -9,29 +9,32 @@ SerialHandler::~SerialHandler()
 {
 }
 
-void SerialHandler::init(const QString &portName, int waitTimeout)
+void SerialHandler::init(const QString &portNameOrFriendlyName, int waitTimeout)
 {
     auto available = getPorts();
-    _portName = portName;
-    LogHandler::Debug("Connecting to port: "+ portName);
+    LogHandler::Debug("Init port: "+ portNameOrFriendlyName);
     LogHandler::Debug("Availible ports length: "+ QString::number(available.length()));
     foreach(SerialComboboxItem port, available)
     {
         LogHandler::Debug("Port: "+ port.portName);
-    }
-    if(portName.isEmpty() && available.count() > 0)
-    {
-        foreach(SerialComboboxItem port, available)
-        {
-            if(port.friendlyName.toLower().contains("arduino") || port.friendlyName.toLower().contains("esp32"))
+        if(!portNameOrFriendlyName.isEmpty() && (portNameOrFriendlyName == port.friendlyName || portNameOrFriendlyName == port.portName)) {
+            _portName = port.portName;
+            break;
+        } else if(portNameOrFriendlyName.isEmpty()) {
+            if(port.friendlyName.toLower().contains("arduino") || port.friendlyName.toLower().contains("cp210x"))
             {
-                _portName = portName;
+                _portName = port.portName;
+                SettingsHandler::setSerialPort(_portName);
+                break;
             }
         }
-        if(portName.isEmpty())
-            _portName = available[0].portName;
     }
-    else if(portName.isEmpty() || available.length() == 0)
+    if(_portName.isEmpty() && available.count() > 0)
+    {
+        emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Disconnected,  portNameOrFriendlyName.isEmpty() ? "No existing ports found with Arduino or CP210x in the name. Select a port from the settings menu.": portNameOrFriendlyName+ " not found in available ports. Select a new port from the settings menu."});
+        return;
+    }
+    else if(_portName.isEmpty() || available.length() == 0)
     {
         //LogHandler::Dialog("No portname specified", XLogLevel::Critical);
         emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Disconnected, "No COM"});
@@ -98,7 +101,7 @@ void SerialHandler::run()
 
     if (currentPortName.isEmpty())
     {
-        emit errorOccurred(tr("No port name specified"));
+        emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Error, "No port name specified"});
         return;
     }
 
@@ -107,7 +110,8 @@ void SerialHandler::run()
         if (currentPortNameChanged)
         {
             LogHandler::Debug("Connecting to: "+ currentPortName);
-            serial.close();
+            if(serial.isOpen())
+                serial.close();
 
             LogHandler::Debug("Setting port params: ");
             serial.setPortName(currentPortName);
@@ -122,10 +126,9 @@ void SerialHandler::run()
             LogHandler::Debug("Opening port");
             if (!serial.open(QIODevice::ReadWrite))
             {
-                LogHandler::Error("Error opening: "+ currentPortName);
-                emit errorOccurred(tr("Can't open %1, error code %2")
-                           .arg(_portName).arg(serial.error()));
-                dispose();
+                LogHandler::Error("Error opening: "+ currentPortName + ", Error: "+serial.errorString());
+                emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Error, tr("Can't open %1, error %2")
+                                       .arg(_portName).arg(serial.errorString())});
                 return;
             }
             else
@@ -192,7 +195,7 @@ void SerialHandler::run()
                         _mutex.unlock();
                         LogHandler::Error("An INVALID response recieved: ");
                         LogHandler::Error("response: "+response);
-                        emit errorOccurred("Warning! You should be able to keep using the program if you have the correct port selected\n\nIt would be greatly appreciated if you could run the program in debug mode.\nSend the console output file to Khrull on patreon or discord. Thanks!");
+                        //emit errorOccurred("Warning! You should be able to keep using the program if you have the correct port selected\n\nIt would be greatly appreciated if you could run the program in debug mode.\nSend the console output file to Khrull on patreon or discord. Thanks!");
                     }
                 }
                 else if (currentPortNameChanged || !_isConnected)
@@ -205,7 +208,6 @@ void SerialHandler::run()
                     _mutex.lock();
                     _isConnected = true;
                     _mutex.unlock();
-                    emit errorOccurred("Warning! You should be able to keep using the program if you have the correct port selected\n\nIt would be greatly appreciated if you could run the program in debug mode.\nSend the console output file to Khrull on patreon or discord. Thanks!");
                 }
             }
             else if(!_isConnected)

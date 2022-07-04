@@ -72,7 +72,6 @@ var speechVolume = 0.5;
 //var deoVideoNode;
 //var deoSourceNode;
 
-
 document.addEventListener('keyup', keyboardShortcuts);
 
 getBrowserInformation();
@@ -98,6 +97,11 @@ var selectedSyncConnectionGlobal = JSON.parse(window.localStorage.getItem("selec
 var externalStreaming = JSON.parse(window.localStorage.getItem("externalStreaming"));
 toggleExternalStreaming(externalStreaming, false);
 
+const skipToMoneyShotButton = document.getElementById('money-shot');
+const skipToNextActionButton = document.getElementById('next-action');
+skipToMoneyShotButton.addEventListener("click", sendSkipToMoneyShot);
+skipToMoneyShotButton.addEventListener("click", onSkipToMoneyShot);
+skipToNextActionButton.addEventListener("click", sendSkipToNextAction);
 videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
 videoNode.addEventListener("loadeddata", onVideoLoad);
 videoNode.addEventListener("play", onVideoPlay);
@@ -176,6 +180,13 @@ function sendTCode(tcode) {
 function sendSyncDeviceConnectionChange(device, checked) {
 	sendWebsocketMessage("connectInputDevice", { deviceType: device, enabled: checked });
 }
+function sendSkipToNextAction() {
+	sendWebsocketMessage("skipToNextAction");
+}
+function sendSkipToMoneyShot() {
+	sendWebsocketMessage("skipToMoneyShot");
+}
+
 
 function restartXTP() {
 	if (confirm('Are you sure you want restart XTP?')) {
@@ -227,7 +238,6 @@ function wsCallBackFunction(evt) {
 		switch (data["command"]) {
 			case "outputDeviceStatus":
 				var status = data["message"];
-				var deviceType = status["deviceType"];
 				setOutputConnectionStatus(status["status"], status["message"]);
 				break;
 			case "inputDeviceStatus":
@@ -263,7 +273,13 @@ function wsCallBackFunction(evt) {
 				var message = data["message"];
 				onTextToSpeech(message);
 				break;
-
+			case "skipToNextAction":
+				var message = data["message"];
+				skipVideoTo(message);
+				break;
+			case "skipToMoneyShot":
+				onSkipToMoneyShot();
+				break;
 		}
 	}
 	catch (e) {
@@ -1140,6 +1156,22 @@ function playVideo(obj) {
 	}
 }
 
+function skipVideoTo(timeInMSecs) {
+	if(videoNode && playingmediaItem) {
+		videoNode.currentTime = timeInMSecs;
+	}
+}
+
+function onSkipToMoneyShot() {
+	if(playingmediaItem) {
+		var moneyShotSecs = playingmediaItem.metaData.moneyShotSecs;
+		if(moneyShotSecs < 1) {
+			moneyShotSecs = videoNode.duration - (videoNode.duration * 0.1);
+		}
+		skipVideoTo(moneyShotSecs);
+	}
+}
+
 function setPlayingMediaItem(obj) {
 	playingmediaItem = obj;
 	playingmediaItemNode = document.getElementById(obj.id);
@@ -1826,6 +1858,12 @@ function keyboardShortcuts(event) {
         case 'ArrowLeft':
 			playPreviousVideo();
             break;
+		case 'a':
+			sendSkipToNextAction();
+			break;
+		case 'c':
+			onSkipToMoneyShot();
+			break;
         
 	}
 }

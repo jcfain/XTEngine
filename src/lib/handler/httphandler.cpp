@@ -11,6 +11,8 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::tcode, this, &HttpHandler::tcode);
     connect(_webSocketHandler, &WebSocketHandler::newWebSocketConnected, this, &HttpHandler::on_webSocketClient_Connected);
     connect(_webSocketHandler, &WebSocketHandler::restartService, this, &HttpHandler::restartService);
+    connect(_webSocketHandler, &WebSocketHandler::skipToMoneyShot, this, &HttpHandler::skipToMoneyShot);
+    connect(_webSocketHandler, &WebSocketHandler::skipToNextAction, this, &HttpHandler::skipToNextAction);
 
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoadingStatus, this, &HttpHandler::onLibraryLoadingStatusChange);
@@ -337,6 +339,9 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, bool stereosc
     object["thumbFileExists"] = item.thumbFileExists;
     object["loaded"] = false;
     object["playing"] = false;
+
+    auto metaData = SettingsHandler::getLibraryListItemMetaData(item.path);
+    object["metaData"] = LibraryListItemMetaData258::toJson(metaData);
     if(item.isMFS)
         object["displayName"] = "(MFS) " + item.nameNoExtension;
 

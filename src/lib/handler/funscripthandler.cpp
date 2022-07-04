@@ -107,6 +107,16 @@ qint64 FunscriptHandler::getMax()
     return _funscriptMax;
 }
 
+qint64 FunscriptHandler::getNext() {
+    if(lastActionIndex == nextActionIndex) {
+        return atList[lastActionIndex + 1];
+    }
+    if(nextActionIndex > -1) {
+        return atList[nextActionIndex];
+    }
+    return getMin();
+}
+
 void FunscriptHandler::JSonToFunscript(QJsonObject json)
 {
     if (json.contains("range"))

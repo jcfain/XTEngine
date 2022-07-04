@@ -52,6 +52,7 @@ public:
     qint64 getFunscriptTime();
     qint64 getFunscriptMin();
     qint64 getFunscriptMax();
+    qint64 getFunscriptNext();
     void stopStandAloneFunscript();
     void stopOtherMediaFunscript();
     void stopInputDeviceFunscript();

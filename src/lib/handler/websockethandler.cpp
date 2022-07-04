@@ -107,6 +107,10 @@ void WebSocketHandler::processTextMessage(QString message)
         emit connectInputDevice((DeviceName)obj["deviceType"].toInt(), obj["enabled"].toBool());
     } else if (command == "restartService") {
         emit restartService();
+    } else if (command == "skipToMoneyShot") {
+        emit skipToMoneyShot();
+    }else if (command == "skipToNextAction") {
+        emit skipToNextAction();
     }
 }
 

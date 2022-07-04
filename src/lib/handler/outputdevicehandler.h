@@ -15,7 +15,6 @@ class XTENGINE_EXPORT OutputDeviceHandler : public QThread
     Q_OBJECT
 
 signals:
-    void errorOccurred(QString error);
     void connectionChange(ConnectionChangedSignal status);
 
 public:

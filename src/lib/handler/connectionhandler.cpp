@@ -79,7 +79,8 @@ void ConnectionHandler::setInputDevice(InputDeviceHandler* device)
     if(_inputDevice) {
         connect(_inputDevice, &InputDeviceHandler::connectionChange, this, &ConnectionHandler::on_input_connectionChanged, Qt::UniqueConnection);
         connect(_inputDevice, &InputDeviceHandler::messageRecieved, this, [this](InputDevicePacket packet){
-            emit messageRecieved(packet);
+            if(_inputDevice->isConnected())
+                emit messageRecieved(packet);
         });
     }
 }
@@ -240,7 +241,7 @@ void ConnectionHandler::on_input_connectionChanged(ConnectionChangedSignal event
     if (event.status == ConnectionStatus::Error)
     {
         setInputDevice(0);
-        emit inputConnectionError(event.message);
+        emit inputConnectionChange(event);
     }
     else
     {
@@ -256,20 +257,13 @@ void ConnectionHandler::on_input_connectionChanged(ConnectionChangedSignal event
     emit inputConnectionChange(status);
     emit connectionChange(status);
 }
-
-void ConnectionHandler::on_input_error(QString error)
-{
-    setInputDevice(0);
-    emit inputConnectionError(error);
-}
-
 void ConnectionHandler::on_output_connectionChanged(ConnectionChangedSignal event)
 {
     _deoConnectionStatus = event.status;
     if (event.status == ConnectionStatus::Error)
     {
         setOutputDevice(0);
-        emit outputConnectionError(event.message);
+        emit outputConnectionChange(event);
     }
     else
     {
@@ -282,11 +276,6 @@ void ConnectionHandler::on_output_connectionChanged(ConnectionChangedSignal even
 //        emit udpDeviceConnectionChange(status);
     emit outputConnectionChange(status);
     emit connectionChange(status);
-}
-void ConnectionHandler::on_output_error(QString error)
-{
-    setInputDevice(0);
-    emit outputConnectionError(error);
 }
 void ConnectionHandler::on_gamepad_connectionChanged(ConnectionChangedSignal status)
 {

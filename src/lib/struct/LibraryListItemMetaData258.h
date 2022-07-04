@@ -85,6 +85,11 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
 
     static QVariant toVariant(LibraryListItemMetaData258 item)
     {
+        return QVariant::fromValue(toJson(item));
+    }
+
+    static QJsonObject toJson(LibraryListItemMetaData258 item)
+    {
         QJsonObject obj;
         obj["libraryItemPath"] = item.libraryItemPath;
         obj["lastPlayPosition"] = QString::number(item.lastPlayPosition);
@@ -93,6 +98,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         obj["lastLoopEnd"] = item.lastLoopEnd;
         obj["offset"] = item.offset;
         obj["moneyShotMillis"] = QString::number(item.moneyShotMillis);
+        obj["moneyShotSecs"] = item.moneyShotMillis / 1000;
         QJsonArray bookmarks;
         foreach(Bookmark bookmark, item.bookmarks) {
             QJsonObject bookmarkObj;
@@ -104,7 +110,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         foreach(QString funscript, item.funscripts) {
             funscripts.append(funscript);
         }
-        return QVariant::fromValue(obj);
+        return obj;
      }
 };
 

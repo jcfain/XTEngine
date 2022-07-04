@@ -59,7 +59,7 @@ struct MediaActions
         {ToggleFunscriptInvert, "Toggle funscript inversion"},
         {TogglePauseAllDeviceActions, "Toggle pause all device actions"},
         {SkipToMoneyShot, "Skip to moneyshot"},
-        {SkipToAction, "Skip to action begin"},
+        {SkipToAction, "Skip to next action"},
         {IncreaseFunscriptModifier, "Increase funscript modifier"},
         {DecreaseFunscriptModifier, "Decrease funscript modifier"},
         {IncreaseOffset, "Increase funscript delay"},
