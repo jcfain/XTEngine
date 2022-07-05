@@ -26,6 +26,11 @@ struct MediaActions
     const QString DecreaseXLowerRange = "DecreaseXLowerRange";
     const QString ResetLiveXRange = "ResetLiveXRange";
     const QString ToggleAxisMultiplier = "ToggleAxisMiltiplier";
+    const QString ToggleChannelRollMultiplier = "ToggleChannelRollMultiplier";
+    const QString ToggleChannelPitchMultiplier = "ToggleChannelPitchMultiplier";
+    const QString ToggleChannelSurgeMultiplier = "ToggleChannelSurgeMultiplier";
+    const QString ToggleChannelSwayMultiplier = "ToggleChannelSwayMultiplier";
+    const QString ToggleChannelTwistMultiplier = "ToggleChannelTwistMultiplier";
     const QString ToggleFunscriptInvert = "ToggleFunscriptInvert";
     const QString TogglePauseAllDeviceActions = "TogglePauseAllDeviceActions";
     const QString SkipToMoneyShot = "SkipToMoneyShot";
@@ -35,35 +40,41 @@ struct MediaActions
     const QString IncreaseOffset = "IncreaseDelay";
     const QString DecreaseOffset = "DecreaseDelay";
     const QMap<QString, QString> Values {
-        {TogglePause, "Toggle pause"},
-        {Next, "Next video"},
-        {Back, "Previous video"},
-        {FullScreen, "Toggle fullscreen"},
-        {VolumeUp, "Volume up"},
-        {VolumeDown, "Volume down"},
-        {Mute, "Toggle mute"},
-        {Stop, "Stop video"},
-        {Loop, "Toggle loop A/B/off"},
-        {Rewind, "Rewind"},
-        {FastForward, "Fast forward"},
-        {TCodeSpeedUp, "Gamepad speed up"},
-        {TCodeSpeedDown, "Gamepad speed down"},
-        {IncreaseXRange, "Increase stroke range"},
-        {DecreaseXRange, "Decrease stroke range"},
-        {IncreaseXUpperRange, "Increase stroke upper range"},
-        {DecreaseXUpperRange, "Decrease stroke upper range"},
-        {IncreaseXLowerRange, "Increase stroke lower range"},
-        {DecreaseXLowerRange, "Decrease stroke lower range"},
-        {ResetLiveXRange, "Reset stroke range"},
-        {ToggleAxisMultiplier, "Toggle axis multiplier"},
-        {ToggleFunscriptInvert, "Toggle funscript inversion"},
-        {TogglePauseAllDeviceActions, "Toggle pause all device actions"},
+        {TogglePause, "Media: Pause (on/off)"},
+        {Next, "Media: Next video"},
+        {Back, "Media: Previous video"},
+        {FullScreen, "Media: Fullscreen (full/normal)"},
+        {VolumeUp, "Media: Volume up"},
+        {VolumeDown, "Media: Volume down"},
+        {Mute, "Media: Mute (on/off)"},
+        {Stop, "Media: Stop video"},
+        {Loop, "Media: Toggle loop (A/B/off)"},
+        {Rewind, "Media: Rewind"},
+        {FastForward, "Media: Fast forward"},
+        {TCodeSpeedUp, "Gamepad: speed up"},
+        {TCodeSpeedDown, "Gamepad: speed down"},
+        {IncreaseXRange, "TCode: Stroke range limit (increase)"},
+        {DecreaseXRange, "TCode: Stroke range limit (decrease)"},
+        {ResetLiveXRange, "TCode: Stroke range limit reset"},
+        {IncreaseXUpperRange, "TCode: Stroke upper range limit (increase)"},
+        {DecreaseXUpperRange, "TCode: Stroke upper range limit (decrease)"},
+        {IncreaseXLowerRange, "TCode: Stroke lower range limit (increase)"},
+        {DecreaseXLowerRange, "TCode: Stroke lower range limit (decrease)"},
+        {ToggleAxisMultiplier, "TCode: Random motion all (on/off)"},
+        {ToggleChannelRollMultiplier, "TCode: Random motion roll (on/off)"},
+        {ToggleChannelPitchMultiplier, "TCode: Random motion pitch (on/off)"},
+        {ToggleChannelSurgeMultiplier, "TCode: Random motion surge (on/off)"},
+        {ToggleChannelSwayMultiplier, "TCode: Random motion sway (on/off)"},
+        {ToggleChannelTwistMultiplier, "TCode: Random motion twist (on/off)"},
+        {TogglePauseAllDeviceActions, "TCode: Device actions (on/off)"},
         {SkipToMoneyShot, "Skip to moneyshot"},
         {SkipToAction, "Skip to next action"},
-        {IncreaseFunscriptModifier, "Increase funscript modifier"},
-        {DecreaseFunscriptModifier, "Decrease funscript modifier"},
-        {IncreaseOffset, "Increase funscript delay"},
-        {DecreaseOffset, "Decrease funscript delay"}
+        {ToggleFunscriptInvert, "Funscript: inversion (on/off)"},
+        {IncreaseFunscriptModifier, "Funscript: Range modifier (increase)"},
+        {DecreaseFunscriptModifier, "Funscript: Range modifier (decrease)"},
+        {IncreaseOffset, "Funscript: delay (increase)"},
+        {DecreaseOffset, "Funscript: delay (decrease)"},
+        {DecreaseOffset, "Funscript: delay (decrease)"},
     };
 };
 #endif // MEDIAACTIONS_H

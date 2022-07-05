@@ -1576,29 +1576,22 @@ void SettingsHandler::deleteAxis(QString axis)
 void SettingsHandler::setGamePadMapButton(QString gamePadButton, QString axis)
 {
     QMutexLocker locker(&mutex);
-    if(axis != TCodeChannelLookup::None())
+    if(!_gamepadButtonMap[gamePadButton].contains(axis))
     {
-        if(!_gamepadButtonMap[gamePadButton].contains(axis))
-        {
-            _gamepadButtonMap[gamePadButton] << axis;
-        }
+        _gamepadButtonMap[gamePadButton] << axis;
     }
-    else
-        _gamepadButtonMap[gamePadButton].clear();
     settingsChangedEvent(true);
 }
 
 void SettingsHandler::removeGamePadMapButton(QString gamePadButton, QString axis) {
     QMutexLocker locker(&mutex);
-    if(axis != TCodeChannelLookup::None())
-    {
-        if(_gamepadButtonMap[gamePadButton].contains(axis))
-        {
-            _gamepadButtonMap[gamePadButton].removeAll(axis);
-        }
-    }
-    else
-        _gamepadButtonMap[gamePadButton].clear();
+    _gamepadButtonMap[gamePadButton].removeAll(axis);
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::clearGamePadMapButton(QString gamePadButton) {
+    _gamepadButtonMap[gamePadButton].clear();
+    settingsChangedEvent(true);
 }
 
 void SettingsHandler::setInverseTcXL0(bool value)
@@ -1747,7 +1740,6 @@ void SettingsHandler::setupAvailableAxis()
 void SettingsHandler::setupGamepadButtonMap()
 {
     _gamepadButtonMap = {
-        { "None", QStringList() },
         { gamepadAxisNames.LeftXAxis, QStringList(TCodeChannelLookup::Twist()) },
         { gamepadAxisNames.LeftYAxis, QStringList(TCodeChannelLookup::Stroke()) },
         { gamepadAxisNames.RightYAxis, QStringList(TCodeChannelLookup::Pitch())  },

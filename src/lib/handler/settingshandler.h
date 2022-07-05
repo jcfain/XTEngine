@@ -154,6 +154,7 @@ public:
     static void setGamepadEnabled(bool value);
     static void setGamePadMapButton(QString gamePadButton, QString axis);
     static void removeGamePadMapButton(QString gamePadButton, QString axis);
+    static void clearGamePadMapButton(QString gamePadButton);
     static void setAxis(QString axis, ChannelModel channel);
     static void addAxis(ChannelModel channel);
     static void deleteAxis(QString axis);
