@@ -5,8 +5,8 @@ const QMap<TCodeVersion, QString> SettingsHandler::SupportedTCodeVersions = {
     {TCodeVersion::v3, "TCode v0.3"}
 };
 
-const QString SettingsHandler::XTEVersion = QString("0.323a_%1T%2").arg(__DATE__).arg(__TIME__);
-const float SettingsHandler::XTEVersionNum = 0.323f;
+const QString SettingsHandler::XTEVersion = QString("0.324a_%1T%2").arg(__DATE__).arg(__TIME__);
+const float SettingsHandler::XTEVersionNum = 0.324f;
 
 SettingsHandler::SettingsHandler(){}
 SettingsHandler::~SettingsHandler()
@@ -302,6 +302,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.32f) {
             locker.unlock();
             MigrateTo32a(settingsToLoadFrom);
+            Save();
+            Load();
+        }
+        if(currentVersion < 0.324f) {
+            locker.unlock();
+            _availableAxis.remove("None");
             Save();
             Load();
         }
@@ -1690,7 +1696,6 @@ void SettingsHandler::setupAvailableAxis()
     int max = _selectedTCodeVersion == TCodeVersion::v2 ? 999 : 9999;
     int mid = _selectedTCodeVersion == TCodeVersion::v2 ? 500 : 5000;
     _availableAxis = {
-        {TCodeChannelLookup::None(), { "None", TCodeChannelLookup::None(), TCodeChannelLookup::None(), 0, mid, max, 0, mid, max, AxisDimension::None, AxisType::None, "", false, 2.50f, false, 1.0f, false, false, "" } },
         {TCodeChannelLookup::Stroke(), { "Stroke", TCodeChannelLookup::Stroke(), TCodeChannelLookup::Stroke(), 0, mid, max, 0, mid, max, AxisDimension::Heave, AxisType::Range, "", false, 2.50f, false, 1.0f, false, false, TCodeChannelLookup::Twist() } },
         {TCodeChannelLookup::StrokeDown(), { "Stroke Down", TCodeChannelLookup::StrokeDown(), TCodeChannelLookup::Stroke(), 0, mid, max, 0, mid, max, AxisDimension::Heave, AxisType::HalfRange, "", false, 2.50f, false, 1.0f, false, false, TCodeChannelLookup::TwistCounterClockwise() } },
         {TCodeChannelLookup::StrokeUp(), { "Stroke Up", TCodeChannelLookup::StrokeUp(), TCodeChannelLookup::Stroke(), 0, mid, max, 0, mid, max, AxisDimension::Heave, AxisType::HalfRange, "", false, 2.50f, false, 1.0f, false, false, TCodeChannelLookup::TwistClockwise() } },

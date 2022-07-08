@@ -22,10 +22,6 @@ bool TCodeChannelLookup::ChannelExists(QString channel)
 {
     return _selectedTCodeVersionMap.values().contains(channel);
 }
-QString TCodeChannelLookup::None()
-{
-    return _selectedTCodeVersionMap.value(AxisName::None);
-}
 QString TCodeChannelLookup::Stroke()
 {
     return _selectedTCodeVersionMap.value(AxisName::Stroke);
@@ -134,7 +130,6 @@ QString TCodeChannelLookup::SuckLessPosition()
 int TCodeChannelLookup::_channelCount = (int)AxisName::AXIS_NAMES_LENGTH;
 QString TCodeChannelLookup::PositiveModifier = "+";
 QString TCodeChannelLookup::NegativeModifier = "-";
-QString TCodeChannelLookup::NA = "None";
 QString TCodeChannelLookup::L0 = "L0";
 QString TCodeChannelLookup::L2 = "L2";
 QString TCodeChannelLookup::L1 = "L1";
@@ -153,7 +148,6 @@ QHash<TCodeVersion, QMap<AxisName, QString>> TCodeChannelLookup::TCodeVersionMap
     {
         TCodeVersion::v2,
         {
-            {AxisName::None, NA},
             {AxisName::Stroke, L0},
             {AxisName::StrokeUp, L0 + PositiveModifier},
             {AxisName::StrokeDown, L0 + NegativeModifier},
@@ -182,7 +176,6 @@ QHash<TCodeVersion, QMap<AxisName, QString>> TCodeChannelLookup::TCodeVersionMap
     {
         TCodeVersion::v3,
         {
-            {AxisName::None, NA},
             {AxisName::Stroke, L0},
             {AxisName::StrokeUp, L0 + PositiveModifier},
             {AxisName::StrokeDown, L0 + NegativeModifier},

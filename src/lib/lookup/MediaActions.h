@@ -34,6 +34,7 @@ struct MediaActions
     const QString ToggleFunscriptInvert = "ToggleFunscriptInvert";
     const QString TogglePauseAllDeviceActions = "TogglePauseAllDeviceActions";
     const QString SkipToMoneyShot = "SkipToMoneyShot";
+    const QString ToggleSkipToMoneyShotPlaysFunscript = "ToggleSkipToMoneyShotPlaysFunscript";
     const QString SkipToAction = "SkipToAction";
     const QString IncreaseFunscriptModifier = "IncreaseFunscriptModifier";
     const QString DecreaseFunscriptModifier = "DecreaseFunscriptModifier";
@@ -69,6 +70,7 @@ struct MediaActions
         {TogglePauseAllDeviceActions, "TCode: Device actions (on/off)"},
         {SkipToMoneyShot, "Skip to moneyshot"},
         {SkipToAction, "Skip to next action"},
+        {ToggleSkipToMoneyShotPlaysFunscript, "ToggleSkipToMoneyShotPlaysFunscript"},
         {ToggleFunscriptInvert, "Funscript: inversion (on/off)"},
         {IncreaseFunscriptModifier, "Funscript: Range modifier (increase)"},
         {DecreaseFunscriptModifier, "Funscript: Range modifier (decrease)"},

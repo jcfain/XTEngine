@@ -19,7 +19,6 @@ public:
     static void AddUserAxis(QString channel);
     static bool ChannelExists(QString channel);
     static QString ToString(AxisName channel);
-    static QString None();
     static QString Stroke();
     static QString StrokeUp();
     static QString StrokeDown();

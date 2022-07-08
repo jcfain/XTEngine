@@ -5,7 +5,6 @@
 
 enum class AxisName
 {
-    None,
     Stroke,
     StrokeUp,
     StrokeDown,

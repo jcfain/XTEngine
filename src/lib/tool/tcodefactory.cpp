@@ -12,37 +12,34 @@ void TCodeFactory::init()
 
 void TCodeFactory::calculate(QString axisName, double value, QVector<ChannelValueModel> &axisValues)
 {
-    if (axisName != TCodeChannelLookup::None())
+    ChannelModel tcodeAxis = SettingsHandler::getAxis(axisName);
+    bool isNegative = tcodeAxis.AxisName.contains(TCodeChannelLookup::NegativeModifier);
+    //auto isPositive = tcodeAxis.AxisName.contains(TCodeChannelLookup::PositiveModifier);
+    if (_addedAxis->contains(tcodeAxis.Channel) && _addedAxis->value(tcodeAxis.Channel) == 0 && value != 0)
     {
-        ChannelModel tcodeAxis = SettingsHandler::getAxis(axisName);
-        bool isNegative = tcodeAxis.AxisName.contains(TCodeChannelLookup::NegativeModifier);
-        //auto isPositive = tcodeAxis.AxisName.contains(TCodeChannelLookup::PositiveModifier);
-        if (_addedAxis->contains(tcodeAxis.Channel) && _addedAxis->value(tcodeAxis.Channel) == 0 && value != 0)
+        _addedAxis->remove(tcodeAxis.Channel);
+        const ChannelValueModel cvm = boolinq::from(axisValues).firstOrDefault([tcodeAxis](const ChannelValueModel &x) { return x.Channel == tcodeAxis.Channel; });
+        axisValues.removeOne(cvm);
+    }
+    if (!boolinq::from(axisValues).any([tcodeAxis](const ChannelValueModel &x) { return x.Channel == tcodeAxis.Channel; }))
+    {
+        double calculatedValue = value;
+        if (isNegative && value > 0)
         {
-            _addedAxis->remove(tcodeAxis.Channel);
-            const ChannelValueModel cvm = boolinq::from(axisValues).firstOrDefault([tcodeAxis](const ChannelValueModel &x) { return x.Channel == tcodeAxis.Channel; });
-            axisValues.removeOne(cvm);
+            calculatedValue = -(value);
         }
-        if (!boolinq::from(axisValues).any([tcodeAxis](const ChannelValueModel &x) { return x.Channel == tcodeAxis.Channel; }))
+        if (value != 0 &&
+            (((tcodeAxis.AxisName == TCodeChannelLookup::Stroke() || tcodeAxis.AxisName == TCodeChannelLookup::StrokeUp() || tcodeAxis.AxisName == TCodeChannelLookup::StrokeDown()) && SettingsHandler::getInverseTcXL0()) ||
+            ((tcodeAxis.AxisName == TCodeChannelLookup::Pitch() || tcodeAxis.AxisName == TCodeChannelLookup::PitchForward() || tcodeAxis.AxisName == TCodeChannelLookup::PitchBack()) && SettingsHandler::getInverseTcXRollR2()) ||
+            ((tcodeAxis.AxisName == TCodeChannelLookup::Roll() || tcodeAxis.AxisName == TCodeChannelLookup::RollLeft() || tcodeAxis.AxisName == TCodeChannelLookup::RollRight()) && SettingsHandler::getInverseTcYRollR1())))
         {
-            double calculatedValue = value;
-            if (isNegative && value > 0)
-            {
-                calculatedValue = -(value);
-            }
-            if (value != 0 &&
-                (((tcodeAxis.AxisName == TCodeChannelLookup::Stroke() || tcodeAxis.AxisName == TCodeChannelLookup::StrokeUp() || tcodeAxis.AxisName == TCodeChannelLookup::StrokeDown()) && SettingsHandler::getInverseTcXL0()) ||
-                ((tcodeAxis.AxisName == TCodeChannelLookup::Pitch() || tcodeAxis.AxisName == TCodeChannelLookup::PitchForward() || tcodeAxis.AxisName == TCodeChannelLookup::PitchBack()) && SettingsHandler::getInverseTcXRollR2()) ||
-                ((tcodeAxis.AxisName == TCodeChannelLookup::Roll() || tcodeAxis.AxisName == TCodeChannelLookup::RollLeft() || tcodeAxis.AxisName == TCodeChannelLookup::RollRight()) && SettingsHandler::getInverseTcYRollR1())))
-            {
-                calculatedValue = -(value);
-            }
-            axisValues.append({
-                calculateTcodeRange(calculatedValue, tcodeAxis),
-                tcodeAxis.Channel
-            });
-            _addedAxis->insert(tcodeAxis.Channel, value);
+            calculatedValue = -(value);
         }
+        axisValues.append({
+            calculateTcodeRange(calculatedValue, tcodeAxis),
+            tcodeAxis.Channel
+        });
+        _addedAxis->insert(tcodeAxis.Channel, value);
     }
 }
 
