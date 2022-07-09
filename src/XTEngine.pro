@@ -22,6 +22,7 @@ SOURCES += \
     lib/handler/medialibraryhandler.cpp \
     lib/handler/outputdevicehandler.cpp \
     lib/handler/serialhandler.cpp \
+    lib/handler/settingsactionhandler.cpp \
     lib/handler/settingshandler.cpp \
     lib/handler/synchandler.cpp \
     lib/handler/tcodehandler.cpp \
@@ -52,6 +53,7 @@ HEADERS += \
     lib/handler/medialibraryhandler.h \
     lib/handler/outputdevicehandler.h \
     lib/handler/serialhandler.h \
+    lib/handler/settingsactionhandler.h \
     lib/handler/settingshandler.h \
     lib/handler/synchandler.h \
     lib/handler/tcodehandler.h \
