@@ -23,7 +23,7 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
             int position = action->pos;
             LogHandler::Debug("Stroke pos: " + QString::number(position) + ", at: " + QString::number(action->at));
             int speed = action->speed;
-            if (FunscriptHandler::getInverted() || SettingsHandler::getChannelInverseChecked(TCodeChannelLookup::Stroke()))
+            if (FunscriptHandler::getInverted() || SettingsHandler::getChannelFunscriptInverseChecked(TCodeChannelLookup::Stroke()))
             {
                 position = XMath::reverseNumber(position, 0, 100);
             }
@@ -53,7 +53,7 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
                 std::shared_ptr<FunscriptAction> axisAction = otherActions.value(axis);
                 int position = axisAction->pos;
                 LogHandler::Debug("MFS: "+ axisModel.FriendlyName + " pos: " + QString::number(position) + ", at: " + QString::number(axisAction->at));
-                if (axisModel.Inverted)
+                if (axisModel.FunscriptInverted)
                 {
                     position = XMath::reverseNumber(position, 0, 100);
                 }
@@ -78,7 +78,7 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
                 continue;
             if(!availibleAxis->contains(axis))
                 continue;
-            ChannelModel channel = availibleAxis->value(axis);
+            ChannelModel33 channel = availibleAxis->value(axis);
             if (channel.Dimension == AxisDimension::Heave || channel.Type == AxisType::HalfRange || channel.Type == AxisType::None)
                 continue;
             if (SettingsHandler::getFunscriptLoaded(axis))
@@ -130,7 +130,7 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
                         continue;
                     }
                     //LogHandler::Debug("Multiplier: "+ channel.FriendlyName + " pos: " + QString::number(value) + ", at: " + QString::number(currentAction->at));
-                    if ((channel.Inverted && channel.LinkToRelatedMFS) || (SettingsHandler::getChannelInverseChecked(TCodeChannelLookup::Stroke()) && !channel.Inverted && !channel.LinkToRelatedMFS) )
+                    if ((channel.FunscriptInverted && channel.LinkToRelatedMFS) || (SettingsHandler::getChannelFunscriptInverseChecked(TCodeChannelLookup::Stroke()) && !channel.FunscriptInverted && !channel.LinkToRelatedMFS) )
                     {
                         //LogHandler::Debug("inverted: "+ QString::number(value));
                         value = XMath::reverseNumber(value, 0, 100);
@@ -225,12 +225,12 @@ QString TCodeHandler::getChannelHome(QString channel)
 {
     QString tcode = "";
     auto availibleAxis = SettingsHandler::getAvailableAxis();
-    ChannelModel channelModel = availibleAxis->value(channel);
+    ChannelModel33 channelModel = availibleAxis->value(channel);
     getChannelHome(channelModel, tcode);
     return tcode;
 }
 
-void TCodeHandler::getChannelHome(ChannelModel channel, QString &tcode)
+void TCodeHandler::getChannelHome(ChannelModel33 channel, QString &tcode)
 {
     if(channel.Type == AxisType::HalfRange || channel.Type == AxisType::None || channel.Channel == TCodeChannelLookup::Suck() || channel.Channel == TCodeChannelLookup::SuckPosition()) {
         return;

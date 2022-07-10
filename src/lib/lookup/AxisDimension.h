@@ -2,6 +2,7 @@
 #define AXISDIMENSION_H
 #include <QString>
 #include <QMap>
+#include <QVariant>
 
 enum class AxisDimension
 {
@@ -24,4 +25,6 @@ const QMap<QString, AxisDimension> AxisDimensions =
     {"Roll", AxisDimension::Roll},
     {"Yaw", AxisDimension::Yaw}
 };
+
+Q_DECLARE_METATYPE(AxisDimension);
 #endif // AXISDIMENSION_H

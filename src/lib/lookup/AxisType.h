@@ -2,6 +2,7 @@
 #define AXISTYPE_H
 #include <QString>
 #include <QMap>
+#include <QVariant>
 
 enum class AxisType
 {
@@ -18,4 +19,6 @@ const QMap<QString, AxisType> AxisTypes =
     {"Switch", AxisType::Switch},
     {"Half range", AxisType::HalfRange}
 };
+
+Q_DECLARE_METATYPE(AxisType);
 #endif // AXISTYPE_H

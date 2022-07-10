@@ -2,7 +2,7 @@
 #define TCODEFACTORY_H
 #include <QString>
 #include <QHash>
-#include "../struct/ChannelModel.h"
+#include "../struct/ChannelModel33.h"
 #include "../handler/settingshandler.h"
 #include "../lookup/AxisNames.h"
 #include "boolinq.h"
@@ -17,7 +17,7 @@ public:
     QString formatTCode(QVector<ChannelValueModel>* values);
 
 private:
-    int calculateTcodeRange(double value, ChannelModel channel);
+    int calculateTcodeRange(double value, ChannelModel33 channel);
     int calculateGamepadSpeed(double gpIn);
 
     QHash<QString, double>* _addedAxis = new QHash<QString, double>();

@@ -43,6 +43,8 @@ private:
     QHash<QString, QVariant>* _gamepadState = nullptr;
     QMutex _mutex;
     QWaitCondition _cond;
+
+    XTimer listenForInputTimer;
     int _waitTimeout = 0;
     bool _stop = false;
     bool _isConnected = false;

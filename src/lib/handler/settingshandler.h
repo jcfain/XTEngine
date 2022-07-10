@@ -19,6 +19,7 @@
 #include "../lookup/xvideorenderer.h"
 #include "../tool/xmath.h"
 #include "../struct/ChannelModel.h"
+#include "../struct/ChannelModel33.h"
 #include "../struct/DecoderModel.h"
 #include "../struct/LibraryListItem.h"
 #include "../struct/LibraryListItem27.h"
@@ -85,11 +86,8 @@ public:
     ///Returns assigned gamepad buttons per action
     static QMap<QString, QStringList> getGamePadMapInverse();
     static QStringList getGamePadMapButton(QString gamepadButton);
-    static QMap<QString, ChannelModel>* getAvailableAxis();
-    static ChannelModel getAxis(QString axis);
-    static bool getInverseTcXL0();
-    static bool getInverseTcXRollR2();
-    static bool getInverseTcYRollR1();
+    static QMap<QString, ChannelModel33>* getAvailableAxis();
+    static ChannelModel33 getAxis(QString axis);
     static int getGamepadSpeed();
     static int getLiveGamepadSpeed();
     static int getGamepadSpeedIncrement();
@@ -132,8 +130,10 @@ public:
     static bool getMultiplierChecked(QString channel);
     static void setMultiplierChecked(QString channel, bool value);
 
-    static bool getChannelInverseChecked(QString channel);
-    static void setChannelInverseChecked(QString channel, bool value);
+    static bool getChannelFunscriptInverseChecked(QString channel);
+    static void setChannelFunscriptInverseChecked(QString channel, bool value);
+    static bool getChannelGamepadInverse(QString channel);
+    static void setChannelGamepadInverse(QString channel, bool value);
 
     static float getDamperValue(QString channel);
     static void setDamperValue(QString channel, float value);
@@ -155,12 +155,9 @@ public:
     static void setGamePadMapButton(QString gamePadButton, QString axis);
     static void removeGamePadMapButton(QString gamePadButton, QString axis);
     static void clearGamePadMapButton(QString gamePadButton);
-    static void setAxis(QString axis, ChannelModel channel);
-    static void addAxis(ChannelModel channel);
+    static void setAxis(QString axis, ChannelModel33 channel);
+    static void addAxis(ChannelModel33 channel);
     static void deleteAxis(QString axis);
-    static void setInverseTcXL0(bool value);
-    static void setInverseTcXRollR2(bool value);
-    static void setInverseTcYRollR1(bool value);
     static void setGamepadSpeed(int value);
     static void setGamepadSpeedStep(int value);
     static void setLiveGamepadSpeed(int value);
@@ -307,7 +304,8 @@ private:
     static bool _settingsChanged;
     static void settingsChangedEvent(bool dirty);
     static void SetMapDefaults();
-    static void setupAvailableAxis();
+    static void setupAvailableChannels();
+    static ChannelModel33 setupAvailableChannel(QString friendlyName, QString axisName, QString channel, AxisDimension dimension, AxisType type, QString mfsTrackName, QString relatedChannel);
     static void setupGamepadButtonMap();
     static void MigrateTo23();
     static void MigrateTo25();
@@ -317,6 +315,7 @@ private:
     static void MigrateTo263();
     static void MigrateToQVariant(QSettings* settingsToLoadFrom);
     static void MigrateToQVariant2(QSettings* settingsToLoadFrom);
+    static void MigrateToQVariantChannelModel(QSettings* settingsToLoadFrom);
     static void MigrateTo281();
     static void DeMigrateLibraryMetaDataTo258();
     static void MigrateTo32a(QSettings* settingsToLoadFrom);
@@ -354,10 +353,7 @@ private:
     static bool _gamePadEnabled;
     static QMap<QString, QStringList> _gamepadButtonMap;
     static QMap<QString, QStringList> _inverseGamePadMap;
-    static QMap<QString, ChannelModel> _availableAxis;
-    static bool _inverseStroke;
-    static bool _inversePitch;
-    static bool _inverseRoll;
+    static QMap<QString, ChannelModel33> _availableAxis;
     static int _gamepadSpeed;
     static int _gamepadSpeedStep;
     static int _liveGamepadSpeed;

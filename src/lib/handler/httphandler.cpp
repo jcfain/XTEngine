@@ -141,7 +141,8 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
             value["damperValue"] = availableAxis->value(channel).DamperValue;
             value["dimension"] = (int)availableAxis->value(channel).Dimension;
             value["friendlyName"] = availableAxis->value(channel).FriendlyName;
-            value["inverted"] = availableAxis->value(channel).Inverted;
+            value["funscriptInverted"] = availableAxis->value(channel).FunscriptInverted;
+            value["gamepadInverted"] = availableAxis->value(channel).GamepadInverted;
             value["linkToRelatedMFS"] = availableAxis->value(channel).LinkToRelatedMFS;
             value["max"] = availableAxis->value(channel).Max;
             value["mid"] = availableAxis->value(channel).Mid;
@@ -203,7 +204,7 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
             if(channels->value(channel).Type == AxisType::HalfRange || channels->value(channel).Type == AxisType::None)
                 continue;
             auto value = doc["availableAxis"][channel];
-            ChannelModel channelModel = {
+            ChannelModel33 channelModel = {
                 value["friendlyName"].toString(),//QString FriendlyName;
                 value["axisName"].toString(),//QString AxisName;
                 value["channel"].toString(),//QString Channel;
@@ -220,7 +221,8 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
                 float(value["multiplierValue"].toDouble()),//float MultiplierValue;
                 value["damperEnabled"].toBool(),//bool DamperEnabled;
                 float(value["damperValue"].toDouble()),//float DamperValue;
-                value["inverted"].toBool(),//bool Inverted;
+                value["funscriptInverted"].toBool(),//bool FunscriptInverted;
+                value["gamepadInverted"].toBool(),//bool GamepadInverted;
                 value["linkToRelatedMFS"].toBool(),//bool LinkToRelatedMFS;
                 value["relatedChannel"].toString()//QString RelatedChannel;
             };

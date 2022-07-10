@@ -76,6 +76,7 @@ HEADERS += \
     lib/lookup/xvideorenderer.h \
     lib/struct/Bookmark.h \
     lib/struct/ChannelModel.h \
+    lib/struct/ChannelModel33.h \
     lib/struct/ConnectionChangedSignal.h \
     lib/struct/DecoderModel.h \
     lib/struct/Funscript.h \

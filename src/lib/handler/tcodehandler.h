@@ -1,7 +1,7 @@
 #ifndef TCODEHANDLER_H
 #define TCODEHANDLER_H
 #include "../struct/Funscript.h"
-#include "../struct/ChannelModel.h"
+#include "../struct/ChannelModel33.h"
 #include "../struct/GamepadState.h"
 #include "../lookup/tcodechannellookup.h"
 #include "../lookup/AxisNames.h"
@@ -29,7 +29,7 @@ public:
 
 private:
     QMutex mutex;
-    void getChannelHome(ChannelModel channel, QString &tcode);
+    void getChannelHome(ChannelModel33 channel, QString &tcode);
 };
 
 #endif // TCODEHANDLER_H
