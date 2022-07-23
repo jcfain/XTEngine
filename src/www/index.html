@@ -43,6 +43,9 @@
 			</div> -->
 	<div id="body-container" class="body-container">
 		<div class="video-container" id="video-container">
+			<div class="loading-animation hidden" id="loading-animation" >
+				<div class="loading-spinner"></div>
+			</div>
 			<div class="playback-animation" id="playback-animation">
 				<svg class="playback-icons">
 					<use class="hidden" href="#play-icon"></use>
@@ -53,18 +56,22 @@
 				<source id="videoSource" />
 				Your browser doesn't support HTML5 video tag.
 			</video>
-			<div class="video-controls hidden" id="video-controls">
-				<div class="top-controls">
-					<div class="left-controls">
-					</div>
-					<div class="middle-controls">
-					</div>
-					<div class="right-controls">
-						<button data-title="Exit (a)" class="video-control video-control--action-end" id="exit-action">
-							<img class="player-button-png" height="16px" width="16px" src="://images/icons/x.svg"></img>
-						</button>
-					</div>
+			<div class="video-controls top-controls hidden">
+				<div class="left-controls">
 				</div>
+				<div class="middle-controls">
+				</div>
+				<div class="right-controls">
+					<button data-title="Exit (a)" class="video-control video-control--action-end" id="exit-action">
+						<svg style="color: white" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16"> <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" fill="white"></path> </svg>
+					</button>
+			<!-- 		Need to put the menu in the video container for this to work in full screen.
+				<button id="settingsOverlayButton" class="video-control video-control--action-end" onclick="openSettings()">
+						<image class="buttonImage" src="://images/icons/settings.svg" />
+					</button> -->
+				</div>
+			</div>
+			<div class="video-controls hidden" id="video-controls">
 				<div class="time">
 					<time id="time-elapsed">00:00</time>
 					<span> / </span>

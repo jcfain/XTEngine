@@ -225,7 +225,7 @@ input:hover {
     height: 24px;
     left: calc(100vw - 35vw);
     position: absolute;
-    z-index: 100;
+    z-index: 10;
 }
 
 .media-item:hover {
@@ -332,7 +332,7 @@ input:hover {
     position: fixed;
     left: calc(100vw - 85px);
     margin-top: 16px;
-    z-index: 100;
+    z-index: 10;
 } 
 
 .range-slider {
@@ -432,7 +432,7 @@ section>.range-values {
     opacity: 0;
     visibility: hidden;
     position: fixed;
-    z-index: 150;
+    z-index: 15;
     left: 0;
     top: 0;
     width: 100%;
@@ -610,10 +610,11 @@ section>.range-values {
     .formElement {
         grid-template-columns: 40% 60%;
     }
-
-    /* .media-filter-input {
-        width: 100vw;
-    } */
+    
+    .media-filter-input {
+        width: 50vw;
+        left: 25vw;
+    }
 }
 
 

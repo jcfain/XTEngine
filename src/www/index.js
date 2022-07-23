@@ -99,9 +99,11 @@ toggleExternalStreaming(externalStreaming, false);
 
 const skipToMoneyShotButton = document.getElementById('money-shot');
 const skipToNextActionButton = document.getElementById('next-action');
+const exitVideoButton = document.getElementById('exit-action');
 skipToMoneyShotButton.addEventListener("click", sendSkipToMoneyShot);
 skipToMoneyShotButton.addEventListener("click", onSkipToMoneyShotClick);
 skipToNextActionButton.addEventListener("click", sendSkipToNextActionClick);
+exitVideoButton.addEventListener("click", stopVideoClick);
 videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
 videoNode.addEventListener("loadeddata", onVideoLoad);
 videoNode.addEventListener("play", onVideoPlay);
@@ -427,7 +429,7 @@ function getServerSettings() {
 function startServerConnectionRetry() {
 	stopServerConnectionRetry();
 	setMediaLoading();
-	setMediaLoadingStatus("Looks like XTP was shut down.\nWaiting for reconnect...");
+	setMediaLoadingStatus("Waiting for reconnect...");
 	serverRetryTimeoutTries++;
 	if (serverRetryTimeoutTries < 100) {
 		serverRetryTimeout = setTimeout(() => {
@@ -1135,6 +1137,7 @@ function playVideo(obj) {
 				return;
 			clearPlayingMediaItem();
 		}
+		dataLoading();
 		setPlayingMediaItem(obj);
 		videoSourceNode.setAttribute("src", "/media" + obj.relativePath);
 		videoNode.setAttribute("title", obj.name);
@@ -1161,9 +1164,17 @@ function playVideo(obj) {
 	}
 }
 
+function stopVideoClick() {
+	stopVideo();
+}
 function stopVideo() {
-	videoNode.pause();
 	hideVideo();
+	hideControls();
+	//videoNode.pause();
+	videoSourceNode.setAttribute("src", "");
+	videoNode.removeAttribute("title");
+	videoNode.removeAttribute("poster");
+	videoNode.load();
 	if (playingmediaItem)
 		clearPlayingMediaItem()
 }
@@ -1219,33 +1230,45 @@ function onVideoTimeUpdate(event) {
 		timer2 = Date.now();
 	}
 }
+function onVideoLoading(event) {
+	debug("Data loading");
+	dataLoading();
+	if(playingmediaItem)
+		playingmediaItem.loaded = false;
+}
 function onVideoLoad(event) {
-	console.log("Data loaded")
-	console.log("Duration: " + videoNode.duration)
-	playingmediaItem.loaded = true;
+	debug("Data loaded");
+	debug("Duration: " + videoNode.duration)
+	if(playingmediaItem)
+		playingmediaItem.loaded = true;
 }
 function onVideoPlay(event) {
-	console.log("Video play")
-	playingmediaItem.playing = true;
+	debug("Video play");
+	if(playingmediaItem)
+		playingmediaItem.playing = true;
 	// if(!funscriptSyncWorker && loadedFunscripts && loadedFunscripts.length > 0)
 	// 	startFunscriptSync(loadedFunscripts);
 	sendMediaState();
 }
 function onVideoPause(event) {
-	console.log("Video pause")
-	playingmediaItem.playing = false;
+	debug("Video pause");
+	if(playingmediaItem)
+		playingmediaItem.playing = false;
 	//setTimeout(function() {
 	sendMediaState();// Sometimes a timeupdate is sent after this event fires?
 	//}, 500);
 }
 function onVideoStall(event) {
-	console.log("Video stall")
-	playingmediaItem.playing = false;
+	debug("Video stall");
+	dataLoading();
+	if(playingmediaItem)
+		playingmediaItem.playing = false;
 	sendMediaState();
 }
 function onVideoPlaying(event) {
-	console.log("Video playing")
-	playingmediaItem.playing = true;
+	debug("Video playing");
+	if(playingmediaItem)
+		playingmediaItem.playing = true;
 	sendMediaState();
 }
 function onVolumeChange() {
@@ -1264,8 +1287,14 @@ function playNextVideoClick() {
 	playNextVideo();
 }
 function playNextVideo() {
-	var playingIndex = sortedMedia.findIndex(x => x.path === playingmediaItem.path);
-	playingIndex++;
+	if(sortedMedia.length == 0)
+		return;
+	if(playingmediaItem) {
+		var playingIndex = sortedMedia.findIndex(x => x.path === playingmediaItem.path);
+		playingIndex++;
+	} else {
+		playingIndex = 0;
+	}
 	if (playingIndex < sortedMedia.length)
 		playVideo(sortedMedia[playingIndex]);
 	else
@@ -1277,8 +1306,14 @@ function playPreviousVideoClick() {
 	playPreviousVideo();
 }
 function playPreviousVideo() {
-	var playingIndex = sortedMedia.findIndex(x => x.path === playingmediaItem.path);
-	playingIndex--;
+	if(sortedMedia.length == 0)
+		return;
+	if(playingmediaItem) {
+		var playingIndex = sortedMedia.findIndex(x => x.path === playingmediaItem.path);
+		playingIndex--;
+	} else {
+		playingIndex = -1;
+	}
 	if (playingIndex < 0)
 		playVideo(sortedMedia[sortedMedia.length - 1]);
 	else
@@ -1872,9 +1907,7 @@ function keyboardShortcuts(event) {
 			if (videoNode.paused) {
 				showControls();
 			} else {
-				setTimeout(() => {
-					hideControls();
-				}, 2000);
+				hideControls();
 			}
 			break;
 		case 'm':

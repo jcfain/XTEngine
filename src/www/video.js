@@ -17,7 +17,7 @@ var isFullScreen = false;
 */
 
 // Select elements here
-const videoControls = document.getElementById('video-controls');
+const videoControls = document.getElementsByClassName('video-controls');
 const playButton = document.getElementById('play');
 const playIcon = document.getElementById('playIcon');
 const pauseIcon = document.getElementById('pauseIcon');
@@ -38,12 +38,15 @@ const videoContainer = document.getElementById('video-container');
 const fullscreenButton = document.getElementById('fullscreen-button');
 const fullscreenIcons = fullscreenButton.querySelectorAll('use');
 const pipButton = document.getElementById('pip-button');
+const loadingAnimation = document.getElementById('loading-animation');
 
 const videoWorks = !!document.createElement('video').canPlayType;
 if (videoWorks) {
 	videoNode.controls = false;
-	videoControls.classList.add('hide');
-	videoControls.classList.remove('hidden');
+	for (let item of videoControls) {
+		item.classList.add('hide');
+		item.classList.remove('hidden');
+	}
 }
 
 // Add functions here
@@ -238,7 +241,7 @@ function toggleFullScreenClick() {
 // If the browser is currently in fullscreen mode,
 // then it should exit and vice versa.
 function toggleFullScreen() {
-	if(!videoNode.classList.contains("video-shown")) {
+	if(!isVideoShown()) {
 		return;
 	}
 	if (!showEmbedded())
@@ -246,6 +249,7 @@ function toggleFullScreen() {
 }
 
 function showEmbedded() {
+	videoNode.classList.add("video", "video-shown-embeded")
 	if (document.fullscreenElement) {
 		document.exitFullscreen();
 		return true;
@@ -257,7 +261,7 @@ function showEmbedded() {
 	return false;
 }
 function showFullScreen() {
-	if(!videoNode.classList.contains("video-shown")) {
+	if(!isVideoShown()) {
 		return;
 	}
 	if (videoContainer.webkitRequestFullscreen) {
@@ -266,6 +270,7 @@ function showFullScreen() {
 	} else if(videoContainer.requestFullscreen) {
 		videoContainer.requestFullscreen();
 	}
+	videoNode.classList.remove("video", "video-shown-embeded")
 }
 
 // updateFullscreenButton changes the icon of the full screen button
@@ -275,11 +280,9 @@ function updateFullscreenButton() {
 
 	if (document.fullscreenElement) {
 		fullscreenButton.setAttribute('data-title', 'Exit full screen (f)');
-        videoNode.classList.remove("video", "video-shown-embeded")
 		isFullScreen = true;
 	} else {
 		fullscreenButton.setAttribute('data-title', 'Full screen (f)');
-        videoNode.classList.add("video", "video-shown-embeded")
 		isFullScreen = false;
 	}
 }
@@ -300,13 +303,16 @@ async function togglePip() {
 	}
 }
 
-function hideControls() {
+function hideControlsEvent() {
 	if (videoNode.paused) {
 		return;
 	}
+	hideControls();
+}
+function hideControls() {
+	for (let item of videoControls) 
+		item.classList.add('hide');
 	controlsVisible = false;
-
-	videoControls.classList.add('hide');
 }
 
 
@@ -314,12 +320,13 @@ function showControls() {
     setTimeout(function () {
 		controlsVisible = true;
     }, 500);
-	videoControls.classList.remove('hide');
+	for (let item of videoControls) 
+		item.classList.remove('hide');
     if(controlsHideDebounce) {
         clearTimeout(controlsHideDebounce);
     }
     controlsHideDebounce = setTimeout(function () {
-        hideControls();
+        hideControlsEvent();
     }, 3000);
 }
 
@@ -355,8 +362,22 @@ function showVideo() {
 }
 
 function hideVideo() {
-	showEmbedded();
+	if(isFullScreen)
+		showEmbedded();
+	videoContainer.classList.remove('video-container-fixed');
 	videoNode.classList.remove("video-shown", "video-shown-embeded");
+}
+
+function isVideoShown() {
+	return videoNode.classList.contains("video-shown");
+}
+
+function dataLoaded() {
+	loadingAnimation.classList.add('hidden');
+}
+function dataLoading() {
+	if(isVideoShown())
+		loadingAnimation.classList.remove('hidden');
 }
 
 function checkInView(container, element, partial) {
@@ -383,6 +404,8 @@ function checkInView(container, element, partial) {
 // Add eventlisteners here
 playButton.addEventListener('click', togglePlay);
 videoNode.addEventListener('play', updatePlayButton);
+videoNode.addEventListener('loadeddata', hideControls);
+videoNode.addEventListener('loadeddata', dataLoaded);
 videoNode.addEventListener('pause', updatePlayButton);
 videoNode.addEventListener('loadedmetadata', initializeVideo);
 videoNode.addEventListener('timeupdate', updateTimeElapsed);
@@ -391,12 +414,10 @@ videoNode.addEventListener('volumechange', updateVolumeIcon);
 //videoNode.addEventListener('click', videoNodeClick);
 //videoNode.addEventListener('click', animatePlaybackVideoNodeClick);
 videoContainer.addEventListener('mouseenter', showControls);
-videoContainer.addEventListener('mouseleave', hideControls);
+videoContainer.addEventListener('mouseleave', hideControlsEvent);
 videoContainer.addEventListener('mouseenter', mouseEnterVideo);
 videoContainer.addEventListener('mouseleave', mouseLeaveVideo);
 videoContainer.addEventListener('mousemove', showControlsIfMouseInVideo);
-// videoControls.addEventListener('mouseenter', showControls);
-// videoControls.addEventListener('mouseleave', hideControls);
 seek.addEventListener('mousemove', updateSeekTooltip);
 seek.addEventListener('input', skipAhead);
 volumeSlider.addEventListener('input', updateVolume);
@@ -431,13 +452,21 @@ if(screen.orientation) {
 	}
   })
 }
-
+var scrollEventLimiter;
 bodyContainer.addEventListener('scroll', (event) => {
-	if(!checkInView(bodyContainer, videoContainer, false)) {
-		videoContainer.classList.add('video-container-fixed');
-	} else {
-		videoContainer.classList.remove('video-container-fixed');
-	}
+	if(scrollEventLimiter)
+		clearTimeout(scrollEventLimiter);
+	scrollEventLimiter = setTimeout(() => {
+		scrollEventLimiter = undefined;
+		if(isVideoShown())
+		{
+			if(!checkInView(bodyContainer, videoContainer, false)) {
+				videoContainer.classList.add('video-container-fixed');
+			} else {
+				videoContainer.classList.remove('video-container-fixed');
+			}
+		}
+	}, 50);
 });
 
 videoNode.volume = volume ? volume : 0.5;
