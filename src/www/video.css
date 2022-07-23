@@ -6,7 +6,6 @@
 
 .video-container {
     border-radius: 4px;
-    margin: 0 auto;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -99,6 +98,12 @@ progress::-webkit-progress-value {
     font-weight: bold;
     color: #fff;
     background-color: rgba(0, 0, 0, 0.6);
+}
+
+.top-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .bottom-controls {
@@ -250,6 +255,14 @@ button.video-control:hover {
     opacity: 0;
 }
 
+.video-container-fixed {
+    position: fixed;
+    left: 2%;
+    top: 2%;
+    z-index: 200;
+    width: 45vw;
+}
+
 .video-container input[type=range] {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -341,4 +354,17 @@ button.video-control:hover {
     fill: #fff;
     stroke: #fff;
     cursor: pointer;
+}
+
+
+
+/* @media only screen and (max-width: 1026px) {
+    #volume {
+        display: none;
+    }
+}  */
+@media (max-width: 1130px) and (min-width: 280px) {
+    .video-container-fixed {
+        width: 35vw;
+    }
 }

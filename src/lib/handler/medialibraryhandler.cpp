@@ -421,8 +421,8 @@ void MediaLibraryHandler::stopThumbProcess()
         }
         if(_extractor) {
             disconnect(_extractor, nullptr,  nullptr, nullptr);
-            delete _extractor;
-            _extractor = 0;
+//            delete _extractor;
+//            _extractor = 0;
         }
 //        delete _thumbNailPlayer;
     }

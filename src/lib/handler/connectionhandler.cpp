@@ -41,12 +41,6 @@ void ConnectionHandler::dispose()
         _initFuture.cancel();
         _initFuture.waitForFinished();
     }
-//    delete _serialHandler;
-//    delete _udpHandler;
-//    delete _deoHandler;
-//    delete _whirligigHandler;
-//    delete _xtpWebHandler;
-//    delete _gamepadHandler;
 }
 
 bool ConnectionHandler::isOutputDeviceConnected()
@@ -248,12 +242,6 @@ void ConnectionHandler::on_input_connectionChanged(ConnectionChangedSignal event
         SettingsHandler::setSelectedInputDevice(event.deviceName);
     }
     ConnectionChangedSignal status = {event.type, event.deviceName, event.status, event.message};
-//    if(event.deviceName == DeviceName::Deo)
-//        emit deoDeviceConnectionChange(status);
-//    else if(event.deviceName == DeviceName::Whirligig)
-//        emit whirligigDeviceConnectionChange(status);
-//    else if(event.deviceName == DeviceName::XTPWeb)
-//        emit xtpWebDeviceConnectionChange(status);
     emit inputConnectionChange(status);
     emit connectionChange(status);
 }
@@ -270,10 +258,6 @@ void ConnectionHandler::on_output_connectionChanged(ConnectionChangedSignal even
         SettingsHandler::setSelectedOutputDevice(event.deviceName);
     }
     ConnectionChangedSignal status = {event.type, event.deviceName, event.status, event.message};
-//    if(event.deviceName == DeviceName::Serial)
-//        emit serialDeviceConnectionChange(status);
-//    else if(event.deviceName == DeviceName::Network)
-//        emit udpDeviceConnectionChange(status);
     emit outputConnectionChange(status);
     emit connectionChange(status);
 }

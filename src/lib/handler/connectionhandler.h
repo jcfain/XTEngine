@@ -27,16 +27,6 @@ signals:
     void gamepadAction(QString action);
     void gamepadTCode(QString tcode);
     void serialPortFound(QString portFriendlyName, QString portName);
-//    void serialDeviceError(QString error);
-//    void serialDeviceConnectionChange(ConnectionChangedSignal event);
-//    void udpDeviceError(QString error);
-//    void udpDeviceConnectionChange(ConnectionChangedSignal event);
-//    void deoDeviceError(QString error);
-//    void deoDeviceConnectionChange(ConnectionChangedSignal event);
-//    void whirligigDeviceError(QString error);
-//    void whirligigDeviceConnectionChange(ConnectionChangedSignal event);
-//    void xtpWebDeviceError(QString error);
-//    void xtpWebDeviceConnectionChange(ConnectionChangedSignal event);
     void gamepadConnectionChange(ConnectionChangedSignal event);
 public slots:
     void inputMessageSend(QByteArray message);

@@ -47,7 +47,6 @@ var mediaListGlobal = [];
 var sortedMedia = [];
 var playingmediaItem;
 var playingmediaItemNode;
-var resizeObserver;
 var webSocket;
 var deviceAddress;
 var funscriptChannels = [];
@@ -77,6 +76,7 @@ document.addEventListener('keyup', keyboardShortcuts);
 getBrowserInformation();
 var userAgentIsDeo = userAgent.indexOf("Deo VR") != -1;
 var userAgentIsHereSphere = userAgent.indexOf("HereSphere") != -1;
+var userAgentIsMobile = userAgent.indexOf("Mobile") != -1;
 setDeoStyles(userAgentIsDeo);
 var settingsNode = document.getElementById("settingsModal");
 var thumbsContainerNode = document.getElementById("thumbsContainer");
@@ -100,8 +100,8 @@ toggleExternalStreaming(externalStreaming, false);
 const skipToMoneyShotButton = document.getElementById('money-shot');
 const skipToNextActionButton = document.getElementById('next-action');
 skipToMoneyShotButton.addEventListener("click", sendSkipToMoneyShot);
-skipToMoneyShotButton.addEventListener("click", onSkipToMoneyShot);
-skipToNextActionButton.addEventListener("click", sendSkipToNextAction);
+skipToMoneyShotButton.addEventListener("click", onSkipToMoneyShotClick);
+skipToNextActionButton.addEventListener("click", sendSkipToNextActionClick);
 videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
 videoNode.addEventListener("loadeddata", onVideoLoad);
 videoNode.addEventListener("play", onVideoPlay);
@@ -113,9 +113,9 @@ videoNode.addEventListener("volumechange", onVolumeChange);
 videoNode.addEventListener("ended", onVideoEnd);
 
 const playNextButton = document.getElementById('play-next');
-playNextButton.addEventListener('click', playNextVideo);
+playNextButton.addEventListener('click', playNextVideoClick);
 const playPreviousButton = document.getElementById('play-previous');
-playPreviousButton.addEventListener('click', playPreviousVideo);
+playPreviousButton.addEventListener('click', playPreviousVideoClick);
 
 // Fires on load?
 // videoSourceNode.addEventListener('error', function(event) { 
@@ -137,7 +137,6 @@ var deviceConnectionStatusRetryButtonImageNodes = document.getElementsByName("co
 
 	if(useDeoWeb) {
 		toggleUseDeo(useDeoWeb, false);
-		new ResizeObserver(onResizeDeo).observe(deoVideoNode)
 	} 
 */
 
@@ -180,6 +179,11 @@ function sendTCode(tcode) {
 function sendSyncDeviceConnectionChange(device, checked) {
 	sendWebsocketMessage("connectInputDevice", { deviceType: device, enabled: checked });
 }
+function sendSkipToNextActionClick() {
+	if(!controlsVisible)
+		return;
+	sendSkipToNextAction();
+}
 function sendSkipToNextAction() {
 	sendWebsocketMessage("skipToNextAction");
 }
@@ -205,8 +209,7 @@ function initWebSocket() {
 		websocket = new WebSocket(wsUri);
 		websocket.onopen = function (evt) {
 			xtpConnected = true;
-			if (serverRetryTimeout)
-				clearTimeout(serverRetryTimeout);
+			stopServerConnectionRetry();
 			debug("CONNECTED");
 			updateSettingsUI();
 			sendMediaState();
@@ -301,7 +304,11 @@ function setMediaLoadingStatus(status) {
 }
 
 function onResizeVideo() {
-	thumbsContainerNode.style.maxHeight = "calc(100vh - " + (+videoNode.offsetHeight + 165) + "px)";
+	// if(!videoContainer.classList.contains('video-fixed-container'))
+	// 	thumbsContainerNode.style.maxHeight = "calc(100vh - " + (+videoNode.offsetHeight + 100) + "px)";
+	// else {
+	// 	thumbsContainerNode.style.maxHeight = "calc(100vh - 100px)";
+	// }
 }
 
 
@@ -418,6 +425,7 @@ function getServerSettings() {
 }
 
 function startServerConnectionRetry() {
+	stopServerConnectionRetry();
 	setMediaLoading();
 	setMediaLoadingStatus("Looks like XTP was shut down.\nWaiting for reconnect...");
 	serverRetryTimeoutTries++;
@@ -427,6 +435,12 @@ function startServerConnectionRetry() {
 		}, 5000);
 	} else {
 		setMediaLoadingStatus("Timed out while looking for server. Please refresh the page when the server has started again.")
+	}
+}
+function stopServerConnectionRetry() {
+	if(serverRetryTimeout != undefined) {
+		clearTimeout(serverRetryTimeout);
+		serverRetryTimeout = undefined;
 	}
 }
 
@@ -730,6 +744,7 @@ function loadMedia(mediaList) {
 	var createClickHandler = function (obj) {
 		return function () {
 			//loadVideo(obj); 
+			showVideo();
 			playVideo(obj);
 		}
 	};
@@ -958,17 +973,7 @@ function toggleExternalStreaming(value, userClicked) {
 	else
 		document.getElementById("externalStreamingCheckbox").checked = value;
 	if (value) {
-		videoNode.pause();
-		videoNode.classList.remove("video-shown");
-		thumbsContainerNode.style.maxHeight = "";
-		if (playingmediaItem)
-			clearPlayingMediaItem()
-		if (resizeObserver)
-			resizeObserver.unobserve(videoNode);
-	} else {
-		onResizeVideo();
-		resizeObserver = new ResizeObserver(onResizeVideo);
-		resizeObserver.observe(videoNode);
+		stopVideo();
 	}
 }
 function setupTextToSpeech() {
@@ -1122,6 +1127,7 @@ function disableTextToSpeech(message) {
 	toggleEnableTextToSpeech(false, true);
 }
 
+
 function playVideo(obj) {
 	if (!externalStreaming) {
 		if (playingmediaItem) {
@@ -1130,7 +1136,6 @@ function playVideo(obj) {
 			clearPlayingMediaItem();
 		}
 		setPlayingMediaItem(obj);
-		videoNode.classList.add("video-shown");
 		videoSourceNode.setAttribute("src", "/media" + obj.relativePath);
 		videoNode.setAttribute("title", obj.name);
 		videoNode.setAttribute("poster", "/thumb/" + obj.relativeThumb);
@@ -1156,10 +1161,23 @@ function playVideo(obj) {
 	}
 }
 
+function stopVideo() {
+	videoNode.pause();
+	hideVideo();
+	if (playingmediaItem)
+		clearPlayingMediaItem()
+}
+
 function skipVideoTo(timeInMSecs) {
 	if(videoNode && playingmediaItem) {
 		videoNode.currentTime = timeInMSecs;
 	}
+}
+
+function onSkipToMoneyShotClick() {
+	if(!controlsVisible)
+		return;
+	onSkipToMoneyShot();
 }
 
 function onSkipToMoneyShot() {
@@ -1170,6 +1188,12 @@ function onSkipToMoneyShot() {
 		}
 		skipVideoTo(moneyShotSecs);
 	}
+}
+
+function onToggleFilterInput(searchButton) {
+	var filterInput = document.getElementById('filterInput');
+	filterInput.classList.toggle('hidden');
+	searchButton.classList.toggle('icon-button-down');
 }
 
 function setPlayingMediaItem(obj) {
@@ -1234,6 +1258,11 @@ function onVideoEnd(event) {
 	playNextVideo();
 }
 
+function playNextVideoClick() {
+	if(!controlsVisible)
+		return;
+	playNextVideo();
+}
 function playNextVideo() {
 	var playingIndex = sortedMedia.findIndex(x => x.path === playingmediaItem.path);
 	playingIndex++;
@@ -1241,6 +1270,11 @@ function playNextVideo() {
 		playVideo(sortedMedia[playingIndex]);
 	else
 		playVideo(sortedMedia[0]);
+}
+function playPreviousVideoClick() {
+	if(!controlsVisible)
+		return;
+	playPreviousVideo();
 }
 function playPreviousVideo() {
 	var playingIndex = sortedMedia.findIndex(x => x.path === playingmediaItem.path);

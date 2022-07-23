@@ -6,6 +6,7 @@ const videoNode = document.getElementById("videoPlayer");
 const videoSourceNode = document.getElementById("videoSource");
 
 var controlsHideDebounce;
+var controlsVisible = false;
 var mouseOverVideo = false;
 var isFullScreen = false;
 
@@ -18,7 +19,8 @@ var isFullScreen = false;
 // Select elements here
 const videoControls = document.getElementById('video-controls');
 const playButton = document.getElementById('play');
-const playbackIcons = document.querySelectorAll('.playback-icons use');
+const playIcon = document.getElementById('playIcon');
+const pauseIcon = document.getElementById('pauseIcon');
 const timeElapsed = document.getElementById('time-elapsed');
 const duration = document.getElementById('duration');
 const progressBar = document.getElementById('progress-bar');
@@ -31,8 +33,9 @@ const volumeLow = document.querySelector('use[href="#volume-low"]');
 const volumeHigh = document.querySelector('use[href="#volume-high"]');
 const volumeSlider = document.getElementById('volume');
 const playbackAnimation = document.getElementById('playback-animation');
-const fullscreenButton = document.getElementById('fullscreen-button');
+const bodyContainer = document.getElementById('body-container');
 const videoContainer = document.getElementById('video-container');
+const fullscreenButton = document.getElementById('fullscreen-button');
 const fullscreenIcons = fullscreenButton.querySelectorAll('use');
 const pipButton = document.getElementById('pip-button');
 
@@ -49,6 +52,8 @@ if (videoWorks) {
 // If the video playback is paused or ended, the video is played
 // otherwise, the video is paused
 function togglePlay() {
+	if(!controlsVisible)
+		return;
 	if (videoNode.paused || videoNode.ended) {
 		videoNode.play();
 	} else {
@@ -56,15 +61,24 @@ function togglePlay() {
 	}
 }
 
+function videoNodeClick() {
+	if(controlsVisible)
+		hideControls();
+	else
+		showControls();
+}
+
 // updatePlayButton updates the playback icon and tooltip
 // depending on the playback state
 function updatePlayButton() {
-	playbackIcons.forEach((icon) => icon.classList.toggle('hidden'));
-
 	if (videoNode.paused) {
 		playButton.setAttribute('data-title', 'Play (k)');
+		pauseIcon.classList.add('hidden');
+		playIcon.classList.remove('hidden');
 	} else {
 		playButton.setAttribute('data-title', 'Pause (k)');
+		pauseIcon.classList.remove('hidden');
+		playIcon.classList.add('hidden');
 	}
 }
 
@@ -133,6 +147,8 @@ function updateSeekTooltip(event) {
 // skipAhead jumps to a different point in the video when the progress bar
 // is clicked
 function skipAhead(event) {
+	if(!controlsVisible)
+		return;
 	const skipTo = event.target.dataset.seek
 		? event.target.dataset.seek
 		: event.target.value;
@@ -144,6 +160,8 @@ function skipAhead(event) {
 // updateVolume updates the video's volume
 // and disables the muted state if active
 function updateVolume() {
+	if(!controlsVisible)
+		return;
 	if (videoNode.muted) {
 		videoNode.muted = false;
 	}
@@ -174,6 +192,8 @@ function updateVolumeIcon() {
 // When the video is unmuted, the volume is returned to the value
 // it was set to before the video was muted
 function toggleMute() {
+	if(!controlsVisible)
+		return;
 	videoNode.muted = !videoNode.muted;
 
 	if (videoNode.muted) {
@@ -203,20 +223,47 @@ function animatePlayback() {
 		}
 	);
 }
+function animatePlaybackVideoNodeClick() {
+	if(!controlsVisible)
+		return;
+	animatePlayback();
+}
 
+function toggleFullScreenClick() {
+	if(!controlsVisible)
+		return;
+	toggleFullScreen();
+}
 // toggleFullScreen toggles the full screen state of the video
 // If the browser is currently in fullscreen mode,
 // then it should exit and vice versa.
 function toggleFullScreen() {
+	if(!videoNode.classList.contains("video-shown")) {
+		return;
+	}
+	if (!showEmbedded())
+		showFullScreen();
+}
+
+function showEmbedded() {
 	if (document.fullscreenElement) {
 		document.exitFullscreen();
+		return true;
 	} else if (document.webkitFullscreenElement) {
 		// Need this to support Safari
 		document.webkitExitFullscreen();
-	} else if (videoContainer.webkitRequestFullscreen) {
+		return true;
+	} 
+	return false;
+}
+function showFullScreen() {
+	if(!videoNode.classList.contains("video-shown")) {
+		return;
+	}
+	if (videoContainer.webkitRequestFullscreen) {
 		// Need this to support Safari
 		videoContainer.webkitRequestFullscreen();
-	} else {
+	} else if(videoContainer.requestFullscreen) {
 		videoContainer.requestFullscreen();
 	}
 }
@@ -228,10 +275,12 @@ function updateFullscreenButton() {
 
 	if (document.fullscreenElement) {
 		fullscreenButton.setAttribute('data-title', 'Exit full screen (f)');
-        videoNode.classList.remove("video", "video-shown")
+        videoNode.classList.remove("video", "video-shown-embeded")
+		isFullScreen = true;
 	} else {
 		fullscreenButton.setAttribute('data-title', 'Full screen (f)');
-        videoNode.classList.add("video", "video-shown")
+        videoNode.classList.add("video", "video-shown-embeded")
+		isFullScreen = false;
 	}
 }
 
@@ -255,12 +304,16 @@ function hideControls() {
 	if (videoNode.paused) {
 		return;
 	}
+	controlsVisible = false;
 
 	videoControls.classList.add('hide');
 }
 
 
 function showControls() {
+    setTimeout(function () {
+		controlsVisible = true;
+    }, 500);
 	videoControls.classList.remove('hide');
     if(controlsHideDebounce) {
         clearTimeout(controlsHideDebounce);
@@ -283,8 +336,51 @@ function mouseEnterVideo() {
 function mouseLeaveVideo() {
     mouseOverVideo = false;
 }
-// Add eventlisteners here
 
+function checkOrientation(orientation) {
+	if(!orientation) {
+		orientation = screen.orientation.type;
+	}
+	if (orientation === 'landscape-primary') {
+	// landscape mode => angle 0
+		showFullScreen();
+	} else if (orientation === 'portrait-primary') {
+	// portrait mode => angle 0
+		showEmbedded();
+	}
+}
+
+function showVideo() {
+	videoNode.classList.add("video-shown", "video-shown-embeded");
+}
+
+function hideVideo() {
+	showEmbedded();
+	videoNode.classList.remove("video-shown", "video-shown-embeded");
+}
+
+function checkInView(container, element, partial) {
+
+    //Get container properties
+    let cTop = container.scrollTop;
+    let cBottom = cTop + container.clientHeight;
+
+    //Get element properties
+    let eTop = element.offsetTop;
+    let eBottom = eTop + element.clientHeight;
+
+    //Check if in view    
+    let isTotal = (eTop >= cTop && eBottom <= cBottom);
+    let isPartial = partial && (
+      (eTop < cTop && eBottom > cTop) ||
+      (eBottom > cBottom && eTop < cBottom)
+    );
+
+    //Return outcome
+    return  (isTotal  || isPartial);
+}
+
+// Add eventlisteners here
 playButton.addEventListener('click', togglePlay);
 videoNode.addEventListener('play', updatePlayButton);
 videoNode.addEventListener('pause', updatePlayButton);
@@ -292,8 +388,8 @@ videoNode.addEventListener('loadedmetadata', initializeVideo);
 videoNode.addEventListener('timeupdate', updateTimeElapsed);
 videoNode.addEventListener('timeupdate', updateProgress);
 videoNode.addEventListener('volumechange', updateVolumeIcon);
-videoNode.addEventListener('click', togglePlay);
-videoNode.addEventListener('click', animatePlayback);
+//videoNode.addEventListener('click', videoNodeClick);
+//videoNode.addEventListener('click', animatePlaybackVideoNodeClick);
 videoContainer.addEventListener('mouseenter', showControls);
 videoContainer.addEventListener('mouseleave', hideControls);
 videoContainer.addEventListener('mouseenter', mouseEnterVideo);
@@ -305,7 +401,7 @@ seek.addEventListener('mousemove', updateSeekTooltip);
 seek.addEventListener('input', skipAhead);
 volumeSlider.addEventListener('input', updateVolume);
 volumeButton.addEventListener('click', toggleMute);
-fullscreenButton.addEventListener('click', toggleFullScreen);
+fullscreenButton.addEventListener('click', toggleFullScreenClick);
 videoContainer.addEventListener('fullscreenchange', updateFullscreenButton);
 /* Firefox */
 videoContainer.addEventListener("mozfullscreenchange", updateFullscreenButton);
@@ -320,7 +416,29 @@ document.addEventListener('DOMContentLoaded', () => {
 		pipButton.classList.add('hidden');
 	}
 });
+if(screen.orientation) {
+	screen.orientation.addEventListener('change', function(e) {
+		checkOrientation(e.currentTarget.type);
+	})
+} else {
+	window.addEventListener('resize', function(e) {
+	if (Math.abs(window.orientation) == 90) {
+	  // landscape mode => angle 90 or -90
+	  checkOrientation("landscape-primary");
+	} else if (window.orientation == 0) {
+	  // portrait mode => angle 0
+	  checkOrientation("portrait-primary");
+	}
+  })
+}
 
+bodyContainer.addEventListener('scroll', (event) => {
+	if(!checkInView(bodyContainer, videoContainer, false)) {
+		videoContainer.classList.add('video-container-fixed');
+	} else {
+		videoContainer.classList.remove('video-container-fixed');
+	}
+});
 
 videoNode.volume = volume ? volume : 0.5;
 volumeSlider.value = videoNode.volume;

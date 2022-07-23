@@ -3,11 +3,14 @@ body {
     color: white;
     font-family: 'sans-serif', "serif", "Lucida Sans Regular", 'Times New Roman', "Times", "DejaVu Serif", "Verdana";
     margin: 0;
+    overflow: hidden;
 }
 
 .body-container {
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    height: calc(100vh - 100px);
 }
 
 .hidden {
@@ -169,7 +172,10 @@ input:hover {
     transition: background-color 0.25s 0s cubic-bezier(0, 1, 1, 1);
     cursor: pointer;
 }
-
+.icon-button-down {
+    background-color: rgba(128, 140, 255, 0.596) !important;
+    color: white;
+}
 .icon-button>img {
     width: 16px;
     height: 16px;
@@ -193,8 +199,8 @@ input:hover {
     flex-flow: column;
     font-family: arial;
     font-size: 16px;
-    max-height: calc(100vh - 165px);
-    overflow-y: auto;
+    /* max-height: calc(100vh - 165px);
+    overflow-y: auto; */
 }
 
 .thumbs-body {
@@ -213,17 +219,13 @@ input:hover {
 
 }
 
-.media-filter-container {
-    display: flex;
-    flex-flow: column;
-    align-items: flex-end;
-    margin-bottom: 8px;
-}
-
 .media-filter-input {
-    width: 50vw;
+    width: 25vw;
     border-radius: 5px;
     height: 24px;
+    left: calc(100vw - 35vw);
+    position: absolute;
+    z-index: 100;
 }
 
 .media-item:hover {
@@ -304,16 +306,19 @@ input:hover {
     max-height: calc(100vh - 500px);
 } */
 .video {
-    max-width: 95vw;
-    max-height: 0;
     align-self: center;
-    opacity: 0;
     transition: max-height 0.25s ease-in-out, opacity 0.5s linear;
+    max-height: 0;
+    opacity: 0;
 }
 
 .video-shown {
     opacity: 1;
-    max-height: 33vh;
+}
+
+.video-shown-embeded {
+    max-width: 95vw;
+    max-height: 50vh;
 }
 
 /* 
@@ -323,6 +328,12 @@ input:hover {
     margin-top: 16px;
 } 
 */
+.search-media-button {
+    position: fixed;
+    left: calc(100vw - 85px);
+    margin-top: 16px;
+    z-index: 100;
+} 
 
 .range-slider {
     display: flex;
@@ -421,7 +432,7 @@ section>.range-values {
     opacity: 0;
     visibility: hidden;
     position: fixed;
-    z-index: 1;
+    z-index: 150;
     left: 0;
     top: 0;
     width: 100%;
@@ -600,10 +611,11 @@ section>.range-values {
         grid-template-columns: 40% 60%;
     }
 
-    .media-filter-input {
+    /* .media-filter-input {
         width: 100vw;
-    }
+    } */
 }
+
 
 /* @media only screen and (-webkit-min-device-pixel-ratio: 2.75)
 or (min-device-width: 375px) 
