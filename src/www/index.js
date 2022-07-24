@@ -83,6 +83,7 @@ var userAgentIsMobile = userAgent.indexOf("Mobile") != -1;
 setDeoStyles(userAgentIsDeo);
 var settingsNode = document.getElementById("settingsModal");
 var thumbsContainerNode = document.getElementById("thumbsContainer");
+var videoMediaName = document.getElementById("videoMediaName");
 
 var sortByGlobal = JSON.parse(window.localStorage.getItem("sortBy"));
 var showGlobal = JSON.parse(window.localStorage.getItem("show"));
@@ -1211,6 +1212,7 @@ function playVideo(obj) {
 		setPlayingMediaItem(obj);
 		videoSourceNode.setAttribute("src", "/media" + obj.relativePath);
 		videoNode.setAttribute("title", obj.name);
+		videoMediaName.innerText = obj.name;
 		videoNode.setAttribute("poster", "/thumb/" + obj.relativeThumb);
 		videoNode.load();
 		// loadedFunscripts = [];
@@ -1235,6 +1237,8 @@ function playVideo(obj) {
 }
 
 function stopVideoClick() {
+	if(!controlsVisible)
+		return;
 	stopVideo();
 }
 function stopVideo() {
@@ -1244,6 +1248,7 @@ function stopVideo() {
 	videoSourceNode.setAttribute("src", "");
 	videoNode.removeAttribute("title");
 	videoNode.removeAttribute("poster");
+	videoMediaName.innerText = "";
 	videoNode.load();
 	if (playingmediaItem)
 		clearPlayingMediaItem()
