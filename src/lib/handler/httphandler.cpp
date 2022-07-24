@@ -46,6 +46,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     router.addRoute("GET", "^/funscript/(.*\\.((funscript)$))?[.]*$", this, &HttpHandler::handleFunscriptFile);
     router.addRoute("GET", "^/deotest$", this, &HttpHandler::handleDeo);
     router.addRoute("GET", "^/settings$", this, &HttpHandler::handleSettings);
+    router.addRoute("GET", "^/settings/availableSerialPorts$", this, &HttpHandler::handleAvailableSerialPorts);
     router.addRoute("POST", "^/settings$", this, &HttpHandler::handleSettingsUpdate);
     router.addRoute("POST", "^/xtpweb$", this, &HttpHandler::handleWebTimeUpdate);
 }
@@ -123,7 +124,13 @@ HttpPromise HttpHandler::handleWebTimeUpdate(HttpDataPtr data)
     data->response->setStatus(HttpStatus::Ok);
     return HttpPromise::resolve(data);
 }
-
+HttpPromise HttpHandler::handleAvailableSerialPorts(HttpDataPtr data) {
+    QJsonArray root;
+    //root = Sett
+    data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
+    data->response->compressBody();
+    return HttpPromise::resolve(data);
+}
 HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     QJsonObject root;
     root["webSocketServerPort"] = _webSocketHandler->getServerPort();
@@ -235,20 +242,33 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
         QJsonObject input = connection["input"].toObject();
         QJsonObject output = connection["output"].toObject();
 
-        DeviceName selectedSyncDevice = (DeviceName)input["selectedDevice"].toInt();
+        DeviceName selectedInputDevice = (DeviceName)input["selectedDevice"].toInt();
         QString deoAddress = input["deoAddress"].toString();
         QString deoPort = input["deoPort"].toString();
         if(deoAddress != SettingsHandler::getDeoAddress() || deoPort != SettingsHandler::getDeoPort())
         {
             SettingsHandler::setDeoAddress(deoAddress);
             SettingsHandler::setDeoPort(deoPort);
-            if(selectedSyncDevice == DeviceName::Deo)
+            if(selectedInputDevice == DeviceName::Deo)
                 emit connectInputDevice(DeviceName::Deo, true);
         }
-//        output["selectedTCodeDevice"] = SettingsHandler::getSelectedDevice();
-//        output["networkAddress"] = SettingsHandler::getServerAddress();
-//        output["networkPort"] = SettingsHandler::getServerPort();
-//        output["serialPort"] = SettingsHandler::getSerialPort();
+        DeviceName selectedOutputDevice = (DeviceName)output["selectedDevice"].toInt();
+        QString networkAddress = output["networkAddress"].toString();
+        QString networkPort = output["networkPort"].toString();
+        if(!networkAddress.isEmpty() && (networkAddress != SettingsHandler::getServerAddress() || networkPort != SettingsHandler::getServerPort()))
+        {
+            SettingsHandler::setServerAddress(networkAddress);
+            SettingsHandler::setServerPort(networkPort);
+            if(selectedOutputDevice == DeviceName::Network)
+                emit connectOutputDevice(DeviceName::Network, true);
+        }
+        QString serialPort = output["serialPort"].toString();
+        if(!serialPort.isEmpty() && serialPort != SettingsHandler::getSerialPort())
+        {
+            SettingsHandler::setSerialPort(serialPort);
+            if(selectedOutputDevice == DeviceName::Serial)
+                emit connectOutputDevice(DeviceName::Serial, true);
+        }
 
     }
     data->response->setStatus(HttpStatus::Ok);

@@ -13,7 +13,7 @@ class WebSocketHandler: public QObject
 {
     Q_OBJECT
 signals:
-    void connectOutputDevice(DeviceName deviceName);
+    void connectOutputDevice(DeviceName deviceName, bool checked);
     void connectInputDevice(DeviceName deviceName, bool checked);
     void tcode(QString tcode);
     void newWebSocketConnected(QWebSocket* client);

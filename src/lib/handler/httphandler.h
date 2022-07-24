@@ -29,7 +29,7 @@ signals:
     void error(QString error);
     void xtpWebPacketRecieve(QByteArray data);
     void tcode(QString tcode);
-    void connectOutputDevice(DeviceName deviceName);
+    void connectOutputDevice(DeviceName deviceName, bool checked);
     void connectInputDevice(DeviceName deviceName, bool checked);
     void restartService();
     void skipToMoneyShot();
@@ -48,6 +48,7 @@ public:
     HttpPromise handleThumbFile(HttpDataPtr data);
     HttpPromise handleFunscriptFile(HttpDataPtr data);
     HttpPromise handleSettings(HttpDataPtr data);
+    HttpPromise handleAvailableSerialPorts(HttpDataPtr data);
     HttpPromise handleSettingsUpdate(HttpDataPtr data);
     HttpPromise handleDeviceConnected(HttpDataPtr data);
     HttpPromise handleConnectDevice(HttpDataPtr data);

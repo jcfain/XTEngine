@@ -45,6 +45,7 @@ var userAgent;
 var remoteUserSettings;
 var mediaListGlobal = [];
 var sortedMedia = [];
+var filteredMedia = [];
 var playingmediaItem;
 var playingmediaItemNode;
 var webSocket;
@@ -54,9 +55,11 @@ var funscriptChannels = [];
 var currentChannelIndex = 0;
 var outputConnectionStatus = ConnectionStatus.Disconnected;
 var selectedInputDevice;
+var selectedOutputDevice;
 var deviceConnectionStatusInterval;
 var serverRetryTimeout;
 var serverRetryTimeoutTries = 0;
+var videoStallTimeout;
 var userFilterCriteria;
 var filterDebounce;
 var enableTextToSpeech = true;
@@ -85,6 +88,7 @@ var sortByGlobal = JSON.parse(window.localStorage.getItem("sortBy"));
 var showGlobal = JSON.parse(window.localStorage.getItem("show"));
 var thumbSizeGlobal = JSON.parse(window.localStorage.getItem("thumbSize"));
 var selectedSyncConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedSyncConnection"));
+var selectedOutputConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedOutputConnection"));
 /* 	if(!thumbSizeGlobal && window.devicePixelRatio == 2.75) {
 		thumbSizeGlobal = 400;
 	} */
@@ -121,10 +125,10 @@ playPreviousButton.addEventListener('click', playPreviousVideoClick);
 
 // Fires on load?
 // videoSourceNode.addEventListener('error', function(event) { 
-// 	alert("There was an issue loading media.");
+// 	userError("There was an issue loading media.");
 // }, true);
 // videoNode.addEventListener('error', function(event) { 
-// 	alert("There was an issue loading media.");
+// 	userError("There was an issue loading media.");
 // }, true);
 
 var saveStateNode = document.getElementById("saveState");
@@ -150,6 +154,12 @@ function debug(message) {
 	if (debugMode)
 		console.log(message);
 }
+function userError(message) {
+	alert(message);
+}
+function systemError(message) {
+	alert(message);
+}
 
 function sendWebsocketMessage(command, message) {
 	if (websocket && xtpConnected) {
@@ -163,23 +173,33 @@ function sendWebsocketMessage(command, message) {
 	}
 }
 
-function onSyncDeviceConnectionChange(input, device) {
+function onInputDeviceConnectionChange(input, device) {
 	selectedInputDevice = device;
-	sendSyncDeviceConnectionChange(device, input.checked);
+	sendInputDeviceConnectionChange(device, input.checked);
 	window.localStorage.setItem("selectedSyncConnection", parseInt(device, 10));
 	sendMediaState();
 }
 
+function onOutputDeviceConnectionChange(input, device) {
+	selectedOutputDevice = device;
+	sendOutputDeviceConnectionChange(device, input.checked);
+	window.localStorage.setItem("selectedOutputConnection", parseInt(device, 10));
+	sendMediaState();
+}
+
 function tcodeDeviceConnectRetry() {
-	sendWebsocketMessage("connectOutputDevice", { deviceType: remoteUserSettings.connection.output.selectedDevice });
+	sendWebsocketMessage("connectOutputDevice", { deviceName: remoteUserSettings.connection.output.selectedDevice });
 }
 
 function sendTCode(tcode) {
 	sendWebsocketMessage("tcode", tcode);
 }
 
-function sendSyncDeviceConnectionChange(device, checked) {
-	sendWebsocketMessage("connectInputDevice", { deviceType: device, enabled: checked });
+function sendInputDeviceConnectionChange(device, checked) {
+	sendWebsocketMessage("connectInputDevice", { deviceName: device, enabled: checked });
+}
+function sendOutputDeviceConnectionChange(device, checked) {
+	sendWebsocketMessage("connectOutputDevice", { deviceName: device, enabled: checked });
 }
 function sendSkipToNextActionClick() {
 	if(!controlsVisible)
@@ -243,12 +263,13 @@ function wsCallBackFunction(evt) {
 		switch (data["command"]) {
 			case "outputDeviceStatus":
 				var status = data["message"];
-				setOutputConnectionStatus(status["status"], status["message"]);
+				var deviceName = status["deviceName"];
+				setOutputConnectionStatus(deviceName, status["status"], status["message"]);
 				break;
 			case "inputDeviceStatus":
 				var status = data["message"];
-				var deviceType = status["deviceType"];
-				setInputConnectionStatus(deviceType, status["status"], status["message"]);
+				var deviceName = status["deviceName"];
+				setInputConnectionStatus(deviceName, status["status"], status["message"]);
 				break;
 			case "mediaLoaded":
 				var mediaLoadingElement = document.getElementById("mediaLoading");
@@ -420,7 +441,7 @@ function getServerSettings() {
 			funscriptChannels.sort();
 			initWebSocket();
 		} else {
-			alert("Error getting settings");
+			systemError("Error getting settings");
 		}
 	};
 	xhr.send();
@@ -468,16 +489,16 @@ function getServerLibrary() {
 			*/
 			updateMediaUI();
 		} else {
-			alert('Error getting media list: ' + err);
+			systemError('Error getting media list: ' + err);
 		}
 	};
 	xhr.onerror = function () {
-		alert("Error getting media");
+		systemError("Error getting media");
 	};
 	xhr.send();
 }
 
-function setInputConnectionStatus(deviceType, status, message) {
+function setInputConnectionStatus(deviceName, status, message) {
 	// check &#x2714;
 	// x &#x2718;
 	// triangle ! &#x26A0;
@@ -505,7 +526,7 @@ function setInputConnectionStatus(deviceType, status, message) {
 	var whirligigStatusImage = document.getElementById("whirligigStatus")
 	var xtpWebStatusImage = document.getElementById("xtpWebStatus")
 	var gamepadStatusImage = document.getElementById("gamepadStatus")
-	if (deviceType != DeviceType.Gamepad) {
+	if (deviceName != DeviceType.Gamepad) {
 		deoVRStatusImage.src = "://images/icons/x.svg";
 		deoVRStatusImage.style.backgroundColor = "crimson";
 		deoVRStatusImage.title = "Disconnected";
@@ -519,7 +540,7 @@ function setInputConnectionStatus(deviceType, status, message) {
 		xtpWebStatusImage.title = "Disconnected";
 		//xtpWebStatusImage.alt = "Disconnected"
 	}
-	switch (deviceType) {
+	switch (deviceName) {
 		case DeviceType.Deo:
 			deoVRStatusImage.src = statusImage;
 			deoVRStatusImage.style.backgroundColor = statusColor;
@@ -547,7 +568,7 @@ function setInputConnectionStatus(deviceType, status, message) {
 
 	}
 }
-function setOutputConnectionStatus(status, message) {
+function setOutputConnectionStatus(deviceName, status, message) {
 	for (var i = 0; i < deviceConnectionStatusRetryButtonNodes.length; i++) {
 		var deviceConnectionStatusRetryButtonNode = deviceConnectionStatusRetryButtonNodes[i];
 		var deviceConnectionStatusRetryButtonImageNode = deviceConnectionStatusRetryButtonImageNodes[i];
@@ -588,6 +609,51 @@ function setOutputConnectionStatus(status, message) {
 
 		}
 	}
+	var statusImage = ""
+	var statusColor = "";
+	switch (status) {
+		case ConnectionStatus.Connected:
+			statusImage = "://images/icons/check-mark-black.png";
+			statusColor = "chartreuse";
+			break;
+		case ConnectionStatus.Connecting:
+			statusImage = "://images/icons/reload.svg";
+			statusColor = "yellow";
+			break;
+		case ConnectionStatus.Disconnected:
+			statusImage = "://images/icons/x.svg";
+			statusColor = "crimson";
+			break;
+		case ConnectionStatus.Error:
+			statusImage = "://images/icons/error-black.png";
+			statusColor = "red";
+			break;
+	}
+	var networkStatusImage = document.getElementById("networkStatus")
+	var serialStatusImage = document.getElementById("serialStatus")
+	networkStatusImage.src = "://images/icons/x.svg";
+	networkStatusImage.style.backgroundColor = "crimson";
+	networkStatusImage.title = "Disconnected";
+	//networkStatusImage.alt = "Disconnected"
+	serialStatusImage.src = "://images/icons/x.svg";
+	serialStatusImage.style.backgroundColor = "crimson";
+	serialStatusImage.title = "Disconnected";
+	switch (deviceName) {
+		case DeviceType.Network:
+			networkStatusImage.src = statusImage;
+			networkStatusImage.style.backgroundColor = statusColor;
+			networkStatusImage.title = message;
+			//networkStatusImage.alt = message 
+			break;
+		case DeviceType.Serial:
+			serialStatusImage.src = statusImage;
+			serialStatusImage.style.backgroundColor = statusColor;
+			serialStatusImage.title = message;
+			//serialStatusImage.alt = message 
+			break;
+
+	}
+	//whirligigStatusImage.alt = "Disconnected"
 }
 /* function getDeviceConnectionStatus() {
 	if(deviceConnectionStatusInterval)
@@ -606,7 +672,7 @@ function setOutputConnectionStatus(status, message) {
 			pollDeviceConnectionStatus(1000);
 		}
 	  } else {
-		alert("Http Error getting device connection status: "+ status);
+		systemError("Http Error getting device connection status: "+ status);
 		if(deviceConnectionStatusInterval)
 			clearTimeout(deviceConnectionStatusInterval);
 			setConnectionStatus(ConnectionStatus.Error, "Http Error getting device connection status: "+ status);
@@ -614,7 +680,7 @@ function setOutputConnectionStatus(status, message) {
 	};
 	xhr.onerror = function() {
 		var status = xhr.status;
-		alert("Error getting device connection status: "+ status);
+		systemError("Error getting device connection status: "+ status);
 		if(deviceConnectionStatusInterval)
 			clearTimeout(deviceConnectionStatusInterval);
 			setConnectionStatus(ConnectionStatus.Error, "Error getting device connection status: "+ status);
@@ -906,7 +972,8 @@ function show(value, userClick) {
 }
 
 function filter(criteria) {
-	if (filterDebounce)
+	filteredMedia = [];
+	if (filterDebounce) 
 		clearTimeout(filterDebounce);
 	filterDebounce = setTimeout(function () {
 		var filterInput = document.getElementById("filterInput");
@@ -915,8 +982,11 @@ function filter(criteria) {
 		var mediaItems = document.getElementsByClassName("media-item");
 		for (var item of mediaItems) {
 			item.hidden = isFiltered(criteria, item.textContent);
+			if(!item.hidden)
+				filteredMedia.push(mediaListGlobal.find(x => x.id === item.id));
 		};
 		filterInput.enabled = true;
+		filterDebounce = undefined;
 	}, 1000);
 }
 
@@ -1232,6 +1302,8 @@ function onVideoTimeUpdate(event) {
 }
 function onVideoLoading(event) {
 	debug("Data loading");
+	if(videoStallTimeout)
+		clearTimeout(videoStallTimeout);
 	dataLoading();
 	if(playingmediaItem)
 		playingmediaItem.loaded = false;
@@ -1250,7 +1322,7 @@ function onVideoPlay(event) {
 	// 	startFunscriptSync(loadedFunscripts);
 	sendMediaState();
 }
-function onVideoPause(event) {
+function onVideoPause(event) { 
 	debug("Video pause");
 	if(playingmediaItem)
 		playingmediaItem.playing = false;
@@ -1264,9 +1336,16 @@ function onVideoStall(event) {
 	if(playingmediaItem)
 		playingmediaItem.playing = false;
 	sendMediaState();
+	// Band aid to fix next video NOT playing due to current stalling at end.
+	videoStallTimeout = setTimeout(() => {
+		playNextVideo();
+		videoStallTimeout = undefined;
+	}, 10000);
 }
 function onVideoPlaying(event) {
 	debug("Video playing");
+	if(videoStallTimeout)
+		clearTimeout(videoStallTimeout);
 	if(playingmediaItem)
 		playingmediaItem.playing = true;
 	sendMediaState();
@@ -1289,16 +1368,20 @@ function playNextVideoClick() {
 function playNextVideo() {
 	if(sortedMedia.length == 0)
 		return;
+	var currentDisplayedMedia = JSON.parse(JSON.stringify(sortedMedia));
 	if(playingmediaItem) {
-		var playingIndex = sortedMedia.findIndex(x => x.path === playingmediaItem.path);
+		if(filteredMedia.length > 0) {
+			currentDisplayedMedia = filteredMedia;
+		}
+		var playingIndex = currentDisplayedMedia.findIndex(x => x.path === playingmediaItem.path);
 		playingIndex++;
 	} else {
 		playingIndex = 0;
 	}
-	if (playingIndex < sortedMedia.length)
-		playVideo(sortedMedia[playingIndex]);
+	if (playingIndex < currentDisplayedMedia.length)
+		playVideo(currentDisplayedMedia[playingIndex]);
 	else
-		playVideo(sortedMedia[0]);
+		playVideo(currentDisplayedMedia[0]);
 }
 function playPreviousVideoClick() {
 	if(!controlsVisible)
@@ -1308,22 +1391,26 @@ function playPreviousVideoClick() {
 function playPreviousVideo() {
 	if(sortedMedia.length == 0)
 		return;
+	var currentDisplayedMedia = JSON.parse(JSON.stringify(sortedMedia));
 	if(playingmediaItem) {
-		var playingIndex = sortedMedia.findIndex(x => x.path === playingmediaItem.path);
+		if(filteredMedia.length > 0) {
+			currentDisplayedMedia = filteredMedia;
+		}
+		var playingIndex = currentDisplayedMedia.findIndex(x => x.path === playingmediaItem.path);
 		playingIndex--;
 	} else {
 		playingIndex = -1;
 	}
 	if (playingIndex < 0)
-		playVideo(sortedMedia[sortedMedia.length - 1]);
+		playVideo(currentDisplayedMedia[currentDisplayedMedia.length - 1]);
 	else
-		playVideo(sortedMedia[playingIndex]);
+		playVideo(currentDisplayedMedia[playingIndex]);
 }
 function setThumbSize(value, userClick) {
 	if (!userClick) {
 		if (value) {
-			document.getElementById(value.toString()).click();
-			// document.getElementById("value.toString()").value = value.toString();
+			//document.getElementById(value.toString()).click();
+			document.getElementById("thumbSize").value = value.toString();
 		}
 	} else {
 		window.localStorage.setItem("thumbSize", parseInt(value, 10));
@@ -1814,7 +1901,7 @@ function setupConnectionsTab() {
 		connectionSettingsJson["serialPort"] = SettingsHandler::getSerialPort(); */
 	selectedInputDevice = remoteUserSettings.connection.input.selectedDevice;
 	if (selectedSyncConnectionGlobal && selectedSyncConnectionGlobal != selectedInputDevice) {
-		sendSyncDeviceConnectionChange(selectedSyncConnectionGlobal, true);
+		sendInputDeviceConnectionChange(selectedSyncConnectionGlobal, true);
 		selectedInputDevice = selectedSyncConnectionGlobal;
 	}
 	switch (selectedInputDevice) {
@@ -1828,12 +1915,33 @@ function setupConnectionsTab() {
 			document.getElementById("connectionXTPWeb").checked = true;
 			break;
 		case DeviceType.None:
-			document.getElementById("connectionNone").checked = true;
+			document.getElementById("connectionInputNone").checked = true;
 			break;
 	}
 	document.getElementById("deoVRAddress").value = remoteUserSettings.connection.input.deoAddress
 	document.getElementById("deoVRPort").value = remoteUserSettings.connection.input.deoPort
 	document.getElementById("connectionGamepad").checked = remoteUserSettings.connection.input.gamePadEnabled;
+
+	selectedOutputDevice = remoteUserSettings.connection.output.selectedDevice;
+	if (selectedOutputConnectionGlobal && selectedOutputConnectionGlobal != selectedOutputDevice) {
+		sendOutputDeviceConnectionChange(selectedOutputConnectionGlobal, true);
+		selectedOutputDevice = selectedOutputConnectionGlobal;
+	}
+	switch (selectedOutputDevice) {
+		case DeviceType.None:
+			document.getElementById("connectionOutputNone").checked = true;
+			break;
+		case DeviceType.Network:
+			document.getElementById("connectionNetwork").checked = true;
+			break;
+		case DeviceType.Serial:
+			document.getElementById("connectionSerial").checked = true;
+			break;
+	}
+	
+	document.getElementById("networkAddress").value = remoteUserSettings.connection.output.networkAddress
+	document.getElementById("networkPort").value = remoteUserSettings.connection.output.networkPort
+	document.getElementById("serialPort").value = remoteUserSettings.connection.output.serialPort
 }
 
 var debouncer;
@@ -1864,11 +1972,39 @@ function deleteLocalSettings() {
 	}
 }
 function onDeoVRAddressChange(input) {
-	remoteUserSettings.connection.input.deoAddress = input.value;
+	if(!input.value || input.value.trim().length === 0) {
+		userError("Invalid Deo/Heresphere network address");
+		return;
+	}
+	remoteUserSettings.connection.input.deoAddress = input.value.trim();
 	markXTPFormDirty();
 }
 function onDeoVRPortChange(input) {
-	remoteUserSettings.connection.input.deoPort = input.value;
+	if(!input.value || input.value.trim().length === 0) {
+		userError("Invalid Deo/Heresphere network port");
+		return;
+	}
+	remoteUserSettings.connection.input.deoPort = input.value.trim();
+	markXTPFormDirty();
+}
+function onNetworkAddressChange(input) {
+	if(!input.value || input.value.trim().length === 0) {
+		userError("Invalid network address");
+		return;
+	}
+	remoteUserSettings.connection.output.networkAddress = input.value.trim();
+	markXTPFormDirty();
+}
+function onNetworkPortChange(input) {
+	if(!input.value || input.value.trim().length === 0) {
+		userError("Invalid network port");
+		return;
+	}
+	remoteUserSettings.connection.output.networkPort = input.value.trim();
+	markXTPFormDirty();
+}
+function onSerialPortChange(input) {
+	remoteUserSettings.connection.output.serialPort = input.value;
 	markXTPFormDirty();
 }
 // function connectToTcodeDevice() {
@@ -1899,38 +2035,49 @@ function onDeoVRPortChange(input) {
 // keyboardShortcuts executes the relevant functions for
 // each supported shortcut key
 function keyboardShortcuts(event) {
-	const { key } = event;
-	switch (key) {
-		case 'k':
-			togglePlay();
-			animatePlayback();
-			if (videoNode.paused) {
-				showControls();
-			} else {
-				hideControls();
-			}
-			break;
-		case 'm':
-			toggleMute();
-			break;
-		case 'f':
-			toggleFullScreen();
-			break;
-		case 'p':
-			togglePip();
-			break;
-        case 'ArrowRight':
-			playNextVideo();
-			break;
-        case 'ArrowLeft':
-			playPreviousVideo();
-            break;
-		case 'a':
-			sendSkipToNextAction();
-			break;
-		case 'c':
-			onSkipToMoneyShot();
-			break;
-        
+	if(!filterDebounce) {
+		const { key } = event;
+		switch (key) {
+			case 'k':
+				togglePlay();
+				animatePlayback();
+				if (videoNode.paused) {
+					showControls();
+				} else {
+					hideControls();
+				}
+				break;
+			case 'm':
+				toggleMute();
+				break;
+			case 'f':
+				toggleFullScreen();
+				break;
+			case 'p':
+				togglePip();
+				break;
+			case 'ArrowRight':
+				playNextVideo();
+				break;
+			case 'ArrowLeft':
+				playPreviousVideo();
+				break;
+			case '+':
+				volumeUp();
+				break;
+			case '-':
+				volumeDown();
+				break;
+			case 'a':
+				sendSkipToNextAction();
+				break;
+			case 'c':
+				onSkipToMoneyShot();
+				break;
+			case 'x':
+				stopVideoClick();
+				break;
+			
+		}
 	}
 }

@@ -190,7 +190,8 @@ progress::-webkit-progress-value {
     box-shadow: none;
 }
 
-.video-container button::before {
+.video-container button::before,
+.video-container input::before {
     content: attr(data-title);
     position: absolute;
     display: none;
@@ -203,6 +204,16 @@ progress::-webkit-progress-value {
     word-break: keep-all;
     white-space: pre;
 }
+.video-container .top-controls button::before {
+    top: 50px;
+}
+.video-container .middle-controls button::before {
+    right: -25px;
+}
+.video-container .left-controls button::before {
+    right: -100px;
+}
+
 
 .video-container button:hover::before {
     display: inline-block;

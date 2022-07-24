@@ -62,7 +62,7 @@
 				<div class="middle-controls">
 				</div>
 				<div class="right-controls">
-					<button data-title="Exit (a)" class="video-control video-control--action-end" id="exit-action">
+					<button data-title="Exit (x)" class="video-control video-control--action-end" id="exit-action">
 						<svg style="color: white" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16"> <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" fill="white"></path> </svg>
 					</button>
 			<!-- 		Need to put the menu in the video container for this to work in full screen.
@@ -112,7 +112,7 @@
 					</div>
 					<div class="right-controls">
 						<div class="volume-controls">
-							<input class="volume" id="volume" value="1" data-mute="0.5" type="range" max="1" min="0" step="0.01" />
+							<input data-title="Up (+) - Down (-)" class="volume" id="volume" value="1" data-mute="0.5" type="range" max="1" min="0" step="0.01" />
 							<button data-title="Mute (m)" class="volume-button video-control" id="volume-button">
 								<svg>
 									<use class="hidden" href="#volume-mute"></use>
@@ -236,7 +236,7 @@
 							<label for="thumbSize">
 								<span class="formLabel">Thumb size</span>
 							</label>
-							<!-- 					<select name="thumbSize" id="thumbSize" onchange="thumbSizeChange(this.value)">
+					<select name="thumbSize" id="thumbSize" onchange="thumbSizeChange(this.value)">
 						<option value="50">50px</option>
 						<option value="75">75px</option>
 						<option value="100">100px</option>
@@ -256,8 +256,8 @@
 						<option value="450">450px</option>
 						<option value="475">475px</option>
 						<option value="500">500px</option>
-					</select> -->
-							<div class="radio-group">
+					</select>
+			<!-- 				<div class="radio-group">
 								<input type="radio" id="50" name="thumbSize" value="50"
 									onclick="thumbSizeChange(this.value)" /><label for="50">50px</label>
 								<input type="radio" id="75" name="thumbSize" value="75"
@@ -296,7 +296,7 @@
 									onclick="thumbSizeChange(this.value)" /><label for="475">475px</label>
 								<input type="radio" id="500" name="thumbSize" value="500"
 									onclick="thumbSizeChange(this.value)" /><label for="500">500px</label>
-							</div>
+							</div> -->
 						</div>
 						<div class="formElement">
 							<label title="If checked, a voice will play with certain actions"
@@ -336,18 +336,59 @@
 						</div>
 					</div>
 					<div id="tabConnections" class="tab-content">
-						<div class="formElement">
-							<label for="connectionNone">None</label>
+						<h3>Output connections</h3>
+				<!-- 		<div class="formElement">
+							<label for="connectionOutputNone">None</label>
 							<section class="form-group-section form-group-section-connection">
-								<input id="connectionNone" type="radio" class="styled-radio" name="connection"
-									onclick="onSyncDeviceConnectionChange(this, 6)" />
+								<input id="connectionOutputNone" type="radio" class="styled-radio" name="connection"
+									onclick="onOutputDeviceConnectionChange(this, 6)" />
+							</section>
+						</div> -->
+						<div class="formElement">
+							<label for="connectionSerial">Serial</label>
+							<section class="form-group-section form-group-section-connection">
+								<input id="connectionSerial" type="radio" class="styled-radio" name="connection"
+									onclick="onOutputDeviceConnectionChange(this, 0)" />
+									<img id="serialStatus" alt="Disconnected" class="sync-device-status icon-small"
+										title="Disconnected" src="://images/icons/x.svg"
+										style="background-color: crimson;" />
+									
+								<select hidden name="serialPort" id="serialPort" onchange="onSerialPortChange(this.value)">
+								</select>
+							</section>
+						</div>
+						<div class="formElement">
+							<label for="connectionNetwork">Network</label>
+							<section class="form-group-section form-group-section-connection">
+								<input id="connectionNetwork" type="radio" class="styled-radio" name="connection"
+									onclick="onOutputDeviceConnectionChange(this, 1)" />
+								<img id="networkStatus" alt="Disconnected" class="sync-device-status icon-small"
+									title="Disconnected" src="://images/icons/x.svg"
+									style="background-color: crimson;" />
+								<div class="form-group-control">
+									<span class="sync-device-input-label">Address</span><input
+										class="sync-device-address" id="networkAddress"
+										onchange="onNetworkAddressChange(this)"></input>
+								</div>
+								<div class="form-group-control">
+									<span class="sync-device-input-label">Port</span> <input class="sync-device-port"
+										id="networkPort" onchange="onNetworkPortChange(this)"></input>
+								</div>
+							</section>
+						</div>
+						<h3>Input connections</h3>
+						<div class="formElement">
+							<label for="connectionInputNone">None</label>
+							<section class="form-group-section form-group-section-connection">
+								<input id="connectionInputNone" type="radio" class="styled-radio" name="connection"
+									onclick="onInputDeviceConnectionChange(this, 6)" />
 							</section>
 						</div>
 						<div class="formElement">
 							<label for="connectionDeoVR">DeoVR/HereSphere</label>
 							<section class="form-group-section form-group-section-connection">
 								<input id="connectionDeoVR" type="radio" class="styled-radio" name="connection"
-									onclick="onSyncDeviceConnectionChange(this, 2)" />
+									onclick="onInputDeviceConnectionChange(this, 2)" />
 								<img id="deoVRStatus" alt="Disconnected" class="sync-device-status icon-small"
 									title="Disconnected" src="://images/icons/x.svg"
 									style="background-color: crimson;" />
@@ -366,7 +407,7 @@
 							<label for="connectionWhirligig">Whirligig</label>
 							<section class="form-group-section form-group-section-connection">
 								<input id="connectionWhirligig" type="radio" class="styled-radio" name="connection"
-									onclick="onSyncDeviceConnectionChange(this, 3)" />
+									onclick="onInputDeviceConnectionChange(this, 3)" />
 								<img id="whirligigStatus" alt="Disconnected" class="sync-device-status icon-small"
 									title="Disconnected" src="://images/icons/x.svg"
 									style="background-color: crimson;" />
@@ -376,7 +417,7 @@
 							<label for="connectionXTPWeb">XTP Web</label>
 							<section class="form-group-section form-group-section-connection">
 								<input id="connectionXTPWeb" type="radio" class="styled-radio" name="connection"
-									onclick="onSyncDeviceConnectionChange(this, 5)" />
+									onclick="onInputDeviceConnectionChange(this, 5)" />
 								<img id="xtpWebStatus" alt="Disconnected" class="sync-device-status icon-small"
 									title="Disconnected" src="://images/icons/x.svg"
 									style="background-color: crimson;" />
@@ -386,7 +427,7 @@
 							<label for="connectionGamepad">Gamepad</label>
 							<section class="form-group-section form-group-section-connection">
 								<input id="connectionGamepad" type="checkbox"
-									onclick="onSyncDeviceConnectionChange(this, 4)" />
+									onclick="onInputDeviceConnectionChange(this, 4)" />
 								<img id="gamepadStatus" alt="Disconnected" class="sync-device-status icon-small"
 									title="Disconnected" src="://images/icons/x.svg"
 									style="background-color: crimson;" />

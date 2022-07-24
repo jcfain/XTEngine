@@ -163,13 +163,35 @@ function skipAhead(event) {
 // updateVolume updates the video's volume
 // and disables the muted state if active
 function updateVolume() {
-	if(!controlsVisible)
-		return;
 	if (videoNode.muted) {
 		videoNode.muted = false;
 	}
 
 	videoNode.volume = volumeSlider.value;
+}
+function updateVolumeClick() {
+	if(!controlsVisible)
+		return;
+	updateVolume();
+}
+
+function volumeUp() {
+	var currentVolume = parseFloat(volumeSlider.value);
+	var newVolume = currentVolume+0.05;
+	if(newVolume <= volumeSlider.max) {
+		volumeSlider.value = newVolume;
+		updateVolume();
+		updateVolumeIcon();
+	}
+}
+function volumeDown() {
+	var currentVolume = parseFloat(volumeSlider.value);
+	var newVolume = currentVolume-0.05;
+	if(newVolume >= volumeSlider.min) {
+		volumeSlider.value = newVolume;
+		updateVolume();
+		updateVolumeIcon();
+	}
 }
 
 // updateVolumeIcon updates the volume icon so that it correctly reflects
@@ -195,8 +217,6 @@ function updateVolumeIcon() {
 // When the video is unmuted, the volume is returned to the value
 // it was set to before the video was muted
 function toggleMute() {
-	if(!controlsVisible)
-		return;
 	videoNode.muted = !videoNode.muted;
 
 	if (videoNode.muted) {
@@ -205,6 +225,11 @@ function toggleMute() {
 	} else {
 		volumeSlider.value = volumeSlider.dataset.volume;
 	}
+}
+function toggleMuteClick() {
+	if(!controlsVisible)
+		return;
+	toggleMute();
 }
 
 // animatePlayback displays an animation when
@@ -404,6 +429,7 @@ function checkInView(container, element, partial) {
 // Add eventlisteners here
 playButton.addEventListener('click', togglePlay);
 videoNode.addEventListener('play', updatePlayButton);
+videoNode.addEventListener('playing', dataLoaded);
 videoNode.addEventListener('loadeddata', hideControls);
 videoNode.addEventListener('loadeddata', dataLoaded);
 videoNode.addEventListener('pause', updatePlayButton);
@@ -420,8 +446,8 @@ videoContainer.addEventListener('mouseleave', mouseLeaveVideo);
 videoContainer.addEventListener('mousemove', showControlsIfMouseInVideo);
 seek.addEventListener('mousemove', updateSeekTooltip);
 seek.addEventListener('input', skipAhead);
-volumeSlider.addEventListener('input', updateVolume);
-volumeButton.addEventListener('click', toggleMute);
+volumeSlider.addEventListener('input', updateVolumeClick);
+volumeButton.addEventListener('click', toggleMuteClick);
 fullscreenButton.addEventListener('click', toggleFullScreenClick);
 videoContainer.addEventListener('fullscreenchange', updateFullscreenButton);
 /* Firefox */
