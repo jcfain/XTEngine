@@ -9,6 +9,10 @@ var controlsHideDebounce;
 var controlsVisible = false;
 var mouseOverVideo = false;
 var isFullScreen = false;
+var isLandScape = false;
+var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+/* if(screen.orientation)
+	isLandScape = screen.orientation.type  === 'landscape-primary'; */
 
 /* ==========================================================================
    #Custom HTML5 Video Player
@@ -18,6 +22,9 @@ var isFullScreen = false;
 
 // Select elements here
 const videoControls = document.getElementsByClassName('video-controls');
+
+const topControls = document.getElementById('top-controls');
+const bottomControls = document.getElementById('bottom-controls');
 const playButton = document.getElementById('play');
 const playIcon = document.getElementById('playIcon');
 const pauseIcon = document.getElementById('pauseIcon');
@@ -37,7 +44,7 @@ const bodyContainer = document.getElementById('body-container');
 const videoContainer = document.getElementById('video-container');
 const fullscreenButton = document.getElementById('fullscreen-button');
 const fullscreenIcons = fullscreenButton.querySelectorAll('use');
-const pipButton = document.getElementById('pip-button');
+//const pipButton = document.getElementById('pip-button');
 const loadingAnimation = document.getElementById('loading-animation');
 
 const videoWorks = !!document.createElement('video').canPlayType;
@@ -274,33 +281,55 @@ function toggleFullScreen() {
 }
 
 function showEmbedded() {
-	videoNode.classList.add("video", "video-shown-embeded")
 	if (document.fullscreenElement) {
+		//console.log("exitFullscreen");
 		document.exitFullscreen();
+		videoNode.classList.add("video", "video-shown-embeded");
+		setVideoEmbeddedLandScape();
 		return true;
 	} else if (document.webkitFullscreenElement) {
 		// Need this to support Safari
+		//console.log("webkitExitFullscreen");
 		document.webkitExitFullscreen();
+		videoNode.classList.add("video", "video-shown-embeded");
+		setVideoEmbeddedLandScape();
+		return true;
+	} else if (document.mozFullscreenElement) {
+		// Need this to support Safari
+		document.mozExitFullscreen();
+		//console.log("mozExitFullscreen");
+		videoNode.classList.add("video", "video-shown-embeded");
+		setVideoEmbeddedLandScape();
 		return true;
 	} 
+	console.log("NO ExitFullscreen!");
 	return false;
 }
 function showFullScreen() {
 	if(!isVideoShown()) {
 		return;
 	}
-	if (videoContainer.webkitRequestFullscreen) {
-		// Need this to support Safari
-		videoContainer.webkitRequestFullscreen();
-	} else if(videoContainer.requestFullscreen) {
+	if (videoContainer.requestFullscreen) {
+		//console.log("requestFullscreen");
+		videoNode.classList.remove("video", "video-shown-embeded");
 		videoContainer.requestFullscreen();
-	}
-	videoNode.classList.remove("video", "video-shown-embeded")
+	} else if (videoContainer.webkitRequestFullscreen) {
+		// Need this to support Safari
+		//console.log("webkitRequestFullscreen");
+		videoNode.classList.remove("video", "video-shown-embeded");
+		videoContainer.webkitRequestFullscreen();
+	} else if (videoContainer.mozRequestFullScreen) {
+        // This is how to go into fullscren mode in Firefox
+        // Note the "moz" prefix, which is short for Mozilla.
+		videoNode.classList.remove("video", "video-shown-embeded");
+        videoContainer.mozRequestFullScreen();
+    } 
 }
 
-// updateFullscreenButton changes the icon of the full screen button
+// fullscreenChange changes the icon of the full screen button
 // and tooltip to reflect the current full screen state of the video
-function updateFullscreenButton() {
+// Also shows fixed embeded if landscape.
+function fullscreenChange() {
 	fullscreenIcons.forEach((icon) => icon.classList.toggle('hidden'));
 
 	if (document.fullscreenElement) {
@@ -309,12 +338,13 @@ function updateFullscreenButton() {
 	} else {
 		fullscreenButton.setAttribute('data-title', 'Full screen (f)');
 		isFullScreen = false;
+		setVideoEmbeddedLandScape();
 	}
 }
 
 // togglePip toggles Picture-in-Picture mode on the video
 async function togglePip() {
-	try {
+/* 	try {
 		if (videoNode !== document.pictureInPictureElement) {
 			pipButton.disabled = true;
 			await videoNode.requestPictureInPicture();
@@ -325,11 +355,11 @@ async function togglePip() {
 		console.error(error);
 	} finally {
 		pipButton.disabled = false;
-	}
+	} */
 }
 
 function hideControlsEvent() {
-	if (videoNode.paused) {
+	if (videoNode.paused || isMouseOverControls) {
 		return;
 	}
 	hideControls();
@@ -350,6 +380,9 @@ function showControls() {
     if(controlsHideDebounce) {
         clearTimeout(controlsHideDebounce);
     }
+	hideControlsAfterTimeout();
+}
+function hideControlsAfterTimeout() {
     controlsHideDebounce = setTimeout(function () {
         hideControlsEvent();
     }, 3000);
@@ -370,25 +403,45 @@ function mouseLeaveVideo() {
 }
 
 function checkOrientation(orientation) {
+	if(!screen.orientation)
+		return false;
 	if(!orientation) {
 		orientation = screen.orientation.type;
 	}
-	if (orientation === 'landscape-primary') {
+	if(orientation)
+		isLandScape = orientation.includes('landscape');
+	setVideoEmbeddedLandScape();
+/* 	if (orientation === 'landscape-primary') {
 	// landscape mode => angle 0
 		showFullScreen();
 	} else if (orientation === 'portrait-primary') {
 	// portrait mode => angle 0
 		showEmbedded();
+	} */
+	return isLandScape;
+}
+function checkOrientationResize() {
+	if (Math.abs(window.orientation) == 90) {
+	  // landscape mode => angle 90 or -90
+		//console.log("resize: landscape-primary");
+	  return checkOrientation("landscape-primary");
+	} else if (window.orientation == 0) {
+	  // portrait mode => angle 0
+		//console.log("resize: portrait-primary");
+	  return checkOrientation("portrait-primary");
 	}
 }
 
 function showVideo() {
 	videoNode.classList.add("video-shown", "video-shown-embeded");
+	setVideoEmbeddedLandScape();
 }
 
 function hideVideo() {
 	if(isFullScreen)
 		showEmbedded();
+	dataLoaded();
+	hideControls();
 	videoContainer.classList.remove('video-container-fixed');
 	videoNode.classList.remove("video-shown", "video-shown-embeded");
 }
@@ -405,27 +458,44 @@ function dataLoading() {
 		loadingAnimation.classList.remove('hidden');
 }
 
-function checkInView(container, element, partial) {
+// function checkInView(container, element, partial) {
 
-    //Get container properties
-    let cTop = container.scrollTop;
-    let cBottom = cTop + container.clientHeight;
+//     //Get container properties
+//     let cTop = container.scrollTop;
+//     let cBottom = cTop + container.clientHeight;
 
-    //Get element properties
-    let eTop = element.offsetTop;
-    let eBottom = eTop + element.clientHeight;
+//     //Get element properties
+//     let eTop = element.offsetTop;
+//     let eBottom = eTop + element.clientHeight;
 
-    //Check if in view    
-    let isTotal = (eTop >= cTop && eBottom <= cBottom);
-    let isPartial = partial && (
-      (eTop < cTop && eBottom > cTop) ||
-      (eBottom > cBottom && eTop < cBottom)
-    );
+//     //Check if in view    
+//     let isTotal = (eTop >= cTop && eBottom <= cBottom);
+//     let isPartial = partial && (
+//       (eTop < cTop && eBottom > cTop) ||
+//       (eBottom > cBottom && eTop < cBottom)
+//     );
 
-    //Return outcome
-    return  (isTotal  || isPartial);
+//     //Return outcome
+//     return  (isTotal  || isPartial);
+// }
+
+function setVideoEmbeddedLandScape() {
+	if(isMobile) {
+		if(screen.orientation) {
+			isLandScape = screen.orientation.type.includes('landscape');;
+		} else {
+			isLandScape = Math.abs(window.orientation) == 90;
+		}
+		if(isLandScape && !isFullScreen && isVideoShown())
+		{
+			videoContainer.classList.add('video-container-fixed');
+		}
+		else {
+			videoContainer.classList.remove('video-container-fixed');
+		}
+	}
 }
-
+var isMouseOverControls = false;
 // Add eventlisteners here
 playButton.addEventListener('click', togglePlay);
 videoNode.addEventListener('play', updatePlayButton);
@@ -444,56 +514,67 @@ videoContainer.addEventListener('mouseleave', hideControlsEvent);
 videoContainer.addEventListener('mouseenter', mouseEnterVideo);
 videoContainer.addEventListener('mouseleave', mouseLeaveVideo);
 videoContainer.addEventListener('mousemove', showControlsIfMouseInVideo);
+
+topControls.addEventListener('mouseenter', function(e) {
+	if(controlsVisible)
+		isMouseOverControls = true;
+});
+bottomControls.addEventListener('mouseenter', function(e) {
+	if(controlsVisible)
+		isMouseOverControls = true;
+});
+topControls.addEventListener('mouseleave', function(e) {
+	isMouseOverControls = false;
+    if(controlsHideDebounce) {
+        clearTimeout(controlsHideDebounce);
+    }
+	hideControlsAfterTimeout();
+});
+bottomControls.addEventListener('mouseleave', function(e) {
+	isMouseOverControls = false;
+    if(controlsHideDebounce) {
+        clearTimeout(controlsHideDebounce);
+    }
+	hideControlsAfterTimeout();
+});
 seek.addEventListener('mousemove', updateSeekTooltip);
 seek.addEventListener('input', skipAhead);
 volumeSlider.addEventListener('input', updateVolumeClick);
 volumeButton.addEventListener('click', toggleMuteClick);
 fullscreenButton.addEventListener('click', toggleFullScreenClick);
-videoContainer.addEventListener('fullscreenchange', updateFullscreenButton);
+videoContainer.addEventListener('fullscreenchange', fullscreenChange);
 /* Firefox */
-videoContainer.addEventListener("mozfullscreenchange", updateFullscreenButton);
+videoContainer.addEventListener("mozfullscreenchange", fullscreenChange);
 /* Chrome, Safari and Opera */
-videoContainer.addEventListener("webkitfullscreenchange", updateFullscreenButton);
+videoContainer.addEventListener("webkitfullscreenchange", fullscreenChange);
 /* IE / Edge */
-videoContainer.addEventListener("msfullscreenchange", updateFullscreenButton);
-pipButton.addEventListener('click', togglePip);
+videoContainer.addEventListener("msfullscreenchange", fullscreenChange);
+/* pipButton.addEventListener('click', togglePip);
 
 document.addEventListener('DOMContentLoaded', () => {
 	if (document.pictureInPictureEnabled) {
 		pipButton.classList.add('hidden');
 	}
-});
+}); */
 if(screen.orientation) {
 	screen.orientation.addEventListener('change', function(e) {
 		checkOrientation(e.currentTarget.type);
-	})
+		//console.log("screen.orientation: "+e.currentTarget.type);
+	});
 } else {
 	window.addEventListener('resize', function(e) {
-	if (Math.abs(window.orientation) == 90) {
-	  // landscape mode => angle 90 or -90
-	  checkOrientation("landscape-primary");
-	} else if (window.orientation == 0) {
-	  // portrait mode => angle 0
-	  checkOrientation("portrait-primary");
-	}
-  })
+		checkOrientationResize();
+  	});
 }
-var scrollEventLimiter;
+/* var scrollEventLimiter;
 bodyContainer.addEventListener('scroll', (event) => {
 	if(scrollEventLimiter)
 		clearTimeout(scrollEventLimiter);
 	scrollEventLimiter = setTimeout(() => {
 		scrollEventLimiter = undefined;
-		if(isVideoShown())
-		{
-			if(!checkInView(bodyContainer, videoContainer, false)) {
-				videoContainer.classList.add('video-container-fixed');
-			} else {
-				videoContainer.classList.remove('video-container-fixed');
-			}
-		}
+		setVideoEmbeddedLandScape();
 	}, 50);
-});
+}); */
 
 videoNode.volume = volume ? volume : 0.5;
 volumeSlider.value = videoNode.volume;

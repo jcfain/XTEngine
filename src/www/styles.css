@@ -305,21 +305,6 @@ input:hover {
 /* .deoVideo {
     max-height: calc(100vh - 500px);
 } */
-.video {
-    align-self: center;
-    transition: max-height 0.25s ease-in-out, opacity 0.5s linear;
-    max-height: 0;
-    opacity: 0;
-}
-
-.video-shown {
-    opacity: 1;
-}
-
-.video-shown-embeded {
-    max-width: 95vw;
-    max-height: 50vh;
-}
 
 /* 
 .refresh-media-button {

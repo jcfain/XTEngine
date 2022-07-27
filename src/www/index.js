@@ -523,10 +523,10 @@ function setInputConnectionStatus(deviceName, status, message) {
 			statusColor = "red";
 			break;
 	}
-	var deoVRStatusImage = document.getElementById("deoVRStatus")
-	var whirligigStatusImage = document.getElementById("whirligigStatus")
-	var xtpWebStatusImage = document.getElementById("xtpWebStatus")
-	var gamepadStatusImage = document.getElementById("gamepadStatus")
+	var deoVRStatusImage = document.getElementById("deoVRStatus");
+	var whirligigStatusImage = document.getElementById("whirligigStatus");
+	var xtpWebStatusImage = document.getElementById("xtpWebStatus");
+	var gamepadStatusImage = document.getElementById("gamepadStatus");
 	if (deviceName != DeviceType.Gamepad) {
 		deoVRStatusImage.src = "://images/icons/x.svg";
 		deoVRStatusImage.style.backgroundColor = "crimson";
@@ -630,8 +630,8 @@ function setOutputConnectionStatus(deviceName, status, message) {
 			statusColor = "red";
 			break;
 	}
-	var networkStatusImage = document.getElementById("networkStatus")
-	var serialStatusImage = document.getElementById("serialStatus")
+	var networkStatusImage = document.getElementById("networkStatus");
+	var serialStatusImage = document.getElementById("serialStatus");
 	networkStatusImage.src = "://images/icons/x.svg";
 	networkStatusImage.style.backgroundColor = "crimson";
 	networkStatusImage.title = "Disconnected";
@@ -1243,7 +1243,6 @@ function stopVideoClick() {
 }
 function stopVideo() {
 	hideVideo();
-	hideControls();
 	//videoNode.pause();
 	videoSourceNode.setAttribute("src", "");
 	videoNode.removeAttribute("title");
@@ -1345,7 +1344,7 @@ function onVideoStall(event) {
 	videoStallTimeout = setTimeout(() => {
 		playNextVideo();
 		videoStallTimeout = undefined;
-	}, 10000);
+	}, 20000);
 }
 function onVideoPlaying(event) {
 	debug("Video playing");
