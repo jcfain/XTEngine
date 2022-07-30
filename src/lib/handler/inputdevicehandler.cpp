@@ -35,3 +35,7 @@ InputDevicePacket InputDeviceHandler::getCurrentPacket()
 {
 
 }
+
+void InputDeviceHandler::sendPacket(InputDevicePacket packet) {
+
+}

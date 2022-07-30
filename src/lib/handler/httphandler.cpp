@@ -579,6 +579,8 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
                            endByte = startByte + chunkSize;
 
                     if (startByte >= bytesAvailable){
+                        LogHandler::Debug("RequestRangeNotSatisfiable: startByte: "+ QString::number(startByte));
+                        LogHandler::Debug("RequestRangeNotSatisfiable: bytesAvailable: "+ QString::number(bytesAvailable));
                         data->response->setStatus(HttpStatus::RequestRangeNotSatisfiable);
                         file.close();
                         resolve(data);

@@ -58,19 +58,28 @@ void DeoHandler::send(const QString &command)
     _sendCommand = command;
     if (command != nullptr)
     {
-        LogHandler::Debug("Sending to Deo: "+command);
-        QByteArray currentRequest("\0\0\0");
+        LogHandler::Debug("Sending to Deo/Heresphere: "+command);
+        QByteArray currentRequest(4, '\0');
         currentRequest.append(command.toUtf8());
-        tcpSocket->write(currentRequest);
+        tcpSocket->write(currentRequest, currentRequest.size());
         tcpSocket->waitForBytesWritten();
     }
     else
     {
-        QByteArray data("\0\0\0");
-        tcpSocket->write(data, 4);
+        //LogHandler::Debug("Sending Deo/Heresphere keep alive");
+        QByteArray data(4, '\0');
+        tcpSocket->write(data, data.size());
         tcpSocket->waitForBytesWritten();
     }
     tcpSocket->flush();
+}
+
+void DeoHandler::sendPacket(InputDevicePacket packet) {
+    QJsonObject jsonObject;
+    jsonObject["path"] = packet.path;
+    jsonObject["currentTime"] = packet.currentTime;
+    jsonObject["playbackSpeed"] = packet.playbackSpeed;
+    send(QJsonDocument(jsonObject).toJson(QJsonDocument::Compact).toStdString().c_str());
 }
 
 void DeoHandler::dispose()

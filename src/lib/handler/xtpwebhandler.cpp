@@ -38,6 +38,9 @@ void XTPWebHandler::send(const QString &command)
 {
 
 }
+void XTPWebHandler::sendPacket(InputDevicePacket packet) {
+
+}
 
 void XTPWebHandler::dispose()
 {

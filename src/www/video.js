@@ -1,5 +1,3 @@
-
-
 var volume = JSON.parse(window.localStorage.getItem("volume"));
 
 const videoNode = document.getElementById("videoPlayer");
@@ -11,6 +9,11 @@ var mouseOverVideo = false;
 var isFullScreen = false;
 var isLandScape = false;
 var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+var isMouseOverControls = false;
+var isTouchingControls = false;
+var isUsingTouch = false;
+var isUsingMouse = false;
+var isUsingPen = false;
 /* if(screen.orientation)
 	isLandScape = screen.orientation.type  === 'landscape-primary'; */
 
@@ -285,21 +288,21 @@ function showEmbedded() {
 		//console.log("exitFullscreen");
 		document.exitFullscreen();
 		videoNode.classList.add("video", "video-shown-embeded");
-		setVideoEmbeddedLandScape();
+		setVideoFixedIfLowHeight();
 		return true;
 	} else if (document.webkitFullscreenElement) {
 		// Need this to support Safari
 		//console.log("webkitExitFullscreen");
 		document.webkitExitFullscreen();
 		videoNode.classList.add("video", "video-shown-embeded");
-		setVideoEmbeddedLandScape();
+		setVideoFixedIfLowHeight();
 		return true;
 	} else if (document.mozFullscreenElement) {
 		// Need this to support Safari
 		document.mozExitFullscreen();
 		//console.log("mozExitFullscreen");
 		videoNode.classList.add("video", "video-shown-embeded");
-		setVideoEmbeddedLandScape();
+		setVideoFixedIfLowHeight();
 		return true;
 	} 
 	console.log("NO ExitFullscreen!");
@@ -338,8 +341,8 @@ function fullscreenChange() {
 	} else {
 		fullscreenButton.setAttribute('data-title', 'Full screen (f)');
 		isFullScreen = false;
-		setVideoEmbeddedLandScape();
 	}
+	setVideoFixedIfLowHeight();
 }
 
 // togglePip toggles Picture-in-Picture mode on the video
@@ -359,7 +362,11 @@ async function togglePip() {
 }
 
 function hideControlsEvent() {
-	if (videoNode.paused || isMouseOverControls) {
+	if (videoNode.paused || 
+		(isMouseOverControls && isUsingMouse) || 
+		(isTouchingControls && isUsingTouch) || 
+		(isMouseOverControls && !isMobile) || 
+		(isTouchingControls && isMobile)) {
 		return;
 	}
 	hideControls();
@@ -402,39 +409,9 @@ function mouseLeaveVideo() {
     mouseOverVideo = false;
 }
 
-function checkOrientation(orientation) {
-	if(!screen.orientation)
-		return false;
-	if(!orientation) {
-		orientation = screen.orientation.type;
-	}
-	if(orientation)
-		isLandScape = orientation.includes('landscape');
-	setVideoEmbeddedLandScape();
-/* 	if (orientation === 'landscape-primary') {
-	// landscape mode => angle 0
-		showFullScreen();
-	} else if (orientation === 'portrait-primary') {
-	// portrait mode => angle 0
-		showEmbedded();
-	} */
-	return isLandScape;
-}
-function checkOrientationResize() {
-	if (Math.abs(window.orientation) == 90) {
-	  // landscape mode => angle 90 or -90
-		//console.log("resize: landscape-primary");
-	  return checkOrientation("landscape-primary");
-	} else if (window.orientation == 0) {
-	  // portrait mode => angle 0
-		//console.log("resize: portrait-primary");
-	  return checkOrientation("portrait-primary");
-	}
-}
-
 function showVideo() {
 	videoNode.classList.add("video-shown", "video-shown-embeded");
-	setVideoEmbeddedLandScape();
+	setVideoFixedIfLowHeight();
 }
 
 function hideVideo() {
@@ -479,23 +456,46 @@ function dataLoading() {
 //     return  (isTotal  || isPartial);
 // }
 
-function setVideoEmbeddedLandScape() {
-	if(isMobile) {
-		if(screen.orientation) {
-			isLandScape = screen.orientation.type.includes('landscape');;
-		} else {
-			isLandScape = Math.abs(window.orientation) == 90;
-		}
-		if(isLandScape && !isFullScreen && isVideoShown())
-		{
-			videoContainer.classList.add('video-container-fixed');
-		}
-		else {
-			videoContainer.classList.remove('video-container-fixed');
-		}
+function checkOrientation() {
+	if(screen.orientation) {
+		isLandScape = screen.orientation.type.includes('landscape');;
+	} else if(window.orientation) {
+		isLandScape = Math.abs(window.orientation) == 90;
 	}
 }
-var isMouseOverControls = false;
+function setVideoFixedIfLowHeight() {
+	if(document.documentElement.clientHeight < 600 && !isFullScreen && isVideoShown())
+	{
+		videoContainer.classList.add('video-container-fixed');
+	}
+	else {
+		videoContainer.classList.remove('video-container-fixed');
+	}
+}
+function setPointerType(event) {
+	// Call the appropriate pointer type handler
+	switch (event.pointerType) {
+	  case 'mouse':
+		isUsingMouse = true;
+		break;
+	  case 'pen':
+		isUsingPen = true;
+		break;
+	  case 'touch':
+		isUsingTouch = true;
+		break;
+	  default:
+		console.log(`pointerType ${event.pointerType} is not supported`);
+	}
+}
+
+function controlPointerEventEnd(event) {
+    if(controlsHideDebounce) {
+        clearTimeout(controlsHideDebounce);
+    }
+	hideControlsAfterTimeout();
+}
+
 // Add eventlisteners here
 playButton.addEventListener('click', togglePlay);
 videoNode.addEventListener('play', updatePlayButton);
@@ -525,18 +525,30 @@ bottomControls.addEventListener('mouseenter', function(e) {
 });
 topControls.addEventListener('mouseleave', function(e) {
 	isMouseOverControls = false;
-    if(controlsHideDebounce) {
-        clearTimeout(controlsHideDebounce);
-    }
-	hideControlsAfterTimeout();
+	controlPointerEventEnd(e);
 });
 bottomControls.addEventListener('mouseleave', function(e) {
 	isMouseOverControls = false;
-    if(controlsHideDebounce) {
-        clearTimeout(controlsHideDebounce);
-    }
-	hideControlsAfterTimeout();
+	controlPointerEventEnd(e);
 });
+topControls.addEventListener('touchstart', function(e) {
+	if(controlsVisible)
+		isTouchingControls = true;
+});
+bottomControls.addEventListener('touchstart', function(e) {
+	if(controlsVisible)
+		isTouchingControls = true;
+});
+topControls.addEventListener('touchend', function(e) {
+	isTouchingControls = false;
+	controlPointerEventEnd(e);
+});
+bottomControls.addEventListener('touchend', function(e) {
+	isTouchingControls = false;
+	controlPointerEventEnd(e);
+});
+topControls.addEventListener('pointerdown', setPointerType, false);
+bottomControls.addEventListener('pointerdown', setPointerType, false);
 seek.addEventListener('mousemove', updateSeekTooltip);
 seek.addEventListener('input', skipAhead);
 volumeSlider.addEventListener('input', updateVolumeClick);
@@ -556,23 +568,25 @@ document.addEventListener('DOMContentLoaded', () => {
 		pipButton.classList.add('hidden');
 	}
 }); */
-if(screen.orientation) {
+/* if(screen.orientation) {
 	screen.orientation.addEventListener('change', function(e) {
-		checkOrientation(e.currentTarget.type);
+		checkOrientation();
 		//console.log("screen.orientation: "+e.currentTarget.type);
 	});
-} else {
-	window.addEventListener('resize', function(e) {
-		checkOrientationResize();
-  	});
-}
+}  */
+
+window.addEventListener('resize', function(e) {
+	checkOrientation();
+	setVideoFixedIfLowHeight();
+});
+	
 /* var scrollEventLimiter;
 bodyContainer.addEventListener('scroll', (event) => {
 	if(scrollEventLimiter)
 		clearTimeout(scrollEventLimiter);
 	scrollEventLimiter = setTimeout(() => {
 		scrollEventLimiter = undefined;
-		setVideoEmbeddedLandScape();
+		setVideoFixedIfLowHeight();
 	}, 50);
 }); */
 

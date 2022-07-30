@@ -32,6 +32,7 @@ public:
     bool isPlaying() override;
     //void togglePause();
     InputDevicePacket getCurrentPacket() override;
+    void sendPacket(InputDevicePacket packet) override;
 
 private:
     void readData();

@@ -21,6 +21,7 @@ public:
     virtual bool isPlaying();
     //void togglePause();
     virtual InputDevicePacket getCurrentPacket();
+    virtual void sendPacket(InputDevicePacket packet);
 signals:
     void errorOccurred(QString error);
     void connectionChange(ConnectionChangedSignal status);

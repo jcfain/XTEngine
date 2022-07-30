@@ -49,6 +49,10 @@ void WhirligigHandler::send(const QString &command)
     tcpSocket->flush();
 }
 
+void WhirligigHandler::sendPacket(InputDevicePacket packet) {
+
+}
+
 void WhirligigHandler::dispose()
 {
     LogHandler::Debug("Whirligig: dispose");

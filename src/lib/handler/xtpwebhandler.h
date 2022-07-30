@@ -23,6 +23,7 @@ public:
     bool isPlaying() override;
     //void togglePause();
     InputDevicePacket getCurrentPacket() override;
+    void sendPacket(InputDevicePacket packet) override;
     void readData(QByteArray data);
 
 private:

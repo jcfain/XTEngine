@@ -225,6 +225,8 @@ function restartXTP() {
 function initWebSocket() {
 	try {
 		wsUri = "ws://" + window.location.hostname + ":" + remoteUserSettings.webSocketServerPort;
+		
+		debug("Connecting to web socket uri: "+wsUri);
 		if (typeof MozWebSocket == 'function')
 			WebSocket = MozWebSocket;
 		if (websocket && websocket.readyState == 1)
