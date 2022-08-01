@@ -5,8 +5,8 @@ const QMap<TCodeVersion, QString> SettingsHandler::SupportedTCodeVersions = {
     {TCodeVersion::v3, "TCode v0.3"}
 };
 
-const QString SettingsHandler::XTEVersion = QString("0.331a_%1T%2").arg(__DATE__).arg(__TIME__);
-const float SettingsHandler::XTEVersionNum = 0.331f;
+const QString SettingsHandler::XTEVersion = QString("0.332a_%1T%2").arg(__DATE__).arg(__TIME__);
+const float SettingsHandler::XTEVersionNum = 0.332f;
 
 SettingsHandler::SettingsHandler(){}
 SettingsHandler::~SettingsHandler()
@@ -313,11 +313,11 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
-        if(currentVersion < 0.34f) {
+        if(currentVersion < 0.332f) {
             locker.unlock();
             setupKeyboardKeyMap();
-//            Save();
-//            Load();
+            Save();
+            Load();
         }
 
 
@@ -396,12 +396,12 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         }
         settingsToSaveTo->setValue("gamepadButtonMap", gamepadMap);
 
-//        QVariantMap keyboardKeyMap;
-//        foreach(auto key, _keyboardKeyMap.keys())
-//        {
-//            keyboardKeyMap.insert(key, QVariant::fromValue(_keyboardKeyMap[key]));
-//        }
-//        settingsToSaveTo->setValue("keyboardKeyMap", keyboardKeyMap);
+        QVariantMap keyboardKeyMap;
+        foreach(auto key, _keyboardKeyMap.keys())
+        {
+            keyboardKeyMap.insert(key, QVariant::fromValue(_keyboardKeyMap[key]));
+        }
+        settingsToSaveTo->setValue("keyboardKeyMap", keyboardKeyMap);
 
         settingsToSaveTo->setValue("gamepadSpeed", _gamepadSpeed);
         settingsToSaveTo->setValue("gamepadSpeedStep", _gamepadSpeedStep);
@@ -528,6 +528,7 @@ void SettingsHandler::SetMapDefaults()
 {
     SetChannelMapDefaults();
     SetGamepadMapDefaults();
+    SetKeyboardKeyDefaults();
 }
 void SettingsHandler::SetChannelMapDefaults()
 {
@@ -551,6 +552,19 @@ void SettingsHandler::SetGamepadMapDefaults()
         gamepadMap.insert(button, buttonVariant);
     }
     settings->setValue("gamepadButtonMap", gamepadMap);
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::SetKeyboardKeyDefaults() {
+    setupKeyboardKeyMap();
+    QVariantHash keyboardKeyMap;
+    foreach(auto key, _keyboardKeyMap.keys())
+    {
+        QVariant actionsVariant;
+        actionsVariant.setValue(_keyboardKeyMap[key]);
+        keyboardKeyMap.insert(key, actionsVariant);
+    }
+    settings->setValue("keyboardKeyMap", keyboardKeyMap);
     settingsChangedEvent(true);
 }
 

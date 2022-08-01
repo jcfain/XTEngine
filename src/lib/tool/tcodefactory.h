@@ -8,7 +8,9 @@
 #include "boolinq.h"
 #include "xmath.h"
 
-class TCodeFactory
+#include "XTEngine_global.h"
+
+class XTENGINE_EXPORT TCodeFactory
 {
 public:
     TCodeFactory(double inputStart, double inputEnd);

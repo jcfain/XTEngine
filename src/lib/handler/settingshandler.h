@@ -264,6 +264,7 @@ public:
 
     static void SetChannelMapDefaults();
     static void SetGamepadMapDefaults();
+    static void SetKeyboardKeyDefaults();
     static void setSaveOnExit(bool enabled);
     static void Load(QSettings* settingsToLoadFrom = nullptr);
     static void Save(QSettings* settingsToSaveTo = nullptr);
