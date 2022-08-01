@@ -44,7 +44,7 @@ void DeoHandler::sendKeepAlive()
 {
     if (_isConnected)
     {
-        LogHandler::Debug("Sending keepalive: "+ QString::number(QTime::currentTime().msecsSinceStartOfDay()));
+        //LogHandler::Debug("Sending keepalive: "+ QString::number(QTime::currentTime().msecsSinceStartOfDay()));
         send(nullptr);
     }
     else
@@ -84,7 +84,7 @@ void DeoHandler::sendPacket(InputDevicePacket packet) {
 
 void DeoHandler::dispose()
 {
-    LogHandler::Debug("Deo: dispose");
+    LogHandler::Debug("Deo/HereSphere: dispose");
     tearDown();
     emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Disconnected, "Disconnected"});
 }
@@ -203,7 +203,7 @@ void DeoHandler::onSocketStateChange (QAbstractSocket::SocketState state)
         {
             //_mutex.lock();
             _isConnected = true;
-            LogHandler::Debug("Deo connected");
+            LogHandler::Debug("Deo/HereSphere connected");
             send(nullptr);
             if (keepAliveTimer != nullptr && keepAliveTimer->isActive())
                 keepAliveTimer->stop();
@@ -231,7 +231,7 @@ void DeoHandler::onSocketStateChange (QAbstractSocket::SocketState state)
 //            }
             if(SettingsHandler::getSelectedInputDevice() == DeviceName::Deo)
             {
-                LogHandler::Debug("DeoVR retrying: " + _address.address);
+                LogHandler::Debug("DeoVR/HereSphere retrying: " + _address.address);
 //                LogHandler::Debug("port: " + QString::number(_address.port));
 //                QHostAddress addressObj;
 //                addressObj.setAddress(_address.address);
@@ -243,35 +243,35 @@ void DeoHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             }
             else
             {
-                LogHandler::Debug("Deo disconnected");
+                LogHandler::Debug("Deo/HereSphere disconnected");
                 emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Disconnected, "Disconnected"});
             }
             break;
         }
         case QAbstractSocket::SocketState::ConnectingState:
         {
-            LogHandler::Debug("Deo connecting");
+            LogHandler::Debug("Deo/HereSphere connecting");
             emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Connecting, "Waiting..."});
             break;
         }
         case QAbstractSocket::SocketState::BoundState:
         {
-            LogHandler::Debug("Deo bound");
+            LogHandler::Debug("Deo/HereSphere bound");
             break;
         }
         case QAbstractSocket::SocketState::ListeningState:
         {
-            LogHandler::Debug("Deo listening");
+            LogHandler::Debug("Deo/HereSphere listening");
             break;
         }
         case QAbstractSocket::SocketState::HostLookupState:
         {
-            LogHandler::Debug("Deo host look up");
+            LogHandler::Debug("Deo/HereSphere host look up");
             break;
         }
         case QAbstractSocket::SocketState::ClosingState:
         {
-            LogHandler::Debug("Deo closing");
+            LogHandler::Debug("Deo/HereSphere closing");
             break;
         }
     }
@@ -284,122 +284,122 @@ void DeoHandler::tcpErrorOccured(QAbstractSocket::SocketError state)
     {
         case QAbstractSocket::SocketError::AddressInUseError:
         {
-            LogHandler::Error("Deo AddressInUseError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere AddressInUseError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::ConnectionRefusedError:
         {
-            LogHandler::Error("Deo ConnectionRefusedError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ConnectionRefusedError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::DatagramTooLargeError:
         {
-            LogHandler::Error("Deo DatagramTooLargeError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere DatagramTooLargeError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::HostNotFoundError:
         {
-            LogHandler::Error("Deo HostNotFoundError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere HostNotFoundError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::NetworkError:
         {
-            LogHandler::Error("Deo NetworkError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere NetworkError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::OperationError:
         {
-            LogHandler::Error("Deo OperationError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere OperationError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyAuthenticationRequiredError:
         {
-            LogHandler::Error("Deo ProxyAuthenticationRequiredError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyAuthenticationRequiredError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyConnectionClosedError:
         {
-            LogHandler::Error("Deo ProxyConnectionClosedError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyConnectionClosedError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyConnectionRefusedError:
         {
-            LogHandler::Error("Deo ProxyConnectionRefusedError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyConnectionRefusedError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyConnectionTimeoutError:
         {
-            LogHandler::Error("Deo ProxyConnectionTimeoutError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyConnectionTimeoutError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyNotFoundError:
         {
-            LogHandler::Error("Deo ProxyNotFoundError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyNotFoundError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyProtocolError:
         {
-            LogHandler::Error("Deo ProxyProtocolError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyProtocolError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::RemoteHostClosedError:
         {
-            LogHandler::Error("Deo RemoteHostClosedError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere RemoteHostClosedError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::SocketAccessError:
         {
-            LogHandler::Error("Deo SocketAccessError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SocketAccessError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::SocketAddressNotAvailableError:
         {
-            LogHandler::Error("Deo SocketAddressNotAvailableError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SocketAddressNotAvailableError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::SocketResourceError:
         {
-            LogHandler::Error("Deo SocketResourceError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SocketResourceError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::SocketTimeoutError:
         {
-            LogHandler::Error("Deo SocketTimeoutError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SocketTimeoutError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::SslHandshakeFailedError:
         {
-            LogHandler::Error("Deo SslHandshakeFailedError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SslHandshakeFailedError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::SslInternalError:
         {
-            LogHandler::Error("Deo SslInternalError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SslInternalError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::SslInvalidUserDataError:
         {
-            LogHandler::Error("Deo SslInvalidUserDataError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SslInvalidUserDataError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::TemporaryError:
         {
-            LogHandler::Error("Deo TemporaryError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere TemporaryError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::UnfinishedSocketOperationError:
         {
-            LogHandler::Error("Deo UnfinishedSocketOperationError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere UnfinishedSocketOperationError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::UnknownSocketError:
         {
-            LogHandler::Error("Deo UnknownSocketError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere UnknownSocketError: "+tcpSocket->errorString());
             break;
         }
         case QAbstractSocket::SocketError::UnsupportedSocketOperationError:
         {
-            LogHandler::Error("Deo UnsupportedSocketOperationError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere UnsupportedSocketOperationError: "+tcpSocket->errorString());
             break;
         }
     }

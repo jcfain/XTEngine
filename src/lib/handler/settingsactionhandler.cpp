@@ -169,31 +169,31 @@ void SettingsActionHandler::media_action(QString action)
     {
         bool multiplier = SettingsHandler::getMultiplierChecked(TCodeChannelLookup::Roll());
         SettingsHandler::setMultiplierChecked(TCodeChannelLookup::Roll(), !multiplier);
-        emit actionExecuted(action, multiplier ? "Disable roll multiplier" : "Enable roll motion");
+        emit actionExecuted(action, multiplier ? "Disable roll motion" : "Enable roll motion");
     }
     else if (action == actions.ToggleChannelPitchMultiplier)
     {
         bool multiplier = SettingsHandler::getMultiplierChecked(TCodeChannelLookup::Pitch());
         SettingsHandler::setMultiplierChecked(TCodeChannelLookup::Pitch(), !multiplier);
-        emit actionExecuted(action, multiplier ? "Disable pitch multiplier" : "Enable pitch motion");
+        emit actionExecuted(action, multiplier ? "Disable pitch motion" : "Enable pitch motion");
     }
     else if (action == actions.ToggleChannelSurgeMultiplier)
     {
         bool multiplier = SettingsHandler::getMultiplierChecked(TCodeChannelLookup::Surge());
         SettingsHandler::setMultiplierChecked(TCodeChannelLookup::Surge(), !multiplier);
-        emit actionExecuted(action, multiplier ? "Disable surge multiplier" : "Enable surge motion");
+        emit actionExecuted(action, multiplier ? "Disable surge motion" : "Enable surge motion");
     }
     else if (action == actions.ToggleChannelSwayMultiplier)
     {
         bool multiplier = SettingsHandler::getMultiplierChecked(TCodeChannelLookup::Sway());
         SettingsHandler::setMultiplierChecked(TCodeChannelLookup::Sway(), !multiplier);
-        emit actionExecuted(action, multiplier ? "Disable sway multiplier" : "Enable sway motion");
+        emit actionExecuted(action, multiplier ? "Disable sway motion" : "Enable sway motion");
     }
     else if (action == actions.ToggleChannelTwistMultiplier)
     {
         bool multiplier = SettingsHandler::getMultiplierChecked(TCodeChannelLookup::Twist());
         SettingsHandler::setMultiplierChecked(TCodeChannelLookup::Twist(), !multiplier);
-        emit actionExecuted(action, multiplier ? "Disable twist multiplier" : "Enable twist motion");
+        emit actionExecuted(action, multiplier ? "Disable twist motion" : "Enable twist motion");
     }
     else if (action == actions.ToggleFunscriptInvert)
     {

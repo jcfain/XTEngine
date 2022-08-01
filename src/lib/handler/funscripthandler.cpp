@@ -109,7 +109,10 @@ qint64 FunscriptHandler::getMax()
 
 qint64 FunscriptHandler::getNext() {
     if(lastActionIndex == nextActionIndex) {
-        return atList[lastActionIndex + 1];
+        int nextAction = lastActionIndex + 1;
+        if(nextAction >= atList.length())
+            return getMin();
+        return atList[nextAction];
     }
     if(nextActionIndex > -1) {
         return atList[nextActionIndex];

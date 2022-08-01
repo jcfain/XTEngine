@@ -1415,8 +1415,8 @@ function playPreviousVideo() {
 function setThumbSize(value, userClick) {
 	if (!userClick) {
 		if (value) {
-			//document.getElementById(value.toString()).click();
-			document.getElementById("thumbSize").value = value.toString();
+			document.getElementById(value.toString()).click();
+			//document.getElementById("thumbSize").value = value.toString();
 		}
 	} else {
 		window.localStorage.setItem("thumbSize", parseInt(value, 10));

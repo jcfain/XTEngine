@@ -81,11 +81,6 @@ public:
     static int getVideoIncrement();
 
     static bool getGamepadEnabled();
-    ///Returns assigned actions per gamepad button
-    static QMap<QString, QStringList> getGamePadMap();
-    ///Returns assigned gamepad buttons per action
-    static QMap<QString, QStringList> getGamePadMapInverse();
-    static QStringList getGamePadMapButton(QString gamepadButton);
     static QMap<QString, ChannelModel33>* getAvailableAxis();
     static ChannelModel33 getAxis(QString axis);
     static int getGamepadSpeed();
@@ -152,9 +147,23 @@ public:
     static LibrarySortMode getLibrarySortMode();
 
     static void setGamepadEnabled(bool value);
-    static void setGamePadMapButton(QString gamePadButton, QString axis);
-    static void removeGamePadMapButton(QString gamePadButton, QString axis);
+    ///Returns assigned actions per gamepad button
+    static QMap<QString, QStringList> getGamePadMap();
+    ///Returns assigned gamepad buttons per action
+    static QMap<QString, QStringList> getGamePadMapInverse();
+    static QStringList getGamePadMapButton(QString gamepadButton);
+    static void setGamePadMapButton(QString gamePadButton, QString action);
+    static void removeGamePadMapButton(QString gamePadButton, QString action);
     static void clearGamePadMapButton(QString gamePadButton);
+
+    static QMap<QString, QStringList> getKeyboardMap();
+    static QMap<QString, QStringList> getKeyboardMapInverse();
+    static QStringList getKeyboardKeyActionList(int key, int modifiers);
+    static void setKeyboardMapKey(QString key, QString action);
+    static void removeKeyboardMapKey(QString key, QString action);
+    static void clearKeyboardMapKey(QString key);
+    static QString getKeyboardKey(int key, int modifiers = 0);
+
     static void setAxis(QString axis, ChannelModel33 channel);
     static void addAxis(ChannelModel33 channel);
     static void deleteAxis(QString axis);
@@ -307,6 +316,7 @@ private:
     static void setupAvailableChannels();
     static ChannelModel33 setupAvailableChannel(QString friendlyName, QString axisName, QString channel, AxisDimension dimension, AxisType type, QString mfsTrackName, QString relatedChannel);
     static void setupGamepadButtonMap();
+    static void setupKeyboardKeyMap();
     static void MigrateTo23();
     static void MigrateTo25();
     static void MigrateTo252();
@@ -353,6 +363,8 @@ private:
     static bool _gamePadEnabled;
     static QMap<QString, QStringList> _gamepadButtonMap;
     static QMap<QString, QStringList> _inverseGamePadMap;
+    static QMap<QString, QStringList> _keyboardKeyMap;
+    static QMap<QString, QStringList> _inverseKeyboardMap;
     static QMap<QString, ChannelModel33> _availableAxis;
     static int _gamepadSpeed;
     static int _gamepadSpeedStep;

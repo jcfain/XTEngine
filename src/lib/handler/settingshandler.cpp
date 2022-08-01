@@ -121,6 +121,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     {
         _gamepadButtonMap.insert(button, gamepadButtonMap[button].toStringList());
     }
+    QVariantMap keyboardKeyMap = settingsToLoadFrom->value("keyboardKeyMap").toMap();
+    _keyboardKeyMap.clear();
+    foreach(auto key, keyboardKeyMap.keys())
+    {
+        _keyboardKeyMap.insert(key, keyboardKeyMap[key].toStringList());
+    }
     _gamepadSpeed = settingsToLoadFrom->value("gamepadSpeed").toInt();
     _gamepadSpeed = _gamepadSpeed == 0 ? 1000 : _gamepadSpeed;
     _gamepadSpeedStep = settingsToLoadFrom->value("gamepadSpeedStep").toInt();
@@ -307,6 +313,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
+        if(currentVersion < 0.34f) {
+            locker.unlock();
+            setupKeyboardKeyMap();
+//            Save();
+//            Load();
+        }
+
 
     }
     settingsChangedEvent(false);
@@ -381,8 +394,15 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         {
             gamepadMap.insert(button, QVariant::fromValue(_gamepadButtonMap[button]));
         }
-
         settingsToSaveTo->setValue("gamepadButtonMap", gamepadMap);
+
+//        QVariantMap keyboardKeyMap;
+//        foreach(auto key, _keyboardKeyMap.keys())
+//        {
+//            keyboardKeyMap.insert(key, QVariant::fromValue(_keyboardKeyMap[key]));
+//        }
+//        settingsToSaveTo->setValue("keyboardKeyMap", keyboardKeyMap);
+
         settingsToSaveTo->setValue("gamepadSpeed", _gamepadSpeed);
         settingsToSaveTo->setValue("gamepadSpeedStep", _gamepadSpeedStep);
         settingsToSaveTo->setValue("xRangeStep", _xRangeStep);
@@ -1373,7 +1393,7 @@ QMap<QString, QStringList> SettingsHandler::getGamePadMapInverse()
     return _inverseGamePadMap;
 }
 
-QMap<QString, ChannelModel33>*  SettingsHandler::getAvailableAxis()
+QMap<QString, ChannelModel33>* SettingsHandler::getAvailableAxis()
 {
     return &_availableAxis;
 }
@@ -1383,6 +1403,99 @@ QStringList SettingsHandler::getGamePadMapButton(QString gamepadButton)
         return _gamepadButtonMap[gamepadButton];
     return QStringList();
 }
+
+void SettingsHandler::setGamePadMapButton(QString gamePadButton, QString axis)
+{
+    QMutexLocker locker(&mutex);
+    if(!_gamepadButtonMap[gamePadButton].contains(axis))
+    {
+        _gamepadButtonMap[gamePadButton] << axis;
+    }
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::removeGamePadMapButton(QString gamePadButton, QString axis) {
+    QMutexLocker locker(&mutex);
+    _gamepadButtonMap[gamePadButton].removeAll(axis);
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::clearGamePadMapButton(QString gamePadButton) {
+    _gamepadButtonMap[gamePadButton].clear();
+    settingsChangedEvent(true);
+}
+
+QMap<QString, QStringList> SettingsHandler::getKeyboardMapInverse() {
+    _inverseKeyboardMap.clear();
+    foreach (auto key, _keyboardKeyMap.keys())
+    {
+        QStringList actions = _keyboardKeyMap.value(key);
+        foreach(auto action, actions) {
+            QStringList existingKeys;
+            if(_inverseKeyboardMap.contains(action)) {
+                existingKeys = _inverseKeyboardMap.value(action);
+            }
+            existingKeys.append(key);
+            _inverseKeyboardMap.insert(action, existingKeys);
+        }
+    }
+    return _inverseKeyboardMap;
+}
+
+QMap<QString, QStringList> SettingsHandler::getKeyboardMap() {
+    return _keyboardKeyMap;
+}
+
+void SettingsHandler::setKeyboardMapKey(QString key, QString action) {
+    QMutexLocker locker(&mutex);
+    if(!_keyboardKeyMap[key].contains(action))
+    {
+        _keyboardKeyMap[key].append(action);
+    }
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::removeKeyboardMapKey(QString key, QString action) {
+    QMutexLocker locker(&mutex);
+    _keyboardKeyMap[key].removeAll(action);
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::clearKeyboardMapKey(QString key) {
+    _keyboardKeyMap[key].clear();
+    settingsChangedEvent(true);
+}
+
+QStringList SettingsHandler::getKeyboardKeyActionList(int key, int modifiers)
+{
+    auto keyCode = getKeyboardKey(key, modifiers);
+    if(!keyCode.isEmpty() && _keyboardKeyMap.contains(keyCode)) {
+        return _keyboardKeyMap.value(keyCode);
+    }
+    return QStringList();
+}
+#include <QKeySequence>
+QString SettingsHandler::getKeyboardKey(int key, int keyModifiers) {
+    if(key == Qt::Key_unknown ||
+        key == Qt::Key_Control ||
+        key == Qt::Key_Shift ||
+        key == Qt::Key_Alt ||
+        key == Qt::Key_Meta)
+    {
+        return nullptr;
+    }
+//    if(keyModifiers & Qt::ShiftModifier)
+//        key += Qt::SHIFT;
+//    if(keyModifiers & Qt::ControlModifier)
+//        key += Qt::CTRL;
+//    if(keyModifiers & Qt::AltModifier)
+//        key += Qt::ALT;
+//    if(keyModifiers & Qt::MetaModifier)
+//        key += Qt::META;
+
+    return QKeySequence(keyModifiers+key).toString(QKeySequence::NativeText);
+}
+
 void SettingsHandler::setSelectedTheme(QString value)
 {
     QMutexLocker locker(&mutex);
@@ -1589,27 +1702,6 @@ void SettingsHandler::deleteAxis(QString axis)
     settingsChangedEvent(true);
 }
 
-void SettingsHandler::setGamePadMapButton(QString gamePadButton, QString axis)
-{
-    QMutexLocker locker(&mutex);
-    if(!_gamepadButtonMap[gamePadButton].contains(axis))
-    {
-        _gamepadButtonMap[gamePadButton] << axis;
-    }
-    settingsChangedEvent(true);
-}
-
-void SettingsHandler::removeGamePadMapButton(QString gamePadButton, QString axis) {
-    QMutexLocker locker(&mutex);
-    _gamepadButtonMap[gamePadButton].removeAll(axis);
-    settingsChangedEvent(true);
-}
-
-void SettingsHandler::clearGamePadMapButton(QString gamePadButton) {
-    _gamepadButtonMap[gamePadButton].clear();
-    settingsChangedEvent(true);
-}
-
 QList<int> SettingsHandler::getMainWindowSplitterPos()
 {
     QMutexLocker locker(&mutex);
@@ -1791,6 +1883,42 @@ void SettingsHandler::setupGamepadButtonMap()
         { gamepadAxisNames.LeftAxisButton, QStringList() },
         { gamepadAxisNames.Center, QStringList() },
         { gamepadAxisNames.Guide, QStringList() }
+    };
+}
+
+void SettingsHandler::setupKeyboardKeyMap() {
+    _keyboardKeyMap = {
+        { getKeyboardKey(Qt::Key::Key_Space), QStringList(mediaActions.TogglePause) },
+        { getKeyboardKey(Qt::Key::Key_Enter), QStringList(mediaActions.TogglePause) },
+        { getKeyboardKey(Qt::Key::Key_MediaPause), QStringList(mediaActions.TogglePause) },
+        { getKeyboardKey(Qt::Key::Key_MediaTogglePlayPause), QStringList(mediaActions.TogglePause) },
+        { getKeyboardKey(Qt::Key::Key_F11), QStringList(mediaActions.FullScreen) },
+        { getKeyboardKey(Qt::Key::Key_M), QStringList(mediaActions.Mute) },
+        { getKeyboardKey(Qt::Key::Key_Escape), QStringList(mediaActions.Stop) },
+        { getKeyboardKey(Qt::Key::Key_MediaStop), QStringList(mediaActions.Stop) },
+        { getKeyboardKey(Qt::Key::Key_E), QStringList(mediaActions.Next) },
+        { getKeyboardKey(Qt::Key::Key_MediaNext), QStringList(mediaActions.Next) },
+        { getKeyboardKey(Qt::Key::Key_Q), QStringList(mediaActions.Back) },
+        { getKeyboardKey(Qt::Key::Key_MediaPrevious), QStringList(mediaActions.Back) },
+        { getKeyboardKey(Qt::Key::Key_W), QStringList(mediaActions.VolumeUp) },
+        { getKeyboardKey(Qt::Key::Key_VolumeUp), QStringList(mediaActions.VolumeUp) },
+        { getKeyboardKey(Qt::Key::Key_S), QStringList(mediaActions.VolumeDown) },
+        { getKeyboardKey(Qt::Key::Key_VolumeDown), QStringList(mediaActions.VolumeDown) },
+        { getKeyboardKey(Qt::Key::Key_L), QStringList(mediaActions.Loop) },
+        { getKeyboardKey(Qt::Key::Key_A), QStringList(mediaActions.Rewind) },
+        { getKeyboardKey(Qt::Key::Key_D), QStringList(mediaActions.FastForward) },
+        { getKeyboardKey(Qt::Key::Key_X), QStringList(mediaActions.IncreaseXRange) },
+        { getKeyboardKey(Qt::Key::Key_Z), QStringList(mediaActions.DecreaseXRange) },
+        { getKeyboardKey(Qt::Key::Key_F), QStringList(mediaActions.DecreaseXUpperRange) },
+        { getKeyboardKey(Qt::Key::Key_R), QStringList(mediaActions.IncreaseXUpperRange) },
+        { getKeyboardKey(Qt::Key::Key_G), QStringList(mediaActions.DecreaseXLowerRange) },
+        { getKeyboardKey(Qt::Key::Key_T), QStringList(mediaActions.IncreaseXLowerRange) },
+        { getKeyboardKey(Qt::Key::Key_Y), QStringList(mediaActions.ResetLiveXRange) },
+        { getKeyboardKey(Qt::Key::Key_I), QStringList(mediaActions.ToggleFunscriptInvert) },
+        { getKeyboardKey(Qt::Key::Key_V), QStringList(mediaActions.ToggleAxisMultiplier) },
+        { getKeyboardKey(Qt::Key::Key_P), QStringList(mediaActions.TogglePauseAllDeviceActions) },
+        { getKeyboardKey(Qt::Key::Key_J), QStringList(mediaActions.SkipToMoneyShot) },
+        { getKeyboardKey(Qt::Key::Key_K), QStringList(mediaActions.SkipToAction) }
     };
 }
 
@@ -2058,6 +2186,8 @@ int SettingsHandler::videoIncrement = 10;
 bool SettingsHandler::_gamePadEnabled;
 QMap<QString, QStringList> SettingsHandler::_gamepadButtonMap;
 QMap<QString, QStringList> SettingsHandler::_inverseGamePadMap;
+QMap<QString, QStringList> SettingsHandler::_keyboardKeyMap;
+QMap<QString, QStringList> SettingsHandler::_inverseKeyboardMap;
 QMap<QString, ChannelModel33> SettingsHandler::_availableAxis;
 int SettingsHandler::_gamepadSpeed;
 int SettingsHandler::_gamepadSpeedStep;
