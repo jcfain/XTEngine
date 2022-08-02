@@ -13,18 +13,17 @@ ConnectionHandler::ConnectionHandler(QObject *parent)
 
 void ConnectionHandler::init()
 {
-    if(SettingsHandler::getSelectedOutputDevice() == DeviceName::Serial)
-    {
-        setOutputDevice(_serialHandler);
-    }
-    else if (SettingsHandler::getSelectedOutputDevice() == DeviceName::Network)
-    {
-        setOutputDevice(_udpHandler);
-    }
+    DeviceName outputDeviceName = SettingsHandler::getSelectedOutputDevice();
+    if(outputDeviceName != DeviceName::None)
+        initOutputDevice(outputDeviceName);
+
+    DeviceName inputDeviceName = SettingsHandler::getSelectedInputDevice();
+    if(inputDeviceName != DeviceName::None)
+        initInputDevice(inputDeviceName);
+
     if(SettingsHandler::getGamepadEnabled())
     {
-        connect(_gamepadHandler, &GamepadHandler::connectionChange, this, &ConnectionHandler::on_gamepad_connectionChanged);
-        _gamepadHandler->init();
+        initInputDevice(DeviceName::Gamepad);
     }
 }
 
@@ -56,7 +55,7 @@ bool ConnectionHandler::isInputDeviceConnected()
 void ConnectionHandler::setOutputDevice(OutputDeviceHandler* device)
 {
     if(!device && _outputDevice) {
-        disconnect(_outputDevice, nullptr, nullptr, nullptr);
+        disconnect(_outputDevice, &OutputDeviceHandler::connectionChange, nullptr, nullptr);
         _outputDevice->dispose();
     }
     _outputDevice = device;
@@ -66,7 +65,8 @@ void ConnectionHandler::setOutputDevice(OutputDeviceHandler* device)
 void ConnectionHandler::setInputDevice(InputDeviceHandler* device)
 {
     if(!device && _inputDevice) {
-        disconnect(_inputDevice, nullptr, nullptr, nullptr);
+        disconnect(_inputDevice, &InputDeviceHandler::connectionChange, nullptr, nullptr);
+        disconnect(_inputDevice, &InputDeviceHandler::messageRecieved, nullptr, nullptr);
         _inputDevice->dispose();
     }
     _inputDevice = device;
@@ -117,7 +117,7 @@ void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
 {
     if (_outputDevice && _outputDevice->isRunning())
     {
-        disconnect(_outputDevice, nullptr, nullptr, nullptr);
+        disconnect(_outputDevice, &OutputDeviceHandler::connectionChange, nullptr, nullptr);
         _outputDevice->dispose();
     }
     if(_initFuture.isRunning())
@@ -162,22 +162,16 @@ void ConnectionHandler::initInputDevice(DeviceName inputDevice)
 {
     if(inputDevice == DeviceName::Gamepad)
     {
-        if (SettingsHandler::getGamepadEnabled())
-        {
-            connect(_gamepadHandler, &GamepadHandler::emitTCode, this, [this](QString tcode){ emit gamepadTCode(tcode); });
-            connect(_gamepadHandler, &GamepadHandler::emitAction, this, [this](QString action){ emit gamepadAction(action); });
-            _gamepadHandler->init();
-        }
-        else
-        {
-            disconnect(_gamepadHandler, nullptr, nullptr, nullptr);
-            _gamepadHandler->dispose();
-        }
+        connect(_gamepadHandler, &GamepadHandler::connectionChange, this, &ConnectionHandler::on_gamepad_connectionChanged);
+        connect(_gamepadHandler, &GamepadHandler::emitTCode, this, [this](QString tcode){ emit gamepadTCode(tcode); });
+        connect(_gamepadHandler, &GamepadHandler::emitAction, this, [this](QString action){ emit gamepadAction(action); });
+        _gamepadHandler->init();
         return;
     }
     if (_inputDevice && _inputDevice->isConnected())
     {
-        disconnect(_inputDevice, nullptr, nullptr, nullptr);
+        disconnect(_inputDevice, &InputDeviceHandler::connectionChange, nullptr, nullptr);
+        disconnect(_inputDevice, &InputDeviceHandler::messageRecieved, nullptr, nullptr);
         _inputDevice->dispose();
     }
     if(inputDevice == DeviceName::Deo)
@@ -212,8 +206,10 @@ void ConnectionHandler::disposeInputDevice(DeviceName inputDevice)
 {
     if(inputDevice == DeviceName::Gamepad)
     {
-        disconnect(_gamepadHandler, nullptr, nullptr, nullptr);
         _gamepadHandler->dispose();
+        disconnect(_gamepadHandler, &GamepadHandler::emitTCode, nullptr, nullptr);
+        disconnect(_gamepadHandler, &GamepadHandler::emitAction, nullptr, nullptr);
+        disconnect(_gamepadHandler, &GamepadHandler::connectionChange, nullptr, nullptr);
     }
     else if(inputDevice == DeviceName::Deo)
     {

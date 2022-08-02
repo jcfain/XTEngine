@@ -109,7 +109,6 @@ skipToMoneyShotButton.addEventListener("click", sendSkipToMoneyShot);
 skipToMoneyShotButton.addEventListener("click", onSkipToMoneyShotClick);
 skipToNextActionButton.addEventListener("click", sendSkipToNextActionClick);
 exitVideoButton.addEventListener("click", stopVideoClick);
-videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
 videoNode.addEventListener("loadeddata", onVideoLoad);
 videoNode.addEventListener("play", onVideoPlay);
 videoNode.addEventListener("playing", onVideoPlaying);
@@ -118,6 +117,7 @@ videoNode.addEventListener("waiting", onVideoStall);
 videoNode.addEventListener("pause", onVideoPause);
 videoNode.addEventListener("volumechange", onVolumeChange);
 videoNode.addEventListener("ended", onVideoEnd);
+videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
 
 const playNextButton = document.getElementById('play-next');
 playNextButton.addEventListener('click', playNextVideoClick);
@@ -1245,14 +1245,17 @@ function stopVideoClick() {
 }
 function stopVideo() {
 	hideVideo();
-	//videoNode.pause();
+	videoNode.pause();
 	videoSourceNode.setAttribute("src", "");
 	videoNode.removeAttribute("title");
 	videoNode.removeAttribute("poster");
 	videoMediaName.innerText = "";
 	videoNode.load();
-	if (playingmediaItem)
+	if (playingmediaItem) {
+		playingmediaItem.playing = false;
+		sendMediaState();
 		clearPlayingMediaItem()
+	}
 }
 
 function skipVideoTo(timeInMSecs) {
