@@ -48,6 +48,9 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     bool firstLoad = currentVersion == 0;
     if (firstLoad)
     {
+        _selectedTCodeVersion = TCodeVersion::v3;
+        TCodeChannelLookup::setSelectedTCodeVersion(_selectedTCodeVersion);
+
         locker.unlock();
         SetMapDefaults();
         QList<QVariant> decoderVarient;
@@ -316,6 +319,9 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.332f) {
             locker.unlock();
             setupKeyboardKeyMap();
+            if(_availableAxis.empty() || _availableAxis.first().AxisName.isEmpty()) {
+                SetChannelMapDefaults();
+            }
             Save();
             Load();
         }
@@ -533,23 +539,22 @@ void SettingsHandler::SetMapDefaults()
 void SettingsHandler::SetChannelMapDefaults()
 {
     setupAvailableChannels();
-    QVariantHash availableAxis;
+    QVariantMap availableAxis;
     foreach(auto axis, _availableAxis.keys())
     {
-        availableAxis.insert(axis, ChannelModel33::toVariant(_availableAxis[axis]));
+        auto variant = ChannelModel33::toVariant(_availableAxis[axis]);
+        availableAxis.insert(axis, variant);
     }
-    settings->setValue("availableAxis", availableAxis);
+    settings->setValue("availableChannels", availableAxis);
     settingsChangedEvent(true);
 }
 void SettingsHandler::SetGamepadMapDefaults()
 {
     setupGamepadButtonMap();
-    QVariantHash gamepadMap;
+    QVariantMap gamepadMap;
     foreach(auto button, _gamepadButtonMap.keys())
     {
-        QVariant buttonVariant;
-        buttonVariant.setValue(_gamepadButtonMap[button]);
-        gamepadMap.insert(button, buttonVariant);
+        gamepadMap.insert(button, QVariant::fromValue(_gamepadButtonMap[button]));
     }
     settings->setValue("gamepadButtonMap", gamepadMap);
     settingsChangedEvent(true);
@@ -557,12 +562,10 @@ void SettingsHandler::SetGamepadMapDefaults()
 
 void SettingsHandler::SetKeyboardKeyDefaults() {
     setupKeyboardKeyMap();
-    QVariantHash keyboardKeyMap;
+    QVariantMap keyboardKeyMap;
     foreach(auto key, _keyboardKeyMap.keys())
     {
-        QVariant actionsVariant;
-        actionsVariant.setValue(_keyboardKeyMap[key]);
-        keyboardKeyMap.insert(key, actionsVariant);
+        keyboardKeyMap.insert(key, QVariant::fromValue(_keyboardKeyMap[key]));
     }
     settings->setValue("keyboardKeyMap", keyboardKeyMap);
     settingsChangedEvent(true);
