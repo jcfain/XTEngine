@@ -538,7 +538,8 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
                     }
                     LogHandler::Debug("Looking for media in library: " + mediaName);
                     QString filename = SettingsHandler::getSelectedLibrary() + "/" + mediaName;
-                    if(mediaName.startsWith(SettingsHandler::getVRLibrary())) {
+                    QString vrLibrary = SettingsHandler::getVRLibrary();
+                    if(!vrLibrary.isEmpty() && QFile::exists(vrLibrary) && mediaName.startsWith(vrLibrary)) {
                         filename = mediaName;
                     }
                     //filename = _videoHandler->transcode(filename);
