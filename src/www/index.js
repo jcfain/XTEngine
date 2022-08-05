@@ -239,6 +239,7 @@ function initWebSocket() {
 		websocket.onopen = function (evt) {
 			xtpConnected = true;
 			stopServerConnectionRetry();
+			serverRetryTimeoutTries = 0;
 			debug("CONNECTED");
 			updateSettingsUI();
 			sendMediaState();
