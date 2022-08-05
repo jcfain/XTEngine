@@ -176,8 +176,7 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
         {
             scriptPath = nullptr;
         }
-
-        LibraryListItemType libratyItemType = LibraryListItemType::Video;
+        LibraryListItemType libratyItemType = vrMode || isStereo(fileName) ? LibraryListItemType::VR : LibraryListItemType::Video;
         QFileInfo scriptZip(scriptNoExtension + ".zip");
         QString zipFile;
         if(scriptZip.exists())
@@ -206,8 +205,8 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
         if(!vrMode && !zipFile.isEmpty())
             funscriptsWithMedia.append(zipFile);
 
-        onLibraryItemFound(item, vrMode);
-        emit libraryItemFound(item, vrMode);
+        onLibraryItemFound(item);
+        emit libraryItemFound(item);
     }
 
     if(!vrMode && !SettingsHandler::getHideStandAloneFunscriptsInLibrary())
@@ -283,8 +282,8 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
             item.duration = 0;
             assignID(item);
             setLiveProperties(item);
-            onLibraryItemFound(item, vrMode);
-            emit libraryItemFound(item, false);
+            onLibraryItemFound(item);
+            emit libraryItemFound(item);
         }
     }
     if(vrMode)
@@ -309,10 +308,10 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
 
 }
 
-void MediaLibraryHandler::onLibraryItemFound(LibraryListItem27 item, bool vrMode)
+void MediaLibraryHandler::onLibraryItemFound(LibraryListItem27 item)
 {
     const QMutexLocker locker(&_mutex);
-    if(vrMode)
+    if(item.type == LibraryListItemType::VR)
         _cachedVRItems.push_back(item);
     else
         _cachedLibraryItems.push_back(item);
@@ -443,7 +442,7 @@ void MediaLibraryHandler::saveNewThumbs(bool vrMode)
         LibraryListItem27 item = vrMode ? _cachedVRItems.at(_thumbNailSearchIterator) : _cachedLibraryItems.at(_thumbNailSearchIterator);
         _thumbNailSearchIterator++;
         QFileInfo thumbInfo(item.thumbFile);
-        if (item.type == LibraryListItemType::Video && !thumbInfo.exists())
+        if ((item.type == LibraryListItemType::Video || item.type == LibraryListItemType::VR) && !thumbInfo.exists())
         {
             saveThumb(item, -1, vrMode);
         }
@@ -789,4 +788,58 @@ void MediaLibraryHandler::assignID(LibraryListItem27 &item)
     QString name = item.nameNoExtension;
     item.ID = name.remove(" ") + "Item" + QString::number(_libraryItemIDTracker);
     _libraryItemIDTracker++;
+}
+
+QString MediaLibraryHandler::getScreenType(QString mediaPath)
+{
+    if(mediaPath.contains("360", Qt::CaseSensitivity::CaseInsensitive))
+        return "360";
+    if(mediaPath.contains("180", Qt::CaseSensitivity::CaseInsensitive))
+        return "180";
+    if(mediaPath.contains("fisheye", Qt::CaseSensitivity::CaseInsensitive))
+        return "fisheye";
+    if(mediaPath.contains("mkx200", Qt::CaseSensitivity::CaseInsensitive))
+        return "mkx200";
+    if(mediaPath.contains("vrca220", Qt::CaseSensitivity::CaseInsensitive))
+        return "vrca220";
+    return "flat";
+}
+
+QString MediaLibraryHandler::getStereoMode(QString mediaPath)
+{
+    if(mediaPath.contains(" tb", Qt::CaseSensitivity::CaseInsensitive) ||
+        mediaPath.contains("_tb", Qt::CaseSensitivity::CaseInsensitive) ||
+        mediaPath.contains("tb_", Qt::CaseSensitivity::CaseInsensitive) ||
+        mediaPath.contains("tb ", Qt::CaseSensitivity::CaseInsensitive))
+        return "TB";
+    if(mediaPath.contains(" sbs", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("_sbs", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("sbs_", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("sbs ", Qt::CaseSensitivity::CaseInsensitive))
+        return "SBS";
+    if(mediaPath.contains(" 3DH", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("_3DH", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("3DH_", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("3DH ", Qt::CaseSensitivity::CaseInsensitive))
+        return "3DH";
+    if(mediaPath.contains(" lr", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("_lr", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("lr_", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("lr ", Qt::CaseSensitivity::CaseInsensitive))
+        return "LR";
+    if(mediaPath.contains(" OverUnder", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("_OverUnder", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("OverUnder_", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("OverUnder ", Qt::CaseSensitivity::CaseInsensitive))
+        return "OverUnder";
+    if(mediaPath.contains(" 3DV", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("_3DV", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("3DV_", Qt::CaseSensitivity::CaseInsensitive) ||
+            mediaPath.contains("3DV ", Qt::CaseSensitivity::CaseInsensitive))
+        return "3DV";
+    return "off";
+}
+
+bool MediaLibraryHandler::isStereo(QString mediaPath) {
+    return getStereoMode(mediaPath) != "off";
 }

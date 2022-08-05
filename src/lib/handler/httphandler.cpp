@@ -311,7 +311,7 @@ HttpPromise HttpHandler::handleVideoList(HttpDataPtr data)
         QJsonObject object;
         if(item.type == LibraryListItemType::PlaylistInternal || item.type == LibraryListItemType::FunscriptType)
             continue;
-        media.append(createMediaObject(item, false, hostAddress));
+        media.append(createMediaObject(item, hostAddress));
     }
 
     foreach(auto item, _mediaLibraryHandler->getVRLibraryCache())
@@ -319,7 +319,7 @@ HttpPromise HttpHandler::handleVideoList(HttpDataPtr data)
         QJsonObject object;
         if(item.type == LibraryListItemType::PlaylistInternal || item.type == LibraryListItemType::FunscriptType)
             continue;
-        media.append(createMediaObject(item, true, hostAddress));
+        media.append(createMediaObject(item, hostAddress));
     }
 
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(media));
@@ -327,11 +327,12 @@ HttpPromise HttpHandler::handleVideoList(HttpDataPtr data)
     return HttpPromise::resolve(data);
 }
 
-QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, bool stereoscopic, QString hostAddress)
+QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostAddress)
 {
     //VideoFormat videoFormat;
     QJsonObject object;
     object["id"] = item.ID;
+    object["type"] = item.type;
     object["name"] = item.nameNoExtension;
     if(item.isMFS)
         object["displayName"] = "(MFS) " + item.nameNoExtension;
@@ -351,7 +352,6 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, bool stereosc
     object["type"] = item.type;
     object["duration"] = QJsonValue::fromVariant(item.duration);
     object["modifiedDate"] = item.modifiedDate.toString(Qt::DateFormat::ISODate);
-    object["isStereoscopic"] = getStereoMode(item.path) != "off" || stereoscopic; //videoFormat.is3D((SettingsHandler::getSelectedLibrary() + item.path).toLocal8Bit().data()) == VideoFormatResultCode::E_Found3D;
     object["isMFS"] = item.isMFS;
     object["tooltip"] = item.toolTip;
     object["hasScript"] = !item.script.isEmpty() || !item.zipFile.isEmpty();
@@ -423,13 +423,12 @@ QJsonObject HttpHandler::createDeoObject(LibraryListItem27 item, QString hostAdd
     //root["id"] = item.nameNoExtension;
     root["videoLength"] = (int)(item.duration / 1000);
     root["is3d"] = true;
-    root["screenType"] = getScreenType(item.path);
+    root["screenType"] = _mediaLibraryHandler->getScreenType(item.path);
     //fisheye" - 180 degrees fisheye mesh, mkx200, "mkx200" - 200 degrees fisheye mesh
-    root["stereoMode"] = getStereoMode(item.path);
+    root["stereoMode"] = _mediaLibraryHandler->getStereoMode(item.path);
 //    root["skipIntro"] = 0;
     QString relativeThumb = item.thumbFile.isEmpty() ? "://images/icons/error.png" : item.thumbFile.replace(SettingsHandler::getSelectedThumbsDir(), "");
     root["thumbnailUrl"] = hostAddress + "thumb/" + relativeThumb;
-
     return root;
 }
 
@@ -634,56 +633,6 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
             });
         }
     };
-}
-
-QString HttpHandler::getScreenType(QString mediaPath)
-{
-    if(mediaPath.contains("360", Qt::CaseSensitivity::CaseInsensitive))
-        return "360";
-    if(mediaPath.contains("180", Qt::CaseSensitivity::CaseInsensitive))
-        return "180";
-    if(mediaPath.contains("fisheye", Qt::CaseSensitivity::CaseInsensitive))
-        return "fisheye";
-    if(mediaPath.contains("mkx200", Qt::CaseSensitivity::CaseInsensitive))
-        return "mkx200";
-    if(mediaPath.contains("vrca220", Qt::CaseSensitivity::CaseInsensitive))
-        return "vrca220";
-    return "flat";
-}
-
-QString HttpHandler::getStereoMode(QString mediaPath)
-{
-    if(mediaPath.contains(" tb", Qt::CaseSensitivity::CaseInsensitive) ||
-        mediaPath.contains("_tb", Qt::CaseSensitivity::CaseInsensitive) ||
-        mediaPath.contains("tb_", Qt::CaseSensitivity::CaseInsensitive) ||
-        mediaPath.contains("tb ", Qt::CaseSensitivity::CaseInsensitive))
-        return "TB";
-    if(mediaPath.contains(" sbs", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("_sbs", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("sbs_", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("sbs ", Qt::CaseSensitivity::CaseInsensitive))
-        return "SBS";
-    if(mediaPath.contains(" 3DH", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("_3DH", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("3DH_", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("3DH ", Qt::CaseSensitivity::CaseInsensitive))
-        return "3DH";
-    if(mediaPath.contains(" lr", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("_lr", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("lr_", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("lr ", Qt::CaseSensitivity::CaseInsensitive))
-        return "LR";
-    if(mediaPath.contains(" OverUnder", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("_OverUnder", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("OverUnder_", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("OverUnder ", Qt::CaseSensitivity::CaseInsensitive))
-        return "OverUnder";
-    if(mediaPath.contains(" 3DV", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("_3DV", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("3DV_", Qt::CaseSensitivity::CaseInsensitive) ||
-            mediaPath.contains("3DV ", Qt::CaseSensitivity::CaseInsensitive))
-        return "3DV";
-    return "off";
 }
 
 

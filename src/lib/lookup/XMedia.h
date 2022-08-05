@@ -1,6 +1,6 @@
 #ifndef XMEDIA_H
 #define XMEDIA_H
-enum XMediaStatus {
+enum class XMediaStatus {
     LoadingMedia,
     LoadedMedia,
     NoMedia,
@@ -12,9 +12,10 @@ enum XMediaStatus {
     EndOfMedia
 
 };
-enum XMediaState {
+enum class XMediaState {
     Paused,
     Playing,
     Stopped,
 };
+
 #endif // XMEDIA_H

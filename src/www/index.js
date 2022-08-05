@@ -1,6 +1,5 @@
 
-var DeviceType =
-{
+var DeviceType = {
 	Serial: 0,
 	Network: 1,
 	Deo: 2,
@@ -10,24 +9,21 @@ var DeviceType =
 	None: 6
 };
 
-var ConnectionStatus =
-{
+var ConnectionStatus = {
 	Connected: 0,
 	Disconnected: 1,
 	Connecting: 2,
 	Error: 3
 };
 
-var ChannelType =
-{
+var ChannelType = {
 	None: 0,
 	Range: 1,
 	Switch: 2,
 	HalfRange: 3
 }
 
-var AxisDimension =
-{
+var AxisDimension = {
 	None: 0,
 	Heave: 1,
 	Surge: 2,
@@ -36,6 +32,14 @@ var AxisDimension =
 	Roll: 5,
 	Yaw: 6
 };
+
+var MediaType = {
+    PlaylistInternal: 0,
+    Video: 1,
+    Audio: 2,
+    FunscriptType: 3,
+    VR: 4
+}
 
 var wsUri;
 var websocket = null;
@@ -425,11 +429,11 @@ function onResizeDeo() {
 } 
 */
 
-function getServerSettings() {
+function getServerSettings(retry) {
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', "/settings", true);
 	xhr.responseType = 'json';
-	xhr.onload = function () {
+	xhr.onload = function (evnt, retry) {
 		var status = xhr.status;
 		if (status === 200) {
 			remoteUserSettings = xhr.response;
@@ -444,8 +448,16 @@ function getServerSettings() {
 			funscriptChannels.sort();
 			initWebSocket();
 		} else {
-			systemError("Error getting settings");
+	/* 		if(!retry)
+				systemError("Error getting settings"); */
+			startServerConnectionRetry();
 		}
+	}.bind(this);
+	xhr.onerror = function(evnt, retry) {
+	/* 	if(!retry)
+			systemError("Error getting settings: "+ xhr.responseText);
+		else */
+		startServerConnectionRetry();
 	};
 	xhr.send();
 }
@@ -457,7 +469,7 @@ function startServerConnectionRetry() {
 	serverRetryTimeoutTries++;
 	if (serverRetryTimeoutTries < 100) {
 		serverRetryTimeout = setTimeout(() => {
-			initWebSocket();
+			getServerSettings();
 		}, 5000);
 	} else {
 		setMediaLoadingStatus("Timed out while looking for server. Please refresh the page when the server has started again.")
@@ -956,10 +968,10 @@ function show(value, userClick) {
 			filteredMedia = mediaListGlobal;
 			break;
 		case "3DOnly":
-			filteredMedia = mediaListGlobal.filter(x => x.isStereoscopic);
+			filteredMedia = mediaListGlobal.filter(x => x.type === MediaType.VR);
 			break;
 		case "2DAndAudioOnly":
-			filteredMedia = mediaListGlobal.filter(x => !x.isStereoscopic);
+			filteredMedia = mediaListGlobal.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video);
 			break;
 	}
 	if (!userClick) {
@@ -1025,7 +1037,7 @@ function toggleUseDeo(value, userClicked)
 
 function loadVideo(obj) {
 	if(useDeoWeb) {
-		deoVideoNode.setAttribute("format", obj.isStereoscopic ? "LR" : "mono");
+		deoVideoNode.setAttribute("format", x.type === MediaType.VR ? "LR" : "mono");
 		deoSourceNode.setAttribute("src", "/video/" + obj.relativePath);
 		deoVideoNode.setAttribute("title", obj.name);
 		deoVideoNode.setAttribute("cover-image", "/thumb/" + obj.relativeThumb);

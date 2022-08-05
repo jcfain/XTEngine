@@ -16,7 +16,7 @@ class XTENGINE_EXPORT MediaLibraryHandler : public QObject
 signals:
     void prepareLibraryLoad();
     void libraryNotFound();
-    void libraryItemFound(LibraryListItem27 item, bool vrMode);
+    void libraryItemFound(LibraryListItem27 item);
     void libraryLoadingStatus(QString message);
     void libraryLoading();
     void libraryLoaded();
@@ -45,6 +45,9 @@ public:
     void setLiveProperties(LibraryListItem27 &item);
     void lockThumb(LibraryListItem27 &item);
     void unlockThumb(LibraryListItem27 &item);
+    QString getScreenType(QString mediaPath);
+    QString getStereoMode(QString mediaPath);
+    bool isStereo(QString mediaPath);
 
 private:
     int _libraryItemIDTracker = 1;
@@ -62,7 +65,7 @@ private:
     void onLibraryLoaded();
     //void saveThumbs(QList<LibraryListItem27> items, qint64 position = 0, bool vrMode = false);
     void onPrepareLibraryLoad();
-    void onLibraryItemFound(LibraryListItem27 item, bool vrMode);
+    void onLibraryItemFound(LibraryListItem27 item);
     void onSaveThumb(LibraryListItem27 item, bool vrMode, QString errorMessage = nullptr);
     void setThumbPath(LibraryListItem27 &item);
     void saveNewThumbs(bool vrMode = false);

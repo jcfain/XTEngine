@@ -200,7 +200,7 @@ public:
 
     static void addToLibraryExclusions(QString values);
     static void removeFromLibraryExclusions(QList<int> indexes);
-    static QList<QString> getLibraryExclusions();
+    static QStringList getLibraryExclusions();
 
     static QMap<QString, QList<LibraryListItem27>> getPlaylists();
     static void setPlaylists(QMap<QString, QList<LibraryListItem27>> value);
@@ -389,7 +389,7 @@ private:
 
     static QList<DecoderModel> decoderPriority;
     static XVideoRenderer _selectedVideoRenderer;
-    static QList<QString> _libraryExclusions;
+    static QStringList _libraryExclusions;
     static QMap<QString, QList<LibraryListItem27>> _playlists;
     static QHash<QString, LibraryListItemMetaData258> _libraryListItemMetaDatas;
 

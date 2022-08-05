@@ -69,10 +69,8 @@ private:
     QString _libraryLoadingStatus = "Loading...";
     QMutex _mutex;
 
-    QJsonObject createMediaObject(LibraryListItem27 libraryListItem, bool stereoscopic, QString hostAddress);
+    QJsonObject createMediaObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);
-    QString getScreenType(QString mediaPath);
-    QString getStereoMode(QString mediaPath);
     void on_webSocketClient_Connected(QWebSocket* client);
     void onSetLibraryLoaded();
     void onSetLibraryLoading();

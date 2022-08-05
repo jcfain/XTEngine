@@ -5,8 +5,8 @@ const QMap<TCodeVersion, QString> SettingsHandler::SupportedTCodeVersions = {
     {TCodeVersion::v3, "TCode v0.3"}
 };
 
-const QString SettingsHandler::XTEVersion = QString("0.332a_%1T%2").arg(__DATE__).arg(__TIME__);
-const float SettingsHandler::XTEVersionNum = 0.332f;
+const QString SettingsHandler::XTEVersion = QString("0.333a_%1T%2").arg(__DATE__).arg(__TIME__);
+const float SettingsHandler::XTEVersionNum = 0.333f;
 
 SettingsHandler::SettingsHandler(){}
 SettingsHandler::~SettingsHandler()
@@ -203,7 +203,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         _mainWindowPos.append(splitterPos.value<int>());
         i++;
     }
-    _libraryExclusions = settingsToLoadFrom->value("libraryExclusions").value<QList<QString>>();
+    _libraryExclusions = settingsToLoadFrom->value("libraryExclusions").toStringList();
 
     QVariantMap playlists = settingsToLoadFrom->value("playlists").toMap();
     _playlists.clear();
@@ -316,12 +316,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
-        if(currentVersion < 0.332f) {
+        if(currentVersion < 0.333f) {
             locker.unlock();
             setupKeyboardKeyMap();
             if(_availableAxis.empty() || _availableAxis.first().AxisName.isEmpty()) {
                 SetChannelMapDefaults();
             }
+            auto libraryExclusions = settingsToLoadFrom->value("libraryExclusions").value<QList<QString>>();
+            _libraryExclusions = QStringList(libraryExclusions);
             Save();
             Load();
         }
@@ -1742,7 +1744,7 @@ void SettingsHandler::removeFromLibraryExclusions(QList<int> indexes)
         _libraryExclusions.removeAt(index);
     settingsChangedEvent(true);
 }
-QList<QString> SettingsHandler::getLibraryExclusions()
+QStringList SettingsHandler::getLibraryExclusions()
 {
     return _libraryExclusions;
 }
@@ -2265,6 +2267,6 @@ QString SettingsHandler::_hashedPass;
 QList<DecoderModel> SettingsHandler::decoderPriority;
 XVideoRenderer SettingsHandler::_selectedVideoRenderer;
 
-QList<QString> SettingsHandler::_libraryExclusions;
+QStringList SettingsHandler::_libraryExclusions;
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::_playlists;
 QHash<QString, LibraryListItemMetaData258> SettingsHandler::_libraryListItemMetaDatas;
