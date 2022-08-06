@@ -48,6 +48,7 @@ public:
     QString getScreenType(QString mediaPath);
     QString getStereoMode(QString mediaPath);
     bool isStereo(QString mediaPath);
+    LibraryListItem27 findItemByID(QString id);
 
 private:
     int _libraryItemIDTracker = 1;

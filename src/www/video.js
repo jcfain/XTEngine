@@ -75,10 +75,11 @@ function togglePlay() {
 }
 
 function videoNodeClick() {
-	if(controlsVisible)
-		hideControls();
-	else
-		showControls();
+	if(videoNode.paused) {
+		videoNode.play();
+	} else {
+		videoNode.pause();
+	}
 }
 
 // updatePlayButton updates the playback icon and tooltip
@@ -507,8 +508,10 @@ videoNode.addEventListener('loadedmetadata', initializeVideo);
 videoNode.addEventListener('timeupdate', updateTimeElapsed);
 videoNode.addEventListener('timeupdate', updateProgress);
 videoNode.addEventListener('volumechange', updateVolumeIcon);
-//videoNode.addEventListener('click', videoNodeClick);
-//videoNode.addEventListener('click', animatePlaybackVideoNodeClick);
+if(!isMobile) {
+	videoNode.addEventListener('click', videoNodeClick);
+	videoNode.addEventListener('click', animatePlaybackVideoNodeClick);
+}
 videoContainer.addEventListener('mouseenter', showControls);
 videoContainer.addEventListener('mouseleave', hideControlsEvent);
 videoContainer.addEventListener('mouseenter', mouseEnterVideo);

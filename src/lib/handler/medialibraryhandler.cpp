@@ -846,3 +846,20 @@ QString MediaLibraryHandler::getStereoMode(QString mediaPath)
 bool MediaLibraryHandler::isStereo(QString mediaPath) {
     return getStereoMode(mediaPath) != "off";
 }
+
+/***
+ * Searches library and vr library for the ID
+ * Returns default if not found
+ * **/
+LibraryListItem27 MediaLibraryHandler::findItemByID(QString id) {
+    LibraryListItem27 foundItem;
+    foreach (LibraryListItem27 item, _cachedLibraryItems) {
+        if(item.ID == id)
+            return item;
+    }
+    foreach (LibraryListItem27 item, _cachedVRItems) {
+        if(item.ID == id)
+            return item;
+    }
+    return foundItem;
+}

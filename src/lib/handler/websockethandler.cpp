@@ -111,6 +111,11 @@ void WebSocketHandler::processTextMessage(QString message)
         emit skipToMoneyShot();
     } else if (command == "skipToNextAction") {
         emit skipToNextAction();
+    } else if (command == "saveSingleThumb") {
+        QJsonObject obj = json["message"].toObject();
+        QString itemID = obj["itemID"].toString();
+        qint64 pos = obj["pos"].toDouble() * 1000;
+        emit saveSingleThumb(itemID, pos);
     }
 }
 

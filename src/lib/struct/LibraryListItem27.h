@@ -106,22 +106,7 @@ public:
     static LibraryListItem27 fromVariant(QVariant item)
     {
         QJsonObject obj = item.toJsonObject();
-        LibraryListItem27 newItem;
-        //newItem.ID = obj["id"].toInt();
-        newItem.path = obj["path"].toString();
-        newItem.duration = obj["path"].toString().toLongLong();
-        newItem.mediaExtension = obj["mediaExtension"].toString();
-        newItem.modifiedDate = QDate::fromString(obj["modifiedDate"].toString());
-        newItem.name = obj["name"].toString();
-        newItem.nameNoExtension = obj["nameNoExtension"].toString();
-        newItem.script = obj["script"].toString();
-        newItem.scriptNoExtension = obj["scriptNoExtension"].toString();
-        newItem.thumbFile = obj["thumbFile"].toString();
-        newItem.type = (LibraryListItemType)obj["type"].toInt();
-        newItem.zipFile = obj["zipFile"].toString();
-//        newItem.isMFS = obj["isMFS"].toBool();
-//        newItem.toolTip = obj["tooltip"].toString();
-        return newItem;
+        return fromJson(obj);
     }
 
     static QVariant toVariant(LibraryListItem27 item)
@@ -143,6 +128,23 @@ public:
 //        obj["tooltip"] = item.toolTip;
         return QVariant::fromValue(obj);
      }
+
+    static LibraryListItem27 fromJson(QJsonObject obj) {
+        LibraryListItem27 newItem;
+        //newItem.ID = obj["id"].toInt();
+        newItem.path = obj["path"].toString();
+        newItem.duration = obj["path"].toString().toLongLong();
+        newItem.mediaExtension = obj["mediaExtension"].toString();
+        newItem.modifiedDate = QDate::fromString(obj["modifiedDate"].toString());
+        newItem.name = obj["name"].toString();
+        newItem.nameNoExtension = obj["nameNoExtension"].toString();
+        newItem.script = obj["script"].toString();
+        newItem.scriptNoExtension = obj["scriptNoExtension"].toString();
+        newItem.thumbFile = obj["thumbFile"].toString();
+        newItem.type = (LibraryListItemType)obj["type"].toInt();
+        newItem.zipFile = obj["zipFile"].toString();
+        return newItem;
+    }
 //    //waiting ? "://images/icons/loading.png" : "://images/icons/loading_current.png"
 };
 Q_DECLARE_METATYPE(LibraryListItem27);

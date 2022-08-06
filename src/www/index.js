@@ -79,6 +79,7 @@ var speechVolume = 0.5;
 //var deoSourceNode;
 
 document.addEventListener('keyup', keyboardShortcuts);
+document.addEventListener('click', destroyMediaContextNode);
 
 getBrowserInformation();
 var userAgentIsDeo = userAgent.indexOf("Deo VR") != -1;
@@ -217,6 +218,13 @@ function sendSkipToNextAction() {
 function sendSkipToMoneyShot() {
 	sendWebsocketMessage("skipToMoneyShot");
 }
+function sendUpdateThumb(item) {
+	sendWebsocketMessage("saveSingleThumb", { itemID: item.id, pos: 0 });
+}
+function sendUpdateThumbAtPos(item) {
+	var pos = videoNode.currentTime;
+	sendWebsocketMessage("saveSingleThumb", { itemID: item.id, pos: pos });
+}
 
 
 function restartXTP() {
@@ -294,8 +302,12 @@ function wsCallBackFunction(evt) {
 				var message = data["message"];
 				var mediaElement = document.getElementById(message.id);
 				if (mediaElement) {
-					var imageElement = mediaElement.getElementsByTagName("img")[0];
-					imageElement.src = "/thumb/" + message.thumb + "?" + new Date().getTime();
+					var imageElement = mediaElement.getElementsByClassName("media-thumb-nail")[0];
+					var src = "/thumb/" + message.thumb + "?" + new Date().getTime();
+					if(imageElement.src.length > 0)
+						imageElement.src = src;
+					else
+						imageElement.dataset.src = src;
 					if (message.errorMessage)
 						imageElement.title = message.errorMessage;
 					var index = mediaListGlobal.findIndex(x => x.id === message.id);
@@ -833,8 +845,39 @@ function loadMedia(mediaList) {
 		}
 	};
 
+	var toggleContext = function (contextMenu, mediaItem) {
+		return function () {
+			contextMenu.classList.toggle("hidden");
+			var thumbAtPosMenuItem = contextMenu.getElementsByClassName("setThumbAtCurrent")[0];
+			if(isVideoShown() && playingmediaItem && playingmediaItem.id === mediaItem.id)
+				thumbAtPosMenuItem.classList.remove("disabled");
+			else
+				thumbAtPosMenuItem.classList.add("disabled");
+		}
+	};
+
+	var closeContext = function (contextMenu) {
+		return function () {
+			contextMenu.classList.add("hidden");
+		}
+	};
+
+	var regenThumbClick = function (mediaItem, contextMenu) {
+		return function () {
+			sendUpdateThumb(mediaItem);
+			contextMenu.classList.add("hidden");;
+		}
+	};
+	var regenThumbCurrentPosClick = function (mediaItem, contextMenu) {
+		return function () {
+			sendUpdateThumbAtPos(mediaItem);
+			contextMenu.classList.add("hidden");;
+		}
+	};
+
 	var textHeight = 0
 	var width = 0;
+	var widthInt = 0;
 	var height = 0;
 	var fontSize = 0;
 	for (var i = 0; i < mediaList.length; i++) {
@@ -845,7 +888,8 @@ function loadMedia(mediaList) {
 		}
 		if (!textHeight) {
 			textHeight = (thumbSizeGlobal * 0.25);
-			width = thumbSizeGlobal + (thumbSizeGlobal * 0.15) + "px";
+			widthInt = thumbSizeGlobal + (thumbSizeGlobal * 0.15);
+			width = widthInt+ "px";
 			height = thumbSizeGlobal + textHeight + "px";
 			fontSize = (textHeight * 0.35) + "px";
 		}
@@ -855,6 +899,34 @@ function loadMedia(mediaList) {
 		divnode.style.width = width;
 		divnode.style.height = height;
 		divnode.title = obj.name;
+
+		var info = document.createElement("button");
+		info.classList.add("media-context");
+		info.style.width = widthInt * 0.10 + "px";
+		var contextMenu = document.createElement("div"); 
+		info.onclick = toggleContext(contextMenu, obj);
+		info.dataset.title = "Media actions";
+		var icon = document.createElement("svg");
+		//icon.classList.add("player-button-png");
+		var iconUse = document.createElement("use");
+		iconUse.setAttribute("href", "#context-menu");
+		icon.appendChild(iconUse);
+		info.appendChild(icon);
+		contextMenu.classList.add("media-context-menu", "hidden");
+		contextMenu.style.fontSize = fontSize;
+		contextMenu.style.width = widthInt * 0.85 + "px";
+
+		var contextMenuItem = createContextMenuItem("Regenerate thumb", regenThumbClick(obj, contextMenu));
+		contextMenu.appendChild(contextMenuItem);
+		var contextMenuItem = createContextMenuItem("Set thumb at current", regenThumbCurrentPosClick(obj, contextMenu));
+		contextMenuItem.classList.add("setThumbAtCurrent", "disabled");
+		contextMenu.appendChild(contextMenuItem);
+		var contextCancelMenuItem = createContextMenuItem("Cancel", closeContext(contextMenu));
+		contextMenu.appendChild(contextCancelMenuItem);
+
+		divnode.appendChild(contextMenu);
+		divnode.appendChild(info);
+
 		var anode = document.createElement("a");
 		anode.className += "media-link"
 		if (obj.isMFS) {
@@ -872,6 +944,7 @@ function loadMedia(mediaList) {
 		else
 			image.dataset.src = "/thumb/" + obj.thumbFileLoading;
 		image.classList.add("lazy");
+		image.classList.add("media-thumb-nail")
 		image.style.width = thumbSizeGlobal + "px";
 		image.style.height = thumbSizeGlobal - textHeight + "px";
 		//image.onerror=onThumbLoadError(image, 1)
@@ -885,6 +958,7 @@ function loadMedia(mediaList) {
 		divnode.appendChild(anode);
 		anode.appendChild(image);
 		anode.appendChild(namenode);
+
 		divnode.hidden = isFiltered(userFilterCriteria, divnode.innerText);
 		medialistNode.appendChild(divnode);
 		if (playingmediaItem && playingmediaItem.id === obj.id)
@@ -892,6 +966,43 @@ function loadMedia(mediaList) {
 
 	}
 	setupLazyLoad();
+}
+
+function createMediaContextNode(parent, mediaItem) {
+	// var regenThumbClick = function (mediaItem) {
+	// 	return function () {
+	// 		sendUpdateThumb(mediaItem)
+	// 	}
+	// };
+	// var infoContainer = document.createElement("div");
+	// infoContainer.id = "mediaContextContainer";
+	// infoContainer.style.left = parent.style.right;
+	// infoContainer.style.top = parent.style.bottom;
+	// var contextMenu = document.createElement("div"); 
+	// contextMenu.classList.add("media-context-menu");
+	// var regenerateThumbContextItem = document.createElement("a");
+	// regenerateThumbContextItem.classList.add("media-context-menu-item");
+	// regenerateThumbContextItem.innerText = "Regenerate thumb";
+	// regenerateThumbContextItem.onclick = regenThumbClick(mediaItem);
+	// contextMenu.appendChild(regenerateThumbContextItem);
+	// infoContainer.appendChild(contextMenu);
+	// document.documentElement.appendChild(infoContainer);
+}
+
+function createContextMenuItem(innerText, onclick) {
+	var contextMenuItem = document.createElement("div");
+	contextMenuItem.classList.add("media-context-menu-item");
+	contextMenuItem.innerText = innerText;
+	contextMenuItem.onclick = onclick;
+	return contextMenuItem;
+}
+
+function destroyMediaContextNode(event) {
+	// if(event.target.classList.contains("media-context"))
+	// 	return;
+	// var node = document.getElementById("mediaContextContainer");
+	// if(node)
+	// 	document.documentElement.removeChild(node);
 }
 
 function setupLazyLoad() {

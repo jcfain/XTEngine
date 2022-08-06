@@ -13,6 +13,11 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::restartService, this, &HttpHandler::restartService);
     connect(_webSocketHandler, &WebSocketHandler::skipToMoneyShot, this, &HttpHandler::skipToMoneyShot);
     connect(_webSocketHandler, &WebSocketHandler::skipToNextAction, this, &HttpHandler::skipToNextAction);
+    connect(_webSocketHandler, &WebSocketHandler::saveSingleThumb, this, [this](QString itemID, qint64 pos) {
+        auto item = _mediaLibraryHandler->findItemByID(itemID);
+        if(!item.path.isEmpty())
+            _mediaLibraryHandler->saveSingleThumb(item, pos);
+    });
 
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoadingStatus, this, &HttpHandler::onLibraryLoadingStatusChange);
