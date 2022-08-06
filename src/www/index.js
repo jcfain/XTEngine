@@ -868,10 +868,10 @@ function loadMedia(mediaList) {
 		anode.onclick = createClickHandler(obj);
 		var image = document.createElement("img");
 		if (obj.thumbFileExists)
-			image.src = "/thumb/" + obj.relativeThumb;
+			image.dataset.src = "/thumb/" + obj.relativeThumb;
 		else
-			image.src = "/thumb/" + obj.thumbFileLoading;
-		image.loading = "lazy"
+			image.dataset.src = "/thumb/" + obj.thumbFileLoading;
+		image.classList.add("lazy");
 		image.style.width = thumbSizeGlobal + "px";
 		image.style.height = thumbSizeGlobal - textHeight + "px";
 		//image.onerror=onThumbLoadError(image, 1)
@@ -890,6 +890,28 @@ function loadMedia(mediaList) {
 		if (playingmediaItem && playingmediaItem.id === obj.id)
 			setPlayingMediaItem(obj);
 
+	}
+	setupLazyLoad();
+}
+
+function setupLazyLoad() {
+	var lazyImages = [].slice.call(document.querySelectorAll("img.lazy"));;
+	if ("IntersectionObserver" in window && "IntersectionObserverEntry" in window && "intersectionRatio" in window.IntersectionObserverEntry.prototype) {
+	  let lazyImageObserver = new IntersectionObserver(function(entries, observer) {
+		entries.forEach(function(entry) {
+		  if (entry.isIntersecting) {
+			let lazyImage = entry.target;
+			lazyImage.src = lazyImage.dataset.src;
+			//lazyImage.srcset = lazyImage.dataset.srcset;
+			lazyImage.classList.remove("lazy");
+			lazyImageObserver.unobserve(lazyImage);
+		  }
+		});
+	  });
+  
+	  lazyImages.forEach(function(lazyImage) {
+		lazyImageObserver.observe(lazyImage);
+	  });
 	}
 }
 

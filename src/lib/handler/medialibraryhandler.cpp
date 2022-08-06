@@ -132,7 +132,10 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
         }
     }
     QStringList funscriptsWithMedia;
-    QList<QString> excludedLibraryPaths = SettingsHandler::getLibraryExclusions();
+    QStringList excludedLibraryPaths = SettingsHandler::getLibraryExclusions();
+    QString vrLibrary = SettingsHandler::getVRLibrary();
+    if(!vrLibrary.isEmpty())
+        excludedLibraryPaths << vrLibrary;
     while (library.hasNext())
     {
         if(_loadingLibraryStop)
