@@ -16,16 +16,14 @@ MediaLibraryHandler::~MediaLibraryHandler()
         _loadingLibraryFuture.cancel();
         _loadingLibraryFuture.waitForFinished();
     }
-//    if(_extractor)
-//        delete _extractor;
-    //    if(thumbNailPlayer)
-    //        delete thumbNailPlayer;
-    //qDeleteAll(cachedVRItems);
-    //cachedVRItems.clear();
 }
 bool MediaLibraryHandler::isLibraryLoading()
 {
     return _loadingLibraryFuture.isRunning();
+}
+
+bool MediaLibraryHandler::isLibraryItemVideo(LibraryListItem27 item) {
+    return item.type == LibraryListItemType::Video || item.type == LibraryListItemType::VR;
 }
 
 void MediaLibraryHandler::stopLibraryLoading()
@@ -41,7 +39,7 @@ void MediaLibraryHandler::onPrepareLibraryLoad()
     //_xSettings->setLibraryLoaded(false, cachedLibraryItems, cachedVRItems);
     const QMutexLocker locker(&_mutex);
     _cachedLibraryItems.clear();
-    _cachedVRItems.clear();
+    //_cachedVRItems.clear();
     _libraryItemIDTracker = 1;
 }
 
@@ -314,10 +312,7 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
 void MediaLibraryHandler::onLibraryItemFound(LibraryListItem27 item)
 {
     const QMutexLocker locker(&_mutex);
-    if(item.type == LibraryListItemType::VR)
-        _cachedVRItems.push_back(item);
-    else
-        _cachedLibraryItems.push_back(item);
+    _cachedLibraryItems.push_back(item);
 }
 LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QString funscript)
 {
@@ -440,12 +435,12 @@ void MediaLibraryHandler::saveSingleThumb(LibraryListItem27 item, qint64 positio
 
 void MediaLibraryHandler::saveNewThumbs(bool vrMode)
 {
-    if (_thumbProcessIsRunning && _thumbNailSearchIterator < (vrMode ? _cachedVRItems.count() : _cachedLibraryItems.count()))
+    if (_thumbProcessIsRunning && _thumbNailSearchIterator < _cachedLibraryItems.count())
     {
-        LibraryListItem27 item = vrMode ? _cachedVRItems.at(_thumbNailSearchIterator) : _cachedLibraryItems.at(_thumbNailSearchIterator);
+        LibraryListItem27 item = _cachedLibraryItems.at(_thumbNailSearchIterator);
         _thumbNailSearchIterator++;
         QFileInfo thumbInfo(item.thumbFile);
-        if ((item.type == LibraryListItemType::Video || item.type == LibraryListItemType::VR) && !thumbInfo.exists())
+        if (isLibraryItemVideo(item) && !thumbInfo.exists())
         {
             saveThumb(item, -1, vrMode);
         }
@@ -574,14 +569,11 @@ void MediaLibraryHandler::onSaveThumb(LibraryListItem27 item, bool vrMode, QStri
 {
     int cachedIndex = _cachedLibraryItems.indexOf(item);
     if(cachedIndex == -1) {
-        cachedIndex = _cachedVRItems.indexOf(item);
-    }
-    if(cachedIndex == -1) {
         LibraryListItem27 emptyItem;
         emit saveThumbError(emptyItem, vrMode, "Missing media");
         return;
     }
-    LibraryListItem27 &cachedItem = vrMode ? _cachedVRItems[cachedIndex] : _cachedLibraryItems[cachedIndex];
+    LibraryListItem27 &cachedItem = _cachedLibraryItems[cachedIndex];
     if(!errorMessage.isEmpty())
     {
         cachedItem.thumbFile = item.thumbFileError;
@@ -609,11 +601,6 @@ QList<LibraryListItem27> MediaLibraryHandler::getLibraryCache()
 {
     const QMutexLocker locker(&_mutex);
     return _cachedLibraryItems;
-}
-QList<LibraryListItem27> MediaLibraryHandler::getVRLibraryCache()
-{
-    const QMutexLocker locker(&_mutex);
-    return _cachedVRItems;
 }
 LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
 {
@@ -851,16 +838,12 @@ bool MediaLibraryHandler::isStereo(QString mediaPath) {
 }
 
 /***
- * Searches library and vr library for the ID
+ * Searches library for the ID
  * Returns default if not found
  * **/
 LibraryListItem27 MediaLibraryHandler::findItemByID(QString id) {
     LibraryListItem27 foundItem;
     foreach (LibraryListItem27 item, _cachedLibraryItems) {
-        if(item.ID == id)
-            return item;
-    }
-    foreach (LibraryListItem27 item, _cachedVRItems) {
         if(item.ID == id)
             return item;
     }

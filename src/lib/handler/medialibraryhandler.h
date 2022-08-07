@@ -41,7 +41,7 @@ public:
     void stopLibraryLoading();
     LibraryListItem27 setupPlaylistItem(QString name);
     QList<LibraryListItem27> getLibraryCache();
-    QList<LibraryListItem27> getVRLibraryCache();
+    //QList<LibraryListItem27> getVRLibraryCache();
     void setLiveProperties(LibraryListItem27 &item);
     void lockThumb(LibraryListItem27 &item);
     void unlockThumb(LibraryListItem27 &item);
@@ -49,6 +49,7 @@ public:
     QString getStereoMode(QString mediaPath);
     bool isStereo(QString mediaPath);
     LibraryListItem27 findItemByID(QString id);
+    bool isLibraryItemVideo(LibraryListItem27 item);
 
 private:
     int _libraryItemIDTracker = 1;
@@ -56,7 +57,7 @@ private:
     bool _loadingLibraryStop = false;
     int _thumbNailSearchIterator = 0;
     QList<LibraryListItem27> _cachedLibraryItems;
-    QList<LibraryListItem27> _cachedVRItems;
+    //QList<LibraryListItem27> _cachedVRItems;
     QFuture<void> _loadingLibraryFuture;
     QTimer _thumbTimeoutTimer;
     QMutex _mutex;

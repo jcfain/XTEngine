@@ -318,15 +318,6 @@ HttpPromise HttpHandler::handleVideoList(HttpDataPtr data)
             continue;
         media.append(createMediaObject(item, hostAddress));
     }
-
-    foreach(auto item, _mediaLibraryHandler->getVRLibraryCache())
-    {
-        QJsonObject object;
-        if(item.type == LibraryListItemType::PlaylistInternal || item.type == LibraryListItemType::FunscriptType)
-            continue;
-        media.append(createMediaObject(item, hostAddress));
-    }
-
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(media));
     data->response->compressBody();
     return HttpPromise::resolve(data);
@@ -385,14 +376,6 @@ HttpPromise HttpHandler::handleDeo(HttpDataPtr data)
     QJsonArray list;
 
     foreach(auto item, _mediaLibraryHandler->getLibraryCache())
-    {
-        QJsonObject object;
-        if(item.type == LibraryListItemType::PlaylistInternal || item.type == LibraryListItemType::FunscriptType)
-            continue;
-        list.append(createDeoObject(item, hostAddress));
-    }
-
-    foreach(auto item, _mediaLibraryHandler->getVRLibraryCache())
     {
         QJsonObject object;
         if(item.type == LibraryListItemType::PlaylistInternal || item.type == LibraryListItemType::FunscriptType)
