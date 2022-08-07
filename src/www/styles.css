@@ -242,7 +242,7 @@ input:hover {
     cursor: not-allowed;
 }
 
-.media-item img {
+.media-thumb-nail {
     object-fit: contain;
 }
 
@@ -250,6 +250,8 @@ input:hover {
     position: absolute;
     right: 10px;
     top: 10px;
+    background: transparent;
+    border: none;
 }
 
 .media-context-menu {
@@ -267,7 +269,11 @@ input:hover {
 }
 
 .media-context-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: smaller;
+    height: 20px;
 }
 .media-context-menu-item:not(:last-child) {
     border-bottom: lightgray solid;

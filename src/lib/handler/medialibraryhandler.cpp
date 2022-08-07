@@ -572,7 +572,10 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 cachedListItem, qint64 pos
 
 void MediaLibraryHandler::onSaveThumb(LibraryListItem27 item, bool vrMode, QString errorMessage)
 {
-    int cachedIndex = vrMode ? _cachedVRItems.indexOf(item) : _cachedLibraryItems.indexOf(item);
+    int cachedIndex = _cachedLibraryItems.indexOf(item);
+    if(cachedIndex == -1) {
+        cachedIndex = _cachedVRItems.indexOf(item);
+    }
     if(cachedIndex == -1) {
         LibraryListItem27 emptyItem;
         emit saveThumbError(emptyItem, vrMode, "Missing media");

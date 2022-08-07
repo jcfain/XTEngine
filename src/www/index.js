@@ -902,15 +902,22 @@ function loadMedia(mediaList) {
 
 		var info = document.createElement("button");
 		info.classList.add("media-context");
-		info.style.width = widthInt * 0.10 + "px";
+		info.style.width = widthInt * 0.20 + "px";
+		info.style.height = widthInt * 0.20 + "px";
 		var contextMenu = document.createElement("div"); 
 		info.onclick = toggleContext(contextMenu, obj);
 		info.dataset.title = "Media actions";
-		var icon = document.createElement("svg");
-		//icon.classList.add("player-button-png");
-		var iconUse = document.createElement("use");
-		iconUse.setAttribute("href", "#context-menu");
-		icon.appendChild(iconUse);
+		// var icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		// icon.style.width = widthInt * 0.08 + "px";
+		// icon.style.height = widthInt * 0.08 + "px";
+		// //icon.classList.add("player-button-png");
+		// var iconUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
+		// iconUse.setAttribute("href", "://images/icons/context-menu.svg");
+		var icon = document.createElement("img");
+		icon.src = "://images/icons/context-menu.svg";
+		icon.style.width = widthInt * 0.10 + "px";;
+		icon.style.height = widthInt * 0.10 + "px";
+		//icon.appendChild(iconUse);
 		info.appendChild(icon);
 		contextMenu.classList.add("media-context-menu", "hidden");
 		contextMenu.style.fontSize = fontSize;
