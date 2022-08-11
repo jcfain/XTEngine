@@ -14,9 +14,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::skipToMoneyShot, this, &HttpHandler::skipToMoneyShot);
     connect(_webSocketHandler, &WebSocketHandler::skipToNextAction, this, &HttpHandler::skipToNextAction);
     connect(_webSocketHandler, &WebSocketHandler::saveSingleThumb, this, [this](QString itemID, qint64 pos) {
-        auto item = _mediaLibraryHandler->findItemByID(itemID);
-        if(!item.path.isEmpty())
-            _mediaLibraryHandler->saveSingleThumb(item, pos);
+        _mediaLibraryHandler->saveSingleThumb(itemID, pos);
     });
 
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);
@@ -328,7 +326,7 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     //VideoFormat videoFormat;
     QJsonObject object;
     object["id"] = item.ID;
-    object["type"] = item.type;
+    object["type"] = (int)item.type;
     object["name"] = item.nameNoExtension;
     if(item.isMFS)
         object["displayName"] = "(MFS) " + item.nameNoExtension;
@@ -345,12 +343,12 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["thumb"] = hostAddress + "thumb/" + QString(QUrl::toPercentEncoding(relativeThumb));
     object["relativeThumb"] = QString(QUrl::toPercentEncoding(relativeThumb));
     object["thumbSize"] = SettingsHandler::getThumbSize();
-    object["type"] = item.type;
     object["duration"] = QJsonValue::fromVariant(item.duration);
     object["modifiedDate"] = item.modifiedDate.toString(Qt::DateFormat::ISODate);
     object["isMFS"] = item.isMFS;
     object["tooltip"] = item.toolTip;
     object["hasScript"] = !item.script.isEmpty() || !item.zipFile.isEmpty();
+    object["thumbState"] = (int)item.thumbState;
     object["thumbFileLoading"] = item.thumbFileLoading;
     object["thumbFileLoadingCurrent"] = item.thumbFileLoadingCurrent;
     object["thumbFileError"] = item.thumbFileError;

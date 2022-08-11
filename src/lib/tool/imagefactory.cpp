@@ -4,18 +4,15 @@
 #include <QSize>
 #include "../tool/xmath.h"
 #include "../lookup/Constants.h"
+#include "lib/handler/settingshandler.h"
 
-ImageFactory::ImageFactory()
-{
 
-}
-
-QPixmap ImageFactory::resize(QString filepath, QSize thumbSize)
+QPixmap ImageFactory::resize(QString filepath, QSize size)
 {
     if(!QFileInfo::exists(filepath))
         filepath = LibraryThumbNail::ERROR_IMAGE;
     QPixmap bgPixmap(filepath);
-    if(bgPixmap.width() == thumbSize.width())
+    if(bgPixmap.width() == size.width())
         return bgPixmap;
     //QSize maxThumbSize = SettingsHandler::getMaxThumbnailSize();
     //int newHeight = round((float)bgPixmap.height() / bgPixmap.width() * 1080);
@@ -30,11 +27,28 @@ QPixmap ImageFactory::resize(QString filepath, QSize thumbSize)
 ////        scaled = scaled.copy(rect);
 //    }
     //bgPixmap = QPixmap();
-    return bgPixmap.scaledToHeight(thumbSize.height(), Qt::TransformationMode::SmoothTransformation);;
+    return bgPixmap.scaledToHeight(size.height(), Qt::TransformationMode::SmoothTransformation);;
 }
 
+QPixmap ImageFactory::resizeCache(QString filepath, QString key, QSize size, bool bustCache) {
+    QPixmap pixMap;
+    auto pixMapExists = _imageCache.contains(filepath);
+    if(bustCache || !pixMapExists) {
+        pixMap = resize(filepath, size);
+        _imageCache.insert(filepath, pixMap);
+    }
+    return _imageCache.value(filepath);
+}
+void ImageFactory::removeCache(QString fileName) {
+    _imageCache.remove(fileName);
+}
+void ImageFactory::clearCache() {
+    _imageCache.clear();
+}
 
 QSize ImageFactory::calculateMaxSize(QSize size)
 {
     return {size.width(), (int)round(size.height()-size.height()/3.5)};
 }
+
+QHash<QString, QPixmap> ImageFactory::_imageCache;

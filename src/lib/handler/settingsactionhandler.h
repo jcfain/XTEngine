@@ -17,6 +17,7 @@ class XTENGINE_EXPORT SettingsActionHandler : public QObject
 
 signals:
     void actionExecuted(QString action, QString actionExecuted);
+    void tcode_action(QString tcode);
 
 public slots:
     void media_action(QString action);

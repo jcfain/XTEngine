@@ -9,12 +9,19 @@
 #include "../lookup/Constants.h"
 #include "XTEngine_global.h"
 
-enum LibraryListItemType {
+enum class LibraryListItemType {
     PlaylistInternal,
     Video,
     Audio,
     FunscriptType,
     VR
+};
+
+enum class ThumbState {
+    Waiting,
+    Loading,
+    Error,
+    Ready
 };
 
 struct  XTENGINE_EXPORT LibraryListItem27
@@ -51,6 +58,7 @@ public:
     QString ID;
     bool isMFS;
     QString toolTip;
+    ThumbState thumbState = ThumbState::Waiting;
     bool thumbFileExists = false;
     QString thumbFileLoading = LibraryThumbNail::LOADING_IMAGE;// "://images/icons/loading.png";
     QString thumbFileLoadingCurrent = LibraryThumbNail::LOADING_CURRENT_IMAGE;// "://images/icons/loading_current.png";
@@ -72,8 +80,11 @@ public:
         dataStream << object.duration;
         dataStream << object.isMFS;
         dataStream << object.toolTip;
+        dataStream << object.thumbFileExists;
+        dataStream << (int)object.thumbState;
         dataStream << object.thumbFileLoading;
         dataStream << object.thumbFileLoadingCurrent;
+        dataStream << object.thumbFileError;
         return dataStream;
     }
 
@@ -93,14 +104,17 @@ public:
         dataStream >> object.duration;
         dataStream >> object.isMFS;
         dataStream >> object.toolTip;
+        dataStream >> object.thumbFileExists;
+        dataStream >> object.thumbState;
         dataStream >> object.thumbFileLoading;
         dataStream >> object.thumbFileLoadingCurrent;
+        dataStream >> object.thumbFileError;
         return dataStream;
     }
 
     friend bool operator==(const LibraryListItem27 &p1, const LibraryListItem27 &p2)
     {
-       return p1.name == p2.name;
+       return p1.ID == p2.ID;
     }
 
     static LibraryListItem27 fromVariant(QVariant item)

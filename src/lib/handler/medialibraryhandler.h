@@ -8,6 +8,7 @@
 #include "../handler/settingshandler.h"
 #include "../handler/xvideopreview.h"
 #include "../struct/LibraryListItem.h"
+#include "lib/tool/imagefactory.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT MediaLibraryHandler : public QObject
@@ -20,6 +21,9 @@ signals:
     void libraryLoadingStatus(QString message);
     void libraryLoading();
     void libraryLoaded();
+    void itemAdded(LibraryListItem27 item);
+    void itemRemoved(LibraryListItem27 item);
+    void itemUpdated(LibraryListItem27 item);
     void playListItem(LibraryListItem27 item);
 
     void thumbProcessBegin();
@@ -33,14 +37,19 @@ signals:
 public:
     MediaLibraryHandler(QObject* parent = nullptr);
     ~MediaLibraryHandler();
-    void saveSingleThumb(LibraryListItem27 item, qint64 position = 0);
+    void saveSingleThumb(QString id, qint64 position = 0);
     void startThumbProcess(bool vrMode = false);
     void stopThumbProcess();
     void loadLibraryAsync();
     bool isLibraryLoading();
     void stopLibraryLoading();
     LibraryListItem27 setupPlaylistItem(QString name);
+    void updateItem(LibraryListItem27 item);
+    void removeFromCache(LibraryListItem27 item);
+    void addItemFront(LibraryListItem27 item);
+    void addItemBack(LibraryListItem27 item);
     QList<LibraryListItem27> getLibraryCache();
+    QList<LibraryListItem27> getPlaylist(QString name);
     //QList<LibraryListItem27> getVRLibraryCache();
     void setLiveProperties(LibraryListItem27 &item);
     void lockThumb(LibraryListItem27 &item);
@@ -48,7 +57,9 @@ public:
     QString getScreenType(QString mediaPath);
     QString getStereoMode(QString mediaPath);
     bool isStereo(QString mediaPath);
-    LibraryListItem27 findItemByID(QString id);
+    LibraryListItem27* findItemByID(QString id);
+    LibraryListItem27* findItemByName(QString name);
+    int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
 
 private:
@@ -68,10 +79,11 @@ private:
     //void saveThumbs(QList<LibraryListItem27> items, qint64 position = 0, bool vrMode = false);
     void onPrepareLibraryLoad();
     void onLibraryItemFound(LibraryListItem27 item);
-    void onSaveThumb(LibraryListItem27 item, bool vrMode, QString errorMessage = nullptr);
+    void onSaveThumb(LibraryListItem27 &item, bool vrMode, QString errorMessage = nullptr);
     void setThumbPath(LibraryListItem27 &item);
+    void setThumbState(ThumbState state, LibraryListItem27 &item);
     void saveNewThumbs(bool vrMode = false);
-    void saveThumb(LibraryListItem27 item, qint64 position = 0, bool vrMode = false);
+    void saveThumb(LibraryListItem27 &item, qint64 position = 0, bool vrMode = false);
     void updateToolTip(LibraryListItem27 &item);
     void assignID(LibraryListItem27 &item);
 
