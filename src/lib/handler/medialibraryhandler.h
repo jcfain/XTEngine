@@ -17,14 +17,15 @@ class XTENGINE_EXPORT MediaLibraryHandler : public QObject
 signals:
     void prepareLibraryLoad();
     void libraryNotFound();
-    void libraryItemFound(LibraryListItem27 item);
+    //void libraryItemFound(LibraryListItem27 item);
     void libraryLoadingStatus(QString message);
     void libraryLoading();
     void libraryLoaded();
+    void libraryChange();
     void itemAdded(LibraryListItem27 item);
     void itemRemoved(LibraryListItem27 item);
     void itemUpdated(LibraryListItem27 item);
-    void playListItem(LibraryListItem27 item);
+    //void playListItem(LibraryListItem27 item);
 
     void thumbProcessBegin();
     void thumbProcessEnd();

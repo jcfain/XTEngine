@@ -147,6 +147,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _skipToMoneyShotStandAloneLoop = settingsToLoadFrom->value("skipToMoneyShotStandAloneLoop").toBool();
 
     _hideStandAloneFunscriptsInLibrary = settingsToLoadFrom->value("hideStandAloneFunscriptsInLibrary").toBool();
+    _showVRInLibraryView = settingsToLoadFrom->value("showVRInLibraryView").toBool();
     _skipPlayingSTandAloneFunscriptsInLibrary = settingsToLoadFrom->value("skipPlayingSTandAloneFunscriptsInLibrary").toBool();
 
     _enableHttpServer = settingsToLoadFrom->value("enableHttpServer").toBool();
@@ -460,6 +461,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("skipToMoneyShotStandAloneLoop", _skipToMoneyShotStandAloneLoop);
 
         settingsToSaveTo->setValue("hideStandAloneFunscriptsInLibrary", _hideStandAloneFunscriptsInLibrary);
+        settingsToSaveTo->setValue("showVRInLibraryView", _showVRInLibraryView);
         settingsToSaveTo->setValue("skipPlayingSTandAloneFunscriptsInLibrary", _skipPlayingSTandAloneFunscriptsInLibrary);
 
         settingsToSaveTo->setValue("enableHttpServer", _enableHttpServer);
@@ -1384,6 +1386,14 @@ LibrarySortMode SettingsHandler::getLibrarySortMode()
     return (LibrarySortMode)_librarySortMode;
 }
 
+void SettingsHandler::setShowVRInLibraryView(bool value) {
+    QMutexLocker locker(&mutex);
+    _showVRInLibraryView = value;
+    settingsChangedEvent(true);
+}
+bool SettingsHandler::getShowVRInLibraryView() {
+    return _showVRInLibraryView;
+}
 ChannelModel33 SettingsHandler::getAxis(QString axis)
 {
     QMutexLocker locker(&mutex);
@@ -2254,6 +2264,7 @@ int SettingsHandler::_httpPort;
 int SettingsHandler::_webSocketPort;
 int SettingsHandler::_httpThumbQuality;
 QString SettingsHandler::_vrLibrary;
+bool SettingsHandler::_showVRInLibraryView;
 
 int SettingsHandler::_funscriptModifierStep;
 int SettingsHandler::_funscriptOffsetStep;

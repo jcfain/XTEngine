@@ -205,7 +205,7 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
             funscriptsWithMedia.append(zipFile);
 
         onLibraryItemFound(item);
-        emit libraryItemFound(item);
+        //emit libraryItemFound(item);
     }
 
     if(!vrMode && !SettingsHandler::getHideStandAloneFunscriptsInLibrary())
@@ -282,7 +282,7 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
             item.thumbState = ThumbState::Waiting;
             setLiveProperties(item);
             onLibraryItemFound(item);
-            emit libraryItemFound(item);
+            //emit libraryItemFound(item);
         }
     }
     if(vrMode)
@@ -350,38 +350,9 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     return item;
 }
 
-//QString MediaLibraryHandler::getThumbPath(LibraryListItem27 libraryListItem)
-//{
-//    if(libraryListItem.type == LibraryListItemType::Audio)
-//    {
-//        return "://images/icons/audio.png";
-//    }
-//    else if(libraryListItem.type == LibraryListItemType::PlaylistInternal)
-//    {
-//        return "://images/icons/playlist.png";
-//    }
-//    else if(libraryListItem.type == LibraryListItemType::FunscriptType)
-//    {
-//        return "://images/icons/funscript.png";
-//    }
-//    QStringList imageExtensions;
-//    imageExtensions << ".jpg" << ".jpeg" << ".png";
-//    QFileInfo mediaInfo(libraryListItem.path);
-//    foreach(QString ext, imageExtensions) {
-//        QString filepath = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension + ext;
-//        if(QFile(filepath).exists())
-//            return filepath;
-//    }
-//    if(SettingsHandler::getUseMediaDirForThumbs())
-//        return QFileInfo(libraryListItem.path).absoluteDir().path() + libraryListItem.nameNoExtension + ".jpg";
-
-//    return SettingsHandler::getSelectedThumbsDir() + libraryListItem.name + ".jpg";
-//}
-
 void MediaLibraryHandler::onLibraryLoaded()
 {
     startThumbProcess();
-    //_xSettings->setLibraryLoaded(true, cachedLibraryItems, cachedVRItems);
 
 }
 
@@ -484,8 +455,9 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
             }
         });
         _thumbTimeoutTimer.start(30000);
-        if(!vrMode)
-            emit saveNewThumbLoading(item);
+//        if(!vrMode)
+        // Webhandler
+        emit saveNewThumbLoading(item);
         // Get the duration and randomize the position with in the video.
         QString videoFile = item.path;
         LogHandler::Debug("Getting thumb: " + item.thumbFile);
@@ -600,7 +572,6 @@ void MediaLibraryHandler::onSaveThumb(LibraryListItem27 &item, bool vrMode, QStr
 
 QList<LibraryListItem27> MediaLibraryHandler::getLibraryCache()
 {
-    const QMutexLocker locker(&_mutex);
     return _cachedLibraryItems;
 }
 QList<LibraryListItem27> MediaLibraryHandler::getPlaylist(QString name) {
@@ -620,9 +591,10 @@ LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
     item.nameNoExtension = playlistName; //nameNoExtension
     item.modifiedDate = QDateTime::currentDateTime().date();
     item.duration = 0;
+    setThumbState(ThumbState::Ready, item);
     setLiveProperties(item);
     addItemFront(item);
-    emit playListItem(item);
+    //emit playListItem(item);
     return item;
 }
 void MediaLibraryHandler::updateItem(LibraryListItem27 item) {
@@ -633,20 +605,26 @@ void MediaLibraryHandler::updateItem(LibraryListItem27 item) {
 void MediaLibraryHandler::removeFromCache(LibraryListItem27 itemToRemove) {
     const QMutexLocker locker(&_mutex);
     _cachedLibraryItems.removeOne(itemToRemove);
-    emit itemUpdated(itemToRemove);
-    emit itemRemoved(itemToRemove);
+    if(!isLibraryLoading()) {
+        emit itemRemoved(itemToRemove);
+        emit libraryChange();
+    }
 }
 void MediaLibraryHandler::addItemFront(LibraryListItem27 item) {
     const QMutexLocker locker(&_mutex);
     _cachedLibraryItems.push_front(item);
-    emit itemUpdated(item);
-    emit itemAdded(item);
+    if(!isLibraryLoading()) {
+        emit itemAdded(item);
+        emit libraryChange();
+    }
 }
 void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
     const QMutexLocker locker(&_mutex);
     _cachedLibraryItems.push_back(item);
-    emit itemUpdated(item);
-    emit itemAdded(item);
+    if(!isLibraryLoading()) {
+        emit itemAdded(item);
+        emit libraryChange();
+    }
 }
 void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
 {
@@ -768,12 +746,12 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &libraryListItem)
 void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
 {
     localData.isMFS = false;
-    QFileInfo scriptInfo(localData.script);
-    QFileInfo zipScriptInfo(localData.zipFile);
+    bool scriptExists = QFileInfo::exists(localData.script);
+    bool zipScripExists = QFileInfo::exists(localData.zipFile);
     localData.toolTip = localData.nameNoExtension + "\nMedia:";
-    if (localData.type != LibraryListItemType::PlaylistInternal && !scriptInfo.exists() && !zipScriptInfo.exists())
+    if (localData.type != LibraryListItemType::PlaylistInternal && !scriptExists && !zipScripExists)
     {
-        localData.toolTip = localData.path + "\nNo script file of the same name found.\nRight click and Play with funscript.";
+        localData.toolTip = localData.path + "\nNo script file of the same name found.\nRight click and Play with chosen funscript.";
     }
     else if (localData.type != LibraryListItemType::PlaylistInternal)
     {
@@ -781,7 +759,7 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
         localData.toolTip += localData.path;
         localData.toolTip += "\n";
         localData.toolTip += "Scripts:\n";
-        if(zipScriptInfo.exists())
+        if(zipScripExists)
         {
             localData.toolTip += localData.zipFile;
             localData.isMFS = true;

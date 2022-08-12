@@ -146,6 +146,9 @@ public:
     static void setLibrarySortMode(int value);
     static LibrarySortMode getLibrarySortMode();
 
+    static void setShowVRInLibraryView(bool value);
+    static bool getShowVRInLibraryView();
+
     static void setGamepadEnabled(bool value);
     ///Returns assigned actions per gamepad button
     static QMap<QString, QStringList> getGamePadMap();
@@ -413,6 +416,7 @@ private:
     static int _httpThumbQuality;
     static int _webSocketPort;
     static QString _vrLibrary;
+    static bool _showVRInLibraryView;
 
 
     static int _funscriptModifierStep;
