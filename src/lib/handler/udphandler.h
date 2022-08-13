@@ -8,18 +8,18 @@
 #include <QWaitCondition>
 #include <math.h>
 #include "loghandler.h"
-#include "outputdevicehandler.h"
+#include "lib/interface/networkdevice.h"
 #include "settingshandler.h"
 #include "../struct/NetworkAddress.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT  UdpHandler : public OutputDeviceHandler
+class XTENGINE_EXPORT  UdpHandler : public NetworkDevice
 {
 
 public:
     explicit UdpHandler(QObject *parent = nullptr);
     ~UdpHandler();
-    void init(NetworkAddress _address, int waitTimeout = 5000);
+    void init(NetworkAddress _address, int waitTimeout = 5000) override;
     void dispose() override;
     void sendTCode(const QString &tcode) override;
     bool isConnected() override;

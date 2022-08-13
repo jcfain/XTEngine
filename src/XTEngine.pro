@@ -27,6 +27,7 @@ SOURCES += \
     lib/handler/synchandler.cpp \
     lib/handler/tcodehandler.cpp \
     lib/handler/udphandler.cpp \
+    lib/handler/websocketdevicehandler.cpp \
     lib/handler/websockethandler.cpp \
     lib/handler/whirligighandler.cpp \
     lib/handler/xtpwebhandler.cpp \
@@ -58,11 +59,13 @@ HEADERS += \
     lib/handler/synchandler.h \
     lib/handler/tcodehandler.h \
     lib/handler/udphandler.h \
+    lib/handler/websocketdevicehandler.h \
     lib/handler/websockethandler.h \
     lib/handler/whirligighandler.h \
     lib/handler/xtpwebhandler.h \
     lib/handler/xvideopreview.h \
     lib/handler/xvideosurface.h \
+    lib/interface/networkdevice.h \
     lib/lookup/AxisDimension.h \
     lib/lookup/AxisNames.h \
     lib/lookup/AxisType.h \

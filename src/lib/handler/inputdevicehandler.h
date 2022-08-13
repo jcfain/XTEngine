@@ -12,16 +12,6 @@
 class XTENGINE_EXPORT InputDeviceHandler : public QObject
 {
     Q_OBJECT
-public:
-    explicit InputDeviceHandler(QObject *parent = nullptr);
-    virtual void init(NetworkAddress _address, int waitTimeout = 5000);
-    virtual void dispose();
-    virtual void send(const QString &command);
-    virtual bool isConnected();
-    virtual bool isPlaying();
-    //void togglePause();
-    virtual InputDevicePacket getCurrentPacket();
-    virtual void sendPacket(InputDevicePacket packet);
 signals:
     void errorOccurred(QString error);
     void connectionChange(ConnectionChangedSignal status);
@@ -30,8 +20,24 @@ signals:
     void emitTCode(QString tcode);
     void emitAction(QStringList actions);
     ///
+
 public slots:
-    virtual void messageSend(QByteArray message);
+    virtual void messageSend(QByteArray message) = 0;
+
+public:
+    explicit InputDeviceHandler(QObject *parent = nullptr) :
+        QObject(parent)
+    {
+
+    }
+    virtual void init(NetworkAddress _address, int waitTimeout = 5000) = 0;
+    virtual void dispose() = 0;
+    virtual void send(const QString &command) = 0;
+    virtual bool isConnected() = 0;
+    virtual bool isPlaying() = 0;
+    //void togglePause();
+    virtual InputDevicePacket getCurrentPacket() = 0;
+    virtual void sendPacket(InputDevicePacket packet) = 0;
 };
 
 #endif // INPUTDEVICEHANDLER_H

@@ -18,14 +18,18 @@ signals:
     void connectionChange(ConnectionChangedSignal status);
 
 public:
-    explicit OutputDeviceHandler(QObject *parent = nullptr);
-    ~OutputDeviceHandler();
-    virtual void sendTCode(const QString &tcode);
-    virtual void dispose();
-    virtual bool isConnected();
+    explicit OutputDeviceHandler(QObject *parent = nullptr) :
+        QThread(parent)
+    {
+
+    }
+    ~OutputDeviceHandler() {};
+    virtual void sendTCode(const QString &tcode) = 0;
+    virtual void dispose() = 0;
+    virtual bool isConnected() = 0;
 
 private:
-    virtual void run() override;
+    virtual void run() override = 0;
 };
 
 #endif // OUTPUTDEVICEHANDLER_H

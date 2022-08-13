@@ -6,10 +6,12 @@
 #include <QtConcurrent/QtConcurrent>
 
 #include "outputdevicehandler.h"
+#include "lib/interface/networkdevice.h"
 #include "deohandler.h"
 #include "whirligighandler.h"
 #include "xtpwebhandler.h"
 #include "udphandler.h"
+#include "websocketdevicehandler.h"
 #include "serialhandler.h"
 #include "gamepadhandler.h"
 #include "lib/struct/ConnectionChangedSignal.h"
@@ -49,7 +51,7 @@ public:
     void disposeOutputDevice(DeviceName outputDevice);
     void disposeInputDevice(DeviceName inputDevice);
     void dispose();
-    UdpHandler* getNetworkHandler();
+    NetworkDevice* getNetworkHandler();
     SerialHandler* getSerialHandler();
     DeoHandler* getDeoHandler();
     XTPWebHandler* getXTPWebHandler();
@@ -63,7 +65,9 @@ private:
     OutputDeviceHandler* _outputDevice = 0;
     InputDeviceHandler* _inputDevice = 0;
     SerialHandler* _serialHandler;
+    NetworkDevice* _networkDeviceHandler;
     UdpHandler* _udpHandler;
+    WebsocketDeviceHandler* _webSocketHandler;
     DeoHandler* _deoHandler;
     WhirligigHandler* _whirligigHandler;
     XTPWebHandler* _xtpWebHandler;

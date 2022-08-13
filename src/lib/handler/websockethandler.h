@@ -38,7 +38,7 @@ private:
     ConnectionChangedSignal _outputDeviceStatus = {DeviceType::Output, DeviceName::Serial, ConnectionStatus::Disconnected, "Disconnected"};
     ConnectionChangedSignal _inputDeviceStatus = {DeviceType::Input, DeviceName::None, ConnectionStatus::Disconnected, "Disconnected"};
     ConnectionChangedSignal _gamepadStatus = {DeviceType::Input, DeviceName::Gamepad, ConnectionStatus::Disconnected, "Disconnected"};
-private:
+
     void closed();
     void onNewConnection();
     void processBinaryMessage(QByteArray message);
