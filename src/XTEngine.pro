@@ -17,10 +17,8 @@ SOURCES += \
     lib/handler/funscripthandler.cpp \
     lib/handler/gamepadhandler.cpp \
     lib/handler/httphandler.cpp \
-    lib/handler/inputdevicehandler.cpp \
     lib/handler/loghandler.cpp \
     lib/handler/medialibraryhandler.cpp \
-    lib/handler/outputdevicehandler.cpp \
     lib/handler/serialhandler.cpp \
     lib/handler/settingsactionhandler.cpp \
     lib/handler/settingshandler.cpp \
