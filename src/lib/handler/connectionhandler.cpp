@@ -5,6 +5,8 @@ ConnectionHandler::ConnectionHandler(QObject *parent)
 {
     _serialHandler = new SerialHandler(this);
     _udpHandler = new UdpHandler(this);
+    _webSocketHandler = new WebsocketDeviceHandler(this);
+    _networkDevice = _udpHandler;
     _deoHandler = new DeoHandler(this);
     _xtpWebHandler = new XTPWebHandler(this);
     _whirligigHandler = new WhirligigHandler(this);
@@ -84,8 +86,8 @@ OutputDeviceHandler* ConnectionHandler::getSelectedOutputDevice() {
 InputDeviceHandler* ConnectionHandler::getSelectedInputDevice() {
     return _inputDevice;
 }
-UdpHandler* ConnectionHandler::getNetworkHandler() {
-    return _udpHandler;
+NetworkDevice* ConnectionHandler::getNetworkHandler() {
+    return _networkDevice;
 }
 SerialHandler* ConnectionHandler::getSerialHandler() {
     return _serialHandler;
@@ -134,14 +136,17 @@ void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
     }
     else if (outputDevice == DeviceName::Network)
     {
-        setOutputDevice(_udpHandler);
+        _networkDevice = _webSocketHandler;
+        setOutputDevice(_networkDevice);
         if(!SettingsHandler::getServerAddress().isEmpty() && !SettingsHandler::getServerPort().isEmpty() &&
             SettingsHandler::getServerAddress() != "0" && SettingsHandler::getServerPort() != "0")
         {
             NetworkAddress address { SettingsHandler::getServerAddress(), SettingsHandler::getServerPort().toInt() };
-            _initFuture = QtConcurrent::run([this, address]() {
-                _udpHandler->init(address);
-            });
+
+            _networkDevice->init(address);
+//            _initFuture = QtConcurrent::run([this, address]() {
+//                _webSocketHandler->init(address);
+//            });
         }
     }
 }

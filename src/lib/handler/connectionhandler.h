@@ -65,7 +65,7 @@ private:
     OutputDeviceHandler* _outputDevice = 0;
     InputDeviceHandler* _inputDevice = 0;
     SerialHandler* _serialHandler;
-    NetworkDevice* _networkDeviceHandler;
+    NetworkDevice* _networkDevice;
     UdpHandler* _udpHandler;
     WebsocketDeviceHandler* _webSocketHandler;
     DeoHandler* _deoHandler;
