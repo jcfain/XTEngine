@@ -68,7 +68,8 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _selectedThumbsDir = settingsToLoadFrom->value("selectedThumbsDir").toString();
     _useMediaDirForThumbs = settingsToLoadFrom->value("useMediaDirForThumbs").toBool();
     _hideWelcomeScreen = settingsToLoadFrom->value("hideWelcomeScreen").toBool();
-    selectedDevice = settingsToLoadFrom->value("selectedDevice").toInt();
+    _selectedOutputDevice = settingsToLoadFrom->value("selectedDevice").toInt();
+    _selectedNetworkDeviceType = (NetworkDeviceType)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
     playerVolume = settingsToLoadFrom->value("playerVolume").toInt();
     offSet = settingsToLoadFrom->value("offSet").toInt();
     _disableTCodeValidation = settingsToLoadFrom->value("disableSerialTCodeValidation").toBool();
@@ -352,7 +353,8 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("selectedTheme", selectedTheme);
         settingsToSaveTo->setValue("selectedThumbsDir", _selectedThumbsDir);
         settingsToSaveTo->setValue("useMediaDirForThumbs", _useMediaDirForThumbs);
-        settingsToSaveTo->setValue("selectedDevice", selectedDevice);
+        settingsToSaveTo->setValue("selectedDevice", _selectedOutputDevice);
+        settingsToSaveTo->setValue("selectedNetworkDeviceType", (int)_selectedNetworkDeviceType);
         settingsToSaveTo->setValue("playerVolume", playerVolume);
         settingsToSaveTo->setValue("offSet", offSet);
         settingsToSaveTo->setValue("disableSerialTCodeValidation", _disableTCodeValidation);
@@ -964,13 +966,13 @@ bool SettingsHandler::getUseMediaDirForThumbs()
 DeviceName SettingsHandler::getSelectedOutputDevice()
 {
     QMutexLocker locker(&mutex);
-    return (DeviceName)selectedDevice;
+    return (DeviceName)_selectedOutputDevice;
 }
 
 void SettingsHandler::setSelectedOutputDevice(DeviceName deviceName)
 {
     QMutexLocker locker(&mutex);
-    selectedDevice = deviceName;
+    _selectedOutputDevice = deviceName;
 }
 
 DeviceName SettingsHandler::getSelectedInputDevice()
@@ -990,6 +992,13 @@ void SettingsHandler::setSelectedInputDevice(DeviceName deviceName)
     deoEnabled = deviceName == DeviceName::Deo;
     whirligigEnabled = deviceName == DeviceName::Whirligig;
     _xtpWebSyncEnabled = deviceName == DeviceName::XTPWeb;
+}
+
+void SettingsHandler::setSelectedNetworkDevice(NetworkDeviceType value) {
+    _selectedNetworkDeviceType = value;
+}
+NetworkDeviceType SettingsHandler::getSelectedNetworkDevice() {
+    return _selectedNetworkDeviceType;
 }
 
 QString SettingsHandler::getSerialPort()
@@ -1541,12 +1550,6 @@ void SettingsHandler::setSelectedFunscriptLibrary(QString value)
 {
     QMutexLocker locker(&mutex);
     selectedFunscriptLibrary = value;
-    settingsChangedEvent(true);
-}
-void SettingsHandler::setSelectedDevice(int value)
-{
-    QMutexLocker locker(&mutex);
-    selectedDevice = value;
     settingsChangedEvent(true);
 }
 void SettingsHandler::setSerialPort(QString value)
@@ -2201,7 +2204,8 @@ QString SettingsHandler::selectedTheme;
 QString SettingsHandler::selectedLibrary;
 QString SettingsHandler::_selectedThumbsDir;
 bool SettingsHandler::_useMediaDirForThumbs;
-int SettingsHandler::selectedDevice;
+int SettingsHandler::_selectedOutputDevice;
+NetworkDeviceType SettingsHandler::_selectedNetworkDeviceType;
 int SettingsHandler::_librarySortMode;
 int SettingsHandler::playerVolume;
 int SettingsHandler::offSet;

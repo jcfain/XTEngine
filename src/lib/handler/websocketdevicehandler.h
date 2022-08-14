@@ -16,6 +16,7 @@
 
 class WebsocketDeviceHandler : public NetworkDevice
 {
+    Q_OBJECT
 public:
     explicit WebsocketDeviceHandler(QObject *parent = nullptr);
     ~WebsocketDeviceHandler();

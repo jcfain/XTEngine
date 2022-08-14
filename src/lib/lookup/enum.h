@@ -17,6 +17,11 @@ enum DeviceName
     None
 };
 
+enum class NetworkDeviceType {
+    UDP,
+    WEBSOCKET
+};
+
 enum ConnectionStatus
 {
     Connected,

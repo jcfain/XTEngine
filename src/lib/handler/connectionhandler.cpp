@@ -136,7 +136,11 @@ void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
     }
     else if (outputDevice == DeviceName::Network)
     {
-        _networkDevice = _webSocketHandler;
+        if(SettingsHandler::getSelectedNetworkDevice() == NetworkDeviceType::WEBSOCKET) {
+           _networkDevice = _webSocketHandler;
+        } else {
+           _networkDevice = _udpHandler;
+        }
         setOutputDevice(_networkDevice);
         if(!SettingsHandler::getServerAddress().isEmpty() && !SettingsHandler::getServerPort().isEmpty() &&
             SettingsHandler::getServerAddress() != "0" && SettingsHandler::getServerPort() != "0")

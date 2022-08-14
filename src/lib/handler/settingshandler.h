@@ -63,9 +63,16 @@ public:
     static void setSelectedOutputDevice(DeviceName deviceName);
     static DeviceName getSelectedInputDevice();
     static void setSelectedInputDevice(DeviceName deviceName);
+    static void setSelectedNetworkDevice(NetworkDeviceType value);
+    static NetworkDeviceType getSelectedNetworkDevice();
+
+    static void setSerialPort(QString value);
+    static void setServerAddress(QString value);
+    static void setServerPort(QString value);
     static QString getSerialPort();
     static QString getServerAddress();
     static QString getServerPort();
+
     static int getPlayerVolume();
     static int getoffSet();
     static bool getDisableTCodeValidation();
@@ -102,10 +109,6 @@ public:
     static void setSelectedTheme(QString value);
     static void setSelectedLibrary(QString value);
     static void setSelectedFunscriptLibrary(QString value);
-    static void setSelectedDevice(int value);
-    static void setSerialPort(QString value);
-    static void setServerAddress(QString value);
-    static void setServerPort(QString value);
 
     static QString getDeoAddress();
     static QString getDeoPort();
@@ -348,7 +351,8 @@ private:
     static QString _selectedThumbsDir;
     static bool _useMediaDirForThumbs;
     static QString selectedFile;
-    static int selectedDevice;
+    static int _selectedOutputDevice;
+    static NetworkDeviceType _selectedNetworkDeviceType;
     static QString serialPort;
     static QString serverAddress;
     static QString serverPort;

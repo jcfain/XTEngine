@@ -1,4 +1,5 @@
 #include "udphandler.h"
+#include <QtConcurrent/QtConcurrent>
 
 UdpHandler::UdpHandler(QObject *parent) :
     NetworkDevice(parent)
@@ -12,38 +13,51 @@ UdpHandler::~UdpHandler()
 void UdpHandler::init(NetworkAddress address, int waitTimeout)
 {
     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connecting, "Connecting..."});
+    connect(this, &UdpHandler::sendHandShake, this, &UdpHandler::onSendHandShake);
     //_mutex.lock();
     _stop = false;
     _isSelected = true;
     _waitTimeout = waitTimeout;
     _address = address;
     //_mutex.unlock();
-    int timeouttracker = 0;
-    QMutex mutex;
-    QWaitCondition cond;
-    QElapsedTimer mSecTimer;
-    qint64 time1 = 0;
-    qint64 time2 = 0;
-    mSecTimer.start();
-    while(!_isConnected && !_stop && timeouttracker <= 3)
-    {
-        if (time2 - time1 >= _waitTimeout + 1000 || timeouttracker == 0)
-        {
-            time1 = time2;
-            sendTCode("D1");
-            ++timeouttracker;
-        }
-        time2 = (round(mSecTimer.nsecsElapsed() / 1000000));
-        mutex.lock();
-        cond.wait(&mutex, 1);
-        mutex.unlock();
-    }
-    if (timeouttracker > 3)
+    if(_initFuture.isRunning())
     {
         _stop = true;
-        _isConnected = false;
-        emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "Timed out"});
+        _initFuture.cancel();
+        _initFuture.waitForFinished();
     }
+    _initFuture = QtConcurrent::run([this]() {
+        int timeouttracker = 0;
+        QMutex mutex;
+        QWaitCondition cond;
+        QElapsedTimer mSecTimer;
+        qint64 time1 = 0;
+        qint64 time2 = 0;
+        mSecTimer.start();
+        while(!_isConnected && !_stop && timeouttracker <= 3)
+        {
+            if (time2 - time1 >= _waitTimeout + 1000 || timeouttracker == 0)
+            {
+                time1 = time2;
+                emit sendHandShake();
+                ++timeouttracker;
+            }
+            time2 = (round(mSecTimer.nsecsElapsed() / 1000000));
+            mutex.lock();
+            cond.wait(&mutex, 1);
+            mutex.unlock();
+        }
+        if (!_stop && timeouttracker > 3)
+        {
+            _stop = true;
+            _isConnected = false;
+            emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "Timed out"});
+        }
+    });
+}
+
+void UdpHandler::onSendHandShake() {
+    sendTCode("D1");
 }
 
 void UdpHandler::sendTCode(const QString &tcode)
@@ -160,7 +174,7 @@ void UdpHandler::run()
             }
 
             currentRequest.clear();
-            currentRequest.append(_tcode);
+            currentRequest.append(_tcode.toUtf8());
             _mutex.unlock();
         }
     }

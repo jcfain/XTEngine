@@ -5,7 +5,8 @@
 #include "lib/struct/NetworkAddress.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT NetworkDevice : public OutputDeviceHandler {
+class XTENGINE_EXPORT NetworkDevice : public OutputDeviceHandler
+{
 
 public:
     explicit NetworkDevice(QObject *parent = nullptr) : OutputDeviceHandler(parent) {

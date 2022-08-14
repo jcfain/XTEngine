@@ -205,6 +205,8 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(qint64 millis)
             _firstActionExecuted = true;
             if(interval < 500)
                 interval = 500;
+            else if(interval > 5000)
+                interval = 5000;
         }
         //LogHandler::Debug("offSet: "+ QString::number(SettingsHandler::getoffSet()));
         //LogHandler::Debug("speed: "+ QString::number(speed));

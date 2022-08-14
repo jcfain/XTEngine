@@ -5,6 +5,7 @@
 #include <QHostInfo>
 #include <QThread>
 #include <QMutex>
+#include <QFuture>
 #include <QWaitCondition>
 #include <math.h>
 #include "loghandler.h"
@@ -15,6 +16,10 @@
 
 class XTENGINE_EXPORT  UdpHandler : public NetworkDevice
 {
+    Q_OBJECT
+
+signals:
+    void sendHandShake();
 
 public:
     explicit UdpHandler(QObject *parent = nullptr);
@@ -24,11 +29,15 @@ public:
     void sendTCode(const QString &tcode) override;
     bool isConnected() override;
 
+private slots:
+    void onSendHandShake();
+
 private:
     void run() override;
     void readData();
     void onSocketStateChange (QAbstractSocket::SocketState state);
 
+    QFuture<void> _initFuture;
     NetworkAddress _address;
     QWaitCondition _cond;
     QMutex _mutex;
@@ -37,6 +46,7 @@ private:
     bool _stop = false;
     bool _isConnected = false;
     bool _isSelected = false;
+
 };
 
 #endif // UDPHANDLER_H
