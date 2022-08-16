@@ -208,7 +208,7 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
         //emit libraryItemFound(item);
     }
 
-    if(!vrMode && !SettingsHandler::getHideStandAloneFunscriptsInLibrary())
+    if(!vrMode)
     {
         emit libraryLoadingStatus("Searching for lone funscripts...");
         QStringList funscriptTypes = QStringList()
