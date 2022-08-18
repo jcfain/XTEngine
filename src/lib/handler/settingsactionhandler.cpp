@@ -206,7 +206,7 @@ void SettingsActionHandler::media_action(QString action)
         bool paused = SettingsHandler::getLiveActionPaused();
         emit actionExecuted(action, paused ? "Resume action" : "Pause action");
         SettingsHandler::setLiveActionPaused(!paused);
-        emit tcode_action("DSTOP");
+        emit tcode_action("DSTOP");// TODO: figure out a better way to do this.
     }
     else if(action == actions.ToggleSkipToMoneyShotPlaysFunscript) {
         auto enabled = !SettingsHandler::getSkipToMoneyShotPlaysFunscript();

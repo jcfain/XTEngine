@@ -115,6 +115,11 @@ void ConnectionHandler::sendTCode(QString tcode)
         _outputDevice->sendTCode(tcode);
 }
 
+void ConnectionHandler::stopOutputDevice()
+{
+    sendTCode("DSTOP");
+}
+
 void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
 {
     if (_outputDevice && _outputDevice->isRunning())

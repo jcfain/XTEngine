@@ -41,6 +41,7 @@ public:
     explicit ConnectionHandler(QObject *parent = nullptr);
     void init();
     void sendTCode(QString tcode);
+    void stopOutputDevice();
 
     bool isOutputDeviceConnected();
     bool isInputDeviceConnected();
@@ -81,6 +82,8 @@ private:
 
     void setOutputDevice(OutputDeviceHandler* device);
     void setInputDevice(InputDeviceHandler* device);
+
+
 };
 
 #endif // CONNECTIONHANDLER_H

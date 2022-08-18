@@ -400,9 +400,13 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
         QString videoPath;
         qint64 duration;
         qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
+        bool lastStatePlaying = false;
         while (_isVRFunscriptPlaying && _inputDeviceHandler && _inputDeviceHandler->isConnected() && _outputDeviceHandler && _outputDeviceHandler->isConnected() && !_isOtherMediaPlaying)
         {
             currentVRPacket = _inputDeviceHandler->getCurrentPacket();
+            if(lastStatePlaying && !currentVRPacket.playing)
+                emit sendTCode("DSTOP");
+            lastStatePlaying = currentVRPacket.playing;
             //timer.start();
             if(!_isPaused && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
             {
