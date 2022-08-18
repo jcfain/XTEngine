@@ -10,10 +10,10 @@
 
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT TCodeFactory
+class XTENGINE_EXPORT TCodeFactory : public QObject
 {
 public:
-    TCodeFactory(double inputStart, double inputEnd);
+    TCodeFactory(double inputStart, double inputEnd, QObject* parent = nullptr);
     void init();
     void calculate(QString axisName, double value, QVector<ChannelValueModel> &axisValues);
     QString formatTCode(QVector<ChannelValueModel>* values);

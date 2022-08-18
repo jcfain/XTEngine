@@ -1,6 +1,6 @@
 #include "tcodefactory.h"
 
-TCodeFactory::TCodeFactory(double inputStart, double inputEnd)
+TCodeFactory::TCodeFactory(double inputStart, double inputEnd, QObject* parent) : QObject(parent)
 {
     _input_start = inputStart;
     _input_end = inputEnd;

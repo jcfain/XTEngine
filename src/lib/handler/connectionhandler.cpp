@@ -177,8 +177,8 @@ void ConnectionHandler::initInputDevice(DeviceName inputDevice)
     if(inputDevice == DeviceName::Gamepad)
     {
         connect(_gamepadHandler, &GamepadHandler::connectionChange, this, &ConnectionHandler::on_gamepad_connectionChanged);
-        connect(_gamepadHandler, &GamepadHandler::emitTCode, this, [this](QString tcode){ emit gamepadTCode(tcode); });
-        connect(_gamepadHandler, &GamepadHandler::emitAction, this, [this](QString action){ emit gamepadAction(action); });
+        connect(_gamepadHandler, &GamepadHandler::emitTCode, this, &ConnectionHandler::sendTCode);
+        connect(_gamepadHandler, &GamepadHandler::emitAction, this, &ConnectionHandler::gamepadAction);
         _gamepadHandler->init();
         return;
     }
