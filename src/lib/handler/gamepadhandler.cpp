@@ -190,8 +190,8 @@ void GamepadHandler::listenForInput()
     connect(_gamepad, &QGamepad::buttonBChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.B); });
     connect(_gamepad, &QGamepad::buttonXChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.X); });
     connect(_gamepad, &QGamepad::buttonYChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.Y); });
-    connect(_gamepad, &QGamepad::buttonL1Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.RightBumper); });
-    connect(_gamepad, &QGamepad::buttonR1Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.LeftBumper); });
+    connect(_gamepad, &QGamepad::buttonR1Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.RightBumper); });
+    connect(_gamepad, &QGamepad::buttonL1Changed, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.LeftBumper); });
     connect(_gamepad, &QGamepad::buttonStartChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.Start); });
     connect(_gamepad, &QGamepad::buttonSelectChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.Select); });
     connect(_gamepad, &QGamepad::buttonUpChanged, this, [this, gamepadAxisName]() {  onListenForInput(gamepadAxisName.DPadUp); });

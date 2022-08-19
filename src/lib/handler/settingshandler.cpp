@@ -1442,19 +1442,19 @@ QStringList SettingsHandler::getGamePadMapButton(QString gamepadButton)
     return QStringList();
 }
 
-void SettingsHandler::setGamePadMapButton(QString gamePadButton, QString axis)
+void SettingsHandler::setGamePadMapButton(QString gamePadButton, QString action)
 {
     QMutexLocker locker(&mutex);
-    if(!_gamepadButtonMap[gamePadButton].contains(axis))
+    if(!_gamepadButtonMap[gamePadButton].contains(action))
     {
-        _gamepadButtonMap[gamePadButton] << axis;
+        _gamepadButtonMap[gamePadButton] << action;
     }
     settingsChangedEvent(true);
 }
 
-void SettingsHandler::removeGamePadMapButton(QString gamePadButton, QString axis) {
+void SettingsHandler::removeGamePadMapButton(QString gamePadButton, QString action) {
     QMutexLocker locker(&mutex);
-    _gamepadButtonMap[gamePadButton].removeAll(axis);
+    _gamepadButtonMap[gamePadButton].removeAll(action);
     settingsChangedEvent(true);
 }
 

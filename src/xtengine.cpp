@@ -27,6 +27,12 @@ XTEngine::XTEngine(QObject* parent) : QObject(parent)
     connect(_connectionHandler, &ConnectionHandler::messageRecieved, _syncHandler, &SyncHandler::searchForFunscript);
     connect(_connectionHandler, &ConnectionHandler::gamepadAction, _settingsActionHandler, &SettingsActionHandler::media_action);
     connect(_syncHandler, &SyncHandler::sendTCode, _connectionHandler, &ConnectionHandler::sendTCode, Qt::QueuedConnection);
+    connect(_settingsActionHandler, &SettingsActionHandler::tcode_action, this, [this](QString tcode) {
+        if(tcode == "DHOME") {
+            tcode = _tcodeHandler->getAllHome();
+        }
+        _connectionHandler->sendTCode(tcode);
+    });
 }
 
 XTEngine::~XTEngine() {

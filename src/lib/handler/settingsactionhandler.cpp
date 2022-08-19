@@ -8,7 +8,6 @@ SettingsActionHandler::SettingsActionHandler(QObject *parent)
 
 void SettingsActionHandler::media_action(QString action)
 {
-    MediaActions actions;
     if(action == actions.TCodeSpeedUp)
     {
         int newGamepadSpeed = SettingsHandler::getLiveGamepadSpeed() + SettingsHandler::getGamepadSpeedIncrement();
@@ -24,6 +23,11 @@ void SettingsActionHandler::media_action(QString action)
             emit actionExecuted(action, "Lower speed "+ QString::number(newGamepadSpeed));
         } else
             emit actionExecuted(action, "Lower speed at minimum");
+    }
+    if(action == actions.TCodeHomeAll)
+    {
+        emit tcode_action("DHOME");// TODO: figure out a better way to do this.
+        emit actionExecuted(action, "Device home");
     }
     else if(action == actions.IncreaseXLowerRange)
     {
@@ -228,15 +232,35 @@ void SettingsActionHandler::media_action(QString action)
         else
             emit actionExecuted(action, "Funscript modifier at minimum "+ QString::number(modedModifier) + "percent");
     }
-    else if (action == actions.IncreaseOffset || action == actions.DecreaseOffset)
-    {
-        bool increase = action == actions.IncreaseOffset;
-        QString verb = increase ? "Increase" : "Decrease";
-        int currentLiveOffSet = SettingsHandler::getLiveOffSet();
-        int newOffset = increase ? currentLiveOffSet + SettingsHandler::getFunscriptOffsetStep() : currentLiveOffSet - SettingsHandler::getFunscriptOffsetStep();
-        SettingsHandler::setLiveOffset(newOffset);
-        emit actionExecuted(action, verb + " live offset to " + QString::number(newOffset));
-    }
+    //TODO: nneds to be moved from main window some how
+//    else if (action == actions.IncreaseOffset || action == actions.DecreaseOffset)
+//    {
+//        bool increase = action == actions.IncreaseOffset;
+//        QString verb = increase ? "Increase" : "Decrease";
+//        int currentLiveOffSet = SettingsHandler::getLiveOffSet();
+//        int newOffset = increase ? currentLiveOffSet + SettingsHandler::getFunscriptOffsetStep() : currentLiveOffSet - SettingsHandler::getFunscriptOffsetStep();
+//        SettingsHandler::setLiveOffset(newOffset);
+//        emit actionExecuted(action, verb + " live offset to " + QString::number(newOffset));
+//    }
+//    else if (action == actions.IncreaseOffset || action == actions.DecreaseOffset)
+//    {
+//        bool increase = action == actions.IncreaseOffset;
+//        QString verb = increase ? "Increase" : "Decrease";
+//        if (xtEngine.syncHandler()->isPlaying())
+//        {
+//           QString path = playingLibraryListItem.path;
+//           if(!path.isEmpty())
+//           {
+//               auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(path);
+//               int newOffset = increase ? libraryListItemMetaData.offset + SettingsHandler::getFunscriptOffsetStep() : libraryListItemMetaData.offset - SettingsHandler::getFunscriptOffsetStep();
+//               libraryListItemMetaData.offset = newOffset;
+//               SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
+//               emit actionExecuted(action, verb + " live offset to " + QString::number(newOffset));
+//           }
+//        }
+//        else
+//            emit actionExecuted(action, "No script playing to " + verb + " offset.");
+//    }
     else
     {
         emit actionExecuted(action, nullptr);

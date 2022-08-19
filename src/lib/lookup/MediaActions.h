@@ -18,6 +18,7 @@ struct MediaActions
     const QString FastForward = "Fast forward";
     const QString TCodeSpeedUp = "TCodeSpeedUp";
     const QString TCodeSpeedDown = "TCodeSpeedDown";
+    const QString TCodeHomeAll = "TCodeHomeAll";
     const QString IncreaseXRange = "IncreaseXRange";
     const QString DecreaseXRange = "DecreaseXRange";
     const QString IncreaseXUpperRange = "IncreaseXUpperRange";
@@ -54,6 +55,7 @@ struct MediaActions
         {FastForward, "Media: Fast forward"},
         {TCodeSpeedUp, "Gamepad: speed up"},
         {TCodeSpeedDown, "Gamepad: speed down"},
+        {TCodeHomeAll, "TCode: Device home"},
         {IncreaseXRange, "TCode: Stroke range limit (increase)"},
         {DecreaseXRange, "TCode: Stroke range limit (decrease)"},
         {ResetLiveXRange, "TCode: Stroke range limit reset"},

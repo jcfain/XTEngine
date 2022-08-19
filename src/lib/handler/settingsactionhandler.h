@@ -26,6 +26,7 @@ public:
     explicit SettingsActionHandler(QObject *parent = nullptr);
 
 private:
+    MediaActions actions;
 
 };
 
