@@ -23,6 +23,8 @@ public:
     XTEngine(QObject* parent = nullptr);
     ~XTEngine();
 
+    void init();
+
     SyncHandler* syncHandler() {
         return _syncHandler;
     }

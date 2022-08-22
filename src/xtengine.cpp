@@ -12,11 +12,17 @@ XTEngine::XTEngine(QObject* parent) : QObject(parent)
     _settingsActionHandler = new SettingsActionHandler(this);
     _mediaLibraryHandler = new MediaLibraryHandler(this);
     _connectionHandler = new ConnectionHandler(this);
-    _connectionHandler->init();
     _syncHandler = new SyncHandler(this);
     if(SettingsHandler::getEnableHttpServer())
     {
         _httpHandler = new HttpHandler(_mediaLibraryHandler, this);
+    }
+}
+
+void XTEngine::init()
+{
+    if(SettingsHandler::getEnableHttpServer())
+    {
         connect(_httpHandler, &HttpHandler::tcode, _connectionHandler, &ConnectionHandler::sendTCode);
         connect(_httpHandler, &HttpHandler::xtpWebPacketRecieve, _connectionHandler, &ConnectionHandler::inputMessageSend);
         connect(_connectionHandler, &ConnectionHandler::connectionChange, _httpHandler, &HttpHandler::on_DeviceConnection_StateChange);
@@ -33,6 +39,9 @@ XTEngine::XTEngine(QObject* parent) : QObject(parent)
         }
         _connectionHandler->sendTCode(tcode);
     });
+    _connectionHandler->init();
+
+    _mediaLibraryHandler->loadLibraryAsync();
 }
 
 XTEngine::~XTEngine() {

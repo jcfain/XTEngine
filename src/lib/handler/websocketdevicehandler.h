@@ -24,6 +24,7 @@ public:
     void dispose() override;
     void sendTCode(const QString &tcode) override;
     bool isConnected() override;
+    DeviceName name() override;
 
 private slots:
     void sendHandShake();

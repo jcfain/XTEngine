@@ -16,6 +16,10 @@ DeoHandler::~DeoHandler()
         delete currentPacket;
 }
 
+DeviceName DeoHandler::name() {
+    return DeviceName::Deo;
+}
+
 void DeoHandler::init(NetworkAddress address, int waitTimeout)
 {
     qRegisterMetaType<ConnectionChangedSignal>();

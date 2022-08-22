@@ -33,6 +33,7 @@ public:
     //void togglePause();
     InputDevicePacket getCurrentPacket() override;
     void sendPacket(InputDevicePacket packet) override;
+    DeviceName name() override;
 
 private:
     void readData();

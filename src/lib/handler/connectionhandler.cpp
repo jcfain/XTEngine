@@ -124,15 +124,19 @@ void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
 {
     if (_outputDevice && _outputDevice->isRunning())
     {
-        disconnect(_outputDevice, &OutputDeviceHandler::connectionChange, nullptr, nullptr);
         _outputDevice->dispose();
+        disconnect(_outputDevice, &OutputDeviceHandler::connectionChange, nullptr, nullptr);
     }
     if(_initFuture.isRunning())
     {
         _initFuture.cancel();
         _initFuture.waitForFinished();
     }
-    if(outputDevice == DeviceName::Serial)
+    if(outputDevice == DeviceName::None)
+    {
+        return;
+    }
+    else if(outputDevice == DeviceName::Serial)
     {
         setOutputDevice(_serialHandler);
         _initFuture = QtConcurrent::run([this]() {
@@ -182,13 +186,17 @@ void ConnectionHandler::initInputDevice(DeviceName inputDevice)
         _gamepadHandler->init();
         return;
     }
-    if (_inputDevice && _inputDevice->isConnected())
+    if (_inputDevice)
     {
-        disconnect(_inputDevice, &InputDeviceHandler::connectionChange, nullptr, nullptr);
         disconnect(_inputDevice, &InputDeviceHandler::messageRecieved, nullptr, nullptr);
         _inputDevice->dispose();
+        disconnect(_inputDevice, &InputDeviceHandler::connectionChange, nullptr, nullptr);
     }
-    if(inputDevice == DeviceName::Deo)
+    if(inputDevice == DeviceName::None)
+    {
+        return;
+    }
+    else if(inputDevice == DeviceName::Deo)
     {
         setInputDevice(_deoHandler);
         if(!SettingsHandler::getDeoAddress().isEmpty() && !SettingsHandler::getDeoPort().isEmpty() &&

@@ -9,6 +9,10 @@ SerialHandler::~SerialHandler()
 {
 }
 
+DeviceName SerialHandler::name() {
+    return DeviceName::Serial;
+}
+
 void SerialHandler::init(const QString &portNameOrFriendlyName, int waitTimeout)
 {
     auto available = getPorts();

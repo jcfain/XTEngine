@@ -27,6 +27,7 @@ public:
     virtual void sendTCode(const QString &tcode) = 0;
     virtual void dispose() = 0;
     virtual bool isConnected() = 0;
+    virtual DeviceName name() = 0;
 
 private:
     virtual void run() override = 0;

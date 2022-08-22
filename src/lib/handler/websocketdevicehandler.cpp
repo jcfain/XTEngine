@@ -12,6 +12,10 @@ WebsocketDeviceHandler::~WebsocketDeviceHandler()
 {
 }
 
+DeviceName WebsocketDeviceHandler::name() {
+    return DeviceName::Network;
+}
+
 void WebsocketDeviceHandler::init(NetworkAddress address, int waitTimeout)
 {
     _address = address;

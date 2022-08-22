@@ -20,6 +20,7 @@ public:
     void init(const QString &portNameOrFriendlyName, int waitTimeout = 30000);
     void dispose() override;
     bool isConnected() override;
+    DeviceName name() override;
 
 
 private:

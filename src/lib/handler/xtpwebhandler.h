@@ -25,6 +25,7 @@ public:
     InputDevicePacket getCurrentPacket() override;
     void sendPacket(InputDevicePacket packet) override;
     void readData(QByteArray data);
+    DeviceName name() override;
 
 private:
     InputDevicePacket* _currentPacket = 0;

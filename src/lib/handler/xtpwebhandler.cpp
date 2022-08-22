@@ -14,6 +14,10 @@ XTPWebHandler::~XTPWebHandler()
         delete _currentPacket;
 }
 
+DeviceName XTPWebHandler::name() {
+    return DeviceName::XTPWeb;
+}
+
 void XTPWebHandler::init(NetworkAddress address, int waitTimeout)
 {
 }

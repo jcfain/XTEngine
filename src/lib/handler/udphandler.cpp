@@ -10,6 +10,10 @@ UdpHandler::~UdpHandler()
 {
 }
 
+DeviceName UdpHandler::name() {
+    return DeviceName::Network;
+}
+
 void UdpHandler::init(NetworkAddress address, int waitTimeout)
 {
     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connecting, "Connecting..."});
@@ -28,7 +32,7 @@ void UdpHandler::init(NetworkAddress address, int waitTimeout)
     }
     _initFuture = QtConcurrent::run([this]() {
         int timeouttracker = 0;
-        QMutex mutex;
+//        QMutex mutex;
         QWaitCondition cond;
         QElapsedTimer mSecTimer;
         qint64 time1 = 0;
@@ -43,9 +47,9 @@ void UdpHandler::init(NetworkAddress address, int waitTimeout)
                 ++timeouttracker;
             }
             time2 = (round(mSecTimer.nsecsElapsed() / 1000000));
-            mutex.lock();
-            cond.wait(&mutex, 1);
-            mutex.unlock();
+//            mutex.lock();
+//            cond.wait(&mutex, 1);
+//            mutex.unlock();
         }
         if (!_stop && timeouttracker > 3)
         {

@@ -13,6 +13,11 @@ WhirligigHandler::~WhirligigHandler()
     if (currentVRPacket != nullptr)
         delete currentVRPacket;
 }
+
+DeviceName WhirligigHandler::name() {
+    return DeviceName::Whirligig;
+}
+
 void WhirligigHandler::init(NetworkAddress address, int waitTimeout)
 {
     qRegisterMetaType<ConnectionChangedSignal>();

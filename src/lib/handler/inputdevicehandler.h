@@ -25,11 +25,7 @@ public slots:
     virtual void messageSend(QByteArray message) = 0;
 
 public:
-    explicit InputDeviceHandler(QObject *parent = nullptr) :
-        QObject(parent)
-    {
-
-    }
+    explicit InputDeviceHandler(QObject *parent = nullptr) : QObject(parent) { }
     virtual void init(NetworkAddress _address, int waitTimeout = 5000) = 0;
     virtual void dispose() = 0;
     virtual void send(const QString &command) = 0;
@@ -38,6 +34,7 @@ public:
     //void togglePause();
     virtual InputDevicePacket getCurrentPacket() = 0;
     virtual void sendPacket(InputDevicePacket packet) = 0;
+    virtual DeviceName name() = 0;
 };
 
 #endif // INPUTDEVICEHANDLER_H
