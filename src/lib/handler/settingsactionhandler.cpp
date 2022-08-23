@@ -218,20 +218,27 @@ void SettingsActionHandler::media_action(QString action)
         SettingsHandler::setSkipToMoneyShotPlaysFunscript(enabled);
         emit actionExecuted(action, verb + " plays funscript.");
     }
-    else if (action == actions.IncreaseFunscriptModifier || action == actions.DecreaseFunscriptModifier)
+    else if (action == actions.IncreaseFunscriptModifier || action == actions.DecreaseFunscriptModifier || action == actions.ResetFunscriptModifier)
     {
-        bool increase = action == actions.IncreaseFunscriptModifier;
-        QString verb = increase ? "Increase" : "Decrease";
-        int modifier = FunscriptHandler::getModifier();
-        int modedModifier = increase ? modifier + SettingsHandler::getFunscriptModifierStep() : modifier - SettingsHandler::getFunscriptModifierStep();
-        if(modedModifier > 0)
-        {
-            FunscriptHandler::setModifier(modedModifier);
-            emit actionExecuted(action, verb + " funscript modifier to "+ QString::number(modedModifier) + "percent");
+        if(action == actions.ResetFunscriptModifier) {
+            FunscriptHandler::resetModifier();
+            emit actionExecuted(action, "Reset funscript modifier");
+        } else {
+            bool increase = action == actions.IncreaseFunscriptModifier;
+            QString verb = increase ? "Increase" : "Decrease";
+            int modifier = FunscriptHandler::getModifier();
+            int modedModifier = increase ? modifier + SettingsHandler::getFunscriptModifierStep() : modifier - SettingsHandler::getFunscriptModifierStep();
+
+            if(modedModifier > 0)
+            {
+                FunscriptHandler::setModifier(modedModifier);
+                emit actionExecuted(action, verb + " funscript modifier to "+ QString::number(modedModifier) + "percent");
+            }
+            else
+                emit actionExecuted(action, "Funscript modifier at minimum "+ QString::number(modedModifier) + "percent");
         }
-        else
-            emit actionExecuted(action, "Funscript modifier at minimum "+ QString::number(modedModifier) + "percent");
     }
+
     //TODO: nneds to be moved from main window some how
 //    else if (action == actions.IncreaseOffset || action == actions.DecreaseOffset)
 //    {

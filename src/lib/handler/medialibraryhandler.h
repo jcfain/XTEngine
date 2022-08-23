@@ -59,7 +59,9 @@ public:
     QString getStereoMode(QString mediaPath);
     bool isStereo(QString mediaPath);
     LibraryListItem27* findItemByID(QString id);
+    LibraryListItem27* findItemByNameNoExtension(QString nameNoExtension);
     LibraryListItem27* findItemByName(QString name);
+    LibraryListItem27* findItemByMediaPath(QString mediaPath);
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
 

@@ -39,8 +39,10 @@ struct MediaActions
     const QString SkipToAction = "SkipToAction";
     const QString IncreaseFunscriptModifier = "IncreaseFunscriptModifier";
     const QString DecreaseFunscriptModifier = "DecreaseFunscriptModifier";
+    const QString ResetFunscriptModifier = "ResetFunscriptModifier";
     const QString IncreaseOffset = "IncreaseDelay";
     const QString DecreaseOffset = "DecreaseDelay";
+    const QString ResetOffset = "ResetOffset";
     const QMap<QString, QString> Values {
         {TogglePause, "Media: Pause (on/off)"},
         {Next, "Media: Next video"},
@@ -74,11 +76,12 @@ struct MediaActions
         {SkipToAction, "Skip to next action"},
         {ToggleSkipToMoneyShotPlaysFunscript, "ToggleSkipToMoneyShotPlaysFunscript"},
         {ToggleFunscriptInvert, "Funscript: inversion (on/off)"},
+        {ResetFunscriptModifier, "Funscript: Range modifier (reset)"},
         {IncreaseFunscriptModifier, "Funscript: Range modifier (increase)"},
         {DecreaseFunscriptModifier, "Funscript: Range modifier (decrease)"},
         {IncreaseOffset, "Funscript: delay (increase)"},
         {DecreaseOffset, "Funscript: delay (decrease)"},
-        {DecreaseOffset, "Funscript: delay (decrease)"},
+        {ResetOffset, "Funscript: delay reset to 0"}
     };
 };
 #endif // MEDIAACTIONS_H

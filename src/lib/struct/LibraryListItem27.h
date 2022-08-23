@@ -27,21 +27,26 @@ enum class ThumbState {
 struct  XTENGINE_EXPORT LibraryListItem27
 {
 public:
-    //    LibraryListItem() {}
-    //    LibraryListItem(const LibraryListItem &item)
-    //    {
-    //        type = item.type;
-    //        path = item.path;
-    //        name = item.name;
-    //        nameNoExtension = item.nameNoExtension;
-    //        script = item.script;
-    //        scriptNoExtension = item.scriptNoExtension;
-    //        mediaExtension = item.mediaExtension;
-    //        thumbFile = item.thumbFile;
-    //        zipFile = item.zipFile;
-    //        modifiedDate = item.modifiedDate;
-    //        duration = item.duration;
-    //    }
+    LibraryListItem27() {}
+    LibraryListItem27(const LibraryListItem27* item)
+    {
+        type = item->type;
+        path = item->path;
+        name = item->name;
+        nameNoExtension = item->nameNoExtension;
+        script = item->script;
+        scriptNoExtension = item->scriptNoExtension;
+        mediaExtension = item->mediaExtension;
+        thumbFile = item->thumbFile;
+        zipFile = item->zipFile;
+        modifiedDate = item->modifiedDate;
+        duration = item->duration;
+        ID = item->ID;
+        isMFS = item->isMFS;
+        toolTip = item->toolTip;
+        thumbState = item->thumbState;
+        thumbFileExists = item->thumbFileExists;
+    }
     LibraryListItemType type;
     QString path;
     QString name;

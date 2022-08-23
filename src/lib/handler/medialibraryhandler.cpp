@@ -881,9 +881,23 @@ int MediaLibraryHandler::findItemIndexByID(QString id) {
     }
     return foundItem;
 }
+LibraryListItem27* MediaLibraryHandler::findItemByNameNoExtension(QString nameNoExtension) {
+    foreach (LibraryListItem27 item, _cachedLibraryItems) {
+        if(item.nameNoExtension == nameNoExtension)
+            return &_cachedLibraryItems[_cachedLibraryItems.indexOf(item)];
+    }
+    return 0;
+}
 LibraryListItem27* MediaLibraryHandler::findItemByName(QString name) {
     foreach (LibraryListItem27 item, _cachedLibraryItems) {
-        if(item.nameNoExtension == name)
+        if(item.name == name)
+            return &_cachedLibraryItems[_cachedLibraryItems.indexOf(item)];
+    }
+    return 0;
+}
+LibraryListItem27* MediaLibraryHandler::findItemByMediaPath(QString mediaPath) {
+    foreach (LibraryListItem27 item, _cachedLibraryItems) {
+        if(item.path == mediaPath)
             return &_cachedLibraryItems[_cachedLibraryItems.indexOf(item)];
     }
     return 0;
