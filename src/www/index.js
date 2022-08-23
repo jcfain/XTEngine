@@ -87,6 +87,7 @@ var userAgentIsHereSphere = userAgent.indexOf("HereSphere") != -1;
 var userAgentIsMobile = userAgent.indexOf("Mobile") != -1;
 setDeoStyles(userAgentIsDeo);
 var settingsNode = document.getElementById("settingsModal");
+var alertModelNode = document.getElementById("alertModal");
 var thumbsContainerNode = document.getElementById("thumbsContainer");
 var videoMediaName = document.getElementById("videoMediaName");
 
@@ -161,10 +162,44 @@ function debug(message) {
 		console.log(message);
 }
 function userError(message) {
-	alert(message);
+	//alert(message);
+	showAlertWindow("Error", message)
 }
 function systemError(message) {
-	alert(message);
+	//alert(message);
+	showAlertWindow("System error", message)
+}
+
+function showAlertWindow(header, message, yesCallback) {
+	if(alertModelNode.style.visibility != "visible") {
+		var confirmButton = document.getElementById("alertConfirmButton");
+		var closebutton = document.getElementById("alertCancelButton");
+		var headerNode = document.getElementById("alert-modal-title");
+		headerNode.innerText = header;
+		if(yesCallback) {
+			confirmButton.hidden = false;
+			confirmButton.onclick = yesCallback;
+			var alertModalBody = document.getElementById("alertModalBody");
+			alertModalBody.innerText = message;
+			closebutton.innerText = "No";
+		} else {
+			confirmButton.hidden = true;
+			closebutton.innerText = "Ok";
+		}
+		alertModelNode.style.visibility = "visible";
+		alertModelNode.style.opacity = 1;
+	} else {
+		systemError("Two alert windows opened");
+	}
+}
+	
+function closeAlertWindow() {
+	alertModelNode.style.visibility = "hidden";
+	alertModelNode.style.opacity = 0;
+	var confirmButton = document.getElementById("alertConfirmButton");
+	confirmButton.onclick = undefined;
+	var alertModalBody = document.getElementById("alertModalBody");
+	alertModalBody.innerText = undefined;
 }
 
 function sendWebsocketMessage(command, message) {
@@ -228,10 +263,11 @@ function sendUpdateThumbAtPos(item) {
 
 
 function restartXTP() {
-	if (confirm('Are you sure you want restart XTP?')) {
+	showAlertWindow("Confirm", 'Are you sure you want restart XTP?', function () {
 		sendWebsocketMessage("restartService");
+		closeAlertWindow();
 		closeSettings();
-	}
+	});
 }
 
 function initWebSocket() {
@@ -2119,19 +2155,19 @@ function webSocketAddressChange(e) {
 }
 
 function defaultLocalSettings() {
-	var r = confirm("Are you sure you want to reset ALL local settings to default? Note: This only resets the settings in this browser. Your settings stored in XTP will remain.");
-	if (r) {
+	showAlertWindow("Confirm", "Are you sure you want to reset ALL local settings to default? Note: This only resets the settings in this browser. Your settings stored in XTP will remain.", function () {
 		window.localStorage.clear();
-		window.location.reload();
-	}
+		window.close();//Does not work
+		closeAlertWindow();
+	});
 }
 
 function deleteLocalSettings() {
-	var r = confirm("Are you sure you want to delete ALL settings from localStorage and close the window?");
-	if (r) {
+	showAlertWindow("Confirm", "Are you sure you want to delete ALL settings from localStorage and close the window?", function () {
 		window.localStorage.clear();
-		window.close();//Does not work
-	}
+		window.location.reload();
+		closeAlertWindow();
+	});
 }
 function onDeoVRAddressChange(input) {
 	if(!input.value || input.value.trim().length === 0) {
