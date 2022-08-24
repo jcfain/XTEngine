@@ -285,19 +285,23 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
             //emit libraryItemFound(item);
         }
     }
-    if(vrMode)
+    if(vrMode) {
+        emit libraryChange();
         emit libraryLoaded();
+    }
     else
     {
         QString vrLibrary = SettingsHandler::getVRLibrary();
         if(vrLibrary.isEmpty())
         {
+            emit libraryChange();
             emit libraryLoaded();
             return;
         }
         QFileInfo vrLibraryInfo(vrLibrary);
         if(!vrLibraryInfo.exists())
         {
+            emit libraryChange();
             emit libraryLoaded();
             return;
         }

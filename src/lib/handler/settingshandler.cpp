@@ -5,8 +5,8 @@ const QMap<TCodeVersion, QString> SettingsHandler::SupportedTCodeVersions = {
     {TCodeVersion::v3, "TCode v0.3"}
 };
 
-const QString SettingsHandler::XTEVersion = QString("0.338b_%1T%2").arg(__DATE__).arg(__TIME__);
-const float SettingsHandler::XTEVersionNum = 0.338f;
+const QString SettingsHandler::XTEVersion = QString("0.339b_%1T%2").arg(__DATE__).arg(__TIME__);
+const float SettingsHandler::XTEVersionNum = 0.339f;
 
 SettingsHandler::SettingsHandler(){}
 SettingsHandler::~SettingsHandler()
@@ -166,7 +166,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _vrLibrary = settingsToLoadFrom->value("vrLibrary").toString();
     _httpChunkSize = settingsToLoadFrom->value("httpChunkSize").toLongLong();
     if(!_httpChunkSize)
-        _httpChunkSize = 5242880;
+        _httpChunkSize = 26214400;
     _httpPort = settingsToLoadFrom->value("httpPort").toInt();
     if(!_httpPort)
         _httpPort = 80;
