@@ -18,6 +18,10 @@ void SettingsHandler::setSaveOnExit(bool enabled)
 {
     _saveOnExit = enabled;
 }
+
+QSettings* SettingsHandler::getSettings() {
+    return settings;
+}
 void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 {
     QMutexLocker locker(&mutex);
@@ -28,7 +32,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     QDir dir(_appdataLocation);
     if (!dir.exists())
         dir.mkpath(_appdataLocation);
-    if(settingsToLoadFrom == nullptr)
+    if(!settingsToLoadFrom)
     {
         QFile settingsini(_applicationDirPath + "/settings.ini");
         if(settingsini.exists())
@@ -340,7 +344,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
     QMutexLocker locker(&mutex);
     if (_saveOnExit)
     {
-        if(settingsToSaveTo == nullptr)
+        if(!settingsToSaveTo)
             settingsToSaveTo = settings;
 
         float currentVersion = settingsToSaveTo->value("version").toFloat();
@@ -348,6 +352,8 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         if(XTEVersionNum > currentVersion)
             settingsToSaveTo->setValue("version", XTEVersionNum);
         settingsToSaveTo->setValue("selectedTCodeVersion", ((int)_selectedTCodeVersion));
+        settingsToSaveTo->setValue("playerVolume", playerVolume);
+
         settingsToSaveTo->setValue("hideWelcomeScreen", ((int)_hideWelcomeScreen));
         settingsToSaveTo->setValue("selectedLibrary", selectedLibrary);
         settingsToSaveTo->setValue("selectedTheme", selectedTheme);
@@ -355,7 +361,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("useMediaDirForThumbs", _useMediaDirForThumbs);
         settingsToSaveTo->setValue("selectedDevice", _selectedOutputDevice);
         settingsToSaveTo->setValue("selectedNetworkDeviceType", (int)_selectedNetworkDeviceType);
-        settingsToSaveTo->setValue("playerVolume", playerVolume);
         settingsToSaveTo->setValue("offSet", offSet);
         settingsToSaveTo->setValue("disableSerialTCodeValidation", _disableTCodeValidation);
         settingsToSaveTo->setValue("selectedFunscriptLibrary", selectedFunscriptLibrary);
@@ -492,7 +497,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
 void SettingsHandler::SaveLinkedFunscripts(QSettings* settingsToSaveTo)
 {
-    if(settingsToSaveTo == nullptr)
+    if(!settingsToSaveTo)
         settingsToSaveTo = settings;
     settingsToSaveTo->setValue("deoDnlaFunscriptLookup", deoDnlaFunscriptLookup);
     settingsToSaveTo->sync();

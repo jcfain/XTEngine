@@ -39,6 +39,7 @@ public:
     static SettingsHandler& instance(){
         return m_instance;
     }
+    static QSettings* getSettings();
     static const QMap<TCodeVersion, QString> SupportedTCodeVersions;
     static const QString XTEVersion;
     static const float XTEVersionNum;
@@ -272,8 +273,8 @@ public:
     static void SetGamepadMapDefaults();
     static void SetKeyboardKeyDefaults();
     static void setSaveOnExit(bool enabled);
-    static void Load(QSettings* settingsToLoadFrom = nullptr);
-    static void Save(QSettings* settingsToSaveTo = nullptr);
+    static void Load(QSettings* settingsToLoadFrom = 0);
+    static void Save(QSettings* settingsToSaveTo = 0);
     static void SaveLinkedFunscripts(QSettings* settingsToSaveTo = nullptr);
     static void PersistSelectSettings();
     static void Default();
