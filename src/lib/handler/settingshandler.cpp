@@ -200,8 +200,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _selectedVideoRenderer = (XVideoRenderer)settingsToLoadFrom->value("selectedVideoRenderer").toInt();
 
     auto splitterSizes = settingsToLoadFrom->value("mainWindowPos").toList();
+    if(splitterSizes.isEmpty()) {
+        splitterSizes.append(398);
+        splitterSizes.append(782);
+    }
     int i = 0;
-    _mainWindowPos.clear();
+    _mainWindowPos.clear();//398, 782
     foreach (auto splitterPos, splitterSizes)
     {
         if(i==2)//Bandaid. Dont store over two.
