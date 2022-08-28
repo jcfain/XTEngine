@@ -21,6 +21,7 @@ signals:
     void libraryLoadingStatus(QString message);
     void libraryLoading();
     void libraryLoaded();
+    void libraryStopped();
     void libraryChange();
     void itemAdded(LibraryListItem27 item);
     void itemRemoved(LibraryListItem27 item);

@@ -10,12 +10,7 @@ MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
 
 MediaLibraryHandler::~MediaLibraryHandler()
 {
-    if(_loadingLibraryFuture.isRunning())
-    {
-        _loadingLibraryStop = true;
-        _loadingLibraryFuture.cancel();
-        _loadingLibraryFuture.waitForFinished();
-    }
+    stopLibraryLoading();
 }
 bool MediaLibraryHandler::isLibraryLoading()
 {
@@ -28,9 +23,14 @@ bool MediaLibraryHandler::isLibraryItemVideo(LibraryListItem27 item) {
 
 void MediaLibraryHandler::stopLibraryLoading()
 {
-    _loadingLibraryStop = true;
-    _loadingLibraryFuture.cancel();
-    _loadingLibraryFuture.waitForFinished();
+    if(_loadingLibraryFuture.isRunning())
+    {
+        _loadingLibraryStop = true;
+        _loadingLibraryFuture.cancel();
+        _loadingLibraryFuture.waitForFinished();
+        _loadingLibraryStop = false;
+        emit libraryLoadingStatus("Loading medai stopped");
+    }
 }
 
 void MediaLibraryHandler::onPrepareLibraryLoad()
@@ -43,13 +43,16 @@ void MediaLibraryHandler::onPrepareLibraryLoad()
 
 void MediaLibraryHandler::loadLibraryAsync()
 {
-    emit libraryLoading();
+    LogHandler::Debug("loadLibraryAsync");
+    stopLibraryLoading();
+    LogHandler::Debug("loadLibraryAsync after stop");
     QString library = SettingsHandler::getSelectedLibrary();
     QString vrLibrary = SettingsHandler::getVRLibrary();
     if(library.isEmpty() && vrLibrary.isEmpty())
     {
         emit libraryLoadingStatus("No media folder specified");
-        emit libraryLoaded();
+        LogHandler::Debug("libraryStopped No media folder specified");
+        emit libraryStopped();
         return;
     }
     if(!isLibraryLoading())
@@ -62,17 +65,18 @@ void MediaLibraryHandler::loadLibraryAsync()
 }
 void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
 {
+    emit libraryLoading();
     if (path.isEmpty())
     {
+        emit libraryStopped();
         return;
     }
     else
     {
-        QDir directory(path);
-        if(!directory.exists())
+        if(!QFileInfo::exists(path))
         {
             emit libraryNotFound();
-            emit libraryLoaded();
+            emit libraryStopped();
             return;
         }
     }
@@ -136,7 +140,8 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
     {
         if(_loadingLibraryStop)
         {
-            emit libraryLoaded();
+            LogHandler::Debug("libraryStopped 1");
+            emit libraryStopped();
             return;
         }
         QFileInfo fileinfo(library.next());
@@ -222,7 +227,8 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
         {
             if(_loadingLibraryStop)
             {
-                emit libraryLoaded();
+                LogHandler::Debug("libraryStopped 2");
+                emit libraryStopped();
                 return;
             }
             QFileInfo fileinfo(funscripts.next());

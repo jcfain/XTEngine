@@ -188,6 +188,7 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     connectionSettingsJson["output"] = connectionOutputSettingsJson;
 
     root["connection"] = connectionSettingsJson;
+    root["hasLaunchPass"] = !SettingsHandler::GetHashedPass().isEmpty();
 
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
     data->response->compressBody();

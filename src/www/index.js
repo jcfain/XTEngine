@@ -180,10 +180,12 @@ function showAlertWindow(header, message, yesCallback) {
 			confirmButton.hidden = false;
 			confirmButton.onclick = yesCallback;
 			var alertModalBody = document.getElementById("alertModalBody");
-			alertModalBody.innerText = message;
+			alertModalBody.innerHTML = message;
 			closebutton.innerText = "No";
 		} else {
 			confirmButton.hidden = true;
+			if(message)
+				alertModalBody.innerHTML = message;
 			closebutton.innerText = "Ok";
 		}
 		alertModelNode.style.visibility = "visible";
@@ -196,10 +198,12 @@ function showAlertWindow(header, message, yesCallback) {
 function closeAlertWindow() {
 	alertModelNode.style.visibility = "hidden";
 	alertModelNode.style.opacity = 0;
-	var confirmButton = document.getElementById("alertConfirmButton");
-	confirmButton.onclick = undefined;
-	var alertModalBody = document.getElementById("alertModalBody");
-	alertModalBody.innerText = undefined;
+	setTimeout(function() {
+		var confirmButton = document.getElementById("alertConfirmButton");
+		confirmButton.onclick = undefined;
+		var alertModalBody = document.getElementById("alertModalBody");
+		alertModalBody.innerText = undefined;
+	}, 275)
 }
 
 function sendWebsocketMessage(command, message) {
@@ -263,7 +267,11 @@ function sendUpdateThumbAtPos(item) {
 
 
 function restartXTP() {
-	showAlertWindow("Confirm", 'Are you sure you want restart XTP?', function () {
+	showAlertWindow("Confirm", `Are you sure you want restart XTP? 
+		${remoteUserSettings.hasLaunchPass ? `
+			<br><br>PLEASE NOTE: XTP is protected by a launch password.
+			<br>You will need to go to the pc and enter the password manually for now.` : ''}`, 
+	function () {
 		sendWebsocketMessage("restartService");
 		closeAlertWindow();
 		closeSettings();

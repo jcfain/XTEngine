@@ -106,7 +106,6 @@ select:disabled {
     border-radius: 5px;
     height: 24px;
 }
-
 .formElement label {
     height: 24px;
     flex-basis: 20%;
@@ -123,7 +122,12 @@ select:disabled {
     height: 20px;
     margin: 4px 0px;
 }
-
+/* width: max-content Hack to get to align left. Somthings not right but im not looking for it now.  */
+.formElement input[type='checkbox'] {
+    width: max-content;
+    /* margin-right: 8px; */
+}
+/* Doesnt look right in Deo */
 .styled-checkbox {
     width: 20px;
     height: 20px;
@@ -470,8 +474,6 @@ section>.range-values {
 
 .modal {
     display: flex;
-    opacity: 0;
-    visibility: hidden;
     position: fixed;
     z-index: 15;
     left: 0;
@@ -481,8 +483,10 @@ section>.range-values {
     overflow: hidden;
     background-color: rgb(0, 0, 0);
     background-color: rgba(0, 0, 0, 0.4);
-    -webkit-transition: opacity 500ms, visibility 500ms linear;
-    transition: opacity 500ms, visibility 500ms linear;
+    opacity: 0;
+    visibility: hidden;
+    -webkit-transition: opacity 250ms, visibility 250ms linear;
+    transition: opacity 250ms, visibility 250ms linear;
 }
 .modal--alert {
     z-index: 16;
@@ -501,6 +505,10 @@ section>.range-values {
     border-radius: 25px;
     width: 85%;
     height: 90%;
+    opacity: inherit;
+    visibility: inherit;
+    -webkit-transition: inherit;
+    transition: inherit;
 }
 .modal-content--alert {
     width: fit-content;
