@@ -126,10 +126,14 @@ void MediaLibraryHandler::on_load_library(QString path, bool vrMode)
         QThread::sleep(1);
 
         auto playlists = SettingsHandler::getPlaylists();
-        foreach(auto playlist, playlists.keys())
-        {
-            setupPlaylistItem(playlist);
-        }
+        //For some reason sorting random without any playlists crashes. Add dummy and hide it in proxy model.
+        if(playlists.empty())
+            setupPlaylistItem("DummyPlaylistThatNoOneShouldEverSeeOrNameTheSame");
+        else
+            foreach(auto playlist, playlists.keys())
+            {
+                setupPlaylistItem(playlist);
+            }
     }
     QStringList funscriptsWithMedia;
     QStringList excludedLibraryPaths = SettingsHandler::getLibraryExclusions();
@@ -617,7 +621,7 @@ void MediaLibraryHandler::removeFromCache(LibraryListItem27 itemToRemove) {
     _cachedLibraryItems.removeOne(itemToRemove);
     if(!isLibraryLoading()) {
         emit itemRemoved(itemToRemove);
-        emit libraryChange();
+        //emit libraryChange();
     }
 }
 void MediaLibraryHandler::addItemFront(LibraryListItem27 item) {
@@ -625,7 +629,7 @@ void MediaLibraryHandler::addItemFront(LibraryListItem27 item) {
     _cachedLibraryItems.push_front(item);
     if(!isLibraryLoading()) {
         emit itemAdded(item);
-        emit libraryChange();
+        //emit libraryChange();
     }
 }
 void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
@@ -633,7 +637,7 @@ void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
     _cachedLibraryItems.push_back(item);
     if(!isLibraryLoading()) {
         emit itemAdded(item);
-        emit libraryChange();
+        //emit libraryChange();
     }
 }
 void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
