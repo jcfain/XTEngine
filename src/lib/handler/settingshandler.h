@@ -54,10 +54,11 @@ public:
     static QHash<QString, QVariant> getDeoDnlaFunscripts();
     static QString getSelectedTheme();
     static QStringList getSelectedLibrary();
-    static QString getFirstSelectedLibrary();
+    static QString getLastSelectedLibrary();
     static void addSelectedLibrary(QString value);
     static void removeSelectedLibrary(QString value);
     static QStringList getVRLibrary();
+    static QString getLastSelectedVRLibrary();
     static void addSelectedVRLibrary(QString value);
     static void removeSelectedVRLibrary(QString value);
     static QString getSelectedThumbsDir();

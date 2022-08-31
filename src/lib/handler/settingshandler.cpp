@@ -951,10 +951,10 @@ QStringList SettingsHandler::getSelectedLibrary()
     return selectedLibrary;
 }
 
-QString  SettingsHandler::getFirstSelectedLibrary() {
+QString  SettingsHandler::getLastSelectedLibrary() {
     QString path;
     if(!selectedLibrary.isEmpty())
-        path = selectedLibrary.first();
+        path = selectedLibrary.last();
     if(path.isEmpty()) {
         selectedLibrary.removeAll("");
         path = QCoreApplication::applicationDirPath();
@@ -979,6 +979,15 @@ void SettingsHandler::removeSelectedLibrary(QString value)
 QStringList SettingsHandler::getVRLibrary()
 {
     return _vrLibrary;
+}
+QString SettingsHandler::getLastSelectedVRLibrary() {
+    QString path;
+    if(!_vrLibrary.isEmpty())
+        path = _vrLibrary.last();
+    if(path.isEmpty()) {
+        _vrLibrary.removeAll("");
+    }
+    return path;
 }
 void SettingsHandler::addSelectedVRLibrary(QString value)
 {
