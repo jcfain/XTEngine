@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QFileInfo>
 #include <QtConcurrent/QtConcurrent>
+#include <algorithm>
 
 #include "../handler/settingshandler.h"
 #include "../handler/xvideopreview.h"

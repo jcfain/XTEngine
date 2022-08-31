@@ -93,7 +93,6 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
         }
     }
 
-    emit libraryLoadingStatus(vrMode ? "Loading VR media..." : "Loading media...");
 //    QStringList videoTypes = QStringList()
 //            << "*.mp4"
 //            << "*.avi"
@@ -160,6 +159,13 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
     }
 
     foreach (QString path, paths) {
+        auto itr = std::find_if(paths.begin(), paths.end(), [path](const QString& item) {
+            return path.startsWith(item) && path.length() > item.length();
+        });
+        if(itr != paths.end())
+            continue;
+
+        emit libraryLoadingStatus((vrMode ? "Loading VR media" : "Loading media") + (paths.length() > 1 ? " " + QString::number(paths.indexOf(path) + 1)+"..." : "..."));
 
         QDirIterator library(path, mediaTypes, QDir::Files, QDirIterator::Subdirectories);
 
@@ -892,7 +898,6 @@ QString MediaLibraryHandler::getStereoMode(QString mediaPath)
 bool MediaLibraryHandler::isStereo(QString mediaPath) {
     return getStereoMode(mediaPath) != "off";
 }
-#include <algorithm>
 /***
  * Searches library for the ID
  * Returns default if not found
