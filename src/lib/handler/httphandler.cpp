@@ -23,7 +23,20 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
 
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveThumbError, this, [this](LibraryListItem27 item, bool vrMode, QString error) {_webSocketHandler->sendUpdateThumb(item.ID, item.thumbFileError, error);});
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumb, this, [this](LibraryListItem27 item, bool vrMode, QString thumbFile) {
-        QString relativeThumb = thumbFile.replace(SettingsHandler::getSelectedThumbsDir(), "").replace(SettingsHandler::getSelectedLibrary(), "");
+        QString relativeThumb;
+        if(thumbFile.startsWith(SettingsHandler::getSelectedThumbsDir())) {
+            relativeThumb = thumbFile.replace(SettingsHandler::getSelectedThumbsDir(), "");
+            _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb);
+            return;
+        }
+        auto selectLibraryPaths = SettingsHandler::getSelectedLibrary();
+        selectLibraryPaths.append(SettingsHandler::getVRLibrary());
+        foreach (auto path, selectLibraryPaths) {
+            if(thumbFile.startsWith(path)) {
+                relativeThumb = thumbFile.replace(path, "");
+                break;
+            }
+        }
         _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, item.thumbFileLoadingCurrent);});
@@ -333,13 +346,13 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
         object["displayName"] = "(MFS) " + item.nameNoExtension;
     else
         object["displayName"] = item.nameNoExtension;
-    QString relativePath = item.path.replace(SettingsHandler::getSelectedLibrary() +"/", "");
+    QString relativePath = item.path.replace(item.libraryPath +"/", "");
     object["path"] = hostAddress + "media/" + QString(QUrl::toPercentEncoding(relativePath));
     object["relativePath"] = "/" + QString(QUrl::toPercentEncoding(relativePath));
-    QString scriptNoExtensionRelativePath = item.scriptNoExtension.replace(SettingsHandler::getSelectedLibrary(), "");
+    QString scriptNoExtensionRelativePath = item.scriptNoExtension.replace(item.libraryPath, "");
     object["scriptNoExtensionRelativePath"] = "funscript/" + QString(QUrl::toPercentEncoding(scriptNoExtensionRelativePath));
     QString thumbFile = item.thumbFile.replace(SettingsHandler::getSelectedThumbsDir(), "");
-    thumbFile = thumbFile.replace(SettingsHandler::getSelectedLibrary(), "");
+    thumbFile = thumbFile.replace(item.libraryPath, "");
     QString relativeThumb = thumbFile;
     object["thumb"] = hostAddress + "thumb/" + QString(QUrl::toPercentEncoding(relativeThumb));
     object["relativeThumb"] = QString(QUrl::toPercentEncoding(relativeThumb));
@@ -396,7 +409,7 @@ QJsonObject HttpHandler::createDeoObject(LibraryListItem27 item, QString hostAdd
     QJsonObject encodingsObj;
     QJsonArray videoSources;
     QJsonObject videoSource;
-    QString relativePath = item.path.replace(SettingsHandler::getSelectedLibrary(), "");
+    QString relativePath = item.path.replace(item.libraryPath, "");
 //    videoSource["resolution"] = 1080;
 //    videoSource["url"] = hostAddress + "video" + QString(QUrl::toPercentEncoding(relativePath));
 //    videoSources.append(videoSource);
@@ -430,14 +443,14 @@ HttpPromise HttpHandler::handleFunscriptFile(HttpDataPtr data)
         data->response->setStatus(HttpStatus::Forbidden);
         return HttpPromise::resolve(data);
     }
-    QString filePath = SettingsHandler::getSelectedLibrary() + funscriptName;
-    if(!QFile(filePath).exists())
-    {
-        data->response->setStatus(HttpStatus::NotFound);
-        return HttpPromise::resolve(data);
-    }
-    data->response->sendFile(filePath, "text/json", "", -1, Z_DEFAULT_COMPRESSION);
-    data->response->setStatus(HttpStatus::Ok);
+//    QString filePath = SettingsHandler::getSelectedLibrary() + funscriptName;
+//    if(!QFile(filePath).exists())
+//    {
+//        data->response->setStatus(HttpStatus::NotFound);
+//        return HttpPromise::resolve(data);
+//    }
+//    data->response->sendFile(filePath, "text/json", "", -1, Z_DEFAULT_COMPRESSION);
+//    data->response->setStatus(HttpStatus::Ok);
     return HttpPromise::resolve(data);
 }
 HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
@@ -450,30 +463,39 @@ HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
         data->response->setStatus(HttpStatus::Forbidden);
         return HttpPromise::resolve(data);
     }
-    QString thumbDirFile = SettingsHandler::getSelectedThumbsDir() + thumbName;
-    QString libraryThumbDirFile = SettingsHandler::getSelectedLibrary() + "/" + thumbName;
+
     QString thumbToSend;
-    if(thumbName.startsWith(":") || (thumbName.startsWith(SettingsHandler::getSelectedLibrary()) && QFileInfo::exists(thumbName)) ||
-            (thumbName.startsWith(SettingsHandler::getVRLibrary()) && QFileInfo::exists(thumbName)))
-    {
-        // System resource thumbs
+    if(thumbName.startsWith(":"))
         thumbToSend = thumbName;
+    else {
+        LibraryListItem27* libraryItem = _mediaLibraryHandler->findItemByPartialThumbPath(thumbName);
+        if(libraryItem) {
+            thumbToSend = libraryItem->thumbFile;
+        }
+        else
+        {
+            data->response->setStatus(HttpStatus::NotFound);
+            return HttpPromise::resolve(data);
+        }
     }
-    else if(QFileInfo::exists(libraryThumbDirFile))
-    {
-        // VR media thumbs
-        thumbToSend = libraryThumbDirFile;
-    }
-    else if(QFileInfo::exists(thumbDirFile))
-    {
-        // Global thumb directory thumbs.
-        thumbToSend = thumbDirFile;
-    }
-    else
-    {
-        data->response->setStatus(HttpStatus::NotFound);
-        return HttpPromise::resolve(data);
-    }
+//    QString thumbDirFile = SettingsHandler::getSelectedThumbsDir() + thumbName;
+//    QString libraryThumbDirFile = SettingsHandler::getSelectedLibrary() + "/" + thumbName;
+//    if(thumbName.startsWith(":") || (thumbName.startsWith(SettingsHandler::getSelectedLibrary()) && QFileInfo::exists(thumbName)) ||
+//            (thumbName.startsWith(SettingsHandler::getVRLibrary()) && QFileInfo::exists(thumbName)))
+//    {
+//        // System resource thumbs
+//        thumbToSend = thumbName;
+//    }
+//    else if(QFileInfo::exists(libraryThumbDirFile))
+//    {
+//        // VR media thumbs
+//        thumbToSend = libraryThumbDirFile;
+//    }
+//    else if(QFileInfo::exists(thumbDirFile))
+//    {
+//        // Global thumb directory thumbs.
+//        thumbToSend = thumbDirFile;
+//    }
     int quality = SettingsHandler::getHttpThumbQuality();
     if(quality > -1)
     {
@@ -524,11 +546,14 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
                         return;
                     }
                     LogHandler::Debug("Looking for media in library: " + mediaName);
-                    QString filename = SettingsHandler::getSelectedLibrary() + "/" + mediaName;
-                    QString vrLibrary = SettingsHandler::getVRLibrary();
-                    if(!vrLibrary.isEmpty() && QFile::exists(vrLibrary) && mediaName.startsWith(vrLibrary)) {
-                        filename = mediaName;
+                    LibraryListItem27* libraryItem = _mediaLibraryHandler->findItemByPartialMediaPath(mediaName);
+                    if(!libraryItem) {
+                        LogHandler::Error(QString("Media item not found (%1)").arg(mediaName));
+                        data->response->setStatus(HttpStatus::NotFound);
+                        resolve(data);
+                        return;
                     }
+                    QString filename = libraryItem->path;
                     //filename = _videoHandler->transcode(filename);
                     QFile file(filename);
                     if (!file.open(QIODevice::ReadOnly))

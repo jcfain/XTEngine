@@ -63,6 +63,8 @@ public:
     LibraryListItem27* findItemByNameNoExtension(QString nameNoExtension);
     LibraryListItem27* findItemByName(QString name);
     LibraryListItem27* findItemByMediaPath(QString mediaPath);
+    LibraryListItem27* findItemByPartialMediaPath(QString partialMediaPath);
+    LibraryListItem27* findItemByPartialThumbPath(QString partialThumbPath);
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
 
@@ -78,7 +80,7 @@ private:
     QMutex _mutex;
     XVideoPreview* _extractor = 0;
 
-    void on_load_library(QString path, bool vrMode);
+    void on_load_library(QStringList paths, bool vrMode);
     void onLibraryLoaded();
     //void saveThumbs(QList<LibraryListItem27> items, qint64 position = 0, bool vrMode = false);
     void onPrepareLibraryLoad();

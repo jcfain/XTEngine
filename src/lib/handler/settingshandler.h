@@ -53,7 +53,13 @@ public:
     static QString getDeoDnlaFunscript(QString key);
     static QHash<QString, QVariant> getDeoDnlaFunscripts();
     static QString getSelectedTheme();
-    static QString getSelectedLibrary();
+    static QStringList getSelectedLibrary();
+    static QString getFirstSelectedLibrary();
+    static void addSelectedLibrary(QString value);
+    static void removeSelectedLibrary(QString value);
+    static QStringList getVRLibrary();
+    static void addSelectedVRLibrary(QString value);
+    static void removeSelectedVRLibrary(QString value);
     static QString getSelectedThumbsDir();
     static void setSelectedThumbsDir(QString thumbDir);
     static void setSelectedThumbsDirDefault();
@@ -108,7 +114,6 @@ public:
     static void setLinkedVRFunscript(QString key, QString value);
     static void removeLinkedVRFunscript(QString key);
     static void setSelectedTheme(QString value);
-    static void setSelectedLibrary(QString value);
     static void setSelectedFunscriptLibrary(QString value);
 
     static QString getDeoAddress();
@@ -246,8 +251,6 @@ public:
     static void setEnableHttpServer(bool enable);
     static QString getHttpServerRoot();
     static void setHttpServerRoot(QString value);
-    static QString getVRLibrary();
-    static void setVRLibrary(QString value);
     static qint64 getHTTPChunkSize();
     static void setHTTPChunkSize(qint64 value);
     static int getHTTPPort();
@@ -347,7 +350,8 @@ private:
 
     static QHash<QString, QVariant> deoDnlaFunscriptLookup;
     static QString selectedTheme;
-    static QString selectedLibrary;
+    static QStringList selectedLibrary;
+    static QStringList _vrLibrary;
     static QString selectedFunscriptLibrary;
     static QString _selectedThumbsDir;
     static bool _useMediaDirForThumbs;
@@ -420,7 +424,6 @@ private:
     static int _httpPort;
     static int _httpThumbQuality;
     static int _webSocketPort;
-    static QString _vrLibrary;
     static bool _showVRInLibraryView;
 
 

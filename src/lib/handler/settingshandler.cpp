@@ -5,8 +5,8 @@ const QMap<TCodeVersion, QString> SettingsHandler::SupportedTCodeVersions = {
     {TCodeVersion::v3, "TCode v0.3"}
 };
 
-const QString SettingsHandler::XTEVersion = QString("0.4b_%1T%2").arg(__DATE__).arg(__TIME__);
-const float SettingsHandler::XTEVersionNum = 0.4f;
+const QString SettingsHandler::XTEVersion = QString("0.41b_%1T%2").arg(__DATE__).arg(__TIME__);
+const float SettingsHandler::XTEVersionNum = 0.41f;
 
 SettingsHandler::SettingsHandler(){}
 SettingsHandler::~SettingsHandler()
@@ -68,7 +68,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     locker.relock();
     selectedTheme = settingsToLoadFrom->value("selectedTheme").toString();
     selectedTheme = selectedTheme.isEmpty() ? _applicationDirPath + "/themes/dark.css" : selectedTheme;
-    selectedLibrary = settingsToLoadFrom->value("selectedLibrary").toString();
+    selectedLibrary = settingsToLoadFrom->value("selectedLibrary").toStringList();
     _selectedThumbsDir = settingsToLoadFrom->value("selectedThumbsDir").toString();
     _useMediaDirForThumbs = settingsToLoadFrom->value("useMediaDirForThumbs").toBool();
     _hideWelcomeScreen = settingsToLoadFrom->value("hideWelcomeScreen").toBool();
@@ -167,7 +167,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         _httpServerRoot = _applicationDirPath + "/www";
 #endif
     }
-    _vrLibrary = settingsToLoadFrom->value("vrLibrary").toString();
+    _vrLibrary = settingsToLoadFrom->value("vrLibrary").toStringList();
     _httpChunkSize = settingsToLoadFrom->value("httpChunkSize").toLongLong();
     if(!_httpChunkSize)
         _httpChunkSize = 26214400;
@@ -334,6 +334,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             }
             auto libraryExclusions = settingsToLoadFrom->value("libraryExclusions").value<QList<QString>>();
             _libraryExclusions = QStringList(libraryExclusions);
+            Save();
+            Load();
+        }
+        if(currentVersion < 0.41f) {
+            locker.unlock();
+            auto library = settingsToLoadFrom->value("selectedLibrary").toString();
+            if(!selectedLibrary.contains(library))
+                selectedLibrary.append(library);
             Save();
             Load();
         }
@@ -937,11 +945,56 @@ QString SettingsHandler::getSelectedTheme()
     QMutexLocker locker(&mutex);
     return selectedTheme;
 }
-QString SettingsHandler::getSelectedLibrary()
+QStringList SettingsHandler::getSelectedLibrary()
 {
     QMutexLocker locker(&mutex);
     return selectedLibrary;
 }
+
+QString  SettingsHandler::getFirstSelectedLibrary() {
+    QString path;
+    if(!selectedLibrary.isEmpty())
+        path = selectedLibrary.first();
+    if(path.isEmpty()) {
+        selectedLibrary.removeAll("");
+        path = QCoreApplication::applicationDirPath();
+    }
+    return path;
+}
+void SettingsHandler::addSelectedLibrary(QString value)
+{
+    QMutexLocker locker(&mutex);
+    if(!value.isEmpty() && !selectedLibrary.contains(value))
+        selectedLibrary << value;
+    selectedLibrary.removeDuplicates();
+    settingsChangedEvent(true);
+}
+void SettingsHandler::removeSelectedLibrary(QString value)
+{
+    QMutexLocker locker(&mutex);
+    selectedLibrary.removeOne(value);
+    settingsChangedEvent(true);
+}
+
+QStringList SettingsHandler::getVRLibrary()
+{
+    return _vrLibrary;
+}
+void SettingsHandler::addSelectedVRLibrary(QString value)
+{
+    QMutexLocker locker(&mutex);
+    _vrLibrary.clear();
+    if(!value.isEmpty())
+        _vrLibrary << value;
+    settingsChangedEvent(true);
+}
+void SettingsHandler::removeSelectedVRLibrary(QString value)
+{
+    QMutexLocker locker(&mutex);
+    _vrLibrary.removeOne(value);
+    settingsChangedEvent(true);
+}
+
 QString SettingsHandler::getSelectedFunscriptLibrary()
 {
      QMutexLocker locker(&mutex);
@@ -1549,12 +1602,6 @@ void SettingsHandler::setSelectedTheme(QString value)
     selectedTheme = value;
     settingsChangedEvent(true);
 }
-void SettingsHandler::setSelectedLibrary(QString value)
-{
-    QMutexLocker locker(&mutex);
-    selectedLibrary = value;
-    settingsChangedEvent(true);
-}
 void SettingsHandler::setSelectedFunscriptLibrary(QString value)
 {
     QMutexLocker locker(&mutex);
@@ -2099,18 +2146,6 @@ void SettingsHandler::setHttpThumbQuality(int value)
     settingsChangedEvent(true);
 }
 
-QString SettingsHandler::getVRLibrary()
-{
-    return _vrLibrary;
-}
-void SettingsHandler::setVRLibrary(QString value)
-{
-    QMutexLocker locker(&mutex);
-    _vrLibrary = value;
-    settingsChangedEvent(true);
-}
-
-
 void  SettingsHandler::setFunscriptModifierStep(int value)
 {
     QMutexLocker locker(&mutex);
@@ -2210,7 +2245,7 @@ GamepadAxisName SettingsHandler::gamepadAxisNames;
 MediaActions SettingsHandler::mediaActions;
 QHash<QString, QVariant> SettingsHandler::deoDnlaFunscriptLookup;
 QString SettingsHandler::selectedTheme;
-QString SettingsHandler::selectedLibrary;
+QStringList SettingsHandler::selectedLibrary;
 QString SettingsHandler::_selectedThumbsDir;
 bool SettingsHandler::_useMediaDirForThumbs;
 int SettingsHandler::_selectedOutputDevice;
@@ -2276,7 +2311,7 @@ qint64 SettingsHandler::_httpChunkSize;
 int SettingsHandler::_httpPort;
 int SettingsHandler::_webSocketPort;
 int SettingsHandler::_httpThumbQuality;
-QString SettingsHandler::_vrLibrary;
+QStringList SettingsHandler::_vrLibrary;
 bool SettingsHandler::_showVRInLibraryView;
 
 int SettingsHandler::_funscriptModifierStep;

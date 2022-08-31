@@ -42,6 +42,7 @@ public:
         modifiedDate = item->modifiedDate;
         duration = item->duration;
         ID = item->ID;
+        libraryPath = item->libraryPath;
         isMFS = item->isMFS;
         toolTip = item->toolTip;
         thumbState = item->thumbState;
@@ -61,6 +62,7 @@ public:
 
     // Live members
     QString ID;
+    QString libraryPath;
     bool isMFS;
     QString toolTip;
     ThumbState thumbState = ThumbState::Waiting;
@@ -84,6 +86,7 @@ public:
         dataStream << object.modifiedDate;
         dataStream << object.duration;
         dataStream << object.isMFS;
+        dataStream << object.libraryPath;
         dataStream << object.toolTip;
         dataStream << object.thumbFileExists;
         dataStream << (int)object.thumbState;
@@ -108,6 +111,7 @@ public:
         dataStream >> object.modifiedDate;
         dataStream >> object.duration;
         dataStream >> object.isMFS;
+        dataStream >> object.libraryPath;
         dataStream >> object.toolTip;
         dataStream >> object.thumbFileExists;
         dataStream >> object.thumbState;
