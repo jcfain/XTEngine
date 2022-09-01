@@ -150,7 +150,7 @@ select:disabled {
     text-align: center;
 }
 
-button:not(.icon-button):not(.tab-section-tab):not(.video-control) {
+button:not(.icon-button):not(.tab-section-tab):not(.video-control):not(.media-context) {
     border-radius: 5px;
     height: 24px;
 }
@@ -160,7 +160,7 @@ select {
 }
 
 select:hover,
-button:hover:not(.video-control),
+button:hover:not(.video-control):not(.media-context),
 input:hover {
     background-color: lightblue;
 }
@@ -254,11 +254,14 @@ input:hover {
     position: absolute;
     background: transparent;
     border: none;
+    border-radius: 20px;
+}
+.media-context:hover {
+    background-color: rgb(107 111 143 / 36%);
+    border: none;
 }
 
 .media-context-menu {
-    left: 6px;
-    top: 9px;
     text-align: center;
     position: fixed;
     width: 140px;
