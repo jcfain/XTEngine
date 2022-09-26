@@ -1,9 +1,6 @@
 #include "loghandler.h"
+#include <QLoggingCategory>
 
-LogHandler::LogHandler()
-{
-
-}
 
 void LogHandler::Debug(QString message)
 {
@@ -98,6 +95,23 @@ void LogHandler::setUserDebug(bool on)
 //    }
 }
 
+void LogHandler::setQtDebuging(bool on)
+{
+    QMutexLocker locker(&mutex);
+//    QLoggingCategory::setFilterRules(QString("*.debug=") + (on ? "true\n": "false\ndriver.usb.*=true"));
+//    QLoggingCategory::setFilterRules(QString("*.debug=") + (on ? "true\n": "false\nqt.multimedia.*=true"));
+//    QLoggingCategory::setFilterRules(QString("*.debug=") + (on ? "true\n": "false\nqt.serialport.*=true"));
+//    QLoggingCategory::setFilterRules(QString("*.debug=") + (on ? "true\n": "false\nqt.network.*=true"));
+//    QLoggingCategory::setFilterRules(QString("*.debug=") + (on ? "true\n": "false\nqt.gamepad.*=true"));
+//    QLoggingCategory::setFilterRules(QString("*.debug=") + (on ? "true\n": "false\nqt.websockets.*=true"));
+    //serialport network gamepad texttospeech compress websockets multimedia
+    QLoggingCategory::setFilterRules(""
+    "*.debug=true\n"
+    "*.critical=true\n"
+    "*.warning=true\n"
+    "*.info=true\n"
+    "");
+}
 bool LogHandler::getUserDebug()
 {
     QMutexLocker locker(&mutex);

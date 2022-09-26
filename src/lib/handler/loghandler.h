@@ -28,6 +28,7 @@ public:
     static QString getLevel(XLogLevel level);
     static void setUserDebug(bool on);
     static bool getUserDebug();
+    static void setQtDebuging(bool on);
     static void ExportDebug();
 
 private:
@@ -38,6 +39,7 @@ private:
     static qint64 userDebugIndex;
     static bool _debugMode;
     static QHash<qint64, QString> _debugStore;
+
 
 };
 
