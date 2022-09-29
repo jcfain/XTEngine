@@ -61,10 +61,10 @@ public:
 private:
     HttpServerConfig config;
     HttpRequestRouter router;
-    HttpServer* _server;
+    HttpServer* _server = 0;
     QMimeDatabase mimeDatabase;
-    WebSocketHandler* _webSocketHandler;
-    MediaLibraryHandler* _mediaLibraryHandler;
+    WebSocketHandler* _webSocketHandler = 0;
+    MediaLibraryHandler* _mediaLibraryHandler = 0;
     bool _libraryLoaded = false;
     QString _libraryLoadingStatus = "Loading...";
     QMutex _mutex;

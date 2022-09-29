@@ -651,33 +651,40 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
 
 void HttpHandler::sendWebSocketTextMessage(QString command, QString message)
 {
-    _webSocketHandler->sendCommand(command, message);
+    if(_webSocketHandler)
+        _webSocketHandler->sendCommand(command, message);
 }
 
 void HttpHandler::onSetLibraryLoaded()
 {
     _libraryLoaded = true;
-    _webSocketHandler->sendCommand("mediaLoaded");
+    if(_webSocketHandler)
+        _webSocketHandler->sendCommand("mediaLoaded");
 }
 void HttpHandler::onSetLibraryLoading()
 {
     _libraryLoaded = false;
-    _webSocketHandler->sendCommand("mediaLoading");
+    if(_webSocketHandler)
+        _webSocketHandler->sendCommand("mediaLoading");
 }
 
 void HttpHandler::onLibraryLoadingStatusChange(QString message) {
     _libraryLoadingStatus = message;
-    _webSocketHandler->sendCommand("mediaLoadingStatus", message);
+    if(_webSocketHandler)
+        _webSocketHandler->sendCommand("mediaLoadingStatus", message);
 }
 
 void HttpHandler::on_webSocketClient_Connected(QWebSocket* client)
 {
-    QString command = _libraryLoaded ? "mediaLoaded" : "mediaLoading";
-    client->sendTextMessage("{ \"command\": \""+command+"\"}");
-    client->sendTextMessage("{ \"command\": \"mediaLoadingStatus\", \"message\": \""+_libraryLoadingStatus+"\"}");
+    if(_webSocketHandler) {
+        QString command = _libraryLoaded ? "mediaLoaded" : "mediaLoading";
+        client->sendTextMessage("{ \"command\": \""+command+"\"}");
+        client->sendTextMessage("{ \"command\": \"mediaLoadingStatus\", \"message\": \""+_libraryLoadingStatus+"\"}");
+    }
 }
 
 void HttpHandler::on_DeviceConnection_StateChange(ConnectionChangedSignal status)
 {
-    _webSocketHandler->sendDeviceConnectionStatus(status);
+    if(_webSocketHandler)
+        _webSocketHandler->sendDeviceConnectionStatus(status);
 }
