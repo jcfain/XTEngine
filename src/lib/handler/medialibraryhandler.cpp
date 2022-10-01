@@ -63,6 +63,7 @@ void MediaLibraryHandler::loadLibraryAsync()
         });
     }
 }
+
 void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 {
     emit libraryLoading();
@@ -210,16 +211,14 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 scriptPath = SettingsHandler::getSelectedFunscriptLibrary() + QDir::separator() + scriptFile;
             }
 
-            QFile fpath(scriptPath);
-            if (!fpath.exists())
+            if (!QFileInfo::exists(scriptPath))
             {
                 scriptPath = nullptr;
             }
             LibraryListItemType libratyItemType = vrMode || isStereo(fileName) ? LibraryListItemType::VR : LibraryListItemType::Video;
-            QFileInfo scriptZip(scriptNoExtension + ".zip");
-            QString zipFile;
-            if(scriptZip.exists())
-                zipFile = scriptNoExtension + ".zip";
+            QString zipFile = scriptNoExtension + ".zip";
+            if(!QFileInfo::exists(zipFile))
+                zipFile = "";
             if(audioTypes.contains(mediaExtension))
             {
                 libratyItemType = LibraryListItemType::Audio;
@@ -237,6 +236,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime().date() : fileinfo.created().date();
             item.duration = 0;
             item.thumbState = ThumbState::Waiting;
+            item.isMFS = false;
             item.libraryPath = path;
             setLiveProperties(item);
 
@@ -256,7 +256,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                     << "*.funscript"
                     << "*.zip";
             QDirIterator funscripts(path, funscriptTypes, QDir::Files, QDirIterator::Subdirectories);
-            auto availibleAxis = SettingsHandler::getAvailableAxis();
+            auto availibleAxis = TCodeChannelLookup::getAvailableAxis();
             while (funscripts.hasNext())
             {
                 if(_loadingLibraryStop)
@@ -321,6 +321,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 item.duration = 0;
                 item.thumbState = ThumbState::Waiting;
                 item.libraryPath = path;
+                item.isMFS = false;
                 setLiveProperties(item);
                 onLibraryItemFound(item);
                 //emit libraryItemFound(item);
@@ -628,6 +629,7 @@ LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
     item.nameNoExtension = playlistName; //nameNoExtension
     item.modifiedDate = QDateTime::currentDateTime().date();
     item.duration = 0;
+    item.isMFS = false;
     setThumbState(ThumbState::Ready, item);
     setLiveProperties(item);
     addItemFront(item);
@@ -636,7 +638,9 @@ LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
 }
 void MediaLibraryHandler::updateItem(LibraryListItem27 item) {
     const QMutexLocker locker(&_mutex);
-    _cachedLibraryItems[findItemIndexByID(item.ID)] = item;
+    auto index = findItemIndexByID(item.ID);
+    if(index > -1)
+        _cachedLibraryItems[index] = item;
     emit itemUpdated(item);
 }
 void MediaLibraryHandler::removeFromCache(LibraryListItem27 itemToRemove) {
@@ -746,52 +750,106 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &libraryListItem)
     QStringList imageExtensions;
     imageExtensions << ".jpg" << ".jpeg" << ".png" << ".jfif" << ".webp";
     QFileInfo mediaInfo(libraryListItem.path);
+    QString globalPath = SettingsHandler::getSelectedThumbsDir() + libraryListItem.name;
+    QString absolutePath = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension;
     foreach(QString ext, imageExtensions) {
-        QString filepath = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension + ext;
-        if(QFileInfo(filepath).exists())
+        QString filepathGlobal = globalPath + ext;
+        if(QFileInfo::exists(filepathGlobal))
         {
             libraryListItem.thumbFileExists = true;
-            libraryListItem.thumbFile = filepath;
+            libraryListItem.thumbFile = filepathGlobal;
             return;
         }
-        QString filepathLocked = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension + ".lock" + ext;
-        if(QFileInfo(filepathLocked).exists())
+        QString filepathGlobalLocked = globalPath + ".lock" + ext;
+        if(QFileInfo::exists(filepathGlobalLocked))
+        {
+            libraryListItem.thumbFileExists = true;
+            libraryListItem.thumbFile = filepathGlobalLocked;
+            return;
+        }
+        QString filepathLocked = absolutePath + ".lock" + ext;
+        if(QFileInfo::exists(filepathLocked))
         {
             libraryListItem.thumbFileExists = true;
             libraryListItem.thumbFile = filepathLocked;
             return;
         }
-        QString filepathGlobalLocked =  SettingsHandler::getSelectedThumbsDir() + libraryListItem.name + ".lock" + ext;
-        if(QFileInfo(filepathGlobalLocked).exists())
+        QString filepath = absolutePath + ext;
+        if(QFileInfo::exists(filepath))
         {
             libraryListItem.thumbFileExists = true;
-            libraryListItem.thumbFile = filepathGlobalLocked;
+            libraryListItem.thumbFile = filepath;
             return;
         }
     }
     if(SettingsHandler::getUseMediaDirForThumbs())
     {
         libraryListItem.thumbFile = mediaInfo.absolutePath() + libraryListItem.nameNoExtension + ".jpg";
-        libraryListItem.thumbFileExists = QFileInfo(libraryListItem.thumbFile).exists();
+        libraryListItem.thumbFileExists = QFileInfo::exists(libraryListItem.thumbFile);
         return;
     }
 
     libraryListItem.thumbFile = SettingsHandler::getSelectedThumbsDir() + libraryListItem.name + ".jpg";
-    libraryListItem.thumbFileExists = QFileInfo(libraryListItem.thumbFile).exists();
+    libraryListItem.thumbFileExists = QFileInfo::exists(libraryListItem.thumbFile);
+
+//    QStringList thumbDirectoryImaged;
+//    thumbDirectoryImaged << libraryListItem.name +".jpg" <<
+//                       libraryListItem.name +".jpeg" <<
+//                       libraryListItem.name +".png" <<
+//                       libraryListItem.name +".jfif" <<
+//                       libraryListItem.name +".webp" <<
+//                       libraryListItem.name +".lock.jpg" <<
+//                       libraryListItem.name +".lock.jpeg" <<
+//                       libraryListItem.name +".lock.png" <<
+//                       libraryListItem.name +".lock.jfif" <<
+//                       libraryListItem.name +".lock.webp";
+
+//    QDir thumbDirectory(SettingsHandler::getSelectedThumbsDir());
+//    QFileInfoList thumbFiles = thumbDirectory.entryInfoList(thumbDirectoryImaged, QDir::Files);
+//    LogHandler::Debug(QString::number(thumbFiles.count()));
+//    if(thumbFiles.count() > 0) {
+//        libraryListItem.thumbFileExists = true;
+//        libraryListItem.thumbFile = thumbFiles.first().filePath();
+//        return;
+//    }
+
+//    QStringList mediaDirectoryImages;
+//    mediaDirectoryImages << libraryListItem.nameNoExtension +".jpg" <<
+//                       libraryListItem.nameNoExtension +".jpeg" <<
+//                       libraryListItem.nameNoExtension +".png" <<
+//                       libraryListItem.nameNoExtension +".jfif" <<
+//                       libraryListItem.nameNoExtension +".webp" <<
+//                       libraryListItem.nameNoExtension +".lock.jpg" <<
+//                       libraryListItem.nameNoExtension +".lock.jpeg" <<
+//                       libraryListItem.nameNoExtension +".lock.png" <<
+//                       libraryListItem.nameNoExtension +".lock.jfif" <<
+//                       libraryListItem.nameNoExtension +".lock.webp";
+
+//    QFileInfo mediaInfo(libraryListItem.path);
+//    QDir directory(mediaInfo.absolutePath());
+//    QFileInfoList txtFilesAndDirectories = directory.entryInfoList(mediaDirectoryImages, QDir::Files);
+//    LogHandler::Debug(QString::number(txtFilesAndDirectories.count()));
+//    if(txtFilesAndDirectories.count() > 0) {
+//        libraryListItem.thumbFileExists = true;
+//        libraryListItem.thumbFile = txtFilesAndDirectories.first().filePath();
+//        return;
+//    }
+
 }
 
-void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
+void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDiscovery)
 {
     localData.isMFS = false;
     bool scriptExists = QFileInfo::exists(localData.script);
     bool zipScripExists = QFileInfo::exists(localData.zipFile);
-    localData.toolTip = localData.nameNoExtension + "\nMedia:";
     if (localData.type != LibraryListItemType::PlaylistInternal && !scriptExists && !zipScripExists)
     {
+        localData.toolTip = localData.nameNoExtension + "\nMedia:";
         localData.toolTip = localData.path + "\nNo script file of the same name found.\nRight click and Play with chosen funscript.";
     }
     else if (localData.type != LibraryListItemType::PlaylistInternal)
     {
+        localData.toolTip = localData.nameNoExtension + "\nMedia:";
         localData.toolTip += "\n";
         localData.toolTip += localData.path;
         localData.toolTip += "\n";
@@ -805,25 +863,24 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
         {
             localData.toolTip += localData.script;
         }
-        auto availibleAxis = SettingsHandler::getAvailableAxis();
-        foreach(auto axisName, availibleAxis->keys())
-        {
-            auto track = availibleAxis->value(axisName);
-            if(axisName == TCodeChannelLookup::Stroke() || track.Type == AxisType::HalfRange || track.TrackName.isEmpty())
-                continue;
+        if(!SettingsHandler::getMFSDiscoveryDisabled() || MFSDiscovery) {
+//            LogHandler::Debug("before discoverMFS1: "+QString::number(mSecTimer.elapsed() - lastTime));
+//            lastTime = mSecTimer.elapsed();
+//            discoverMFS1(localData);
+//            LogHandler::Debug("after discoverMFS1: "+QString::number(mSecTimer.elapsed() - lastTime));
+//            lastTime = mSecTimer.elapsed();
 
-            QString script = localData.scriptNoExtension + "." + track.TrackName + ".funscript";
-            QFileInfo fileInfo(script);
-            if (fileInfo.exists())
-            {
-                localData.isMFS = true;
-                localData.toolTip += "\n";
-                localData.toolTip += script;
-            }
+            discoverMFS2(localData);
+
+            if(MFSDiscovery)//Update on tooltip demand
+                updateItem(localData);
+        } else {
+            localData.toolTip += "Unknown";
         }
     }
     else if (localData.type == LibraryListItemType::PlaylistInternal)
     {
+        localData.toolTip = localData.nameNoExtension + "\nMedia:";
         auto playlists = SettingsHandler::getPlaylists();
         auto playlist = playlists.value(localData.nameNoExtension);
         for(auto i = 0; i < playlist.length(); i++)
@@ -832,6 +889,38 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
             localData.toolTip += QString::number(i + 1);
             localData.toolTip += ": ";
             localData.toolTip += playlist[i].nameNoExtension;
+        }
+    }
+}
+
+void MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
+    auto availibleAxis = TCodeChannelLookup::getAvailableAxis();
+    QString script;
+    script.reserve(item.scriptNoExtension.length() + 1 + 5 + 10);
+    foreach(auto axisName, availibleAxis->keys())
+    {
+        auto track = availibleAxis->value(axisName);
+        if(axisName == TCodeChannelLookup::Stroke() || track.Type == AxisType::HalfRange || track.TrackName.isEmpty())
+            continue;
+
+        script = item.scriptNoExtension + "." + track.TrackName + ".funscript";
+        if (QFileInfo::exists(script))
+        {
+            item.isMFS = true;
+            item.toolTip += "\n";
+            item.toolTip += script;
+        }
+    }
+}
+void MediaLibraryHandler::discoverMFS2(LibraryListItem27 &item) {
+    QStringList funscripts = TCodeChannelLookup::getValidMFSExtensions();
+    foreach(auto scriptExtension, funscripts)
+    {
+        if (QFileInfo::exists(item.scriptNoExtension + scriptExtension))
+        {
+            item.isMFS = true;
+            item.toolTip += "\n";
+            item.toolTip += item.scriptNoExtension + scriptExtension;
         }
     }
 }

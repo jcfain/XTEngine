@@ -68,6 +68,7 @@ public:
     LibraryListItem27* findItemByPartialThumbPath(QString partialThumbPath);
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
+    void updateToolTip(LibraryListItem27 &item, bool scriptDiscovery = false);
 
 private:
     int _libraryItemIDTracker = 1;
@@ -91,10 +92,11 @@ private:
     void setThumbState(ThumbState state, LibraryListItem27 &item);
     void saveNewThumbs(bool vrMode = false);
     void saveThumb(LibraryListItem27 &item, qint64 position = 0, bool vrMode = false);
-    void updateToolTip(LibraryListItem27 &item);
     void assignID(LibraryListItem27 &item);
 
     LibraryListItem27 createLibraryListItemFromFunscript(QString funscript);
+    void discoverMFS1(LibraryListItem27 &item);
+    void discoverMFS2(LibraryListItem27 &item);
 
 
 

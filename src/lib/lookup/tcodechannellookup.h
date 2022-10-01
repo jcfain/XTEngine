@@ -11,13 +11,26 @@
 class XTENGINE_EXPORT TCodeChannelLookup
 {
 public:
+    static const QMap<TCodeVersion, QString> SupportedTCodeVersions;
     static QString PositiveModifier;
     static QString NegativeModifier;
     static QHash<TCodeVersion,  QMap<AxisName,  QString>> TCodeVersionMap;
     static void setSelectedTCodeVersion(TCodeVersion version);
+    static void changeSelectedTCodeVersion(TCodeVersion version);
+    static TCodeVersion getSelectedTCodeVersion();
+    static QString getSelectedTCodeVersionName();
+    static QString getTCodeVersionName(TCodeVersion version);
     static QMap<AxisName,  QString> GetSelectedVersionMap();
     static void AddUserAxis(QString channel);
     static bool ChannelExists(QString channel);
+    static QStringList getValidMFSExtensions();
+    static QMap<QString, ChannelModel33>* getAvailableAxis();
+    static ChannelModel33* getChannel(QString name);
+    static void setChannel(QString name, ChannelModel33 channel);
+    static void addChannel(QString name, ChannelModel33 channel);
+    static void deleteChannel(QString axis);
+    static bool hasChannel(QString name);
+    static void setupAvailableChannels();
     static QString ToString(AxisName channel);
     static QString None();
     static QString Stroke();
@@ -48,7 +61,9 @@ public:
     static QString SuckLessPosition();
 private:
     static int _channelCount;
+    static TCodeVersion _selectedTCodeVersion;
     static QMap<AxisName,  QString> _selectedTCodeVersionMap;
+    static QMap<QString, ChannelModel33> _availableAxis;
     static QString NA;
     static QString L0;
     static QString L2;
@@ -62,6 +77,9 @@ private:
     static QString A0;
     static QString A1;
     static QString A2;
+    static void setValidMFSExtensions();
+    static QStringList m_validMFSExtensions;
+    static ChannelModel33 setupAvailableChannel(QString friendlyName, QString axisName, QString channel, AxisDimension dimension, AxisType type, QString mfsTrackName, QString relatedChannel);
 };
 
 #endif // TCODECHANNELLOOKUP_H

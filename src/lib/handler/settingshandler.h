@@ -40,15 +40,14 @@ public:
         return m_instance;
     }
     static QSettings* getSettings();
-    static const QMap<TCodeVersion, QString> SupportedTCodeVersions;
     static const QString XTEVersion;
     static const float XTEVersionNum;
     static bool getSettingsChanged();
     static bool getHideWelcomeScreen();
     static void setHideWelcomeScreen(bool value);
     static int getTCodePadding();
-    static QString getSelectedTCodeVersion();
-    static void setSelectedTCodeVersion(TCodeVersion key);
+
+    static void changeSelectedTCodeVersion(TCodeVersion key);
     //static void migrateTCodeVersion();
     static QString getDeoDnlaFunscript(QString key);
     static QHash<QString, QVariant> getDeoDnlaFunscripts();
@@ -96,8 +95,7 @@ public:
     static int getVideoIncrement();
 
     static bool getGamepadEnabled();
-    static QMap<QString, ChannelModel33>* getAvailableAxis();
-    static ChannelModel33 getAxis(QString axis);
+    static ChannelModel33* getAxis(QString axis);
     static int getGamepadSpeed();
     static int getLiveGamepadSpeed();
     static int getGamepadSpeedIncrement();
@@ -158,6 +156,9 @@ public:
 
     static void setShowVRInLibraryView(bool value);
     static bool getShowVRInLibraryView();
+
+    static void setMFSDiscoveryDisabled(bool value);
+    static bool getMFSDiscoveryDisabled();
 
     static void setGamepadEnabled(bool value);
     ///Returns assigned actions per gamepad button
@@ -325,8 +326,6 @@ private:
     static bool _settingsChanged;
     static void settingsChangedEvent(bool dirty);
     static void SetMapDefaults();
-    static void setupAvailableChannels();
-    static ChannelModel33 setupAvailableChannel(QString friendlyName, QString axisName, QString channel, AxisDimension dimension, AxisType type, QString mfsTrackName, QString relatedChannel);
     static void setupGamepadButtonMap();
     static void setupKeyboardKeyMap();
     static void MigrateTo23();
@@ -343,7 +342,6 @@ private:
     static void MigrateTo32a(QSettings* settingsToLoadFrom);
 
     static QString _appdataLocation;
-    static TCodeVersion _selectedTCodeVersion;
     static GamepadAxisName gamepadAxisNames;
     static MediaActions mediaActions;
     static QSize _maxThumbnailSize;
@@ -379,7 +377,6 @@ private:
     static QMap<QString, QStringList> _inverseGamePadMap;
     static QMap<QString, QStringList> _keyboardKeyMap;
     static QMap<QString, QStringList> _inverseKeyboardMap;
-    static QMap<QString, ChannelModel33> _availableAxis;
     static int _gamepadSpeed;
     static int _gamepadSpeedStep;
     static int _liveGamepadSpeed;
@@ -399,6 +396,7 @@ private:
     static int thumbSize;
     static int thumbSizeList;
     static int videoIncrement;
+    static bool m_MFSDiscoveryDisabled;
 
     static QList<DecoderModel> decoderPriority;
     static XVideoRenderer _selectedVideoRenderer;

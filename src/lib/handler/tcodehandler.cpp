@@ -13,7 +13,7 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
 {
     QMutexLocker locker(&mutex);
     QString tcode = "";
-    auto availibleAxis = SettingsHandler::getAvailableAxis();
+    auto availibleAxis = TCodeChannelLookup::getAvailableAxis();
     auto axisKeys = availibleAxis->keys();
     if(action != nullptr)
     {
@@ -164,9 +164,9 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
 
 int TCodeHandler::calculateRange(const char* channel, int rawValue)
 {
-    int xMax = SettingsHandler::getAxis(channel).UserMax;
-    int xMin = SettingsHandler::getAxis(channel).UserMin;
-    int xMid = SettingsHandler::getAxis(channel).UserMid;
+    int xMax = SettingsHandler::getAxis(channel)->UserMax;
+    int xMin = SettingsHandler::getAxis(channel)->UserMin;
+    int xMid = SettingsHandler::getAxis(channel)->UserMid;
     // Update for live x range switch
     if(QString(channel) == TCodeChannelLookup::Stroke())
     {
@@ -180,7 +180,7 @@ int TCodeHandler::calculateRange(const char* channel, int rawValue)
 QString TCodeHandler::getRunningHome()
 {
     QString tcode;
-    auto availibleAxis = SettingsHandler::getAvailableAxis();
+    auto availibleAxis = TCodeChannelLookup::getAvailableAxis();
     auto axisKeys = availibleAxis->keys();
     foreach(auto axis, axisKeys)
     {
@@ -195,7 +195,7 @@ QString TCodeHandler::getRunningHome()
 QString TCodeHandler::getAllHome()
 {
     QString tcode;
-    auto availibleAxis = SettingsHandler::getAvailableAxis();
+    auto availibleAxis = TCodeChannelLookup::getAvailableAxis();
     auto axisKeys = availibleAxis->keys();
     foreach(auto axis, axisKeys)
     {
@@ -210,7 +210,7 @@ QString TCodeHandler::getAllHome()
 QString TCodeHandler::getSwitchedHome()
 {
     QString tcode;
-    auto availibleAxis = SettingsHandler::getAvailableAxis();
+    auto availibleAxis = TCodeChannelLookup::getAvailableAxis();
     auto axisKeys = availibleAxis->keys();
     foreach(auto axis, axisKeys)
     {
@@ -225,7 +225,7 @@ QString TCodeHandler::getSwitchedHome()
 QString TCodeHandler::getChannelHome(QString channel)
 {
     QString tcode = "";
-    auto availibleAxis = SettingsHandler::getAvailableAxis();
+    auto availibleAxis = TCodeChannelLookup::getAvailableAxis();
     ChannelModel33 channelModel = availibleAxis->value(channel);
     getChannelHome(channelModel, tcode);
     return tcode;

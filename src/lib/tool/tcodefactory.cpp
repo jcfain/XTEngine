@@ -13,16 +13,16 @@ void TCodeFactory::init()
 void TCodeFactory::calculate(QString axisName, double value, QVector<ChannelValueModel> &axisValues)
 {
     if (axisName != TCodeChannelLookup::None()) {
-        ChannelModel33 tcodeAxis = SettingsHandler::getAxis(axisName);
-        bool isNegative = tcodeAxis.AxisName.contains(TCodeChannelLookup::NegativeModifier);
+        ChannelModel33* tcodeAxis = SettingsHandler::getAxis(axisName);
+        bool isNegative = tcodeAxis->AxisName.contains(TCodeChannelLookup::NegativeModifier);
         //auto isPositive = tcodeAxis.AxisName.contains(TCodeChannelLookup::PositiveModifier);
-        if (_addedAxis->contains(tcodeAxis.Channel) && _addedAxis->value(tcodeAxis.Channel) == 0 && value != 0)
+        if (_addedAxis->contains(tcodeAxis->Channel) && _addedAxis->value(tcodeAxis->Channel) == 0 && value != 0)
         {
-            _addedAxis->remove(tcodeAxis.Channel);
-            const ChannelValueModel cvm = boolinq::from(axisValues).firstOrDefault([tcodeAxis](const ChannelValueModel &x) { return x.Channel == tcodeAxis.Channel; });
+            _addedAxis->remove(tcodeAxis->Channel);
+            const ChannelValueModel cvm = boolinq::from(axisValues).firstOrDefault([tcodeAxis](const ChannelValueModel &x) { return x.Channel == tcodeAxis->Channel; });
             axisValues.removeOne(cvm);
         }
-        if (!boolinq::from(axisValues).any([tcodeAxis](const ChannelValueModel &x) { return x.Channel == tcodeAxis.Channel; }))
+        if (!boolinq::from(axisValues).any([tcodeAxis](const ChannelValueModel &x) { return x.Channel == tcodeAxis->Channel; }))
         {
             double calculatedValue = value;
             if (isNegative && value > 0)
@@ -35,9 +35,9 @@ void TCodeFactory::calculate(QString axisName, double value, QVector<ChannelValu
             }
             axisValues.append({
                 calculateTcodeRange(calculatedValue, tcodeAxis),
-                tcodeAxis.Channel
+                tcodeAxis->Channel
             });
-            _addedAxis->insert(tcodeAxis.Channel, value);
+            _addedAxis->insert(tcodeAxis->Channel, value);
         }
     }
 }
@@ -49,8 +49,8 @@ QString TCodeFactory::formatTCode(QVector<ChannelValueModel>* values)
     {
         if(!value.Channel.isEmpty())
         {
-            auto minValue = SettingsHandler::getAxis(value.Channel).Min;
-            auto maxValue = SettingsHandler::getAxis(value.Channel).Max;
+            auto minValue = SettingsHandler::getAxis(value.Channel)->Min;
+            auto maxValue = SettingsHandler::getAxis(value.Channel)->Max;
             auto clampedValue = maxValue == 0 ? value.Value : XMath::constrain(value.Value, minValue, maxValue);
             tCode += value.Channel + QString::number(clampedValue).rightJustified(SettingsHandler::getTCodePadding(), '0') + "S" + QString::number(SettingsHandler::getLiveGamepadSpeed()) + " ";
         }
@@ -58,17 +58,17 @@ QString TCodeFactory::formatTCode(QVector<ChannelValueModel>* values)
     return tCode.trimmed();
 }
 
-int TCodeFactory::calculateTcodeRange(double value, ChannelModel33 channel)
+int TCodeFactory::calculateTcodeRange(double value, ChannelModel33* channel)
 {
-    int output_end = SettingsHandler::getAxis(channel.Channel).UserMax;
-    int min = SettingsHandler::getAxis(channel.Channel).UserMin;
+    int output_end = SettingsHandler::getAxis(channel->Channel)->UserMax;//Get parent as could be - or +
+    int min = SettingsHandler::getAxis(channel->Channel)->UserMin;
     // Update for live x range switch
-    if(channel.Channel == TCodeChannelLookup::Stroke())
+    if(channel->Channel == TCodeChannelLookup::Stroke())
     {
         output_end = SettingsHandler::getLiveXRangeMax();
         min = SettingsHandler::getLiveXRangeMin();
     }
-    int output_start = channel.Type != AxisType::Switch ? qRound((output_end + min) / 2.0) : min;
+    int output_start = channel->Type != AxisType::Switch ? qRound((output_end + min) / 2.0) : min;
     double slope = (output_end - output_start) / (_input_end - _input_start);
     return qRound(output_start + slope * (value - _input_start));
 }

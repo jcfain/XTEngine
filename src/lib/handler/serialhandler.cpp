@@ -169,12 +169,12 @@ void SerialHandler::run()
                     const QString response = QString::fromUtf8(responseData);
                     LogHandler::Debug("Serial read: "+ response);
                     bool validated = false;
-                    if(response.contains(SettingsHandler::SupportedTCodeVersions.value(TCodeVersion::v2)))
+                    if(response.contains(TCodeChannelLookup::SupportedTCodeVersions.value(TCodeVersion::v2)))
                     {
                         version = "V2";
                         validated = true;
                     }
-                    else if (response.contains(SettingsHandler::SupportedTCodeVersions.value(TCodeVersion::v3)))
+                    else if (response.contains(TCodeChannelLookup::SupportedTCodeVersions.value(TCodeVersion::v3)))
                     {
                         version = "V3";
                         validated = true;

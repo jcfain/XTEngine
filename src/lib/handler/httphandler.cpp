@@ -65,6 +65,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     router.addRoute("GET", "^/settings/availableSerialPorts$", this, &HttpHandler::handleAvailableSerialPorts);
     router.addRoute("POST", "^/settings$", this, &HttpHandler::handleSettingsUpdate);
     router.addRoute("POST", "^/xtpweb$", this, &HttpHandler::handleWebTimeUpdate);
+    router.addRoute("POST", "^/heresphere$", this, &HttpHandler::handleHereSphere);
 }
 bool HttpHandler::listen()
 {
@@ -152,7 +153,7 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     root["webSocketServerPort"] = _webSocketHandler->getServerPort();
 
     QJsonObject availableAxisJson;
-    auto availableAxis = SettingsHandler::getAvailableAxis();
+    auto availableAxis = TCodeChannelLookup::getAvailableAxis();
     foreach(auto channel, availableAxis->keys())
     {
         QJsonObject value;
@@ -222,7 +223,7 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
     }
     else
     {
-        auto channels = SettingsHandler::getAvailableAxis();
+        auto channels = TCodeChannelLookup::getAvailableAxis();
         foreach(auto channel, channels->keys())
         {
             if(channels->value(channel).Type == AxisType::HalfRange || channels->value(channel).Type == AxisType::None)
@@ -378,13 +379,72 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     return object;
 }
 
+
+HttpPromise HttpHandler::handleHereSphere(HttpDataPtr data)
+{
+    QString hostAddress = "http://" + data->request->headerDefault("Host", "") + "/";
+    QJsonObject root;
+    QJsonObject banner;
+    root["access"] = 1;
+    banner["image"] = "";
+    banner["alpha"] = "";
+    banner["link"] = "";
+    root["banner"] = banner;
+    QJsonObject library;
+    library["name"] = "XTP Library";
+    QJsonArray list;
+
+    foreach(auto item, _mediaLibraryHandler->getLibraryCache())
+    {
+        QJsonObject object;
+        if(item.type == LibraryListItemType::PlaylistInternal || item.type == LibraryListItemType::FunscriptType)
+            continue;
+        list.append(createHeresphereObject(item, hostAddress));
+    }
+
+    root["library"] = list;
+    data->response->header("HereSphere-JSON-Version", new QString("1"));
+    data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
+    return HttpPromise::resolve(data);
+}
+QJsonObject HttpHandler::createHeresphereObject(LibraryListItem27 item, QString hostAddress)
+{
+    QJsonObject root;
+    QJsonArray encodings;
+    QJsonObject encodingsObj;
+    QJsonArray videoSources;
+    QJsonObject videoSource;
+    QString relativePath = item.path.replace(item.libraryPath, "");
+//    videoSource["resolution"] = 1080;
+//    videoSource["url"] = hostAddress + "video" + QString(QUrl::toPercentEncoding(relativePath));
+//    videoSources.append(videoSource);
+//    //encodingsObj["name"] = "h264";
+//    encodingsObj["videoSources"] = videoSources;
+//    encodings.append(encodingsObj);
+//    root["encodings"] = encodings;
+
+    root["HereSphere-JSON-Version"] = 1;
+    root["access"] = 1;
+    root["title"] = item.nameNoExtension;
+    root["dateAdded"] = item.modifiedDate.toString("YYYY-MM-DD");
+    root["duration"] = (double)item.duration;
+    root["url"] = hostAddress + "video/" + relativePath;
+    QString relativeThumb = item.thumbFile.isEmpty() ? "://images/icons/error.png" : item.thumbFile.replace(SettingsHandler::getSelectedThumbsDir(), "");
+    root["thumbnailImage"] = hostAddress + "thumb/" + relativeThumb;
+    //root["id"] = item.nameNoExtension;
+    root["projection"] = _mediaLibraryHandler->getScreenType(item.path);
+    //fisheye" - 180 degrees fisheye mesh, mkx200, "mkx200" - 200 degrees fisheye mesh
+    root["stereo"] = _mediaLibraryHandler->getStereoMode(item.path);
+//    root["skipIntro"] = 0;
+    return root;
+}
+
 HttpPromise HttpHandler::handleDeo(HttpDataPtr data)
 {
     QString hostAddress = "http://" + data->request->headerDefault("Host", "") + "/";
     QJsonObject root;
     QJsonArray scenes;
     QJsonObject library;
-    library["name"] = "XTP Library";
     QJsonArray list;
 
     foreach(auto item, _mediaLibraryHandler->getLibraryCache())
@@ -395,13 +455,12 @@ HttpPromise HttpHandler::handleDeo(HttpDataPtr data)
         list.append(createDeoObject(item, hostAddress));
     }
 
-    library["list"] = list;
+    library["libraryData"] = list;
     scenes.append(library);
     root["scenes"] = scenes;
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
     return HttpPromise::resolve(data);
 }
-
 QJsonObject HttpHandler::createDeoObject(LibraryListItem27 item, QString hostAddress)
 {
     QJsonObject root;

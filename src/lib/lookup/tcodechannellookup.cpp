@@ -1,9 +1,36 @@
 #include "tcodechannellookup.h"
 
-void TCodeChannelLookup::setSelectedTCodeVersion(TCodeVersion version)
-{
+
+const QMap<TCodeVersion, QString> TCodeChannelLookup::SupportedTCodeVersions = {
+    {TCodeVersion::v2, "TCode v0.2"},
+    {TCodeVersion::v3, "TCode v0.3"}
+};
+
+void TCodeChannelLookup::setSelectedTCodeVersion(TCodeVersion version) {
+    _selectedTCodeVersion = version;
     _selectedTCodeVersionMap = TCodeVersionMap.value(version);
+    setValidMFSExtensions();
 }
+
+void TCodeChannelLookup::changeSelectedTCodeVersion(TCodeVersion version) {
+    if(_selectedTCodeVersion != version) {
+        setSelectedTCodeVersion(version);
+        setupAvailableChannels();
+    }
+}
+
+TCodeVersion TCodeChannelLookup::getSelectedTCodeVersion() {
+    return _selectedTCodeVersion;
+}
+QString TCodeChannelLookup::getSelectedTCodeVersionName()
+{
+    return SupportedTCodeVersions.value(_selectedTCodeVersion);
+}
+
+QString TCodeChannelLookup::getTCodeVersionName(TCodeVersion version) {
+    return SupportedTCodeVersions.value(version);
+}
+
 QMap<AxisName,  QString> TCodeChannelLookup::GetSelectedVersionMap()
 {
     return _selectedTCodeVersionMap;
@@ -130,6 +157,20 @@ QString TCodeChannelLookup::SuckLessPosition()
 {
     return _selectedTCodeVersionMap.value(AxisName::SuckLessPosition);
 }
+QStringList TCodeChannelLookup::getValidMFSExtensions() {
+    return m_validMFSExtensions;
+}
+void TCodeChannelLookup::setValidMFSExtensions() {
+    m_validMFSExtensions.clear();
+    foreach(auto axisName, _availableAxis.keys())
+    {
+        auto track = _availableAxis.value(axisName);
+        if(axisName == TCodeChannelLookup::Stroke() || track.Type == AxisType::HalfRange || track.TrackName.isEmpty())
+            continue;
+
+        m_validMFSExtensions << "." + track.TrackName + ".funscript";
+    }
+}
 
 int TCodeChannelLookup::_channelCount = (int)AxisName::AXIS_NAMES_LENGTH;
 QString TCodeChannelLookup::PositiveModifier = "+";
@@ -212,3 +253,119 @@ QHash<TCodeVersion, QMap<AxisName, QString>> TCodeChannelLookup::TCodeVersionMap
         }
     }
 };
+
+ChannelModel33* TCodeChannelLookup::getChannel(QString name) {
+    return &_availableAxis[name];
+}
+
+bool TCodeChannelLookup::hasChannel(QString name) {
+    return _availableAxis.contains(name);
+}
+void TCodeChannelLookup::setChannel(QString axis, ChannelModel33 channel)
+{
+    _availableAxis[axis] = channel;
+}
+void TCodeChannelLookup::addChannel(QString name, ChannelModel33 channel)
+{
+    _availableAxis.insert(name, channel);
+    if(!ChannelExists(channel.AxisName))
+        AddUserAxis(channel.AxisName);
+}
+void TCodeChannelLookup::deleteChannel(QString axis)
+{
+    _availableAxis.remove(axis);
+}
+
+QMap<QString, ChannelModel33>* TCodeChannelLookup::getAvailableAxis()
+{
+    return &_availableAxis;
+}
+
+void TCodeChannelLookup::setupAvailableChannels()
+{
+    _availableAxis = {
+        {TCodeChannelLookup::None(),  setupAvailableChannel(TCodeChannelLookup::None(), TCodeChannelLookup::None(), TCodeChannelLookup::None(), AxisDimension::None, AxisType::None, "", "") },
+
+        {TCodeChannelLookup::Stroke(), setupAvailableChannel("Stroke", TCodeChannelLookup::Stroke(), TCodeChannelLookup::Stroke(), AxisDimension::Heave, AxisType::Range, "", TCodeChannelLookup::Twist())  },
+        {TCodeChannelLookup::StrokeUp(), setupAvailableChannel("Stroke Up", TCodeChannelLookup::StrokeUp(), TCodeChannelLookup::Stroke(), AxisDimension::Heave, AxisType::HalfRange, "", TCodeChannelLookup::TwistClockwise()) },
+        {TCodeChannelLookup::StrokeDown(), setupAvailableChannel("Stroke Down", TCodeChannelLookup::StrokeDown(), TCodeChannelLookup::Stroke(), AxisDimension::Heave, AxisType::HalfRange, "", TCodeChannelLookup::TwistCounterClockwise()) },
+
+        {TCodeChannelLookup::Sway(), setupAvailableChannel("Sway", TCodeChannelLookup::Sway(), TCodeChannelLookup::Sway(), AxisDimension::Sway, AxisType::Range, "sway", TCodeChannelLookup::Roll()) },
+        {TCodeChannelLookup::SwayLeft(), setupAvailableChannel("Sway Left", TCodeChannelLookup::SwayLeft(), TCodeChannelLookup::Sway(), AxisDimension::Sway, AxisType::HalfRange, "", TCodeChannelLookup::RollLeft()) },
+        {TCodeChannelLookup::SwayRight(), setupAvailableChannel("Sway Right", TCodeChannelLookup::SwayRight(), TCodeChannelLookup::Sway(), AxisDimension::Sway, AxisType::HalfRange, "", TCodeChannelLookup::RollRight()) },
+
+        {TCodeChannelLookup::Surge(), setupAvailableChannel("Surge", TCodeChannelLookup::Surge(), TCodeChannelLookup::Surge(), AxisDimension::Surge, AxisType::Range, "surge", TCodeChannelLookup::Pitch()) },
+        {TCodeChannelLookup::SurgeBack(), setupAvailableChannel("Surge Back", TCodeChannelLookup::SurgeBack(), TCodeChannelLookup::Surge(), AxisDimension::Surge, AxisType::HalfRange, "", TCodeChannelLookup::PitchBack()) },
+        {TCodeChannelLookup::SurgeForward(), setupAvailableChannel("Surge Forward", TCodeChannelLookup::SurgeForward(), TCodeChannelLookup::Surge(), AxisDimension::Surge, AxisType::HalfRange, "", TCodeChannelLookup::PitchForward()) },
+
+        {TCodeChannelLookup::Pitch(), setupAvailableChannel("Pitch", TCodeChannelLookup::Pitch(), TCodeChannelLookup::Pitch(), AxisDimension::Pitch, AxisType::Range, "pitch", TCodeChannelLookup::Surge()) },
+        {TCodeChannelLookup::PitchBack(), setupAvailableChannel("Pitch Back", TCodeChannelLookup::PitchBack(), TCodeChannelLookup::Pitch(), AxisDimension::Pitch, AxisType::HalfRange, "", TCodeChannelLookup::SurgeBack()) },
+        {TCodeChannelLookup::PitchForward(), setupAvailableChannel("Pitch Forward", TCodeChannelLookup::PitchForward(), TCodeChannelLookup::Pitch(), AxisDimension::Pitch, AxisType::HalfRange, "", TCodeChannelLookup::SurgeForward()) },
+
+        {TCodeChannelLookup::Roll(), setupAvailableChannel("Roll", TCodeChannelLookup::Roll(), TCodeChannelLookup::Roll(), AxisDimension::Roll, AxisType::Range, "roll", TCodeChannelLookup::Sway()) },
+        {TCodeChannelLookup::RollLeft(), setupAvailableChannel("Roll Left", TCodeChannelLookup::RollLeft(), TCodeChannelLookup::Roll(), AxisDimension::Roll, AxisType::HalfRange, "", TCodeChannelLookup::SwayLeft()) },
+        {TCodeChannelLookup::RollRight(), setupAvailableChannel("Roll Right", TCodeChannelLookup::RollRight(), TCodeChannelLookup::Roll(), AxisDimension::Roll, AxisType::HalfRange, "", TCodeChannelLookup::SwayRight()) },
+
+        {TCodeChannelLookup::Twist(), setupAvailableChannel("Twist", TCodeChannelLookup::Twist(), TCodeChannelLookup::Twist(), AxisDimension::Yaw, AxisType::Range, "twist", TCodeChannelLookup::Stroke()) },
+        {TCodeChannelLookup::TwistClockwise(), setupAvailableChannel("Twist (CW)", TCodeChannelLookup::TwistClockwise(), TCodeChannelLookup::Twist(), AxisDimension::Yaw, AxisType::HalfRange, "", TCodeChannelLookup::StrokeUp()) },
+        {TCodeChannelLookup::TwistCounterClockwise(), setupAvailableChannel("Twist (CCW)", TCodeChannelLookup::TwistCounterClockwise(), TCodeChannelLookup::Twist(), AxisDimension::Yaw, AxisType::HalfRange, "", TCodeChannelLookup::StrokeDown()) },
+
+        {TCodeChannelLookup::Suck(), setupAvailableChannel("Suck", TCodeChannelLookup::Suck(), TCodeChannelLookup::Suck(), AxisDimension::None, AxisType::Range, "suck", TCodeChannelLookup::Stroke()) },
+        {TCodeChannelLookup::SuckMore(), setupAvailableChannel("Suck more", TCodeChannelLookup::SuckMore(), TCodeChannelLookup::Suck(), AxisDimension::None, AxisType::HalfRange, "suck", TCodeChannelLookup::StrokeUp()) },
+        {TCodeChannelLookup::SuckLess(), setupAvailableChannel("Suck less", TCodeChannelLookup::SuckLess(), TCodeChannelLookup::Suck(), AxisDimension::None, AxisType::HalfRange, "suck", TCodeChannelLookup::StrokeDown()) },
+
+        {TCodeChannelLookup::Vib(), setupAvailableChannel("Vib", TCodeChannelLookup::Vib(), TCodeChannelLookup::Vib(), AxisDimension::None, AxisType::Switch, "vib", TCodeChannelLookup::Stroke()) },
+        {TCodeChannelLookup::Lube(), setupAvailableChannel("Lube", TCodeChannelLookup::Lube(), TCodeChannelLookup::Lube(), AxisDimension::None, AxisType::Switch, "lube", TCodeChannelLookup::Stroke()) }
+    };
+    if(_selectedTCodeVersion == TCodeVersion::v3)
+    {
+       _availableAxis.insert(TCodeChannelLookup::SuckPosition(), setupAvailableChannel("Suck manual", TCodeChannelLookup::SuckPosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::Range, "suckManual", TCodeChannelLookup::Stroke()));
+       _availableAxis.insert(TCodeChannelLookup::SuckMorePosition(), setupAvailableChannel("Suck manual more", TCodeChannelLookup::SuckMorePosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::HalfRange, "suckManual", TCodeChannelLookup::StrokeUp()));
+       _availableAxis.insert(TCodeChannelLookup::SuckLessPosition(), setupAvailableChannel("Suck manual less", TCodeChannelLookup::SuckLessPosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::HalfRange, "suckManual", TCodeChannelLookup::StrokeDown()));
+    }
+    else
+    {
+        auto v3ChannelMap = TCodeChannelLookup::TCodeVersionMap.value(TCodeVersion::v3);
+        auto suckPositionV3Channel = v3ChannelMap.value(AxisName::SuckPosition);
+        _availableAxis.remove(suckPositionV3Channel);
+
+        auto suckMorePositionV3Channel = v3ChannelMap.value(AxisName::SuckMorePosition);
+        _availableAxis.remove(suckMorePositionV3Channel);
+
+        auto suckLessPositionV3Channel = v3ChannelMap.value(AxisName::SuckLessPosition);
+        _availableAxis.remove(suckLessPositionV3Channel);
+    }
+}
+
+ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, QString axisName, QString channel, AxisDimension dimension, AxisType type, QString mfsTrackName, QString relatedChannel) {
+    TCodeChannelLookup::setSelectedTCodeVersion(_selectedTCodeVersion);
+    int max = _selectedTCodeVersion == TCodeVersion::v2 ? 999 : 9999;
+    int mid = _selectedTCodeVersion == TCodeVersion::v2 ? 500 : 5000;
+    return {
+             friendlyName,
+             axisName,
+             channel,
+             0, //Min
+             mid,
+             max,
+             0, //UserMin
+             mid,
+             max,
+             dimension,
+             type,
+             mfsTrackName,
+             false, //MultiplierEnabled
+             2.50, //MultiplierValue
+             false, //DamperEnabled
+             1.0, //DamperValue
+             false, //FunscriptInverted
+             false, //GamepadInverted
+             false, //LinkToRelatedMFS
+             relatedChannel
+          };
+}
+
+
+TCodeVersion TCodeChannelLookup::_selectedTCodeVersion;
+QMap<QString, ChannelModel33> TCodeChannelLookup::_availableAxis;
+QStringList TCodeChannelLookup::m_validMFSExtensions;

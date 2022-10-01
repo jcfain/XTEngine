@@ -508,7 +508,7 @@ void SyncHandler::loadMFS(QString scriptFile)
     if(scriptFile.endsWith(".zip"))
         zipFile = new QZipReader(scriptFile, QIODevice::ReadOnly);
 
-    auto availibleAxis = SettingsHandler::getAvailableAxis();
+    auto availibleAxis = TCodeChannelLookup::getAvailableAxis();
     foreach(auto axisName, availibleAxis->keys())
     {
         auto track = availibleAxis->value(axisName);

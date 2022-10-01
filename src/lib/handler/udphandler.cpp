@@ -126,12 +126,12 @@ void UdpHandler::run()
 
                         QString response = QString(datagram.data());
                         bool validated = false;
-                        if(response.contains(SettingsHandler::SupportedTCodeVersions.value(TCodeVersion::v2)))
+                        if(response.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v2)))
                         {
                             version = "V2";
                             validated = true;
                         }
-                        else if (response.contains(SettingsHandler::SupportedTCodeVersions.value(TCodeVersion::v3)))
+                        else if (response.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v3)))
                         {
                             version = "V3";
                             validated = true;
@@ -145,7 +145,7 @@ void UdpHandler::run()
                         }
                         else
                         {
-                            emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "No " + SettingsHandler::getSelectedTCodeVersion()});
+                            emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "No " + TCodeChannelLookup::getSelectedTCodeVersionName()});
                         }
                     }
                 }

@@ -48,7 +48,7 @@ void SettingsActionHandler::media_action(QString action)
     else if(action == actions.DecreaseXLowerRange)
     {
         int newLiveRange = SettingsHandler::getLiveXRangeMin() - SettingsHandler::getXRangeStep();
-        int axisMin = SettingsHandler::getAxis(TCodeChannelLookup::Stroke()).Min;
+        int axisMin = SettingsHandler::getAxis(TCodeChannelLookup::Stroke())->Min;
         if(newLiveRange > axisMin)
         {
             SettingsHandler::setLiveXRangeMin(newLiveRange);
@@ -63,7 +63,7 @@ void SettingsActionHandler::media_action(QString action)
     else if(action == actions.IncreaseXUpperRange)
     {
         int newLiveRange = SettingsHandler::getLiveXRangeMax() + SettingsHandler::getXRangeStep();
-        int axisMax = SettingsHandler::getAxis(TCodeChannelLookup::Stroke()).Max;
+        int axisMax = SettingsHandler::getAxis(TCodeChannelLookup::Stroke())->Max;
         if(newLiveRange < axisMax)
         {
             SettingsHandler::setLiveXRangeMax(newLiveRange);
@@ -97,7 +97,7 @@ void SettingsActionHandler::media_action(QString action)
         int xRangeMin = SettingsHandler::getLiveXRangeMin();
         int xRangeStep = SettingsHandler::getXRangeStep();
         int newLiveMaxRange = xRangeMax + xRangeStep;
-        int axisMax = SettingsHandler::getAxis(TCodeChannelLookup::Stroke()).Max;
+        int axisMax = SettingsHandler::getAxis(TCodeChannelLookup::Stroke())->Max;
         bool atMax = false;
         if(newLiveMaxRange > axisMax)
         {
@@ -107,7 +107,7 @@ void SettingsActionHandler::media_action(QString action)
         SettingsHandler::setLiveXRangeMax(newLiveMaxRange);
 
         int newLiveMinRange = xRangeMin - xRangeStep;
-        int axisMin = SettingsHandler::getAxis(TCodeChannelLookup::Stroke()).Min;
+        int axisMin = SettingsHandler::getAxis(TCodeChannelLookup::Stroke())->Min;
         bool atMin = false;
         if(newLiveMinRange < axisMin)
         {

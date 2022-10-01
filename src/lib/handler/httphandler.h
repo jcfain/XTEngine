@@ -54,6 +54,7 @@ public:
     HttpPromise handleConnectDevice(HttpDataPtr data);
     HttpPromise handleTCodeIn(HttpDataPtr data);
     HttpPromise handleDeo(HttpDataPtr data);
+    HttpPromise handleHereSphere(HttpDataPtr data);
     HttpPromise handleWebTimeUpdate(HttpDataPtr data);
 
     void sendWebSocketTextMessage(QString command, QString message = nullptr);
@@ -71,6 +72,7 @@ private:
 
     QJsonObject createMediaObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);
+    QJsonObject createHeresphereObject(LibraryListItem27 libraryListItem, QString hostAddress);
     void on_webSocketClient_Connected(QWebSocket* client);
     void onSetLibraryLoaded();
     void onSetLibraryLoading();
