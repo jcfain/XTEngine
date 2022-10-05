@@ -53,7 +53,7 @@ public:
     void dispose();
     NetworkDevice* getNetworkHandler();
     SerialHandler* getSerialHandler();
-    DeoHandler* getDeoHandler();
+    HereSphereHandler* getHereSphereHandler();
     XTPWebHandler* getXTPWebHandler();
     WhirligigHandler* getWhirligigHandler();
     GamepadHandler* getGamepadHandler();
@@ -68,7 +68,7 @@ private:
     NetworkDevice* _networkDevice;
     UdpHandler* _udpHandler;
     WebsocketDeviceHandler* _webSocketHandler;
-    DeoHandler* _deoHandler;
+    HereSphereHandler* m_hereSphereHandler;
     WhirligigHandler* _whirligigHandler;
     XTPWebHandler* _xtpWebHandler;
     GamepadHandler* _gamepadHandler;

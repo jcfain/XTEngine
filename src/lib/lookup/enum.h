@@ -10,7 +10,7 @@ enum DeviceName
 {
     Serial,
     Network,
-    Deo,
+    HereSphere,
     Whirligig,
     Gamepad,
     XTPWeb,

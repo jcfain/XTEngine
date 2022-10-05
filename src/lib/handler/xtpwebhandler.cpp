@@ -112,7 +112,6 @@ bool XTPWebHandler::isConnected()
 bool XTPWebHandler::isPlaying()
 {
     const QMutexLocker locker(&_mutex);
-    //LogHandler::Error("DeoHandler::isPlaying(): "+ QString::number(_isPlaying));
     return _isPlaying;
 }
 

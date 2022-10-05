@@ -40,21 +40,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         }
         settingsToLoadFrom = settings;
     }
-    // TODO: Find a better way. Must be set before the version
-    QJsonObject availableAxisJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
-    auto availableChannels = TCodeChannelLookup::getAvailableAxis();
-    availableChannels->clear();
-    _funscriptLoaded.clear();
-    foreach(auto axis, availableAxisJson.keys())
-    {
-        availableChannels->insert(axis, ChannelModel33::fromVariant(availableAxisJson.value(axis)));
-        _funscriptLoaded.insert(axis, false);
-        if(!TCodeChannelLookup::ChannelExists(axis))
-            TCodeChannelLookup::AddUserAxis(axis);
-    }
-    _liveXRangeMax = availableChannels->value(TCodeChannelLookup::Stroke()).UserMax;
-    _liveXRangeMin = availableChannels->value(TCodeChannelLookup::Stroke()).UserMin;
-    _liveXRangeMid = availableChannels->value(TCodeChannelLookup::Stroke()).UserMid;
 
     float currentVersion = settingsToLoadFrom->value("version").toFloat();
     bool firstLoad = currentVersion == 0;
@@ -76,6 +61,22 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     }
 
     locker.relock();
+
+    QJsonObject availableAxisJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
+    QMap<QString, ChannelModel33> availableChannels;
+    _funscriptLoaded.clear();
+    foreach(auto axis, availableAxisJson.keys())
+    {
+        availableChannels.insert(axis, ChannelModel33::fromVariant(availableAxisJson.value(axis)));
+        _funscriptLoaded.insert(axis, false);
+        if(!TCodeChannelLookup::ChannelExists(axis))
+            TCodeChannelLookup::AddUserAxis(axis);
+    }
+    TCodeChannelLookup::setAvailableChannels(availableChannels);
+    _liveXRangeMax = availableChannels.value(TCodeChannelLookup::Stroke()).UserMax;
+    _liveXRangeMin = availableChannels.value(TCodeChannelLookup::Stroke()).UserMin;
+    _liveXRangeMid = availableChannels.value(TCodeChannelLookup::Stroke()).UserMid;
+
     selectedTheme = settingsToLoadFrom->value("selectedTheme").toString();
     selectedTheme = selectedTheme.isEmpty() ? _applicationDirPath + "/themes/dark.css" : selectedTheme;
     selectedLibrary = settingsToLoadFrom->value("selectedLibrary").toStringList();
@@ -273,7 +274,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.2581f)
         {
             locker.unlock();
-            TCodeChannelLookup::setupAvailableChannels();
+            TCodeChannelLookup::setAvailableChannelDefaults();
         }
         if(currentVersion < 0.2615f)
         {
@@ -309,7 +310,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.286f) {
             locker.unlock();
             _httpThumbQuality = -1;
-            TCodeChannelLookup::setupAvailableChannels();
+            TCodeChannelLookup::setAvailableChannelDefaults();
             Save();
             Load();
         }
@@ -328,7 +329,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.333f) {
             locker.unlock();
             setupKeyboardKeyMap();
-            if(availableChannels->empty() || availableChannels->first().AxisName.isEmpty()) {
+            if(availableChannels.empty() || availableChannels.first().AxisName.isEmpty()) {
                 SetChannelMapDefaults();
             }
             auto libraryExclusions = settingsToLoadFrom->value("libraryExclusions").value<QList<QString>>();
@@ -414,7 +415,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("selectedVideoRenderer", (int)_selectedVideoRenderer);
 
         QVariantMap availableAxis;
-        auto availableChannels = TCodeChannelLookup::getAvailableAxis();
+        auto availableChannels = TCodeChannelLookup::getAvailableChannels();
         foreach(auto axis, availableChannels->keys())
         {
             auto variant = ChannelModel33::toVariant(availableChannels->value(axis));
@@ -567,9 +568,9 @@ void SettingsHandler::SetMapDefaults()
 }
 void SettingsHandler::SetChannelMapDefaults()
 {
-    TCodeChannelLookup::setupAvailableChannels();
+    TCodeChannelLookup::setAvailableChannelDefaults();
     QVariantMap availableAxis;
-    auto userChannels = TCodeChannelLookup::getAvailableAxis();
+    auto userChannels = TCodeChannelLookup::getAvailableChannels();
     foreach(auto axis, userChannels->keys())
     {
         auto variant = ChannelModel33::toVariant(userChannels->value(axis));
@@ -604,7 +605,7 @@ void SettingsHandler::SetKeyboardKeyDefaults() {
 void SettingsHandler::MigrateTo23()
 {
     settings->setValue("version", 0.23f);
-    TCodeChannelLookup::setupAvailableChannels();
+    TCodeChannelLookup::setAvailableChannelDefaults();
     Save();
     Load();
     emit instance().messageSend("Due to a standards update your RANGE settings\nhave been set to default for a new data structure.", XLogLevel::Information);
@@ -620,7 +621,7 @@ void SettingsHandler::MigrateTo25()
 void SettingsHandler::MigrateTo252()
 {
     settings->setValue("version", 0.252f);
-    TCodeChannelLookup::setupAvailableChannels();
+    TCodeChannelLookup::setAvailableChannelDefaults();
     Save();
     Load();
     emit instance().messageSend("Due to a standards update your CHANNELS\nhave been set to default for a new data structure.\nPlease reset your Multiplier/Range settings before using.", XLogLevel::Information);
@@ -687,7 +688,7 @@ void SettingsHandler::MigrateLibraryMetaDataTo258()
 void SettingsHandler::MigratrTo2615()
 {
     settings->setValue("version", 0.2615f);
-    TCodeChannelLookup::setupAvailableChannels();
+    TCodeChannelLookup::setAvailableChannelDefaults();
     Save();
     Load();
     emit instance().messageSend("Due to a standards update your CHANNEL SETTINGS\nhave been set to default for a new data structure.\nPlease reset your RANGES and MULTIPLIERS settings before using.", XLogLevel::Information);
@@ -696,7 +697,7 @@ void SettingsHandler::MigratrTo2615()
 void SettingsHandler::MigrateTo263() {
 
     settings->setValue("version", 0.263f);
-    auto currentChannels = TCodeChannelLookup::getAvailableAxis();
+    auto currentChannels = TCodeChannelLookup::getAvailableChannels();
     foreach(auto axis, currentChannels->keys())
     {
         int max = currentChannels->value(axis).UserMax;
@@ -756,7 +757,7 @@ void SettingsHandler::MigrateToQVariant2(QSettings* settingsToLoadFrom)
 void SettingsHandler::MigrateToQVariantChannelModel(QSettings* settingsToLoadFrom)
 {
     QVariantMap availableAxis = settingsToLoadFrom->value("availableAxis").toMap();
-    auto availableChannels = TCodeChannelLookup::getAvailableAxis();
+    auto availableChannels = TCodeChannelLookup::getAvailableChannels();
     availableChannels->clear();
     _funscriptLoaded.clear();
     QMap<QString, ChannelModel> availableChannelsTemp;
@@ -1052,7 +1053,7 @@ DeviceName SettingsHandler::getSelectedInputDevice()
 {
     QMutexLocker locker(&mutex);
     if(deoEnabled)
-        return DeviceName::Deo;
+        return DeviceName::HereSphere;
     else if(whirligigEnabled)
         return DeviceName::Whirligig;
     else if(_xtpWebSyncEnabled)
@@ -1062,7 +1063,7 @@ DeviceName SettingsHandler::getSelectedInputDevice()
 
 void SettingsHandler::setSelectedInputDevice(DeviceName deviceName)
 {
-    deoEnabled = deviceName == DeviceName::Deo;
+    deoEnabled = deviceName == DeviceName::HereSphere;
     whirligigEnabled = deviceName == DeviceName::Whirligig;
     _xtpWebSyncEnabled = deviceName == DeviceName::XTPWeb;
 }

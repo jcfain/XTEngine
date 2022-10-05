@@ -24,13 +24,14 @@ public:
     static void AddUserAxis(QString channel);
     static bool ChannelExists(QString channel);
     static QStringList getValidMFSExtensions();
-    static QMap<QString, ChannelModel33>* getAvailableAxis();
+    static void setAvailableChannels(QMap<QString, ChannelModel33> channels);
+    static QMap<QString, ChannelModel33>* getAvailableChannels();
     static ChannelModel33* getChannel(QString name);
     static void setChannel(QString name, ChannelModel33 channel);
     static void addChannel(QString name, ChannelModel33 channel);
     static void deleteChannel(QString axis);
     static bool hasChannel(QString name);
-    static void setupAvailableChannels();
+    static void setAvailableChannelDefaults();
     static QString ToString(AxisName channel);
     static QString None();
     static QString Stroke();
@@ -63,7 +64,7 @@ private:
     static int _channelCount;
     static TCodeVersion _selectedTCodeVersion;
     static QMap<AxisName,  QString> _selectedTCodeVersionMap;
-    static QMap<QString, ChannelModel33> _availableAxis;
+    static QMap<QString, ChannelModel33> _availableChanels;
     static QString NA;
     static QString L0;
     static QString L2;

@@ -256,7 +256,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                     << "*.funscript"
                     << "*.zip";
             QDirIterator funscripts(path, funscriptTypes, QDir::Files, QDirIterator::Subdirectories);
-            auto availibleAxis = TCodeChannelLookup::getAvailableAxis();
+            auto availibleAxis = TCodeChannelLookup::getAvailableChannels();
             while (funscripts.hasNext())
             {
                 if(_loadingLibraryStop)
@@ -894,7 +894,7 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDi
 }
 
 void MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
-    auto availibleAxis = TCodeChannelLookup::getAvailableAxis();
+    auto availibleAxis = TCodeChannelLookup::getAvailableChannels();
     QString script;
     script.reserve(item.scriptNoExtension.length() + 1 + 5 + 10);
     foreach(auto axisName, availibleAxis->keys())

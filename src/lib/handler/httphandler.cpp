@@ -153,7 +153,7 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     root["webSocketServerPort"] = _webSocketHandler->getServerPort();
 
     QJsonObject availableAxisJson;
-    auto availableAxis = TCodeChannelLookup::getAvailableAxis();
+    auto availableAxis = TCodeChannelLookup::getAvailableChannels();
     foreach(auto channel, availableAxis->keys())
     {
         QJsonObject value;
@@ -223,7 +223,7 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
     }
     else
     {
-        auto channels = TCodeChannelLookup::getAvailableAxis();
+        auto channels = TCodeChannelLookup::getAvailableChannels();
         foreach(auto channel, channels->keys())
         {
             if(channels->value(channel).Type == AxisType::HalfRange || channels->value(channel).Type == AxisType::None)
@@ -267,8 +267,8 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
         {
             SettingsHandler::setDeoAddress(deoAddress);
             SettingsHandler::setDeoPort(deoPort);
-            if(selectedInputDevice == DeviceName::Deo)
-                emit connectInputDevice(DeviceName::Deo, true);
+            if(selectedInputDevice == DeviceName::HereSphere)
+                emit connectInputDevice(DeviceName::HereSphere, true);
         }
         DeviceName selectedOutputDevice = (DeviceName)output["selectedDevice"].toInt();
         QString networkAddress = output["networkAddress"].toString();

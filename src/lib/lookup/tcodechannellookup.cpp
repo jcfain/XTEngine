@@ -9,16 +9,14 @@ const QMap<TCodeVersion, QString> TCodeChannelLookup::SupportedTCodeVersions = {
 void TCodeChannelLookup::setSelectedTCodeVersion(TCodeVersion version) {
     _selectedTCodeVersion = version;
     _selectedTCodeVersionMap = TCodeVersionMap.value(version);
-    setValidMFSExtensions();
 }
 
 void TCodeChannelLookup::changeSelectedTCodeVersion(TCodeVersion version) {
     if(_selectedTCodeVersion != version) {
         setSelectedTCodeVersion(version);
-        setupAvailableChannels();
+        setAvailableChannelDefaults();
     }
 }
-
 TCodeVersion TCodeChannelLookup::getSelectedTCodeVersion() {
     return _selectedTCodeVersion;
 }
@@ -162,9 +160,9 @@ QStringList TCodeChannelLookup::getValidMFSExtensions() {
 }
 void TCodeChannelLookup::setValidMFSExtensions() {
     m_validMFSExtensions.clear();
-    foreach(auto axisName, _availableAxis.keys())
+    foreach(auto axisName, _availableChanels.keys())
     {
-        auto track = _availableAxis.value(axisName);
+        auto track = _availableChanels.value(axisName);
         if(axisName == TCodeChannelLookup::Stroke() || track.Type == AxisType::HalfRange || track.TrackName.isEmpty())
             continue;
 
@@ -255,35 +253,39 @@ QHash<TCodeVersion, QMap<AxisName, QString>> TCodeChannelLookup::TCodeVersionMap
 };
 
 ChannelModel33* TCodeChannelLookup::getChannel(QString name) {
-    return &_availableAxis[name];
+    return &_availableChanels[name];
 }
 
 bool TCodeChannelLookup::hasChannel(QString name) {
-    return _availableAxis.contains(name);
+    return _availableChanels.contains(name);
 }
 void TCodeChannelLookup::setChannel(QString axis, ChannelModel33 channel)
 {
-    _availableAxis[axis] = channel;
+    _availableChanels[axis] = channel;
 }
 void TCodeChannelLookup::addChannel(QString name, ChannelModel33 channel)
 {
-    _availableAxis.insert(name, channel);
+    _availableChanels.insert(name, channel);
     if(!ChannelExists(channel.AxisName))
         AddUserAxis(channel.AxisName);
 }
 void TCodeChannelLookup::deleteChannel(QString axis)
 {
-    _availableAxis.remove(axis);
+    _availableChanels.remove(axis);
 }
 
-QMap<QString, ChannelModel33>* TCodeChannelLookup::getAvailableAxis()
+QMap<QString, ChannelModel33>* TCodeChannelLookup::getAvailableChannels()
 {
-    return &_availableAxis;
+    return &_availableChanels;
+}
+void TCodeChannelLookup::setAvailableChannels(QMap<QString, ChannelModel33> channels) {
+    _availableChanels = channels;
+    setValidMFSExtensions();
 }
 
-void TCodeChannelLookup::setupAvailableChannels()
+void TCodeChannelLookup::setAvailableChannelDefaults()
 {
-    _availableAxis = {
+    _availableChanels = {
         {TCodeChannelLookup::None(),  setupAvailableChannel(TCodeChannelLookup::None(), TCodeChannelLookup::None(), TCodeChannelLookup::None(), AxisDimension::None, AxisType::None, "", "") },
 
         {TCodeChannelLookup::Stroke(), setupAvailableChannel("Stroke", TCodeChannelLookup::Stroke(), TCodeChannelLookup::Stroke(), AxisDimension::Heave, AxisType::Range, "", TCodeChannelLookup::Twist())  },
@@ -319,22 +321,24 @@ void TCodeChannelLookup::setupAvailableChannels()
     };
     if(_selectedTCodeVersion == TCodeVersion::v3)
     {
-       _availableAxis.insert(TCodeChannelLookup::SuckPosition(), setupAvailableChannel("Suck manual", TCodeChannelLookup::SuckPosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::Range, "suckManual", TCodeChannelLookup::Stroke()));
-       _availableAxis.insert(TCodeChannelLookup::SuckMorePosition(), setupAvailableChannel("Suck manual more", TCodeChannelLookup::SuckMorePosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::HalfRange, "suckManual", TCodeChannelLookup::StrokeUp()));
-       _availableAxis.insert(TCodeChannelLookup::SuckLessPosition(), setupAvailableChannel("Suck manual less", TCodeChannelLookup::SuckLessPosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::HalfRange, "suckManual", TCodeChannelLookup::StrokeDown()));
+       _availableChanels.insert(TCodeChannelLookup::SuckPosition(), setupAvailableChannel("Suck manual", TCodeChannelLookup::SuckPosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::Range, "suckManual", TCodeChannelLookup::Stroke()));
+       _availableChanels.insert(TCodeChannelLookup::SuckMorePosition(), setupAvailableChannel("Suck manual more", TCodeChannelLookup::SuckMorePosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::HalfRange, "suckManual", TCodeChannelLookup::StrokeUp()));
+       _availableChanels.insert(TCodeChannelLookup::SuckLessPosition(), setupAvailableChannel("Suck manual less", TCodeChannelLookup::SuckLessPosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::HalfRange, "suckManual", TCodeChannelLookup::StrokeDown()));
     }
     else
     {
         auto v3ChannelMap = TCodeChannelLookup::TCodeVersionMap.value(TCodeVersion::v3);
         auto suckPositionV3Channel = v3ChannelMap.value(AxisName::SuckPosition);
-        _availableAxis.remove(suckPositionV3Channel);
+        _availableChanels.remove(suckPositionV3Channel);
 
         auto suckMorePositionV3Channel = v3ChannelMap.value(AxisName::SuckMorePosition);
-        _availableAxis.remove(suckMorePositionV3Channel);
+        _availableChanels.remove(suckMorePositionV3Channel);
 
         auto suckLessPositionV3Channel = v3ChannelMap.value(AxisName::SuckLessPosition);
-        _availableAxis.remove(suckLessPositionV3Channel);
+        _availableChanels.remove(suckLessPositionV3Channel);
     }
+
+    setValidMFSExtensions();
 }
 
 ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, QString axisName, QString channel, AxisDimension dimension, AxisType type, QString mfsTrackName, QString relatedChannel) {
@@ -367,5 +371,5 @@ ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, Q
 
 
 TCodeVersion TCodeChannelLookup::_selectedTCodeVersion;
-QMap<QString, ChannelModel33> TCodeChannelLookup::_availableAxis;
+QMap<QString, ChannelModel33> TCodeChannelLookup::_availableChanels;
 QStringList TCodeChannelLookup::m_validMFSExtensions;

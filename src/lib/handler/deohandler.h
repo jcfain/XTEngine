@@ -11,7 +11,7 @@
 #include "inputdevicehandler.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT DeoHandler : public InputDeviceHandler
+class XTENGINE_EXPORT HereSphereHandler : public InputDeviceHandler
 {
 
     Q_OBJECT
@@ -19,8 +19,8 @@ public slots:
     void messageSend(QByteArray message) override;
 
 public:
-    explicit DeoHandler(QObject *parent = nullptr);
-    ~DeoHandler();
+    explicit HereSphereHandler(QObject *parent = nullptr);
+    ~HereSphereHandler();
     void init(NetworkAddress _address, int waitTimeout = 5000) override;
     void dispose() override;
     void send(const QString &command) override;

@@ -7,7 +7,7 @@ ConnectionHandler::ConnectionHandler(QObject *parent)
     _udpHandler = new UdpHandler(this);
     _webSocketHandler = new WebsocketDeviceHandler(this);
     _networkDevice = _udpHandler;
-    _deoHandler = new DeoHandler(this);
+    m_hereSphereHandler = new HereSphereHandler(this);
     _xtpWebHandler = new XTPWebHandler(this);
     _whirligigHandler = new WhirligigHandler(this);
     _gamepadHandler = new GamepadHandler(this);
@@ -31,7 +31,7 @@ void ConnectionHandler::init()
 
 void ConnectionHandler::dispose()
 {
-    disposeInputDevice(DeviceName::Deo);
+    disposeInputDevice(DeviceName::HereSphere);
     disposeInputDevice(DeviceName::Whirligig);
     disposeInputDevice(DeviceName::XTPWeb);
     disposeInputDevice(DeviceName::Gamepad);
@@ -92,8 +92,8 @@ NetworkDevice* ConnectionHandler::getNetworkHandler() {
 SerialHandler* ConnectionHandler::getSerialHandler() {
     return _serialHandler;
 }
-DeoHandler* ConnectionHandler::getDeoHandler() {
-   return _deoHandler;
+HereSphereHandler* ConnectionHandler::getHereSphereHandler() {
+   return m_hereSphereHandler;
 }
 XTPWebHandler* ConnectionHandler::getXTPWebHandler() {
     return _xtpWebHandler;
@@ -196,14 +196,14 @@ void ConnectionHandler::initInputDevice(DeviceName inputDevice)
     {
         return;
     }
-    else if(inputDevice == DeviceName::Deo)
+    else if(inputDevice == DeviceName::HereSphere)
     {
-        setInputDevice(_deoHandler);
+        setInputDevice(m_hereSphereHandler);
         if(!SettingsHandler::getDeoAddress().isEmpty() && !SettingsHandler::getDeoPort().isEmpty() &&
             SettingsHandler::getDeoAddress() != "0" && SettingsHandler::getDeoPort() != "0")
         {
             NetworkAddress address { SettingsHandler::getDeoAddress(), SettingsHandler::getDeoPort().toInt() };
-            _deoHandler->init(address);
+            m_hereSphereHandler->init(address);
         }
     }
     else if(inputDevice == DeviceName::Whirligig)
@@ -233,9 +233,9 @@ void ConnectionHandler::disposeInputDevice(DeviceName inputDevice)
         disconnect(_gamepadHandler, &GamepadHandler::emitAction, nullptr, nullptr);
         disconnect(_gamepadHandler, &GamepadHandler::connectionChange, nullptr, nullptr);
     }
-    else if(inputDevice == DeviceName::Deo)
+    else if(inputDevice == DeviceName::HereSphere)
     {
-        _deoHandler->dispose();
+        m_hereSphereHandler->dispose();
     }
     else if(inputDevice == DeviceName::Whirligig)
     {
