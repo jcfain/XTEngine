@@ -43,39 +43,51 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
     float currentVersion = settingsToLoadFrom->value("version").toFloat();
     bool firstLoad = currentVersion == 0;
+
+    TCodeChannelLookup::load(settingsToLoadFrom, firstLoad);
+
     if (firstLoad)
     {
-        TCodeChannelLookup::setSelectedTCodeVersion(TCodeVersion::v3);
-
         locker.unlock();
         SetMapDefaults();
-        QList<QVariant> decoderVarient;
-        foreach(auto decoder, decoderPriority)
-        {
-            decoderVarient.append(QVariant::fromValue(decoder));
-        }
-        settingsToLoadFrom->setValue("decoderPriority", decoderVarient);
-    } else {
-        auto selectedTCodeVersion = (TCodeVersion)(settingsToLoadFrom->value("selectedTCodeVersion").toInt());
-        TCodeChannelLookup::setSelectedTCodeVersion(selectedTCodeVersion);
     }
 
     locker.relock();
 
-    QJsonObject availableAxisJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
-    QMap<QString, ChannelModel33> availableChannels;
+//    QJsonObject availableAxisJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
+//    QMap<QString, ChannelModel33> availableChannels;
+//    _funscriptLoaded.clear();
+//    foreach(auto axis, availableAxisJson.keys())
+//    {
+//        availableChannels.insert(axis, ChannelModel33::fromVariant(availableAxisJson.value(axis)));
+//        _funscriptLoaded.insert(axis, false);
+//        if(!TCodeChannelLookup::ChannelExists(axis))
+//            TCodeChannelLookup::AddUserAxis(axis);
+//    }
+//    TCodeChannelLookup::setAvailableChannels(availableChannels);
+
+    QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
+    QMap<QString, QMap<QString, ChannelModel33>> availableChannelProfiles;
     _funscriptLoaded.clear();
-    foreach(auto axis, availableAxisJson.keys())
+    foreach(auto profile, availableChannelJson.keys())
     {
-        availableChannels.insert(axis, ChannelModel33::fromVariant(availableAxisJson.value(axis)));
-        _funscriptLoaded.insert(axis, false);
-        if(!TCodeChannelLookup::ChannelExists(axis))
-            TCodeChannelLookup::AddUserAxis(axis);
+        foreach(auto axis, availableChannelJson.value(profile).toObject().keys())
+        {
+            if(!availableChannelProfiles.contains(profile))
+                availableChannelProfiles.insert(profile, { { axis, ChannelModel33::fromVariant(availableChannelJson.value(profile).toObject().value(axis)) } });
+            else
+                availableChannelProfiles[profile].insert({{ axis, ChannelModel33::fromVariant(availableChannelJson.value(profile).toObject().value(axis)) }});
+            _funscriptLoaded.insert(axis, false);
+            if(!TCodeChannelLookup::ChannelExists(axis))
+                TCodeChannelLookup::AddUserAxis(axis);
+        }
     }
-    TCodeChannelLookup::setAvailableChannels(availableChannels);
-    _liveXRangeMax = availableChannels.value(TCodeChannelLookup::Stroke()).UserMax;
-    _liveXRangeMin = availableChannels.value(TCodeChannelLookup::Stroke()).UserMin;
-    _liveXRangeMid = availableChannels.value(TCodeChannelLookup::Stroke()).UserMid;
+    TCodeChannelLookup::setAvailableChannelsProfiles(availableChannelProfiles);
+
+    auto channels = TCodeChannelLookup::getAvailableChannels();
+    _liveXRangeMax = channels->value(TCodeChannelLookup::Stroke()).UserMax;
+    _liveXRangeMin = channels->value(TCodeChannelLookup::Stroke()).UserMin;
+    _liveXRangeMid = channels->value(TCodeChannelLookup::Stroke()).UserMid;
 
     selectedTheme = settingsToLoadFrom->value("selectedTheme").toString();
     selectedTheme = selectedTheme.isEmpty() ? _applicationDirPath + "/themes/dark.css" : selectedTheme;
@@ -199,20 +211,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
     _selectedVideoRenderer = (XVideoRenderer)settingsToLoadFrom->value("selectedVideoRenderer").toInt();
 
-    auto splitterSizes = settingsToLoadFrom->value("mainWindowPos").toList();
-    if(splitterSizes.isEmpty()) {
-        splitterSizes.append(398);
-        splitterSizes.append(782);
-    }
-    int i = 0;
-    _mainWindowPos.clear();//398, 782
-    foreach (auto splitterPos, splitterSizes)
-    {
-        if(i==2)//Bandaid. Dont store over two.
-            break;
-        _mainWindowPos.append(splitterPos.value<int>());
-        i++;
-    }
     _libraryExclusions = settingsToLoadFrom->value("libraryExclusions").toStringList();
 
     QVariantMap playlists = settingsToLoadFrom->value("playlists").toMap();
@@ -329,7 +327,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.333f) {
             locker.unlock();
             setupKeyboardKeyMap();
-            if(availableChannels.empty() || availableChannels.first().AxisName.isEmpty()) {
+            if(TCodeChannelLookup::getAvailableChannels()->empty() || TCodeChannelLookup::getAvailableChannels()->first().AxisName.isEmpty()) {
                 SetChannelMapDefaults();
             }
             auto libraryExclusions = settingsToLoadFrom->value("libraryExclusions").value<QList<QString>>();
@@ -345,11 +343,11 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
-        if(currentVersion < 0.413f) {
-//            locker.unlock();
-
-//            Save();
-//            Load();
+        if(currentVersion < 0.414f) {
+            locker.unlock();
+            MigrateTo42(settingsToLoadFrom);
+            Save();
+            Load();
         }
 
     }
@@ -368,7 +366,11 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         if(XTEVersionNum > currentVersion)
             settingsToSaveTo->setValue("version", XTEVersionNum);
+
+        //TODO: move to TCodeChannelLookup
         settingsToSaveTo->setValue("selectedTCodeVersion", ((int)TCodeChannelLookup::getSelectedTCodeVersion()));
+        settingsToSaveTo->setValue("selectedChannelProfile", TCodeChannelLookup::getSelectedChannelProfile());
+
         settingsToSaveTo->setValue("playerVolume", playerVolume);
 
         settingsToSaveTo->setValue("hideWelcomeScreen", ((int)_hideWelcomeScreen));
@@ -414,14 +416,28 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         settingsToSaveTo->setValue("selectedVideoRenderer", (int)_selectedVideoRenderer);
 
-        QVariantMap availableAxis;
-        auto availableChannels = TCodeChannelLookup::getAvailableChannels();
-        foreach(auto axis, availableChannels->keys())
-        {
-            auto variant = ChannelModel33::toVariant(availableChannels->value(axis));
-            availableAxis.insert(axis, variant);
+//        QVariantMap availableAxis;
+//        auto availableChannels = TCodeChannelLookup::getAvailableChannels();
+//        foreach(auto axis, availableChannels->keys())
+//        {
+//            auto variant = ChannelModel33::toVariant(availableChannels->value(axis));
+//            availableAxis.insert(axis, variant);
+//        }
+//        settingsToSaveTo->setValue("availableChannels", availableAxis);
+
+        QVariantMap availableChannelVariant;
+        QMap<QString, QMap<QString, ChannelModel33>>* availableChannelProfiles = TCodeChannelLookup::getAvailableChannelProfiles();
+        foreach(auto channelProfileName, availableChannelProfiles->keys()) {
+            QVariantMap availableChannelProfileVarient;
+            auto channelProfile = availableChannelProfiles->value(channelProfileName);
+            foreach(auto channel, channelProfile.keys()) {
+                auto variant = ChannelModel33::toVariant(channelProfile.value(channel));
+                availableChannelProfileVarient.insert(channel, variant);
+            }
+            if(!availableChannelVariant.contains(channelProfileName))
+                availableChannelVariant.insert(channelProfileName, availableChannelProfileVarient);
         }
-        settingsToSaveTo->setValue("availableChannels", availableAxis);
+        settingsToSaveTo->setValue("availableChannels", availableChannelVariant);
 
         QVariantMap gamepadMap;
         foreach(auto button, _gamepadButtonMap.keys())
@@ -445,17 +461,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("disableSpeechToText", disableSpeechToText);
         settingsToSaveTo->setValue("disableVRScriptSelect", _disableVRScriptSelect);
         settingsToSaveTo->setValue("disableNoScriptFound", _disableNoScriptFound);
-
-        QList<QVariant> splitterPos;
-        int i = 0;
-        foreach(auto pos, _mainWindowPos)
-        {
-            if(i==2)//Bandaid. Dont store over two.
-                break;
-            splitterPos.append(pos);
-            i++;
-        }
-        settingsToSaveTo->setValue("mainWindowPos", splitterPos);
 
         settingsToSaveTo->setValue("libraryExclusions", QVariant::fromValue(_libraryExclusions));
 
@@ -790,6 +795,30 @@ void SettingsHandler::MigrateTo32a(QSettings* settingsToLoadFrom)
     {
         _gamepadButtonMap.insert(button, QStringList(gamepadButtonMap[button].toString()));
     }
+}
+
+void  SettingsHandler::MigrateTo42(QSettings* settingsToLoadFrom) {
+    QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
+    QMap<QString, QMap<QString, ChannelModel33>> availableChannelProfiles;
+    QVariantMap availableChannelVariant;
+    foreach(auto axis, availableChannelJson.keys())
+    {
+        if(availableChannelProfiles.isEmpty())
+            availableChannelProfiles.insert("Default", { { axis, ChannelModel33::fromVariant(availableChannelJson.value(axis)) } });
+        else
+            availableChannelProfiles["Default"].insert({{ axis, ChannelModel33::fromVariant(availableChannelJson.value(axis)) }});
+    }
+    TCodeChannelLookup::setAvailableChannelsProfiles(availableChannelProfiles);
+//    QVariantMap availableChannelVariant;
+//    foreach(auto channelProfile, availableChannelProfiles.keys()) {
+//        QVariantMap availableChannelProfile;
+//        foreach(auto channel, availableChannelProfiles[channelProfile].keys()) {
+//            auto variant = ChannelModel33::toVariant(availableChannelProfiles[channelProfile][channel]);
+//            availableChannelProfile.insert(channel, variant);
+//        }
+//        availableChannelVariant.insert(channelProfile, availableChannelProfile);
+//    }
+//    settingsToLoadFrom->setValue("availableChannels", availableChannelVariant);
 }
 
 void SettingsHandler::changeSelectedTCodeVersion(TCodeVersion key)
@@ -1819,18 +1848,6 @@ XVideoRenderer SettingsHandler::getSelectedVideoRenderer()
     return _selectedVideoRenderer;
 }
 
-QList<int> SettingsHandler::getMainWindowSplitterPos()
-{
-    QMutexLocker locker(&mutex);
-    return _mainWindowPos;
-}
-void SettingsHandler::setMainWindowSplitterPos(QList<int> value)
-{
-    QMutexLocker locker(&mutex);
-    _mainWindowPos = value;
-    settingsChangedEvent(true);
-}
-
 void SettingsHandler::addToLibraryExclusions(QString values)
 {
     _libraryExclusions.append(values);
@@ -2184,7 +2201,6 @@ bool SettingsHandler::_hideWelcomeScreen;
 QMutex SettingsHandler::mutex;
 QString SettingsHandler::_appdataLocation;
 QHash<QString, bool> SettingsHandler::_funscriptLoaded;
-QList<int> SettingsHandler::_mainWindowPos;
 QSize SettingsHandler::_maxThumbnailSize = {500, 500};
 GamepadAxisName SettingsHandler::gamepadAxisNames;
 MediaActions SettingsHandler::mediaActions;

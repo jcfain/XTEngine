@@ -100,9 +100,6 @@ public:
     static int getLiveGamepadSpeed();
     static int getGamepadSpeedIncrement();
 
-    static QList<int> getMainWindowSplitterPos();
-    static void setMainWindowSplitterPos(QList<int> value);
-
     static bool getDisableSpeechToText();
     static void setDisableSpeechToText(bool value);
     static bool getDisableNoScriptFound();
@@ -340,6 +337,7 @@ private:
     static void MigrateTo281();
     static void DeMigrateLibraryMetaDataTo258();
     static void MigrateTo32a(QSettings* settingsToLoadFrom);
+    static void MigrateTo42(QSettings* settingsToLoadFrom);
 
     static QString _appdataLocation;
     static GamepadAxisName gamepadAxisNames;
@@ -370,7 +368,6 @@ private:
     static int playerVolume;
     static int offSet;
     static bool _disableTCodeValidation;
-    static QList<int> _mainWindowPos;
 
     static bool _gamePadEnabled;
     static QMap<QString, QStringList> _gamepadButtonMap;

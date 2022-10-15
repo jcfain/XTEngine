@@ -6,23 +6,51 @@ const QMap<TCodeVersion, QString> TCodeChannelLookup::SupportedTCodeVersions = {
     {TCodeVersion::v3, "TCode v0.3"}
 };
 
+void TCodeChannelLookup::load(QSettings* settingsToLoadFrom, bool firstLoad) {
+    if (firstLoad) {
+        setSelectedChannelProfile("Default");
+        setSelectedTCodeVersion(TCodeVersion::v3);
+        setAvailableChannelDefaults();
+    } else {
+        QString selectedChannelProfile = settingsToLoadFrom->value("selectedChannelProfile").toString();
+        if(selectedChannelProfile.isEmpty())
+            setSelectedChannelProfile("Default");
+        else
+            setSelectedChannelProfile(selectedChannelProfile);
+        auto selectedTCodeVersion = (TCodeVersion)(settingsToLoadFrom->value("selectedTCodeVersion").toInt());
+        setSelectedTCodeVersion(selectedTCodeVersion);
+    }
+
+}
+
 void TCodeChannelLookup::setSelectedTCodeVersion(TCodeVersion version) {
-    _selectedTCodeVersion = version;
-    _selectedTCodeVersionMap = TCodeVersionMap.value(version);
+    m_selectedTCodeVersion = version;
+    m_selectedTCodeVersionMap = TCodeVersionMap.value(version);
 }
 
 void TCodeChannelLookup::changeSelectedTCodeVersion(TCodeVersion version) {
-    if(_selectedTCodeVersion != version) {
+    if(m_selectedTCodeVersion != version) {
         setSelectedTCodeVersion(version);
         setAvailableChannelDefaults();
     }
 }
+
+QString TCodeChannelLookup::getSelectedChannelProfile() {
+    QMutexLocker locker(&m_mutex);
+    return m_selectedChannelProfile;
+}
+
+void TCodeChannelLookup::setSelectedChannelProfile(QString value) {
+    QMutexLocker locker(&m_mutex);
+    m_selectedChannelProfile = value;
+}
+
 TCodeVersion TCodeChannelLookup::getSelectedTCodeVersion() {
-    return _selectedTCodeVersion;
+    return m_selectedTCodeVersion;
 }
 QString TCodeChannelLookup::getSelectedTCodeVersionName()
 {
-    return SupportedTCodeVersions.value(_selectedTCodeVersion);
+    return SupportedTCodeVersions.value(m_selectedTCodeVersion);
 }
 
 QString TCodeChannelLookup::getTCodeVersionName(TCodeVersion version) {
@@ -31,146 +59,147 @@ QString TCodeChannelLookup::getTCodeVersionName(TCodeVersion version) {
 
 QMap<AxisName,  QString> TCodeChannelLookup::GetSelectedVersionMap()
 {
-    return _selectedTCodeVersionMap;
+    return m_selectedTCodeVersionMap;
 }
 
 QString TCodeChannelLookup::ToString(AxisName axisName)
 {
-    return _selectedTCodeVersionMap.value(axisName);
+    return m_selectedTCodeVersionMap.value(axisName);
 }
 void TCodeChannelLookup::AddUserAxis(QString channel)
 {
-    _selectedTCodeVersionMap.insert((AxisName)_channelCount, channel);
-    _channelCount++;
+    m_selectedTCodeVersionMap.insert((AxisName)m_channelCount, channel);
+    m_channelCount++;
 }
 bool TCodeChannelLookup::ChannelExists(QString channel)
 {
-    return _selectedTCodeVersionMap.values().contains(channel);
+    return m_selectedTCodeVersionMap.values().contains(channel);
 }
 QString TCodeChannelLookup::None()
 {
-    return _selectedTCodeVersionMap.value(AxisName::None);
+    return m_selectedTCodeVersionMap.value(AxisName::None);
 }
 QString TCodeChannelLookup::Stroke()
 {
-    return _selectedTCodeVersionMap.value(AxisName::Stroke);
+    return m_selectedTCodeVersionMap.value(AxisName::Stroke);
 }
 QString TCodeChannelLookup::StrokeUp()
 {
-    return _selectedTCodeVersionMap.value(AxisName::StrokeUp);
+    return m_selectedTCodeVersionMap.value(AxisName::StrokeUp);
 }
 QString TCodeChannelLookup::StrokeDown()
 {
-    return _selectedTCodeVersionMap.value(AxisName::StrokeDown);
+    return m_selectedTCodeVersionMap.value(AxisName::StrokeDown);
 }
 QString TCodeChannelLookup::Sway()
 {
-    return _selectedTCodeVersionMap.value(AxisName::Sway);
+    return m_selectedTCodeVersionMap.value(AxisName::Sway);
 }
 QString TCodeChannelLookup::SwayRight()
 {
-    return _selectedTCodeVersionMap.value(AxisName::SwayRight);
+    return m_selectedTCodeVersionMap.value(AxisName::SwayRight);
 }
 QString TCodeChannelLookup::SwayLeft()
 {
-    return _selectedTCodeVersionMap.value(AxisName::SwayLeft);
+    return m_selectedTCodeVersionMap.value(AxisName::SwayLeft);
 }
 QString TCodeChannelLookup::Surge()
 {
-    return _selectedTCodeVersionMap.value(AxisName::Surge);
+    return m_selectedTCodeVersionMap.value(AxisName::Surge);
 }
 QString TCodeChannelLookup::SurgeForward()
 {
-    return _selectedTCodeVersionMap.value(AxisName::SurgeForward);
+    return m_selectedTCodeVersionMap.value(AxisName::SurgeForward);
 }
 QString TCodeChannelLookup::SurgeBack()
 {
-    return _selectedTCodeVersionMap.value(AxisName::SurgeBack);
+    return m_selectedTCodeVersionMap.value(AxisName::SurgeBack);
 }
 QString TCodeChannelLookup::Twist()
 {
-    return _selectedTCodeVersionMap.value(AxisName::Twist);
+    return m_selectedTCodeVersionMap.value(AxisName::Twist);
 }
 QString TCodeChannelLookup::TwistCounterClockwise()
 {
-    return _selectedTCodeVersionMap.value(AxisName::TwistCounterClockwise);
+    return m_selectedTCodeVersionMap.value(AxisName::TwistCounterClockwise);
 }
 QString TCodeChannelLookup::TwistClockwise()
 {
-    return _selectedTCodeVersionMap.value(AxisName::TwistClockwise);
+    return m_selectedTCodeVersionMap.value(AxisName::TwistClockwise);
 }
 QString TCodeChannelLookup::Roll()
 {
-    return _selectedTCodeVersionMap.value(AxisName::Roll);
+    return m_selectedTCodeVersionMap.value(AxisName::Roll);
 }
 QString TCodeChannelLookup::RollRight()
 {
-    return _selectedTCodeVersionMap.value(AxisName::RollRight);
+    return m_selectedTCodeVersionMap.value(AxisName::RollRight);
 }
 QString TCodeChannelLookup::RollLeft()
 {
-    return _selectedTCodeVersionMap.value(AxisName::RollLeft);
+    return m_selectedTCodeVersionMap.value(AxisName::RollLeft);
 }
 QString TCodeChannelLookup::Pitch()
 {
-    return _selectedTCodeVersionMap.value(AxisName::Pitch);
+    return m_selectedTCodeVersionMap.value(AxisName::Pitch);
 }
 QString TCodeChannelLookup::PitchForward()
 {
-    return _selectedTCodeVersionMap.value(AxisName::PitchForward);
+    return m_selectedTCodeVersionMap.value(AxisName::PitchForward);
 }
 QString TCodeChannelLookup::PitchBack()
 {
-    return _selectedTCodeVersionMap.value(AxisName::PitchBack);
+    return m_selectedTCodeVersionMap.value(AxisName::PitchBack);
 }
 QString TCodeChannelLookup::Vib()
 {
-    return _selectedTCodeVersionMap.value(AxisName::Vib);
+    return m_selectedTCodeVersionMap.value(AxisName::Vib);
 }
 QString TCodeChannelLookup::Lube()
 {
-    return _selectedTCodeVersionMap.value(AxisName::Lube);
+    return m_selectedTCodeVersionMap.value(AxisName::Lube);
 }
 QString TCodeChannelLookup::Suck()
 {
-    return _selectedTCodeVersionMap.value(AxisName::Suck);
+    return m_selectedTCodeVersionMap.value(AxisName::Suck);
 }
 QString TCodeChannelLookup::SuckMore()
 {
-    return _selectedTCodeVersionMap.value(AxisName::SuckMore);
+    return m_selectedTCodeVersionMap.value(AxisName::SuckMore);
 }
 QString TCodeChannelLookup::SuckLess()
 {
-    return _selectedTCodeVersionMap.value(AxisName::SuckLess);
+    return m_selectedTCodeVersionMap.value(AxisName::SuckLess);
 }
 QString TCodeChannelLookup::SuckPosition()
 {
-    return _selectedTCodeVersionMap.value(AxisName::SuckPosition);
+    return m_selectedTCodeVersionMap.value(AxisName::SuckPosition);
 }
 QString TCodeChannelLookup::SuckMorePosition()
 {
-    return _selectedTCodeVersionMap.value(AxisName::SuckMorePosition);
+    return m_selectedTCodeVersionMap.value(AxisName::SuckMorePosition);
 }
 QString TCodeChannelLookup::SuckLessPosition()
 {
-    return _selectedTCodeVersionMap.value(AxisName::SuckLessPosition);
+    return m_selectedTCodeVersionMap.value(AxisName::SuckLessPosition);
 }
 QStringList TCodeChannelLookup::getValidMFSExtensions() {
+    QMutexLocker locker(&m_mutex);
     return m_validMFSExtensions;
 }
 void TCodeChannelLookup::setValidMFSExtensions() {
     m_validMFSExtensions.clear();
-    foreach(auto axisName, _availableChanels.keys())
+    foreach(auto axisName, m_availableChanels.keys())
     {
-        auto track = _availableChanels.value(axisName);
-        if(axisName == TCodeChannelLookup::Stroke() || track.Type == AxisType::HalfRange || track.TrackName.isEmpty())
+        auto track = m_availableChanels.value(axisName);
+        if(axisName == TCodeChannelLookup::Stroke() || track[m_selectedChannelProfile].Type == AxisType::HalfRange || track[m_selectedChannelProfile].TrackName.isEmpty())
             continue;
 
-        m_validMFSExtensions << "." + track.TrackName + ".funscript";
+        m_validMFSExtensions << "." + track[m_selectedChannelProfile].TrackName + ".funscript";
     }
 }
 
-int TCodeChannelLookup::_channelCount = (int)AxisName::AXIS_NAMES_LENGTH;
+int TCodeChannelLookup::m_channelCount = (int)AxisName::AXIS_NAMES_LENGTH;
 QString TCodeChannelLookup::PositiveModifier = "+";
 QString TCodeChannelLookup::NegativeModifier = "-";
 QString TCodeChannelLookup::NA = "None";
@@ -186,7 +215,7 @@ QString TCodeChannelLookup::L3 = "L3";
 QString TCodeChannelLookup::A0 = "A0";
 QString TCodeChannelLookup::A1 = "A1";
 QString TCodeChannelLookup::A2 = "A2";
-QMap<AxisName, QString> TCodeChannelLookup::_selectedTCodeVersionMap;
+QMap<AxisName, QString> TCodeChannelLookup::m_selectedTCodeVersionMap;
 QHash<TCodeVersion, QMap<AxisName, QString>> TCodeChannelLookup::TCodeVersionMap =
 {
     {
@@ -253,39 +282,69 @@ QHash<TCodeVersion, QMap<AxisName, QString>> TCodeChannelLookup::TCodeVersionMap
 };
 
 ChannelModel33* TCodeChannelLookup::getChannel(QString name) {
-    return &_availableChanels[name];
+    QMutexLocker locker(&m_mutex);
+    return &m_availableChanels[m_selectedChannelProfile][name];
 }
 
 bool TCodeChannelLookup::hasChannel(QString name) {
-    return _availableChanels.contains(name);
+    return m_availableChanels.contains(name);
 }
 void TCodeChannelLookup::setChannel(QString axis, ChannelModel33 channel)
 {
-    _availableChanels[axis] = channel;
+    QMutexLocker locker(&m_mutex);
+    m_availableChanels[m_selectedChannelProfile][axis] = channel;
 }
 void TCodeChannelLookup::addChannel(QString name, ChannelModel33 channel)
 {
-    _availableChanels.insert(name, channel);
+    QMutexLocker locker(&m_mutex);
+    m_availableChanels[m_selectedChannelProfile].insert(name, channel);
     if(!ChannelExists(channel.AxisName))
         AddUserAxis(channel.AxisName);
 }
 void TCodeChannelLookup::deleteChannel(QString axis)
 {
-    _availableChanels.remove(axis);
+    QMutexLocker locker(&m_mutex);
+    m_availableChanels.remove(axis);
 }
 
 QMap<QString, ChannelModel33>* TCodeChannelLookup::getAvailableChannels()
 {
-    return &_availableChanels;
+    QMutexLocker locker(&m_mutex);
+    return &m_availableChanels[m_selectedChannelProfile];
 }
-void TCodeChannelLookup::setAvailableChannels(QMap<QString, ChannelModel33> channels) {
-    _availableChanels = channels;
+
+QMap<QString, QMap<QString, ChannelModel33>>* TCodeChannelLookup::getAvailableChannelProfiles() {
+    QMutexLocker locker(&m_mutex);
+    return &m_availableChanels;
+}
+void TCodeChannelLookup::setAvailableChannelsProfiles(QMap<QString, QMap<QString, ChannelModel33>> channels) {
+    QMutexLocker locker(&m_mutex);
+    m_availableChanels = QMap<QString, QMap<QString, ChannelModel33>>(channels);
     setValidMFSExtensions();
+}
+
+void TCodeChannelLookup::addChannelsProfile(QString name, QMap<QString, ChannelModel33> channels) {
+    QMutexLocker locker(&m_mutex);
+
+    m_availableChanels.insert(name, channels);
+    m_selectedChannelProfile = name;
+}
+
+void TCodeChannelLookup::deleteChannelsProfile(QString name) {
+    QMutexLocker locker(&m_mutex);
+    m_availableChanels.remove(name);
+    m_selectedChannelProfile = m_availableChanels.keys().last();
 }
 
 void TCodeChannelLookup::setAvailableChannelDefaults()
 {
-    _availableChanels = {
+    m_availableChanels[m_selectedChannelProfile] = getDefaultChannelProfile();
+
+    setValidMFSExtensions();
+}
+
+QMap<QString, ChannelModel33> TCodeChannelLookup::getDefaultChannelProfile() {
+    QMap<QString, ChannelModel33> defaultChannelProfile = {
         {TCodeChannelLookup::None(),  setupAvailableChannel(TCodeChannelLookup::None(), TCodeChannelLookup::None(), TCodeChannelLookup::None(), AxisDimension::None, AxisType::None, "", "") },
 
         {TCodeChannelLookup::Stroke(), setupAvailableChannel("Stroke", TCodeChannelLookup::Stroke(), TCodeChannelLookup::Stroke(), AxisDimension::Heave, AxisType::Range, "", TCodeChannelLookup::Twist())  },
@@ -319,32 +378,32 @@ void TCodeChannelLookup::setAvailableChannelDefaults()
         {TCodeChannelLookup::Vib(), setupAvailableChannel("Vib", TCodeChannelLookup::Vib(), TCodeChannelLookup::Vib(), AxisDimension::None, AxisType::Switch, "vib", TCodeChannelLookup::Stroke()) },
         {TCodeChannelLookup::Lube(), setupAvailableChannel("Lube", TCodeChannelLookup::Lube(), TCodeChannelLookup::Lube(), AxisDimension::None, AxisType::Switch, "lube", TCodeChannelLookup::Stroke()) }
     };
-    if(_selectedTCodeVersion == TCodeVersion::v3)
+    if(m_selectedTCodeVersion == TCodeVersion::v3)
     {
-       _availableChanels.insert(TCodeChannelLookup::SuckPosition(), setupAvailableChannel("Suck manual", TCodeChannelLookup::SuckPosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::Range, "suckManual", TCodeChannelLookup::Stroke()));
-       _availableChanels.insert(TCodeChannelLookup::SuckMorePosition(), setupAvailableChannel("Suck manual more", TCodeChannelLookup::SuckMorePosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::HalfRange, "suckManual", TCodeChannelLookup::StrokeUp()));
-       _availableChanels.insert(TCodeChannelLookup::SuckLessPosition(), setupAvailableChannel("Suck manual less", TCodeChannelLookup::SuckLessPosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::HalfRange, "suckManual", TCodeChannelLookup::StrokeDown()));
+       defaultChannelProfile.insert(TCodeChannelLookup::SuckPosition(), setupAvailableChannel("Suck manual", TCodeChannelLookup::SuckPosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::Range, "suckManual", TCodeChannelLookup::Stroke()));
+       defaultChannelProfile.insert(TCodeChannelLookup::SuckMorePosition(), setupAvailableChannel("Suck manual more", TCodeChannelLookup::SuckMorePosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::HalfRange, "suckManual", TCodeChannelLookup::StrokeUp()));
+       defaultChannelProfile.insert(TCodeChannelLookup::SuckLessPosition(), setupAvailableChannel("Suck manual less", TCodeChannelLookup::SuckLessPosition(), TCodeChannelLookup::SuckPosition(), AxisDimension::None, AxisType::HalfRange, "suckManual", TCodeChannelLookup::StrokeDown()));
     }
     else
     {
         auto v3ChannelMap = TCodeChannelLookup::TCodeVersionMap.value(TCodeVersion::v3);
         auto suckPositionV3Channel = v3ChannelMap.value(AxisName::SuckPosition);
-        _availableChanels.remove(suckPositionV3Channel);
+        defaultChannelProfile.remove(suckPositionV3Channel);
 
         auto suckMorePositionV3Channel = v3ChannelMap.value(AxisName::SuckMorePosition);
-        _availableChanels.remove(suckMorePositionV3Channel);
+        defaultChannelProfile.remove(suckMorePositionV3Channel);
 
         auto suckLessPositionV3Channel = v3ChannelMap.value(AxisName::SuckLessPosition);
-        _availableChanels.remove(suckLessPositionV3Channel);
+        defaultChannelProfile.remove(suckLessPositionV3Channel);
     }
-
-    setValidMFSExtensions();
+    return defaultChannelProfile;
 }
 
 ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, QString axisName, QString channel, AxisDimension dimension, AxisType type, QString mfsTrackName, QString relatedChannel) {
-    TCodeChannelLookup::setSelectedTCodeVersion(_selectedTCodeVersion);
-    int max = _selectedTCodeVersion == TCodeVersion::v2 ? 999 : 9999;
-    int mid = _selectedTCodeVersion == TCodeVersion::v2 ? 500 : 5000;
+    QMutexLocker locker(&m_mutex);
+    TCodeChannelLookup::setSelectedTCodeVersion(m_selectedTCodeVersion);
+    int max = m_selectedTCodeVersion == TCodeVersion::v2 ? 999 : 9999;
+    int mid = m_selectedTCodeVersion == TCodeVersion::v2 ? 500 : 5000;
     return {
              friendlyName,
              axisName,
@@ -369,7 +428,8 @@ ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, Q
           };
 }
 
-
-TCodeVersion TCodeChannelLookup::_selectedTCodeVersion;
-QMap<QString, ChannelModel33> TCodeChannelLookup::_availableChanels;
+QMutex TCodeChannelLookup::m_mutex;
+TCodeVersion TCodeChannelLookup::m_selectedTCodeVersion;
+QMap<QString, QMap<QString, ChannelModel33>> TCodeChannelLookup::m_availableChanels;
 QStringList TCodeChannelLookup::m_validMFSExtensions;
+QString TCodeChannelLookup::m_selectedChannelProfile = "Default";

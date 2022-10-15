@@ -1,7 +1,9 @@
 #ifndef TCODECHANNELLOOKUP_H
 #define TCODECHANNELLOOKUP_H
 #include <QString>
+#include <QSettings>
 #include <QMap>
+#include <QMutex>
 #include "AxisNames.h"
 #include "TCodeVersion.h"
 #include <QHash>
@@ -12,19 +14,26 @@ class XTENGINE_EXPORT TCodeChannelLookup
 {
 public:
     static const QMap<TCodeVersion, QString> SupportedTCodeVersions;
+    static void load(QSettings* settingsToLoadFrom, bool firstLoad = false);
     static QString PositiveModifier;
     static QString NegativeModifier;
     static QHash<TCodeVersion,  QMap<AxisName,  QString>> TCodeVersionMap;
     static void setSelectedTCodeVersion(TCodeVersion version);
     static void changeSelectedTCodeVersion(TCodeVersion version);
+    static QString getSelectedChannelProfile();
+    static QMap<QString, ChannelModel33> getDefaultChannelProfile();
+    static void setSelectedChannelProfile(QString value);
     static TCodeVersion getSelectedTCodeVersion();
     static QString getSelectedTCodeVersionName();
     static QString getTCodeVersionName(TCodeVersion version);
-    static QMap<AxisName,  QString> GetSelectedVersionMap();
+    static QMap<AxisName, QString> GetSelectedVersionMap();
     static void AddUserAxis(QString channel);
     static bool ChannelExists(QString channel);
     static QStringList getValidMFSExtensions();
-    static void setAvailableChannels(QMap<QString, ChannelModel33> channels);
+    static void setAvailableChannelsProfiles(QMap<QString, QMap<QString, ChannelModel33>> channels);
+    static void addChannelsProfile(QString name, QMap<QString, ChannelModel33> channels);
+    static void deleteChannelsProfile(QString name);
+    static QMap<QString, QMap<QString, ChannelModel33>>* getAvailableChannelProfiles();
     static QMap<QString, ChannelModel33>* getAvailableChannels();
     static ChannelModel33* getChannel(QString name);
     static void setChannel(QString name, ChannelModel33 channel);
@@ -61,10 +70,12 @@ public:
     static QString SuckMorePosition();
     static QString SuckLessPosition();
 private:
-    static int _channelCount;
-    static TCodeVersion _selectedTCodeVersion;
-    static QMap<AxisName,  QString> _selectedTCodeVersionMap;
-    static QMap<QString, ChannelModel33> _availableChanels;
+    static QMutex m_mutex;
+    static int m_channelCount;
+    static TCodeVersion m_selectedTCodeVersion;
+    static QMap<AxisName,  QString> m_selectedTCodeVersionMap;
+    static QMap<QString, QMap<QString, ChannelModel33>> m_availableChanels;
+    static QString m_selectedChannelProfile;
     static QString NA;
     static QString L0;
     static QString L2;

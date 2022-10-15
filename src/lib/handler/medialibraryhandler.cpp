@@ -158,6 +158,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             }
         }
     }
+    auto availibleAxis = TCodeChannelLookup::getAvailableChannels();
 
     foreach (QString path, paths) {
         auto itr = std::find_if(paths.begin(), paths.end(), [path](const QString& item) {
@@ -256,7 +257,6 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                     << "*.funscript"
                     << "*.zip";
             QDirIterator funscripts(path, funscriptTypes, QDir::Files, QDirIterator::Subdirectories);
-            auto availibleAxis = TCodeChannelLookup::getAvailableChannels();
             while (funscripts.hasNext())
             {
                 if(_loadingLibraryStop)
