@@ -183,21 +183,6 @@ QString TCodeChannelLookup::SuckLessPosition()
 {
     return m_selectedTCodeVersionMap.value(AxisName::SuckLessPosition);
 }
-QStringList TCodeChannelLookup::getValidMFSExtensions() {
-    QMutexLocker locker(&m_mutex);
-    return m_validMFSExtensions;
-}
-void TCodeChannelLookup::setValidMFSExtensions() {
-    m_validMFSExtensions.clear();
-    foreach(auto axisName, m_availableChanels.keys())
-    {
-        auto track = m_availableChanels.value(axisName);
-        if(axisName == TCodeChannelLookup::Stroke() || track[m_selectedChannelProfile].Type == AxisType::HalfRange || track[m_selectedChannelProfile].TrackName.isEmpty())
-            continue;
-
-        m_validMFSExtensions << "." + track[m_selectedChannelProfile].TrackName + ".funscript";
-    }
-}
 
 int TCodeChannelLookup::m_channelCount = (int)AxisName::AXIS_NAMES_LENGTH;
 QString TCodeChannelLookup::PositiveModifier = "+";
@@ -287,7 +272,7 @@ ChannelModel33* TCodeChannelLookup::getChannel(QString name) {
 }
 
 bool TCodeChannelLookup::hasChannel(QString name) {
-    return m_availableChanels.contains(name);
+    return m_availableChanels[m_selectedChannelProfile].contains(name);
 }
 void TCodeChannelLookup::setChannel(QString axis, ChannelModel33 channel)
 {
@@ -304,7 +289,7 @@ void TCodeChannelLookup::addChannel(QString name, ChannelModel33 channel)
 void TCodeChannelLookup::deleteChannel(QString axis)
 {
     QMutexLocker locker(&m_mutex);
-    m_availableChanels.remove(axis);
+    m_availableChanels[m_selectedChannelProfile].remove(axis);
 }
 
 QMap<QString, ChannelModel33>* TCodeChannelLookup::getAvailableChannels()
@@ -341,6 +326,22 @@ void TCodeChannelLookup::setAvailableChannelDefaults()
     m_availableChanels[m_selectedChannelProfile] = getDefaultChannelProfile();
 
     setValidMFSExtensions();
+}
+
+QStringList TCodeChannelLookup::getValidMFSExtensions() {
+    QMutexLocker locker(&m_mutex);
+    return m_validMFSExtensions;
+}
+void TCodeChannelLookup::setValidMFSExtensions() {
+    m_validMFSExtensions.clear();
+    foreach(auto channelName, m_availableChanels[m_selectedChannelProfile].keys())
+    {
+        auto track = m_availableChanels[m_selectedChannelProfile].value(channelName);
+        if(channelName == TCodeChannelLookup::Stroke() || track.Type == AxisType::HalfRange || track.TrackName.isEmpty())
+            continue;
+
+        m_validMFSExtensions << "." + track.TrackName + ".funscript";
+    }
 }
 
 QMap<QString, ChannelModel33> TCodeChannelLookup::getDefaultChannelProfile() {
