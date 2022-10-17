@@ -508,17 +508,17 @@ void SyncHandler::loadMFS(QString scriptFile)
     if(scriptFile.endsWith(".zip"))
         zipFile = new QZipReader(scriptFile, QIODevice::ReadOnly);
 
-    auto availibleAxis = TCodeChannelLookup::getAvailableChannels();
-    foreach(auto axisName, availibleAxis->keys())
+    auto availibleAxis = TCodeChannelLookup::getChannels();
+    foreach(auto axisName, availibleAxis)
     {
-        auto track = availibleAxis->value(axisName);
-        if(axisName == TCodeChannelLookup::Stroke() || track.Type == AxisType::HalfRange || track.TrackName.isEmpty())
+        auto track = TCodeChannelLookup::getChannel(axisName);
+        if(axisName == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfRange || track->TrackName.isEmpty())
             continue;
 
-        QFileInfo fileInfo(scriptFileNoExtension + "." + track.TrackName + ".funscript");
+        QFileInfo fileInfo(scriptFileNoExtension + "." + track->TrackName + ".funscript");
         if(fileInfo.exists())
         {
-            LogHandler::Debug("Loading MFS track: "+ scriptFileNoExtension + "." + track.TrackName + ".funscript");
+            LogHandler::Debug("Loading MFS track: "+ scriptFileNoExtension + "." + track->TrackName + ".funscript");
             if(!loadMFS(axisName, fileInfo.absoluteFilePath()))
                 _invalidScripts.append("MFS script: " + fileInfo.absoluteFilePath());
         }
@@ -526,7 +526,7 @@ void SyncHandler::loadMFS(QString scriptFile)
         {
            QString fileName = scriptFileInfo.fileName();
            QString scriptFileNameNoExtension = fileName.remove(fileName.lastIndexOf('.'), scriptTemp.length() -  1);
-           QString trackFileName = scriptFileNameNoExtension + "." + track.TrackName + ".funscript";
+           QString trackFileName = scriptFileNameNoExtension + "." + track->TrackName + ".funscript";
            QByteArray data = zipFile->fileData(trackFileName);
            if (!data.isEmpty())
            {

@@ -153,33 +153,34 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     root["webSocketServerPort"] = _webSocketHandler->getServerPort();
 
     QJsonObject availableAxisJson;
-    auto availableAxis = TCodeChannelLookup::getAvailableChannels();
-    foreach(auto channel, availableAxis->keys())
+    auto availableAxis = TCodeChannelLookup::getChannels();
+    foreach(auto channelName, availableAxis)
     {
         QJsonObject value;
-        if(availableAxis->value(channel).Type != AxisType::HalfRange && availableAxis->value(channel).Type != AxisType::None)
+        auto channel = TCodeChannelLookup::getChannel(channelName);
+        if(channel->Type != AxisType::HalfRange && channel->Type != AxisType::None)
         {
-            value["axisName"] = availableAxis->value(channel).AxisName;
-            value["channel"] = availableAxis->value(channel).Channel;
-            value["damperEnabled"] = availableAxis->value(channel).DamperEnabled;
-            value["damperValue"] = availableAxis->value(channel).DamperValue;
-            value["dimension"] = (int)availableAxis->value(channel).Dimension;
-            value["friendlyName"] = availableAxis->value(channel).FriendlyName;
-            value["funscriptInverted"] = availableAxis->value(channel).FunscriptInverted;
-            value["gamepadInverted"] = availableAxis->value(channel).GamepadInverted;
-            value["linkToRelatedMFS"] = availableAxis->value(channel).LinkToRelatedMFS;
-            value["max"] = availableAxis->value(channel).Max;
-            value["mid"] = availableAxis->value(channel).Mid;
-            value["min"] = availableAxis->value(channel).Min;
-            value["multiplierEnabled"] = availableAxis->value(channel).MultiplierEnabled;
-            value["multiplierValue"] = availableAxis->value(channel).MultiplierValue;
-            value["relatedChannel"] = availableAxis->value(channel).RelatedChannel;
-            value["trackName"] = availableAxis->value(channel).TrackName;
-            value["type"] = (int)availableAxis->value(channel).Type;
-            value["userMax"] = availableAxis->value(channel).UserMax;
-            value["userMid"] = availableAxis->value(channel).UserMid;
-            value["userMin"] = availableAxis->value(channel).UserMin;
-            availableAxisJson[channel] = value;
+            value["axisName"] = channel->AxisName;
+            value["channel"] = channel->Channel;
+            value["damperEnabled"] = channel->DamperEnabled;
+            value["damperValue"] = channel->DamperValue;
+            value["dimension"] = (int)channel->Dimension;
+            value["friendlyName"] = channel->FriendlyName;
+            value["funscriptInverted"] = channel->FunscriptInverted;
+            value["gamepadInverted"] = channel->GamepadInverted;
+            value["linkToRelatedMFS"] = channel->LinkToRelatedMFS;
+            value["max"] = channel->Max;
+            value["mid"] = channel->Mid;
+            value["min"] = channel->Min;
+            value["multiplierEnabled"] = channel->MultiplierEnabled;
+            value["multiplierValue"] = channel->MultiplierValue;
+            value["relatedChannel"] = channel->RelatedChannel;
+            value["trackName"] = channel->TrackName;
+            value["type"] = (int)channel->Type;
+            value["userMax"] = channel->UserMax;
+            value["userMid"] = channel->UserMid;
+            value["userMin"] = channel->UserMin;
+            availableAxisJson[channelName] = value;
         }
     }
     root["availableAxis"] = availableAxisJson;
@@ -223,12 +224,13 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
     }
     else
     {
-        auto channels = TCodeChannelLookup::getAvailableChannels();
-        foreach(auto channel, channels->keys())
+        auto channels = TCodeChannelLookup::getChannels();
+        foreach(auto channelName, channels)
         {
-            if(channels->value(channel).Type == AxisType::HalfRange || channels->value(channel).Type == AxisType::None)
+            auto channel = TCodeChannelLookup::getChannel(channelName);
+            if(channel->Type == AxisType::HalfRange || channel->Type == AxisType::None)
                 continue;
-            auto value = doc["availableAxis"][channel];
+            auto value = doc["availableAxis"][channelName];
             ChannelModel33 channelModel = {
                 value["friendlyName"].toString(),//QString FriendlyName;
                 value["axisName"].toString(),//QString AxisName;
@@ -251,7 +253,7 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
                 value["linkToRelatedMFS"].toBool(),//bool LinkToRelatedMFS;
                 value["relatedChannel"].toString()//QString RelatedChannel;
             };
-            SettingsHandler::setAxis(channel, channelModel);
+            SettingsHandler::setAxis(channelName, channelModel);
         }
 
         SettingsHandler::setMultiplierEnabled(doc["multiplierEnabled"].toBool());

@@ -1,16 +1,20 @@
 #include "tcodechannellookup.h"
 
-
 const QMap<TCodeVersion, QString> TCodeChannelLookup::SupportedTCodeVersions = {
     {TCodeVersion::v2, "TCode v0.2"},
     {TCodeVersion::v3, "TCode v0.3"}
 };
 
+void TCodeChannelLookup::profileChanged() {
+    if(!m_debounceTimer.isActive() || m_debounceTimer.remainingTime() > 0) {
+        m_debounceTimer.start(100);
+    }
+}
 void TCodeChannelLookup::load(QSettings* settingsToLoadFrom, bool firstLoad) {
     if (firstLoad) {
         setSelectedChannelProfile("Default");
         setSelectedTCodeVersion(TCodeVersion::v3);
-        setAvailableChannelDefaults();
+        setProfileDefaults();
     } else {
         QString selectedChannelProfile = settingsToLoadFrom->value("selectedChannelProfile").toString();
         if(selectedChannelProfile.isEmpty())
@@ -20,18 +24,25 @@ void TCodeChannelLookup::load(QSettings* settingsToLoadFrom, bool firstLoad) {
         auto selectedTCodeVersion = (TCodeVersion)(settingsToLoadFrom->value("selectedTCodeVersion").toInt());
         setSelectedTCodeVersion(selectedTCodeVersion);
     }
+    m_debounceTimer.setSingleShot(true);
+    connect(&m_debounceTimer, &QTimer::timeout, [] () {
+        setValidMFSExtensions();
+        emit TCodeChannelLookup::instance().channelProfileChanged(&m_availableChanels[m_selectedChannelProfile]);
+    });
 
 }
 
 void TCodeChannelLookup::setSelectedTCodeVersion(TCodeVersion version) {
     m_selectedTCodeVersion = version;
     m_selectedTCodeVersionMap = TCodeVersionMap.value(version);
+    emit instance().tcodeVersionChanged();
 }
 
 void TCodeChannelLookup::changeSelectedTCodeVersion(TCodeVersion version) {
     if(m_selectedTCodeVersion != version) {
         setSelectedTCodeVersion(version);
-        setAvailableChannelDefaults();
+        setProfileDefaults();
+        emit instance().tcodeVersionChanged();
     }
 }
 
@@ -43,6 +54,7 @@ QString TCodeChannelLookup::getSelectedChannelProfile() {
 void TCodeChannelLookup::setSelectedChannelProfile(QString value) {
     QMutexLocker locker(&m_mutex);
     m_selectedChannelProfile = value;
+    profileChanged();
 }
 
 TCodeVersion TCodeChannelLookup::getSelectedTCodeVersion() {
@@ -266,34 +278,74 @@ QHash<TCodeVersion, QMap<AxisName, QString>> TCodeChannelLookup::TCodeVersionMap
     }
 };
 
-ChannelModel33* TCodeChannelLookup::getChannel(QString name) {
+QList<QString> TCodeChannelLookup::getChannelProfiles() {
+    return m_availableChanels.keys();
+}
+QList<QString> TCodeChannelLookup::getChannels(QString profile) {
+    if(profile.isEmpty())
+        return m_availableChanels[m_selectedChannelProfile].keys();
+    return m_availableChanels[profile].keys();
+}
+ChannelModel33* TCodeChannelLookup::getChannel(QString name, QString profile) {
     QMutexLocker locker(&m_mutex);
-    return &m_availableChanels[m_selectedChannelProfile][name];
+    if(profile.isEmpty())
+        return &m_availableChanels[m_selectedChannelProfile][name];
+    return &m_availableChanels[profile][name];
 }
 
-bool TCodeChannelLookup::hasChannel(QString name) {
-    return m_availableChanels[m_selectedChannelProfile].contains(name);
+bool TCodeChannelLookup::hasChannel(QString name, QString profile) {
+    if(profile.isEmpty())
+        return m_availableChanels[m_selectedChannelProfile].contains(name);
+    return m_availableChanels[profile].contains(name);
 }
-void TCodeChannelLookup::setChannel(QString axis, ChannelModel33 channel)
+
+bool TCodeChannelLookup::hasProfile(QString profile) {
+    return m_availableChanels.contains(profile);
+}
+void TCodeChannelLookup::setChannel(QString axis, ChannelModel33 channel, QString profile)
 {
     QMutexLocker locker(&m_mutex);
-    m_availableChanels[m_selectedChannelProfile][axis] = channel;
+    auto specifiedProfile = m_selectedChannelProfile;
+    if(!profile.isEmpty())
+        specifiedProfile = profile;
+    m_availableChanels[specifiedProfile][axis] = channel;
+    profileChanged();
 }
-void TCodeChannelLookup::addChannel(QString name, ChannelModel33 channel)
+void TCodeChannelLookup::addChannel(QString name, ChannelModel33 channel, QString profile)
 {
     QMutexLocker locker(&m_mutex);
-    m_availableChanels[m_selectedChannelProfile].insert(name, channel);
+    auto specifiedProfile = m_selectedChannelProfile;
+    if(!profile.isEmpty())
+        specifiedProfile = profile;
+    m_availableChanels[specifiedProfile].insert(name, channel);
+
+    //        if(availableChannelProfiles.isEmpty())
+    //            availableChannelProfiles.insert("Default", { { axis, ChannelModel33::fromVariant(availableChannelJson.value(axis)) } });
+    //        else
+    //            availableChannelProfiles["Default"].insert({{ axis, ChannelModel33::fromVariant(availableChannelJson.value(axis)) }});
     if(!ChannelExists(channel.AxisName))
         AddUserAxis(channel.AxisName);
+    profileChanged();
 }
-void TCodeChannelLookup::deleteChannel(QString axis)
+void TCodeChannelLookup::deleteChannel(QString axis, QString profile)
 {
     QMutexLocker locker(&m_mutex);
-    m_availableChanels[m_selectedChannelProfile].remove(axis);
+    auto specifiedProfile = m_selectedChannelProfile;
+    if(!profile.isEmpty())
+        specifiedProfile = profile;
+    m_availableChanels[specifiedProfile].remove(axis);
+    profileChanged();
 }
 
-QMap<QString, ChannelModel33>* TCodeChannelLookup::getAvailableChannels()
-{
+void TCodeChannelLookup::clearChannels(QString profile) {
+    QMutexLocker locker(&m_mutex);
+    auto specifiedProfile = m_selectedChannelProfile;
+    if(!profile.isEmpty())
+        specifiedProfile = profile;
+    m_availableChanels[specifiedProfile].clear();
+}
+
+QMap<QString, ChannelModel33>* TCodeChannelLookup::getAvailableChannels() {
     QMutexLocker locker(&m_mutex);
     return &m_availableChanels[m_selectedChannelProfile];
 }
@@ -305,27 +357,51 @@ QMap<QString, QMap<QString, ChannelModel33>>* TCodeChannelLookup::getAvailableCh
 void TCodeChannelLookup::setAvailableChannelsProfiles(QMap<QString, QMap<QString, ChannelModel33>> channels) {
     QMutexLocker locker(&m_mutex);
     m_availableChanels = QMap<QString, QMap<QString, ChannelModel33>>(channels);
-    setValidMFSExtensions();
+    profileChanged();
 }
 
 void TCodeChannelLookup::addChannelsProfile(QString name, QMap<QString, ChannelModel33> channels) {
     QMutexLocker locker(&m_mutex);
 
-    m_availableChanels.insert(name, channels);
+    if(channels.empty())
+        m_availableChanels.insert(name, getDefaultChannelProfile());
+    else
+        m_availableChanels.insert(name, channels);
     m_selectedChannelProfile = name;
+    profileChanged();
+}
+
+void TCodeChannelLookup::copyChannelsProfile(QString newName, QString oldName) {
+    auto profileToCopy = m_selectedChannelProfile;
+    if(!oldName.isEmpty())
+        profileToCopy = oldName;
+    addChannelsProfile(newName, m_availableChanels.value(profileToCopy));
 }
 
 void TCodeChannelLookup::deleteChannelsProfile(QString name) {
     QMutexLocker locker(&m_mutex);
     m_availableChanels.remove(name);
     m_selectedChannelProfile = m_availableChanels.keys().last();
+    profileChanged();
 }
 
-void TCodeChannelLookup::setAvailableChannelDefaults()
-{
-    m_availableChanels[m_selectedChannelProfile] = getDefaultChannelProfile();
+void TCodeChannelLookup::setAllProfileDefaults() {
+    m_availableChanels.clear();
+    m_availableChanels.insert("Default", getDefaultChannelProfile());
+    m_selectedChannelProfile = "Default";
+    profileChanged();
+}
 
-    setValidMFSExtensions();
+void TCodeChannelLookup::setProfileDefaults(QString profile) {
+    auto selectedProfile = m_selectedChannelProfile;
+    if(!profile.isEmpty())
+        selectedProfile = profile;
+    m_availableChanels[selectedProfile] = getDefaultChannelProfile();
+    profileChanged();
+}
+
+void TCodeChannelLookup::clearChannelProfiles() {
+    m_availableChanels.clear();
 }
 
 QStringList TCodeChannelLookup::getValidMFSExtensions() {
@@ -401,7 +477,6 @@ QMap<QString, ChannelModel33> TCodeChannelLookup::getDefaultChannelProfile() {
 }
 
 ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, QString axisName, QString channel, AxisDimension dimension, AxisType type, QString mfsTrackName, QString relatedChannel) {
-    QMutexLocker locker(&m_mutex);
     TCodeChannelLookup::setSelectedTCodeVersion(m_selectedTCodeVersion);
     int max = m_selectedTCodeVersion == TCodeVersion::v2 ? 999 : 9999;
     int mid = m_selectedTCodeVersion == TCodeVersion::v2 ? 500 : 5000;
@@ -429,8 +504,10 @@ ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, Q
           };
 }
 
+TCodeChannelLookup TCodeChannelLookup::m_instance;
 QMutex TCodeChannelLookup::m_mutex;
 TCodeVersion TCodeChannelLookup::m_selectedTCodeVersion;
 QMap<QString, QMap<QString, ChannelModel33>> TCodeChannelLookup::m_availableChanels;
 QStringList TCodeChannelLookup::m_validMFSExtensions;
 QString TCodeChannelLookup::m_selectedChannelProfile = "Default";
+QTimer TCodeChannelLookup::m_debounceTimer;

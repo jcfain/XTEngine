@@ -158,7 +158,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             }
         }
     }
-    auto availibleAxis = TCodeChannelLookup::getAvailableChannels();
+    auto availibleChannels = TCodeChannelLookup::getChannels();
 
     foreach (QString path, paths) {
         auto itr = std::find_if(paths.begin(), paths.end(), [path](const QString& item) {
@@ -277,10 +277,10 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 
                 QString scriptMFSExt = scriptNoExtensionTemp.remove(0, scriptNoExtensionTemp.length() - (scriptNoExtensionTemp.length() - scriptNoExtensionTemp.lastIndexOf('.')));
                 bool isMfs = false;
-                foreach(auto axisName, availibleAxis->keys())
+                foreach(auto axisName, availibleChannels)
                 {
-                    auto track = availibleAxis->value(axisName);
-                    if("."+track.TrackName == scriptMFSExt)
+                    auto track = TCodeChannelLookup::getChannel(axisName);
+                    if("."+track->TrackName == scriptMFSExt)
                     {
                         isMfs = true;
                         break;
@@ -894,16 +894,16 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDi
 }
 
 void MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
-    auto availibleAxis = TCodeChannelLookup::getAvailableChannels();
+    auto channels = TCodeChannelLookup::getChannels();
     QString script;
     script.reserve(item.scriptNoExtension.length() + 1 + 5 + 10);
-    foreach(auto axisName, availibleAxis->keys())
+    foreach(auto axisName, channels)
     {
-        auto track = availibleAxis->value(axisName);
-        if(axisName == TCodeChannelLookup::Stroke() || track.Type == AxisType::HalfRange || track.TrackName.isEmpty())
+        auto track = TCodeChannelLookup::getChannel(axisName);
+        if(axisName == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfRange || track->TrackName.isEmpty())
             continue;
 
-        script = item.scriptNoExtension + "." + track.TrackName + ".funscript";
+        script = item.scriptNoExtension + "." + track->TrackName + ".funscript";
         if (QFileInfo::exists(script))
         {
             item.isMFS = true;

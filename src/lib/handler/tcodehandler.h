@@ -29,7 +29,7 @@ public:
 
 private:
     QMutex mutex;
-    void getChannelHome(ChannelModel33 channel, QString &tcode);
+    void getChannelHome(ChannelModel33* channel, QString &tcode);
 };
 
 #endif // TCODEHANDLER_H

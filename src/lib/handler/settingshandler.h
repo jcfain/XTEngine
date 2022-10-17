@@ -31,7 +31,6 @@ class XTENGINE_EXPORT SettingsHandler: public QObject
 {
     Q_OBJECT
 signals:
-    void tcodeVersionChanged();
     void settingsChanged(bool dirty);
     void messageSend(QString message, XLogLevel loglevel);
 

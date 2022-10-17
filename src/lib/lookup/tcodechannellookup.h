@@ -4,15 +4,24 @@
 #include <QSettings>
 #include <QMap>
 #include <QMutex>
+#include <QTimer>
 #include "AxisNames.h"
 #include "TCodeVersion.h"
 #include <QHash>
 #include "../struct/ChannelModel.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT TCodeChannelLookup
+class XTENGINE_EXPORT TCodeChannelLookup: public QObject
 {
+    Q_OBJECT
+signals:
+    void tcodeVersionChanged();
+    void channelProfileChanged(QMap<QString, ChannelModel33>* channelProfile);
+
 public:
+    static TCodeChannelLookup& instance(){
+        return m_instance;
+    }
     static const QMap<TCodeVersion, QString> SupportedTCodeVersions;
     static void load(QSettings* settingsToLoadFrom, bool firstLoad = false);
     static QString PositiveModifier;
@@ -21,7 +30,6 @@ public:
     static void setSelectedTCodeVersion(TCodeVersion version);
     static void changeSelectedTCodeVersion(TCodeVersion version);
     static QString getSelectedChannelProfile();
-    static QMap<QString, ChannelModel33> getDefaultChannelProfile();
     static void setSelectedChannelProfile(QString value);
     static TCodeVersion getSelectedTCodeVersion();
     static QString getSelectedTCodeVersionName();
@@ -30,17 +38,25 @@ public:
     static void AddUserAxis(QString channel);
     static bool ChannelExists(QString channel);
     static QStringList getValidMFSExtensions();
-    static void setAvailableChannelsProfiles(QMap<QString, QMap<QString, ChannelModel33>> channels);
-    static void addChannelsProfile(QString name, QMap<QString, ChannelModel33> channels);
+    static void addChannelsProfile(QString name, QMap<QString, ChannelModel33> channels = QMap<QString, ChannelModel33>());
+    static void copyChannelsProfile(QString oldName, QString newName = nullptr);
     static void deleteChannelsProfile(QString name);
-    static QMap<QString, QMap<QString, ChannelModel33>>* getAvailableChannelProfiles();
-    static QMap<QString, ChannelModel33>* getAvailableChannels();
-    static ChannelModel33* getChannel(QString name);
-    static void setChannel(QString name, ChannelModel33 channel);
-    static void addChannel(QString name, ChannelModel33 channel);
-    static void deleteChannel(QString axis);
-    static bool hasChannel(QString name);
-    static void setAvailableChannelDefaults();
+
+    static QList<QString> getChannelProfiles();
+    static QList<QString> getChannels(QString profile = nullptr);
+
+
+    static ChannelModel33* getChannel(QString name, QString profile = nullptr);
+    static void setChannel(QString name, ChannelModel33 channel, QString profile = nullptr);
+    static void addChannel(QString name, ChannelModel33 channel, QString profile = nullptr);
+    static void deleteChannel(QString axis, QString profile = nullptr);
+    static void clearChannels(QString profile = nullptr);
+    static bool hasChannel(QString name, QString profile = nullptr);
+    static bool hasProfile(QString profile);
+    static void clearChannelProfiles();
+    static void setAllProfileDefaults();
+    static void setProfileDefaults(QString profile = nullptr);
+    static QMap<QString, ChannelModel33> getDefaultChannelProfile();
     static QString ToString(AxisName channel);
     static QString None();
     static QString Stroke();
@@ -70,6 +86,7 @@ public:
     static QString SuckMorePosition();
     static QString SuckLessPosition();
 private:
+    static TCodeChannelLookup m_instance;
     static QMutex m_mutex;
     static int m_channelCount;
     static TCodeVersion m_selectedTCodeVersion;
@@ -92,6 +109,13 @@ private:
     static void setValidMFSExtensions();
     static QStringList m_validMFSExtensions;
     static ChannelModel33 setupAvailableChannel(QString friendlyName, QString axisName, QString channel, AxisDimension dimension, AxisType type, QString mfsTrackName, QString relatedChannel);
+
+
+    static void setAvailableChannelsProfiles(QMap<QString, QMap<QString, ChannelModel33>> channels);
+    static QMap<QString, QMap<QString, ChannelModel33>>* getAvailableChannelProfiles();
+    static QMap<QString, ChannelModel33>* getAvailableChannels();
+    static void profileChanged();
+    static QTimer m_debounceTimer;
 };
 
 #endif // TCODECHANNELLOOKUP_H
