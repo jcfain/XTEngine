@@ -63,6 +63,8 @@ public:
     // Live members
     QString ID;
     QString libraryPath;
+    bool hasScript;
+    QStringList MFSScripts;
     bool isMFS;
     QString toolTip;
     ThumbState thumbState = ThumbState::Waiting;

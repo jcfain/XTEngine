@@ -237,6 +237,21 @@ void SettingsActionHandler::media_action(QString action)
             else
                 emit actionExecuted(action, "Funscript modifier at minimum "+ QString::number(modedModifier) + "percent");
         }
+    } else if(MediaActions::TCodeChannelProfileActions.contains(action)) {
+        TCodeChannelLookup::setSelectedChannelProfile(action);
+        emit actionExecuted(action, "Set "+ action);
+    } else if(action == actions.ChannelProfileNext || action == actions.ChannelProfilePrevious) {
+        auto profiles = TCodeChannelLookup::getChannelProfiles();
+        auto currentProfile = TCodeChannelLookup::getSelectedChannelProfile();
+        auto indexOfProfile = profiles.indexOf(currentProfile);
+        action == actions.ChannelProfileNext ? indexOfProfile++ : indexOfProfile--;
+        if(indexOfProfile == profiles.length() && action == actions.ChannelProfileNext) {
+            indexOfProfile = 0;
+        } else if(indexOfProfile == -1 && action == actions.ChannelProfilePrevious) {
+            indexOfProfile = profiles.length() - 1;
+        }
+        TCodeChannelLookup::setSelectedChannelProfile(profiles[indexOfProfile]);
+        emit actionExecuted(profiles[indexOfProfile], "Set "+ profiles[indexOfProfile]);
     }
 
     //TODO: nneds to be moved from main window some how

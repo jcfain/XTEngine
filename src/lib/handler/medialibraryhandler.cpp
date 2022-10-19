@@ -211,29 +211,30 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 scriptNoExtension = SettingsHandler::getSelectedFunscriptLibrary() + QDir::separator() + fileNameNoExtension;
                 scriptPath = SettingsHandler::getSelectedFunscriptLibrary() + QDir::separator() + scriptFile;
             }
-
             if (!QFileInfo::exists(scriptPath))
             {
                 scriptPath = nullptr;
             }
             LibraryListItemType libratyItemType = vrMode || isStereo(fileName) ? LibraryListItemType::VR : LibraryListItemType::Video;
             QString zipFile = scriptNoExtension + ".zip";
-            if(!QFileInfo::exists(zipFile))
-                zipFile = "";
+            if(!QFileInfo::exists(zipFile)) {
+                zipFile = nullptr;
+            }
             if(audioTypes.contains(mediaExtension))
             {
                 libratyItemType = LibraryListItemType::Audio;
             }
             LibraryListItem27 item;
-            item.type = libratyItemType,
-            item.path = videoPath, // path
-            item.name = fileName, // name
-            item.nameNoExtension = fileNameNoExtension, //nameNoExtension
-            item.script = scriptPath, // script
-            item.scriptNoExtension = scriptNoExtension,
-            item.mediaExtension = mediaExtension,
-            item.thumbFile = nullptr,
-            item.zipFile = zipFile,
+            item.type = libratyItemType;
+            item.path = videoPath; // path
+            item.name = fileName; // name
+            item.nameNoExtension = fileNameNoExtension; //nameNoExtension
+            item.script = scriptPath; // script
+            item.scriptNoExtension = scriptNoExtension;
+            item.hasScript = !scriptPath.isEmpty() || !zipFile.isEmpty();
+            item.mediaExtension = mediaExtension;
+            item.thumbFile = nullptr;
+            item.zipFile = zipFile;
             item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime().date() : fileinfo.created().date();
             item.duration = 0;
             item.thumbState = ThumbState::Waiting;
@@ -309,14 +310,15 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 QString mediaExtension = "*" + fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameTemp.lastIndexOf('.')));
 
                 LibraryListItem27 item;
-                item.type = LibraryListItemType::FunscriptType,
-                item.path = scriptPath, // path
-                item.name = fileName, // name
-                item.nameNoExtension = fileNameNoExtension, //nameNoExtension
-                item.script = scriptPath, // script
-                item.scriptNoExtension = scriptNoExtension,
-                item.mediaExtension = mediaExtension,
-                item.zipFile = zipFile,
+                item.type = LibraryListItemType::FunscriptType;
+                item.path = scriptPath; // path
+                item.name = fileName; // name
+                item.nameNoExtension = fileNameNoExtension; //nameNoExtension
+                item.script = scriptPath; // script
+                item.scriptNoExtension = scriptNoExtension;
+                item.hasScript = true;
+                item.mediaExtension = mediaExtension;
+                item.zipFile = zipFile;
                 item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime().date() : fileinfo.created().date();
                 item.duration = 0;
                 item.thumbState = ThumbState::Waiting;
@@ -842,6 +844,7 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDi
     localData.isMFS = false;
     bool scriptExists = QFileInfo::exists(localData.script);
     bool zipScripExists = QFileInfo::exists(localData.zipFile);
+    localData.hasScript = scriptExists || zipScripExists;
     if (localData.type != LibraryListItemType::PlaylistInternal && !scriptExists && !zipScripExists)
     {
         localData.toolTip = localData.nameNoExtension + "\nMedia:";
@@ -906,9 +909,11 @@ void MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
         script = item.scriptNoExtension + "." + track->TrackName + ".funscript";
         if (QFileInfo::exists(script))
         {
+            item.hasScript = true;
             item.isMFS = true;
             item.toolTip += "\n";
             item.toolTip += script;
+            item.MFSScripts << script;
         }
     }
 }
@@ -918,9 +923,11 @@ void MediaLibraryHandler::discoverMFS2(LibraryListItem27 &item) {
     {
         if (QFileInfo::exists(item.scriptNoExtension + scriptExtension))
         {
+            item.hasScript = true;
             item.isMFS = true;
             item.toolTip += "\n";
             item.toolTip += item.scriptNoExtension + scriptExtension;
+            item.MFSScripts << item.scriptNoExtension + scriptExtension;
         }
     }
 }

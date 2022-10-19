@@ -362,7 +362,7 @@ void TCodeChannelLookup::setAvailableChannelsProfiles(QMap<QString, QMap<QString
 
 void TCodeChannelLookup::addChannelsProfile(QString name, QMap<QString, ChannelModel33> channels) {
     QMutexLocker locker(&m_mutex);
-
+    MediaActions::TCodeChannelProfileActions.insert(name, name);
     if(channels.empty())
         m_availableChanels.insert(name, getDefaultChannelProfile());
     else

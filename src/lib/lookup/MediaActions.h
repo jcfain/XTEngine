@@ -3,8 +3,11 @@
 
 #include <QString>
 #include <QMap>
-struct MediaActions
+#include "XTEngine_global.h"
+class XTENGINE_EXPORT MediaActions
 {
+public:
+    MediaActions();
     const QString TogglePause = "TogglePause";
     const QString Next = "Next";
     const QString Back = "Back";
@@ -34,6 +37,8 @@ struct MediaActions
     const QString ToggleChannelTwistMultiplier = "ToggleChannelTwistMultiplier";
     const QString ToggleFunscriptInvert = "ToggleFunscriptInvert";
     const QString TogglePauseAllDeviceActions = "TogglePauseAllDeviceActions";
+    const QString ChannelProfileNext = "ChannelProfileNext";
+    const QString ChannelProfilePrevious = "ChannelProfilePrevious";
     const QString SkipToMoneyShot = "SkipToMoneyShot";
     const QString ToggleSkipToMoneyShotPlaysFunscript = "ToggleSkipToMoneyShotPlaysFunscript";
     const QString SkipToAction = "SkipToAction";
@@ -81,7 +86,11 @@ struct MediaActions
         {DecreaseFunscriptModifier, "Funscript: Range modifier (decrease)"},
         {IncreaseOffset, "Funscript: delay (increase)"},
         {DecreaseOffset, "Funscript: delay (decrease)"},
-        {ResetOffset, "Funscript: delay reset to 0"}
+        {ResetOffset, "Funscript: delay reset to 0"},
+        {ChannelProfileNext, "Channel profile next"},
+        {ChannelProfilePrevious, "Channel profile previous"}
     };
+    static QMap<QString, QString> TCodeChannelProfileActions;
+private:
 };
 #endif // MEDIAACTIONS_H

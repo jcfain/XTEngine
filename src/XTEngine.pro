@@ -32,6 +32,7 @@ SOURCES += \
     lib/handler/xvideopreview.cpp \
     lib/handler/xvideosurface.cpp \
     lib/lookup/Constant.cpp \
+    lib/lookup/MediaActions.cpp \
     lib/lookup/tcodechannellookup.cpp \
     lib/tool/imagefactory.cpp \
     lib/tool/simplecrypt.cpp \

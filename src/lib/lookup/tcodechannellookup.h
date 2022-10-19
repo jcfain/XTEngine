@@ -9,6 +9,7 @@
 #include "TCodeVersion.h"
 #include <QHash>
 #include "../struct/ChannelModel.h"
+#include "MediaActions.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT TCodeChannelLookup: public QObject
