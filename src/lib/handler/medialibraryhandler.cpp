@@ -981,9 +981,6 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
                 hasLocal = filepath;
             }
         }
-        if(libraryListItem.path.contains("Tits you")){
-            LogHandler::Debug("break");
-        }
         if((!hasLocal.isEmpty() || !hasLocalLocked.isEmpty()) && (!hasGlobal.isEmpty() || !hasGlobalLocked.isEmpty())) {
             if(!hasGlobal.isEmpty())
                 QFile::remove(hasGlobal);
@@ -1009,9 +1006,6 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
         }
 
         QString filepath = thumbs.next();
-        if(filepath.contains("Tits you")){
-            LogHandler::Debug("break");
-        }
 //        QFileInfo fileinfo(filepath);
 //        QString fileName = fileinfo.fileName();
         if(!findItemByThumbPath(filepath))
