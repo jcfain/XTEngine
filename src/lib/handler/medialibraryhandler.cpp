@@ -612,6 +612,7 @@ void MediaLibraryHandler::onSaveThumb(LibraryListItem27 &item, bool vrMode, QStr
 
 QList<LibraryListItem27> MediaLibraryHandler::getLibraryCache()
 {
+    const QMutexLocker locker(&_mutex);
     return _cachedLibraryItems;
 }
 QList<LibraryListItem27> MediaLibraryHandler::getPlaylist(QString name) {
@@ -749,34 +750,35 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &libraryListItem)
         libraryListItem.thumbFileExists = true;
         return;
     }
-    QStringList imageExtensions;
-    imageExtensions << ".jpg" << ".jpeg" << ".png" << ".jfif" << ".webp";
     QFileInfo mediaInfo(libraryListItem.path);
     QString globalPath = SettingsHandler::getSelectedThumbsDir() + libraryListItem.name;
+
+    QString filepathGlobal = globalPath + ".jpg";
+    if(QFileInfo::exists(filepathGlobal))
+    {
+        libraryListItem.thumbFileExists = true;
+        libraryListItem.thumbFile = filepathGlobal;
+        return;
+    }
+    QString filepathGlobalLocked = globalPath + ".lock.jpg";
+    if(QFileInfo::exists(filepathGlobalLocked))
+    {
+        libraryListItem.thumbFileExists = true;
+        libraryListItem.thumbFile = filepathGlobalLocked;
+        return;
+    }
+
     QString absolutePath = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension;
+    QStringList imageExtensions = SettingsHandler::getImageExtensions();
     foreach(QString ext, imageExtensions) {
-        QString filepathGlobal = globalPath + ext;
-        if(QFileInfo::exists(filepathGlobal))
-        {
-            libraryListItem.thumbFileExists = true;
-            libraryListItem.thumbFile = filepathGlobal;
-            return;
-        }
-        QString filepathGlobalLocked = globalPath + ".lock" + ext;
-        if(QFileInfo::exists(filepathGlobalLocked))
-        {
-            libraryListItem.thumbFileExists = true;
-            libraryListItem.thumbFile = filepathGlobalLocked;
-            return;
-        }
-        QString filepathLocked = absolutePath + ".lock" + ext;
+        QString filepathLocked = absolutePath + ".lock." + ext;
         if(QFileInfo::exists(filepathLocked))
         {
             libraryListItem.thumbFileExists = true;
             libraryListItem.thumbFile = filepathLocked;
             return;
         }
-        QString filepath = absolutePath + ext;
+        QString filepath = absolutePath + "." + ext;
         if(QFileInfo::exists(filepath))
         {
             libraryListItem.thumbFileExists = true;
@@ -784,6 +786,7 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &libraryListItem)
             return;
         }
     }
+
     if(SettingsHandler::getUseMediaDirForThumbs())
     {
         libraryListItem.thumbFile = mediaInfo.absolutePath() + libraryListItem.nameNoExtension + ".jpg";
@@ -932,6 +935,89 @@ void MediaLibraryHandler::discoverMFS2(LibraryListItem27 &item) {
     }
 }
 
+void MediaLibraryHandler::cleanGlobalThumbDirectory() {
+    foreach(auto libraryListItem, _cachedLibraryItems) {
+        if(_loadingLibraryStop) {
+            LogHandler::Debug("thumb cleanup stopped 1");
+            emit libraryStopped();
+            return;
+        }
+        if(libraryListItem.type != LibraryListItemType::VR && libraryListItem.type != LibraryListItemType::Video)
+            continue;
+        QString hasGlobal;
+        QString hasGlobalLocked;
+        QString hasLocal;
+        QString hasLocalLocked;
+        QFileInfo mediaInfo(libraryListItem.path);
+        QString globalPath = SettingsHandler::getSelectedThumbsDir() + libraryListItem.name;
+
+        QString filepathGlobal = globalPath + ".jpg";
+        if(QFileInfo::exists(filepathGlobal))
+        {
+            hasGlobal = filepathGlobal;
+        }
+        QString filepathGlobalLocked = globalPath + ".lock.jpg";
+        if(QFileInfo::exists(filepathGlobalLocked))
+        {
+            hasGlobalLocked = filepathGlobalLocked;
+        }
+
+        QString absolutePath = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension;
+        QStringList imageExtensions = SettingsHandler::getImageExtensions();
+        foreach(QString ext, imageExtensions) {
+            if(_loadingLibraryStop) {
+                LogHandler::Debug("thumb cleanup stopped 2");
+                emit libraryStopped();
+                return;
+            }
+            QString filepathLocked = absolutePath + ".lock." + ext;
+            if(QFileInfo::exists(filepathLocked))
+            {
+                hasLocalLocked = filepathLocked;
+            }
+            QString filepath = absolutePath + "." + ext;
+            if(QFileInfo::exists(filepath))
+            {
+                hasLocal = filepath;
+            }
+        }
+        if(libraryListItem.path.contains("Tits you")){
+            LogHandler::Debug("break");
+        }
+        if((!hasLocal.isEmpty() || !hasLocalLocked.isEmpty()) && (!hasGlobal.isEmpty() || !hasGlobalLocked.isEmpty())) {
+            if(!hasGlobal.isEmpty())
+                QFile::remove(hasGlobal);
+            if(!hasGlobalLocked.isEmpty())
+                QFile::remove(hasGlobalLocked);
+            if(!hasLocal.isEmpty()) {
+                libraryListItem.thumbFile = hasLocal;
+            } else if(!hasLocalLocked.isEmpty()) {
+                libraryListItem.thumbFile = hasLocalLocked;
+            }
+            updateItem(libraryListItem);
+        }
+    }
+
+    QDirIterator thumbs(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*.jpg", QDir::Files, QDirIterator::Subdirectories);
+
+    while (thumbs.hasNext())
+    {
+        if(_loadingLibraryStop) {
+            LogHandler::Debug("thumb cleanup stopped 3");
+            emit libraryStopped();
+            return;
+        }
+
+        QString filepath = thumbs.next();
+        if(filepath.contains("Tits you")){
+            LogHandler::Debug("break");
+        }
+//        QFileInfo fileinfo(filepath);
+//        QString fileName = fileinfo.fileName();
+        if(!findItemByThumbPath(filepath))
+            QFile::remove(filepath);
+    }
+}
 void MediaLibraryHandler::assignID(LibraryListItem27 &item)
 {
     //.replace(/^[^a-z]+|[^\w:.-]+/gi, "")+"item"+i
@@ -1076,6 +1162,15 @@ LibraryListItem27* MediaLibraryHandler::findItemByPartialMediaPath(QString parti
     return 0;
 }
 
+LibraryListItem27* MediaLibraryHandler::findItemByThumbPath(QString thumbPath) {
+
+    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [thumbPath](const LibraryListItem27& item) {
+        return item.thumbFile == thumbPath;
+    });
+    if(itr != _cachedLibraryItems.end())
+        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
+    return 0;
+}
 LibraryListItem27* MediaLibraryHandler::findItemByPartialThumbPath(QString partialThumbPath) {
 //    foreach (LibraryListItem27 item, _cachedLibraryItems) {
 //        if(item.thumbFile.startsWith(partialThumbPath) || item.thumbFile.endsWith(partialThumbPath))

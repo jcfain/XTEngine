@@ -313,6 +313,10 @@ public:
                 << "wav"
                 << "wma";
     }
+    static QStringList getImageExtensions()
+    {
+        return QStringList() << "jpg" << "jpeg" << "png" << "jfif" << "webp";
+    }
 
 private:
     SettingsHandler();

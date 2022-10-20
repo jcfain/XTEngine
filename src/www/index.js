@@ -946,6 +946,8 @@ function loadMedia(mediaList) {
 
 		var info = document.createElement("button");
 		info.classList.add("media-context");
+		if(userAgentIsHereSphere)
+			info.classList.add("media-context-heresphere");
 		info.style.width = widthInt * 0.20 + "px";
 		info.style.height = widthInt * 0.20 + "px";
 		var contextMenu = document.createElement("div"); 
@@ -964,6 +966,9 @@ function loadMedia(mediaList) {
 		//icon.appendChild(iconUse);
 		info.appendChild(icon);
 		contextMenu.classList.add("media-context-menu", "hidden");
+		if(userAgentIsHereSphere)
+			contextMenu.classList.add("media-context-menu-heresphere");
+		
 		contextMenu.style.fontSize = fontSize;
 		contextMenu.style.width = widthInt * 0.85 + "px";
 

@@ -256,6 +256,9 @@ input:hover {
     border: none;
     border-radius: 20px;
 }
+.media-context-heresphere {
+    position: relative;
+}
 .media-context:hover {
     background-color: rgb(107 111 143 / 36%);
     border: none;
@@ -271,6 +274,9 @@ input:hover {
     z-index: 10;
     border-radius: 10px;
     box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px cornflowerblue;
+}
+.media-context-menu-heresphere {
+    position: relative;
 }
 
 .media-context-menu-item {

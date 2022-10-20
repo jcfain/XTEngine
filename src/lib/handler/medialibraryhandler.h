@@ -65,10 +65,12 @@ public:
     LibraryListItem27* findItemByName(QString name);
     LibraryListItem27* findItemByMediaPath(QString mediaPath);
     LibraryListItem27* findItemByPartialMediaPath(QString partialMediaPath);
+    LibraryListItem27* findItemByThumbPath(QString thumbPath);
     LibraryListItem27* findItemByPartialThumbPath(QString partialThumbPath);
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
     void updateToolTip(LibraryListItem27 &item, bool scriptDiscovery = false);
+    void cleanGlobalThumbDirectory();
 
 private:
     int _libraryItemIDTracker = 1;
