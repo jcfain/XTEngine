@@ -163,7 +163,7 @@ void GamepadHandler::executeAction(QString channelName, double gamepadValue, QVe
     {
         bool actionExecuted = false;
         foreach(QString action, AxisActions) {
-          if (!mediaActions.Values.contains(action))
+          if (!mediaActions.Values.contains(action) && !MediaActions::HasOtherAction(action))
               _tcodeFactory->calculate(action, calculateDeadZone(gamepadValue), channelValues);
           else if(actionTimer.remainingTime() <= 0 && gamepadValue != 0)
           {

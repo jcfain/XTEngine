@@ -94,7 +94,6 @@ public:
     static int getVideoIncrement();
 
     static bool getGamepadEnabled();
-    static ChannelModel33* getAxis(QString axis);
     static int getGamepadSpeed();
     static int getLiveGamepadSpeed();
     static int getGamepadSpeedIncrement();
@@ -184,15 +183,6 @@ public:
     static void setXRangeStep(int value);
     static int getXRangeStep();
 
-
-    static void setLiveXRangeMin(int value);
-    static int getLiveXRangeMin();
-    static void setLiveXRangeMid(int value);
-    static int getLiveXRangeMid();
-    static void setLiveXRangeMax(int value);
-    static int getLiveXRangeMax();
-    static void resetLiveXRange();
-
     static bool getMultiplierEnabled();
     static void setMultiplierEnabled(bool value);
     static void setLiveMultiplierEnabled(bool value);
@@ -270,7 +260,6 @@ public:
     static void setLubePulseFrequency(int value);
     static int getLubePulseFrequency();
 
-    static void SetChannelMapDefaults();
     static void SetGamepadMapDefaults();
     static void SetKeyboardKeyDefaults();
     static void setSaveOnExit(bool enabled);
@@ -342,6 +331,8 @@ private:
     static void MigrateTo32a(QSettings* settingsToLoadFrom);
     static void MigrateTo42(QSettings* settingsToLoadFrom);
 
+    static void SaveChannelMap();
+
     static QString _appdataLocation;
     static GamepadAxisName gamepadAxisNames;
     static MediaActions mediaActions;
@@ -385,9 +376,6 @@ private:
     static int _liveOffset;
 
     static int _xRangeStep;
-    static int _liveXRangeMax;
-    static int _liveXRangeMid;
-    static int _liveXRangeMin;
     static bool _liveMultiplierEnabled;
     static bool _multiplierEnabled;
 

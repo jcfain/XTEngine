@@ -7,17 +7,17 @@
 enum class AxisType
 {
     None, // 0
-    Range, // 1
-    Switch, // 2
-    HalfRange // 3
+    Oscillate, // 1
+    Ramp, // 2
+    HalfOscillate // 3
 };
 
 const QMap<QString, AxisType> AxisTypes =
 {
     {"None", AxisType::None},
-    {"Oscillate", AxisType::Range},
-    {"Ramp", AxisType::Switch},
-    {"Half oscillate", AxisType::HalfRange}
+    {"Oscillate", AxisType::Oscillate},
+    {"Ramp", AxisType::Ramp},
+    {"Half oscillate", AxisType::HalfOscillate}
 };
 
 Q_DECLARE_METATYPE(AxisType);

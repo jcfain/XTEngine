@@ -158,7 +158,6 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             }
         }
     }
-    auto availibleChannels = TCodeChannelLookup::getChannels();
 
     foreach (QString path, paths) {
         auto itr = std::find_if(paths.begin(), paths.end(), [path](const QString& item) {
@@ -278,7 +277,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 
                 QString scriptMFSExt = scriptNoExtensionTemp.remove(0, scriptNoExtensionTemp.length() - (scriptNoExtensionTemp.length() - scriptNoExtensionTemp.lastIndexOf('.')));
                 bool isMfs = false;
-                foreach(auto axisName, availibleChannels)
+                foreach(auto axisName, TCodeChannelLookup::getChannels())
                 {
                     auto track = TCodeChannelLookup::getChannel(axisName);
                     if("."+track->TrackName == scriptMFSExt)
@@ -906,7 +905,7 @@ void MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
     foreach(auto axisName, channels)
     {
         auto track = TCodeChannelLookup::getChannel(axisName);
-        if(axisName == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfRange || track->TrackName.isEmpty())
+        if(axisName == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfOscillate || track->TrackName.isEmpty())
             continue;
 
         script = item.scriptNoExtension + "." + track->TrackName + ".funscript";

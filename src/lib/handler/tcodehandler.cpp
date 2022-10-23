@@ -79,7 +79,7 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
             if(!TCodeChannelLookup::ChannelExists(axis))
                 continue;
             ChannelModel33* channel = TCodeChannelLookup::getChannel(axis);
-            if (channel->Dimension == AxisDimension::Heave || channel->Type == AxisType::HalfRange || channel->Type == AxisType::None)
+            if (channel->Dimension == AxisDimension::Heave || channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None)
                 continue;
             if (SettingsHandler::getFunscriptLoaded(axis))
                 continue;
@@ -164,15 +164,15 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
 
 int TCodeHandler::calculateRange(const char* channel, int rawValue)
 {
-    int xMax = SettingsHandler::getAxis(channel)->UserMax;
-    int xMin = SettingsHandler::getAxis(channel)->UserMin;
-    int xMid = SettingsHandler::getAxis(channel)->UserMid;
+    int xMax = TCodeChannelLookup::getChannel(channel)->UserMax;
+    //int xMin = TCodeChannelLookup::getChannel(channel)->UserMin;
+    int xMid = TCodeChannelLookup::getChannel(channel)->UserMid;
     // Update for live x range switch
     if(QString(channel) == TCodeChannelLookup::Stroke())
     {
-        xMax = SettingsHandler::getLiveXRangeMax();
-        xMin = SettingsHandler::getLiveXRangeMin();
-        xMid = SettingsHandler::getLiveXRangeMid();
+        xMax = TCodeChannelLookup::getLiveXRangeMax();
+        //xMin = TCodeChannelLookup::getLiveXRangeMin();
+        xMid = TCodeChannelLookup::getLiveXRangeMid();
     }
     return XMath::mapRange(rawValue, 50, 100, xMid, xMax);
 }
@@ -184,7 +184,7 @@ QString TCodeHandler::getRunningHome()
     foreach(auto axis, axisKeys)
     {
         auto channel = TCodeChannelLookup::getChannel(axis);
-        if(channel->Dimension == AxisDimension::Heave || channel->Type != AxisType::Range)
+        if(channel->Dimension == AxisDimension::Heave || channel->Type != AxisType::Oscillate)
             continue;
         getChannelHome(channel, tcode);
     }
@@ -198,7 +198,7 @@ QString TCodeHandler::getAllHome()
     foreach(auto axis, axisKeys)
     {
         auto channel = TCodeChannelLookup::getChannel(axis);
-        if(channel->Type == AxisType::HalfRange || channel->Type == AxisType::None )
+        if(channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None )
             continue;
         getChannelHome(channel, tcode);
     }
@@ -212,7 +212,7 @@ QString TCodeHandler::getSwitchedHome()
     foreach(auto axis, axisKeys)
     {
         auto channel = TCodeChannelLookup::getChannel(axis);
-        if(channel->Type != AxisType::Switch )
+        if(channel->Type != AxisType::Ramp )
             continue;
         getChannelHome(channel, tcode);
     }
@@ -229,7 +229,7 @@ QString TCodeHandler::getChannelHome(QString channel)
 
 void TCodeHandler::getChannelHome(ChannelModel33* channel, QString &tcode)
 {
-    if(channel->Type == AxisType::HalfRange || channel->Type == AxisType::None || channel->Channel == TCodeChannelLookup::Suck() || channel->Channel == TCodeChannelLookup::SuckPosition()) {
+    if(channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None || channel->Channel == TCodeChannelLookup::Suck() || channel->Channel == TCodeChannelLookup::SuckPosition()) {
         return;
     }
     if(!tcode.isEmpty())

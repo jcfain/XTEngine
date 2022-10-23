@@ -54,42 +54,17 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
     locker.relock();
 
-//    QJsonObject availableAxisJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
-//    QMap<QString, ChannelModel33> availableChannels;
-//    _funscriptLoaded.clear();
-//    foreach(auto axis, availableAxisJson.keys())
-//    {
-//        availableChannels.insert(axis, ChannelModel33::fromVariant(availableAxisJson.value(axis)));
-//        _funscriptLoaded.insert(axis, false);
-//        if(!TCodeChannelLookup::ChannelExists(axis))
-//            TCodeChannelLookup::AddUserAxis(axis);
-//    }
-//    TCodeChannelLookup::setAvailableChannels(availableChannels);
-
     QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
-    //QMap<QString, QMap<QString, ChannelModel33>> availableChannelProfiles;
     _funscriptLoaded.clear();
     foreach(auto profile, availableChannelJson.keys())
     {
         TCodeChannelLookup::addChannelsProfile(profile, QMap<QString, ChannelModel33>());
         foreach(auto axis, availableChannelJson.value(profile).toObject().keys())
         {
-//            if(!availableChannelProfiles.contains(profile))
-//                availableChannelProfiles.insert(profile, { { axis, ChannelModel33::fromVariant(availableChannelJson.value(profile).toObject().value(axis)) } });
-//            else
-//                availableChannelProfiles[profile].insert({{ axis, ChannelModel33::fromVariant(availableChannelJson.value(profile).toObject().value(axis)) }});
             TCodeChannelLookup::addChannel(axis, ChannelModel33::fromVariant(availableChannelJson.value(profile).toObject().value(axis)), profile);
             _funscriptLoaded.insert(axis, false);
-            if(!TCodeChannelLookup::ChannelExists(axis))
-                TCodeChannelLookup::AddUserAxis(axis);
         }
     }
-    //TCodeChannelLookup::setAvailableChannelsProfiles(availableChannelProfiles);
-
-    auto channels = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke());
-    _liveXRangeMax = channels->UserMax;
-    _liveXRangeMin = channels->UserMin;
-    _liveXRangeMid = channels->UserMid;
 
     selectedTheme = settingsToLoadFrom->value("selectedTheme").toString();
     selectedTheme = selectedTheme.isEmpty() ? _applicationDirPath + "/themes/dark.css" : selectedTheme;
@@ -274,7 +249,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.2581f)
         {
             locker.unlock();
-            TCodeChannelLookup::setProfileDefaults();
+            TCodeChannelLookup::setAllProfileDefaults();
         }
         if(currentVersion < 0.2615f)
         {
@@ -310,7 +285,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.286f) {
             locker.unlock();
             _httpThumbQuality = -1;
-            TCodeChannelLookup::setProfileDefaults();
+            TCodeChannelLookup::setAllProfileDefaults();
             Save();
             Load();
         }
@@ -329,8 +304,10 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.333f) {
             locker.unlock();
             setupKeyboardKeyMap();
-            if(TCodeChannelLookup::getChannels().isEmpty() || TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke())->AxisName.isEmpty()) {
-                SetChannelMapDefaults();
+            auto channel = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke());
+            if(TCodeChannelLookup::getChannels().isEmpty() || !channel || channel->AxisName.isEmpty()) {
+                TCodeChannelLookup::setAllProfileDefaults();
+                SaveChannelMap();
             }
             auto libraryExclusions = settingsToLoadFrom->value("libraryExclusions").value<QList<QString>>();
             _libraryExclusions = QStringList(libraryExclusions);
@@ -427,20 +404,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 //        }
 //        settingsToSaveTo->setValue("availableChannels", availableAxis);
 
-        QVariantMap availableChannelVariant;
-        //QMap<QString, QMap<QString, ChannelModel33>>* availableChannelProfiles = TCodeChannelLookup::getAvailableChannelProfiles();
-        QList<QString> availableChannelProfiles = TCodeChannelLookup::getChannelProfiles();
-        foreach(auto channelProfileName, availableChannelProfiles) {
-            QVariantMap availableChannelProfileVarient;
-            auto channels = TCodeChannelLookup::getChannels(channelProfileName);
-            foreach(auto channel, channels) {
-                auto variant = ChannelModel33::toVariant(*TCodeChannelLookup::getChannel(channel, channelProfileName));
-                availableChannelProfileVarient.insert(channel, variant);
-            }
-            if(!availableChannelVariant.contains(channelProfileName))
-                availableChannelVariant.insert(channelProfileName, availableChannelProfileVarient);
-        }
-        settingsToSaveTo->setValue("availableChannels", availableChannelVariant);
+        SaveChannelMap();
 
         QVariantMap gamepadMap;
         foreach(auto button, _gamepadButtonMap.keys())
@@ -570,21 +534,26 @@ void SettingsHandler::Default()
 
 void SettingsHandler::SetMapDefaults()
 {
-    SetChannelMapDefaults();
+    TCodeChannelLookup::setAllProfileDefaults();
+    SaveChannelMap();
     SetGamepadMapDefaults();
     SetKeyboardKeyDefaults();
 }
-void SettingsHandler::SetChannelMapDefaults()
+void SettingsHandler::SaveChannelMap()
 {
-    TCodeChannelLookup::setProfileDefaults();
-    QVariantMap availableAxis;
-    foreach(auto axis, TCodeChannelLookup::getChannels())
-    {
-        auto variant = ChannelModel33::toVariant(*TCodeChannelLookup::getChannel(axis));
-        availableAxis.insert(axis, variant);
+    QVariantMap availableChannelVariant;
+    QList<QString> availableChannelProfiles = TCodeChannelLookup::getChannelProfiles();
+    foreach(auto channelProfileName, availableChannelProfiles) {
+        QVariantMap availableChannelProfileVarient;
+        auto channels = TCodeChannelLookup::getChannels(channelProfileName);
+        foreach(auto channel, channels) {
+            auto variant = ChannelModel33::toVariant(*TCodeChannelLookup::getChannel(channel, channelProfileName));
+            availableChannelProfileVarient.insert(channel, variant);
+        }
+        if(!availableChannelVariant.contains(channelProfileName))
+            availableChannelVariant.insert(channelProfileName, availableChannelProfileVarient);
     }
-    settings->setValue("availableChannels", availableAxis);
-    settingsChangedEvent(true);
+    settings->setValue("availableChannels", availableChannelVariant);
 }
 void SettingsHandler::SetGamepadMapDefaults()
 {
@@ -772,15 +741,11 @@ void SettingsHandler::MigrateToQVariantChannelModel(QSettings* settingsToLoadFro
     {
         availableChannelsTemp.insert(axis, availableAxis[axis].value<ChannelModel>());
         _funscriptLoaded.insert(axis, false);
-        if(!TCodeChannelLookup::ChannelExists(axis))
-            TCodeChannelLookup::AddUserAxis(axis);
     }
     foreach(auto axis, availableChannelsTemp.keys())
     {
         TCodeChannelLookup::addChannel(axis, availableChannelsTemp[axis].toChannelModel33());
         _funscriptLoaded.insert(axis, false);
-        if(!TCodeChannelLookup::ChannelExists(axis))
-            TCodeChannelLookup::AddUserAxis(axis);
     }
 }
 
@@ -801,28 +766,11 @@ void SettingsHandler::MigrateTo32a(QSettings* settingsToLoadFrom)
 
 void  SettingsHandler::MigrateTo42(QSettings* settingsToLoadFrom) {
     QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
-//    QMap<QString, QMap<QString, ChannelModel33>> availableChannelProfiles;
-//    QVariantMap availableChannelVariant;
     TCodeChannelLookup::clearChannelProfiles();
     foreach(auto axis, availableChannelJson.keys())
     {
-//        if(availableChannelProfiles.isEmpty())
-//            availableChannelProfiles.insert("Default", { { axis, ChannelModel33::fromVariant(availableChannelJson.value(axis)) } });
-//        else
-//            availableChannelProfiles["Default"].insert({{ axis, ChannelModel33::fromVariant(availableChannelJson.value(axis)) }});
         TCodeChannelLookup::addChannel(axis, ChannelModel33::fromVariant(availableChannelJson.value(axis)), "Default");
     }
-    //TCodeChannelLookup::setAvailableChannelsProfiles(availableChannelProfiles);
-//    QVariantMap availableChannelVariant;
-//    foreach(auto channelProfile, availableChannelProfiles.keys()) {
-//        QVariantMap availableChannelProfile;
-//        foreach(auto channel, availableChannelProfiles[channelProfile].keys()) {
-//            auto variant = ChannelModel33::toVariant(availableChannelProfiles[channelProfile][channel]);
-//            availableChannelProfile.insert(channel, variant);
-//        }
-//        availableChannelVariant.insert(channelProfile, availableChannelProfile);
-//    }
-//    settingsToLoadFrom->setValue("availableChannels", availableChannelVariant);
 }
 
 void SettingsHandler::changeSelectedTCodeVersion(TCodeVersion key)
@@ -1161,11 +1109,6 @@ void SettingsHandler::setDisableTCodeValidation(bool value)
     settingsChangedEvent(true);
 }
 
-ChannelModel33* SettingsHandler::getAxis(QString channel)
-{
-    QMutexLocker locker(&mutex);
-    return TCodeChannelLookup::getChannel(channel);
-}
 void SettingsHandler::setAxis(QString axis, ChannelModel33 channel)
 {
     QMutexLocker locker(&mutex);
@@ -1202,7 +1145,7 @@ void SettingsHandler::setChannelUserMin(QString channel, int value)
     if(TCodeChannelLookup::hasChannel(channel)) {
         TCodeChannelLookup::getChannel(channel)->UserMin = value;
         if(channel == TCodeChannelLookup::Stroke())
-            _liveXRangeMin = value;
+            TCodeChannelLookup::setLiveXRangeMin(value);
         settingsChangedEvent(true);
     }
 }
@@ -1212,7 +1155,7 @@ void SettingsHandler::setChannelUserMax(QString channel, int value)
     if(TCodeChannelLookup::hasChannel(channel)) {
         TCodeChannelLookup::getChannel(channel)->UserMax = value;
         if(channel == TCodeChannelLookup::Stroke())
-            _liveXRangeMax = value;
+            TCodeChannelLookup::setLiveXRangeMax(value);
         settingsChangedEvent(true);
     }
 }
@@ -1222,7 +1165,7 @@ void SettingsHandler::setChannelUserMid(QString channel, int value)
     if(TCodeChannelLookup::hasChannel(channel)) {
         TCodeChannelLookup::getChannel(channel)->UserMid = value;
         if(channel == TCodeChannelLookup::Stroke())
-            _liveXRangeMid = value;
+            TCodeChannelLookup::setLiveXRangeMid(value);
         settingsChangedEvent(true);
     }
 }
@@ -1434,50 +1377,6 @@ int SettingsHandler::getXRangeStep()
 {
     QMutexLocker locker(&mutex);
     return _xRangeStep;
-}
-
-void SettingsHandler::setLiveXRangeMin(int value)
-{
-    QMutexLocker locker(&mutex);
-    _liveXRangeMin = value;
-    _liveXRangeMid = XMath::middle(_liveXRangeMin, _liveXRangeMax);
-}
-int SettingsHandler::getLiveXRangeMin()
-{
-    QMutexLocker locker(&mutex);
-    return _liveXRangeMin;
-}
-
-void SettingsHandler::setLiveXRangeMax(int value)
-{
-    QMutexLocker locker(&mutex);
-    _liveXRangeMax = value;
-    _liveXRangeMid = XMath::middle(_liveXRangeMin, _liveXRangeMax);
-}
-
-int SettingsHandler::getLiveXRangeMax()
-{
-    QMutexLocker locker(&mutex);
-    return _liveXRangeMax;
-}
-
-void SettingsHandler::setLiveXRangeMid(int value)
-{
-    QMutexLocker locker(&mutex);
-    _liveXRangeMid = value;
-}
-
-int SettingsHandler::getLiveXRangeMid()
-{
-    QMutexLocker locker(&mutex);
-    return _liveXRangeMid;
-}
-void SettingsHandler::resetLiveXRange()
-{
-    QMutexLocker locker(&mutex);
-    _liveXRangeMax = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke())->UserMax;
-    _liveXRangeMin = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke())->UserMin;
-    _liveXRangeMid = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke())->UserMid;
 }
 
 void SettingsHandler::setLiveMultiplierEnabled(bool value)
@@ -2238,9 +2137,6 @@ bool SettingsHandler::_liveActionPaused;
 int SettingsHandler::_liveOffset;
 
 int SettingsHandler::_xRangeStep;
-int SettingsHandler::_liveXRangeMax;
-int SettingsHandler::_liveXRangeMid;
-int SettingsHandler::_liveXRangeMin;
 bool SettingsHandler::_liveMultiplierEnabled = false;
 bool SettingsHandler::_multiplierEnabled;
 

@@ -512,7 +512,7 @@ void SyncHandler::loadMFS(QString scriptFile)
     foreach(auto axisName, availibleAxis)
     {
         auto track = TCodeChannelLookup::getChannel(axisName);
-        if(axisName == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfRange || track->TrackName.isEmpty())
+        if(axisName == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfOscillate || track->TrackName.isEmpty())
             continue;
 
         QFileInfo fileInfo(scriptFileNoExtension + "." + track->TrackName + ".funscript");
@@ -587,6 +587,8 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
     {
         _funscriptSearchRunning = true;
         QFileInfo videoFile(videoPath);
+        QString libraryScriptFile = videoFile.fileName().remove(videoFile.fileName().lastIndexOf('.'), videoFile.fileName().length() -  1) + ".funscript";
+        QString libraryScriptZipFile = videoFile.fileName().remove(videoFile.fileName().lastIndexOf('.'), videoFile.fileName().length() -  1) + ".zip";
         QStringList libraryPaths = SettingsHandler::getSelectedLibrary();
         QStringList vrLibraryPaths = SettingsHandler::getVRLibrary();
         QString funscriptPath;
@@ -622,19 +624,6 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
                 }
             }
 
-            if(funscriptPath.isEmpty())
-            {
-                funscriptPath = SettingsHandler::getDeoDnlaFunscript(videoPath);
-                if(!funscriptPath.isEmpty())
-                {
-                    QFileInfo funscriptFile(funscriptPath);
-                    if(!funscriptFile.exists())
-                    {
-                        SettingsHandler::removeLinkedVRFunscript(videoPath);
-                        funscriptPath = nullptr;
-                    }
-                }
-            }
 
             if (funscriptPath.isEmpty())
             {
@@ -646,46 +635,40 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
                 QString localFunscriptZipPath = tempZipPath.replace(indexOfSuffix, tempZipPath.length() - indexOfSuffix, ".zip");
                 QString libraryScriptPath = libraryPath + QDir::separator() + localFunscriptPath;
                 QString libraryScriptZipPath = libraryPath + QDir::separator() + localFunscriptZipPath;
-                QFile localFile(localFunscriptPath);
-                QFile libraryZipFile(libraryScriptZipPath);
                 LogHandler::Debug("searchForFunscript Searching local path: "+localFunscriptPath);
-                if(localFile.exists())
+                if(QFile::exists(localFunscriptPath))
                 {
                     LogHandler::Debug("searchForFunscript script found in path of media");
                     funscriptPath = localFunscriptPath;
                 }
-                else if (libraryZipFile.exists())
+                else if (QFile::exists(libraryScriptZipPath))
                 {
                     LogHandler::Debug("searchForFunscript script zip found in path of media");
                     funscriptPath = libraryScriptZipPath;
                 }
-                else if(!vrLibraryPaths.isEmpty())
-                {
-                    foreach (auto vrLibraryPath, vrLibraryPaths) {
-                        QString vrLibraryScriptPath = vrLibraryPath + QDir::separator() + localFunscriptPath;
-                        QString vrLibraryScriptZipPath = vrLibraryPath + QDir::separator() + localFunscriptZipPath;
-                        LogHandler::Debug("searchForFunscript Searching for local path in VR library root: "+ vrLibraryScriptPath);
-                        QFile localVRFile(vrLibraryScriptPath);
-                        QFile libraryVRZipFile(vrLibraryScriptZipPath);
-                        if(localVRFile.exists())
-                        {
-                            LogHandler::Debug("searchForFunscript script found in path of VR media");
-                            funscriptPath = vrLibraryScriptPath;
-                        }
-                        else if (libraryVRZipFile.exists())
-                        {
-                            LogHandler::Debug("searchForFunscript script zip found in path of VR media");
-                            funscriptPath = vrLibraryScriptZipPath;
-                        }
-                    }
-                }
+//                else if(!vrLibraryPaths.isEmpty())
+//                {
+//                    foreach (auto vrLibraryPath, vrLibraryPaths) {
+//                        QString vrLibraryScriptPath = vrLibraryPath + QDir::separator() + localFunscriptPath;
+//                        QString vrLibraryScriptZipPath = vrLibraryPath + QDir::separator() + localFunscriptZipPath;
+//                        LogHandler::Debug("searchForFunscript Searching for local path in VR library root: "+ vrLibraryScriptPath);
+//                        if(QFile::exists(vrLibraryScriptPath))
+//                        {
+//                            LogHandler::Debug("searchForFunscript script found in path of VR media");
+//                            funscriptPath = vrLibraryScriptPath;
+//                        }
+//                        else if (QFile::exists(vrLibraryScriptZipPath))
+//                        {
+//                            LogHandler::Debug("searchForFunscript script zip found in path of VR media");
+//                            funscriptPath = vrLibraryScriptZipPath;
+//                        }
+//                    }
+//                }
             }
 
             if (funscriptPath.isEmpty())
             {
-                LogHandler::Debug("searchForFunscript: Search ALL sub directories of both libraries for the funscript");
-                QString libraryScriptFile = videoFile.fileName().remove(videoFile.fileName().lastIndexOf('.'), videoFile.fileName().length() -  1) + ".funscript";
-                QString libraryScriptZipFile = videoFile.fileName().remove(videoFile.fileName().lastIndexOf('.'), videoFile.fileName().length() -  1) + ".zip";
+                LogHandler::Debug("searchForFunscript: Search ALL sub directories of library: "+libraryPath);
                 if(!libraryPath.isEmpty() && QFileInfo(libraryPath).exists()) {
                     QDirIterator directory(libraryPath,QDirIterator::Subdirectories);
                     while (_funscriptSearchRunning && directory.hasNext()) {
@@ -700,32 +683,48 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
                         }
                     }
                 }
-                if (funscriptPath.isEmpty() && !vrLibraryPaths.isEmpty())
-                {
-
-                    foreach (auto vrLibraryPath, vrLibraryPaths) {
-                        if(QFileInfo(vrLibraryPath).exists()) {
-                            QDirIterator directory(vrLibraryPath,QDirIterator::Subdirectories);
-                            while (_funscriptSearchRunning && directory.hasNext()) {
-                                directory.next();
-                                if (QFileInfo(directory.filePath()).isFile()) {
-                                    QString fileName = directory.fileName();
-                                    if (fileName.contains(libraryScriptFile) || fileName.contains(libraryScriptZipFile)){
-                                        funscriptPath = directory.filePath();
-                                        LogHandler::Debug("searchForFunscript Script found in VR library: "+funscriptPath);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if(!funscriptPath.isEmpty())
-                            break;
-                    }
-                }
             }
             if(!funscriptPath.isEmpty())
                 break;
         }
+
+        if (funscriptPath.isEmpty() && !vrLibraryPaths.isEmpty())
+        {
+            foreach (auto vrLibraryPath, vrLibraryPaths) {
+                if(QFileInfo(vrLibraryPath).exists()) {
+                    LogHandler::Debug("searchForFunscript: Search ALL sub directories of VR Library: "+vrLibraryPath);
+                    QDirIterator directory(vrLibraryPath,QDirIterator::Subdirectories);
+                    while (_funscriptSearchRunning && directory.hasNext()) {
+                        directory.next();
+                        if (QFileInfo(directory.filePath()).isFile()) {
+                            QString fileName = directory.fileName();
+                            if (fileName.contains(libraryScriptFile) || fileName.contains(libraryScriptZipFile)){
+                                funscriptPath = directory.filePath();
+                                LogHandler::Debug("searchForFunscript Script found in VR library: "+funscriptPath);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if(!funscriptPath.isEmpty())
+                    break;
+            }
+        }
+
+        if(funscriptPath.isEmpty())
+        {
+            funscriptPath = SettingsHandler::getDeoDnlaFunscript(videoPath);
+            if(!funscriptPath.isEmpty())
+            {
+                QFileInfo funscriptFile(funscriptPath);
+                if(!funscriptFile.exists())
+                {
+                    SettingsHandler::removeLinkedVRFunscript(videoPath);
+                    funscriptPath = nullptr;
+                }
+            }
+        }
+
         if(funscriptPath.isEmpty())
             _funscriptSearchNotFound = true;
 

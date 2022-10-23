@@ -60,15 +60,16 @@ QString TCodeFactory::formatTCode(QVector<ChannelValueModel>* values)
 
 int TCodeFactory::calculateTcodeRange(double value, ChannelModel33* channel)
 {
-    int output_end = TCodeChannelLookup::getChannel(channel->Channel)->UserMax;//Get parent as could be - or +
-    int min = SettingsHandler::getAxis(channel->Channel)->UserMin;
+    auto parentChannel = TCodeChannelLookup::getChannel(channel->Channel);//Get parent as could be - or +
+    int output_end = parentChannel->UserMax;
+    int min = parentChannel->UserMin;
     // Update for live x range switch
     if(channel->Channel == TCodeChannelLookup::Stroke())
     {
-        output_end = SettingsHandler::getLiveXRangeMax();
-        min = SettingsHandler::getLiveXRangeMin();
+        output_end = TCodeChannelLookup::getLiveXRangeMax();
+        min = TCodeChannelLookup::getLiveXRangeMin();
     }
-    int output_start = channel->Type != AxisType::Switch ? qRound((output_end + min) / 2.0) : min;
+    int output_start = channel->Type != AxisType::Ramp ? qRound((output_end + min) / 2.0) : min;
     double slope = (output_end - output_start) / (_input_end - _input_start);
     return qRound(output_start + slope * (value - _input_start));
 }

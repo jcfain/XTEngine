@@ -158,7 +158,7 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     {
         QJsonObject value;
         auto channel = TCodeChannelLookup::getChannel(channelName);
-        if(channel->Type != AxisType::HalfRange && channel->Type != AxisType::None)
+        if(channel->Type != AxisType::HalfOscillate && channel->Type != AxisType::None)
         {
             value["axisName"] = channel->AxisName;
             value["channel"] = channel->Channel;
@@ -228,7 +228,7 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
         foreach(auto channelName, channels)
         {
             auto channel = TCodeChannelLookup::getChannel(channelName);
-            if(channel->Type == AxisType::HalfRange || channel->Type == AxisType::None)
+            if(channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None)
                 continue;
             auto value = doc["availableAxis"][channelName];
             ChannelModel33 channelModel = {

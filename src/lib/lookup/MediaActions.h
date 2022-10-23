@@ -4,6 +4,11 @@
 #include <QString>
 #include <QMap>
 #include "XTEngine_global.h"
+enum class ActionType {
+    NONE,
+    CHANNEL_PROFILE
+};
+
 class XTENGINE_EXPORT MediaActions
 {
 public:
@@ -90,7 +95,11 @@ public:
         {ChannelProfileNext, "Channel profile next"},
         {ChannelProfilePrevious, "Channel profile previous"}
     };
-    static QMap<QString, QString> TCodeChannelProfileActions;
+
+    static bool HasOtherAction(QString action, ActionType type = ActionType::NONE);
+    static QMap<QString, QString> GetOtherActions(ActionType type = ActionType::NONE);
+    static void AddOtherAction(QString action, QString friendlyName, ActionType type);
 private:
+    static QMap<QString, QString> m_tCodeChannelProfileActions;
 };
 #endif // MEDIAACTIONS_H

@@ -32,89 +32,89 @@ void SettingsActionHandler::media_action(QString action)
     else if(action == actions.IncreaseXLowerRange)
     {
         int xRangeStep = SettingsHandler::getXRangeStep();
-        int newLiveRange = SettingsHandler::getLiveXRangeMin() + SettingsHandler::getXRangeStep();
-        int xRangeMax = SettingsHandler::getLiveXRangeMax();
+        int newLiveRange = TCodeChannelLookup::getLiveXRangeMin() + SettingsHandler::getXRangeStep();
+        int xRangeMax = TCodeChannelLookup::getLiveXRangeMax();
         if(newLiveRange < xRangeMax - xRangeStep)
         {
-            SettingsHandler::setLiveXRangeMin(newLiveRange);
+            TCodeChannelLookup::setLiveXRangeMin(newLiveRange);
             emit actionExecuted(action, "Raise X min to "+ QString::number(newLiveRange));
         }
         else
         {
-            SettingsHandler::setLiveXRangeMin(xRangeMax - xRangeStep);
+            TCodeChannelLookup::setLiveXRangeMin(xRangeMax - xRangeStep);
             emit actionExecuted(action, "X Min limit reached");
         }
     }
     else if(action == actions.DecreaseXLowerRange)
     {
-        int newLiveRange = SettingsHandler::getLiveXRangeMin() - SettingsHandler::getXRangeStep();
-        int axisMin = SettingsHandler::getAxis(TCodeChannelLookup::Stroke())->Min;
+        int newLiveRange = TCodeChannelLookup::getLiveXRangeMin() - SettingsHandler::getXRangeStep();
+        int axisMin = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke())->Min;
         if(newLiveRange > axisMin)
         {
-            SettingsHandler::setLiveXRangeMin(newLiveRange);
+            TCodeChannelLookup::setLiveXRangeMin(newLiveRange);
             emit actionExecuted(action, "Lower X min to "+ QString::number(newLiveRange));
         }
         else
         {
-            SettingsHandler::setLiveXRangeMin(axisMin);
+            TCodeChannelLookup::setLiveXRangeMin(axisMin);
             emit actionExecuted(action, "Low X min limit reached");
         }
     }
     else if(action == actions.IncreaseXUpperRange)
     {
-        int newLiveRange = SettingsHandler::getLiveXRangeMax() + SettingsHandler::getXRangeStep();
-        int axisMax = SettingsHandler::getAxis(TCodeChannelLookup::Stroke())->Max;
+        int newLiveRange = TCodeChannelLookup::getLiveXRangeMax() + SettingsHandler::getXRangeStep();
+        int axisMax = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke())->Max;
         if(newLiveRange < axisMax)
         {
-            SettingsHandler::setLiveXRangeMax(newLiveRange);
+            TCodeChannelLookup::setLiveXRangeMax(newLiveRange);
             emit actionExecuted(action, "Raise X max to "+ QString::number(newLiveRange));
         }
         else
         {
-            SettingsHandler::setLiveXRangeMax(axisMax);
+            TCodeChannelLookup::setLiveXRangeMax(axisMax);
             emit actionExecuted(action, "High X max limit reached");
         }
     }
     else if(action == actions.DecreaseXUpperRange)
     {
         int xRangeStep = SettingsHandler::getXRangeStep();
-        int newLiveRange = SettingsHandler::getLiveXRangeMax() - xRangeStep;
-        int xRangeMin = SettingsHandler::getLiveXRangeMin();
+        int newLiveRange = TCodeChannelLookup::getLiveXRangeMax() - xRangeStep;
+        int xRangeMin = TCodeChannelLookup::getLiveXRangeMin();
         if(newLiveRange > xRangeMin + xRangeStep)
         {
-            SettingsHandler::setLiveXRangeMax(newLiveRange);
+            TCodeChannelLookup::setLiveXRangeMax(newLiveRange);
             emit actionExecuted(action, "Lower X max to "+ QString::number(newLiveRange));
         }
         else
         {
-            SettingsHandler::setLiveXRangeMax(xRangeMin + xRangeStep);
+            TCodeChannelLookup::setLiveXRangeMax(xRangeMin + xRangeStep);
             emit actionExecuted(action, "Low X max limit reached");
         }
     }
     else if (action == actions.IncreaseXRange)
     {
-        int xRangeMax = SettingsHandler::getLiveXRangeMax();
-        int xRangeMin = SettingsHandler::getLiveXRangeMin();
+        int xRangeMax = TCodeChannelLookup::getLiveXRangeMax();
+        int xRangeMin = TCodeChannelLookup::getLiveXRangeMin();
         int xRangeStep = SettingsHandler::getXRangeStep();
         int newLiveMaxRange = xRangeMax + xRangeStep;
-        int axisMax = SettingsHandler::getAxis(TCodeChannelLookup::Stroke())->Max;
+        int axisMax = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke())->Max;
         bool atMax = false;
         if(newLiveMaxRange > axisMax)
         {
             atMax = true;
             newLiveMaxRange = axisMax;
         }
-        SettingsHandler::setLiveXRangeMax(newLiveMaxRange);
+        TCodeChannelLookup::setLiveXRangeMax(newLiveMaxRange);
 
         int newLiveMinRange = xRangeMin - xRangeStep;
-        int axisMin = SettingsHandler::getAxis(TCodeChannelLookup::Stroke())->Min;
+        int axisMin = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke())->Min;
         bool atMin = false;
         if(newLiveMinRange < axisMin)
         {
             atMin = true;
             newLiveMinRange = axisMin;
         }
-        SettingsHandler::setLiveXRangeMin(newLiveMinRange);
+        TCodeChannelLookup::setLiveXRangeMin(newLiveMinRange);
 
         if (atMin && atMax)
             emit actionExecuted(action, "Increase X at limit");
@@ -128,8 +128,8 @@ void SettingsActionHandler::media_action(QString action)
     }
     else if (action == actions.DecreaseXRange)
     {
-        int xRangeMax = SettingsHandler::getLiveXRangeMax();
-        int xRangeMin = SettingsHandler::getLiveXRangeMin();
+        int xRangeMax = TCodeChannelLookup::getLiveXRangeMax();
+        int xRangeMin = TCodeChannelLookup::getLiveXRangeMin();
         int xRangeStep = SettingsHandler::getXRangeStep();
         int newLiveMaxRange = xRangeMax - xRangeStep;
         bool maxLessThanMin = false;
@@ -138,7 +138,7 @@ void SettingsActionHandler::media_action(QString action)
             maxLessThanMin = true;
             newLiveMaxRange = xRangeMin + 1;
         }
-        SettingsHandler::setLiveXRangeMax(newLiveMaxRange);
+        TCodeChannelLookup::setLiveXRangeMax(newLiveMaxRange);
 
         int newLiveMinRange = xRangeMin + xRangeStep;
         bool minGreaterThanMax = false;
@@ -147,7 +147,7 @@ void SettingsActionHandler::media_action(QString action)
             minGreaterThanMax = true;
             newLiveMinRange = xRangeMax - 1;
         }
-        SettingsHandler::setLiveXRangeMin(newLiveMinRange);
+        TCodeChannelLookup::setLiveXRangeMin(newLiveMinRange);
         if (maxLessThanMin && minGreaterThanMax)
             emit actionExecuted(action, "Decrease X at limit");
         else if (maxLessThanMin)
@@ -161,7 +161,7 @@ void SettingsActionHandler::media_action(QString action)
     else if (action == actions.ResetLiveXRange)
     {
         emit actionExecuted(action, "Resetting X range");
-        SettingsHandler::resetLiveXRange();
+        TCodeChannelLookup::resetLiveXRange();
     }
     else if (action == actions.ToggleAxisMultiplier)
     {
@@ -237,7 +237,7 @@ void SettingsActionHandler::media_action(QString action)
             else
                 emit actionExecuted(action, "Funscript modifier at minimum "+ QString::number(modedModifier) + "percent");
         }
-    } else if(MediaActions::TCodeChannelProfileActions.contains(action)) {
+    } else if(MediaActions::HasOtherAction(action, ActionType::CHANNEL_PROFILE)) {
         TCodeChannelLookup::setSelectedChannelProfile(action);
         emit actionExecuted(action, "Set "+ action);
     } else if(action == actions.ChannelProfileNext || action == actions.ChannelProfilePrevious) {

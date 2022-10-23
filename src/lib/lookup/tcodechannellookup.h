@@ -17,9 +17,11 @@ class XTENGINE_EXPORT TCodeChannelLookup: public QObject
     Q_OBJECT
 signals:
     void tcodeVersionChanged();
+    void allProfilesDeleted();
     void channelProfileChanged(QMap<QString, ChannelModel33>* channelProfile);
 
 public:
+    ~TCodeChannelLookup();
     static TCodeChannelLookup& instance(){
         return m_instance;
     }
@@ -28,7 +30,6 @@ public:
     static QString PositiveModifier;
     static QString NegativeModifier;
     static QHash<TCodeVersion,  QMap<AxisName,  QString>> TCodeVersionMap;
-    static void setSelectedTCodeVersion(TCodeVersion version);
     static void changeSelectedTCodeVersion(TCodeVersion version);
     static QString getSelectedChannelProfile();
     static void setSelectedChannelProfile(QString value);
@@ -36,7 +37,6 @@ public:
     static QString getSelectedTCodeVersionName();
     static QString getTCodeVersionName(TCodeVersion version);
     static QMap<AxisName, QString> GetSelectedVersionMap();
-    static void AddUserAxis(QString channel);
     static bool ChannelExists(QString channel);
     static QStringList getValidMFSExtensions();
     static void addChannelsProfile(QString name, QMap<QString, ChannelModel33> channels = QMap<QString, ChannelModel33>());
@@ -55,8 +55,17 @@ public:
     static bool hasChannel(QString name, QString profile = nullptr);
     static bool hasProfile(QString profile);
     static void clearChannelProfiles();
-    static void setAllProfileDefaults();
+    static void setAllProfileDefaults(bool keepCurrent = false);
     static void setProfileDefaults(QString profile = nullptr);
+
+    static void setLiveXRangeMin(int value);
+    static int getLiveXRangeMin();
+    static void setLiveXRangeMid(int value);
+    static int getLiveXRangeMid();
+    static void setLiveXRangeMax(int value);
+    static int getLiveXRangeMax();
+    static void resetLiveXRange();
+
     static QMap<QString, ChannelModel33> getDefaultChannelProfile();
     static QString ToString(AxisName channel);
     static QString None();
@@ -86,9 +95,11 @@ public:
     static QString SuckPosition();
     static QString SuckMorePosition();
     static QString SuckLessPosition();
+    static bool isDefaultChannel(QString channelName);
 private:
     static TCodeChannelLookup m_instance;
     static QMutex m_mutex;
+    static ChannelModel33* m_defaultChannel;
     static int m_channelCount;
     static TCodeVersion m_selectedTCodeVersion;
     static QMap<AxisName,  QString> m_selectedTCodeVersionMap;
@@ -111,12 +122,20 @@ private:
     static QStringList m_validMFSExtensions;
     static ChannelModel33 setupAvailableChannel(QString friendlyName, QString axisName, QString channel, AxisDimension dimension, AxisType type, QString mfsTrackName, QString relatedChannel);
 
+    static int _liveXRangeMax;
+    static int _liveXRangeMid;
+    static int _liveXRangeMin;
 
-    static void setAvailableChannelsProfiles(QMap<QString, QMap<QString, ChannelModel33>> channels);
-    static QMap<QString, QMap<QString, ChannelModel33>>* getAvailableChannelProfiles();
-    static QMap<QString, ChannelModel33>* getAvailableChannels();
-    static void profileChanged();
     static QTimer m_debounceTimer;
+
+    static void setSelectedTCodeVersion(TCodeVersion version);
+//    static void setAvailableChannelsProfiles(QMap<QString, QMap<QString, ChannelModel33>> channels);
+//    static QMap<QString, QMap<QString, ChannelModel33>>* getAvailableChannelProfiles();
+    //static QMap<QString, ChannelModel33>* getAvailableChannels();
+    static void addUserChannelMap(QString channel);
+    static void deleteUserChannelMap(QString channel);
+    static void profileChanged();
+    static void syncChannelMapToCurrentProfile();
 };
 
 #endif // TCODECHANNELLOOKUP_H
