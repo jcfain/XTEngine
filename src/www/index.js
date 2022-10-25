@@ -96,6 +96,8 @@ var showGlobal = JSON.parse(window.localStorage.getItem("show"));
 var thumbSizeGlobal = JSON.parse(window.localStorage.getItem("thumbSize"));
 var selectedSyncConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedSyncConnection"));
 var selectedOutputConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedOutputConnection"));
+var disableLazyLoad = JSON.parse(window.localStorage.getItem("disableLazyLoad"));
+toggleLazyLoad(disableLazyLoad, false);
 /* 	if(!thumbSizeGlobal && window.devicePixelRatio == 2.75) {
 		thumbSizeGlobal = 400;
 	} */
@@ -995,11 +997,20 @@ function loadMedia(mediaList) {
 		//anode.style.height = height;
 		anode.onclick = createClickHandler(obj);
 		var image = document.createElement("img");
-		if (obj.thumbFileExists)
-			image.dataset.src = "/thumb/" + obj.relativeThumb;
-		else
-			image.dataset.src = "/thumb/" + obj.thumbFileLoading;
-		image.classList.add("lazy");
+		
+		if(!disableLazyLoad) {
+			if (obj.thumbFileExists)
+				image.dataset.src = "/thumb/" + obj.relativeThumb;
+			else
+				image.dataset.src = "/thumb/" + obj.thumbFileLoading;
+			image.classList.add("lazy");
+		} else {
+			if (obj.thumbFileExists)
+				image.src = "/thumb/" + obj.relativeThumb;
+			else
+				image.src = "/thumb/" + obj.thumbFileLoading;
+			image.loading = "lazy"
+		}
 		image.classList.add("media-thumb-nail")
 		image.style.width = thumbSizeGlobal + "px";
 		image.style.height = thumbSizeGlobal - textHeight + "px";
@@ -1021,7 +1032,8 @@ function loadMedia(mediaList) {
 			setPlayingMediaItem(obj);
 
 	}
-	setupLazyLoad();
+	if(!disableLazyLoad)
+		setupLazyLoad();
 }
 
 function createMediaContextNode(parent, mediaItem) {
@@ -1238,10 +1250,24 @@ function loadVideo(obj) {
 	}
 } 
 */
+function onClickLazyLoadCheckbox(checkbox) {
+	toggleLazyLoad(checkbox.checked, true);
+}
+function toggleLazyLoad(value, userClicked) {
+	if (userClicked) {
+		externalStreaming = value;
+		window.localStorage.setItem("disableLazyLoad", JSON.stringify(value));
+	}
+	else
+		document.getElementById("disableLazyLoadCheckbox").checked = value;
+	if (value) {
+		stopVideo();
+	}
+}
+
 function onClickExternalStreamingCheckbox(checkbox) {
 	toggleExternalStreaming(checkbox.checked, true);
 }
-
 function toggleExternalStreaming(value, userClicked) {
 	if (userClicked) {
 		externalStreaming = value;

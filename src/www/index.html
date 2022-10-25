@@ -300,6 +300,14 @@
 							</div>
 						</div>
 						<div class="formElement">
+							<label
+								title="If checked, the thumb nails may load in all at once&#010;This could reduce performance with a lot of images.&#010;Only check if having issues with loading thumbs in this browser."
+								for="disableLazyLoadCheckbox">Alternate lazy load thumbnails
+							</label>
+							<input id="disableLazyLoadCheckbox" type="checkbox"
+								onclick="onClickLazyLoadCheckbox(this)" />
+						</div>
+						<div class="formElement">
 							<label title="If checked, a voice will play with certain actions"
 								for="enableTextToSpeech">Voice enabled
 							</label>
