@@ -40,6 +40,7 @@ public:
     static bool ChannelExists(QString channel);
     static QStringList getValidMFSExtensions();
     static void addChannelsProfile(QString name, QMap<QString, ChannelModel33> channels = QMap<QString, ChannelModel33>());
+    static void setupChannelsProfile(QString name, QMap<QString, ChannelModel33> channels = QMap<QString, ChannelModel33>());
     static void copyChannelsProfile(QString oldName, QString newName = nullptr);
     static void deleteChannelsProfile(QString name);
 

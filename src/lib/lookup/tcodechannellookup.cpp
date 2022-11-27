@@ -59,7 +59,6 @@ QString TCodeChannelLookup::getSelectedChannelProfile() {
 }
 
 void TCodeChannelLookup::setSelectedChannelProfile(QString value) {
-    QMutexLocker locker(&m_mutex);
     m_selectedChannelProfile = value;
     profileChanged();
 }
@@ -311,15 +310,18 @@ void TCodeChannelLookup::clearChannels(QString profile) {
 //    profileChanged();
 //}
 
-void TCodeChannelLookup::addChannelsProfile(QString name, QMap<QString, ChannelModel33> channels) {
+void TCodeChannelLookup::setupChannelsProfile(QString name, QMap<QString, ChannelModel33> channels) {
     QMutexLocker locker(&m_mutex);
     MediaActions::AddOtherAction(name, "Channel profile: " + name, ActionType::CHANNEL_PROFILE);
     if(channels.empty())
         m_availableChanels.insert(name, getDefaultChannelProfile());
     else
         m_availableChanels.insert(name, channels);
-    m_selectedChannelProfile = name;
     profileChanged();
+}
+void TCodeChannelLookup::addChannelsProfile(QString name, QMap<QString, ChannelModel33> channels) {
+    setupChannelsProfile(name, channels);
+    setSelectedChannelProfile(name);
 }
 
 void TCodeChannelLookup::copyChannelsProfile(QString newName, QString oldName) {
@@ -332,7 +334,7 @@ void TCodeChannelLookup::copyChannelsProfile(QString newName, QString oldName) {
 void TCodeChannelLookup::deleteChannelsProfile(QString name) {
     QMutexLocker locker(&m_mutex);
     m_availableChanels.remove(name);
-    m_selectedChannelProfile = m_availableChanels.keys().last();
+    setSelectedChannelProfile(m_availableChanels.keys().last());
     profileChanged();
 }
 

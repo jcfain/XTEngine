@@ -58,7 +58,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _funscriptLoaded.clear();
     foreach(auto profile, availableChannelJson.keys())
     {
-        TCodeChannelLookup::addChannelsProfile(profile, QMap<QString, ChannelModel33>());
+        TCodeChannelLookup::setupChannelsProfile(profile, QMap<QString, ChannelModel33>());
         foreach(auto axis, availableChannelJson.value(profile).toObject().keys())
         {
             TCodeChannelLookup::addChannel(axis, ChannelModel33::fromVariant(availableChannelJson.value(profile).toObject().value(axis)), profile);
