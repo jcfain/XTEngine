@@ -50,7 +50,6 @@ public:
     //static void migrateTCodeVersion();
     static QString getDeoDnlaFunscript(QString key);
     static QHash<QString, QVariant> getDeoDnlaFunscripts();
-    static QString getSelectedTheme();
     static QStringList getSelectedLibrary();
     static QString getLastSelectedLibrary();
     static void addSelectedLibrary(QString value);
@@ -107,7 +106,6 @@ public:
 
     static void setLinkedVRFunscript(QString key, QString value);
     static void removeLinkedVRFunscript(QString key);
-    static void setSelectedTheme(QString value);
     static void setSelectedFunscriptLibrary(QString value);
 
     static QString getDeoAddress();
@@ -304,7 +302,7 @@ public:
     }
     static QStringList getImageExtensions()
     {
-        return QStringList() << "jpg" << "jpeg" << "png" << "jfif" << "webp";
+        return QStringList() << "jpg" << "jpeg" << "png" << "jfif" << "webp" << "gif";
     }
 
 private:
@@ -340,7 +338,6 @@ private:
     static bool _hideWelcomeScreen;
 
     static QHash<QString, QVariant> deoDnlaFunscriptLookup;
-    static QString selectedTheme;
     static QStringList selectedLibrary;
     static QStringList _vrLibrary;
     static QString selectedFunscriptLibrary;

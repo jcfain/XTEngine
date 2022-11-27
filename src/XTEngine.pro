@@ -34,6 +34,7 @@ SOURCES += \
     lib/lookup/Constant.cpp \
     lib/lookup/MediaActions.cpp \
     lib/lookup/tcodechannellookup.cpp \
+    lib/tool/heatmap.cpp \
     lib/tool/imagefactory.cpp \
     lib/tool/simplecrypt.cpp \
     lib/tool/tcodefactory.cpp \
@@ -91,6 +92,7 @@ HEADERS += \
     lib/struct/SerialComboboxItem.h \
     lib/struct/InputDevicePacket.h \
     lib/tool/boolinq.h \
+    lib/tool/heatmap.h \
     lib/tool/imagefactory.h \
     lib/tool/simplecrypt.h \
     lib/tool/tcodefactory.h \

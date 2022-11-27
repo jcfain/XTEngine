@@ -52,6 +52,10 @@ bool SyncHandler::isPlayingVR()
     return _isVRFunscriptPlaying;
 }
 
+FunscriptHandler* SyncHandler::getFunscriptHandler() {
+    return _funscriptHandler;
+}
+
 QList<QString> SyncHandler::load(QString scriptFile)
 {
     LogHandler::Debug("Enter syncHandler load");

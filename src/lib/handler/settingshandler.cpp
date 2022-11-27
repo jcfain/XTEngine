@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = QString("0.42b_%1T%2").arg(__DATE__).arg(__TIME__);
-const float SettingsHandler::XTEVersionNum = 0.42f;
+const QString SettingsHandler::XTEVersion = QString("0.421b_%1T%2").arg(__DATE__).arg(__TIME__);
+const float SettingsHandler::XTEVersionNum = 0.421f;
 
 SettingsHandler::SettingsHandler(){}
 SettingsHandler::~SettingsHandler()
@@ -66,8 +66,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         }
     }
 
-    selectedTheme = settingsToLoadFrom->value("selectedTheme").toString();
-    selectedTheme = selectedTheme.isEmpty() ? _applicationDirPath + "/themes/dark.css" : selectedTheme;
     selectedLibrary = settingsToLoadFrom->value("selectedLibrary").toStringList();
     _selectedThumbsDir = settingsToLoadFrom->value("selectedThumbsDir").toString();
     _useMediaDirForThumbs = settingsToLoadFrom->value("useMediaDirForThumbs").toBool();
@@ -354,7 +352,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         settingsToSaveTo->setValue("hideWelcomeScreen", ((int)_hideWelcomeScreen));
         settingsToSaveTo->setValue("selectedLibrary", selectedLibrary);
-        settingsToSaveTo->setValue("selectedTheme", selectedTheme);
         settingsToSaveTo->setValue("selectedThumbsDir", _selectedThumbsDir);
         settingsToSaveTo->setValue("useMediaDirForThumbs", _useMediaDirForThumbs);
         settingsToSaveTo->setValue("selectedDevice", _selectedOutputDevice);
@@ -923,11 +920,6 @@ int SettingsHandler::getTCodePadding()
     return TCodeChannelLookup::getSelectedTCodeVersion() == TCodeVersion::v3 ? 4 : 3;
 }
 
-QString SettingsHandler::getSelectedTheme()
-{
-    QMutexLocker locker(&mutex);
-    return selectedTheme;
-}
 QStringList SettingsHandler::getSelectedLibrary()
 {
     QMutexLocker locker(&mutex);
@@ -1578,12 +1570,6 @@ QString SettingsHandler::getKeyboardKey(int key, int keyModifiers) {
     return QKeySequence(keyModifiers+key).toString(QKeySequence::NativeText);
 }
 
-void SettingsHandler::setSelectedTheme(QString value)
-{
-    QMutexLocker locker(&mutex);
-    selectedTheme = value;
-    settingsChangedEvent(true);
-}
 void SettingsHandler::setSelectedFunscriptLibrary(QString value)
 {
     QMutexLocker locker(&mutex);
@@ -2107,7 +2093,6 @@ QSize SettingsHandler::_maxThumbnailSize = {500, 500};
 GamepadAxisName SettingsHandler::gamepadAxisNames;
 MediaActions SettingsHandler::mediaActions;
 QHash<QString, QVariant> SettingsHandler::deoDnlaFunscriptLookup;
-QString SettingsHandler::selectedTheme;
 QStringList SettingsHandler::selectedLibrary;
 QString SettingsHandler::_selectedThumbsDir;
 bool SettingsHandler::_useMediaDirForThumbs;

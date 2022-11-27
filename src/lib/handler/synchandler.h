@@ -65,9 +65,11 @@ public:
     bool isPlayingStandAlone();
     bool isPlayingVR();
     QString getPlayingStandAloneScript();
+
+    FunscriptHandler* getFunscriptHandler();
 private:
     TCodeHandler* _tcodeHandler;
-    FunscriptHandler* _funscriptHandler;
+    FunscriptHandler* _funscriptHandler = 0;
     QList<FunscriptHandler*> _funscriptHandlers;
     InputDeviceHandler* _inputDeviceHandler = 0;
     OutputDeviceHandler* _outputDeviceHandler = 0;
