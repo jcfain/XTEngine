@@ -24,9 +24,9 @@ signals:
     void libraryLoaded();
     void libraryStopped();
     void libraryChange();
-    void itemAdded(LibraryListItem27 item);
-    void itemRemoved(LibraryListItem27 item);
-    void itemUpdated(LibraryListItem27 item);
+    void itemAdded(LibraryListItem27 item, int index, int newSize);
+    void itemRemoved(LibraryListItem27 item, int index, int newSize);
+    void itemUpdated(LibraryListItem27 item, int index);
     //void playListItem(LibraryListItem27 item);
 
     void thumbProcessBegin();

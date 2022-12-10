@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QPixmap>
+#include <QPainter>
 #include "lib/handler/funscripthandler.h"
 
 #include "XTEngine_global.h"
@@ -13,6 +14,8 @@ class XTENGINE_EXPORT HeatMap : public QObject
 public:
     explicit HeatMap(QObject *parent = nullptr);
     QPixmap setData(int width, int height, FunscriptHandler* data, qint64 duration);
+
+    QPixmap draw2(int width, int height);
     QPixmap draw(int width, int height);
 
 private:

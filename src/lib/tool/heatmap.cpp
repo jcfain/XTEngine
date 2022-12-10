@@ -11,6 +11,7 @@ QPixmap HeatMap::setData(int width, int height, FunscriptHandler* funscriptHandl
 
     minD = 0;
     maxD = duration;
+    LogHandler::Debug("Set duration: "+QString::number(duration));
     m_funscriptHandler = funscriptHandler;
 //    minD = m_funscriptHandler->getMin();
 //    maxD = m_funscriptHandler->getMax();
@@ -38,6 +39,39 @@ QPixmap HeatMap::setData(int width, int height, FunscriptHandler* funscriptHandl
     return draw(width, height);
 }
 
+QPixmap HeatMap::draw2(int width, int height) {
+    QPixmap pixmap;
+    QPainter _painter(&pixmap);
+    _painter.setWindow( 0, 0, width, height );
+
+    _painter.setRenderHint( QPainter::Antialiasing, true);
+    _painter.setPen(QPen(Qt::black, 1, Qt::SolidLine, Qt::RoundCap, Qt::MiterJoin));
+
+    int nGridStep = 20;
+    for( int x = 0; x <= width / nGridStep; x ++ )
+    {
+       _painter.drawLine( x * nGridStep, 0, x * nGridStep, height );
+    }
+    for( int y = 0; y <= height / nGridStep; y ++ )
+    {
+       _painter.drawLine( 0, y * nGridStep, width, y * nGridStep );
+    }
+
+    _painter.setPen(QPen(Qt::red, 3, Qt::SolidLine, Qt::RoundCap, Qt::MiterJoin));
+    int nSpace = 0;
+    int nSpace2 = 0;
+    auto funscript = m_funscriptHandler->currentFunscript();
+    auto atList = m_funscriptActions.keys();
+    auto posList = m_funscriptActions.values();
+    for(int i = 0; i < posList.count(); i ++ ) {
+        if(i + 1 < posList.count()) {
+            nSpace += nGridStep;
+            _painter.drawLine( nSpace2, height - posList[i] , nSpace, height - posList[i + 1]);
+            nSpace2 += nGridStep;
+        }
+    }
+    return pixmap;
+}
 
 QPixmap HeatMap::draw(int width, int height) {
     if(!m_funscriptHandler) {
@@ -59,7 +93,7 @@ QPixmap HeatMap::draw(int width, int height) {
             qint64 newTime = at - timeSinceLastAt;
             if (newTime > 0) {
                 timeSinceLastAt = newTime;
-                Rv = qRound(255.0f * timeSinceLastAt / (maxD - minD));
+                Rv = qRound(255.0f * ((double)timeSinceLastAt / (maxD - minD)));
                 LogHandler::Debug("Time change: 255.0f * "+QString::number(timeSinceLastAt)+" / "+ QString::number(maxD) + " - "+QString::number(minD)+ " = "+QString::number(Rv));
             }
 

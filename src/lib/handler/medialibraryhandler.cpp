@@ -643,31 +643,34 @@ void MediaLibraryHandler::updateItem(LibraryListItem27 item) {
     auto index = findItemIndexByID(item.ID);
     if(index > -1)
         _cachedLibraryItems[index] = item;
-    emit itemUpdated(item);
+    emit itemUpdated(item, index);
 }
 void MediaLibraryHandler::removeFromCache(LibraryListItem27 itemToRemove) {
     const QMutexLocker locker(&_mutex);
+    auto index = findItemIndexByID(itemToRemove.ID);
     _cachedLibraryItems.removeOne(itemToRemove);
-    if(!isLibraryLoading()) {
-        emit itemRemoved(itemToRemove);
+    //if(!isLibraryLoading()) {
+        emit itemRemoved(itemToRemove, index, _cachedLibraryItems.count());
         //emit libraryChange();
-    }
+    //}
 }
 void MediaLibraryHandler::addItemFront(LibraryListItem27 item) {
     const QMutexLocker locker(&_mutex);
     _cachedLibraryItems.push_front(item);
-    if(!isLibraryLoading()) {
-        emit itemAdded(item);
+    auto index = 0;
+    //if(!isLibraryLoading()) {
+        emit itemAdded(item, index, _cachedLibraryItems.count());
         //emit libraryChange();
-    }
+    //}
 }
 void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
     const QMutexLocker locker(&_mutex);
     _cachedLibraryItems.push_back(item);
-    if(!isLibraryLoading()) {
-        emit itemAdded(item);
+    auto index = _cachedLibraryItems.count() - 1;
+    //if(!isLibraryLoading()) {
+        emit itemAdded(item, index, _cachedLibraryItems.count());
         //emit libraryChange();
-    }
+    //}
 }
 void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
 {
@@ -695,7 +698,7 @@ void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)
             int index = findItemIndexByID(item.ID);
             if(index > -1) {
                 _cachedLibraryItems[index].thumbFile = newName;
-                emit itemUpdated(item);
+                emit itemUpdated(item, index);
             }
         } else {
             LogHandler::Error("File rename failed: "+ newName);
@@ -716,7 +719,7 @@ void MediaLibraryHandler::unlockThumb(LibraryListItem27 &item)
             int index = findItemIndexByID(item.ID);
             if(index > -1) {
                 _cachedLibraryItems[index].thumbFile = newName;
-                emit itemUpdated(item);
+                emit itemUpdated(item, index);
             }
         } else {
             LogHandler::Error("File NOT renamed: "+ newName);
@@ -726,7 +729,8 @@ void MediaLibraryHandler::unlockThumb(LibraryListItem27 &item)
 
 void MediaLibraryHandler::setThumbState(ThumbState state, LibraryListItem27 &item) {
     item.thumbState = state;
-    emit itemUpdated(item);
+    int index = findItemIndexByID(item.ID);
+    emit itemUpdated(item, index);
 }
 
 void MediaLibraryHandler::setThumbPath(LibraryListItem27 &libraryListItem)

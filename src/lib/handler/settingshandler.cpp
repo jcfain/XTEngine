@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = QString("0.421b_%1T%2").arg(__DATE__).arg(__TIME__);
-const float SettingsHandler::XTEVersionNum = 0.421f;
+const QString SettingsHandler::XTEVersion = QString("0.422b_%1T%2").arg(__DATE__).arg(__TIME__);
+const float SettingsHandler::XTEVersionNum = 0.422f;
 
 SettingsHandler::SettingsHandler(){}
 SettingsHandler::~SettingsHandler()
