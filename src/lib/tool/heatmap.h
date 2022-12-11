@@ -21,7 +21,7 @@ public:
     QPixmap draw(int width, int height, FunscriptHandler* data, qint64 duration);
 
 private:
-    FunscriptHandler* m_funscriptHandler = 0;
+    //FunscriptHandler* m_funscriptHandler = 0;
     QMap<qint64, int> m_funscriptActionsSorted;
     //QList<QMap<qint64, int>> m_funscriptSegments;
     qint64 minD;

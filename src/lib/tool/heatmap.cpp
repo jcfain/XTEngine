@@ -10,15 +10,18 @@ HeatMap::HeatMap(QObject *parent)
 void HeatMap::drawAsync(int width, int height, FunscriptHandler* data, qint64 duration) {
     QtConcurrent::run([this, width, height, data, duration]() {
         QPixmap pixmap = draw(width, height, data, duration);
-        if(!pixmap.isNull())
-            emit imageGenerated(pixmap);
+        emit imageGenerated(pixmap);
     });
 }
 
 QPixmap HeatMap::draw(int width, int height, FunscriptHandler* data, qint64 duration) {
     setData(data, duration);
-    if(!m_funscriptHandler) {
-        LogHandler::Error("Heatmap draw called without funscript!");
+    if(m_funscriptActionsSorted.empty()) {
+        LogHandler::Debug("Heatmap draw called without funscript!");
+        return QPixmap();
+    }
+    if(duration <= 0) {
+        LogHandler::Debug("Heatmap draw duration 0!");
         return QPixmap();
     }
     QPixmap pixmap(width, height);
@@ -93,11 +96,15 @@ void HeatMap::setData(FunscriptHandler* funscriptHandler, qint64 duration){
     minD = 0;
     maxD = duration;
     LogHandler::Debug("Set duration: "+QString::number(duration));
-    m_funscriptHandler = funscriptHandler;
 //    minD = m_funscriptHandler->getMin();
 //    maxD = m_funscriptHandler->getMax();
 
-    auto actions = m_funscriptHandler->currentFunscript()->actions;
+    auto funscript = funscriptHandler->currentFunscript();
+    if(!funscript) {
+        m_funscriptActionsSorted.clear();
+        return;
+    }
+    auto actions = funscriptHandler->currentFunscript()->actions;
     qint64 lastAction = 0;
     foreach (auto key, actions.keys()) {
         auto currentAction = actions.value(key);

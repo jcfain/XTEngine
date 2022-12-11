@@ -58,7 +58,7 @@ private:
     int lastActionPos;
     int lastActionSpeed;
     QList<qint64> atList;
-    Funscript* funscript = new Funscript();
+    Funscript* funscript = 0;
     int n;
     qint64 _funscriptMin = 0;
     qint64 _funscriptMax = -1;

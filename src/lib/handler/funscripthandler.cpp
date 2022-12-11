@@ -7,7 +7,8 @@ FunscriptHandler::FunscriptHandler(QString channel, QObject* parent) : QObject(p
 
 FunscriptHandler::~FunscriptHandler()
 {
-    delete(funscript);
+    if(funscript)
+        delete funscript;
     _loaded = false;
     SettingsHandler::setFunscriptLoaded(_channel, _loaded);
 }
@@ -94,6 +95,10 @@ void FunscriptHandler::setLoaded(bool value)
 {
     QMutexLocker locker(&mutex);
     _loaded = value;
+    if(!value && funscript) {
+        delete funscript;
+        funscript = 0;
+    }
     SettingsHandler::setFunscriptLoaded(_channel, _loaded);
 }
 
@@ -122,6 +127,8 @@ qint64 FunscriptHandler::getNext() {
 
 void FunscriptHandler::JSonToFunscript(QJsonObject json)
 {
+    if(!funscript)
+        funscript = new Funscript();
     if (json.contains("range"))
         funscript->range = json["range"].toInt();
     if (json.contains("version") && json["version"].isString())
