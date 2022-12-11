@@ -43,9 +43,11 @@ QPixmap HeatMap::draw(int width, int height, FunscriptHandler* data, qint64 dura
             int y2 = XMath::mapRange(posList[i + 1], 0, 100, height, 0);
             int x2 = XMath::mapRange(atList[i + 1], (qint64)0, (qint64)maxD, (qint64)0, (qint64)width);
             qint64 timeDiff = atList[i + 1] - atList[i];
-            if(timeDiff < 200) {
+            int posDiff = abs(posList[i + 1] - posList[i]);
+            float velocity = ((float)posDiff / (float)timeDiff) * 100;
+            if(velocity > 50) {
                 _painter.setPen(m_redPen);
-            } else if(timeDiff < 700) {
+            } else if(velocity > 25) {
                 _painter.setPen(m_yellowPen);
             } else {
                 _painter.setPen(m_greenPen);
@@ -92,7 +94,7 @@ QPixmap HeatMap::draw(int width, int height, FunscriptHandler* data, qint64 dura
 }
 
 void HeatMap::setData(FunscriptHandler* funscriptHandler, qint64 duration){
-
+    m_funscriptActionsSorted.clear();
     minD = 0;
     maxD = duration;
     LogHandler::Debug("Set duration: "+QString::number(duration));
