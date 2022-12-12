@@ -15,13 +15,13 @@ void HeatMap::drawAsync(int width, int height, FunscriptHandler* data, qint64 du
 }
 
 QPixmap HeatMap::draw(int width, int height, FunscriptHandler* data, qint64 duration) {
+    if(duration <= 0) {
+        LogHandler::Debug("Heatmap draw duration 0!");
+        return QPixmap();
+    }
     setData(data, duration);
     if(m_funscriptActionsSorted.empty()) {
         LogHandler::Debug("Heatmap draw called without funscript!");
-        return QPixmap();
-    }
-    if(duration <= 0) {
-        LogHandler::Debug("Heatmap draw duration 0!");
         return QPixmap();
     }
     QPixmap pixmap(width, height);
@@ -38,13 +38,13 @@ QPixmap HeatMap::draw(int width, int height, FunscriptHandler* data, qint64 dura
     auto posList = m_funscriptActionsSorted.values();
     for(int i = 0; i < posList.count(); i ++ ) {
         if(i + 1 < posList.count()) {
+            if(atList[i] > duration)
+                 continue;
             int y1 = XMath::mapRange(posList[i], 0, 100, height, 0);
             int x1 = XMath::mapRange(atList[i], (qint64)0, (qint64)maxD, (qint64)0, (qint64)width);
             int y2 = XMath::mapRange(posList[i + 1], 0, 100, height, 0);
             int x2 = XMath::mapRange(atList[i + 1], (qint64)0, (qint64)maxD, (qint64)0, (qint64)width);
-            qint64 timeDiff = atList[i + 1] - atList[i];
-            int posDiff = abs(posList[i + 1] - posList[i]);
-            float velocity = ((float)posDiff / (float)timeDiff) * 100;
+            float velocity = XMath::calculateVelocity(atList[i], posList[i], atList[i + 1], posList[i + 1]);;
             if(velocity > 50) {
                 _painter.setPen(m_redPen);
             } else if(velocity > 25) {
@@ -103,45 +103,170 @@ void HeatMap::setData(FunscriptHandler* funscriptHandler, qint64 duration){
 
     auto funscript = funscriptHandler->currentFunscript();
     if(!funscript) {
-        m_funscriptActionsSorted.clear();
         return;
     }
     auto actions = funscriptHandler->currentFunscript()->actions;
-    qint64 lastAction = 0;
-    foreach (auto key, actions.keys()) {
-        auto currentAction = actions.value(key);
-        auto actionTimeDifference = currentAction - lastAction;
-        if(actionTimeDifference > longestAction) {
-            longestAction = actionTimeDifference;
-        } else if (actionTimeDifference < shortestAction) {
-            shortestAction = actionTimeDifference;
-        }
-        m_funscriptActionsSorted.insert(key, actions.value(key));
-        lastAction = currentAction;
-    }
+//    qint64 lastAction = 0;
+//    foreach (auto key, actions.keys()) {
+//        auto currentAction = actions.value(key);
+//        auto actionTimeDifference = currentAction - lastAction;
+//        if(actionTimeDifference > longestAction) {
+//            longestAction = actionTimeDifference;
+//        } else if (actionTimeDifference < shortestAction) {
+//            shortestAction = actionTimeDifference;
+//        }
+//        m_funscriptActionsSorted.insert(key, actions.value(key));
+//        lastAction = currentAction;
+//    }
+
+    sortHash(actions, &m_funscriptActionsSorted);
     //m_funscriptSegments = GetSegments();
 }
 
-QList<QMap<qint64, int>> HeatMap::GetSegments()
-{
-    QList<QMap<qint64, int>> segments;
+void HeatMap::getMaxHeatAsync(QHash<qint64, int> actions) {
+    QtConcurrent::run([this, actions]() {
+        emit maxHeat(getMaxHeat(actions));
+    });
+}
 
-//    int previous = 0;
-//    foreach (auto beat, m_funscriptActions.keys())
+qint64 HeatMap::getMaxHeat(QHash<qint64, int> actions) {
+    QMap<qint64, int> sortedHash;
+    sortHash(actions, &sortedHash);
+    ActionSegments actionSegments;
+    getSegments(sortedHash, &actionSegments);
+//    qint64 maxHeat = 0;
+//    qint64 maxSize = 0;
+//    foreach (auto beat, segment.segments) {
+//        if(maxSize < beat.count()) {
+//            maxHeat = beat.firstKey();
+//            maxSize = beat.count();
+//        }
+//    }
+//    if(actionSegments.maxCountIndex == actionSegments.maxVelocityIndex)
+//        return actionSegments.maxCountAt;
+//    else if(actionSegments.segments.at(actionSegments.maxCountIndex).actions.count() > actionSegments.segments.at(actionSegments.maxVelocityIndex).actions.count())
+//        return actionSegments.maxCountAt;
+//    else
+//        return actionSegments.maxVelocityAt;
+    return actionSegments.maxWeightAt;
+}
+
+void HeatMap::getSegments(QMap<qint64, int> actions, ActionSegments* actionSegments) {
+    //QList<QMap<qint64, int>> segments;
+    int previousAt = 0;
+    int previousPos = 0;
+    //qint64 maxSize = 0;
+    //qint64 maxSegmentAt = 0;
+    QList<int> segmentVelocity;
+    //float maxAverageVelocity = 0;
+    //qint64 maxAverageVelocityAt = 0;
+    int index = 0;
+    foreach (auto at, actions.keys()) {
+        if (at < 0) {
+            continue;
+        }
+
+        if (!actionSegments->segments.empty()) {
+            ActionSegment lastActionSegment = actionSegments->segments.last();
+            if (at - previousAt >= 1000) {
+                if(actionSegments->maxCount <= segmentVelocity.count()) {
+                    actionSegments->maxCount = segmentVelocity.count();
+                    actionSegments->maxCountIndex = index;
+                    actionSegments->maxCountAt = lastActionSegment.actions.firstKey();
+                }
+                auto previousAverageVelicity = std::accumulate(segmentVelocity.begin(), segmentVelocity.end(), 0.0) / segmentVelocity.size();
+                if(actionSegments->maxVelocity <= previousAverageVelicity) {
+                    actionSegments->maxVelocity = previousAverageVelicity;
+                    actionSegments->maxVelocityIndex = index;
+                    actionSegments->maxVelocityAt = lastActionSegment.actions.firstKey();
+                }
+                qint64 maxWeight = actionSegments->maxCount * actionSegments->maxVelocity;
+                if(actionSegments->maxWeight < maxWeight) {
+                    actionSegments->maxWeight = maxWeight;
+                    actionSegments->maxWeightAt = lastActionSegment.actions.firstKey();
+                }
+                segmentVelocity.clear();
+                actionSegments->segments.append(ActionSegment());
+                index++;
+            }
+        } else
+            actionSegments->segments.append(ActionSegment());
+
+        ActionSegment* lastActionSegment = &actionSegments->segments.last();
+        int pos = actions.value(at);
+        float velocity = XMath::calculateVelocity(previousAt, previousPos, at, pos);
+        if(velocity > 0) {
+            segmentVelocity.append(velocity);
+            if(lastActionSegment->maxVelocity < velocity)
+                lastActionSegment->maxVelocity = velocity;
+        }
+        lastActionSegment->segmentIndex = index;
+        lastActionSegment->actions.insert(at, pos);
+
+        previousAt = at;
+        previousPos = actions.value(at);
+    }
+
+
+
+
+//    foreach (auto at, actions.keys())
 //    {
-//        if (beat < 0 || beat > m_funscriptActions.end().key()) continue;
-
-//        if (beat - previous >= 1000)
+//        if (at < 0 || at > actions.end().key()) continue;
+//        if (at - previousAt >= 500)
 //        {
-//            segments.append(QMap<qint64, int>());
+//            segment.segments.append(QMap<qint64, int>());
 //        }
 
-//        if (segments.empty())
-//            segments.append(QMap<qint64, int>());
+//        if (segment.segments.empty())
+//            segment.segments.append(QMap<qint64, int>());
 
-//        segments.last().insert(beat, m_funscriptActions.value(beat));
-//        previous = beat;
+//        segment.segments.last().insert(at, actions.value(at));
+//        //previousPos = actions.value(at);
+//        previousAt = at;
+
 //    }
 
-    return segments;
+//    previousAt = 0;
+//    foreach (auto beat, segment.segments) {
+//        foreach (auto at, beat.keys()) {
+//           int pos = beat.value(at);
+//           qint64 timeDiff = at - previousAt;
+//           int posDiff = abs(pos - previousPos);
+//           float velocity = ((float)posDiff / (float)timeDiff) * 100;
+//           if(velocity > 0)
+//               segmentVelocity.append(velocity);
+//           previousAt = at;
+//           previousPos = pos;
+//        }
+//        auto previousAverageVelicity = std::accumulate(segmentVelocity.begin(), segmentVelocity.end(), 0.0) / segmentVelocity.size();
+//        if(maxSize < beat.count() && maxAverageVelocity <= previousAverageVelicity) {
+//            segment.maxSegmentAt = beat.firstKey();
+//            segment.maxAverageVelocityAt = beat.firstKey();
+//        }
+//        if(maxSize < beat.count()) {
+//            maxSegmentAt = beat.firstKey();
+//            maxSize = beat.count();
+//        }
+//        if(maxAverageVelocity <= previousAverageVelicity) {
+//            maxAverageVelocity = previousAverageVelicity;
+//            if(!beat.empty())
+//                maxAverageVelocityAt = beat.firstKey();
+//        }
+//    }
+}
+
+void HeatMap::sortHash(QHash<qint64, int> actions, QMap<qint64, int>* sortedMap) {
+    //qint64 lastAction = 0;
+    foreach (auto key, actions.keys()) {
+//        auto currentAction = actions.value(key);
+//        auto actionTimeDifference = currentAction - lastAction;
+//        if(actionTimeDifference > longestAction) {
+//            longestAction = actionTimeDifference;
+//        } else if (actionTimeDifference < shortestAction) {
+//            shortestAction = actionTimeDifference;
+//        }
+        sortedMap->insert(key, actions.value(key));
+//        lastAction = currentAction;
+    }
 }

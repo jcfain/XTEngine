@@ -21,6 +21,7 @@ public:
     static int randSine(double base, double amplitude);
     static int reverseNumber(int num, int min, int max);
     static int lerp(int a, int b, float f);
+    static float calculateVelocity(qint64 timeStart, int posStart, qint64 timeEnd, int posEnd);
 };
 
 #endif // XMATH_H

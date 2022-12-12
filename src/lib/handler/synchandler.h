@@ -25,6 +25,7 @@ signals:
     void funscriptStopped();
     void funscriptStarted();
     void funscriptEnded();
+    void funscriptLoaded(QString funscriptPath);
     void funscriptVREnded(QString videoPath, QString funscriptPath, qint64 duration);
     void togglePaused(bool paused);
     void sendTCode(QString tcode);
@@ -44,6 +45,7 @@ public:
     void setPause(bool paused);
     bool isPaused();
     void playStandAlone(QString funscript = nullptr);
+    void swapScript(QString funscript);
     void skipToMoneyShot();
     void setStandAloneLoop(bool enabled);
     void syncInputDeviceFunscript(QString funscript);

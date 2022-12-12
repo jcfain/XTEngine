@@ -93,6 +93,7 @@ QList<QString> SyncHandler::load(QString scriptFile)
                 _invalidScripts.append(scriptFile);
             }
             loadMFS(scriptFile);
+            emit funscriptLoaded(scriptFile);
         }
         else
         {
@@ -181,6 +182,10 @@ void SyncHandler::reset()
 QString SyncHandler::getPlayingStandAloneScript()
 {
     return _playingStandAloneFunscript;
+}
+
+void SyncHandler::swapScript(QString funscript) {
+    load(funscript);
 }
 
 void SyncHandler::skipToMoneyShot()

@@ -80,3 +80,9 @@ int XMath::reverseNumber(int num, int min, int max) {
 int XMath::lerp(int start, int end, float t) {
     return start + (int)(t * (float)(end-start));
 }
+
+float XMath::calculateVelocity(qint64 timeStart, int posStart, qint64 timeEnd, int posEnd) {
+    qint64 timeDiff = timeEnd - timeStart;
+    int posDiff = abs(posEnd - posStart);
+    return ((float)posDiff / (float)timeDiff) * 100;
+}
