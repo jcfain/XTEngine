@@ -38,6 +38,9 @@ private:
         qint64 maxVelocity = 0;
         qint64 maxWeight = 0;
         qint64 maxWeightAt = 0;
+        qint64 highVelosityStart = 0;
+        qint64 highVelosityEnd = 0;
+        qint64 highVelositySpan = 0;
         QList<ActionSegment> segments;
     };
     //FunscriptHandler* m_funscriptHandler = 0;
