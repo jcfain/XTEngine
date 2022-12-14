@@ -641,9 +641,10 @@ LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
 void MediaLibraryHandler::updateItem(LibraryListItem27 item) {
     const QMutexLocker locker(&_mutex);
     auto index = findItemIndexByID(item.ID);
-    if(index > -1)
+    if(index > -1) {
         _cachedLibraryItems[index] = item;
-    emit itemUpdated(item, index);
+        emit itemUpdated(item, index);
+    }
 }
 void MediaLibraryHandler::removeFromCache(LibraryListItem27 itemToRemove) {
     const QMutexLocker locker(&_mutex);
