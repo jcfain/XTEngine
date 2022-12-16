@@ -15,8 +15,8 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     QString libraryItemPath;
     qint64 lastPlayPosition;
     bool lastLoopEnabled;
-    int lastLoopStart;
-    int lastLoopEnd;
+    qint64 lastLoopStart;
+    qint64 lastLoopEnd;
     int offset;
     qint64 moneyShotMillis;
     QList<Bookmark> bookmarks;
@@ -65,8 +65,8 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         newItem.libraryItemPath = obj["libraryItemPath"].toString();
         newItem.lastPlayPosition = obj["lastPlayPosition"].toString().toLongLong();
         newItem.lastLoopEnabled = obj["lastLoopEnabled"].toBool();
-        newItem.lastLoopStart = obj["lastLoopStart"].toInt();
-        newItem.lastLoopEnd = obj["lastLoopEnd"].toInt();
+        newItem.lastLoopStart = obj["lastLoopStart"].toString().toLongLong();
+        newItem.lastLoopEnd = obj["lastLoopEnd"].toString().toLongLong();
         newItem.offset = obj["offset"].toInt();
         newItem.moneyShotMillis = obj["moneyShotMillis"].toString().toLongLong();
         foreach(auto bookmark, obj["bookmarks"].toArray())
@@ -94,8 +94,8 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         obj["libraryItemPath"] = item.libraryItemPath;
         obj["lastPlayPosition"] = QString::number(item.lastPlayPosition);
         obj["lastLoopEnabled"] = item.lastLoopEnabled;
-        obj["lastLoopStart"] = item.lastLoopStart;
-        obj["lastLoopEnd"] = item.lastLoopEnd;
+        obj["lastLoopStart"] = QString::number(item.lastLoopStart);
+        obj["lastLoopEnd"] = QString::number(item.lastLoopEnd);
         obj["offset"] = item.offset;
         obj["moneyShotMillis"] = QString::number(item.moneyShotMillis);
         obj["moneyShotSecs"] = item.moneyShotMillis / 1000;

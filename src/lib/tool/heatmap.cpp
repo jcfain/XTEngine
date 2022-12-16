@@ -58,10 +58,10 @@ void HeatMap::paint(QPainter* painter, int width, int height, qint64 duration, Q
         {
             if(atList[i] > duration)
                  continue;
-            int y1 = XMath::mapRange(posList[i], 0, 100, height, startPoint);
-            int x1 = XMath::mapRange(atList[i], (qint64)0, (qint64)duration, (qint64)0, (qint64)width);
-            int y2 = XMath::mapRange(posList[i + 1], 0, 100, height, startPoint);
-            int x2 = XMath::mapRange(atList[i + 1], (qint64)0, (qint64)duration, (qint64)0, (qint64)width);
+            qint64 y1 = XMath::mapRange(posList[i], 0, 100, height, startPoint);
+            qint64 x1 = XMath::mapRange(atList[i], (qint64)0, (qint64)duration, (qint64)0, (qint64)width);
+            qint64 y2 = XMath::mapRange(posList[i + 1], 0, 100, height, startPoint);
+            qint64 x2 = XMath::mapRange(atList[i + 1], (qint64)0, (qint64)duration, (qint64)0, (qint64)width);
             float velocity = XMath::calculateSpeed(atList[i], posList[i], atList[i + 1], posList[i + 1]);;
             if(velocity > 45) {
                 painter->setPen(m_darkRedPen);
