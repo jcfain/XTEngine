@@ -34,6 +34,7 @@ public:
     static QString getSelectedChannelProfile();
     static void setSelectedChannelProfile(QString value);
     static TCodeVersion getSelectedTCodeVersion();
+    static int getTCodeMaxValue();
     static QString getSelectedTCodeVersionName();
     static QString getTCodeVersionName(TCodeVersion version);
     static QMap<AxisName, QString> GetSelectedVersionMap();

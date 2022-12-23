@@ -66,6 +66,11 @@ void TCodeChannelLookup::setSelectedChannelProfile(QString value) {
 TCodeVersion TCodeChannelLookup::getSelectedTCodeVersion() {
     return m_selectedTCodeVersion;
 }
+
+int TCodeChannelLookup::getTCodeMaxValue() {
+    return getSelectedTCodeVersion() >= TCodeVersion::v3 ? 9999 : 999;
+}
+
 QString TCodeChannelLookup::getSelectedTCodeVersionName()
 {
     return SupportedTCodeVersions.value(m_selectedTCodeVersion);

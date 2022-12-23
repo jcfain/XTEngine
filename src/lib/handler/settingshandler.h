@@ -40,6 +40,7 @@ public:
     }
     static QSettings* getSettings();
     static const QString XTEVersion;
+    static const QString XTEVersionTimeStamp;
     static const float XTEVersionNum;
     static bool getSettingsChanged();
     static bool getHideWelcomeScreen();
@@ -329,7 +330,7 @@ private:
     static void MigrateTo32a(QSettings* settingsToLoadFrom);
     static void MigrateTo42(QSettings* settingsToLoadFrom);
 
-    static void SaveChannelMap();
+    static void SaveChannelMap(QSettings* settingsToSaveTo = 0);
 
     static QString _appdataLocation;
     static GamepadAxisName gamepadAxisNames;

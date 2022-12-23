@@ -1,7 +1,8 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = QString("0.422b_%1T%2").arg(__DATE__).arg(__TIME__);
-const float SettingsHandler::XTEVersionNum = 0.422f;
+const QString SettingsHandler::XTEVersion = "0.423b";
+const float SettingsHandler::XTEVersionNum = 0.423f;
+const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){}
 SettingsHandler::~SettingsHandler()
@@ -401,7 +402,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 //        }
 //        settingsToSaveTo->setValue("availableChannels", availableAxis);
 
-        SaveChannelMap();
+        SaveChannelMap(settingsToSaveTo);
 
         QVariantMap gamepadMap;
         foreach(auto button, _gamepadButtonMap.keys())
@@ -536,8 +537,10 @@ void SettingsHandler::SetMapDefaults()
     SetGamepadMapDefaults();
     SetKeyboardKeyDefaults();
 }
-void SettingsHandler::SaveChannelMap()
+void SettingsHandler::SaveChannelMap(QSettings* settingsToSaveTo)
 {
+    if(!settingsToSaveTo)
+        settingsToSaveTo = settings;
     QVariantMap availableChannelVariant;
     QList<QString> availableChannelProfiles = TCodeChannelLookup::getChannelProfiles();
     foreach(auto channelProfileName, availableChannelProfiles) {
@@ -550,7 +553,7 @@ void SettingsHandler::SaveChannelMap()
         if(!availableChannelVariant.contains(channelProfileName))
             availableChannelVariant.insert(channelProfileName, availableChannelProfileVarient);
     }
-    settings->setValue("availableChannels", availableChannelVariant);
+    settingsToSaveTo->setValue("availableChannels", availableChannelVariant);
 }
 void SettingsHandler::SetGamepadMapDefaults()
 {
