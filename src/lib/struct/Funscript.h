@@ -13,6 +13,17 @@ struct FunscriptAction {
     int lastSpeed;
 };
 
+struct FunscriptBookmark {
+    QString name;
+    qint64 time;
+};
+
+struct FunscriptChapter {
+    QString name;
+    qint64 startTime;
+    qint64 endTime;
+};
+
 struct FunscriptMetadata {
     QString creator;
     QString  original_name;
@@ -23,6 +34,8 @@ struct FunscriptMetadata {
     bool paid;
     QString comment;
     qint64 original_total_duration_ms;
+    QList<FunscriptBookmark> bookmarks;
+    QList<FunscriptChapter> chapters;
 };
 
 struct Funscript {

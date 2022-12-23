@@ -124,7 +124,7 @@ qint64 FunscriptHandler::getNext() {
     }
     return getMin();
 }
-
+#include <QTime>
 void FunscriptHandler::JSonToFunscript(QJsonObject json)
 {
     if(!funscript)
@@ -154,32 +154,54 @@ void FunscriptHandler::JSonToFunscript(QJsonObject json)
         std::sort(atList.begin(), atList.end());
         n = atList.length() / sizeof(atList.first());
     }
-    if (json.contains("creator") && json["creator"].isString())
-        funscript->metadata.creator = json["creator"].toString();
-    if (json.contains("original_name") && json["original_name"].isString())
-        funscript->metadata.original_name = json["original_name"].toString();
-    if (json.contains("url") && json["url"].isString())
-        funscript->metadata.url = json["url"].toString();
-    if (json.contains("url_video") && json["url_video"].isString())
-        funscript->metadata.url_video = json["url_video"].toString();
-    if (json.contains("tags") && json["tags"].isArray())
+
+    QJsonObject metaData = json;
+    if(json.contains("metadata"))
+        metaData = json["metadata"].toObject();
+
+    if (metaData.contains("creator") && metaData["creator"].isString())
+        funscript->metadata.creator = metaData["creator"].toString();
+    if (metaData.contains("original_name") && metaData["original_name"].isString())
+        funscript->metadata.original_name = metaData["original_name"].toString();
+    if (metaData.contains("url") && metaData["url"].isString())
+        funscript->metadata.url = metaData["url"].toString();
+    if (metaData.contains("url_video") && metaData["url_video"].isString())
+        funscript->metadata.url_video = metaData["url_video"].toString();
+    if (metaData.contains("tags") && metaData["tags"].isArray())
     {
-        QJsonArray tags = json["tags"].toArray();;
+        QJsonArray tags = metaData["tags"].toArray();;
         foreach(QJsonValue tag, tags)
             funscript->metadata.tags.append(tag.toString());
     }
-    if (json.contains("performers") && json["performers"].isArray())
+    if (metaData.contains("performers") && metaData["performers"].isArray())
     {
-        QJsonArray performers = json["performers"].toArray();;
+        QJsonArray performers = metaData["performers"].toArray();;
         foreach(QJsonValue performer, performers)
             funscript->metadata.performers.append(performer.toString());
     }
-    if (json.contains("paid") && json["paid"].isBool())
-        funscript->metadata.paid = json["paid"].toBool();
-    if (json.contains("comment") && json["comment"].isString())
-        funscript->metadata.comment = json["comment"].toString();
-    if (json.contains("original_total_duration_ms"))
-        funscript->metadata.original_total_duration_ms = json["original_total_duration_ms"].toString().toLongLong();
+    if (metaData.contains("bookmarks") && metaData["bookmarks"].isArray())
+    {
+        QJsonArray bookmarks = metaData["bookmarks"].toArray();;
+        foreach(QJsonValue bookmark, bookmarks) {
+            qint64 milliseconds = QTime::fromString(bookmark.toObject()["time"].toString(), Qt::DateFormat::ISODateWithMs).msecsSinceStartOfDay();
+            funscript->metadata.bookmarks.append({bookmark.toObject()["name"].toString(), milliseconds});
+        }
+    }
+    if (metaData.contains("chapters") && metaData["chapters"].isArray())
+    {
+        QJsonArray chapters = metaData["chapters"].toArray();;
+        foreach(QJsonValue chapter, chapters) {
+            qint64 startTime = QTime::fromString(chapter.toObject()["startTime"].toString(), Qt::DateFormat::ISODateWithMs).msecsSinceStartOfDay();
+            qint64 endTime = QTime::fromString(chapter.toObject()["endTime"].toString(), Qt::DateFormat::ISODateWithMs).msecsSinceStartOfDay();
+            funscript->metadata.chapters.append({chapter.toObject()["name"].toString(), startTime, endTime});
+        }
+    }
+    if (metaData.contains("paid") && metaData["paid"].isBool())
+        funscript->metadata.paid = metaData["paid"].toBool();
+    if (metaData.contains("comment") && metaData["comment"].isString())
+        funscript->metadata.comment = metaData["comment"].toString();
+    if (metaData.contains("original_total_duration_ms"))
+        funscript->metadata.original_total_duration_ms = metaData["original_total_duration_ms"].toString().toLongLong();
 }
 
 bool FunscriptHandler::exists(QString path)
