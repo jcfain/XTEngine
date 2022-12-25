@@ -300,6 +300,7 @@ void SyncHandler::playStandAlone(QString funscript) {
         _playingStandAloneFunscript = nullptr;
         _currentTime = 0;
         emit funscriptEnded();
+        emit funscriptStandaloneDurationChanged(0);
         LogHandler::Debug("exit play Funscript stand alone thread");
     });
 }
