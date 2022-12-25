@@ -21,6 +21,7 @@ class XTENGINE_EXPORT SyncHandler: public QObject
     Q_OBJECT
 signals:
     void funscriptPositionChanged(qint64 msecs);
+    void funscriptStandaloneDurationChanged(qint64 duration);
     void funscriptStatusChanged(XMediaStatus status);
     void funscriptStopped();
     void funscriptStarted();

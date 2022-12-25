@@ -219,8 +219,10 @@ void SyncHandler::playStandAlone(QString funscript) {
     _playingStandAloneFunscript = funscript;
     locker.unlock();
     emit funscriptStarted();
+    qint64 funscriptMax = getFunscriptMax();
+    emit funscriptStandaloneDurationChanged(funscriptMax);
     LogHandler::Debug("playStandAlone start thread");
-    _funscriptStandAloneFuture = QtConcurrent::run([this]()
+    _funscriptStandAloneFuture = QtConcurrent::run([this, funscriptMax]()
     {
         std::shared_ptr<FunscriptAction> actionPosition;
         QMap<QString, std::shared_ptr<FunscriptAction>> otherActions;
@@ -231,7 +233,6 @@ void SyncHandler::playStandAlone(QString funscript) {
         qint64 timer1 = 0;
         qint64 timer2 = 0;
         mSecTimer.start();
-        qint64 funscriptMax = getFunscriptMax();
         while (_isStandAloneFunscriptPlaying)
         {
             if (timer2 - timer1 >= 1)
