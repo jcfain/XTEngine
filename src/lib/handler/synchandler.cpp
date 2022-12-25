@@ -227,6 +227,7 @@ void SyncHandler::playStandAlone(QString funscript) {
         int secCounter1 = 0;
         int secCounter2 = 0;
         QElapsedTimer mSecTimer;
+        qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
         qint64 timer1 = 0;
         qint64 timer2 = 0;
         mSecTimer.start();
@@ -268,6 +269,8 @@ void SyncHandler::playStandAlone(QString funscript) {
                     if(tcode != nullptr)
                         emit sendTCode(tcode);
                     otherActions.clear();
+
+                    sendPulse(mSecTimer.elapsed(), nextPulseTime);
                 }
                 secCounter2 = round(mSecTimer.elapsed() / 1000);
                 if(secCounter2 - secCounter1 >= 1)
