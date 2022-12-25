@@ -2,6 +2,7 @@
 #define XVIDEOPREVIEW_H
 
 #include <QMediaPlayer>
+#include <QTimer>
 #include "xvideosurface.h"
 #include "loghandler.h"
 #include "XTEngine_global.h"
@@ -22,6 +23,7 @@ public:
     void load(QString file);
 
 private:
+    void extract();
     XVideoSurface* _thumbNailVideoSurface;
     QMediaPlayer* _thumbPlayer;
     QString _file;
@@ -32,6 +34,7 @@ private:
     QImage _lastImage;
     QString _lastError;
     QVideoSurfaceFormat m_format;
+    QTimer m_debouncer;
 
     void setUpThumbPlayer();
     void setUpInfoPlayer();

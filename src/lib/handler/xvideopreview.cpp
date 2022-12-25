@@ -6,11 +6,15 @@ XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent), _thumbNailVideo
     _thumbNailVideoSurface = new XVideoSurface(_thumbPlayer);
     _thumbPlayer->setVideoOutput(_thumbNailVideoSurface);
     _thumbPlayer->setMuted(true);
+    m_debouncer.setSingleShot(true);
     connect(_thumbPlayer, &QMediaPlayer::stateChanged, this, &XVideoPreview::on_mediaStateChange);
     connect(_thumbPlayer, &QMediaPlayer::mediaStatusChanged, this, &XVideoPreview::on_mediaStatusChanged);
     connect(_thumbNailVideoSurface, &XVideoSurface::frameCapture, this, &XVideoPreview::on_thumbCapture);
     connect(_thumbNailVideoSurface, &XVideoSurface::frameCaptureError, this, &XVideoPreview::on_thumbError);
     connect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
+    connect(&m_debouncer, &QTimer::timeout, this, [this]() {
+        extract();
+    });
 }
 XVideoPreview::~XVideoPreview() {
     tearDownPlayer();
@@ -40,6 +44,8 @@ void XVideoPreview::tearDownPlayer()
 //            _thumbNailVideoSurface->stop();
         if(_thumbPlayer->state() == QMediaPlayer::PlayingState)
             _thumbPlayer->stop();
+
+        //_thumbPlayer->setMedia(QMediaContent());
 //        else {
 //            delete _thumbPlayer;
 //            _thumbPlayer = 0;
@@ -61,12 +67,15 @@ void XVideoPreview::extract(QString file, qint64 time)
         return;
     }
     _time = time;
-    LogHandler::Debug("extract: "+ file);
-    LogHandler::Debug("extract: "+ QString::number(time));
-    QUrl mediaUrl = QUrl::fromLocalFile(file);
+    m_debouncer.start(100);
+}
+
+void XVideoPreview::extract() {
+    LogHandler::Debug("extract at: " + QString::number(_time) + " from: "+ _file);
+    QUrl mediaUrl = QUrl::fromLocalFile(_file);
     QMediaContent mc(mediaUrl);
     _thumbPlayer->setMedia(mc);
-    if(time > -1)
+    if(_time > -1)
     {
         _loadingInfo = false;
         _extracting = true;
