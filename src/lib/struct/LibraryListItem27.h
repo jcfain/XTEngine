@@ -47,6 +47,7 @@ public:
         toolTip = item->toolTip;
         thumbState = item->thumbState;
         thumbFileExists = item->thumbFileExists;
+        managedThumb = item->managedThumb;
     }
     LibraryListItemType type;
     QString path;
@@ -69,6 +70,7 @@ public:
     QString toolTip;
     ThumbState thumbState = ThumbState::Waiting;
     bool thumbFileExists = false;
+    bool managedThumb = false;
     QString thumbFileLoading = LibraryThumbNail::LOADING_IMAGE;// "://images/icons/loading.png";
     QString thumbFileLoadingCurrent = LibraryThumbNail::LOADING_CURRENT_IMAGE;// "://images/icons/loading_current.png";
     QString thumbFileError = LibraryThumbNail::ERROR_IMAGE;// "://images/icons/error.png";
@@ -169,6 +171,30 @@ public:
         newItem.type = (LibraryListItemType)obj["type"].toInt();
         newItem.zipFile = obj["zipFile"].toString();
         return newItem;
+    }
+
+    static void copyProperties(LibraryListItem27 from, LibraryListItem27 &to) {
+        to.path = from.path;
+        to.duration = from.duration;
+        to.mediaExtension = from.mediaExtension;
+        to.modifiedDate = from.modifiedDate;
+        to.name = from.name;
+        to.nameNoExtension = from.nameNoExtension;
+        to.script = from.script;
+        to.scriptNoExtension = from.scriptNoExtension;
+        to.thumbFile = from.thumbFile;
+        to.type = from.type;
+        to.zipFile = from.zipFile;
+        //Live
+        to.ID = from.ID;
+        to.libraryPath = from.libraryPath;
+        to.hasScript = from.hasScript;
+        to.MFSScripts = from.MFSScripts;
+        to.isMFS = from.isMFS;
+        to.toolTip = from.toolTip;
+        to.thumbState = from.thumbState;
+        to.thumbFileExists = from.thumbFileExists;
+        to.managedThumb = from.managedThumb;
     }
 //    //waiting ? "://images/icons/loading.png" : "://images/icons/loading_current.png"
 };

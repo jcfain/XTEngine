@@ -496,13 +496,13 @@ function getServerSettings(retry) {
 		var status = xhr.status;
 		if (status === 200) {
 			remoteUserSettings = xhr.response;
-			funscriptChannels = Object.keys(remoteUserSettings["availableAxis"])
+			funscriptChannels = Object.keys(remoteUserSettings["availableChannels"])
 				.map(function (k) {
-					return remoteUserSettings["availableAxis"][k]["channel"];
+					return remoteUserSettings["availableChannels"][k]["channel"];
 				});
-			remoteUserSettings.availableAxisArray = Object.keys(remoteUserSettings["availableAxis"])
+			remoteUserSettings.availableChannelsArray = Object.keys(remoteUserSettings["availableChannels"])
 				.map(function (k) {
-					return remoteUserSettings["availableAxis"][k];
+					return remoteUserSettings["availableChannels"][k];
 				});
 			funscriptChannels.sort();
 			initWebSocket();
@@ -775,7 +775,7 @@ function setOutputConnectionStatus(deviceName, status, message) {
 
 function getMediaFunscripts(path, isMFS) {
 	var channel = funscriptChannels[currentChannelIndex];
-	var trackName = remoteUserSettings["availableAxis"][channel]["trackName"];
+	var trackName = remoteUserSettings["availableChannels"][channel]["trackName"];
 	var xhr = new XMLHttpRequest();
 	var channelPath = trackName === "" ? trackName : "." + trackName;
 	xhr.open('GET', path + channelPath + ".funscript", true);
@@ -897,8 +897,17 @@ function loadMedia(mediaList) {
 			var thumbAtPosMenuItem = contextMenu.getElementsByClassName("setThumbAtCurrent")[0];
 			if(isVideoShown() && playingmediaItem && playingmediaItem.id === mediaItem.id)
 				thumbAtPosMenuItem.classList.remove("disabled");
-			else
+			else {
 				thumbAtPosMenuItem.classList.add("disabled");
+				thumbAtPosMenuItem.title = "This is not the current playing video so it cannot be set at the current position."
+			}
+			var regenerateThumbMenuItem = contextMenu.getElementsByClassName("regenerateThumb")[0];
+			if(mediaItem.managedThumb && !mediaItem.thumb.includes(".lock."))
+				regenerateThumbMenuItem.classList.remove("disabled");
+			else {
+				regenerateThumbMenuItem.classList.add("disabled");
+				regenerateThumbMenuItem.title = "This thumb file is not modifiable because it is not managed by XTP."
+			}
 		}
 	};
 
@@ -975,6 +984,7 @@ function loadMedia(mediaList) {
 		contextMenu.style.width = widthInt * 0.85 + "px";
 
 		var contextMenuItem = createContextMenuItem("Regenerate thumb", regenThumbClick(obj, contextMenu));
+		contextMenuItem.classList.add("regenerateThumb", "disabled");
 		contextMenu.appendChild(contextMenuItem);
 		var contextMenuItem = createContextMenuItem("Set thumb at current", regenThumbCurrentPosClick(obj, contextMenu));
 		contextMenuItem.classList.add("setThumbAtCurrent", "disabled");
@@ -1769,10 +1779,10 @@ function thumbSizeChange(value) {
 var sendTcodeDebouncer;
 async function setupSliders() {
 	// Initialize Sliders
-	var availableAxis = remoteUserSettings.availableAxisArray;
+	var availableChannels = remoteUserSettings.availableChannelsArray;
 	var tcodeTab = document.getElementById("tabTCode");
-	for (var i = 0; i < availableAxis.length; i++) {
-		var channel = availableAxis[i];
+	for (var i = 0; i < availableChannels.length; i++) {
+		var channel = availableChannels[i];
 
 		var formElementNode = document.createElement("div");
 		formElementNode.classList.add("formElement");
@@ -1818,10 +1828,10 @@ async function setupSliders() {
 			rangeValuesNode.innerText = slide1 + " - " + slideMid + " - " + slide2;
 			if (slide2 < slide1) {
 				input2Node.value = slide1 + 1;
-				remoteUserSettings.availableAxis[channel.channel].userMax = input2Node.value;
+				remoteUserSettings.availableChannels[channel.channel].userMax = input2Node.value;
 			}
-			remoteUserSettings.availableAxis[channel.channel].userMin = slide1;
-			remoteUserSettings.availableAxis[channel.channel].userMid = slideMid;
+			remoteUserSettings.availableChannels[channel.channel].userMin = slide1;
+			remoteUserSettings.availableChannels[channel.channel].userMid = slideMid;
 			// if(sendTcodeDebouncer)
 			// 	clearTimeout(sendTcodeDebouncer);
 			// sendTcodeDebouncer = setTimeout(function () {
@@ -1837,10 +1847,10 @@ async function setupSliders() {
 			rangeValuesNode.innerText = slide1 + " - " + slideMid + " - " + slide2;
 			if (slide1 > slide2) {
 				input1Node.value = slide2 - 1;
-				remoteUserSettings.availableAxis[channel.channel].userMin = input1Node.value;
+				remoteUserSettings.availableChannels[channel.channel].userMin = input1Node.value;
 			}
-			remoteUserSettings.availableAxis[channel.channel].userMax = slide2;
-			remoteUserSettings.availableAxis[channel.channel].userMid = slideMid;
+			remoteUserSettings.availableChannels[channel.channel].userMax = slide2;
+			remoteUserSettings.availableChannels[channel.channel].userMid = slideMid;
 			// if(sendTcodeDebouncer)
 			// 	clearTimeout(sendTcodeDebouncer);
 			// sendTcodeDebouncer = setTimeout(function () {
@@ -1917,10 +1927,10 @@ async function setupMotionModifiers() {
 	tab.appendChild(headerDivNode);
 	tab.appendChild(formElementNode);
 
-	var availableAxis = remoteUserSettings.availableAxisArray;
-	for (var i = 0; i < availableAxis.length; i++) {
+	var availableChannels = remoteUserSettings.availableChannelsArray;
+	for (var i = 0; i < availableChannels.length; i++) {
 
-		var channel = availableAxis[i];
+		var channel = availableChannels[i];
 
 		if (channel.dimension === AxisDimension.Heave)
 			continue;
@@ -1934,17 +1944,17 @@ async function setupMotionModifiers() {
 		formElementNode.appendChild(labelNode);
 
 
-		/* 	value["damperEnabled"] = availableAxis->value(channel).DamperEnabled;
-			value["damperValue"] = availableAxis->value(channel).DamperValue;
-			value["dimension"] = (int)availableAxis->value(channel).Dimension;
-			value["friendlyName"] = availableAxis->value(channel).FriendlyName;
-			value["linkToRelatedMFS"] = availableAxis->value(channel).LinkToRelatedMFS;
-			value["max"] = availableAxis->value(channel).Max;
-			value["mid"] = availableAxis->value(channel).Mid;
-			value["min"] = availableAxis->value(channel).Min;
-			value["multiplierEnabled"] = availableAxis->value(channel).MultiplierEnabled;
-			value["multiplierValue"] = availableAxis->value(channel).MultiplierValue;
-			value["relatedChannel"] = availableAxis->value(channel).RelatedChannel; */
+		/* 	value["damperEnabled"] = availableChannels->value(channel).DamperEnabled;
+			value["damperValue"] = availableChannels->value(channel).DamperValue;
+			value["dimension"] = (int)availableChannels->value(channel).Dimension;
+			value["friendlyName"] = availableChannels->value(channel).FriendlyName;
+			value["linkToRelatedMFS"] = availableChannels->value(channel).LinkToRelatedMFS;
+			value["max"] = availableChannels->value(channel).Max;
+			value["mid"] = availableChannels->value(channel).Mid;
+			value["min"] = availableChannels->value(channel).Min;
+			value["multiplierEnabled"] = availableChannels->value(channel).MultiplierEnabled;
+			value["multiplierValue"] = availableChannels->value(channel).MultiplierValue;
+			value["relatedChannel"] = availableChannels->value(channel).RelatedChannel; */
 
 		var sectionNode = document.createElement("section");
 		sectionNode.setAttribute("name", "motionModifierSection");
@@ -1960,7 +1970,7 @@ async function setupMotionModifiers() {
 		multiplierEnabledNode.checked = channel.multiplierEnabled;
 
 		multiplierEnabledNode.oninput = function (i, event) {
-			remoteUserSettings.availableAxisArray[i].multiplierEnabled = event.target.checked;
+			remoteUserSettings.availableChannelsArray[i].multiplierEnabled = event.target.checked;
 			markXTPFormDirty();
 		}.bind(multiplierEnabledNode, i);
 
@@ -1971,7 +1981,7 @@ async function setupMotionModifiers() {
 		multiplierValueNode.oninput = function (i, event) {
 			var value = parseFloat(event.target.value);
 			if (value) {
-				remoteUserSettings.availableAxisArray[i].multiplierValue = value;
+				remoteUserSettings.availableChannelsArray[i].multiplierValue = value;
 				markXTPFormDirty();
 			}
 		}.bind(multiplierValueNode, i);
@@ -1988,7 +1998,7 @@ async function setupMotionModifiers() {
 		linkToRelatedMFSNode.checked = channel.linkToRelatedMFS;
 
 		linkToRelatedMFSNode.oninput = function (i, event) {
-			remoteUserSettings.availableAxisArray[i].linkToRelatedMFS = event.target.checked;
+			remoteUserSettings.availableChannelsArray[i].linkToRelatedMFS = event.target.checked;
 			markXTPFormDirty();
 		}.bind(linkToRelatedMFSNode, i);
 
@@ -1996,7 +2006,7 @@ async function setupMotionModifiers() {
 		var relatedChannelNode = document.createElement("select");
 		relatedChannelNode.setAttribute("name", "motionModifierInput");
 
-		availableAxis.forEach(element => {
+		availableChannels.forEach(element => {
 			if (element.channel !== channel.channel) {
 				var relatedChannelOptionNode = document.createElement("option");
 				relatedChannelOptionNode.innerHTML = element.friendlyName
@@ -2007,7 +2017,7 @@ async function setupMotionModifiers() {
 		relatedChannelNode.value = channel.relatedChannel;
 
 		relatedChannelNode.oninput = function (i, event) {
-			remoteUserSettings.availableAxisArray[i].relatedChannel = event.target.value;
+			remoteUserSettings.availableChannelsArray[i].relatedChannel = event.target.value;
 			markXTPFormDirty();
 		}.bind(relatedChannelNode, i);
 
@@ -2023,7 +2033,7 @@ async function setupMotionModifiers() {
 		damperEnabledNode.checked = channel.damperEnabled;
 
 		damperEnabledNode.oninput = function (i, event) {
-			remoteUserSettings.availableAxisArray[i].damperEnabled = event.target.checked;
+			remoteUserSettings.availableChannelsArray[i].damperEnabled = event.target.checked;
 			markXTPFormDirty();
 		}.bind(damperEnabledNode, i);
 
@@ -2034,7 +2044,7 @@ async function setupMotionModifiers() {
 		damperValueNode.oninput = function (i, event) {
 			var value = parseFloat(event.target.value);
 			if (value) {
-				remoteUserSettings.availableAxisArray[i].damperValue = value;
+				remoteUserSettings.availableChannelsArray[i].damperValue = value;
 				markXTPFormDirty();
 			}
 		}.bind(damperValueNode, i);
@@ -2077,10 +2087,10 @@ async function setUpInversionMotionModifier() {
 	tab.appendChild(headerDivNode);
 
 
-	var availableAxis = remoteUserSettings.availableAxisArray;
-	for (var i = 0; i < availableAxis.length; i++) {
+	var availableChannels = remoteUserSettings.availableChannelsArray;
+	for (var i = 0; i < availableChannels.length; i++) {
 
-		var channel = availableAxis[i];
+		var channel = availableChannels[i];
 
 		var formElementNode = document.createElement("div");
 		formElementNode.classList.add("formElement");
@@ -2091,7 +2101,7 @@ async function setUpInversionMotionModifier() {
 		formElementNode.appendChild(labelNode);
 
 
-		/* value["inverted"] = availableAxis->value(channel).Inverted; */
+		/* value["inverted"] = availableChannels->value(channel).Inverted; */
 
 		var sectionNode = document.createElement("section");
 		sectionNode.setAttribute("name", "motionModifierInvertedSection");
@@ -2107,7 +2117,7 @@ async function setUpInversionMotionModifier() {
 		invertedEnabledNode.checked = channel.inverted;
 
 		invertedEnabledNode.oninput = function (i, event) {
-			remoteUserSettings.availableAxisArray[i].inverted = event.target.checked;
+			remoteUserSettings.availableChannelsArray[i].inverted = event.target.checked;
 			markXTPFormDirty();
 		}.bind(invertedEnabledNode, i);
 

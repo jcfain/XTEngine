@@ -17,7 +17,8 @@ class XTENGINE_EXPORT MediaLibraryHandler : public QObject
     Q_OBJECT
 signals:
     void prepareLibraryLoad();
-    void libraryNotFound();
+    void libraryNotFound(QStringList paths);
+    void noLibraryFound();
     //void libraryItemFound(LibraryListItem27 item);
     void libraryLoadingStatus(QString message);
     void libraryLoading();
@@ -89,7 +90,7 @@ private:
     //void saveThumbs(QList<LibraryListItem27> items, qint64 position = 0, bool vrMode = false);
     void onPrepareLibraryLoad();
     void onLibraryItemFound(LibraryListItem27 item);
-    void onSaveThumb(LibraryListItem27 &item, bool vrMode, QString errorMessage = nullptr);
+    void onSaveThumb(QString itemID, bool vrMode, QString errorMessage = nullptr);
     void setThumbPath(LibraryListItem27 &item);
     void setThumbState(ThumbState state, LibraryListItem27 &item);
     void saveNewThumbs(bool vrMode = false);

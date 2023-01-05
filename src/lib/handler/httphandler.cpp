@@ -152,40 +152,21 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     QJsonObject root;
     root["webSocketServerPort"] = _webSocketHandler->getServerPort();
 
-    QJsonObject availableAxisJson;
-    auto availableAxis = TCodeChannelLookup::getChannels();
-    foreach(auto channelName, availableAxis)
+    QJsonObject availableChannelsJson;
+    auto channels = TCodeChannelLookup::getChannels();
+    foreach(auto channelName, channels)
     {
-        QJsonObject value;
         auto channel = TCodeChannelLookup::getChannel(channelName);
         if(channel->Type != AxisType::HalfOscillate && channel->Type != AxisType::None)
         {
-            value["axisName"] = channel->AxisName;
-            value["channel"] = channel->Channel;
-            value["damperEnabled"] = channel->DamperEnabled;
-            value["damperValue"] = channel->DamperValue;
-            value["dimension"] = (int)channel->Dimension;
-            value["friendlyName"] = channel->FriendlyName;
-            value["funscriptInverted"] = channel->FunscriptInverted;
-            value["gamepadInverted"] = channel->GamepadInverted;
-            value["linkToRelatedMFS"] = channel->LinkToRelatedMFS;
-            value["max"] = channel->Max;
-            value["mid"] = channel->Mid;
-            value["min"] = channel->Min;
-            value["multiplierEnabled"] = channel->MultiplierEnabled;
-            value["multiplierValue"] = channel->MultiplierValue;
-            value["relatedChannel"] = channel->RelatedChannel;
-            value["trackName"] = channel->TrackName;
-            value["type"] = (int)channel->Type;
-            value["userMax"] = channel->UserMax;
-            value["userMid"] = channel->UserMid;
-            value["userMin"] = channel->UserMin;
-            availableAxisJson[channelName] = value;
+            availableChannelsJson[channelName] = ChannelModel33::toJson(*channel);
         }
     }
-    root["availableAxis"] = availableAxisJson;
+    root["availableChannels"] = availableChannelsJson;
 
     root["multiplierEnabled"] = SettingsHandler::getMultiplierEnabled();
+
+    root["selectedChannelProfile"] = TCodeChannelLookup::getSelectedChannelProfile();
 
     QJsonObject connectionSettingsJson;
     QJsonObject connectionInputSettingsJson;
@@ -230,7 +211,7 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
             auto channel = TCodeChannelLookup::getChannel(channelName);
             if(channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None)
                 continue;
-            auto value = doc["availableAxis"][channelName];
+            auto value = doc["availableChannels"][channelName];
             ChannelModel33 channelModel = {
                 value["friendlyName"].toString(),//QString FriendlyName;
                 value["axisName"].toString(),//QString AxisName;
@@ -372,6 +353,7 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["thumbFileExists"] = item.thumbFileExists;
     object["loaded"] = false;
     object["playing"] = false;
+    object["managedThumb"] = item.managedThumb;
 
     auto metaData = SettingsHandler::getLibraryListItemMetaData(item.path);
     object["metaData"] = LibraryListItemMetaData258::toJson(metaData);

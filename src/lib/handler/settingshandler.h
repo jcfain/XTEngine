@@ -306,6 +306,10 @@ public:
         return QStringList() << "jpg" << "jpeg" << "png" << "jfif" << "webp" << "gif";
     }
 
+    static QString getThumbFormatExtension() {
+        return "jpg";
+    }
+
 private:
     SettingsHandler();
     ~SettingsHandler();
