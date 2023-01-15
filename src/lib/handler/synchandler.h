@@ -70,6 +70,7 @@ public:
     QString getPlayingStandAloneScript();
 
     FunscriptHandler* getFunscriptHandler();
+
 private:
     TCodeHandler* _tcodeHandler;
     FunscriptHandler* _funscriptHandler = 0;

@@ -1,4 +1,5 @@
 #include "settingsactionhandler.h"
+#include "xmediastatehandler.h"
 
 SettingsActionHandler::SettingsActionHandler(QObject *parent)
     : QObject{parent}
@@ -253,36 +254,43 @@ void SettingsActionHandler::media_action(QString action)
         TCodeChannelLookup::setSelectedChannelProfile(profiles[indexOfProfile]);
         emit actionExecuted(profiles[indexOfProfile], "Set "+ profiles[indexOfProfile]);
     }
+    else if (action == actions.IncreaseOffset || action == actions.DecreaseOffset || action == actions.ResetOffset)//TODO: move to XTEngine
+    {
+        bool increase = action == actions.IncreaseOffset;
+        QString verb = increase ? "Increase" : "Decrease";
+        bool reset = false;
+        if(action == actions.ResetOffset) {
+            reset = true;
+            verb = "reset";
+        }
+        if (XMediaStateHandler::isPlaying())
+        {
+           QString path = XMediaStateHandler::getPlaying().path;
+           if(!path.isEmpty())
+           {
+               auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(path);
+               int newOffset = 0;
+               if(!reset) {
+                    newOffset = increase ? libraryListItemMetaData.offset + SettingsHandler::getFunscriptOffsetStep() : libraryListItemMetaData.offset - SettingsHandler::getFunscriptOffsetStep();
+               }
+               libraryListItemMetaData.offset = newOffset;
+               SettingsHandler::setLiveOffset(newOffset);
+               SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
+               emit actionExecuted(action, verb + " offset to " + QString::number(newOffset));
+           }
+        }
+        else
+            emit actionExecuted(action, "Nothing playing to " + verb + " offset.");
+    }
+    else if (action == actions.SkipToMoneyShot)
+    {
+        emit actionExecuted(action, nullptr);
+    }
+    else if (action == actions.SkipToAction)
+    {
+        emit actionExecuted(action, nullptr);
+    }
 
-    //TODO: nneds to be moved from main window some how
-//    else if (action == actions.IncreaseOffset || action == actions.DecreaseOffset)
-//    {
-//        bool increase = action == actions.IncreaseOffset;
-//        QString verb = increase ? "Increase" : "Decrease";
-//        int currentLiveOffSet = SettingsHandler::getLiveOffSet();
-//        int newOffset = increase ? currentLiveOffSet + SettingsHandler::getFunscriptOffsetStep() : currentLiveOffSet - SettingsHandler::getFunscriptOffsetStep();
-//        SettingsHandler::setLiveOffset(newOffset);
-//        emit actionExecuted(action, verb + " live offset to " + QString::number(newOffset));
-//    }
-//    else if (action == actions.IncreaseOffset || action == actions.DecreaseOffset)
-//    {
-//        bool increase = action == actions.IncreaseOffset;
-//        QString verb = increase ? "Increase" : "Decrease";
-//        if (xtEngine.syncHandler()->isPlaying())
-//        {
-//           QString path = playingLibraryListItem.path;
-//           if(!path.isEmpty())
-//           {
-//               auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(path);
-//               int newOffset = increase ? libraryListItemMetaData.offset + SettingsHandler::getFunscriptOffsetStep() : libraryListItemMetaData.offset - SettingsHandler::getFunscriptOffsetStep();
-//               libraryListItemMetaData.offset = newOffset;
-//               SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
-//               emit actionExecuted(action, verb + " live offset to " + QString::number(newOffset));
-//           }
-//        }
-//        else
-//            emit actionExecuted(action, "No script playing to " + verb + " offset.");
-//    }
     else
     {
         emit actionExecuted(action, nullptr);

@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.424b";
-const float SettingsHandler::XTEVersionNum = 0.424f;
+const QString SettingsHandler::XTEVersion = "0.426b";
+const float SettingsHandler::XTEVersionNum = 0.426f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){}
@@ -9,10 +9,25 @@ SettingsHandler::~SettingsHandler()
 {
     delete settings;
 }
-#include <QJsonArray>
+
 void SettingsHandler::setSaveOnExit(bool enabled)
 {
     _saveOnExit = enabled;
+}
+
+void SettingsHandler::setMoneyShot(LibraryListItem27 libraryListItem, qint64 currentPosition, bool userSet)
+{
+    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem.path);
+    if(!userSet && libraryListItemMetaData.moneyShotMillis > 0)
+        return;
+    libraryListItemMetaData.moneyShotMillis = currentPosition;
+    SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
+}
+void SettingsHandler::addBookmark(LibraryListItem27 libraryListItem, QString name, qint64 currentPosition)
+{
+    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem.path);
+    libraryListItemMetaData.bookmarks.append({name, currentPosition});
+    SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
 }
 
 QSettings* SettingsHandler::getSettings() {
@@ -498,6 +513,19 @@ void SettingsHandler::Clear()
     _saveOnExit = false;
     settings->clear();
     settingsChangedEvent(true);
+}
+
+void SettingsHandler::Quit(bool restart)
+{
+    QCoreApplication::quit();
+    if(restart)
+        QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
+}
+
+void SettingsHandler::Restart()
+{
+    QCoreApplication::quit();
+    QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
 }
 
 void SettingsHandler::settingsChangedEvent(bool dirty)

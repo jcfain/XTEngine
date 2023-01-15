@@ -13,6 +13,7 @@ CONFIG += c++11
 
 SOURCES += \
     lib/handler/connectionhandler.cpp \
+    lib/handler/crypthandler.cpp \
     lib/handler/deohandler.cpp \
     lib/handler/funscripthandler.cpp \
     lib/handler/gamepadhandler.cpp \
@@ -28,6 +29,7 @@ SOURCES += \
     lib/handler/websocketdevicehandler.cpp \
     lib/handler/websockethandler.cpp \
     lib/handler/whirligighandler.cpp \
+    lib/handler/xmediastatehandler.cpp \
     lib/handler/xtpwebhandler.cpp \
     lib/handler/xvideopreview.cpp \
     lib/handler/xvideosurface.cpp \
@@ -45,6 +47,7 @@ SOURCES += \
 HEADERS += \
     XTEngine_global.h \
     lib/handler/connectionhandler.h \
+    lib/handler/crypthandler.h \
     lib/handler/deohandler.h \
     lib/handler/funscripthandler.h \
     lib/handler/gamepadhandler.h \
@@ -62,6 +65,7 @@ HEADERS += \
     lib/handler/websocketdevicehandler.h \
     lib/handler/websockethandler.h \
     lib/handler/whirligighandler.h \
+    lib/handler/xmediastatehandler.h \
     lib/handler/xtpwebhandler.h \
     lib/handler/xvideopreview.h \
     lib/handler/xvideosurface.h \

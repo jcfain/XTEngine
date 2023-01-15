@@ -13,14 +13,21 @@
 #include "lib/handler/synchandler.h"
 #include "lib/handler/medialibraryhandler.h"
 #include "lib/handler/connectionhandler.h"
+#include "lib/handler/xmediastatehandler.h"
 #include "lib/tool/tcodefactory.h"
 #include "lib/handler/tcodehandler.h"
+#include "lib/tool/heatmap.h"
 
 class XTENGINE_EXPORT XTEngine: public QObject
 {
     Q_OBJECT
+signals:
+
+private slots:
+    void onFunscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
+
 public:
-    XTEngine(QObject* parent = nullptr);
+    XTEngine(QString appName = nullptr, QObject* parent = nullptr);
     ~XTEngine();
 
     void init();
@@ -48,6 +55,10 @@ public:
     TCodeFactory* tcodeFactory() {
         return _tcodeFactory;
     }
+//    XMediaStateHandler* xMediaStateHandler() {
+//        return m_xMediaStateHandler;
+//    }
+
 
 private:
     SyncHandler* _syncHandler = 0;
@@ -57,6 +68,14 @@ private:
     ConnectionHandler* _connectionHandler = 0;
     SettingsActionHandler* _settingsActionHandler = 0;
     TCodeFactory *_tcodeFactory = 0;
+    HeatMap* m_heatmap;
+//    XMediaStateHandler* m_xMediaStateHandler;
+
+
+    //TODO maybe move this to a more sutible place somehow?...
+    MediaActions actions;
+    void skipToNextAction();
+    void skipToMoneyShot();
 };
 
 #endif // XTENGINE_H

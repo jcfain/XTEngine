@@ -34,6 +34,10 @@ signals:
     void settingsChanged(bool dirty);
     void messageSend(QString message, XLogLevel loglevel);
 
+public slots:
+    void setMoneyShot(LibraryListItem27 selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
+    void addBookmark(LibraryListItem27 LibraryListItem27, QString name, qint64 currentPosition);
+
 public:
     static SettingsHandler& instance(){
         return m_instance;
@@ -268,6 +272,8 @@ public:
     static void PersistSelectSettings();
     static void Default();
     static void Clear();
+    static void Quit(bool restart);
+    static void Restart();
 
 
     static QStringList getVideoExtensions()
