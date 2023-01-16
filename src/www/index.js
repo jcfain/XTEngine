@@ -91,6 +91,7 @@ var alertModelNode = document.getElementById("alertModal");
 var thumbsContainerNode = document.getElementById("thumbsContainer");
 var videoMediaName = document.getElementById("videoMediaName");
 
+var storedHash = window.localStorage.getItem("storedHash");
 var sortByGlobal = JSON.parse(window.localStorage.getItem("sortBy"));
 var showGlobal = JSON.parse(window.localStorage.getItem("show"));
 var thumbSizeGlobal = JSON.parse(window.localStorage.getItem("thumbSize"));
@@ -487,6 +488,45 @@ function onResizeDeo() {
 	}
 } 
 */
+function logout() {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', "/logout", true);
+	xhr.responseType = 'json';
+	xhr.onload = function () {
+		var status = xhr.status;
+		if (status === 200) {
+			window.localStorage.removeItem("storedHash");
+			window.location.replace(window.location.origin);
+		} else {
+			systemError('Error logging out: ' + err);
+		}
+	};
+	xhr.onerror = function () {
+		systemError("Error logging out");
+	};
+	xhr.send();
+}
+
+function checkPass() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', "/auth", true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            var status = xhr.status;
+            if (status == 200) {
+				startServerConnectionRetry();
+            }
+        }
+    }
+    xhr.onerror = function () {
+        onSaveFail(xhr.statusText);
+    };
+    if(storedHash) {
+        xhr.send("{\"hashedPass\":\""+storedHash+"\"}");
+    } else
+        alert("Invalid password");
+}
 
 function getServerSettings(retry) {
 	var xhr = new XMLHttpRequest();
@@ -506,6 +546,12 @@ function getServerSettings(retry) {
 				});
 			funscriptChannels.sort();
 			initWebSocket();
+		} else if(status == 401) {
+			if(storedHash) {
+				checkPass();
+			} else {
+				window.location.replace(window.location.origin);
+			}
 		} else {
 	/* 		if(!retry)
 				systemError("Error getting settings"); */

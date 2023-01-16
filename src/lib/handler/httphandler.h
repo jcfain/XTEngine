@@ -43,6 +43,8 @@ public:
     ~HttpHandler();
     bool listen();
     HttpPromise handle(HttpDataPtr data);
+    HttpPromise handleAuth(HttpDataPtr data);
+    HttpPromise handleLogout(HttpDataPtr data);
     HttpPromise handleVideoStream(HttpDataPtr data);
     HttpPromise handleVideoList(HttpDataPtr data);
     HttpPromise handleThumbFile(HttpDataPtr data);
@@ -57,6 +59,7 @@ public:
     HttpPromise handleHereSphere(HttpDataPtr data);
     HttpPromise handleWebTimeUpdate(HttpDataPtr data);
 
+
     void sendWebSocketTextMessage(QString command, QString message = nullptr);
 
 private:
@@ -69,6 +72,7 @@ private:
     bool _libraryLoaded = false;
     QString _libraryLoadingStatus = "Loading...";
     QMutex _mutex;
+    bool m_isAuthenticated;
 
     QJsonObject createMediaObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);

@@ -63,9 +63,11 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     router.addRoute("GET", "^/deotest$", this, &HttpHandler::handleDeo);
     router.addRoute("GET", "^/settings$", this, &HttpHandler::handleSettings);
     router.addRoute("GET", "^/settings/availableSerialPorts$", this, &HttpHandler::handleAvailableSerialPorts);
+    router.addRoute("GET", "^/logout$", this, &HttpHandler::handleLogout);
     router.addRoute("POST", "^/settings$", this, &HttpHandler::handleSettingsUpdate);
     router.addRoute("POST", "^/xtpweb$", this, &HttpHandler::handleWebTimeUpdate);
     router.addRoute("POST", "^/heresphere$", this, &HttpHandler::handleHereSphere);
+    router.addRoute("POST", "^/auth$", this, &HttpHandler::handleAuth);
 }
 bool HttpHandler::listen()
 {
@@ -91,7 +93,48 @@ HttpPromise HttpHandler::handle(HttpDataPtr data)
 
     auto path = data->request->uri().path();
     auto root = SettingsHandler::getHttpServerRoot();
-    if(path == "/") {
+    auto hashedWebPass = SettingsHandler::hashedWebPass();
+    if(!hashedWebPass.isEmpty() && !m_isAuthenticated) {
+        if(path =="/auth-min.js" ||
+            path =="/js-sha3-min.js" ||
+            path == "/styles-min.css"  ||
+            path == "/faviicon.ico" ||
+            path.startsWith("/://images"))
+        {
+            QString localPath;
+            if(path.startsWith("/:"))
+            {
+                localPath = path.remove(0,1);
+            }
+            else
+            {
+                localPath = root + path;
+            }
+            if(QFile::exists(localPath))
+            {
+                QString mimeType = mimeDatabase.mimeTypeForFile(localPath, QMimeDatabase::MatchExtension).name();
+                data->response->sendFile(localPath, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
+                data->response->setStatus(HttpStatus::Ok);
+            }
+            else
+                data->response->setStatus(HttpStatus::BadRequest);
+        }
+        else if(path == "/")
+        {
+            LogHandler::Debug("Sending root auth-min.html");
+            if(!QFileInfo::exists(root+"/auth-min.html"))
+            {
+                LogHandler::Debug("file does not exist: "+root+"/auth-min.html");
+                data->response->setStatus(HttpStatus::BadRequest);
+            }
+            else
+            {
+                data->response->sendFile(root+"/auth-min.html", "text/html", "", -1, Z_DEFAULT_COMPRESSION);
+                data->response->setStatus(HttpStatus::Ok);
+            }
+        }
+
+    } else if(path == "/") {
         LogHandler::Debug("Sending root index-min.html");
         if(!QFileInfo(root+"/index-min.html").exists())
         {
@@ -120,8 +163,7 @@ HttpPromise HttpHandler::handle(HttpDataPtr data)
         {
             localPath = root + path;
         }
-        QFile file(localPath);
-        if(file.exists())
+        if(QFile::exists(localPath))
         {
             QString mimeType = mimeDatabase.mimeTypeForFile(localPath, QMimeDatabase::MatchExtension).name();
             data->response->sendFile(localPath, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
@@ -133,8 +175,43 @@ HttpPromise HttpHandler::handle(HttpDataPtr data)
     return HttpPromise::resolve(data);
 }
 
+HttpPromise HttpHandler::handleAuth(HttpDataPtr data)
+{
+    auto body = data->request->body();
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(body, &error);
+    if (doc.isEmpty())
+    {
+        LogHandler::Error("XTP Web json response error: "+error.errorString());
+        LogHandler::Error("data: "+body);
+        data->response->setStatus(HttpStatus::BadRequest);
+        return HttpPromise::resolve(data);
+    }
+    else
+    {
+        if(SettingsHandler::hashedWebPass() == doc["hashedPass"].toString()) {
+            m_isAuthenticated = true;
+            data->response->setStatus(HttpStatus::Ok);
+        } else {
+            data->response->setStatus(HttpStatus::Unauthorized);
+        }
+    }
+    return HttpPromise::resolve(data);
+}
+
+HttpPromise HttpHandler::handleLogout(HttpDataPtr data)
+{
+    m_isAuthenticated = false;
+    data->response->setStatus(HttpStatus::Ok);
+    return HttpPromise::resolve(data);
+}
+
 HttpPromise HttpHandler::handleWebTimeUpdate(HttpDataPtr data)
 {
+    if(!m_isAuthenticated) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
     auto body = data->request->body();
     LogHandler::Debug("HTTP time sync update: "+QString(body));
     emit xtpWebPacketRecieve(body);
@@ -142,6 +219,10 @@ HttpPromise HttpHandler::handleWebTimeUpdate(HttpDataPtr data)
     return HttpPromise::resolve(data);
 }
 HttpPromise HttpHandler::handleAvailableSerialPorts(HttpDataPtr data) {
+    if(!m_isAuthenticated) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
     QJsonArray root;
     //root = Sett
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
@@ -149,6 +230,11 @@ HttpPromise HttpHandler::handleAvailableSerialPorts(HttpDataPtr data) {
     return HttpPromise::resolve(data);
 }
 HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
+    if(!m_isAuthenticated) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+
     QJsonObject root;
     root["webSocketServerPort"] = _webSocketHandler->getServerPort();
 
@@ -193,6 +279,11 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
 
 HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
 {
+    if(!m_isAuthenticated) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+
     auto body = data->request->body();
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(body, &error);
@@ -305,6 +396,11 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
 
 HttpPromise HttpHandler::handleVideoList(HttpDataPtr data)
 {
+    if(!m_isAuthenticated) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+
     QJsonArray media;
     QString hostAddress = "http://" + data->request->headerDefault("Host", "") + "/";
     foreach(auto item, _mediaLibraryHandler->getLibraryCache())
@@ -366,6 +462,11 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
 
 HttpPromise HttpHandler::handleHereSphere(HttpDataPtr data)
 {
+    if(!m_isAuthenticated) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+
     QString hostAddress = "http://" + data->request->headerDefault("Host", "") + "/";
     QJsonObject root;
     QJsonObject banner;
@@ -425,6 +526,11 @@ QJsonObject HttpHandler::createHeresphereObject(LibraryListItem27 item, QString 
 
 HttpPromise HttpHandler::handleDeo(HttpDataPtr data)
 {
+    if(!m_isAuthenticated) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+
     QString hostAddress = "http://" + data->request->headerDefault("Host", "") + "/";
     QJsonObject root;
     QJsonArray scenes;
@@ -477,6 +583,11 @@ QJsonObject HttpHandler::createDeoObject(LibraryListItem27 item, QString hostAdd
 
 HttpPromise HttpHandler::handleFunscriptFile(HttpDataPtr data)
 {
+    if(!m_isAuthenticated) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+
     auto match = data->state["match"].value<QRegularExpressionMatch>();
     QString parameter = match.captured();
 
@@ -498,6 +609,11 @@ HttpPromise HttpHandler::handleFunscriptFile(HttpDataPtr data)
 }
 HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
 {
+    if(!m_isAuthenticated) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+
     auto match = data->state["match"].value<QRegularExpressionMatch>();
     QString parameter = match.captured();
     QString thumbName = parameter.remove("/thumb/");
@@ -566,6 +682,11 @@ HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
 
 HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
 {
+    if(!m_isAuthenticated) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+
     return QPromise<HttpDataPtr> {[&](
         const QtPromise::QPromiseResolve<HttpDataPtr> &resolve,
         const QtPromise::QPromiseReject<HttpDataPtr> &reject)

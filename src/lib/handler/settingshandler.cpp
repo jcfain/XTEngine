@@ -224,6 +224,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     }
 
     _hashedPass = settingsToLoadFrom->value("userData").toString();
+    _hashedWebPass = settingsToLoadFrom->value("userWebData").toString();
     if(!firstLoad && currentVersion < 0.258f)
     {
         locker.unlock();
@@ -342,6 +343,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
+        if(currentVersion < 0.426f) {
+            locker.unlock();
+            _hashedPass = nullptr;
+            Save();
+            Load();
+        }
 
     }
     settingsChangedEvent(false);
@@ -457,6 +464,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         }
         settingsToSaveTo->setValue("playlists", playlists);
         settingsToSaveTo->setValue("userData", _hashedPass);
+        settingsToSaveTo->setValue("userWebData", _hashedWebPass);
 
         QVariantHash libraryListItemMetaDatas;
         foreach(auto libraryListItemMetaData, _libraryListItemMetaDatas.keys())
@@ -583,6 +591,7 @@ void SettingsHandler::SaveChannelMap(QSettings* settingsToSaveTo)
     }
     settingsToSaveTo->setValue("availableChannels", availableChannelVariant);
 }
+
 void SettingsHandler::SetGamepadMapDefaults()
 {
     setupGamepadButtonMap();
@@ -1826,6 +1835,14 @@ void SettingsHandler::SetHashedPass(QString value)
     settingsChangedEvent(true);
 }
 
+const QString &SettingsHandler::hashedWebPass()
+{
+    return _hashedWebPass;
+}
+void SettingsHandler::setHashedWebPass(const QString &newHashedWebPass)
+{
+    _hashedWebPass = newHashedWebPass;
+}
 
 //private
 void SettingsHandler::setupGamepadButtonMap()
@@ -2198,6 +2215,7 @@ qint64 SettingsHandler::_channelPulseFrequency;
 int SettingsHandler::_channelPulseAmount;
 
 QString SettingsHandler::_hashedPass;
+QString SettingsHandler::_hashedWebPass;
 
 QList<DecoderModel> SettingsHandler::decoderPriority;
 XVideoRenderer SettingsHandler::_selectedVideoRenderer;

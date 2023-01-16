@@ -1,5 +1,7 @@
 #ifndef SETTINGSHANDLER_H
 #define SETTINGSHANDLER_H
+#include "XTEngine_global.h"
+
 #include <QCoreApplication>
 #include <QSettings>
 #include <QObject>
@@ -25,7 +27,6 @@
 #include "../struct/LibraryListItem27.h"
 #include "../struct/LibraryListItemMetaData.h"
 #include "../struct/LibraryListItemMetaData258.h"
-#include "XTEngine_global.h"
 
 class XTENGINE_EXPORT SettingsHandler: public QObject
 {
@@ -316,6 +317,9 @@ public:
         return "jpg";
     }
 
+    static const QString &hashedWebPass();
+    static void setHashedWebPass(const QString &newHashedWebPass);
+
 private:
     SettingsHandler();
     ~SettingsHandler();
@@ -405,6 +409,7 @@ private:
     static bool disableSpeechToText;
     static bool _saveOnExit;
     static QString _hashedPass;
+    static QString _hashedWebPass;
 
     static bool _skipToMoneyShotPlaysFunscript;
     static QString _skipToMoneyShotFunscript;

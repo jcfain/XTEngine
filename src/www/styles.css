@@ -47,7 +47,30 @@ body {
     height: 50px;
     max-width: fit-content;
 }
-
+.auth-container {
+    margin: 0 auto;
+    display: flex;
+    flex-flow: column;
+    width: 20%;
+}
+.auth-body {
+    display: flex;
+    height: 100vh;
+    align-items: center;
+}
+.auth-body-content {
+    flex-basis: 100%;
+}
+.auth-footer {
+    justify-content: center !important;
+    margin-top: 16px;
+}
+.auth-footer button {    
+    border-radius: 50px !important;
+    height: 75px !important;
+    width: 75px;
+    font-size: larger;
+}
 .toolBar {
     display: flex;
     flex-flow: column;
@@ -99,6 +122,15 @@ select:disabled {
     text-align: end;
 }
 
+.formElement--column {
+    display: grid;
+    grid-template-columns: 100%;
+    margin-top: 8px;
+    width: 100%;
+    align-items: center;
+    text-align: center;
+}
+
 .formElement select,
 .formElement button:not(.video-control),
 .formElement input:not([type='checkbox']):not([type='range']):not([type='radio']):not(.video-control) {
@@ -111,6 +143,12 @@ select:disabled {
     flex-basis: 20%;
     padding-top: 4px;
     margin-right: 8px;
+}
+.formElement--column label {
+    height: 24px;
+    flex-basis: 100%;
+    padding-top: 4px;
+    margin-right: 0px;
 }
 
 .formElement .radio-group {
@@ -126,6 +164,10 @@ select:disabled {
 .formElement input[type='checkbox'] {
     width: max-content;
     /* margin-right: 8px; */
+}
+.formElement--column input[type='checkbox'] {
+    width: max-content;
+    margin: auto;
 }
 /* Doesnt look right in Deo */
 .styled-checkbox {
@@ -149,7 +191,9 @@ select:disabled {
     font-weight: bold;
     text-align: center;
 }
+.styled-text {
 
+}
 button:not(.icon-button):not(.tab-section-tab):not(.video-control):not(.media-context) {
     border-radius: 5px;
     height: 24px;
@@ -680,6 +724,14 @@ section>.range-values {
     .media-filter-input {
         width: 50vw;
         left: 25vw;
+    }
+    .auth-container {
+        width: 85%;
+        margin: 0;
+    }
+    
+    .auth-body {
+
     }
 }
 
