@@ -72,7 +72,7 @@ private:
     bool _libraryLoaded = false;
     QString _libraryLoadingStatus = "Loading...";
     QMutex _mutex;
-    bool m_isAuthenticated;
+    QHash<QString, QDateTime> m_authenticated;
 
     QJsonObject createMediaObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);
@@ -81,6 +81,7 @@ private:
     void onSetLibraryLoaded();
     void onSetLibraryLoading();
     void onLibraryLoadingStatusChange(QString message);
+    bool isAuthenticated(HttpDataPtr data);
 
 };
 

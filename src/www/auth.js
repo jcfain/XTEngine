@@ -25,8 +25,10 @@ function checkPass(userEntered) {
             else {
                 if(rememberPassword)
                     window.localStorage.setItem("storedHash", hashedPass);
+                //var sessionID = JSON.parse(xhr.response).sessionID;
+                //window.sessionStorage.setItem("sessionID", sessionID);
                 document.removeEventListener("keypress", onEnter);
-                window.location.reload();
+                window.location.replace(window.location.origin);
             }
         }
     }
@@ -35,11 +37,11 @@ function checkPass(userEntered) {
     };
     if(storedHash && !userEntered) {
         hashedPass = storedHash;
-        xhr.send("{\"hashedPass\":\""+storedHash+"\"}");
+        xhr.send("{\"hashedPass\":\""+storedHash+"\", \"remember\":\"true\"}");
     } else {
         hashedPass = encrypt();
         if(hashedPass) {
-            xhr.send("{\"hashedPass\":\""+hashedPass+"\"}");
+            xhr.send("{\"hashedPass\":\""+hashedPass+"\", \"remember\":\""+rememberPassword+"\"}");
         } else
             alert("Invalid password");
     }

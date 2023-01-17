@@ -1,4 +1,5 @@
 #include "httphandler.h"
+#include <QUuid>
 #include "../tool/imagefactory.h"
 
 HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent):
@@ -56,6 +57,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     extensions += SettingsHandler::getVideoExtensions().join("|");
     extensions += "|";
     extensions += SettingsHandler::getAudioExtensions().join("|");
+    //router.addRoute("GET", "^/home", this, &HttpHandler::handleHome);
     router.addRoute("GET", "^/media/(.*\\.(("+extensions+")$))?[.]*$", this, &HttpHandler::handleVideoStream);
     router.addRoute("GET", "^/media$", this, &HttpHandler::handleVideoList);
     router.addRoute("GET", "^/thumb/.*$", this, &HttpHandler::handleThumbFile);
@@ -94,7 +96,7 @@ HttpPromise HttpHandler::handle(HttpDataPtr data)
     auto path = data->request->uri().path();
     auto root = SettingsHandler::getHttpServerRoot();
     auto hashedWebPass = SettingsHandler::hashedWebPass();
-    if(!hashedWebPass.isEmpty() && !m_isAuthenticated) {
+    if(!hashedWebPass.isEmpty() && !isAuthenticated(data)) {
         if(path =="/auth-min.js" ||
             path =="/js-sha3-min.js" ||
             path == "/styles-min.css"  ||
@@ -136,7 +138,7 @@ HttpPromise HttpHandler::handle(HttpDataPtr data)
 
     } else if(path == "/") {
         LogHandler::Debug("Sending root index-min.html");
-        if(!QFileInfo(root+"/index-min.html").exists())
+        if(!QFileInfo::exists(root+"/index-min.html"))
         {
             LogHandler::Debug("file does not exist: "+root+"/index-min.html");
             data->response->setStatus(HttpStatus::BadRequest);
@@ -190,8 +192,21 @@ HttpPromise HttpHandler::handleAuth(HttpDataPtr data)
     else
     {
         if(SettingsHandler::hashedWebPass() == doc["hashedPass"].toString()) {
-            m_isAuthenticated = true;
+//            QJsonObject root;
+            QString sessionID = QUuid::createUuid().toString(QUuid::StringFormat::WithoutBraces);
+//            root["sessionID"] = sessionID;
+            QDateTime dateTime;
+            QDateTime createDate = QDateTime::currentDateTime();
+            HttpCookie cookie("sessionID", sessionID);
+            if(!doc["remember"].toBool(false))
+                cookie.expiration = createDate.addDays(1);
+            QString lastSessionID = data->request->cookie("sessionID");
+            if(!lastSessionID.isEmpty())
+                m_authenticated.remove(lastSessionID);
+            data->response->setCookie(cookie);
             data->response->setStatus(HttpStatus::Ok);
+            data->response->compressBody();
+            m_authenticated.insert(sessionID, createDate);
         } else {
             data->response->setStatus(HttpStatus::Unauthorized);
         }
@@ -201,14 +216,15 @@ HttpPromise HttpHandler::handleAuth(HttpDataPtr data)
 
 HttpPromise HttpHandler::handleLogout(HttpDataPtr data)
 {
-    m_isAuthenticated = false;
+    QString sessionID = data->request->cookie("sessionID");
+    m_authenticated.remove(sessionID);
     data->response->setStatus(HttpStatus::Ok);
     return HttpPromise::resolve(data);
 }
 
 HttpPromise HttpHandler::handleWebTimeUpdate(HttpDataPtr data)
 {
-    if(!m_isAuthenticated) {
+    if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
@@ -219,7 +235,7 @@ HttpPromise HttpHandler::handleWebTimeUpdate(HttpDataPtr data)
     return HttpPromise::resolve(data);
 }
 HttpPromise HttpHandler::handleAvailableSerialPorts(HttpDataPtr data) {
-    if(!m_isAuthenticated) {
+    if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
@@ -230,7 +246,7 @@ HttpPromise HttpHandler::handleAvailableSerialPorts(HttpDataPtr data) {
     return HttpPromise::resolve(data);
 }
 HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
-    if(!m_isAuthenticated) {
+    if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
@@ -279,7 +295,7 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
 
 HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
 {
-    if(!m_isAuthenticated) {
+    if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
@@ -396,7 +412,7 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
 
 HttpPromise HttpHandler::handleVideoList(HttpDataPtr data)
 {
-    if(!m_isAuthenticated) {
+    if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
@@ -462,7 +478,7 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
 
 HttpPromise HttpHandler::handleHereSphere(HttpDataPtr data)
 {
-    if(!m_isAuthenticated) {
+    if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
@@ -526,7 +542,7 @@ QJsonObject HttpHandler::createHeresphereObject(LibraryListItem27 item, QString 
 
 HttpPromise HttpHandler::handleDeo(HttpDataPtr data)
 {
-    if(!m_isAuthenticated) {
+    if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
@@ -583,7 +599,7 @@ QJsonObject HttpHandler::createDeoObject(LibraryListItem27 item, QString hostAdd
 
 HttpPromise HttpHandler::handleFunscriptFile(HttpDataPtr data)
 {
-    if(!m_isAuthenticated) {
+    if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
@@ -609,7 +625,7 @@ HttpPromise HttpHandler::handleFunscriptFile(HttpDataPtr data)
 }
 HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
 {
-    if(!m_isAuthenticated) {
+    if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
@@ -682,7 +698,7 @@ HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
 
 HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
 {
-    if(!m_isAuthenticated) {
+    if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
@@ -836,6 +852,14 @@ void HttpHandler::onLibraryLoadingStatusChange(QString message) {
     _libraryLoadingStatus = message;
     if(_webSocketHandler)
         _webSocketHandler->sendCommand("mediaLoadingStatus", message);
+}
+
+bool HttpHandler::isAuthenticated(HttpDataPtr data)
+{
+    QString sessionID = data->request->cookie("sessionID");
+    if(sessionID.isEmpty())
+        return false;
+    return m_authenticated.contains(sessionID);
 }
 
 void HttpHandler::on_webSocketClient_Connected(QWebSocket* client)

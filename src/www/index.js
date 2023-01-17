@@ -91,7 +91,7 @@ var alertModelNode = document.getElementById("alertModal");
 var thumbsContainerNode = document.getElementById("thumbsContainer");
 var videoMediaName = document.getElementById("videoMediaName");
 
-var storedHash = window.localStorage.getItem("storedHash");
+const storedHash = window.localStorage.getItem("storedHash");
 var sortByGlobal = JSON.parse(window.localStorage.getItem("sortBy"));
 var showGlobal = JSON.parse(window.localStorage.getItem("show"));
 var thumbSizeGlobal = JSON.parse(window.localStorage.getItem("thumbSize"));
@@ -496,6 +496,7 @@ function logout() {
 		var status = xhr.status;
 		if (status === 200) {
 			window.localStorage.removeItem("storedHash");
+			window.sessionStorage.clear();
 			window.location.replace(window.location.origin);
 		} else {
 			systemError('Error logging out: ' + err);
@@ -523,7 +524,7 @@ function checkPass() {
         onSaveFail(xhr.statusText);
     };
     if(storedHash) {
-        xhr.send("{\"hashedPass\":\""+storedHash+"\"}");
+        xhr.send("{\"hashedPass\":\""+storedHash+"\", \"remember\":\""+!!storedHash+"\"}");
     } else
         alert("Invalid password");
 }
