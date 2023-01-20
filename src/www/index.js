@@ -582,6 +582,7 @@ function getServerSettings(retry) {
 	xhr.send();
 }
 
+function getServerSassions() {
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', "/activeSessions", true);
 	xhr.responseType = 'json';
@@ -589,6 +590,18 @@ function getServerSettings(retry) {
 		var status = xhr.status;
 		if (status === 200) {
 			var activeSessions = xhr.response;
+			var tBody = document.getElementById("sessionInfoBody");
+			removeAllChildNodes(tBody);
+			activeSessions.forEach(element => {
+				var row = document.createElement("tr");
+				row.id = element["id"];
+				var cellSessionID = document.createElement("td");
+				cellSessionID.innerText = element["id"];
+				var cellCreate = document.createElement("td");
+				cellCreate.innerText = element["lastAccessed"];
+				var cellExpire = document.createElement("td");
+				cellExpire.innerText = element["expire"];
+				var cellCurrent = document.createElement("td");
 				cellCurrent.innerText = element["current"] ? "*" : "";
 				var cellDelete = document.createElement("td");
 				var btnDelete = document.createElement("button");
