@@ -21,7 +21,7 @@ function checkPass(userEntered) {
         if (xhr.readyState === 4) {
             var status = xhr.status;
             if (status !== 200) {
-                alert(xhr.statusText);
+                showAlertWindow("Error", xhr.statusText);
                 if(status == 401 && storedHash)
                     window.localStorage.removeItem("storedHash");
             } else {
@@ -45,7 +45,7 @@ function checkPass(userEntered) {
         if(hashedPass) {
             xhr.send("{\"hashedPass\":\""+hashedPass+"\", \"remember\":\""+rememberPassword+"\"}");
         } else
-            alert("Invalid password");
+            showAlertWindow("Error", "Invalid password");
     }
 }
 

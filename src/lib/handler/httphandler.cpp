@@ -100,7 +100,7 @@ HttpPromise HttpHandler::handle(HttpDataPtr data)
     auto root = SettingsHandler::getHttpServerRoot();
     auto hashedWebPass = SettingsHandler::hashedWebPass();
     if(!hashedWebPass.isEmpty() && !isAuthenticated(data)) {
-        if(path =="/auth-min.js" ||
+        if(path =="/common-min.js" || path =="/auth-min.js" ||
             path =="/js-sha3-min.js" ||
             path == "/styles-min.css"  ||
             path == "/faviicon.ico" ||

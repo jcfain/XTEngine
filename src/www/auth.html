@@ -68,6 +68,32 @@
                 </div>
             </div>
         </div>
+        
+        <div id="alertModal" class="modal modal--alert">
+            <div class="modal-content modal-content--alert">
+                <div class="modal-header">
+                    <span id="alert-modal-title" class="modal-title">Confirm</span>
+                    <button class="close-modal icon-button" onclick="closeAlertWindow()">
+                        <image class="buttonImage" src="://images/icons/x.svg" />
+                    </button>
+                </div>
+                <div id="alertModalBody" class="modal-body modal-body--alert">
+                </div>
+                <div class="modal-footer">
+                    <div class="modal-footer-content"> </div>
+                    <div class="modal-footer-content">
+                        <button id="alertConfirmButton">
+                            Yes
+                        </button>
+                        <button id="alertCancelButton" onclick="closeAlertWindow()">
+                            No
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript" src="common-min.js"></script>
         <script type="text/javascript" src="auth-min.js"></script>
         <script type="text/javascript" src="js-sha3-min.js"></script>
     </body>

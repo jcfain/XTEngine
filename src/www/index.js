@@ -80,25 +80,45 @@ var speechVolume = 0.5;
 
 
 const parseCookie = str =>
-  str
-  .split(';')
-  .map(v => v.split('='))
-  .reduce((acc, v) => {
-    acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
-    return acc;
-  }, {});
+str
+.split(';')
+.map(v => v.split('='))
+.reduce((acc, v) => {
+	if(v && v[0].trim().length)
+		acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
+return acc;
+}, {});
+
+function delete_cookie( name, path, domain ) {
+	if( get_cookie( name ) ) {
+		document.cookie = name + "=" +
+		((path) ? ";path="+path:"")+
+		((domain)?";domain="+domain:"") +
+		";expires=Thu, 01 Jan 1970 00:00:01 GMT";
+	}
+}
+
+function get_cookie(name) {
+    return document.cookie.split(';').some(c => {
+        return c.trim().startsWith(name + '=');
+    });
+}
 
 document.addEventListener('keyup', keyboardShortcuts);
 document.addEventListener('click', destroyMediaContextNode);
 
 var cookies = parseCookie(document.cookie);
+if(!cookies.sessionID) {
+	document.getElementById("logoutSection").style.display = "none";
+	document.getElementById("logoutSectionSpacing").style.display = "none";
+	document.getElementById("sessionInfoTable").hidden = true;
+}
 getBrowserInformation();
 var userAgentIsDeo = userAgent.indexOf("Deo VR") != -1;
 var userAgentIsHereSphere = userAgent.indexOf("HereSphere") != -1;
 var userAgentIsMobile = userAgent.indexOf("Mobile") != -1;
 setDeoStyles(userAgentIsDeo);
 var settingsNode = document.getElementById("settingsModal");
-var alertModelNode = document.getElementById("alertModal");
 var thumbsContainerNode = document.getElementById("thumbsContainer");
 var videoMediaName = document.getElementById("videoMediaName");
 
@@ -174,50 +194,6 @@ debugMode = true;
 function debug(message) {
 	if (debugMode)
 		console.log(message);
-}
-function userError(message) {
-	//alert(message);
-	showAlertWindow("Error", message)
-}
-function systemError(message) {
-	//alert(message);
-	showAlertWindow("System error", message)
-}
-
-function showAlertWindow(header, message, yesCallback) {
-	if(alertModelNode.style.visibility != "visible") {
-		var confirmButton = document.getElementById("alertConfirmButton");
-		var closebutton = document.getElementById("alertCancelButton");
-		var headerNode = document.getElementById("alert-modal-title");
-		headerNode.innerText = header;
-		if(yesCallback) {
-			confirmButton.hidden = false;
-			confirmButton.onclick = yesCallback;
-			var alertModalBody = document.getElementById("alertModalBody");
-			alertModalBody.innerHTML = message;
-			closebutton.innerText = "No";
-		} else {
-			confirmButton.hidden = true;
-			if(message)
-				alertModalBody.innerHTML = message;
-			closebutton.innerText = "Ok";
-		}
-		alertModelNode.style.visibility = "visible";
-		alertModelNode.style.opacity = 1;
-	} else {
-		systemError("Two alert windows opened");
-	}
-}
-	
-function closeAlertWindow() {
-	alertModelNode.style.visibility = "hidden";
-	alertModelNode.style.opacity = 0;
-	setTimeout(function() {
-		var confirmButton = document.getElementById("alertConfirmButton");
-		confirmButton.onclick = undefined;
-		var alertModalBody = document.getElementById("alertModalBody");
-		alertModalBody.innerText = undefined;
-	}, 275)
 }
 
 function sendWebsocketMessage(command, message) {
@@ -511,6 +487,8 @@ function logout() {
 		if (status === 200) {
 			window.localStorage.removeItem("storedHash");
 			window.sessionStorage.clear();
+			delete_cookie("sessionID");
+			cookies.sessionID = undefined;
 			window.location.replace(window.location.origin);
 		} else {
 			systemError('Error logging out: ' + err);
@@ -582,53 +560,55 @@ function getServerSettings(retry) {
 	xhr.send();
 }
 
-function getServerSassions() {
-	var xhr = new XMLHttpRequest();
-	xhr.open('GET', "/activeSessions", true);
-	xhr.responseType = 'json';
-	xhr.onload = function (evnt) {
-		var status = xhr.status;
-		if (status === 200) {
-			var activeSessions = xhr.response;
-			var tBody = document.getElementById("sessionInfoBody");
-			removeAllChildNodes(tBody);
-			activeSessions.forEach(element => {
-				var row = document.createElement("tr");
-				row.id = element["id"];
-				var cellSessionID = document.createElement("td");
-				cellSessionID.innerText = element["id"];
-				var cellCreate = document.createElement("td");
-				cellCreate.innerText = element["lastAccessed"];
-				var cellExpire = document.createElement("td");
-				cellExpire.innerText = element["expire"];
-				var cellCurrent = document.createElement("td");
-				cellCurrent.innerText = element["current"] ? "*" : "";
-				var cellDelete = document.createElement("td");
-				var btnDelete = document.createElement("button");
-				btnDelete.onclick = checkSession(element["id"]);
-				btnDelete.innerText = "X"
-				cellDelete.appendChild(btnDelete);
-				row.appendChild(cellSessionID);
-				row.appendChild(cellCreate);
-				row.appendChild(cellExpire);
-				row.appendChild(cellCurrent);
-				row.appendChild(cellDelete);
-				tBody.appendChild(row);
-			});
-		} else {
-			showAlertWindow(status.statusText);
-		}
-	}.bind(this);
-	xhr.onerror = function(evnt, retry) {
-		onSaveFail(xhr.status.statusText);
-	};
-	xhr.send();
+function getServerSessions() {
+	if(cookies.sessionID) {
+		var xhr = new XMLHttpRequest();
+		xhr.open('GET', "/activeSessions", true);
+		xhr.responseType = 'json';
+		xhr.onload = function (evnt) {
+			var status = xhr.status;
+			if (status === 200) {
+				var activeSessions = xhr.response;
+				var tBody = document.getElementById("sessionInfoBody");
+				removeAllChildNodes(tBody);
+				activeSessions.forEach(element => {
+					var row = document.createElement("tr");
+					row.id = element["id"];
+					var cellSessionID = document.createElement("td");
+					cellSessionID.innerText = element["id"];
+					var cellCreate = document.createElement("td");
+					cellCreate.innerText = element["lastAccessed"];
+					var cellExpire = document.createElement("td");
+					cellExpire.innerText = element["expire"];
+					var cellCurrent = document.createElement("td");
+					cellCurrent.innerText = element["current"] ? "*" : "";
+					var cellDelete = document.createElement("td");
+					var btnDelete = document.createElement("button");
+					btnDelete.onclick = checkSession(element["id"]);
+					btnDelete.innerText = "X"
+					cellDelete.appendChild(btnDelete);
+					row.appendChild(cellSessionID);
+					row.appendChild(cellCreate);
+					row.appendChild(cellExpire);
+					row.appendChild(cellCurrent);
+					row.appendChild(cellDelete);
+					tBody.appendChild(row);
+				});
+			} else {
+				showAlertWindow(status.statusText);
+			}
+		}.bind(this);
+		xhr.onerror = function(evnt, retry) {
+			onSaveFail(xhr.status.statusText);
+		};
+		xhr.send();
+	}
 }
 
 var checkSession = function (sessionID) {
 	return function () {
 		if(sessionID == cookies.sessionID)
-			showAlertWindow("Logout?", "Are you sure you want to delete the current session? This will log you out.", deleteSession(sessionID));
+			showAlertWindow("Logout?", "Are you sure you want to delete the current session? This will log you out.", function() {deleteSession(sessionID)});
 		else
 			deleteSession(sessionID);
 	}
@@ -644,8 +624,10 @@ function deleteSession (sessionID) {
 			if (status == 200) {
 				var sessionNode = document.getElementById(sessionID);
 				document.getElementById("sessionInfoBody").removeChild(sessionNode);
-				if(sessionID == cookies.sessionID)
+				if(sessionID == cookies.sessionID) {
+					delete_cookie("sessionID");
 					logout();
+				}
 			}
 		}
 	}
@@ -1862,7 +1844,7 @@ function onFunscriptWorkerThreadRecieveMessage(e) {
 }
 //Settings
 function openSettings() {
-	getServerSassions();
+	getServerSessions();
 	settingsNode.style.visibility = "visible";
 	settingsNode.style.opacity = 1;
 	document.getElementById("settingsTabs").style.display = "block";

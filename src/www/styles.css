@@ -701,18 +701,19 @@ section>.range-values {
 }
 .session-info {
     margin-top: 30px;
-    text-align: left;
 }
 .session-info-table, 
 .session-info-table td, 
 .session-info-table th  {
     border: 1px solid white;
     border-collapse: collapse;
-    padding: 4px;
+    padding: 4px 8px;
+    text-align: center;
 }
 
 .session-info-table td button  {
     width: 100%;
+    max-width: 50px;
 }
 
 
