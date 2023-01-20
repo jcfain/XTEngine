@@ -65,9 +65,8 @@ body {
     justify-content: center !important;
     margin-top: 16px;
 }
-.auth-footer button {    
-    border-radius: 50px !important;
-    height: 75px !important;
+.auth-footer button {
+    height: 40px!important;
     width: 75px;
     font-size: larger;
 }
@@ -700,6 +699,22 @@ section>.range-values {
     border-color: #fff transparent #fff transparent;
     animation: loading-spinner 1.2s linear infinite;
 }
+.session-info {
+    margin-top: 30px;
+    text-align: left;
+}
+.session-info-table, 
+.session-info-table td, 
+.session-info-table th  {
+    border: 1px solid white;
+    border-collapse: collapse;
+    padding: 4px;
+}
+
+.session-info-table td button  {
+    width: 100%;
+}
+
 
 @keyframes loading-spinner {
     0% {

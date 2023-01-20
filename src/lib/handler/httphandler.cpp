@@ -66,10 +66,13 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     router.addRoute("GET", "^/settings$", this, &HttpHandler::handleSettings);
     router.addRoute("GET", "^/settings/availableSerialPorts$", this, &HttpHandler::handleAvailableSerialPorts);
     router.addRoute("GET", "^/logout$", this, &HttpHandler::handleLogout);
+    router.addRoute("GET", "^/activeSessions$", this, &HttpHandler::handleActiveSessions);
     router.addRoute("POST", "^/settings$", this, &HttpHandler::handleSettingsUpdate);
     router.addRoute("POST", "^/xtpweb$", this, &HttpHandler::handleWebTimeUpdate);
     router.addRoute("POST", "^/heresphere$", this, &HttpHandler::handleHereSphere);
     router.addRoute("POST", "^/auth$", this, &HttpHandler::handleAuth);
+    router.addRoute("POST", "^/expireSession$", this, &HttpHandler::handleExpireSession);
+
 }
 bool HttpHandler::listen()
 {
@@ -194,12 +197,34 @@ HttpPromise HttpHandler::handleAuth(HttpDataPtr data)
         if(SettingsHandler::hashedWebPass() == doc["hashedPass"].toString()) {
 //            QJsonObject root;
             QString sessionID = QUuid::createUuid().toString(QUuid::StringFormat::WithoutBraces);
+
+            if(!m_sessionPolice.isActive()) {
+                connect(&m_sessionPolice, &QTimer::timeout, this, [this]()
+                {
+                    QStringList expiredIDs;
+                    foreach(QString sessionID, m_authenticated.keys())
+                    {
+                        if(m_authenticated.value(sessionID).addSecs(m_sessionTimeout) < QDateTime::currentDateTime())// Exipre if not accessed in 15min
+                        {
+                                expiredIDs << sessionID;
+                        }
+                    }
+                    foreach (QString sessionID, expiredIDs)
+                    {
+                        m_authenticated.remove(sessionID);
+                    }
+                });
+                // Run every 5 mins.
+                m_sessionPolice.start(300);
+            }
+
 //            root["sessionID"] = sessionID;
             QDateTime dateTime;
             QDateTime createDate = QDateTime::currentDateTime();
             HttpCookie cookie("sessionID", sessionID);
             if(!doc["remember"].toBool(false))
                 cookie.expiration = createDate.addDays(1);
+            cookie.path = "/";
             QString lastSessionID = data->request->cookie("sessionID");
             if(!lastSessionID.isEmpty())
                 m_authenticated.remove(lastSessionID);
@@ -211,6 +236,47 @@ HttpPromise HttpHandler::handleAuth(HttpDataPtr data)
             data->response->setStatus(HttpStatus::Unauthorized);
         }
     }
+    return HttpPromise::resolve(data);
+}
+
+HttpPromise HttpHandler::handleActiveSessions(HttpDataPtr data)
+{
+    if(!isAuthenticated(data)) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+    QJsonArray activeSessions;
+    foreach(QString sessionID, m_authenticated.keys())
+    {
+        QJsonObject session;
+        session["id"] = sessionID;
+        session["lastAccessed"] = m_authenticated.value(sessionID).toString();
+        session["expire"] = m_authenticated.value(sessionID).addSecs(m_sessionTimeout).toString();
+        session["current"] = sessionID == data->request->cookie("sessionID");
+        activeSessions.append(session);
+    }
+    data->response->setStatus(HttpStatus::Ok, QJsonDocument(activeSessions));
+    data->response->compressBody();
+    return HttpPromise::resolve(data);
+}
+
+HttpPromise HttpHandler::handleExpireSession(HttpDataPtr data)
+{
+    if(data->request->uriQuery().hasQueryItem("sessionID")) {
+        LogHandler::Debug("Auth from query.");
+        QString sessionID = data->request->uriQuery().queryItemValue("sessionID");
+        if(m_authenticated.contains(sessionID))
+            m_authenticated.remove(sessionID);
+        else {
+            data->response->setStatus(HttpStatus::BadRequest);
+            return HttpPromise::resolve(data);
+        }
+    }
+    else {
+        data->response->setStatus(HttpStatus::BadRequest);
+        return HttpPromise::resolve(data);
+    }
+    data->response->setStatus(HttpStatus::Ok);
     return HttpPromise::resolve(data);
 }
 
@@ -698,9 +764,20 @@ HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
 
 HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
 {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
-        return HttpPromise::resolve(data);
+    if(!SettingsHandler::hashedWebPass().isEmpty()) {
+        if(data->request->uriQuery().hasQueryItem("sessionID")) {//Workaround for external streaming where the cookie isnt passed to the app.
+            LogHandler::Debug("Auth from query.");
+            QString sessionID = data->request->uriQuery().queryItemValue("sessionID");
+            if(sessionID.isEmpty() || !m_authenticated.contains(sessionID)) {
+                data->response->setStatus(HttpStatus::Unauthorized);
+                LogHandler::Debug("Auth from query denied.");
+                return HttpPromise::resolve(data);
+            }
+        } else if(!isAuthenticated(data)) {
+            data->response->setStatus(HttpStatus::Unauthorized);
+            LogHandler::Debug("Auth from cookie denied.");
+            return HttpPromise::resolve(data);
+        }
     }
 
     return QPromise<HttpDataPtr> {[&](
@@ -856,10 +933,21 @@ void HttpHandler::onLibraryLoadingStatusChange(QString message) {
 
 bool HttpHandler::isAuthenticated(HttpDataPtr data)
 {
+    if(SettingsHandler::hashedWebPass().isEmpty()) {
+        return true;
+    }
+    LogHandler::Debug("Auth from cookie.");
     QString sessionID = data->request->cookie("sessionID");
     if(sessionID.isEmpty())
         return false;
-    return m_authenticated.contains(sessionID);
+    bool isAuthed = m_authenticated.contains(sessionID);
+    if(!isAuthed) {
+        LogHandler::Debug("Auth from cookie failed");
+    } else {
+        // Keep date last accessed.
+        m_authenticated[sessionID] = QDateTime::currentDateTime();
+    }
+    return isAuthed;
 }
 
 void HttpHandler::on_webSocketClient_Connected(QWebSocket* client)

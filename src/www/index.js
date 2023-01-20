@@ -78,9 +78,20 @@ var speechVolume = 0.5;
 //var deoVideoNode;
 //var deoSourceNode;
 
+
+const parseCookie = str =>
+  str
+  .split(';')
+  .map(v => v.split('='))
+  .reduce((acc, v) => {
+    acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
+    return acc;
+  }, {});
+
 document.addEventListener('keyup', keyboardShortcuts);
 document.addEventListener('click', destroyMediaContextNode);
 
+var cookies = parseCookie(document.cookie);
 getBrowserInformation();
 var userAgentIsDeo = userAgent.indexOf("Deo VR") != -1;
 var userAgentIsHereSphere = userAgent.indexOf("HereSphere") != -1;
@@ -373,6 +384,9 @@ function wsCallBackFunction(evt) {
 			case "skipToMoneyShot":
 				onSkipToMoneyShot();
 				break;
+			case "logout":
+				logout();
+				break;
 		}
 	}
 	catch (e) {
@@ -466,7 +480,7 @@ function getBrowserInformation() {
 		+ 'Major version = ' + majorVersion + '<br>'
 		+ 'navigator.userAgent = ' + navigator.userAgent + '<br>';
 	userAgent = navigator.userAgent;
-	document.getElementById("browserInfoTab").appendChild(divnode)
+	document.getElementById("browserInfo").appendChild(divnode)
 }
 function setDeoStyles(isDeo) {
 	if (isDeo) {
@@ -564,6 +578,66 @@ function getServerSettings(retry) {
 			systemError("Error getting settings: "+ xhr.responseText);
 		else */
 		startServerConnectionRetry();
+	};
+	xhr.send();
+}
+
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', "/activeSessions", true);
+	xhr.responseType = 'json';
+	xhr.onload = function (evnt) {
+		var status = xhr.status;
+		if (status === 200) {
+			var activeSessions = xhr.response;
+				cellCurrent.innerText = element["current"] ? "*" : "";
+				var cellDelete = document.createElement("td");
+				var btnDelete = document.createElement("button");
+				btnDelete.onclick = checkSession(element["id"]);
+				btnDelete.innerText = "X"
+				cellDelete.appendChild(btnDelete);
+				row.appendChild(cellSessionID);
+				row.appendChild(cellCreate);
+				row.appendChild(cellExpire);
+				row.appendChild(cellCurrent);
+				row.appendChild(cellDelete);
+				tBody.appendChild(row);
+			});
+		} else {
+			showAlertWindow(status.statusText);
+		}
+	}.bind(this);
+	xhr.onerror = function(evnt, retry) {
+		onSaveFail(xhr.status.statusText);
+	};
+	xhr.send();
+}
+
+var checkSession = function (sessionID) {
+	return function () {
+		if(sessionID == cookies.sessionID)
+			showAlertWindow("Logout?", "Are you sure you want to delete the current session? This will log you out.", deleteSession(sessionID));
+		else
+			deleteSession(sessionID);
+	}
+}
+
+function deleteSession (sessionID) {
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', "/expireSession?sessionID="+sessionID, true);
+	xhr.setRequestHeader('Content-Type', 'application/json');
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			var status = xhr.status;
+			if (status == 200) {
+				var sessionNode = document.getElementById(sessionID);
+				document.getElementById("sessionInfoBody").removeChild(sessionNode);
+				if(sessionID == cookies.sessionID)
+					logout();
+			}
+		}
+	}
+	xhr.onerror = function () {
+		onSaveFail(xhr.statusText);
 	};
 	xhr.send();
 }
@@ -1509,16 +1583,20 @@ function playVideo(obj) {
 		//videoNode.play();
 
 	} else {
-		if (!userAgentIsHereSphere) {
-			window.open("/media" + obj.relativePath)
+		if (!userAgentIsHereSphere && !userAgentIsDeo) {
+			window.open("/media" + obj.relativePath);
 		} else {
-			var file_path = "/media" + obj.relativePath;
-			var a = document.createElement('A');
-			a.href = file_path;
-			a.download = file_path;//.substr(file_path.lastIndexOf('/') + 1);
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
+			var file_path = "/media" + obj.relativePath + "?sessionID="+cookies.sessionID;
+			if(userAgentIsDeo) {
+				window.open(file_path);
+			} else {
+				var a = document.createElement('A');
+				a.href = file_path;
+				a.download = file_path;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+			}
 		}
 	}
 }
@@ -1771,6 +1849,7 @@ function onFunscriptWorkerThreadRecieveMessage(e) {
 }
 //Settings
 function openSettings() {
+	getServerSassions();
 	settingsNode.style.visibility = "visible";
 	settingsNode.style.opacity = 1;
 	document.getElementById("settingsTabs").style.display = "block";

@@ -44,6 +44,8 @@ public:
     bool listen();
     HttpPromise handle(HttpDataPtr data);
     HttpPromise handleAuth(HttpDataPtr data);
+    HttpPromise handleActiveSessions(HttpDataPtr data);
+    HttpPromise handleExpireSession(HttpDataPtr data);
     HttpPromise handleLogout(HttpDataPtr data);
     HttpPromise handleVideoStream(HttpDataPtr data);
     HttpPromise handleVideoList(HttpDataPtr data);
@@ -73,6 +75,8 @@ private:
     QString _libraryLoadingStatus = "Loading...";
     QMutex _mutex;
     QHash<QString, QDateTime> m_authenticated;
+    QTimer m_sessionPolice;
+    int m_sessionTimeout = 900; // 15 Min
 
     QJsonObject createMediaObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);

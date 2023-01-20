@@ -123,7 +123,7 @@ void HereSphereHandler::readData()
     QJsonDocument doc = QJsonDocument::fromJson(datagram, &error);
     if (doc.isNull())
     {
-        LogHandler::Error("Settings json response error: "+error.errorString());
+        LogHandler::Error("Heresphere/Deo json response error: "+error.errorString());
         LogHandler::Error("datagram: "+datagram);
         //emit connectionChange({DeviceName::Deo, ConnectionStatus::Error, "Read error: " + error.errorString()});
 //        if(currentPacket != nullptr)

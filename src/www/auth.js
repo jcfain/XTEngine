@@ -20,9 +20,11 @@ function checkPass(userEntered) {
     xhr.onreadystatechange = function () {
         if (xhr.readyState === 4) {
             var status = xhr.status;
-            if (status !== 200)
+            if (status !== 200) {
                 alert(xhr.statusText);
-            else {
+                if(status == 401 && storedHash)
+                    window.localStorage.removeItem("storedHash");
+            } else {
                 if(rememberPassword)
                     window.localStorage.setItem("storedHash", hashedPass);
                 //var sessionID = JSON.parse(xhr.response).sessionID;

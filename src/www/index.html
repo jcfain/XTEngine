@@ -185,8 +185,7 @@
 						onclick="tabClick(this, 1)">Connections</button>
 					<button id="tabTCodeTab" class="tab-section-tab" onclick="tabClick(this, 2)">TCode</button>
 					<button id="tabFunscriptTab" class="tab-section-tab" onclick="tabClick(this, 3)">Funscript</button>
-					<button id="tabBrowserInfoTab" class="tab-section-tab" onclick="tabClick(this, 4)">Browser
-						info</button>
+					<button id="tabBrowserInfoTab" class="tab-section-tab" onclick="tabClick(this, 4)">System</button>
 				</div>
 				<section id="settingsTabs" class="tab-section">
 					<div id="tabLocal" class="tab-content">
@@ -452,7 +451,23 @@
 					</div>
 					<div id="tabTCode" class="tab-content"></div>
 					<div id="tabFunscript" class="tab-content"></div>
-					<div id="browserInfoTab" class="tab-content"></div>
+					<div id="systemInfoTab" class="tab-content">
+						<div id="browserInfo"></div>
+						<div id="sessionInfo" class="session-info">
+							<table class="session-info-table">
+								<thead>
+									<tr>
+										<th>Session ID</th>
+										<th>Last access</th>
+										<th>Expire</th>
+										<th>Current</th>
+										<th>Delete</th>
+									</tr>
+								</thead>
+								<tbody id="sessionInfoBody"></tbody>
+							</table>
+						</div>
+					</div>
 				</section>
 				<!-- 				<div class="formElement">
 					<label for="thumbSize">
