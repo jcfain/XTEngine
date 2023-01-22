@@ -82,7 +82,7 @@ void UdpHandler::run()
     _mutex.lock();
     _tcode = "";
     QByteArray currentRequest;
-    currentRequest.append(_tcode);
+    currentRequest.append(_tcode.toUtf8());
 
     QString currentAddress;
     int currentPort = 0;

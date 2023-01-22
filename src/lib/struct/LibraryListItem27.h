@@ -6,8 +6,14 @@
 #include <QVariant>
 #include <QDataStream>
 #include <QJsonObject>
-#include "../lookup/Constants.h"
 #include "XTEngine_global.h"
+
+
+struct XTENGINE_EXPORT LibraryThumbNail {
+    QString ERROR_IMAGE = "://images/icons/error.png";
+    QString LOADING_IMAGE = "://images/icons/loading.png";
+    QString LOADING_CURRENT_IMAGE = "://images/icons/loading_current.png";
+};
 
 enum class LibraryListItemType {
     PlaylistInternal,
@@ -71,9 +77,10 @@ public:
     ThumbState thumbState = ThumbState::Waiting;
     bool thumbFileExists = false;
     bool managedThumb = false;
-    QString thumbFileLoading = LibraryThumbNail::LOADING_IMAGE;// "://images/icons/loading.png";
-    QString thumbFileLoadingCurrent = LibraryThumbNail::LOADING_CURRENT_IMAGE;// "://images/icons/loading_current.png";
-    QString thumbFileError = LibraryThumbNail::ERROR_IMAGE;// "://images/icons/error.png";
+    LibraryThumbNail thumbNails;
+    QString thumbFileLoading = thumbNails.LOADING_IMAGE;// "://images/icons/loading.png";
+    QString thumbFileLoadingCurrent = thumbNails.LOADING_CURRENT_IMAGE;// "://images/icons/loading_current.png";
+    QString thumbFileError = thumbNails.ERROR_IMAGE;;// "://images/icons/error.png";
 
     friend QDataStream & operator<<( QDataStream &dataStream, const LibraryListItem27 &object )
     {

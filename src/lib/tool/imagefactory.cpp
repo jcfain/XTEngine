@@ -3,14 +3,15 @@
 #include <QIcon>
 #include <QSize>
 #include "../tool/xmath.h"
-#include "../lookup/Constants.h"
 #include "lib/handler/settingshandler.h"
 
 
 QPixmap ImageFactory::resize(QString filepath, QSize size)
 {
-    if(!QFileInfo::exists(filepath))
-        filepath = LibraryThumbNail::ERROR_IMAGE;
+    if(!QFileInfo::exists(filepath)) {
+        LibraryThumbNail thumbNails;
+        filepath = thumbNails.ERROR_IMAGE;
+    }
     QPixmap bgPixmap(filepath);
     if(bgPixmap.width() == size.width())
         return bgPixmap;

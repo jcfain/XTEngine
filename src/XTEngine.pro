@@ -33,7 +33,6 @@ SOURCES += \
     lib/handler/xtpwebhandler.cpp \
     lib/handler/xvideopreview.cpp \
     lib/handler/xvideosurface.cpp \
-    lib/lookup/Constant.cpp \
     lib/lookup/MediaActions.cpp \
     lib/lookup/tcodechannellookup.cpp \
     lib/tool/heatmap.cpp \
@@ -73,7 +72,6 @@ HEADERS += \
     lib/lookup/AxisDimension.h \
     lib/lookup/AxisNames.h \
     lib/lookup/AxisType.h \
-    lib/lookup/Constants.h \
     lib/lookup/GamepadAxisNames.h \
     lib/lookup/MediaActions.h \
     lib/lookup/TCodeVersion.h \
