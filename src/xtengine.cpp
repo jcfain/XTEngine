@@ -24,10 +24,6 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     _mediaLibraryHandler = new MediaLibraryHandler(this);
     _connectionHandler = new ConnectionHandler(this);
     _syncHandler = new SyncHandler(this);
-    if(SettingsHandler::getEnableHttpServer())
-    {
-        _httpHandler = new HttpHandler(_mediaLibraryHandler, this);
-    }
     m_heatmap = new HeatMap(this);
     connect(m_heatmap, &HeatMap::maxHeat, this, [](qint64 maxHeatAt) {
         if(maxHeatAt > 0)
@@ -50,6 +46,7 @@ void XTEngine::init()
 {
     if(SettingsHandler::getEnableHttpServer())
     {
+        _httpHandler = new HttpHandler(_mediaLibraryHandler, this);
         connect(_httpHandler, &HttpHandler::tcode, _connectionHandler, &ConnectionHandler::sendTCode);
         connect(_httpHandler, &HttpHandler::xtpWebPacketRecieve, _connectionHandler, &ConnectionHandler::inputMessageSend);
         connect(_httpHandler, &HttpHandler::restartService, &SettingsHandler::instance(), &SettingsHandler::Restart);
