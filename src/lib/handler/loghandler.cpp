@@ -12,26 +12,17 @@ void LogHandler::Debug(QString message)
 
 void LogHandler::Info(QString message)
 {
-    if (_debugMode)
-    {
-        qInfo() << "XTP INFO " + QDateTime::currentDateTime().toString("hh:mm:ss:zzz") +": " +  message;
-    }
+    qInfo() << "XTP INFO " + QDateTime::currentDateTime().toString("hh:mm:ss:zzz") +": " +  message;
 }
 
 void LogHandler::Warn(QString message)
 {
-    if (_debugMode)
-    {
-        qWarning() << "XTP WARN " + QDateTime::currentDateTime().toString("hh:mm:ss:zzz") + ": " + message;
-    }
+    qWarning() << "XTP WARN " + QDateTime::currentDateTime().toString("hh:mm:ss:zzz") + ": " + message;
 }
 
 void LogHandler::Error(QString message)
 {
-    if (_debugMode)
-    {
-        qCritical() << "XTP ERROR " + QDateTime::currentDateTime().toString("hh:mm:ss:zzz") +": " +  message;
-    }
+    qCritical() << "XTP ERROR " + QDateTime::currentDateTime().toString("hh:mm:ss:zzz") +": " +  message;
 }
 
 

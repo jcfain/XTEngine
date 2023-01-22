@@ -4,6 +4,7 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
 {
     QCoreApplication::setOrganizationName("cUrbSide prOd");
     QCoreApplication::setApplicationName(appName.isEmpty() ? "XTEngine" : appName);
+    QCoreApplication::setApplicationVersion(SettingsHandler::XTEVersion);
 
     SettingsHandler::Load();
 
@@ -33,6 +34,12 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
             SettingsHandler::instance().setMoneyShot(XMediaStateHandler::getPlaying(), maxHeatAt, false);
     });
 
+    connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, []() {
+        std::cout << "XTEngine QCoreApplication about to quit";
+    });
+    connect(this, &XTEngine::destroyed, this, []() {
+        std::cout << "XTEngine destroyed";
+    });
 }
 
 XTEngine::~XTEngine() {

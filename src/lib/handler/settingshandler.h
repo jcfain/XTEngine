@@ -275,6 +275,7 @@ public:
     static void Clear();
     static void Quit(bool restart);
     static void Restart();
+    static bool Import(QString file);
 
 
     static QStringList getVideoExtensions()

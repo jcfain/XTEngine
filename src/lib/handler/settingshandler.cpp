@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.426b";
-const float SettingsHandler::XTEVersionNum = 0.426f;
+const QString SettingsHandler::XTEVersion = "0.427b";
+const float SettingsHandler::XTEVersionNum = 0.427f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){}
@@ -534,6 +534,24 @@ void SettingsHandler::Restart()
 {
     QCoreApplication::quit();
     QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
+}
+
+bool SettingsHandler::Import(QString file)
+{
+    if(file.isEmpty()) {
+        LogHandler::Error("Invalid file: empty file");
+        return false;
+    }
+    if(!QFileInfo::exists(file)) {
+        LogHandler::Error("Invalid file: does not exist.");
+        return false;
+    }
+    QSettings* settingsImport = new QSettings(file, QSettings::Format::IniFormat);
+    Load(settingsImport);
+    Save();
+    setSaveOnExit(false);
+    delete settingsImport;
+    return true;
 }
 
 void SettingsHandler::settingsChangedEvent(bool dirty)
