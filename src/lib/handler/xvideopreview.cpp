@@ -1,4 +1,7 @@
 #include "xvideopreview.h"
+#include <QProcess>
+#include <QCoreApplication>
+#include <QFileInfo>
 
 XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent), _thumbNailVideoSurface(0), _thumbPlayer(0)
 {
@@ -15,6 +18,12 @@ XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent), _thumbNailVideo
     connect(&m_debouncer, &QTimer::timeout, this, [this]() {
         extract();
     });
+
+//    m_ffmpeg = new QProcess(this);
+//    m_ffmprobe = new QProcess(this);
+//    connect(m_ffmpeg, &QProcess::readyReadStandardOutput, this, &XVideoPreview::onFFMpegThumbSave);
+//    connect(m_ffmprobe, &QProcess::readyReadStandardOutput, this, &XVideoPreview::onFFMpegDuration);
+//    connect(m_ffmprobe, &QProcess::readyReadStandardError, this, &XVideoPreview::onFFMpegDuration);
 }
 XVideoPreview::~XVideoPreview() {
     tearDownPlayer();
@@ -44,7 +53,7 @@ void XVideoPreview::tearDownPlayer()
 //            _thumbNailVideoSurface->stop();
         if(_thumbPlayer->state() == QMediaPlayer::PlayingState)
             _thumbPlayer->stop();
-
+        _thumbPlayer->setMedia(QMediaContent());
         //_thumbPlayer->setMedia(QMediaContent());
 //        else {
 //            delete _thumbPlayer;
@@ -75,13 +84,18 @@ void XVideoPreview::extract() {
     QUrl mediaUrl = QUrl::fromLocalFile(_file);
     QMediaContent mc(mediaUrl);
     _thumbPlayer->setMedia(mc);
+//    bool isFFmpeg = checkForFFMpeg();
     if(_time > -1)
     {
         _loadingInfo = false;
         _extracting = true;
-        _thumbPlayer->setPosition(_time);
+//        if(!isFFmpeg)
+            _thumbPlayer->setPosition(_time);
     }
-    _thumbPlayer->play();
+//    if(!isFFmpeg)
+        _thumbPlayer->play();
+//    else
+//        getDurationFromFFmpeg();
 }
 
 void XVideoPreview::load(QString file)
@@ -162,3 +176,79 @@ void XVideoPreview::on_durationChanged(qint64 duration)
         tearDownPlayer();
     }
 }
+
+//bool XVideoPreview::checkForFFMpeg()
+//{
+//    if(QFileInfo::exists(QCoreApplication::applicationDirPath() + "/ffmpeg")) {
+//        return true;
+//    }
+//    QProcess program;
+//    QStringList environment = program.systemEnvironment();
+//    program.start("ffmpeg", QStringList() << "-h");
+//    bool started = program.waitForStarted();
+//    if (!program.waitForFinished(10000)) // 10 Second timeout
+//        program.kill();
+
+//    int exitCode = program.exitCode();
+//    QString stdOutput = program.readAllStandardOutput();
+//    if(!stdOutput.isEmpty())
+//        LogHandler::Debug("ffmpeg detect: "+ stdOutput);
+//    QString stdError = program.readAllStandardError();
+//    if(!stdError.isEmpty())
+//        LogHandler::Error("ffmpeg detect: "+ stdError);
+//    if(exitCode > 0)
+//        return false;
+//    return started;
+//}
+
+//void XVideoPreview::getDurationFromFFmpeg()
+//{
+//    m_ffmprobe->start("ffprobe", QStringList() << _file);
+////    bool started = program.waitForStarted();
+////    if (!program.waitForFinished(10000)) // 10 Second timeout
+////        program.kill();
+
+//}
+
+//void XVideoPreview::onFFMpegDuration()
+//{
+//    int exitCode = m_ffmprobe->exitCode();
+//    QString stdOutput = m_ffmprobe->readAllStandardOutput();
+//    QString stdError = m_ffmprobe->readAllStandardError();
+//    if(exitCode == 0) {
+//        if(!stdOutput.isEmpty() || !stdError.isEmpty()) {
+//            QString message = !stdOutput.isEmpty() ? stdOutput : stdError;
+//            LogHandler::Debug("FFMprobe output: " + message);
+//            QRegExp durationRegex("Duration: (?:[01]\\d|2[0-3]):(?:[0-5]\\d):(?:[0-5]\\d).(?:[0-5]\\d)");
+//            durationRegex.indexIn(message);
+//            QStringList list = durationRegex.capturedTexts();
+//            if(list.isEmpty()) {
+//                emit frameExtractionError("Unknown error");
+//                return;
+//            }
+//            QString durationFormat = list.first().remove("Duration: ");
+//            QTime durationTime = QTime::fromString(durationFormat, "hh:mm:ss.zz");
+//            qint64 duration = durationTime.msec();
+//            emit durationChanged(duration);
+//        } else {
+//            emit frameExtractionError("Unknown error");
+//        }
+//    } else {
+//        if(!stdError.isEmpty()) {
+//            LogHandler::Error(stdError);
+//            emit frameExtractionError(stdError);
+//        } else {
+//            emit frameExtractionError("Unknown error");
+//        }
+//    }
+//}
+
+//void XVideoPreview::getThumbFromFFmpeg()
+//{
+
+//}
+
+//void XVideoPreview::onFFMpegThumbSave()
+//{
+
+//}

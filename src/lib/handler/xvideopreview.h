@@ -1,11 +1,14 @@
 #ifndef XVIDEOPREVIEW_H
 #define XVIDEOPREVIEW_H
+#include "XTEngine_global.h"
 
 #include <QMediaPlayer>
 #include <QTimer>
+//#include <QProcess>
+//#include <QCoreApplication>
+//#include <QFileInfo>
 #include "xvideosurface.h"
 #include "loghandler.h"
-#include "XTEngine_global.h"
 
 class XTENGINE_EXPORT XVideoPreview : public QObject
 {
@@ -26,6 +29,8 @@ private:
     void extract();
     XVideoSurface* _thumbNailVideoSurface;
     QMediaPlayer* _thumbPlayer;
+//    QProcess* m_ffmpeg;
+//    QProcess* m_ffmprobe;
     QString _file;
     qint64 _time;
     bool _loadingInfo = false;
@@ -44,6 +49,11 @@ private:
     void on_mediaStateChange(QMediaPlayer::State state);
     void on_thumbError(QString error);
     void on_durationChanged(qint64 duration);
+//    bool checkForFFMpeg();
+//    void getDurationFromFFmpeg();
+//    void onFFMpegDuration();
+//    void getThumbFromFFmpeg();
+//    void onFFMpegThumbSave();
 };
 
 #endif // XVIDEOPREVIEW_H
