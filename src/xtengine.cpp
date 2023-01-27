@@ -31,10 +31,10 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     });
 
     connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, []() {
-        std::cout << "XTEngine QCoreApplication about to quit";
+        LogHandler::Debug("XTEngine QCoreApplication about to quit");
     });
     connect(this, &XTEngine::destroyed, this, []() {
-        std::cout << "XTEngine destroyed";
+        LogHandler::Debug("XTEngine destroyed");
     });
 }
 
