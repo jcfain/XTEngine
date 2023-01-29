@@ -359,6 +359,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
     QMutexLocker locker(&mutex);
     if (_saveOnExit)
     {
+        LogHandler::Info("Saving settings");
         if(!settingsToSaveTo)
             settingsToSaveTo = settings;
 
@@ -503,6 +504,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->sync();
 
         settingsChangedEvent(false);
+        LogHandler::Info("Save complete");
     }
 
 }

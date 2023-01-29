@@ -30,8 +30,10 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
             SettingsHandler::instance().setMoneyShot(XMediaStateHandler::getPlaying(), maxHeatAt, false);
     });
 
-    connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, []() {
-        LogHandler::Debug("XTEngine QCoreApplication about to quit");
+    connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, [this]() {
+        LogHandler::Info("XTEngine about to quit");
+        SettingsHandler::Save();
+        _syncHandler->stopAll();
     });
     connect(this, &XTEngine::destroyed, this, []() {
         LogHandler::Debug("XTEngine destroyed");
@@ -39,7 +41,6 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
 }
 
 XTEngine::~XTEngine() {
-    _syncHandler->stopAll();
 }
 
 void XTEngine::init()
