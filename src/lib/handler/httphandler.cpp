@@ -443,7 +443,7 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
             if(selectedOutputDevice == DeviceName::Serial)
                 emit connectOutputDevice(DeviceName::Serial, true);
         }
-
+        SettingsHandler::Save();
     }
     data->response->setStatus(HttpStatus::Ok);
     return HttpPromise::resolve(data);
