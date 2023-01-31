@@ -527,15 +527,17 @@ void SettingsHandler::Clear()
 
 void SettingsHandler::Quit(bool restart)
 {
+    QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
     if(restart)
-        QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
+        QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments);
 }
 
 void SettingsHandler::Restart()
 {
+    QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
-    QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
+    QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments);
 }
 
 bool SettingsHandler::Import(QString file)
