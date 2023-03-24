@@ -152,6 +152,9 @@
 		<button id="searchButton" title="Search media" class="search-media-button icon-button" onclick="onToggleFilterInput(this)">
 			<img class="buttonImage" src="://images/icons/search.svg"/>
 		</button> 
+		<button id="randomizeButton" title="Randomize media" class="hidden random-media-button icon-button" onclick="sortChange('random')">
+			<img class="buttonImage" src="://images/icons/reload.svg"/ >
+		</button> 
 		<input id="filterInput" class="media-filter-input hidden" placeholder="Filter" oninput="filter(this.value)" />
 
 			<div id="noMedia" style="text-align: center;" hidden>No media found</div>
@@ -226,6 +229,7 @@
 						<option value="nameDesc">Name (desc)</option>
 						<option value="dateAsc">Date (asc)</option>
 						<option value="dateDesc">Date (desc)</option>
+						<option value="random">Random</option>
 					</select> -->
 
 							<div class="radio-group">
@@ -237,6 +241,8 @@
 									onclick="sortChange(this.value)" /><label for="dateAsc">Date (asc)</label>
 								<input type="radio" id="dateDesc" name="sort" value="dateDesc"
 									onclick="sortChange(this.value)" /><label for="dateDesc">Date (desc)</label>
+								<input type="radio" id="random" name="sort" value="random"
+									onclick="sortChange(this.value)" /><label for="random">Random</label>
 							</div>
 						</div>
 						<div class="formElement">

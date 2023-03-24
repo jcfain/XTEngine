@@ -1239,6 +1239,9 @@ function removeAllChildNodes(parent) {
 function sort(value, userClick) {
 	if (!value)
 		value = "nameAsc";
+	var randomButton = document.getElementById("randomizeButton");
+	if(random !== "random" && !randomButton.classList.contains("hidden"))
+		randomButton.classList.add("hidden")
 	switch (value) {
 		case "dateDesc":
 			mediaListGlobal.sort(function (a, b) {
@@ -1274,6 +1277,10 @@ function sort(value, userClick) {
 				}
 			});
 			break;
+		case "random":
+			fy(mediaListGlobal)
+			randomButton.classList.remove("hidden")
+		break;
 	}
 	if (!userClick) {
 		//document.getElementById("sortBy").value = value;
@@ -1285,6 +1292,11 @@ function sort(value, userClick) {
 		window.localStorage.setItem("sortBy", JSON.stringify(value));
 		sortByGlobal = value;
 	}
+}
+
+//https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+function fy(a,b,c,d){//array,placeholder,placeholder,placeholder
+	c=a.length;while(c)b=Math.random()*c--|0,d=a[c],a[c]=a[b],a[b]=d
 }
 
 function show(value, userClick) {

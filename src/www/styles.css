@@ -14,7 +14,7 @@ body {
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .disabled {
@@ -427,6 +427,12 @@ input:hover {
     position: fixed;
     left: calc(100vw - 85px);
     margin-top: 16px;
+    z-index: 10;
+} 
+.random-media-button {
+    position: fixed;
+    left: calc(100vw - 85px);
+    margin-top: 63px;
     z-index: 10;
 } 
 
