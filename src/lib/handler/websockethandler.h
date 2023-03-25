@@ -21,6 +21,7 @@ signals:
     void skipToMoneyShot();
     void skipToNextAction();
     void saveSingleThumb(QString itemID, qint64 pos);
+    void reloadLibrary();
 public:
     WebSocketHandler(QObject *parent = nullptr);
     ~WebSocketHandler();

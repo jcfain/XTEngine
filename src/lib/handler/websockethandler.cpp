@@ -116,6 +116,8 @@ void WebSocketHandler::processTextMessage(QString message)
         QString itemID = obj["itemID"].toString();
         qint64 pos = obj["pos"].toDouble() * 1000;
         emit saveSingleThumb(itemID, pos);
+    } else if (command == "reloadLibrary") {
+        emit reloadLibrary();
     }
 }
 

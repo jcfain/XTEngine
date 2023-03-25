@@ -267,6 +267,9 @@ function restartXTP() {
 		closeSettings();
 	});
 }
+function refreshXTPLibrary() {
+	sendWebsocketMessage("reloadLibrary");
+}
 
 function initWebSocket() {
 	try {
