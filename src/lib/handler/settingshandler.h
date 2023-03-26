@@ -267,6 +267,7 @@ public:
     static void SetGamepadMapDefaults();
     static void SetKeyboardKeyDefaults();
     static void setSaveOnExit(bool enabled);
+    static bool getFirstLoad();
     static void Load(QSettings* settingsToLoadFrom = 0);
     static void Save(QSettings* settingsToSaveTo = 0);
     static void SaveLinkedFunscripts(QSettings* settingsToSaveTo = nullptr);
@@ -370,6 +371,7 @@ private:
     static bool deoEnabled;
     static QString whirligigAddress;
     static QString whirligigPort;
+    static bool m_firstLoad;
     static bool whirligigEnabled;
     static bool _xtpWebSyncEnabled;
     static int playerVolume;

@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.43b";
-const float SettingsHandler::XTEVersionNum = 0.43f;
+const QString SettingsHandler::XTEVersion = "0.431b";
+const float SettingsHandler::XTEVersionNum = 0.431f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){}
@@ -13,6 +13,11 @@ SettingsHandler::~SettingsHandler()
 void SettingsHandler::setSaveOnExit(bool enabled)
 {
     _saveOnExit = enabled;
+}
+
+bool SettingsHandler::getFirstLoad()
+{
+    return m_firstLoad;
 }
 
 void SettingsHandler::setMoneyShot(LibraryListItem27 libraryListItem, qint64 currentPosition, bool userSet)
@@ -58,11 +63,11 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     }
 
     float currentVersion = settingsToLoadFrom->value("version").toFloat();
-    bool firstLoad = currentVersion == 0;
+    m_firstLoad = currentVersion == 0;
 
-    TCodeChannelLookup::load(settingsToLoadFrom, firstLoad);
+    TCodeChannelLookup::load(settingsToLoadFrom, m_firstLoad);
 
-    if (firstLoad)
+    if (m_firstLoad)
     {
         locker.unlock();
         SetMapDefaults();
@@ -179,7 +184,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         _httpPort = 80;
     _webSocketPort = settingsToLoadFrom->value("webSocketPort").toInt();
     _httpThumbQuality = settingsToLoadFrom->value("httpThumbQuality").toInt();
-    if(firstLoad)
+    if(m_firstLoad)
         _httpThumbQuality = -1;
 
     _funscriptOffsetStep = settingsToLoadFrom->value("funscriptOffsetStep").toInt();
@@ -225,7 +230,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
     _hashedPass = settingsToLoadFrom->value("userData").toString();
     _hashedWebPass = settingsToLoadFrom->value("userWebData").toString();
-    if(!firstLoad && currentVersion < 0.258f)
+    if(!m_firstLoad && currentVersion < 0.258f)
     {
         locker.unlock();
         MigrateLibraryMetaDataTo258();
@@ -240,7 +245,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         }
     }
 
-    if(!firstLoad)
+    if(!m_firstLoad)
     {
         if(currentVersion < 0.2f)
         {
@@ -2154,6 +2159,7 @@ void SettingsHandler::updateLibraryListItemMetaData(LibraryListItemMetaData258 l
 QSettings* SettingsHandler::settings;
 QString SettingsHandler::_applicationDirPath;
 SettingsHandler SettingsHandler::m_instance;
+bool SettingsHandler::m_firstLoad;
 bool SettingsHandler::_settingsChanged;
 bool SettingsHandler::_hideWelcomeScreen;
 QMutex SettingsHandler::mutex;
