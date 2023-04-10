@@ -41,6 +41,7 @@ var MediaType = {
     VR: 4
 }
 
+var debounceTracker = {};// Use to create timeout handles on the fly.
 var wsUri;
 var websocket = null;
 var xtpConnected = false;
@@ -73,6 +74,9 @@ var selectedVoiceIndex = 0;
 var speechPitch = 5;
 var speechRate = 5;
 var speechVolume = 0.5;
+
+var shufflePlayMode = false;
+var shufflePlayModePlayedIndexed = {};
 //var funscriptSyncWorker;
 //var useDeoWeb;
 //var deoVideoNode;
@@ -229,6 +233,9 @@ function tcodeDeviceConnectRetry() {
 function sendTCode(tcode) {
 	sendWebsocketMessage("tcode", tcode);
 }
+function sendTCodeRange(channelName, min, max) {
+	sendWebsocketMessage("setChannelRange", { channelName: channelName, min: min, max: max });
+}
 
 function sendInputDeviceConnectionChange(device, checked) {
 	sendWebsocketMessage("connectInputDevice", { deviceName: device, enabled: checked });
@@ -365,6 +372,9 @@ function wsCallBackFunction(evt) {
 				break;
 			case "logout":
 				logout();
+				break;
+			case "channelProfileChanged":
+				getServerChannels();
 				break;
 		}
 	}
@@ -532,15 +542,9 @@ function getServerSettings(retry) {
 		var status = xhr.status;
 		if (status === 200) {
 			remoteUserSettings = xhr.response;
-			funscriptChannels = Object.keys(remoteUserSettings["availableChannels"])
-				.map(function (k) {
-					return remoteUserSettings["availableChannels"][k]["channel"];
-				});
-			remoteUserSettings.availableChannelsArray = Object.keys(remoteUserSettings["availableChannels"])
-				.map(function (k) {
-					return remoteUserSettings["availableChannels"][k];
-				});
-			funscriptChannels.sort();
+			
+			setupChannelData();
+			
 			initWebSocket();
 		} else if(status == 401) {
 			if(storedHash) {
@@ -561,6 +565,46 @@ function getServerSettings(retry) {
 		startServerConnectionRetry();
 	};
 	xhr.send();
+}
+
+function getServerChannels() {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', "/channels", true);
+	xhr.responseType = 'json';
+	xhr.onload = function (evnt) {
+		var status = xhr.status;
+		if (status === 200) {
+			var response = xhr.response;
+			remoteUserSettings.availableChannels = response.availableChannels;
+			remoteUserSettings.selectedChannelProfile = response.selectedChannelProfile;
+			remoteUserSettings.allChannelProfileNames = response.allChannelProfileNames;
+			setupChannelData();
+			updateChannelsUI();
+		} else {
+			systemError("Error getting channels: "+ xhr.responseText);
+		}
+	}.bind(this);
+	xhr.onerror = function(evnt) {
+		systemError("Error getting channels: "+ xhr.responseText);
+	};
+	xhr.send();
+}
+
+function setupChannelData() {
+	// Used to get funscripts from server?
+	funscriptChannels = Object.keys(remoteUserSettings["availableChannels"])
+		.map(function (k) {
+			return remoteUserSettings["availableChannels"][k]["channel"];
+		});
+	remoteUserSettings.availableChannelsArray = Object.keys(remoteUserSettings["availableChannels"])
+		.map(function (k) {
+			return remoteUserSettings["availableChannels"][k];
+		});
+	funscriptChannels.sort();
+}
+
+function setSelectedProfile(profileName) {
+	sendWebsocketMessage("changeChannelProfile", profileName);
 }
 
 function getServerSessions() {
@@ -661,11 +705,24 @@ function stopServerConnectionRetry() {
 }
 
 function updateSettingsUI() {
-	setupSliders();
-	setupMotionModifiers();
+	updateChannelsUI();
 	setupConnectionsTab();
 
 	document.getElementById("tabLocalTab").onclick();
+}
+
+function updateChannelsUI() {
+	var profileNamesSelect = document.getElementById("profileNamesSelect");
+	removeAllChildNodes(profileNamesSelect);
+	remoteUserSettings["allChannelProfileNames"].forEach(x => {
+		var option = document.createElement("option");
+		option.value = x;
+		option.innerText = x;
+		profileNamesSelect.appendChild(option);
+	});
+	profileNamesSelect.value = remoteUserSettings.selectedChannelProfile;
+	setupSliders();
+	setupMotionModifiers();
 }
 
 function getServerLibrary() {
@@ -986,6 +1043,14 @@ function updateMediaUI() {
 	sortedMedia = show(showGlobal, false);
 	loadMedia(sortedMedia)
 }
+
+function getCurrentDisplayedMedia() {
+	if(filteredMedia.length > 0) {
+		return filteredMedia;
+	} 
+	return JSON.parse(JSON.stringify(sortedMedia || []))
+}
+
 function clearMediaList() {
 	var medialistNode = document.getElementById("mediaList");
 	removeAllChildNodes(medialistNode);
@@ -1571,6 +1636,38 @@ function disableTextToSpeech(message) {
 	toggleEnableTextToSpeech(false, true);
 }
 
+function toggleShufflePlay() {
+	if(!sortedMedia.length)
+		return;
+	shufflePlayMode = !shufflePlayMode;
+	if(shufflePlayMode) {
+		document.getElementById("shuffleButton").classList.add("icon-button-down");
+		showVideo();
+		playVideo(getNextShuffleMediaItem());
+	} else {
+		shufflePlayModePlayedIndexed = {};
+		document.getElementById("shuffleButton").classList.remove("icon-button-down");
+	}
+}
+
+function getNextShuffleMediaItem() {
+	var currentDisplayedMedia = getCurrentDisplayedMedia();
+	if(!currentDisplayedMedia.length) {
+		return;
+	}
+	if(Object.keys(shufflePlayModePlayedIndexed).length === currentDisplayedMedia.length) {
+		shufflePlayModePlayedIndexed = {};
+	}
+	var randomIndex = Math.floor(Math.random() * (currentDisplayedMedia.length - 1));
+	var id = currentDisplayedMedia[randomIndex].id;
+	while(shufflePlayModePlayedIndexed[id]) {
+		randomIndex = Math.floor(Math.random() * (currentDisplayedMedia.length - 1));
+		id = currentDisplayedMedia[randomIndex].id;
+	}
+	document.getElementById(id).scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
+	shufflePlayModePlayedIndexed[id] = true;
+	return currentDisplayedMedia[randomIndex];
+}
 
 function playVideo(obj) {
 	if (!externalStreaming) {
@@ -1747,23 +1844,25 @@ function playNextVideoClick() {
 		return;
 	playNextVideo();
 }
+
 function playNextVideo() {
 	if(sortedMedia.length == 0)
 		return;
-	var currentDisplayedMedia = JSON.parse(JSON.stringify(sortedMedia));
-	if(playingmediaItem) {
-		if(filteredMedia.length > 0) {
-			currentDisplayedMedia = filteredMedia;
-		}
-		var playingIndex = currentDisplayedMedia.findIndex(x => x.path === playingmediaItem.path);
-		playingIndex++;
+	if(shufflePlayMode) {
+		playVideo(getNextShuffleMediaItem())
 	} else {
-		playingIndex = 0;
+		var currentDisplayedMedia = getCurrentDisplayedMedia();
+		if(playingmediaItem) {
+			var playingIndex = currentDisplayedMedia.findIndex(x => x.path === playingmediaItem.path);
+			playingIndex++;
+		} else {
+			playingIndex = 0;
+		}
+		if (playingIndex < currentDisplayedMedia.length)
+			playVideo(currentDisplayedMedia[playingIndex]);
+		else
+			playVideo(currentDisplayedMedia[0]);
 	}
-	if (playingIndex < currentDisplayedMedia.length)
-		playVideo(currentDisplayedMedia[playingIndex]);
-	else
-		playVideo(currentDisplayedMedia[0]);
 }
 function playPreviousVideoClick() {
 	if(!controlsVisible)
@@ -1773,11 +1872,8 @@ function playPreviousVideoClick() {
 function playPreviousVideo() {
 	if(sortedMedia.length == 0)
 		return;
-	var currentDisplayedMedia = JSON.parse(JSON.stringify(sortedMedia));
+	var currentDisplayedMedia = getCurrentDisplayedMedia();
 	if(playingmediaItem) {
-		if(filteredMedia.length > 0) {
-			currentDisplayedMedia = filteredMedia;
-		}
 		var playingIndex = currentDisplayedMedia.findIndex(x => x.path === playingmediaItem.path);
 		playingIndex--;
 	} else {
@@ -1912,11 +2008,15 @@ function thumbSizeChange(value) {
 	loadMedia(sortedMedia);
 }
 
-var sendTcodeDebouncer;
 async function setupSliders() {
 	// Initialize Sliders
 	var availableChannels = remoteUserSettings.availableChannelsArray;
-	var tcodeTab = document.getElementById("tabTCode");
+	var tcodeRanges = document.getElementById("tcodeRanges");
+	if(!availableChannels || availableChannels.length == 0) {
+		console.error("availableChannels was null or empty when setupSliders was called");
+		return;
+	}
+	removeAllChildNodes(tcodeRanges);
 	for (var i = 0; i < availableChannels.length; i++) {
 		var channel = availableChannels[i];
 
@@ -1968,12 +2068,15 @@ async function setupSliders() {
 			}
 			remoteUserSettings.availableChannels[channel.channel].userMin = slide1;
 			remoteUserSettings.availableChannels[channel.channel].userMid = slideMid;
-			// if(sendTcodeDebouncer)
-			// 	clearTimeout(sendTcodeDebouncer);
-			// sendTcodeDebouncer = setTimeout(function () {
-			sendTCode(channel.channel + input1Node.value.toString().padStart(4, '0') + "S2000")
-			markXTPFormDirty();
-			// }, 1000);
+			sendTCode(channel.channel + input1Node.value.toString().padStart(4, '0') + "S2000");
+			//markXTPFormDirty();
+			var debouncerOBJ = debounceTracker[channel.channel + "min"];
+			if(debouncerOBJ)
+				clearTimeout(debouncerOBJ);
+			debounceTracker[channel.channel + "min"] = setTimeout(function () {
+				sendTCodeRange(channel.channel, parseInt(input1Node.value), parseInt(input2Node.value));
+				debounceTracker[channel.channel + "min"] = undefined;
+			}, 1000);
 		}.bind(input1Node, input1Node, input2Node, rangeValuesNode, channel);
 
 		input2Node.oninput = function (input1Node, input2Node, rangeValuesNode, channel) {
@@ -1987,12 +2090,15 @@ async function setupSliders() {
 			}
 			remoteUserSettings.availableChannels[channel.channel].userMax = slide2;
 			remoteUserSettings.availableChannels[channel.channel].userMid = slideMid;
-			// if(sendTcodeDebouncer)
-			// 	clearTimeout(sendTcodeDebouncer);
-			// sendTcodeDebouncer = setTimeout(function () {
-			sendTCode(channel.channel + input2Node.value.toString().padStart(4, '0') + "S2000")
-			markXTPFormDirty();
-			// }, 1000);
+			sendTCode(channel.channel + input2Node.value.toString().padStart(4, '0') + "S2000");
+			//markXTPFormDirty();
+			var debouncerOBJ = debounceTracker[channel.channel + "max"];
+			if(debouncerOBJ)
+				clearTimeout(debouncerOBJ);
+			debounceTracker[channel.channel + "max"] = setTimeout(function () {
+				sendTCodeRange(channel.channel, parseInt(input1Node.value), parseInt(input2Node.value));
+				debounceTracker[channel.channel + "max"] = undefined;
+			}, 1000);
 		}.bind(input2Node, input1Node, input2Node, rangeValuesNode, channel);
 
 		sectionNode.appendChild(input1Node);
@@ -2003,12 +2109,13 @@ async function setupSliders() {
 		var slideMid = Math.round((slide2 + slide1) / 2);
 		rangeValuesNode.innerText = slide1 + " - " + slideMid + " - " + slide2;
 
-		tcodeTab.appendChild(formElementNode);
+		tcodeRanges.appendChild(formElementNode);
 	}
 }
 
 async function setupMotionModifiers() {
 	var tab = document.getElementById("tabFunscript");
+	removeAllChildNodes(tab);
 
 	var formElementNode = document.createElement("div");
 	formElementNode.classList.add("formElement");
@@ -2067,6 +2174,7 @@ async function setupMotionModifiers() {
 	for (var i = 0; i < availableChannels.length; i++) {
 
 		var channel = availableChannels[i];
+		var channelName = channel.channel;
 
 		if (channel.dimension === AxisDimension.Heave)
 			continue;
@@ -2076,7 +2184,7 @@ async function setupMotionModifiers() {
 
 		var labelNode = document.createElement("label");
 		labelNode.innerText = channel.friendlyName;
-		labelNode.for = channel.channel;
+		labelNode.for = channelName;
 		formElementNode.appendChild(labelNode);
 
 
@@ -2095,7 +2203,7 @@ async function setupMotionModifiers() {
 		var sectionNode = document.createElement("section");
 		sectionNode.setAttribute("name", "motionModifierSection");
 		sectionNode.classList.add("form-group-section");
-		sectionNode.id = channel.channel;
+		sectionNode.id = channelName;
 
 		var enabledValueNode = document.createElement("div");
 		enabledValueNode.classList.add("form-group-control");
@@ -2105,22 +2213,22 @@ async function setupMotionModifiers() {
 		multiplierEnabledNode.type = "checkbox";
 		multiplierEnabledNode.checked = channel.multiplierEnabled;
 
-		multiplierEnabledNode.oninput = function (i, event) {
-			remoteUserSettings.availableChannelsArray[i].multiplierEnabled = event.target.checked;
+		multiplierEnabledNode.oninput = function (channelName, event) {
+			remoteUserSettings.availableChannels[channelName].multiplierEnabled = event.target.checked;
 			markXTPFormDirty();
-		}.bind(multiplierEnabledNode, i);
+		}.bind(multiplierEnabledNode, channelName);
 
 		var multiplierValueNode = document.createElement("input");
 		multiplierValueNode.setAttribute("name", "motionModifierInput");
 		multiplierValueNode.value = channel.multiplierValue;
 
-		multiplierValueNode.oninput = function (i, event) {
+		multiplierValueNode.oninput = function (channelName, event) {
 			var value = parseFloat(event.target.value);
 			if (value) {
-				remoteUserSettings.availableChannelsArray[i].multiplierValue = value;
+				remoteUserSettings.availableChannels[channelName].multiplierValue = value;
 				markXTPFormDirty();
 			}
-		}.bind(multiplierValueNode, i);
+		}.bind(multiplierValueNode, channelName);
 
 		enabledValueNode.appendChild(multiplierEnabledNode);
 		enabledValueNode.appendChild(multiplierValueNode);
@@ -2133,10 +2241,10 @@ async function setupMotionModifiers() {
 		linkToRelatedMFSNode.type = "checkbox";
 		linkToRelatedMFSNode.checked = channel.linkToRelatedMFS;
 
-		linkToRelatedMFSNode.oninput = function (i, event) {
-			remoteUserSettings.availableChannelsArray[i].linkToRelatedMFS = event.target.checked;
+		linkToRelatedMFSNode.oninput = function (channelName, event) {
+			remoteUserSettings.availableChannels[channelName].linkToRelatedMFS = event.target.checked;
 			markXTPFormDirty();
-		}.bind(linkToRelatedMFSNode, i);
+		}.bind(linkToRelatedMFSNode, channelName);
 
 
 		var relatedChannelNode = document.createElement("select");
@@ -2152,10 +2260,10 @@ async function setupMotionModifiers() {
 		});
 		relatedChannelNode.value = channel.relatedChannel;
 
-		relatedChannelNode.oninput = function (i, event) {
-			remoteUserSettings.availableChannelsArray[i].relatedChannel = event.target.value;
+		relatedChannelNode.oninput = function (channelName, event) {
+			remoteUserSettings.availableChannels[channelName].relatedChannel = event.target.value;
 			markXTPFormDirty();
-		}.bind(relatedChannelNode, i);
+		}.bind(relatedChannelNode, channelName);
 
 		linkedEnabledValueNode.appendChild(linkToRelatedMFSNode);
 		linkedEnabledValueNode.appendChild(relatedChannelNode);
@@ -2168,22 +2276,22 @@ async function setupMotionModifiers() {
 		damperEnabledNode.type = "checkbox";
 		damperEnabledNode.checked = channel.damperEnabled;
 
-		damperEnabledNode.oninput = function (i, event) {
-			remoteUserSettings.availableChannelsArray[i].damperEnabled = event.target.checked;
+		damperEnabledNode.oninput = function (channelName, event) {
+			remoteUserSettings.availableChannels[channelName].damperEnabled = event.target.checked;
 			markXTPFormDirty();
-		}.bind(damperEnabledNode, i);
+		}.bind(damperEnabledNode, channelName);
 
 		var damperValueNode = document.createElement("input");
 		damperValueNode.setAttribute("name", "motionModifierInput");
 		damperValueNode.value = channel.damperValue;
 
-		damperValueNode.oninput = function (i, event) {
+		damperValueNode.oninput = function (channelName, event) {
 			var value = parseFloat(event.target.value);
 			if (value) {
-				remoteUserSettings.availableChannelsArray[i].damperValue = value;
+				remoteUserSettings.availableChannels[channelName].damperValue = value;
 				markXTPFormDirty();
 			}
-		}.bind(damperValueNode, i);
+		}.bind(damperValueNode, channelName);
 
 		damperEnabledValueNode.appendChild(damperEnabledNode);
 		damperEnabledValueNode.appendChild(damperValueNode);
@@ -2227,6 +2335,7 @@ async function setUpInversionMotionModifier() {
 	for (var i = 0; i < availableChannels.length; i++) {
 
 		var channel = availableChannels[i];
+		var channelName = channel.channel;
 
 		var formElementNode = document.createElement("div");
 		formElementNode.classList.add("formElement");
@@ -2252,10 +2361,10 @@ async function setUpInversionMotionModifier() {
 		invertedEnabledNode.type = "checkbox";
 		invertedEnabledNode.checked = channel.inverted;
 
-		invertedEnabledNode.oninput = function (i, event) {
-			remoteUserSettings.availableChannelsArray[i].inverted = event.target.checked;
+		invertedEnabledNode.oninput = function (channelName, event) {
+			remoteUserSettings.availableChannels[channelName].inverted = event.target.checked;
 			markXTPFormDirty();
-		}.bind(invertedEnabledNode, i);
+		}.bind(invertedEnabledNode, channelName);
 
 		enabledValueNode.appendChild(invertedEnabledNode);
 		sectionNode.appendChild(enabledValueNode);

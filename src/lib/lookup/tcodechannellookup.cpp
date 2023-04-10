@@ -34,10 +34,9 @@ void TCodeChannelLookup::load(QSettings* settingsToLoadFrom, bool firstLoad) {
             resetLiveXRange();
             setValidMFSExtensions();
             syncChannelMapToCurrentProfile();
-            emit TCodeChannelLookup::instance().channelProfileChanged(&m_availableChanels[m_selectedChannelProfile]);
+            emit TCodeChannelLookup::instance()->channelProfileChanged(&m_availableChanels[m_selectedChannelProfile]);
         }
     });
-
 }
 
 void TCodeChannelLookup::setSelectedTCodeVersion(TCodeVersion version) {
@@ -49,7 +48,7 @@ void TCodeChannelLookup::changeSelectedTCodeVersion(TCodeVersion version) {
     if(m_selectedTCodeVersion != version) {
         m_selectedTCodeVersion = version;
         m_selectedTCodeVersionMap = TCodeVersionMap.value(version);
-        emit instance().tcodeVersionChanged();
+        emit instance()->tcodeVersionChanged();
     }
 }
 
@@ -348,7 +347,7 @@ void TCodeChannelLookup::setAllProfileDefaults(bool keepCurrent) {
         m_availableChanels.clear();
         m_availableChanels.insert("Default", getDefaultChannelProfile());
         m_selectedChannelProfile = "Default";
-        emit instance().allProfilesDeleted();
+        emit instance()->allProfilesDeleted();
     } else {
         foreach(auto profile, m_availableChanels.keys()) {
             if(m_availableChanels.contains(profile))
@@ -517,6 +516,29 @@ void TCodeChannelLookup::resetLiveXRange()
     _liveXRangeMid = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke())->UserMid;
 }
 
+void TCodeChannelLookup::setChannelRange(QString channelName, int min, int max) {
+    if(hasChannel(channelName)) {
+        ChannelModel33* channel = getChannel(channelName);
+        channel->UserMax = max;
+        channel->UserMin = min;
+        channel->UserMid = XMath::middle(min, max);
+        if(channelName == Stroke())
+            setChannelRangeLive(channelName, min, max);
+    }
+}
+
+/**
+ * @brief Only for X (stroke) for now. Channel is ignored
+ * @param channel
+ * @param min
+ * @param max
+ */
+void TCodeChannelLookup::setChannelRangeLive(QString channel, int min, int max) {
+    setLiveXRangeMax(max);
+    setLiveXRangeMin(min);
+    setLiveXRangeMid(XMath::middle(min, max));
+}
+
 void TCodeChannelLookup::syncChannelMapToCurrentProfile() {
     m_selectedTCodeVersionMap = TCodeVersionMap.value(m_selectedTCodeVersion);
     foreach (auto channel, m_availableChanels[m_selectedChannelProfile]) {
@@ -533,7 +555,7 @@ void TCodeChannelLookup::syncChannelMapToCurrentProfile() {
 //    }
 }
 
-TCodeChannelLookup TCodeChannelLookup::m_instance;
+TCodeChannelLookup* TCodeChannelLookup::m_instance = 0;
 QMutex TCodeChannelLookup::m_mutex;
 ChannelModel33* TCodeChannelLookup::m_defaultChannel = new ChannelModel33();
 TCodeVersion TCodeChannelLookup::m_selectedTCodeVersion;

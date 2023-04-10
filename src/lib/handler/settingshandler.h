@@ -40,7 +40,9 @@ public slots:
     void addBookmark(LibraryListItem27 LibraryListItem27, QString name, qint64 currentPosition);
 
 public:
-    static SettingsHandler& instance(){
+    static SettingsHandler* instance(){
+        if(!m_instance)
+            m_instance = new SettingsHandler();
         return m_instance;
     }
     static QSettings* getSettings();
@@ -326,7 +328,7 @@ private:
     SettingsHandler();
     ~SettingsHandler();
     static QString _applicationDirPath;
-    static SettingsHandler m_instance;
+    static SettingsHandler* m_instance;
     static bool _settingsChanged;
     static void settingsChangedEvent(bool dirty);
     static void SetMapDefaults();

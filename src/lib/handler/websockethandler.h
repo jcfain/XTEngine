@@ -16,6 +16,8 @@ signals:
     void connectOutputDevice(DeviceName deviceName, bool checked);
     void connectInputDevice(DeviceName deviceName, bool checked);
     void tcode(QString tcode);
+    void setChannelRange(QString channelName, int min, int max);
+    void changeChannelProfile(QString name);
     void newWebSocketConnected(QWebSocket* client);
     void restartService();
     void skipToMoneyShot();

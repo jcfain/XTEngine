@@ -52,8 +52,10 @@ public:
     HttpPromise handleThumbFile(HttpDataPtr data);
     HttpPromise handleFunscriptFile(HttpDataPtr data);
     HttpPromise handleSettings(HttpDataPtr data);
+    HttpPromise handleChannels(HttpDataPtr data);
     HttpPromise handleAvailableSerialPorts(HttpDataPtr data);
     HttpPromise handleSettingsUpdate(HttpDataPtr data);
+    //HttpPromise handleChannelsUpdate(HttpDataPtr data);
     HttpPromise handleDeviceConnected(HttpDataPtr data);
     HttpPromise handleConnectDevice(HttpDataPtr data);
     HttpPromise handleTCodeIn(HttpDataPtr data);
@@ -81,6 +83,7 @@ private:
     QJsonObject createMediaObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createHeresphereObject(LibraryListItem27 libraryListItem, QString hostAddress);
+    QJsonObject createSelectedChannels();
     void on_webSocketClient_Connected(QWebSocket* client);
     void onSetLibraryLoaded();
     void onSetLibraryLoading();

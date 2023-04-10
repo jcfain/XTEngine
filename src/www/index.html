@@ -152,7 +152,10 @@
 		<button id="searchButton" title="Search media" class="search-media-button icon-button" onclick="onToggleFilterInput(this)">
 			<img class="buttonImage" src="://images/icons/search.svg"/>
 		</button> 
-		<button id="randomizeButton" title="Randomize media" class="hidden random-media-button icon-button" onclick="sortChange('random')">
+		<button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button" onclick="toggleShufflePlay()">
+			<img class="buttonImage" src="://images/icons/shuffle.svg"/ >
+		</button> 
+		<button id="randomizeButton" title="Randomize media playlist" class="hidden random-media-button icon-button" onclick="sortChange('random')">
 			<img class="buttonImage" src="://images/icons/reload.svg"/ >
 		</button> 
 		<input id="filterInput" class="media-filter-input hidden" placeholder="Filter" oninput="filter(this.value)" />
@@ -455,7 +458,13 @@
 							</section>
 						</div>
 					</div>
-					<div id="tabTCode" class="tab-content"></div>
+					<div id="tabTCode" class="tab-content">
+						<div class="formElement">
+							<label for="profileNamesSelect">Profile</label>
+							<select name="profileNamesSelect" id="profileNamesSelect" onchange="setSelectedProfile(this.value)"></select> 
+						</div>
+						<div id="tcodeRanges"></div>
+					</div>
 					<div id="tabFunscript" class="tab-content"></div>
 					<div id="systemInfoTab" class="tab-content">
 						<h3>Current browser information</h3>

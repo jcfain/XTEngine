@@ -8,6 +8,8 @@ SettingsHandler::SettingsHandler(){}
 SettingsHandler::~SettingsHandler()
 {
     delete settings;
+    if(m_instance)
+        delete m_instance;
 }
 
 void SettingsHandler::setSaveOnExit(bool enabled)
@@ -566,7 +568,7 @@ bool SettingsHandler::Import(QString file)
 void SettingsHandler::settingsChangedEvent(bool dirty)
 {
     _settingsChanged = dirty;
-    emit instance().settingsChanged(dirty);
+    emit instance()->settingsChanged(dirty);
 }
 bool SettingsHandler::getSettingsChanged()
 {
@@ -648,7 +650,7 @@ void SettingsHandler::MigrateTo23()
     TCodeChannelLookup::setProfileDefaults();
     Save();
     Load();
-    emit instance().messageSend("Due to a standards update your RANGE settings\nhave been set to default for a new data structure.", XLogLevel::Information);
+    emit instance()->messageSend("Due to a standards update your RANGE settings\nhave been set to default for a new data structure.", XLogLevel::Information);
 }
 
 void SettingsHandler::MigrateTo25()
@@ -664,7 +666,7 @@ void SettingsHandler::MigrateTo252()
     TCodeChannelLookup::setProfileDefaults();
     Save();
     Load();
-    emit instance().messageSend("Due to a standards update your CHANNELS\nhave been set to default for a new data structure.\nPlease reset your Multiplier/Range settings before using.", XLogLevel::Information);
+    emit instance()->messageSend("Due to a standards update your CHANNELS\nhave been set to default for a new data structure.\nPlease reset your Multiplier/Range settings before using.", XLogLevel::Information);
 }
 void SettingsHandler::MigrateLibraryMetaDataTo258()
 {
@@ -731,7 +733,7 @@ void SettingsHandler::MigratrTo2615()
     TCodeChannelLookup::setProfileDefaults();
     Save();
     Load();
-    emit instance().messageSend("Due to a standards update your CHANNEL SETTINGS\nhave been set to default for a new data structure.\nPlease reset your RANGES and MULTIPLIERS settings before using.", XLogLevel::Information);
+    emit instance()->messageSend("Due to a standards update your CHANNEL SETTINGS\nhave been set to default for a new data structure.\nPlease reset your RANGES and MULTIPLIERS settings before using.", XLogLevel::Information);
 }
 
 void SettingsHandler::MigrateTo263() {
@@ -2158,7 +2160,7 @@ void SettingsHandler::updateLibraryListItemMetaData(LibraryListItemMetaData258 l
 
 QSettings* SettingsHandler::settings;
 QString SettingsHandler::_applicationDirPath;
-SettingsHandler SettingsHandler::m_instance;
+SettingsHandler* SettingsHandler::m_instance = 0;
 bool SettingsHandler::m_firstLoad;
 bool SettingsHandler::_settingsChanged;
 bool SettingsHandler::_hideWelcomeScreen;

@@ -22,7 +22,9 @@ signals:
 
 public:
     ~TCodeChannelLookup();
-    static TCodeChannelLookup& instance(){
+    static TCodeChannelLookup* instance(){
+        if(!m_instance)
+            m_instance = new TCodeChannelLookup();
         return m_instance;
     }
     static const QMap<TCodeVersion, QString> SupportedTCodeVersions;
@@ -67,6 +69,8 @@ public:
     static void setLiveXRangeMax(int value);
     static int getLiveXRangeMax();
     static void resetLiveXRange();
+    static void setChannelRange(QString channelName, int min, int max);
+    static void setChannelRangeLive(QString channel, int min, int max);
 
     static QMap<QString, ChannelModel33> getDefaultChannelProfile();
     static QString ToString(AxisName channel);
@@ -99,7 +103,7 @@ public:
     static QString SuckLessPosition();
     static bool isDefaultChannel(QString channelName);
 private:
-    static TCodeChannelLookup m_instance;
+    static TCodeChannelLookup* m_instance;
     static QMutex m_mutex;
     static ChannelModel33* m_defaultChannel;
     static int m_channelCount;

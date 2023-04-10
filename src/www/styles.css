@@ -429,13 +429,18 @@ input:hover {
     margin-top: 16px;
     z-index: 10;
 } 
-.random-media-button {
+.shuffle-media-button {
     position: fixed;
     left: calc(100vw - 85px);
     margin-top: 63px;
     z-index: 10;
+}
+.random-media-button {
+    position: fixed;
+    left: calc(100vw - 85px);
+    margin-top: 110px;
+    z-index: 10;
 } 
-
 .range-slider {
     display: flex;
     flex-flow: column;

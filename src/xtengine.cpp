@@ -7,7 +7,6 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     QCoreApplication::setApplicationVersion(SettingsHandler::XTEVersion);
 
     SettingsHandler::Load();
-
     _tcodeFactory = new TCodeFactory(0.0, 1.0, this);
     _tcodeHandler = new TCodeHandler(this);
     _settingsActionHandler = new SettingsActionHandler(this);
@@ -27,7 +26,7 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     m_heatmap = new HeatMap(this);
     connect(m_heatmap, &HeatMap::maxHeat, this, [](qint64 maxHeatAt) {
         if(maxHeatAt > 0)
-            SettingsHandler::instance().setMoneyShot(XMediaStateHandler::getPlaying(), maxHeatAt, false);
+            SettingsHandler::instance()->setMoneyShot(XMediaStateHandler::getPlaying(), maxHeatAt, false);
     });
 
     connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, [this]() {
@@ -50,7 +49,7 @@ void XTEngine::init()
         _httpHandler = new HttpHandler(_mediaLibraryHandler, this);
         connect(_httpHandler, &HttpHandler::tcode, _connectionHandler, &ConnectionHandler::sendTCode);
         connect(_httpHandler, &HttpHandler::xtpWebPacketRecieve, _connectionHandler, &ConnectionHandler::inputMessageSend);
-        connect(_httpHandler, &HttpHandler::restartService, &SettingsHandler::instance(), &SettingsHandler::Restart);
+        connect(_httpHandler, &HttpHandler::restartService, SettingsHandler::instance(), &SettingsHandler::Restart);
         connect(_httpHandler, &HttpHandler::skipToMoneyShot, this, &XTEngine::skipToMoneyShot);
         connect(_httpHandler, &HttpHandler::skipToNextAction, this, &XTEngine::skipToNextAction);
         connect(_httpHandler, &HttpHandler::connectInputDevice, _connectionHandler, &ConnectionHandler::initInputDevice);

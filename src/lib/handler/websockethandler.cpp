@@ -99,6 +99,11 @@ void WebSocketHandler::processTextMessage(QString message)
     if (command == "tcode") {
         QString commandMessage = json["message"].toString();
         emit tcode(commandMessage);
+    } else if (command == "setChannelRange") {
+        QJsonObject obj = json["message"].toObject();
+        emit setChannelRange(obj["channelName"].toString(), obj["min"].toInt(), obj["max"].toInt());
+    } else if (command == "changeChannelProfile") {
+        emit changeChannelProfile(json["message"].toString());
     } else if (command == "connectOutputDevice") {
         QJsonObject obj = json["message"].toObject();
         emit connectOutputDevice((DeviceName)obj["deviceName"].toInt(), obj["enabled"].toBool());

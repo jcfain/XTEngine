@@ -10,6 +10,13 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::connectOutputDevice, this, &HttpHandler::connectOutputDevice);
     connect(_webSocketHandler, &WebSocketHandler::connectInputDevice, this, &HttpHandler::connectInputDevice);
     connect(_webSocketHandler, &WebSocketHandler::tcode, this, &HttpHandler::tcode);
+    connect(_webSocketHandler, &WebSocketHandler::setChannelRange, this, [](QString channelName, int min, int max) {
+        TCodeChannelLookup::setChannelRange(channelName, min, max);
+    });
+    connect(_webSocketHandler, &WebSocketHandler::changeChannelProfile, this, [](QString profileName) {
+        if(TCodeChannelLookup::getSelectedChannelProfile() != profileName)
+            TCodeChannelLookup::setSelectedChannelProfile(profileName);
+    });
     connect(_webSocketHandler, &WebSocketHandler::newWebSocketConnected, this, &HttpHandler::on_webSocketClient_Connected);
     connect(_webSocketHandler, &WebSocketHandler::restartService, this, &HttpHandler::restartService);
     connect(_webSocketHandler, &WebSocketHandler::skipToMoneyShot, this, &HttpHandler::skipToMoneyShot);
@@ -44,6 +51,10 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, item.thumbFileLoadingCurrent);});
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::thumbProcessBegin, this, [this]() {onLibraryLoadingStatusChange("Loading thumbs...");});
 
+    connect(TCodeChannelLookup::instance(), &TCodeChannelLookup::channelProfileChanged, this, [this](QMap<QString, ChannelModel33>* channelProfile) {
+        sendWebSocketTextMessage("channelProfileChanged", TCodeChannelLookup::getSelectedChannelProfile());
+    });
+
     config.port = SettingsHandler::getHTTPPort();
     config.requestTimeout = 20;
     if(LogHandler::getUserDebug())
@@ -65,10 +76,12 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     router.addRoute("GET", "^/funscript/(.*\\.((funscript)$))?[.]*$", this, &HttpHandler::handleFunscriptFile);
     router.addRoute("GET", "^/deotest$", this, &HttpHandler::handleDeo);
     router.addRoute("GET", "^/settings$", this, &HttpHandler::handleSettings);
+    router.addRoute("GET", "^/channels$", this, &HttpHandler::handleChannels);
     router.addRoute("GET", "^/settings/availableSerialPorts$", this, &HttpHandler::handleAvailableSerialPorts);
     router.addRoute("GET", "^/logout$", this, &HttpHandler::handleLogout);
     router.addRoute("GET", "^/activeSessions$", this, &HttpHandler::handleActiveSessions);
     router.addRoute("POST", "^/settings$", this, &HttpHandler::handleSettingsUpdate);
+    //router.addRoute("POST", "^/channels$", this, &HttpHandler::handleChannelsUpdate);
     router.addRoute("POST", "^/xtpweb$", this, &HttpHandler::handleWebTimeUpdate);
     router.addRoute("POST", "^/heresphere$", this, &HttpHandler::handleHereSphere);
     router.addRoute("POST", "^/auth$", this, &HttpHandler::handleAuth);
@@ -321,21 +334,16 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     QJsonObject root;
     root["webSocketServerPort"] = _webSocketHandler->getServerPort();
 
-    QJsonObject availableChannelsJson;
-    auto channels = TCodeChannelLookup::getChannels();
-    foreach(auto channelName, channels)
-    {
-        auto channel = TCodeChannelLookup::getChannel(channelName);
-        if(channel->Type != AxisType::HalfOscillate && channel->Type != AxisType::None)
-        {
-            availableChannelsJson[channelName] = ChannelModel33::toJson(*channel);
-        }
-    }
-    root["availableChannels"] = availableChannelsJson;
+    root["availableChannels"] = createSelectedChannels();
 
     root["multiplierEnabled"] = SettingsHandler::getMultiplierEnabled();
 
     root["selectedChannelProfile"] = TCodeChannelLookup::getSelectedChannelProfile();
+    QJsonArray allChannelProfileNames;
+    foreach (auto profile, TCodeChannelLookup::getChannelProfiles()) {
+        allChannelProfileNames.append(profile);
+    }
+    root["allChannelProfileNames"] = allChannelProfileNames;
 
     QJsonObject connectionSettingsJson;
     QJsonObject connectionInputSettingsJson;
@@ -372,7 +380,6 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
     QJsonDocument doc = QJsonDocument::fromJson(body, &error);
     if (doc.isEmpty())
     {
-        LogHandler::Error("XTP Web json response error: "+error.errorString());
         LogHandler::Error("data: "+body);
         data->response->setStatus(HttpStatus::BadRequest);
         return HttpPromise::resolve(data);
@@ -450,6 +457,90 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
     return HttpPromise::resolve(data);
 }
 
+HttpPromise HttpHandler::handleChannels(HttpDataPtr data) {
+    QJsonObject root;
+//    QJsonObject allChannelProfiles;
+//    auto profiles = TCodeChannelLookup::getChannelProfiles();
+//    QJsonArray allChannelProfileNames;
+//    foreach(auto profileName, profiles)
+//    {
+//        allChannelProfileNames.append(profileName);
+//        auto channels = TCodeChannelLookup::getChannels(profileName);
+//        QJsonObject availableChannelsJson;
+//        foreach(auto channelName, channels)
+//        {
+//            auto channel = TCodeChannelLookup::getChannel(channelName);
+//            if(channel->Type != AxisType::HalfOscillate && channel->Type != AxisType::None)
+//            {
+//                availableChannelsJson[channelName] = ChannelModel33::toJson(*channel);
+//            }
+//        }
+//        allChannelProfiles[profileName] = availableChannelsJson;
+//    }
+//    root["selectedProfile"] = TCodeChannelLookup::getSelectedChannelProfile();
+//    root["allChannelProfiles"] = allChannelProfiles;
+//    root["allChannelProfileNames"] = allChannelProfileNames;
+
+    root["availableChannels"] = createSelectedChannels();
+    root["selectedChannelProfile"] = TCodeChannelLookup::getSelectedChannelProfile();
+    QJsonArray allChannelProfileNames;
+    foreach (auto profile, TCodeChannelLookup::getChannelProfiles()) {
+        allChannelProfileNames.append(profile);
+    }
+    root["allChannelProfileNames"] = allChannelProfileNames;
+    data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
+    data->response->compressBody();
+    return HttpPromise::resolve(data);
+}
+
+//HttpPromise HttpHandler::handleChannelsUpdate(HttpDataPtr data)
+//{
+//    if(!isAuthenticated(data)) {
+//        data->response->setStatus(HttpStatus::Unauthorized);
+//        return HttpPromise::resolve(data);
+//    }
+
+//    auto body = data->request->body();
+//    QJsonParseError error;
+//    QJsonDocument doc = QJsonDocument::fromJson(body, &error);
+//    if (doc.isEmpty())
+//    {
+//        LogHandler::Error("XTP Web json response error (handleChannelsUpdate): "+error.errorString());
+//        LogHandler::Error("data: "+body);
+//        data->response->setStatus(HttpStatus::BadRequest);
+//        return HttpPromise::resolve(data);
+//    }
+//    else
+//    {
+//        auto profiles = TCodeChannelLookup::getChannelProfiles();
+//        QJsonObject availableChannelProfilesJson = doc["availableChannels"].toObject();
+//        QJsonArray deletedProfiles = availableChannelProfilesJson["deleted"].toArray();
+//        QStringList updatedProfiles;
+//        QJsonArray docArray = availableChannelProfilesJson["updated"].toArray();
+//        foreach(auto update, docArray) {
+//            updatedProfiles << update.toString();
+//        }
+
+//        QJsonArray addedProfiles = availableChannelProfilesJson["added"].toArray();
+//        foreach(auto profileName, updatedProfiles)
+//        {
+//            auto channels = TCodeChannelLookup::getChannels(profileName);
+//            auto incomingProfile = availableChannelProfilesJson[profileName].toObject();
+//            foreach(auto channelName, channels)
+//            {
+//                auto channel = TCodeChannelLookup::getChannel(channelName);
+//                if(channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None)
+//                    continue;
+//                auto value = incomingProfile[channelName].toObject();
+//                ChannelModel33 channelModel  = ChannelModel33::fromJson(value);
+//                TCodeChannelLookup::setChannel(channelName, channelModel, profileName);
+//            }
+//        }
+//        SettingsHandler::Save();
+//        data->response->setStatus(HttpStatus::Ok);
+//        return HttpPromise::resolve(data);
+//    }
+//}
 //HttpPromise HttpHandler::handleDeviceConnected(HttpDataPtr data)
 //{
 //    QJsonObject root;
@@ -606,7 +697,19 @@ QJsonObject HttpHandler::createHeresphereObject(LibraryListItem27 item, QString 
 //    root["skipIntro"] = 0;
     return root;
 }
-
+QJsonObject HttpHandler::createSelectedChannels() {
+    QJsonObject availableChannelsJson;
+    auto channels = TCodeChannelLookup::getChannels();
+    foreach(auto channelName, channels)
+    {
+        auto channel = TCodeChannelLookup::getChannel(channelName);
+        if(channel->Type != AxisType::HalfOscillate && channel->Type != AxisType::None)
+        {
+            availableChannelsJson[channelName] = ChannelModel33::toJson(*channel);
+        }
+    }
+    return availableChannelsJson;
+}
 HttpPromise HttpHandler::handleDeo(HttpDataPtr data)
 {
     if(!isAuthenticated(data)) {
