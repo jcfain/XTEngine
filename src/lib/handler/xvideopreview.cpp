@@ -5,6 +5,7 @@
 
 XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent), _thumbNailVideoSurface(0), _thumbPlayer(0)
 {
+    LogHandler::Debug("XVideoPreview");
     _thumbPlayer = new QMediaPlayer(this, QMediaPlayer::VideoSurface);
     _thumbNailVideoSurface = new XVideoSurface(_thumbPlayer);
     _thumbPlayer->setVideoOutput(_thumbNailVideoSurface);
@@ -16,6 +17,7 @@ XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent), _thumbNailVideo
     connect(_thumbNailVideoSurface, &XVideoSurface::frameCaptureError, this, &XVideoPreview::on_thumbError);
     connect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
     connect(&m_debouncer, &QTimer::timeout, this, [this]() {
+        LogHandler::Debug("Extract debounce");
         extract();
     });
 
@@ -26,6 +28,7 @@ XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent), _thumbNailVideo
 //    connect(m_ffmprobe, &QProcess::readyReadStandardError, this, &XVideoPreview::onFFMpegDuration);
 }
 XVideoPreview::~XVideoPreview() {
+    LogHandler::Debug("~XVideoPreview");
     tearDownPlayer();
 }
 void XVideoPreview::setUpThumbPlayer()
@@ -51,9 +54,11 @@ void XVideoPreview::tearDownPlayer()
 //        disconnect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
 //        if(_thumbNailVideoSurface->isActive())
 //            _thumbNailVideoSurface->stop();
+
         if(_thumbPlayer->state() == QMediaPlayer::PlayingState)
             _thumbPlayer->stop();
         _thumbPlayer->setMedia(QMediaContent());
+
         //_thumbPlayer->setMedia(QMediaContent());
 //        else {
 //            delete _thumbPlayer;
@@ -68,10 +73,12 @@ void XVideoPreview::extract(QString file, qint64 time)
     setUpThumbPlayer();
     _file = file;
     if(_file.isNull()) {
+        LogHandler::Error("In valid file path.");
         emit frameExtractionError("In valid file path.");
         return;
     }
     if(!QFile::exists(_file)) {
+        LogHandler::Error("File: "+file+" does not exist.");
         emit frameExtractionError("File: "+file+" does not exist.");
         return;
     }
@@ -118,7 +125,8 @@ void XVideoPreview::on_thumbCapture(QImage frame)
         LogHandler::Debug("on_thumbCapture: "+ _file);
         _lastImage = frame;
         frame = QImage();
-        tearDownPlayer();
+        //tearDownPlayer();
+        process();
     }
 }
 
@@ -127,7 +135,8 @@ void XVideoPreview::on_thumbError(QString error)
     if(_extracting) {
         LogHandler::Debug("on_thumbError: "+ _file);
         _lastError = error;
-        tearDownPlayer();
+        //tearDownPlayer();
+        process();
     }
 }
 
@@ -146,26 +155,29 @@ void XVideoPreview::on_mediaStateChange(QMediaPlayer::State state)
     }
     else if(state == QMediaPlayer::State::StoppedState)
     {
-        if(_extracting) {
-            _extracting = false;
-            if(!_lastError.isNull()) {
-                emit frameExtractionError(_lastError);
-                _lastError.clear();
-            }
-            else if(!_lastImage.isNull()) {
-                emit frameExtracted(_lastImage);
-                //_lastImage = QImage();
-            }
-        }
-        else if(_loadingInfo && _lastDuration > 0)
-        {
-            _loadingInfo = false;
-            emit durationChanged(_lastDuration);
-        }
+        process();
 
     }
 }
 
+void XVideoPreview::process() {
+    if(_extracting) {
+        _extracting = false;
+        if(!_lastError.isNull()) {
+            emit frameExtractionError(_lastError);
+            _lastError.clear();
+        }
+        else if(!_lastImage.isNull()) {
+            emit frameExtracted(_lastImage);
+            //_lastImage = QImage();
+        }
+    }
+    else if(_loadingInfo && _lastDuration > 0)
+    {
+        _loadingInfo = false;
+        emit durationChanged(_lastDuration);
+    }
+}
 void XVideoPreview::on_durationChanged(qint64 duration)
 {
     if(_loadingInfo && duration > 0)
@@ -173,7 +185,10 @@ void XVideoPreview::on_durationChanged(qint64 duration)
         LogHandler::Debug("on_durationChanged: "+ _file);
         LogHandler::Debug("on_durationChanged: "+ QString::number(duration));
         _lastDuration = duration;
-        tearDownPlayer();
+        //tearDownPlayer();
+        process();
+//        _loadingInfo = false;
+//        emit durationChanged(_lastDuration);
     }
 }
 

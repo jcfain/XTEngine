@@ -399,11 +399,11 @@ void MediaLibraryHandler::stopThumbProcess()
             _thumbTimeoutTimer.stop();
             disconnect(&_thumbTimeoutTimer, &QTimer::timeout, nullptr, nullptr);
         }
-        if(_extractor) {
-            disconnect(_extractor, nullptr,  nullptr, nullptr);
+//        if(_extractor) {
+//            disconnect(_extractor, nullptr,  nullptr, nullptr);
 //            delete _extractor;
 //            _extractor = 0;
-        }
+//        }
 //        delete _thumbNailPlayer;
     }
 }
@@ -463,12 +463,13 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
         dir.mkpath(SettingsHandler::getSelectedThumbsDir());
         _thumbTimeoutTimer.stop();
         disconnect(&_thumbTimeoutTimer, &QTimer::timeout, nullptr, nullptr);
-        if(!_extractor)
-            _extractor = new XVideoPreview(this);
-        connect(&_thumbTimeoutTimer, &QTimer::timeout, &_thumbTimeoutTimer, [this, itemID, vrMode]() {
+
+        QSharedPointer<XVideoPreview> xVideoPreview(new XVideoPreview(this));
+
+        connect(&_thumbTimeoutTimer, &QTimer::timeout, &_thumbTimeoutTimer, [this, itemID, vrMode, xVideoPreview]() {
             if(_thumbProcessIsRunning)
             {
-                disconnect(_extractor, nullptr,  nullptr, nullptr);
+                disconnect(xVideoPreview.data(), nullptr,  nullptr, nullptr);
                 onSaveThumb(itemID, vrMode, "Thumb loading timed out.");
             }
         });
@@ -479,14 +480,14 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
         // Get the duration and randomize the position with in the video.
         QString videoFile = item.path;
         LogHandler::Debug("Getting thumb: " + item.thumbFile);
-        connect(_extractor, &XVideoPreview::durationChanged, this,
-           [this, videoFile, position](qint64 duration)
+        connect(xVideoPreview.data(), &XVideoPreview::durationChanged, this,
+                [this, videoFile, position, xVideoPreview](qint64 duration)
             {
-               disconnect(_extractor, &XVideoPreview::durationChanged,  nullptr, nullptr);
+               disconnect(xVideoPreview.data(), &XVideoPreview::durationChanged,  nullptr, nullptr);
                LogHandler::Debug("Loaded video for thumb. Duration: " + QString::number(duration));
                qint64 randomPosition = position > 0 ? position : XMath::rand((qint64)1, duration);
                LogHandler::Debug("Extracting at: " + QString::number(randomPosition));
-               _extractor->extract(videoFile, randomPosition);
+               xVideoPreview->extract(videoFile, randomPosition);
             });
 
 
@@ -498,11 +499,11 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
 //            });
 
 
-        connect(_extractor, &XVideoPreview::frameExtracted, this,
-           [this, itemID, vrMode](QImage frame)
+        connect(xVideoPreview.data(), &XVideoPreview::frameExtracted, this,
+           [this, itemID, vrMode, xVideoPreview](QImage frame)
             {
-                disconnect(_extractor, &XVideoPreview::frameExtracted,  nullptr, nullptr);
-                disconnect(_extractor, &XVideoPreview::frameExtractionError,  nullptr, nullptr);
+                disconnect(xVideoPreview.data(), &XVideoPreview::frameExtracted,  nullptr, nullptr);
+                disconnect(xVideoPreview.data(), &XVideoPreview::frameExtractionError,  nullptr, nullptr);
                 if(!frame.isNull())
                 {
                     auto item = findItemByID(itemID);
@@ -522,16 +523,16 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
                 onSaveThumb(itemID, vrMode);
             });
 
-        connect(_extractor, &XVideoPreview::frameExtractionError, this,
-           [this, itemID, itemPath, vrMode](const QString &errorMessage)
+        connect(xVideoPreview.data(), &XVideoPreview::frameExtractionError, this,
+                [this, itemID, itemPath, vrMode, xVideoPreview](const QString &errorMessage)
             {
-                disconnect(_extractor, &XVideoPreview::frameExtracted,  nullptr, nullptr);
-                disconnect(_extractor, &XVideoPreview::frameExtractionError,  nullptr, nullptr);
+                disconnect(xVideoPreview.data(), &XVideoPreview::frameExtracted,  nullptr, nullptr);
+                disconnect(xVideoPreview.data(), &XVideoPreview::frameExtractionError,  nullptr, nullptr);
                 QString error = "Error extracting image from: " + itemPath + " Error: " + errorMessage;
                 onSaveThumb(itemID, vrMode, error);
             });
 
-        _extractor->load(videoFile);
+        xVideoPreview->load(videoFile);
     }
 }
 
@@ -592,7 +593,7 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
     if(_thumbProcessIsRunning)
         saveNewThumbs(vrMode);
     else {
-        disconnect(_extractor, nullptr,  nullptr, nullptr);
+        //disconnect(xVideoPreview.data(), nullptr,  nullptr, nullptr);
 //        delete _extractor;
 //        _extractor = 0;
     }

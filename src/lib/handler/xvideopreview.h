@@ -49,6 +49,7 @@ private:
     void on_mediaStateChange(QMediaPlayer::State state);
     void on_thumbError(QString error);
     void on_durationChanged(qint64 duration);
+    void process();
 //    bool checkForFFMpeg();
 //    void getDurationFromFFmpeg();
 //    void onFFMpegDuration();

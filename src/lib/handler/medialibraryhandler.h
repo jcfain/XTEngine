@@ -83,7 +83,7 @@ private:
     QFuture<void> _loadingLibraryFuture;
     QTimer _thumbTimeoutTimer;
     QMutex _mutex;
-    XVideoPreview* _extractor = 0;
+    //XVideoPreview* _extractor = 0;
 
     void on_load_library(QStringList paths, bool vrMode);
     void onLibraryLoaded();
