@@ -220,7 +220,7 @@ HttpPromise HttpHandler::handleAuth(HttpDataPtr data)
                     {
                         if(m_authenticated.value(sessionID).addSecs(m_sessionTimeout) < QDateTime::currentDateTime())// Exipre if not accessed in 15min
                         {
-                                expiredIDs << sessionID;
+                            expiredIDs << sessionID;
                         }
                     }
                     foreach (QString sessionID, expiredIDs)
@@ -458,6 +458,10 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
 }
 
 HttpPromise HttpHandler::handleChannels(HttpDataPtr data) {
+    if(!isAuthenticated(data)) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
     QJsonObject root;
 //    QJsonObject allChannelProfiles;
 //    auto profiles = TCodeChannelLookup::getChannelProfiles();
@@ -868,21 +872,22 @@ HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
 
 HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
 {
-    if(!SettingsHandler::hashedWebPass().isEmpty()) {
-        if(data->request->uriQuery().hasQueryItem("sessionID")) {//Workaround for external streaming where the cookie isnt passed to the app.
-            LogHandler::Debug("Auth from query.");
-            QString sessionID = data->request->uriQuery().queryItemValue("sessionID");
-            if(sessionID.isEmpty() || !m_authenticated.contains(sessionID)) {
-                data->response->setStatus(HttpStatus::Unauthorized);
-                LogHandler::Debug("Auth from query denied.");
-                return HttpPromise::resolve(data);
-            }
-        } else if(!isAuthenticated(data)) {
-            data->response->setStatus(HttpStatus::Unauthorized);
-            LogHandler::Debug("Auth from cookie denied.");
-            return HttpPromise::resolve(data);
-        }
-    }
+//    if(!SettingsHandler::hashedWebPass().isEmpty()) {
+//        LogHandler::Debug("Has session query: "+ data->request->uriStr());
+//        if(data->request->uriQuery().hasQueryItem("sessionID")) {//Workaround for external streaming where the cookie isnt passed to the app.
+//            LogHandler::Debug("Auth from query.");
+//            QString sessionID = data->request->uriQuery().queryItemValue("sessionID");
+//            if(sessionID.isEmpty() || !m_authenticated.contains(sessionID)) {
+//                data->response->setStatus(HttpStatus::Unauthorized);
+//                LogHandler::Debug("Auth from query denied.");
+//                return HttpPromise::resolve(data);
+//            }
+//        } else if(!isAuthenticated(data)) {
+//            data->response->setStatus(HttpStatus::Unauthorized);
+//            LogHandler::Debug("Auth from cookie denied.");
+//            return HttpPromise::resolve(data);
+//        }
+//    }
 
     return QPromise<HttpDataPtr> {[&](
         const QtPromise::QPromiseResolve<HttpDataPtr> &resolve,

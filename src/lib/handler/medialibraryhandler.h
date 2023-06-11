@@ -5,11 +5,11 @@
 #include <QFileInfo>
 #include <QtConcurrent/QtConcurrent>
 #include <algorithm>
+#include <QImage>
 
-#include "../handler/settingshandler.h"
-#include "../handler/xvideopreview.h"
-#include "../struct/LibraryListItem.h"
-#include "lib/tool/imagefactory.h"
+#include "../struct/LibraryListItem27.h"
+#include "../struct/ScriptInfo.h"
+
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT MediaLibraryHandler : public QObject
@@ -28,6 +28,7 @@ signals:
     void itemAdded(LibraryListItem27 item, int index, int newSize);
     void itemRemoved(LibraryListItem27 item, int index, int newSize);
     void itemUpdated(LibraryListItem27 item, int index);
+    void alternateFunscriptsFound(QList<ScriptInfo> scriptInfos);
     //void playListItem(LibraryListItem27 item);
 
     void thumbProcessBegin();
@@ -35,7 +36,7 @@ signals:
     void saveNewThumbLoading(LibraryListItem27 item);
     void saveNewThumb(LibraryListItem27 item, bool vrMode, QString thumbFile);
     void saveThumbError(LibraryListItem27 item, bool vrMode, QString error);
-    void frameExtracted(LibraryListItem27 item, bool vrMode, QPixmap frame);
+    void frameExtracted(LibraryListItem27 item, bool vrMode, QImage frame);
     void frameExtractedError(LibraryListItem27 item, bool vrMode, const QString &errorMessage);
 //    void videoLoadError(LibraryListItem27 item, bool vrMode, QtAV::AVError er);
 public:
@@ -72,6 +73,7 @@ public:
     bool isLibraryItemVideo(LibraryListItem27 item);
     void updateToolTip(LibraryListItem27 &item, bool scriptDiscovery = false);
     void cleanGlobalThumbDirectory();
+    void findAlternateFunscripts(QString path);
 
 private:
     int _libraryItemIDTracker = 1;

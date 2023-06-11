@@ -13,7 +13,6 @@
 #include "lib/handler/synchandler.h"
 #include "lib/handler/medialibraryhandler.h"
 #include "lib/handler/connectionhandler.h"
-#include "lib/handler/xmediastatehandler.h"
 #include "lib/tool/tcodefactory.h"
 #include "lib/handler/tcodehandler.h"
 #include "lib/tool/heatmap.h"

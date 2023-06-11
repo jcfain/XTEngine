@@ -24,6 +24,7 @@ public:
     ~XVideoPreview();
     void extract(QString videoPath, qint64 time = -1);
     void load(QString file);
+    void stop();
 
 private:
     void extract();

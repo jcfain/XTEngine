@@ -1,5 +1,9 @@
 #include "medialibraryhandler.h"
 
+#include "settingshandler.h"
+#include "xvideopreview.h"
+#include "../tool/imagefactory.h"
+
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     : QObject(parent)
 {
@@ -461,17 +465,12 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
         QString itemPath = item.path;
         QDir dir; // Make thumb path if doesnt exist
         dir.mkpath(SettingsHandler::getSelectedThumbsDir());
-        _thumbTimeoutTimer.stop();
-        disconnect(&_thumbTimeoutTimer, &QTimer::timeout, nullptr, nullptr);
 
-        QSharedPointer<XVideoPreview> xVideoPreview(new XVideoPreview(this));
+        const QSharedPointer<XVideoPreview> xVideoPreview(new XVideoPreview(this));
 
-        connect(&_thumbTimeoutTimer, &QTimer::timeout, &_thumbTimeoutTimer, [this, itemID, vrMode, xVideoPreview]() {
-            if(_thumbProcessIsRunning)
-            {
-                disconnect(xVideoPreview.data(), nullptr,  nullptr, nullptr);
-                onSaveThumb(itemID, vrMode, "Thumb loading timed out.");
-            }
+        connect(&_thumbTimeoutTimer, &QTimer::timeout, &_thumbTimeoutTimer, [this, itemID, vrMode, ptr = xVideoPreview]() {
+            disconnect(ptr.data(), nullptr,  nullptr, nullptr);
+            onSaveThumb(itemID, vrMode, "Thumb loading timed out.");
         });
         _thumbTimeoutTimer.start(30000);
 //        if(!vrMode)
@@ -481,13 +480,13 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
         QString videoFile = item.path;
         LogHandler::Debug("Getting thumb: " + item.thumbFile);
         connect(xVideoPreview.data(), &XVideoPreview::durationChanged, this,
-                [this, videoFile, position, xVideoPreview](qint64 duration)
+                [videoFile, position, ptr = xVideoPreview](qint64 duration)
             {
-               disconnect(xVideoPreview.data(), &XVideoPreview::durationChanged,  nullptr, nullptr);
+               disconnect(ptr.data(), &XVideoPreview::durationChanged,  nullptr, nullptr);
                LogHandler::Debug("Loaded video for thumb. Duration: " + QString::number(duration));
                qint64 randomPosition = position > 0 ? position : XMath::rand((qint64)1, duration);
                LogHandler::Debug("Extracting at: " + QString::number(randomPosition));
-               xVideoPreview->extract(videoFile, randomPosition);
+               ptr->extract(videoFile, randomPosition);
             });
 
 
@@ -500,12 +499,11 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
 
 
         connect(xVideoPreview.data(), &XVideoPreview::frameExtracted, this,
-           [this, itemID, vrMode, xVideoPreview](QImage frame)
+           [this, itemID, vrMode, ptr = xVideoPreview](QImage frame)
             {
-                disconnect(xVideoPreview.data(), &XVideoPreview::frameExtracted,  nullptr, nullptr);
-                disconnect(xVideoPreview.data(), &XVideoPreview::frameExtractionError,  nullptr, nullptr);
                 if(!frame.isNull())
                 {
+                    LogHandler::Debug("Enter frameExtracted");
                     auto item = findItemByID(itemID);
                     if(!item) {
                         onSaveThumb(itemID, vrMode, "Media item no longer exists: "+itemID);
@@ -520,14 +518,14 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
 
                 }
                 frame = QImage();
+                disconnect(ptr.data(), nullptr,  nullptr, nullptr);
                 onSaveThumb(itemID, vrMode);
             });
 
         connect(xVideoPreview.data(), &XVideoPreview::frameExtractionError, this,
-                [this, itemID, itemPath, vrMode, xVideoPreview](const QString &errorMessage)
+                [this, itemID, itemPath, vrMode, ptr = xVideoPreview](const QString &errorMessage)
             {
-                disconnect(xVideoPreview.data(), &XVideoPreview::frameExtracted,  nullptr, nullptr);
-                disconnect(xVideoPreview.data(), &XVideoPreview::frameExtractionError,  nullptr, nullptr);
+                disconnect(ptr.data(), nullptr,  nullptr, nullptr);
                 QString error = "Error extracting image from: " + itemPath + " Error: " + errorMessage;
                 onSaveThumb(itemID, vrMode, error);
             });
@@ -589,6 +587,8 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
             emit saveNewThumb(item, vrMode, item->thumbFile);
         }
     }
+    _thumbTimeoutTimer.stop();
+    disconnect(&_thumbTimeoutTimer, &QTimer::timeout, nullptr, nullptr);
 
     if(_thumbProcessIsRunning)
         saveNewThumbs(vrMode);
@@ -977,6 +977,64 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
             QFile::remove(filepath);
     }
 }
+
+void MediaLibraryHandler::findAlternateFunscripts(QString path)
+{
+    if(!QFileInfo::exists(path)) {
+        LogHandler::Error("No file found when searching for alternate scripts: "+ path);
+        return;
+    }
+    QtConcurrent::run([this, path]() {
+        QFileInfo fileInfo(path);
+        QString location = fileInfo.path();
+        QDirIterator scripts(location, QStringList() << "*.funscript" << "*.zip", QDir::Files);
+
+        QList<ScriptInfo> funscriptsWithMedia;
+        QString fileName = fileInfo.baseName();
+        auto channels = TCodeChannelLookup::getChannels();
+        ScriptContainerType containerType = ScriptContainerType::BASE;
+        LogHandler::Debug("Searching for alternative scripts for: "+ fileName);
+        while (scripts.hasNext())
+        {
+            QString filepath = scripts.next();
+            QFileInfo scriptInfo(filepath);
+            if(filepath.endsWith(".zip")) {
+                containerType = ScriptContainerType::ZIP;
+            }
+            //Is alternate script?
+            if(scriptInfo.baseName().startsWith(fileName)) {
+                LogHandler::Debug("Found possible alt script: " + scriptInfo.baseName());
+                // Ignore mfs files
+                LogHandler::Debug("Is MFS?");
+                QString trackname;
+                foreach (auto channel, channels) {
+                    auto track = TCodeChannelLookup::getChannel(channel);
+                    if(channel == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfOscillate || track->TrackName.isEmpty())
+                        continue;
+                    if(filepath.endsWith("."+track->TrackName+".funscript")) {
+                        LogHandler::Debug("Is MFS track: " + track->TrackName);
+                        trackname = track->TrackName;
+                        containerType = ScriptContainerType::MFS;
+                        break;
+                    }
+                }
+                if(containerType == ScriptContainerType::MFS) {
+                    LogHandler::Debug("MFS script found: " +trackname);
+                    funscriptsWithMedia.append({trackname, scriptInfo.baseName(), filepath, ScriptType::MAIN, containerType });
+                } else if(scriptInfo.baseName() != fileName) {
+                    auto name = scriptInfo.baseName().replace(fileName, "").trimmed();
+                    LogHandler::Debug("Alt script found: " +name);
+                    funscriptsWithMedia.append({name, scriptInfo.baseName(), filepath, ScriptType::ALTERNATE, containerType });
+                } else {
+                    LogHandler::Debug("Is default script");
+                    funscriptsWithMedia.push_front({"Default", scriptInfo.baseName(), filepath, ScriptType::MAIN, containerType });
+                }
+            }
+        }
+        emit alternateFunscriptsFound(funscriptsWithMedia);
+    });
+}
+
 void MediaLibraryHandler::assignID(LibraryListItem27 &item)
 {
     //.replace(/^[^a-z]+|[^\w:.-]+/gi, "")+"item"+i

@@ -37,7 +37,7 @@ void SyncHandler::setStandAloneLoop(bool enabled)
 
 bool SyncHandler::isPaused()
 {
-    return _isPaused;
+    return _isPaused || m_isSwapping;
 }
 bool SyncHandler::isPlaying()
 {
@@ -56,51 +56,66 @@ FunscriptHandler* SyncHandler::getFunscriptHandler() {
     return _funscriptHandler;
 }
 
-QList<QString> SyncHandler::load(QString scriptFile)
+QList<QString> SyncHandler::load(QString funscript, bool reset)
 {
-    LogHandler::Debug("Enter syncHandler load");
-    reset();
-    if(!scriptFile.isEmpty())
+    if(reset)
+        this->reset();
+    if(!funscript.isEmpty())
     {
-        QFileInfo scriptInfo(scriptFile);
+        QFileInfo scriptInfo(funscript);
         if(scriptInfo.exists())
         {
-            QString scriptTemp = scriptFile;
+            QString scriptTemp = funscript;
             QString scriptFileNoExtension = scriptTemp.remove(scriptTemp.lastIndexOf('.'), scriptTemp.length() -  1);
             QString fileName = scriptInfo.fileName();
             QString scriptNameNoExtension = fileName.remove(fileName.lastIndexOf('.'), scriptTemp.length() -  1);
-            if(scriptFile.endsWith(".zip"))
+            if(funscript.endsWith(".zip"))
             {
-               QZipReader zipFile(scriptFile, QIODevice::ReadOnly);
-               if(zipFile.isReadable())
-               {
-                   QByteArray data = zipFile.fileData(scriptNameNoExtension + ".funscript");
-                   if (!data.isEmpty())
-                   {
-                       if(!load(data))
-                       {
-                           _invalidScripts.append("Zip file: " + scriptNameNoExtension + ".funscript");
-                       }
-                   }
-                   else
-                   {
-                       LogHandler::Debug("Main funscript: '"+scriptNameNoExtension + ".funscript' not found in zip");
-                   }
-               }
+                QZipReader zipFile(funscript, QIODevice::ReadOnly);
+                if(zipFile.isReadable())
+                {
+                    QByteArray data = zipFile.fileData(scriptNameNoExtension + ".funscript");
+                    if (!data.isEmpty())
+                    {
+                        if(!load(data))
+                        {
+                            _invalidScripts.append("Zip file: " + scriptNameNoExtension + ".funscript");
+                        }
+                    }
+                    else
+                    {
+                        LogHandler::Debug("Main funscript: '"+scriptNameNoExtension + ".funscript' not found in zip");
+                    }
+                }
             }
-            else if(!_funscriptHandler->load(scriptFile))
+            else if(!_funscriptHandler->load(funscript))
             {
-                _invalidScripts.append(scriptFile);
+                _invalidScripts.append(funscript);
             }
-            loadMFS(scriptFile);
-            emit funscriptLoaded(scriptFile);
+            loadMFS(funscript);
+            emit funscriptLoaded(funscript);
         }
         else
         {
-            _invalidScripts.append("File not found: " + scriptFile);
+            _invalidScripts.append("File not found: " + funscript);
         }
     }
     return _invalidScripts;
+}
+
+QList<QString> SyncHandler::load(QString funscript)
+{
+    LogHandler::Debug("Enter syncHandler load");
+    return load(funscript, true);
+}
+
+QList<QString> SyncHandler::swap(QString funscript)
+{
+    LogHandler::Debug("Enter syncHandler swap");
+    m_isSwapping = true;
+    auto invalidScripts = load(funscript, false);
+    m_isSwapping = false;
+    return invalidScripts;
 }
 
 bool SyncHandler::isLoaded()
@@ -241,9 +256,9 @@ void SyncHandler::playStandAlone(QString funscript) {
                 if (_inputDeviceHandler && _inputDeviceHandler->isConnected()) {
                     auto currentVRPacket = _inputDeviceHandler->getCurrentPacket();
                     if(currentVRPacket.duration > 0)
-                        _isPaused = !currentVRPacket.playing;
+                        setPause(!currentVRPacket.playing);
                 }
-                if(!_isPaused && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected())
+                if(!isPaused() && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected())
                 {
                     if(_seekTime > -1)
                     {
@@ -361,7 +376,7 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
             if (timer2 - timer1 >= 1)
             {
                 timer1 = timer2;
-                if(!_isPaused && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected())
+                if(!isPaused() && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected())
                 {
                     qint64 currentTime = getMediaPosition();//_videoHandler->position();
                     actionPosition = _funscriptHandler->getPosition(currentTime);
@@ -422,7 +437,7 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
                 emit sendTCode("DSTOP");
             lastStatePlaying = currentVRPacket.playing;
             //timer.start();
-            if(!_isPaused && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
+            if(!isPaused() && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
             {
                 if(videoPath.isEmpty())
                     videoPath = currentVRPacket.path;

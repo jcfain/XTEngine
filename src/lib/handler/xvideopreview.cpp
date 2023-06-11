@@ -55,9 +55,7 @@ void XVideoPreview::tearDownPlayer()
 //        if(_thumbNailVideoSurface->isActive())
 //            _thumbNailVideoSurface->stop();
 
-        if(_thumbPlayer->state() == QMediaPlayer::PlayingState)
-            _thumbPlayer->stop();
-        _thumbPlayer->setMedia(QMediaContent());
+    stop();
 
         //_thumbPlayer->setMedia(QMediaContent());
 //        else {
@@ -116,6 +114,13 @@ void XVideoPreview::load(QString file)
     LogHandler::Debug("load: "+ file);
     _loadingInfo = true;
     extract(file);
+}
+
+void XVideoPreview::stop()
+{
+    if(_thumbPlayer->state() == QMediaPlayer::PlayingState)
+        _thumbPlayer->stop();
+    _thumbPlayer->setMedia(QMediaContent());
 }
 
 // Private

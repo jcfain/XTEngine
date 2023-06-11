@@ -77,6 +77,7 @@ private:
     QString _libraryLoadingStatus = "Loading...";
     QMutex _mutex;
     QHash<QString, QDateTime> m_authenticated;
+    QStringList m_authenticatedForMedia;
     QTimer m_sessionPolice;
     int m_sessionTimeout = 900; // 15 Min
 

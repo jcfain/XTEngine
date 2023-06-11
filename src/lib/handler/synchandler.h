@@ -63,6 +63,7 @@ public:
     void clear();
     void reset();
     QList<QString> load(QString funscript);
+    QList<QString> swap(QString funscript);
     bool isLoaded();
     bool isPlaying();
     bool isPlayingStandAlone();
@@ -85,6 +86,7 @@ private:
     bool _isVRFunscriptPlaying = false;
     bool _isStandAloneFunscriptPlaying = false;
     bool _isPaused = false;
+    bool m_isSwapping = false;
     bool _standAloneLoop;
     bool _isOtherMediaPlaying = false;
     qint64 _currentTime = 0;
@@ -100,6 +102,7 @@ private:
     bool _funscriptSearchNotFound = false;
     QString _lastSearchedMediaPath;
 
+    QList<QString> load(QString funscript, bool reset);
     bool load(QByteArray funscript);
     void loadMFS(QString funscript);
     bool loadMFS(QString channel, QString funscript);

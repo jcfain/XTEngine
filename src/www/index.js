@@ -1070,7 +1070,6 @@ function loadMedia(mediaList) {
 	var createClickHandler = function (obj) {
 		return function () {
 			//loadVideo(obj); 
-			showVideo();
 			playVideo(obj);
 		}
 	};
@@ -1671,6 +1670,7 @@ function getNextShuffleMediaItem() {
 
 function playVideo(obj) {
 	if (!externalStreaming) {
+		showVideo();
 		if (playingmediaItem) {
 			if (playingmediaItem.id === obj.id)
 				return;
@@ -1690,20 +1690,20 @@ function playVideo(obj) {
 		//videoNode.play();
 
 	} else {
-		if (!userAgentIsHereSphere && !userAgentIsDeo) {
-			window.open("/media" + obj.relativePath);
+		var file_path = "/media" + obj.relativePath;// + "?sessionID="+cookies.sessionID;
+		if(userAgentIsDeo) {
+			window.open(file_path);
+		} else if(userAgentIsHereSphere) {
+			var a = document.createElement('A');
+			a.href = file_path;
+			a.download = file_path;
+			// a.setAttribute("href", file_path);
+			// a.setAttribute("download", file_path);
+			a.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
 		} else {
-			var file_path = "/media" + obj.relativePath + "?sessionID="+cookies.sessionID;
-			if(userAgentIsDeo) {
-				window.open(file_path);
-			} else {
-				var a = document.createElement('A');
-				a.href = file_path;
-				a.download = file_path;
-				document.body.appendChild(a);
-				a.click();
-				document.body.removeChild(a);
-			}
+			window.open(file_path);
 		}
 	}
 }
