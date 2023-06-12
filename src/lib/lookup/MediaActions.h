@@ -53,6 +53,8 @@ public:
     const QString IncreaseOffset = "IncreaseDelay";
     const QString DecreaseOffset = "DecreaseDelay";
     const QString ResetOffset = "ResetOffset";
+    const QString AltFunscriptNext = "AltFunscriptNext";
+    const QString AltFunscriptPrev = "AltFunscriptPrev";
     const QMap<QString, QString> Values {
         {TogglePause, "Media: Pause (on/off)"},
         {Next, "Media: Next video"},
@@ -92,6 +94,8 @@ public:
         {IncreaseOffset, "Funscript: delay (increase)"},
         {DecreaseOffset, "Funscript: delay (decrease)"},
         {ResetOffset, "Funscript: delay reset to 0"},
+        {AltFunscriptNext, "Funscript: Next alternative "},
+        {AltFunscriptPrev, "Funscript: Previous alternative"},
         {ChannelProfileNext, "Channel profile next"},
         {ChannelProfilePrevious, "Channel profile previous"}
     };

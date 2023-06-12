@@ -25,7 +25,7 @@ void SettingsActionHandler::media_action(QString action)
         } else
             emit actionExecuted(action, "Lower speed at minimum");
     }
-    if(action == actions.TCodeHomeAll)
+    else if(action == actions.TCodeHomeAll)
     {
         emit tcode_action("DHOME");// TODO: figure out a better way to do this.
         emit actionExecuted(action, "Device home");
