@@ -287,6 +287,8 @@ void SyncHandler::playStandAlone(QString funscript) {
                     otherActions.clear();
 
                     sendPulse(mSecTimer.elapsed(), nextPulseTime);
+                } else {
+                    QThread::msleep(100);
                 }
                 secCounter2 = round(mSecTimer.elapsed() / 1000);
                 if(secCounter2 - secCounter1 >= 1)
@@ -397,8 +399,11 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
                     otherActions.clear();
 
                     sendPulse(mSecTimer.elapsed(), nextPulseTime);
+                } else {
+                    QThread::msleep(100);
                 }
             }
+            QThread::usleep(1);
             timer2 = (round(mSecTimer.nsecsElapsed() / 1000000));
         }
         _currentLocalVideoTime = 0;
@@ -413,7 +418,7 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
     load(funscript);
     QMutexLocker locker(&_mutex);
     _isVRFunscriptPlaying = true;
-    LogHandler::Debug("syncVRFunscript start thread");
+    LogHandler::Debug("syncInputDeviceFunscript start thread");
     _funscriptVRFuture = QtConcurrent::run([this, funscript]()
     {
         std::shared_ptr<FunscriptAction> actionPosition;
@@ -421,7 +426,7 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
         InputDevicePacket currentVRPacket;
         qint64 timeTracker = 0;
         qint64 lastVRTime = 0;
-        qint64 lastVRSyncResetTime = 0;
+        //qint64 lastVRSyncResetTime = 0;
         QElapsedTimer mSecTimer;
         qint64 timer1 = 0;
         qint64 timer2 = 0;
@@ -489,6 +494,8 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
                //     LogHandler::Debug("timer "+QString::number((round(timer.nsecsElapsed()) / 1000000)));
                     sendPulse(timer1, nextPulseTime);
                 //}
+                } else {
+                    QThread::msleep(100);
                 }
             }
             timer2 = (round(mSecTimer.nsecsElapsed() / 1000000));

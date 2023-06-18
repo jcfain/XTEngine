@@ -139,7 +139,7 @@ void HereSphereHandler::readData()
         qint64 currentTime = jsonObject["currentTime"].toDouble() * 1000;
         float playbackSpeed = jsonObject["playbackSpeed"].toDouble() * 1.0;
         bool playing = jsonObject["playerState"].toInt() == 0; // 0 == true? right? I know...
-        bool stopped = !playing;
+        bool stopped = false;
 //        LogHandler::Debug("Deo path: "+path);
 //        LogHandler::Debug("Deo duration: "+QString::number(duration));
 //        LogHandler::Debug("Deo currentTime------------------------------------------------> "+QString::number(currentTime));

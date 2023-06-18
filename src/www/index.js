@@ -1709,8 +1709,9 @@ function stopVideo() {
 	videoNode.load();
 	if (playingmediaItem) {
 		playingmediaItem.playing = false;
-		clearPlayingMediaItem();
+		playingmediaItem.stopped = true;
 		sendMediaState();
+		clearPlayingMediaItem();// Clear after sending so the correct state is applied.
 	}
 }
 
