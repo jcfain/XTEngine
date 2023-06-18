@@ -10,6 +10,7 @@ struct InputDevicePacket
     qint64 currentTime;
     float playbackSpeed;
     bool playing;
+    bool stopped;
 };
 
 Q_DECLARE_METATYPE(InputDevicePacket);

@@ -85,6 +85,7 @@ void WhirligigHandler::readData()
     QString line = QString::fromUtf8(datagram);
     //LogHandler::Debug("all: "+line);
     bool playing = false;
+    bool stopped = false;
     qint64 currentTime = 0;
     if (line.contains("S"))
     {
@@ -125,7 +126,8 @@ void WhirligigHandler::readData()
         duration,
         currentTime,
         0,
-        playing
+        playing,
+        stopped
     };
     _mutex.unlock();
     if (time2 - time1 >= 1000)

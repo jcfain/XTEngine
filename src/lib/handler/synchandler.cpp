@@ -432,25 +432,25 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
         bool lastStatePlaying = false;
         while (_isVRFunscriptPlaying && _inputDeviceHandler && _inputDeviceHandler->isConnected() && _outputDeviceHandler && _outputDeviceHandler->isConnected() && !_isOtherMediaPlaying)
         {
-            currentVRPacket = _inputDeviceHandler->getCurrentPacket();
-            if(lastStatePlaying && !currentVRPacket.playing)
-                emit sendTCode("DSTOP");
-            lastStatePlaying = currentVRPacket.playing;
-            //timer.start();
-            if(!isPaused() && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
+            //execute once every millisecond
+            if (timer2 - timer1 >= 1)
             {
-                if(videoPath.isEmpty())
-                    videoPath = currentVRPacket.path;
-                if(!duration)
-                    duration = currentVRPacket.duration;
-                //execute once every millisecond
-                if (timer2 - timer1 >= 1)
+                timer1 = timer2;
+                currentVRPacket = _inputDeviceHandler->getCurrentPacket();
+                if(lastStatePlaying && !currentVRPacket.playing)
+                    emit sendTCode("DSTOP");
+                lastStatePlaying = currentVRPacket.playing;
+                //timer.start();
+                if(!isPaused() && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
                 {
-    //                LogHandler::Debug("timer1: "+QString::number(timer1));
-    //                LogHandler::Debug("timer2: "+QString::number(timer2));
-                    //LogHandler::Debug("timer2 - timer1 "+QString::number(timer2-timer1));
-    //                LogHandler::Debug("Out timeTracker: "+QString::number(timeTracker));
-                    timer1 = timer2;
+                    if(videoPath.isEmpty())
+                        videoPath = currentVRPacket.path;
+                    if(!duration)
+                        duration = currentVRPacket.duration;
+        //                LogHandler::Debug("timer1: "+QString::number(timer1));
+        //                LogHandler::Debug("timer2: "+QString::number(timer2));
+                        //LogHandler::Debug("timer2 - timer1 "+QString::number(timer2-timer1));
+        //                LogHandler::Debug("Out timeTracker: "+QString::number(timeTracker));
                     qint64 vrTime = currentVRPacket.currentTime;
                     if(lastVRTime != vrTime)
                     {
@@ -488,11 +488,11 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
                     otherActions.clear();
                //     LogHandler::Debug("timer "+QString::number((round(timer.nsecsElapsed()) / 1000000)));
                     sendPulse(timer1, nextPulseTime);
+                //}
                 }
-                timer2 = (round(mSecTimer.nsecsElapsed() / 1000000));
-                //LogHandler::Debug("timer nsecsElapsed: "+QString::number(timer2));
             }
-
+            timer2 = (round(mSecTimer.nsecsElapsed() / 1000000));
+            //LogHandler::Debug("timer nsecsElapsed: "+QString::number(timer2));
         }
 
         QMutexLocker locker(&_mutex);
@@ -599,6 +599,11 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
         //LogHandler::Debug("VR currentTime: "+QString::number(packet.currentTime));
 //        LogHandler::Debug("VR playbackSpeed: "+QString::number(packet.playbackSpeed));
 //        LogHandler::Debug("VR playing: "+QString::number(packet.playing));
+    if(packet.stopped) {
+        reset();
+        return;
+    }
+
     if(!(_outputDeviceHandler && _outputDeviceHandler->isConnected()))
         return;
 

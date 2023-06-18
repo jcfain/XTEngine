@@ -139,6 +139,7 @@ void HereSphereHandler::readData()
         qint64 currentTime = jsonObject["currentTime"].toDouble() * 1000;
         float playbackSpeed = jsonObject["playbackSpeed"].toDouble() * 1.0;
         bool playing = jsonObject["playerState"].toInt() == 0; // 0 == true? right? I know...
+        bool stopped = !playing;
 //        LogHandler::Debug("Deo path: "+path);
 //        LogHandler::Debug("Deo duration: "+QString::number(duration));
 //        LogHandler::Debug("Deo currentTime------------------------------------------------> "+QString::number(currentTime));
@@ -152,7 +153,8 @@ void HereSphereHandler::readData()
             duration,
             currentTime,
             playbackSpeed,
-            playing
+            playing,
+            stopped
        };
         _isPlaying = playing;
         _currentTime = currentTime;
@@ -191,6 +193,7 @@ InputDevicePacket HereSphereHandler::getCurrentPacket()
     const QMutexLocker locker(&_mutex);
     InputDevicePacket blankPacket = {
         NULL,
+        0,
         0,
         0,
         0,

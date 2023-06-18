@@ -34,6 +34,7 @@ void XTPWebHandler::init()
         0,
         0,
         0,
+        0,
         0
     };
 }
@@ -80,6 +81,7 @@ void XTPWebHandler::readData(QByteArray data)
         qint64 currentTime = jsonObject["currentTime"].toDouble() * 1000;
         float playbackSpeed = jsonObject["playbackSpeed"].toDouble() * 1.0;
         bool playing = jsonObject["playing"].toBool();
+        bool stopped = jsonObject["stopped"].toBool();;
 //        LogHandler::Debug("XTP Web path: "+path);
 //        LogHandler::Debug("XTP Web duration: "+QString::number(duration));
 //        LogHandler::Debug("XTP Web currentTime------------------------------------------------> "+QString::number(currentTime));
@@ -93,7 +95,8 @@ void XTPWebHandler::readData(QByteArray data)
             duration,
             currentTime,
             playbackSpeed,
-            playing
+            playing,
+            stopped
        };
         _isPlaying = playing;
         _currentTime = currentTime;
