@@ -1709,8 +1709,8 @@ function stopVideo() {
 	videoNode.load();
 	if (playingmediaItem) {
 		playingmediaItem.playing = false;
+		clearPlayingMediaItem();
 		sendMediaState();
-		clearPlayingMediaItem()
 	}
 }
 
