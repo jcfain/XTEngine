@@ -16,6 +16,7 @@ public:
     static int constrain(int value, int min, int max);
     static int rand(int min, int max);
     static int middle(int min, int max);
+    static int min(int value1, int value2);
     static qint64 rand(qint64 min, qint64 max);
     static double rand(double min, double max);
     static int randSine(double base);

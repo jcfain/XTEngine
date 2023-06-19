@@ -3,6 +3,7 @@
 #include "settingshandler.h"
 #include "xvideopreview.h"
 #include "../tool/imagefactory.h"
+#include "../tool/string-util.h"
 
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     : QObject(parent)
@@ -996,6 +997,7 @@ void MediaLibraryHandler::findAlternateFunscripts(QString path)
         LogHandler::Debug("Searching for alternative scripts for: "+ fileName);
         while (scripts.hasNext())
         {
+            containerType = ScriptContainerType::BASE;
             QString filepath = scripts.next();
             QFileInfo scriptInfo(filepath);
             if(filepath.endsWith(".zip")) {

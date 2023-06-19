@@ -104,6 +104,7 @@ HEADERS += \
     lib/tool/heatmap.h \
     lib/tool/imagefactory.h \
     lib/tool/simplecrypt.h \
+    lib/tool/string-util.h \
     lib/tool/tcodefactory.h \
     lib/tool/videoformat.h \
     lib/tool/xmath.h \

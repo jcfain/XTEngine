@@ -56,6 +56,11 @@ int XMath::middle(int min, int max)
     return qRound((min + max)/2.0);
 }
 
+int XMath::min(int value1, int value2)
+{
+    return value1 < value2 ? value1 : value2;
+}
+
 int XMath::randSine(double angle)
 {
     double amplitude = rand(0.0, 100.0);
