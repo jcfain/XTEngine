@@ -1,5 +1,8 @@
 #include "settingsactionhandler.h"
+
 #include "xmediastatehandler.h"
+#include "settingshandler.h"
+#include "funscripthandler.h"
 
 SettingsActionHandler::SettingsActionHandler(QObject *parent)
     : QObject{parent}
@@ -254,7 +257,7 @@ void SettingsActionHandler::media_action(QString action)
         TCodeChannelLookup::setSelectedChannelProfile(profiles[indexOfProfile]);
         emit actionExecuted(profiles[indexOfProfile], "Set "+ profiles[indexOfProfile]);
     }
-    else if (action == actions.IncreaseOffset || action == actions.DecreaseOffset || action == actions.ResetOffset)//TODO: move to XTEngine
+    else if (action == actions.IncreaseOffset || action == actions.DecreaseOffset || action == actions.ResetOffset)
     {
         bool increase = action == actions.IncreaseOffset;
         QString verb = increase ? "Increase" : "Decrease";

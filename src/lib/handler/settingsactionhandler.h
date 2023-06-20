@@ -3,8 +3,6 @@
 
 #include <QObject>
 #include "lib/lookup/MediaActions.h"
-#include "settingshandler.h"
-#include "funscripthandler.h"
 
 #include "XTEngine_global.h"
 /**
