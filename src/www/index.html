@@ -169,6 +169,76 @@
 		</div>
 	</div>
 
+	<div id="mediaItemSettingsModal" class="modal">
+		<div class="modal-content modal-content--other">
+			<div class="modal-header">
+				<span class="modal-title">Media settings</span>
+				<button class="close-modal icon-button" onclick="closeMetaDataModal()">
+					<image class="buttonImage" src="://images/icons/x.svg" />
+				</button>
+			</div>
+			<div id="modalBody" class="modal-body">
+				<div class="formElement">
+					<label
+						title="Change the sync offset for the current media item"
+						for="mediaOffset">Offset (ms)
+					</label>
+					<input id="mediaOffset" type="number" step="1" oninput="metaDataChange()" />
+				</div>
+				<div class="form-buttons">
+					<button class="close-modal icon-button" onclick="addToSelectedMetaData(10)">
+						+10
+					</button>
+					<button class="close-modal icon-button" onclick="addToSelectedMetaData(50)">
+						+50
+					</button>
+					<button class="close-modal icon-button" onclick="addToSelectedMetaData(100)">
+						+100
+					</button>
+					<button class="close-modal icon-button" onclick="addToSelectedMetaData(500)">
+						+500
+					</button>
+					<button class="close-modal icon-button" onclick="addToSelectedMetaData(-10)">
+						-10
+					</button>
+					<button class="close-modal icon-button" onclick="addToSelectedMetaData(-50)">
+						-50
+					</button>
+					<button class="close-modal icon-button" onclick="addToSelectedMetaData(-100)">
+						-100
+					</button>
+					<button class="close-modal icon-button" onclick="addToSelectedMetaData(-500)">
+						-500
+					</button>
+				</div>
+				<div class="formElement">
+					<label
+						title="Change the moneyshot for the current media item"
+						for="moneyShotMillis">Moneyshot (ms)
+					</label>
+					<input id="moneyShotMillis" type="number" step="1" oninput="metaDataChange()" />
+				</div>
+				<div class="form-buttons">
+					<button class="icon-button" onclick="resetMoneyShot()">
+						Reset
+					</button>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<div class="modal-footer-content">
+				</div>
+				<div class="modal-footer-content">
+					<span id="metaDataSaveState" class="save-status"></span>
+					<button id="saveMediaItemMetaDataButton" disabled="true"
+						onclick="saveMetaData()">
+						Save
+					</button>
+				</div>
+			</div>
+		</div>
+
+	</div>
+
 	<div id="settingsModal" class="modal">
 		<div class="modal-content">
 			<div class="modal-header">

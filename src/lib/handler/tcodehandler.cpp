@@ -117,7 +117,8 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
                     {
                         //LogHandler::Debug("Multiplier: "+ axis);
                         float calculatedMultiplier = multiplierValue;
-                        int tcodeRandSineValue = XMath::randSine(XMath::mapRange(currentAction->pos, 0, 100, 0, 180));
+                        int tcodeRandSineAngle = XMath::randSine(XMath::mapRange(currentAction->pos, 0, 100, 0, 180));
+                        int tcodeRandSineValue = XMath::mapRange(tcodeRandSineAngle, 0, 180, 0, 100);
                         if(multiplierValue < 1.0 && multiplierValue > -1.0 && tcodeRandSineValue < channel->UserMid)
                             calculatedMultiplier = 1 + multiplierValue;
                         value = XMath::constrain(tcodeRandSineValue * calculatedMultiplier, 0, 100);

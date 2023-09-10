@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.444b";
-const float SettingsHandler::XTEVersionNum = 0.444f;
+const QString SettingsHandler::XTEVersion = "0.445b";
+const float SettingsHandler::XTEVersionNum = 0.445f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){}
@@ -474,12 +474,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("userData", _hashedPass);
         settingsToSaveTo->setValue("userWebData", _hashedWebPass);
 
-        QVariantHash libraryListItemMetaDatas;
-        foreach(auto libraryListItemMetaData, _libraryListItemMetaDatas.keys())
-        {
-            libraryListItemMetaDatas.insert(libraryListItemMetaData, LibraryListItemMetaData258::toVariant(_libraryListItemMetaDatas[libraryListItemMetaData]));
-        }
-        settingsToSaveTo->setValue("libraryListItemMetaDatas", libraryListItemMetaDatas);
+        storeMediaMetaDatas(settingsToSaveTo);
 
         settingsToSaveTo->setValue("skipToMoneyShotPlaysFunscript", _skipToMoneyShotPlaysFunscript);
         settingsToSaveTo->setValue("skipToMoneyShotFunscript", _skipToMoneyShotFunscript);
@@ -619,6 +614,18 @@ void SettingsHandler::SaveChannelMap(QSettings* settingsToSaveTo)
             availableChannelVariant.insert(channelProfileName, availableChannelProfileVarient);
     }
     settingsToSaveTo->setValue("availableChannels", availableChannelVariant);
+}
+
+void SettingsHandler::storeMediaMetaDatas(QSettings* settingsToSaveTo)
+{
+    if(!settingsToSaveTo)
+        settingsToSaveTo = settings;
+    QVariantHash libraryListItemMetaDatas;
+    foreach(auto libraryListItemMetaData, _libraryListItemMetaDatas.keys())
+    {
+        libraryListItemMetaDatas.insert(libraryListItemMetaData, LibraryListItemMetaData258::toVariant(_libraryListItemMetaDatas[libraryListItemMetaData]));
+    }
+    settingsToSaveTo->setValue("libraryListItemMetaDatas", libraryListItemMetaDatas);
 }
 
 void SettingsHandler::SetGamepadMapDefaults()
@@ -2155,7 +2162,9 @@ void SettingsHandler::updateLibraryListItemMetaData(LibraryListItemMetaData258 l
 {
     QMutexLocker locker(&mutex);
     _libraryListItemMetaDatas.insert(libraryListItemMetaData.libraryItemPath, libraryListItemMetaData);
-    settingsChangedEvent(true);
+    storeMediaMetaDatas();
+    settings->sync();
+    //settingsChangedEvent(true);
 }
 
 QSettings* SettingsHandler::settings;

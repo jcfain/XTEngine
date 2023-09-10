@@ -350,6 +350,8 @@ private:
 
     static void SaveChannelMap(QSettings* settingsToSaveTo = 0);
 
+    static void storeMediaMetaDatas(QSettings* settingsToSaveTo = 0);
+
     static QString _appdataLocation;
     static GamepadAxisName gamepadAxisNames;
     static MediaActions mediaActions;

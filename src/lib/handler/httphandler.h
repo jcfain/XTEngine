@@ -55,6 +55,8 @@ public:
     HttpPromise handleChannels(HttpDataPtr data);
     HttpPromise handleAvailableSerialPorts(HttpDataPtr data);
     HttpPromise handleSettingsUpdate(HttpDataPtr data);
+    HttpPromise handleMediaItemMetadataUpdate(HttpDataPtr data);
+
     //HttpPromise handleChannelsUpdate(HttpDataPtr data);
     HttpPromise handleDeviceConnected(HttpDataPtr data);
     HttpPromise handleConnectDevice(HttpDataPtr data);

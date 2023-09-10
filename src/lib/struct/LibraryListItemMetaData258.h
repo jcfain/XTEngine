@@ -55,32 +55,32 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     }
     friend bool operator==(const LibraryListItemMetaData258 &p1, const LibraryListItemMetaData258 &p2)
     {
-       return p1.libraryItemPath == p2.libraryItemPath;
+        return p1.libraryItemPath == p2.libraryItemPath;
     }
 
     static LibraryListItemMetaData258 fromVariant(QVariant item)
     {
         QJsonObject obj = item.toJsonObject();
-        LibraryListItemMetaData258 newItem;
-        newItem.libraryItemPath = obj["libraryItemPath"].toString();
-        newItem.lastPlayPosition = obj["lastPlayPosition"].toString().toLongLong();
-        newItem.lastLoopEnabled = obj["lastLoopEnabled"].toBool();
-        newItem.lastLoopStart = obj["lastLoopStart"].toString().toLongLong();
-        newItem.lastLoopEnd = obj["lastLoopEnd"].toString().toLongLong();
-        newItem.offset = obj["offset"].toInt();
-        newItem.moneyShotMillis = obj["moneyShotMillis"].toString().toLongLong();
-        foreach(auto bookmark, obj["bookmarks"].toArray())
-        {
-            Bookmark bookMark;
-            bookMark.Name = bookmark["Name"].toString();
-            bookMark.Time = bookmark["Time"].toString().toLongLong();
-            newItem.bookmarks.append(bookMark);
-        }
-        foreach(auto funscript, obj["funscripts"].toArray())
-        {
-            newItem.funscripts.append(funscript.toString());
-        }
-        return newItem;
+        return fromJson(obj);
+//        newItem.libraryItemPath = obj["libraryItemPath"].toString();
+//        newItem.lastPlayPosition = obj["lastPlayPosition"].toString().toLongLong();
+//        newItem.lastLoopEnabled = obj["lastLoopEnabled"].toBool();
+//        newItem.lastLoopStart = obj["lastLoopStart"].toString().toLongLong();
+//        newItem.lastLoopEnd = obj["lastLoopEnd"].toString().toLongLong();
+//        newItem.offset = obj["offset"].toInt();
+//        newItem.moneyShotMillis = obj["moneyShotMillis"].toString().toLongLong();
+//        foreach(auto bookmark, obj["bookmarks"].toArray())
+//        {
+//            Bookmark bookMark;
+//            bookMark.Name = bookmark["Name"].toString();
+//            bookMark.Time = bookmark["Time"].toString().toLongLong();
+//            newItem.bookmarks.append(bookMark);
+//        }
+//        foreach(auto funscript, obj["funscripts"].toArray())
+//        {
+//            newItem.funscripts.append(funscript.toString());
+//        }
+//        return newItem;
     }
 
     static QVariant toVariant(LibraryListItemMetaData258 item)
@@ -111,7 +111,30 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
             funscripts.append(funscript);
         }
         return obj;
-     }
+    }
+
+    static LibraryListItemMetaData258 fromJson(QJsonObject obj) {
+        LibraryListItemMetaData258 newItem;
+        newItem.libraryItemPath = obj["libraryItemPath"].toString();
+        newItem.lastPlayPosition = obj["lastPlayPosition"].toString().toLongLong();
+        newItem.lastLoopEnabled = obj["lastLoopEnabled"].toBool();
+        newItem.lastLoopStart = obj["lastLoopStart"].toString().toLongLong();
+        newItem.lastLoopEnd = obj["lastLoopEnd"].toString().toLongLong();
+        newItem.offset = obj["offset"].toInt();
+        newItem.moneyShotMillis = obj["moneyShotMillis"].toString().toLongLong();
+        foreach(auto bookmark, obj["bookmarks"].toArray())
+        {
+            Bookmark bookMark;
+            bookMark.Name = bookmark["Name"].toString();
+            bookMark.Time = bookmark["Time"].toString().toLongLong();
+            newItem.bookmarks.append(bookMark);
+        }
+        foreach(auto funscript, obj["funscripts"].toArray())
+        {
+            newItem.funscripts.append(funscript.toString());
+        }
+        return newItem;
+    }
 };
 
 Q_DECLARE_METATYPE(LibraryListItemMetaData258);

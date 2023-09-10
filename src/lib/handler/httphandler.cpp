@@ -81,6 +81,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     router.addRoute("GET", "^/logout$", this, &HttpHandler::handleLogout);
     router.addRoute("GET", "^/activeSessions$", this, &HttpHandler::handleActiveSessions);
     router.addRoute("POST", "^/settings$", this, &HttpHandler::handleSettingsUpdate);
+    router.addRoute("POST", "^/mediaItemMetadata$", this, &HttpHandler::handleMediaItemMetadataUpdate);
     //router.addRoute("POST", "^/channels$", this, &HttpHandler::handleChannelsUpdate);
     router.addRoute("POST", "^/xtpweb$", this, &HttpHandler::handleWebTimeUpdate);
     router.addRoute("POST", "^/heresphere$", this, &HttpHandler::handleHereSphere);
@@ -457,6 +458,33 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
     return HttpPromise::resolve(data);
 }
 
+HttpPromise HttpHandler::handleMediaItemMetadataUpdate(HttpDataPtr data)
+{
+
+    if(!isAuthenticated(data)) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+
+    auto body = data->request->body();
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(body, &error);
+    if (doc.isEmpty())
+    {
+        LogHandler::Error("data: "+body);
+        data->response->setStatus(HttpStatus::BadRequest);
+        return HttpPromise::resolve(data);
+    }
+    else
+    {
+        auto metaData = LibraryListItemMetaData258::fromJson(doc.object());
+        SettingsHandler::updateLibraryListItemMetaData(metaData);
+        SettingsHandler::setLiveOffset(metaData.offset);
+    }
+    data->response->setStatus(HttpStatus::Ok);
+    return HttpPromise::resolve(data);
+}
+
 HttpPromise HttpHandler::handleChannels(HttpDataPtr data) {
     if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);
@@ -604,12 +632,15 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
         object["displayName"] = "(MFS) " + item.nameNoExtension;
     else
         object["displayName"] = item.nameNoExtension;
-    QString relativePath = item.path.replace(item.libraryPath +"/", "");
+    QString relativePath = item.path;
+    relativePath = relativePath.replace(item.libraryPath +"/", "");
     object["path"] = hostAddress + "media/" + QString(QUrl::toPercentEncoding(relativePath));
     object["relativePath"] = "/" + QString(QUrl::toPercentEncoding(relativePath));
-    QString scriptNoExtensionRelativePath = item.scriptNoExtension.replace(item.libraryPath, "");
+    QString scriptNoExtensionRelativePath = item.scriptNoExtension;
+    scriptNoExtensionRelativePath = scriptNoExtensionRelativePath.replace(item.libraryPath, "");
     object["scriptNoExtensionRelativePath"] = "funscript/" + QString(QUrl::toPercentEncoding(scriptNoExtensionRelativePath));
-    QString thumbFile = item.thumbFile.replace(SettingsHandler::getSelectedThumbsDir(), "");
+    QString thumbFile = item.thumbFile;
+    thumbFile = thumbFile.replace(SettingsHandler::getSelectedThumbsDir(), "");
     thumbFile = thumbFile.replace(item.libraryPath, "");
     QString relativeThumb = thumbFile;
     object["thumb"] = hostAddress + "thumb/" + QString(QUrl::toPercentEncoding(relativeThumb));

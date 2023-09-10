@@ -51,6 +51,7 @@ var remoteUserSettings;
 var mediaListGlobal = [];
 var sortedMedia = [];
 var filteredMedia = [];
+var selectedMediaItemMetaData = null;
 var playingmediaItem;
 var playingmediaItemNode;
 var webSocket;
@@ -123,6 +124,7 @@ var userAgentIsHereSphere = userAgent.indexOf("HereSphere") != -1;
 var userAgentIsMobile = userAgent.indexOf("Mobile") != -1;
 setDeoStyles(userAgentIsDeo);
 var settingsNode = document.getElementById("settingsModal");
+var mediaItemSettingsModalNode = document.getElementById("mediaItemSettingsModal");
 var thumbsContainerNode = document.getElementById("thumbsContainer");
 var videoMediaName = document.getElementById("videoMediaName");
 
@@ -177,6 +179,7 @@ playPreviousButton.addEventListener('click', playPreviousVideoClick);
 // }, true);
 
 var saveStateNode = document.getElementById("saveState");
+var metaDataSaveStateNode = document.getElementById("metaDataSaveState");
 var deviceConnectionStatusRetryButtonNodes = document.getElementsByName("deviceStatusRetryButton");
 var deviceConnectionStatusRetryButtonImageNodes = document.getElementsByName("connectionStatusIconImage");
 
@@ -260,6 +263,10 @@ function sendUpdateThumb(item) {
 function sendUpdateThumbAtPos(item) {
 	var pos = videoNode.currentTime;
 	sendWebsocketMessage("saveSingleThumb", { itemID: item.id, pos: pos });
+}
+function sendUpdateMoneyShotAtPos(item) {
+	var pos = videoNode.currentTime;
+	sendWebsocketMessage("setMoneyShot", { itemID: item.id, pos: pos });
 }
 
 
@@ -982,7 +989,6 @@ function getMediaFunscripts(path, isMFS) {
 	xhr.send();
 }
 
-
 function postServerSettings() {
 	var xhr = new XMLHttpRequest();
 	xhr.open('POST', "/settings", true);
@@ -1004,6 +1010,27 @@ function postServerSettings() {
 	xhr.send(JSON.stringify(remoteUserSettings));
 }
 
+function postMediaItemMetaData(metaData) {
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', "/mediaItemMetadata", true);
+	xhr.setRequestHeader('Content-Type', 'application/json');
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			var status = xhr.status;
+			if (status !== 200)
+				onSaveFail(xhr.statusText, metaDataSaveStateNode);
+			else {
+				onSaveSuccess(metaDataSaveStateNode);
+				document.getElementById("saveMediaItemMetaDataButton").disabled = true;
+			}
+		}
+	}
+	xhr.onerror = function () {
+		onSaveFail(xhr.statusText, metaDataSaveStateNode);
+	};
+	xhr.send(JSON.stringify(metaData));
+}
+
 function postMediaState(mediaState) {
 	var xhr = new XMLHttpRequest();
 	xhr.open("POST", "/xtpweb", true);
@@ -1019,22 +1046,24 @@ function postMediaState(mediaState) {
 	};
 }
 
-function onSaveSuccess() {
-	saveStateNode.style.visibility = "visible";
-	saveStateNode.style.opacity = "1";
-	saveStateNode.style.color = "green";
-	saveStateNode.innerText = "Save success";
+function onSaveSuccess(node) {
+	if(!node)
+		node = saveStateNode;
+	node.style.visibility = "visible";
+	node.style.opacity = "1";
+	node.style.color = "green";
+	node.innerText = "Save success";
 	setTimeout(() => {
-		saveStateNode.style.visibility = "hidden";
-		saveStateNode.style.opacity = "0";
+		node.style.visibility = "hidden";
+		node.style.opacity = "0";
 	}, 5000);
 }
-function onSaveFail(error) {
-	saveStateNode.style.visibility = "visible";
-	saveStateNode.style.opacity = "1";
-	saveStateNode.style.color = "red";
-	saveStateNode.innerText = "Save fail";
-	saveStateNode.title = error;
+function onSaveFail(error, node) {
+	node.style.visibility = "visible";
+	node.style.opacity = "1";
+	node.style.color = "red";
+	node.innerText = "Save fail";
+	node.title = error;
 }
 
 function updateMediaUI() {
@@ -1078,11 +1107,17 @@ function loadMedia(mediaList) {
 		return function () {
 			contextMenu.classList.toggle("hidden");
 			var thumbAtPosMenuItem = contextMenu.getElementsByClassName("setThumbAtCurrent")[0];
-			if(isVideoShown() && playingmediaItem && playingmediaItem.id === mediaItem.id)
+			var setMoneyShotAtCurrentMenuItem = contextMenu.getElementsByClassName("setMoneyShotAtCurrent")[0];
+			if(isVideoShown() && playingmediaItem && playingmediaItem.id === mediaItem.id) {
 				thumbAtPosMenuItem.classList.remove("disabled");
-			else {
+				setMoneyShotAtCurrentMenuItem.classList.remove("disabled");
+				setMoneyShotAtCurrentMenuItem.title = "Set moneyshot at current"
+				thumbAtPosMenuItem.title = "Set thumb at current"
+			} else {
 				thumbAtPosMenuItem.classList.add("disabled");
 				thumbAtPosMenuItem.title = "This is not the current playing video so it cannot be set at the current position."
+				setMoneyShotAtCurrentMenuItem.classList.add("disabled");
+				setMoneyShotAtCurrentMenuItem.title = "This is not the current playing video so it cannot be set at the current position."
 			}
 			var regenerateThumbMenuItem = contextMenu.getElementsByClassName("regenerateThumb")[0];
 			if(mediaItem.managedThumb && !mediaItem.thumb.includes(".lock."))
@@ -1091,6 +1126,7 @@ function loadMedia(mediaList) {
 				regenerateThumbMenuItem.classList.add("disabled");
 				regenerateThumbMenuItem.title = "This thumb file is not modifiable because it is not managed by XTP."
 			}
+			
 		}
 	};
 
@@ -1100,16 +1136,30 @@ function loadMedia(mediaList) {
 		}
 	};
 
+	var mediaSettingsClick = function (mediaItem, contextMenu) {
+		return function () {
+			openMetaDataModal(mediaItem);
+			contextMenu.classList.add("hidden");
+		}
+	};
+
 	var regenThumbClick = function (mediaItem, contextMenu) {
 		return function () {
 			sendUpdateThumb(mediaItem);
-			contextMenu.classList.add("hidden");;
+			contextMenu.classList.add("hidden");
 		}
 	};
 	var regenThumbCurrentPosClick = function (mediaItem, contextMenu) {
 		return function () {
 			sendUpdateThumbAtPos(mediaItem);
-			contextMenu.classList.add("hidden");;
+			contextMenu.classList.add("hidden");
+		}
+	};
+	var setMoneyShotCurrentPosClick = function (mediaItem, contextMenu) {
+		return function () {
+			mediaItem["metaData"]["moneyShotMillis"] = Math.round(videoNode.currentTime * 1000).toString();
+			postMediaItemMetaData(mediaItem["metaData"]);
+			contextMenu.classList.add("hidden");
 		}
 	};
 
@@ -1171,6 +1221,11 @@ function loadMedia(mediaList) {
 		contextMenu.appendChild(contextMenuItem);
 		var contextMenuItem = createContextMenuItem("Set thumb at current", regenThumbCurrentPosClick(obj, contextMenu));
 		contextMenuItem.classList.add("setThumbAtCurrent", "disabled");
+		contextMenu.appendChild(contextMenuItem);
+		var contextMenuItem = createContextMenuItem("Set moneyshot at current", setMoneyShotCurrentPosClick(obj, contextMenu));
+		contextMenuItem.classList.add("setMoneyShotAtCurrent", "disabled");
+		contextMenu.appendChild(contextMenuItem);
+		var contextMenuItem = createContextMenuItem("Settings", mediaSettingsClick(obj, contextMenu));
 		contextMenu.appendChild(contextMenuItem);
 		var contextCancelMenuItem = createContextMenuItem("Cancel", closeContext(contextMenu));
 		contextMenu.appendChild(contextCancelMenuItem);
@@ -1954,6 +2009,45 @@ function closeSettings() {
 	settingsNode.style.visibility = "hidden";
 	settingsNode.style.opacity = 0;
 	document.getElementById("settingsTabs").style.display = "none";
+}
+
+function openMetaDataModal(mediaItem) {
+	selectedMediaItemMetaData = mediaItem["metaData"];
+	document.getElementById("mediaOffset").value = selectedMediaItemMetaData["offset"];
+	document.getElementById("moneyShotMillis").value = selectedMediaItemMetaData["moneyShotMillis"];
+	mediaItemSettingsModalNode.style.visibility = "visible";
+	mediaItemSettingsModalNode.style.opacity = 1;
+}
+function closeMetaDataModal() {
+	mediaItemSettingsModalNode.style.visibility = "hidden";
+	mediaItemSettingsModalNode.style.opacity = 0;
+	document.getElementById("saveMediaItemMetaDataButton").disabled = true;
+}
+function saveMetaData() {
+	selectedMediaItemMetaData["offset"] = parseInt(document.getElementById("mediaOffset").value);
+	selectedMediaItemMetaData["moneyShotMillis"] = parseInt(document.getElementById("moneyShotMillis").value);
+	postMediaItemMetaData(selectedMediaItemMetaData);
+}
+
+function metaDataChange() {
+	document.getElementById("saveMediaItemMetaDataButton").disabled = false;
+}
+
+function addToSelectedMetaData(amount) {
+	var mediaOffsetNode = document.getElementById("mediaOffset");
+	var value = parseInt(mediaOffsetNode.value);
+	value += amount;
+	mediaOffsetNode.value = value;
+	metaDataChange();
+}
+
+function resetMoneyShot() {
+	document.getElementById("moneyShotMillis").value = -1;
+	metaDataChange();
+}
+
+function setMoneyShotFromCurrent() {
+	
 }
 
 function tabClick(tab, tabNumber) {

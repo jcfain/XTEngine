@@ -575,6 +575,10 @@ section>.range-values {
     width: fit-content;
     height: fit-content;
 }
+.modal-content--other {
+    width: fit-content;
+    height: fit-content;
+}
 .modal-header {
     display: flex;
     flex-flow: row;
