@@ -78,6 +78,10 @@ public:
     static void setSelectedInputDevice(DeviceName deviceName);
     static void setSelectedNetworkDevice(NetworkDeviceType value);
     static NetworkDeviceType getSelectedNetworkDevice();
+    static QStringList getCustomTCodeCommands();
+    static void addCustomTCodeCommand(QString command);
+    static void removeCustomTCodeCommand(QString command);
+    static void editCustomTCodeCommand(QString command, QString newCommand);
 
     static void setSerialPort(QString value);
     static void setServerAddress(QString value);
@@ -381,6 +385,7 @@ private:
     static int playerVolume;
     static int offSet;
     static bool _disableTCodeValidation;
+    static QStringList m_customTCodeCommands;
 
     static bool _gamePadEnabled;
     static QMap<QString, QStringList> _gamepadButtonMap;

@@ -244,6 +244,9 @@ void SettingsActionHandler::media_action(QString action)
     } else if(MediaActions::HasOtherAction(action, ActionType::CHANNEL_PROFILE)) {
         TCodeChannelLookup::setSelectedChannelProfile(action);
         emit actionExecuted(action, "Set "+ action);
+    }  else if(MediaActions::HasOtherAction(action, ActionType::TCODE)) {
+        emit tcode_action(action);
+        emit actionExecuted(action, "Execute TCode "+ action);
     } else if(action == actions.ChannelProfileNext || action == actions.ChannelProfilePrevious) {
         auto profiles = TCodeChannelLookup::getChannelProfiles();
         auto currentProfile = TCodeChannelLookup::getSelectedChannelProfile();

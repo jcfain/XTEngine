@@ -232,6 +232,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
     _hashedPass = settingsToLoadFrom->value("userData").toString();
     _hashedWebPass = settingsToLoadFrom->value("userWebData").toString();
+
+    m_customTCodeCommands = settingsToLoadFrom->value("customTCodeCommands").toStringList();
+    for(auto command: m_customTCodeCommands) {
+        MediaActions::AddOtherAction(command, "TCode command: " + command, ActionType::TCODE);
+    }
+
+
     if(!m_firstLoad && currentVersion < 0.258f)
     {
         locker.unlock();
@@ -502,6 +509,8 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("channelPulseAmount", _channelPulseAmount);
         settingsToSaveTo->setValue("channelPulseEnabled", _channelPulseEnabled);
         settingsToSaveTo->setValue("channelPulseFrequency", _channelPulseFrequency);
+
+        settingsToSaveTo->setValue("customTCodeCommands", m_customTCodeCommands);
 
         settingsToSaveTo->sync();
 
@@ -1121,6 +1130,33 @@ void SettingsHandler::setSelectedNetworkDevice(NetworkDeviceType value) {
 }
 NetworkDeviceType SettingsHandler::getSelectedNetworkDevice() {
     return _selectedNetworkDeviceType;
+}
+
+QStringList SettingsHandler::getCustomTCodeCommands()
+{
+    return m_customTCodeCommands;
+}
+
+void SettingsHandler::addCustomTCodeCommand(QString command)
+{
+    if(!m_customTCodeCommands.contains(command)) {
+        m_customTCodeCommands.append(command);
+        settingsChangedEvent(true);
+    }
+}
+
+void SettingsHandler::removeCustomTCodeCommand(QString command)
+{
+    m_customTCodeCommands.removeAll(command);
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::editCustomTCodeCommand(QString command, QString newCommand)
+{
+    if(m_customTCodeCommands.contains(command)) {
+        m_customTCodeCommands.replace(m_customTCodeCommands.indexOf(command), newCommand);
+        settingsChangedEvent(true);
+    }
 }
 
 QString SettingsHandler::getSerialPort()
@@ -2190,6 +2226,7 @@ bool SettingsHandler::m_MFSDiscoveryDisabled;
 int SettingsHandler::playerVolume;
 int SettingsHandler::offSet;
 bool SettingsHandler::_disableTCodeValidation;
+QStringList SettingsHandler::m_customTCodeCommands;
 
 int SettingsHandler::libraryView = LibraryView::Thumb;
 int SettingsHandler::thumbSize = 175;

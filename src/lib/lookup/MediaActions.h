@@ -6,7 +6,8 @@
 #include "XTEngine_global.h"
 enum class ActionType {
     NONE,
-    CHANNEL_PROFILE
+    CHANNEL_PROFILE,
+    TCODE
 };
 
 class XTENGINE_EXPORT MediaActions
@@ -103,7 +104,11 @@ public:
     static bool HasOtherAction(QString action, ActionType type = ActionType::NONE);
     static QMap<QString, QString> GetOtherActions(ActionType type = ActionType::NONE);
     static void AddOtherAction(QString action, QString friendlyName, ActionType type);
+    static void RemoveOtherAction(QString action, ActionType type);
+    static void EditOtherAction(QString action, QString newAction, QString newFriendlyName, ActionType type);
 private:
     static QMap<QString, QString> m_tCodeChannelProfileActions;
+    static QMap<QString, QString> m_tCodeActions;
+    static QMap<QString, QString> m_allOtherActions;
 };
 #endif // MEDIAACTIONS_H
