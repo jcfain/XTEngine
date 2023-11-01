@@ -1158,7 +1158,7 @@ void SettingsHandler::setoffSet(int value)
 int SettingsHandler::getLiveOffSet()
 {
     QMutexLocker locker(&mutex);
-    return _liveOffset;
+    return _liveOffset ? _liveOffset : offSet;
 }
 void SettingsHandler::setLiveOffset(int value)
 {
