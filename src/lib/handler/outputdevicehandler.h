@@ -16,6 +16,7 @@ class XTENGINE_EXPORT OutputDeviceHandler : public QThread
 
 signals:
     void connectionChange(ConnectionChangedSignal status);
+    void commandRecieve(QString command);
 
 public:
     explicit OutputDeviceHandler(QObject *parent = nullptr) :

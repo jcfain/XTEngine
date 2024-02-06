@@ -26,7 +26,7 @@ signals:
     void inputConnectionChange(ConnectionChangedSignal status);
     void outputConnectionChange(ConnectionChangedSignal status);
     void messageRecieved(InputDevicePacket packet);
-    void gamepadAction(QString action);
+    void action(QString action);
     void serialPortFound(QString portFriendlyName, QString portName);
     void gamepadConnectionChange(ConnectionChangedSignal event);
 public slots:

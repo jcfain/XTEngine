@@ -58,11 +58,14 @@ void ConnectionHandler::setOutputDevice(OutputDeviceHandler* device)
 {
     if(!device && _outputDevice) {
         disconnect(_outputDevice, &OutputDeviceHandler::connectionChange, nullptr, nullptr);
+        disconnect(_outputDevice, &OutputDeviceHandler::commandRecieve, nullptr, nullptr);
         _outputDevice->dispose();
     }
     _outputDevice = device;
-    if(_outputDevice)
+    if(_outputDevice) {
         connect(_outputDevice, &OutputDeviceHandler::connectionChange, this, &ConnectionHandler::on_output_connectionChanged, Qt::UniqueConnection);
+        connect(_outputDevice, &OutputDeviceHandler::commandRecieve, this, &ConnectionHandler::action);
+    }
 }
 void ConnectionHandler::setInputDevice(InputDeviceHandler* device)
 {
@@ -182,7 +185,7 @@ void ConnectionHandler::initInputDevice(DeviceName inputDevice)
     {
         connect(_gamepadHandler, &GamepadHandler::connectionChange, this, &ConnectionHandler::on_gamepad_connectionChanged);
         connect(_gamepadHandler, &GamepadHandler::emitTCode, this, &ConnectionHandler::sendTCode);
-        connect(_gamepadHandler, &GamepadHandler::emitAction, this, &ConnectionHandler::gamepadAction);
+        connect(_gamepadHandler, &GamepadHandler::emitAction, this, &ConnectionHandler::action);
         _gamepadHandler->init();
         return;
     }

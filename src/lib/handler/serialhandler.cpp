@@ -231,6 +231,12 @@ void SerialHandler::run()
         {
             _mutex.lock();
             _cond.wait(&_mutex);
+            if(_isConnected && serial.bytesAvailable()) {
+                QByteArray responseData = serial.readAll();
+                while (serial.waitForReadyRead(100))
+                    responseData += serial.readAll();
+                emit commandRecieve(QString::fromUtf8(responseData));
+            }
             if (currentPortName != _portName)
             {
                 LogHandler::Debug("Port name change "+ _portName);

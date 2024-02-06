@@ -96,7 +96,6 @@ void UdpHandler::run()
     _mutex.unlock();
 
     QScopedPointer<QUdpSocket> udpSocketSend(new QUdpSocket(this));
-
     //QScopedPointer<QUdpSocket> udpSocketRecieve(new QUdpSocket(this));
     //if (!udpSocketSend->bind(QHostAddress::Any, 54000))
     //{
@@ -159,11 +158,14 @@ void UdpHandler::run()
             }
         }
 
-
         if (!_stop)
         {
             _mutex.lock();
             _cond.wait(&_mutex);
+            if(_isConnected && udpSocketSend->bytesAvailable()) {
+                QNetworkDatagram datagram = udpSocketSend->receiveDatagram();
+                emit commandRecieve(QString::fromUtf8(datagram.data()));
+            }
             if (currentAddress != _address.address || currentPort != _address.port)
             {
                 currentAddress = _address.address;

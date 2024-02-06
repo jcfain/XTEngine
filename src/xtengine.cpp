@@ -89,7 +89,7 @@ void XTEngine::init()
     }
 
     connect(_connectionHandler, &ConnectionHandler::messageRecieved, _syncHandler, &SyncHandler::searchForFunscript);
-    connect(_connectionHandler, &ConnectionHandler::gamepadAction, _settingsActionHandler, &SettingsActionHandler::media_action);
+    connect(_connectionHandler, &ConnectionHandler::action, _settingsActionHandler, &SettingsActionHandler::media_action);
     connect(_connectionHandler, &ConnectionHandler::inputConnectionChange, this, [this](ConnectionChangedSignal event) {
         auto selectedInputDevice = _connectionHandler->getSelectedInputDevice();
         if(event.type == DeviceType::Input && (!selectedInputDevice || selectedInputDevice->name() == event.deviceName))
