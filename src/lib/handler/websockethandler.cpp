@@ -1,4 +1,5 @@
 #include "websockethandler.h"
+#include "settingshandler.h"
 
 WebSocketHandler::WebSocketHandler(QObject *parent):
     QObject(parent),

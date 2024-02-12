@@ -6,7 +6,6 @@
 #include "QtWebSockets/qwebsocketserver.h"
 #include "QtWebSockets/qwebsocket.h"
 
-#include "settingshandler.h"
 #include "../struct/ConnectionChangedSignal.h"
 
 class WebSocketHandler: public QObject
@@ -25,7 +24,7 @@ signals:
     void saveSingleThumb(QString itemID, qint64 pos);
     void reloadLibrary();
 public:
-    WebSocketHandler(QObject *parent = nullptr);
+    explicit WebSocketHandler(QObject *parent = nullptr);
     ~WebSocketHandler();
     QHostAddress getAddress();
     QUrl getUrl();

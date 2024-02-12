@@ -3,8 +3,8 @@
 
 #include <QObject>
 #include <QFuture>
-#include <QtCompress/qzipwriter.h>
-#include <QtCompress/qzipreader.h>
+// #include <QtCompress/qzipwriter.h>
+// #include <QtCompress/qzipreader.h>
 #include "tcodehandler.h"
 #include "funscripthandler.h"
 #include "lib/lookup/XMedia.h"

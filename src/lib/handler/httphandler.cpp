@@ -1,9 +1,12 @@
 #include "httphandler.h"
 #include <QUuid>
+#include <QNetworkCookie>
 #include "../tool/imagefactory.h"
+#include "settingshandler.h"
+// #include "xtpwebhandler.h"
+// #include "../tool/videoformat.h"
 
-HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent):
-    HttpRequestHandler(parent)
+HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent) : QObject(parent)
 {
     _mediaLibraryHandler = mediaLibraryHandler;
     _webSocketHandler = new WebSocketHandler(this);
@@ -55,44 +58,41 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         sendWebSocketTextMessage("channelProfileChanged", TCodeChannelLookup::getSelectedChannelProfile());
     });
 
-    config.port = SettingsHandler::getHTTPPort();
-    config.requestTimeout = 20;
-    if(LogHandler::getUserDebug())
-        config.verbosity = HttpServerConfig::Verbose::All;
-    config.maxMultipartSize = 512 * 1024 * 1024;
-//    config.errorDocumentMap[HttpStatus::NotFound] = "data/404_2.html";
-//    config.errorDocumentMap[HttpStatus::InternalServerError] = "data/404_2.html";
-//    config.errorDocumentMap[HttpStatus::BadGateway] = "data/404_2.html";
-    _server = new HttpServer(config, this);
+    // config.port = SettingsHandler::getHTTPPort();
+    // config.requestTimeout = 20;
+    // if(LogHandler::getUserDebug())
+    //     config.verbosity = HttpServerConfig::Verbose::All;
+    // config.maxMultipartSize = 512 * 1024 * 1024;
+    _server = new QHttpServer(this);
 
     QString extensions;
     extensions += SettingsHandler::getVideoExtensions().join("|");
     extensions += "|";
     extensions += SettingsHandler::getAudioExtensions().join("|");
-    //router.addRoute("GET", "^/home", this, &HttpHandler::handleHome);
-    router.addRoute("GET", "^/media/(.*\\.(("+extensions+")$))?[.]*$", this, &HttpHandler::handleVideoStream);
-    router.addRoute("GET", "^/media$", this, &HttpHandler::handleVideoList);
-    router.addRoute("GET", "^/thumb/.*$", this, &HttpHandler::handleThumbFile);
-    router.addRoute("GET", "^/funscript/(.*\\.((funscript)$))?[.]*$", this, &HttpHandler::handleFunscriptFile);
-    router.addRoute("GET", "^/deotest$", this, &HttpHandler::handleDeo);
-    router.addRoute("GET", "^/settings$", this, &HttpHandler::handleSettings);
-    router.addRoute("GET", "^/channels$", this, &HttpHandler::handleChannels);
-    router.addRoute("GET", "^/settings/availableSerialPorts$", this, &HttpHandler::handleAvailableSerialPorts);
-    router.addRoute("GET", "^/logout$", this, &HttpHandler::handleLogout);
-    router.addRoute("GET", "^/activeSessions$", this, &HttpHandler::handleActiveSessions);
-    router.addRoute("POST", "^/settings$", this, &HttpHandler::handleSettingsUpdate);
-    router.addRoute("POST", "^/mediaItemMetadata$", this, &HttpHandler::handleMediaItemMetadataUpdate);
-    //router.addRoute("POST", "^/channels$", this, &HttpHandler::handleChannelsUpdate);
-    router.addRoute("POST", "^/xtpweb$", this, &HttpHandler::handleWebTimeUpdate);
-    router.addRoute("POST", "^/heresphere$", this, &HttpHandler::handleHereSphere);
-    router.addRoute("POST", "^/auth$", this, &HttpHandler::handleAuth);
-    router.addRoute("POST", "^/expireSession$", this, &HttpHandler::handleExpireSession);
+    // _server->route("GET", "^/home", this, &HttpHandler::handleHome);
+    _server->route("^/media/(.*\\.(("+extensions+")$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleVideoStream);
+    _server->route("^/media$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleVideoList);
+    _server->route("^/thumb/.*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleThumbFile);
+    _server->route("^/funscript/(.*\\.((funscript)$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleFunscriptFile);
+    _server->route("^/deotest$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleDeo);
+    _server->route("^/settings$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleSettings);
+    _server->route("^/channels$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleChannels);
+    _server->route("^/settings/availableSerialPorts$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleAvailableSerialPorts);
+    _server->route("^/logout$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleLogout);
+    _server->route("^/activeSessions$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleActiveSessions);
+    _server->route("POST", "^/settings$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleSettingsUpdate);
+    _server->route("POST", "^/mediaItemMetadata$", this, &HttpHandler::handleMediaItemMetadataUpdate);
+    // _server->route("POST", "^/channels$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleChannelsUpdate);
+    _server->route("^/xtpweb$", this, &HttpHandler::handleWebTimeUpdate);
+    _server->route("^/heresphere$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleHereSphere);
+    _server->route("^/auth$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleAuth);
+    _server->route("^/expireSession$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleExpireSession);
 
 }
 bool HttpHandler::listen()
 {
-    if(!_server->listen()) {
-        emit error("Error listening on port "+ QString::number(config.port) + ": " + _server->errorString());
+    if(!_server->listen(QHostAddress::Any, SettingsHandler::getHTTPPort())) {
+        emit error("Error listening on port "+ QString::number(SettingsHandler::getHTTPPort()));
         return false;
     }
     return true;
@@ -104,22 +104,93 @@ HttpHandler::~HttpHandler()
 }
 
 
-HttpPromise HttpHandler::handle(HttpDataPtr data)
+QHttpServerResponse HttpHandler::handle(const QHttpServerRequest& request)
 {
-    bool foundRoute;
-    HttpPromise promise = router.route(data, &foundRoute);
-    if (foundRoute)
-        return promise;
-
-    auto path = data->request->uri().path();
-    auto root = SettingsHandler::getHttpServerRoot();
     auto hashedWebPass = SettingsHandler::hashedWebPass();
-    if(!hashedWebPass.isEmpty() && !isAuthenticated(data)) {
-        if(path =="/common-min.js" || path =="/auth-min.js" ||
-            path =="/js-sha3-min.js" ||
-            path == "/styles-min.css"  ||
-            path == "/faviicon.ico" ||
-            path.startsWith("/://images"))
+    QString urlPath = request.url().path();
+    if(!hashedWebPass.isEmpty() && !isAuthenticated(request)) {
+            QString path = urlPath;
+            auto root = SettingsHandler::getHttpServerRoot();
+            auto response = QHttpServerResponse::StatusCode::Ok;
+            QString fileToSend;
+            QString mimeType;
+            if(path =="/common-min.js" || path =="/auth-min.js" ||
+                path =="/js-sha3-min.js" ||
+                path == "/styles-min.css"  ||
+                path == "/faviicon.ico" ||
+                path.startsWith("/://images"))
+            {
+                QString localPath;
+                if(path.startsWith("/:"))
+                {
+                    localPath = path.removeFirst();
+                }
+                else
+                {
+                    localPath = root + path;
+                }
+                if(QFile::exists(localPath))
+                {
+                    mimeType = mimeDatabase.mimeTypeForFile(localPath, QMimeDatabase::MatchExtension).name();
+                    fileToSend = localPath;
+                    response = QHttpServerResponse::StatusCode::Ok;
+                }
+                else
+                    response = QHttpServerResponse::StatusCode::BadRequest;
+            }
+            else if(path == "/")
+            {
+                LogHandler::Debug("Sending root auth-min.html");
+                if(!QFileInfo::exists(root+"/auth-min.html"))
+                {
+                    LogHandler::Debug("file does not exist: "+root+"/auth-min.html");
+                    response = QHttpServerResponse::StatusCode::BadRequest;
+                }
+                else
+                {
+                    fileToSend = root+"/auth-min.html";
+                    mimeType = "text/html";
+                    response = QHttpServerResponse::StatusCode::Ok;
+                }
+            }
+            auto httpResponse = QHttpServerResponse(response);
+            //, mimeType, "", -1, Z_DEFAULT_COMPRESSION)
+            httpResponse.fromFile(fileToSend);
+            return httpResponse;
+    }
+
+        // bool foundRoute = false;
+        // QFuture<QHttpServerResponse> promise = router.route(data, &foundRoute);
+        // if (foundRoute)
+        //     return promise;
+
+        QString path = urlPath;
+        auto root = SettingsHandler::getHttpServerRoot();
+        auto response = QHttpServerResponse::StatusCode::Ok;
+        QString fileToSend;
+        QString mimeType;
+
+        if(path == "/") {
+            LogHandler::Debug("Sending root index-min.html");
+            if(!QFileInfo::exists(root+"/index-min.html"))
+            {
+                LogHandler::Debug("file does not exist: "+root+"/index-min.html");
+                response = QHttpServerResponse::StatusCode::BadRequest;
+            }
+            else
+            {
+                fileToSend = root+"/index-min.html";
+                mimeType = "text/html";
+                response = QHttpServerResponse::StatusCode::Ok;
+            }
+        }
+        else if(path.contains("favicon.ico"))
+        {
+            fileToSend = root+"/favicon.ico";
+            mimeType = "image/x-icon";
+            response = QHttpServerResponse::StatusCode::Ok;
+        }
+        else
         {
             QString localPath;
             if(path.startsWith("/:"))
@@ -132,85 +203,34 @@ HttpPromise HttpHandler::handle(HttpDataPtr data)
             }
             if(QFile::exists(localPath))
             {
-                QString mimeType = mimeDatabase.mimeTypeForFile(localPath, QMimeDatabase::MatchExtension).name();
-                data->response->sendFile(localPath, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
-                data->response->setStatus(HttpStatus::Ok);
+                mimeType = mimeDatabase.mimeTypeForFile(localPath, QMimeDatabase::MatchExtension).name();
+                fileToSend = localPath;
+                response = QHttpServerResponse::StatusCode::Ok;
             }
             else
-                data->response->setStatus(HttpStatus::BadRequest);
+                response = QHttpServerResponse::StatusCode::BadRequest;
         }
-        else if(path == "/")
-        {
-            LogHandler::Debug("Sending root auth-min.html");
-            if(!QFileInfo::exists(root+"/auth-min.html"))
-            {
-                LogHandler::Debug("file does not exist: "+root+"/auth-min.html");
-                data->response->setStatus(HttpStatus::BadRequest);
-            }
-            else
-            {
-                data->response->sendFile(root+"/auth-min.html", "text/html", "", -1, Z_DEFAULT_COMPRESSION);
-                data->response->setStatus(HttpStatus::Ok);
-            }
-        }
-
-    } else if(path == "/") {
-        LogHandler::Debug("Sending root index-min.html");
-        if(!QFileInfo::exists(root+"/index-min.html"))
-        {
-            LogHandler::Debug("file does not exist: "+root+"/index-min.html");
-            data->response->setStatus(HttpStatus::BadRequest);
-        }
-        else
-        {
-            data->response->sendFile(root+"/index-min.html", "text/html", "", -1, Z_DEFAULT_COMPRESSION);
-            data->response->setStatus(HttpStatus::Ok);
-        }
-    }
-    else if(path.contains("favicon.ico"))
-    {
-        data->response->sendFile(root+"/favicon.ico", "image/x-icon", "", -1, Z_DEFAULT_COMPRESSION);
-        data->response->setStatus(HttpStatus::Ok);
-    }
-    else
-    {
-        QString localPath;
-        if(path.startsWith("/:"))
-        {
-            localPath = path.remove(0,1);
-        }
-        else
-        {
-            localPath = root + path;
-        }
-        if(QFile::exists(localPath))
-        {
-            QString mimeType = mimeDatabase.mimeTypeForFile(localPath, QMimeDatabase::MatchExtension).name();
-            data->response->sendFile(localPath, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
-            data->response->setStatus(HttpStatus::Ok);
-        }
-        else
-            data->response->setStatus(HttpStatus::BadRequest);
-    }
-    return HttpPromise::resolve(data);
+        auto httpResponse = QHttpServerResponse(response);
+        //, mimeType, "", -1, Z_DEFAULT_COMPRESSION)
+        httpResponse.fromFile(fileToSend);
+        return httpResponse;
 }
 
-HttpPromise HttpHandler::handleAuth(HttpDataPtr data)
+QHttpServerResponse HttpHandler::handleAuth(const QHttpServerRequest& request)
 {
-    auto body = data->request->body();
+    auto body = request.body();
+    auto response = QHttpServerResponse::StatusCode::Ok;
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(body, &error);
     if (doc.isEmpty())
     {
         LogHandler::Error("XTP Web json response error: "+error.errorString());
         LogHandler::Error("data: "+body);
-        data->response->setStatus(HttpStatus::BadRequest);
-        return HttpPromise::resolve(data);
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::BadRequest);
     }
     else
     {
         if(SettingsHandler::hashedWebPass() == doc["hashedPass"].toString()) {
-//            QJsonObject root;
             QString sessionID = QUuid::createUuid().toString(QUuid::StringFormat::WithoutBraces);
 
             if(!m_sessionPolice.isActive()) {
@@ -236,28 +256,29 @@ HttpPromise HttpHandler::handleAuth(HttpDataPtr data)
 //            root["sessionID"] = sessionID;
             QDateTime dateTime;
             QDateTime createDate = QDateTime::currentDateTime();
-            HttpCookie cookie("sessionID", sessionID);
+            QNetworkCookie cookie("sessionID", sessionID.toUtf8());
             if(!doc["remember"].toBool(false))
-                cookie.expiration = createDate.addDays(1);
-            cookie.path = "/";
-            QString lastSessionID = data->request->cookie("sessionID");
+                cookie.setExpirationDate(createDate.addDays(1));
+            cookie.setPath("/");
+            QString lastSessionID = request.request->cookie("sessionID");
             if(!lastSessionID.isEmpty())
                 m_authenticated.remove(lastSessionID);
-            data->response->setCookie(cookie);
-            data->response->setStatus(HttpStatus::Ok);
-            data->response->compressBody();
+            request.response->setCookie(cookie);
+            request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
+            request.response->compressBody();
             m_authenticated.insert(sessionID, createDate);
         } else {
-            data->response->setStatus(HttpStatus::Unauthorized);
+            response = QHttpServerResponse::StatusCode::Unauthorized;
         }
     }
-    return HttpPromise::resolve(data);
+    auto httpResponse = QHttpServerResponse(response);
+    return httpResponse;
 }
 
-HttpPromise HttpHandler::handleActiveSessions(HttpDataPtr data)
+QFuture<QHttpServerResponse> HttpHandler::handleActiveSessions(const QHttpServerRequest& request)
 {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
+    if(!isAuthenticated(request)) {
+        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
     QJsonArray activeSessions;
@@ -267,68 +288,68 @@ HttpPromise HttpHandler::handleActiveSessions(HttpDataPtr data)
         session["id"] = sessionID;
         session["lastAccessed"] = m_authenticated.value(sessionID).toString();
         session["expire"] = m_authenticated.value(sessionID).addSecs(m_sessionTimeout).toString();
-        session["current"] = sessionID == data->request->cookie("sessionID");
+        session["current"] = sessionID == request.request->cookie("sessionID");
         activeSessions.append(session);
     }
-    data->response->setStatus(HttpStatus::Ok, QJsonDocument(activeSessions));
-    data->response->compressBody();
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok, QJsonDocument(activeSessions));
+    request.response->compressBody();
     return HttpPromise::resolve(data);
 }
 
-HttpPromise HttpHandler::handleExpireSession(HttpDataPtr data)
+QFuture<QHttpServerResponse> HttpHandler::handleExpireSession(const QHttpServerRequest& request)
 {
-    if(data->request->uriQuery().hasQueryItem("sessionID")) {
+    if(request.request->uriQuery().hasQueryItem("sessionID")) {
         LogHandler::Debug("Auth from query.");
-        QString sessionID = data->request->uriQuery().queryItemValue("sessionID");
+        QString sessionID = request.request->uriQuery().queryItemValue("sessionID");
         if(m_authenticated.contains(sessionID))
             m_authenticated.remove(sessionID);
         else {
-            data->response->setStatus(HttpStatus::BadRequest);
+            request.response->setStatus(QHttpServerResponse::StatusCode::BadRequest);
             return HttpPromise::resolve(data);
         }
     }
     else {
-        data->response->setStatus(HttpStatus::BadRequest);
+        request.response->setStatus(QHttpServerResponse::StatusCode::BadRequest);
         return HttpPromise::resolve(data);
     }
-    data->response->setStatus(HttpStatus::Ok);
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
     return HttpPromise::resolve(data);
 }
 
-HttpPromise HttpHandler::handleLogout(HttpDataPtr data)
+QFuture<QHttpServerResponse> HttpHandler::handleLogout(const QHttpServerRequest& request)
 {
-    QString sessionID = data->request->cookie("sessionID");
+    QString sessionID = request.request->cookie("sessionID");
     m_authenticated.remove(sessionID);
-    data->response->setStatus(HttpStatus::Ok);
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
     return HttpPromise::resolve(data);
 }
 
-HttpPromise HttpHandler::handleWebTimeUpdate(HttpDataPtr data)
+QFuture<QHttpServerResponse> HttpHandler::handleWebTimeUpdate(const QHttpServerRequest& request)
 {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
+    if(!isAuthenticated(request)) {
+        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
-    auto body = data->request->body();
+    auto body = request.request->body();
     LogHandler::Debug("HTTP time sync update: "+QString(body));
     emit xtpWebPacketRecieve(body);
-    data->response->setStatus(HttpStatus::Ok);
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
     return HttpPromise::resolve(data);
 }
-HttpPromise HttpHandler::handleAvailableSerialPorts(HttpDataPtr data) {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
+QFuture<QHttpServerResponse> HttpHandler::handleAvailableSerialPorts(const QHttpServerRequest& request) {
+    if(!isAuthenticated(request)) {
+        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
     QJsonArray root;
     //root = Sett
-    data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
-    data->response->compressBody();
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok, QJsonDocument(root));
+    request.response->compressBody();
     return HttpPromise::resolve(data);
 }
-HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
+QFuture<QHttpServerResponse> HttpHandler::handleSettings(const QHttpServerRequest& request) {
+    if(!isAuthenticated(request)) {
+        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
 
@@ -364,25 +385,25 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     root["connection"] = connectionSettingsJson;
     root["hasLaunchPass"] = !SettingsHandler::GetHashedPass().isEmpty();
 
-    data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
-    data->response->compressBody();
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok, QJsonDocument(root));
+    request.response->compressBody();
     return HttpPromise::resolve(data);
 }
 
-HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
+QFuture<QHttpServerResponse> HttpHandler::handleSettingsUpdate(const QHttpServerRequest& request)
 {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
+    if(!isAuthenticated(request)) {
+        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
 
-    auto body = data->request->body();
+    auto body = request.request->body();
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(body, &error);
     if (doc.isEmpty())
     {
         LogHandler::Error("data: "+body);
-        data->response->setStatus(HttpStatus::BadRequest);
+        request.response->setStatus(QHttpServerResponse::StatusCode::BadRequest);
         return HttpPromise::resolve(data);
     }
     else
@@ -454,25 +475,25 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
         }
         SettingsHandler::Save();
     }
-    data->response->setStatus(HttpStatus::Ok);
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
     return HttpPromise::resolve(data);
 }
 
-HttpPromise HttpHandler::handleMediaItemMetadataUpdate(HttpDataPtr data)
+QFuture<QHttpServerResponse> HttpHandler::handleMediaItemMetadataUpdate(const QHttpServerRequest& request)
 {
 
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
+    if(!isAuthenticated(request)) {
+        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
 
-    auto body = data->request->body();
+    auto body = request.request->body();
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(body, &error);
     if (doc.isEmpty())
     {
         LogHandler::Error("data: "+body);
-        data->response->setStatus(HttpStatus::BadRequest);
+        request.response->setStatus(QHttpServerResponse::StatusCode::BadRequest);
         return HttpPromise::resolve(data);
     }
     else
@@ -481,13 +502,13 @@ HttpPromise HttpHandler::handleMediaItemMetadataUpdate(HttpDataPtr data)
         SettingsHandler::updateLibraryListItemMetaData(metaData);
         SettingsHandler::setLiveOffset(metaData.offset);
     }
-    data->response->setStatus(HttpStatus::Ok);
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
     return HttpPromise::resolve(data);
 }
 
-HttpPromise HttpHandler::handleChannels(HttpDataPtr data) {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
+QFuture<QHttpServerResponse> HttpHandler::handleChannels(const QHttpServerRequest& request) {
+    if(!isAuthenticated(request)) {
+        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
     QJsonObject root;
@@ -520,26 +541,26 @@ HttpPromise HttpHandler::handleChannels(HttpDataPtr data) {
         allChannelProfileNames.append(profile);
     }
     root["allChannelProfileNames"] = allChannelProfileNames;
-    data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
-    data->response->compressBody();
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok, QJsonDocument(root));
+    request.response->compressBody();
     return HttpPromise::resolve(data);
 }
 
-//HttpPromise HttpHandler::handleChannelsUpdate(HttpDataPtr data)
+//QFuture<QHttpServerResponse> HttpHandler::handleChannelsUpdate(const QHttpServerRequest& request)
 //{
-//    if(!isAuthenticated(data)) {
-//        data->response->setStatus(HttpStatus::Unauthorized);
+//    if(!isAuthenticated(request)) {
+//        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
 //        return HttpPromise::resolve(data);
 //    }
 
-//    auto body = data->request->body();
+//    auto body = request.request->body();
 //    QJsonParseError error;
 //    QJsonDocument doc = QJsonDocument::fromJson(body, &error);
 //    if (doc.isEmpty())
 //    {
 //        LogHandler::Error("XTP Web json response error (handleChannelsUpdate): "+error.errorString());
 //        LogHandler::Error("data: "+body);
-//        data->response->setStatus(HttpStatus::BadRequest);
+//        request.response->setStatus(QHttpServerResponse::StatusCode::BadRequest);
 //        return HttpPromise::resolve(data);
 //    }
 //    else
@@ -569,46 +590,46 @@ HttpPromise HttpHandler::handleChannels(HttpDataPtr data) {
 //            }
 //        }
 //        SettingsHandler::Save();
-//        data->response->setStatus(HttpStatus::Ok);
+//        request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
 //        return HttpPromise::resolve(data);
 //    }
 //}
-//HttpPromise HttpHandler::handleDeviceConnected(HttpDataPtr data)
+//QFuture<QHttpServerResponse> HttpHandler::handleDeviceConnected(const QHttpServerRequest& request)
 //{
 //    QJsonObject root;
 ////    root["status"] = _tcodeDeviceStatus.status;
 ////    root["deviceType"] = _tcodeDeviceStatus.deviceType;
 ////    root["message"] = _tcodeDeviceStatus.message;
-//    data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
+//    request.response->setStatus(QHttpServerResponse::StatusCode::Ok, QJsonDocument(root));
 //    return HttpPromise::resolve(data);
 //}
-//HttpPromise HttpHandler::handleConnectDevice(HttpDataPtr data)
+//QFuture<QHttpServerResponse> HttpHandler::handleConnectDevice(const QHttpServerRequest& request)
 //{
 //    emit connectTCodeDevice();
-//    data->response->setStatus(HttpStatus::Ok);
+//    request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
 //    return HttpPromise::resolve(data);
 //}
 
-//HttpPromise HttpHandler::handleTCodeIn(HttpDataPtr data)
+//QFuture<QHttpServerResponse> HttpHandler::handleTCodeIn(const QHttpServerRequest& request)
 //{
-//    data->response->setStatus(HttpStatus::Ok);
-//    QString tcodeData(data->request->body());
+//    request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
+//    QString tcodeData(request.request->body());
 //    if(!tcodeData.isEmpty())
 //        emit tcode(tcodeData);
 //    else
-//        data->response->setStatus(HttpStatus::BadRequest);
+//        request.response->setStatus(QHttpServerResponse::StatusCode::BadRequest);
 //    return HttpPromise::resolve(data);
 //}
 
-HttpPromise HttpHandler::handleVideoList(HttpDataPtr data)
+QFuture<QHttpServerResponse> HttpHandler::handleVideoList(const QHttpServerRequest& request)
 {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
+    if(!isAuthenticated(request)) {
+        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
 
     QJsonArray media;
-    QString hostAddress = "http://" + data->request->headerDefault("Host", "") + "/";
+    QString hostAddress = "http://" + request.request->headerDefault("Host", "") + "/";
     foreach(auto item, _mediaLibraryHandler->getLibraryCache())
     {
         QJsonObject object;
@@ -616,8 +637,8 @@ HttpPromise HttpHandler::handleVideoList(HttpDataPtr data)
             continue;
         media.append(createMediaObject(item, hostAddress));
     }
-    data->response->setStatus(HttpStatus::Ok, QJsonDocument(media));
-    data->response->compressBody();
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok, QJsonDocument(media));
+    request.response->compressBody();
     return HttpPromise::resolve(data);
 }
 
@@ -669,14 +690,14 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
 }
 
 
-HttpPromise HttpHandler::handleHereSphere(HttpDataPtr data)
+QFuture<QHttpServerResponse> HttpHandler::handleHereSphere(const QHttpServerRequest& request)
 {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
+    if(!isAuthenticated(request)) {
+        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
 
-    QString hostAddress = "http://" + data->request->headerDefault("Host", "") + "/";
+    QString hostAddress = "http://" + request.request->headerDefault("Host", "") + "/";
     QJsonObject root;
     QJsonObject banner;
     root["access"] = 1;
@@ -697,8 +718,8 @@ HttpPromise HttpHandler::handleHereSphere(HttpDataPtr data)
     }
 
     root["library"] = list;
-    data->response->header("HereSphere-JSON-Version", new QString("1"));
-    data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
+    request.response->header("HereSphere-JSON-Version", new QString("1"));
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok, QJsonDocument(root));
     return HttpPromise::resolve(data);
 }
 QJsonObject HttpHandler::createHeresphereObject(LibraryListItem27 item, QString hostAddress)
@@ -745,14 +766,14 @@ QJsonObject HttpHandler::createSelectedChannels() {
     }
     return availableChannelsJson;
 }
-HttpPromise HttpHandler::handleDeo(HttpDataPtr data)
+QFuture<QHttpServerResponse> HttpHandler::handleDeo(const QHttpServerRequest& request)
 {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
+    if(!isAuthenticated(request)) {
+        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
 
-    QString hostAddress = "http://" + data->request->headerDefault("Host", "") + "/";
+    QString hostAddress = "http://" + request.request->headerDefault("Host", "") + "/";
     QJsonObject root;
     QJsonArray scenes;
     QJsonObject library;
@@ -769,7 +790,7 @@ HttpPromise HttpHandler::handleDeo(HttpDataPtr data)
     library["libraryData"] = list;
     scenes.append(library);
     root["scenes"] = scenes;
-    data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok, QJsonDocument(root));
     return HttpPromise::resolve(data);
 }
 QJsonObject HttpHandler::createDeoObject(LibraryListItem27 item, QString hostAddress)
@@ -802,45 +823,44 @@ QJsonObject HttpHandler::createDeoObject(LibraryListItem27 item, QString hostAdd
     return root;
 }
 
-HttpPromise HttpHandler::handleFunscriptFile(HttpDataPtr data)
+QHttpServerResponse HttpHandler::handleFunscriptFile(const QHttpServerRequest& request)
 {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
-        return HttpPromise::resolve(data);
+    if(!isAuthenticated(request)) {
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::Unauthorized);
     }
+    auto status = QHttpServerResponse::StatusCode::Ok
 
-    auto match = data->state["match"].value<QRegularExpressionMatch>();
+    auto match = request.url().state["match"].value<QRegularExpressionMatch>();
     QString parameter = match.captured();
 
     QString funscriptName = parameter.remove("/funscript/");
     if(funscriptName.contains("../"))
     {
-        data->response->setStatus(HttpStatus::Forbidden);
-        return HttpPromise::resolve(data);
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::Forbidden);
     }
 //    QString filePath = SettingsHandler::getSelectedLibrary() + funscriptName;
 //    if(!QFile(filePath).exists())
 //    {
-//        data->response->setStatus(HttpStatus::NotFound);
+//        request.response->setStatus(QHttpServerResponse::StatusCode::NotFound);
 //        return HttpPromise::resolve(data);
 //    }
-//    data->response->sendFile(filePath, "text/json", "", -1, Z_DEFAULT_COMPRESSION);
-//    data->response->setStatus(HttpStatus::Ok);
-    return HttpPromise::resolve(data);
+//    request.response->sendFile(filePath, "text/json", "", -1, Z_DEFAULT_COMPRESSION);
+//    request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
+    return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok, funscriptName.constData());
 }
-HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
+QFuture<QHttpServerResponse> HttpHandler::handleThumbFile(const QHttpServerRequest& request)
 {
-    if(!isAuthenticated(data)) {
-        data->response->setStatus(HttpStatus::Unauthorized);
+    if(!isAuthenticated(request)) {
+        request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
 
-    auto match = data->state["match"].value<QRegularExpressionMatch>();
+    auto match = request.state["match"].value<QRegularExpressionMatch>();
     QString parameter = match.captured();
     QString thumbName = parameter.remove("/thumb/");
     if(thumbName.contains("../"))
     {
-        data->response->setStatus(HttpStatus::Forbidden);
+        request.response->setStatus(QHttpServerResponse::StatusCode::Forbidden);
         return HttpPromise::resolve(data);
     }
 
@@ -854,7 +874,7 @@ HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
         }
         else
         {
-            data->response->setStatus(HttpStatus::NotFound);
+            request.response->setStatus(QHttpServerResponse::StatusCode::NotFound);
             return HttpPromise::resolve(data);
         }
     }
@@ -887,42 +907,42 @@ HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
         auto newObj = new QBuffer(&bytes);
         //LogHandler::Debug("Image resized: "+QString::number(bytes.length()));
         newObj->open(QIODevice::ReadOnly);
-        data->response->sendFile(newObj, "image/webp", "", -1, Z_DEFAULT_COMPRESSION);
+        request.response->sendFile(newObj, "image/webp", "", -1, Z_DEFAULT_COMPRESSION);
         buffer.close();
         newObj->close();
         delete newObj;
     }
     else {
         QString mimeType = mimeDatabase.mimeTypeForFile(thumbToSend, QMimeDatabase::MatchExtension).name();
-        data->response->sendFile(thumbToSend, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
+        request.response->sendFile(thumbToSend, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
     }
-    data->response->setStatus(HttpStatus::Ok);
+    request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
     //buffer->deleteLater();
     return HttpPromise::resolve(data);
 }
 
-HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
+QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerRequest& request)
 {
 //    if(!SettingsHandler::hashedWebPass().isEmpty()) {
-//        LogHandler::Debug("Has session query: "+ data->request->uriStr());
-//        if(data->request->uriQuery().hasQueryItem("sessionID")) {//Workaround for external streaming where the cookie isnt passed to the app.
+//        LogHandler::Debug("Has session query: "+ request.request->uriStr());
+//        if(request.request->uriQuery().hasQueryItem("sessionID")) {//Workaround for external streaming where the cookie isnt passed to the app.
 //            LogHandler::Debug("Auth from query.");
-//            QString sessionID = data->request->uriQuery().queryItemValue("sessionID");
+//            QString sessionID = request.request->uriQuery().queryItemValue("sessionID");
 //            if(sessionID.isEmpty() || !m_authenticated.contains(sessionID)) {
-//                data->response->setStatus(HttpStatus::Unauthorized);
+//                request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
 //                LogHandler::Debug("Auth from query denied.");
 //                return HttpPromise::resolve(data);
 //            }
-//        } else if(!isAuthenticated(data)) {
-//            data->response->setStatus(HttpStatus::Unauthorized);
+//        } else if(!isAuthenticated(request)) {
+//            request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
 //            LogHandler::Debug("Auth from cookie denied.");
 //            return HttpPromise::resolve(data);
 //        }
 //    }
 
-    return QPromise<HttpDataPtr> {[&](
-        const QtPromise::QPromiseResolve<HttpDataPtr> &resolve,
-        const QtPromise::QPromiseReject<HttpDataPtr> &reject)
+    return QPromise<const QHttpServerRequest&> {[&](
+        const QtPromise::QPromiseResolve<const QHttpServerRequest&> &resolve,
+        const QtPromise::QPromiseReject<const QHttpServerRequest&> &reject)
         {
 
             QtConcurrent::run([=]()
@@ -932,13 +952,13 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
                     QElapsedTimer timer;
                     LogHandler::Debug("Enter Video stream");
                     timer.start();
-                    auto match = data->state["match"].value<QRegularExpressionMatch>();
+                    auto match = request.state["match"].value<QRegularExpressionMatch>();
                     QString parameter = match.captured();
                     QString apiStr("/media/");
                     QString mediaName = parameter.replace(parameter.indexOf(apiStr), apiStr.size(), "");
                     if(mediaName.contains("../"))
                     {
-                        data->response->setStatus(HttpStatus::Forbidden);
+                        request.response->setStatus(QHttpServerResponse::StatusCode::Forbidden);
                         resolve(data);
                         return;
                     }
@@ -946,7 +966,7 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
                     LibraryListItem27* libraryItem = _mediaLibraryHandler->findItemByPartialMediaPath(mediaName);
                     if(!libraryItem) {
                         LogHandler::Error(QString("Media item not found (%1)").arg(mediaName));
-                        data->response->setStatus(HttpStatus::NotFound);
+                        request.response->setStatus(QHttpServerResponse::StatusCode::NotFound);
                         resolve(data);
                         return;
                     }
@@ -956,14 +976,14 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
                     if (!file.open(QIODevice::ReadOnly))
                     {
                         LogHandler::Error(QString("Unable to open file to be sent (%1): %2").arg(filename).arg(file.errorString()));
-                        data->response->setStatus(HttpStatus::Forbidden);
+                        request.response->setStatus(QHttpServerResponse::StatusCode::Forbidden);
                         resolve(data);
                         return;
                     }
                     qint64 bytesAvailable = file.bytesAvailable();
 
                     QString range;
-                    data->request->header<QString>("range", &range);
+                    request.request->header<QString>("range", &range);
                     LogHandler::Debug("Requested range: "+range);
                     QStringList rangeKeyValue = range.split('=');
                     qint64 startByte = 0;
@@ -990,7 +1010,7 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
                     if (startByte >= bytesAvailable){
                         LogHandler::Debug("RequestRangeNotSatisfiable: startByte: "+ QString::number(startByte));
                         LogHandler::Debug("RequestRangeNotSatisfiable: bytesAvailable: "+ QString::number(bytesAvailable));
-                        data->response->setStatus(HttpStatus::RequestRangeNotSatisfiable);
+                        request.response->setStatus(QHttpServerResponse::StatusCode::RequestRangeNotSatisfiable);
                         file.close();
                         resolve(data);
                         return;
@@ -1012,24 +1032,24 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
                     {
                         LogHandler::Error(QString("Unable to open buffer to be sent (%1): %2").arg(filename).arg(file.errorString()));
 
-                        data->response->setStatus(HttpStatus::Forbidden);
+                        request.response->setStatus(QHttpServerResponse::StatusCode::Forbidden);
                         delete byteArray;
                         file.close();
                         resolve(data);
                         return;
                     }
 
-                    data->response->setStatus(HttpStatus::PartialContent);
+                    request.response->setStatus(QHttpServerResponse::StatusCode::PartialContent);
                     qint64 contentLength = (endByte - startByte) + 1;
                     //LogHandler::Debug("Start bytes: " + QString::number(startByte));
                     //LogHandler::Debug("End bytes: " + QString::number(endByte));
                     //LogHandler::Debug("Content length: " + QString::number(contentLength));
-                    data->response->setHeader("Accept-Ranges", "bytes");
-                    data->response->setHeader("Content-Range", requestBytes);
-                    data->response->setHeader("Content-Length", contentLength);
+                    request.response->setHeader("Accept-Ranges", "bytes");
+                    request.response->setHeader("Content-Range", requestBytes);
+                    request.response->setHeader("Content-Length", contentLength);
                     //LogHandler::Debug("Video stream send chunk: "+ QString::number(timer.elapsed()));
                     QString mimeType = mimeDatabase.mimeTypeForFile(filename, QMimeDatabase::MatchExtension).name();
-                    data->response->sendFile(&buffer, mimeType);
+                    request.response->sendFile(&buffer, mimeType);
                     LogHandler::Debug("Video stream send chunk finish: "+ QString::number(timer.elapsed()));
                     delete byteArray;
                     file.close();
@@ -1071,13 +1091,13 @@ void HttpHandler::onLibraryLoadingStatusChange(QString message) {
         _webSocketHandler->sendCommand("mediaLoadingStatus", message);
 }
 
-bool HttpHandler::isAuthenticated(HttpDataPtr data)
+bool HttpHandler::isAuthenticated(const QHttpServerRequest& request)
 {
     if(SettingsHandler::hashedWebPass().isEmpty()) {
         return true;
     }
     LogHandler::Debug("Auth from cookie.");
-    QString sessionID = data->request->cookie("sessionID");
+    QString sessionID = request.request->cookie("sessionID");
     if(sessionID.isEmpty())
         return false;
     bool isAuthed = m_authenticated.contains(sessionID);

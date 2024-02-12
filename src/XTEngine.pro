@@ -1,5 +1,5 @@
 QT -= gui
-QT += core serialport network gamepad texttospeech compress websockets multimedia
+QT += core serialport network texttospeech websockets multimedia httpserver gamepadlegacy
 
 TARGET = xtengine
 TEMPLATE = lib
@@ -122,15 +122,17 @@ unix:!mac {
 CONFIG += shared
     #QMAKE_PREFIX_SHLIB = so
     #QMAKE_RPATHDIR += ../lib
-    INCLUDEPATH += $$PWD/../../HttpServer/src
-    DEPENDPATH += $$PWD/../../HttpServer/src
+    # INCLUDEPATH += $$PWD/../../HttpServer/src
+    # DEPENDPATH += $$PWD/../../HttpServer/src
     CONFIG(debug, debug|release) {
         DESTDIR = $$shell_path($$OUT_PWD/debug)
-        LIBS += -L$$PWD/../../HttpServer/src/build/debug -lhttpServer
+        # LIBS += -L$$PWD/../../HttpServer/src/build/debug -lhttpServer
+        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
     }
     else:CONFIG(release, debug|release): {
         DESTDIR = $$shell_path($$OUT_PWD/release)
-        LIBS += -L$$PWD/../../HttpServer/src/build/release -lhttpServer
+        # LIBS += -L$$PWD/../../HttpServer/src/build/release -lhttpServer
+        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
     }
 }
 
@@ -154,15 +156,15 @@ unix:mac {
 CONFIG += shared
     #QMAKE_PREFIX_SHLIB = so
     #QMAKE_RPATHDIR += ../lib
-    INCLUDEPATH += $$PWD/../../HttpServer/src
-    DEPENDPATH += $$PWD/../../HttpServer/src
+    # INCLUDEPATH += $$PWD/../../HttpServer/src
+    # DEPENDPATH += $$PWD/../../HttpServer/src
     CONFIG(debug, debug|release) {
         DESTDIR = $$shell_path($$OUT_PWD/debug)
-        LIBS += -L$$PWD/../../HttpServer/src/build/debug -lhttpServer
+        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
     }
     else:CONFIG(release, debug|release): {
         DESTDIR = $$shell_path($$OUT_PWD/release)
-        LIBS += -L$$PWD/../../HttpServer/src/build/release -lhttpServer
+        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
     }
     RPATHDIR *= @loader_path/../Frameworks @executable_path/../Frameworks
     QMAKE_LFLAGS_SONAME = -W1,-install_name,@rpath,
@@ -175,19 +177,19 @@ CONFIG += shared
 win32{
     build_pass: CONFIG(debug, debug|release) {
         DESTDIR = $$shell_path($$OUT_PWD/debug)
-        LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug -lhttpServer
-        INCLUDEPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug
+        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
+        # INCLUDEPATH += $$PWD/../../qtgamepadlegacy/src/gamepad
     }
     else:win32:CONFIG(release, debug|release): {
         DESTDIR = $$shell_path($$OUT_PWD/release)
-        LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release -lhttpServer
-        INCLUDEPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release
+        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
+        # INCLUDEPATH += $$PWD/../../qtgamepadlegacy/src/gamepad
     }
-    INCLUDEPATH += $$PWD/../../HttpServer/src
-    DEPENDPATH += $$PWD/../../HttpServer/src
+    # INCLUDEPATH += $$PWD/../../HttpServer/src
+    # DEPENDPATH += $$PWD/../../HttpServer/src
 }
 
-include($$PWD/../../HttpServer/3rdparty/qtpromise/qtpromise.pri)
+# include($$PWD/../../HttpServer/3rdparty/qtpromise/qtpromise.pri)
 #mkspecs_features.files    = $$PWD/qss/default.qss
 #mkspecs_features.path     = $$OUT_PWD/qss
 #INSTALLS                  += mkspecs_features

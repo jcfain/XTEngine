@@ -1,7 +1,7 @@
 #ifndef HTTPHANDLER_H
 #define HTTPHANDLER_H
 
-#include <QtPromise>
+#include <QHttpServer>
 #include <QTimer>
 #include <QBuffer>
 #include <QObject>
@@ -11,18 +11,12 @@
 #include <QJsonValue>
 #include <QtConcurrent/QtConcurrent>
 
-#include "settingshandler.h"
 #include "websockethandler.h"
-#include "xtpwebhandler.h"
-#include "httpServer/httpServer.h"
-#include "httpServer/httpRequestHandler.h"
-#include "httpServer/httpRequestRouter.h"
 #include "medialibraryhandler.h"
 #include "../struct/ConnectionChangedSignal.h"
-#include "../tool/videoformat.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT HttpHandler : public HttpRequestHandler
+class XTENGINE_EXPORT HttpHandler : QObject
 {
     Q_OBJECT
 signals:
@@ -42,36 +36,34 @@ public:
     HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent = nullptr);
     ~HttpHandler();
     bool listen();
-    HttpPromise handle(HttpDataPtr data);
-    HttpPromise handleAuth(HttpDataPtr data);
-    HttpPromise handleActiveSessions(HttpDataPtr data);
-    HttpPromise handleExpireSession(HttpDataPtr data);
-    HttpPromise handleLogout(HttpDataPtr data);
-    HttpPromise handleVideoStream(HttpDataPtr data);
-    HttpPromise handleVideoList(HttpDataPtr data);
-    HttpPromise handleThumbFile(HttpDataPtr data);
-    HttpPromise handleFunscriptFile(HttpDataPtr data);
-    HttpPromise handleSettings(HttpDataPtr data);
-    HttpPromise handleChannels(HttpDataPtr data);
-    HttpPromise handleAvailableSerialPorts(HttpDataPtr data);
-    HttpPromise handleSettingsUpdate(HttpDataPtr data);
-    HttpPromise handleMediaItemMetadataUpdate(HttpDataPtr data);
+    // QHttpServerResponse handle(const QHttpServerRequest& request);
+    // QHttpServerResponse handleAuth(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleActiveSessions(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleExpireSession(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleLogout(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleVideoStream(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleVideoList(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleThumbFile(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleFunscriptFile(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleSettings(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleChannels(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleAvailableSerialPorts(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleSettingsUpdate(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleMediaItemMetadataUpdate(const QHttpServerRequest& request);
 
-    //HttpPromise handleChannelsUpdate(HttpDataPtr data);
-    HttpPromise handleDeviceConnected(HttpDataPtr data);
-    HttpPromise handleConnectDevice(HttpDataPtr data);
-    HttpPromise handleTCodeIn(HttpDataPtr data);
-    HttpPromise handleDeo(HttpDataPtr data);
-    HttpPromise handleHereSphere(HttpDataPtr data);
-    HttpPromise handleWebTimeUpdate(HttpDataPtr data);
+    // //HttpPromise handleChannelsUpdate(HttpDataPtr data);
+    // QFuture<QHttpServerResponse> handleDeviceConnected(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleConnectDevice(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleTCodeIn(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleDeo(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleHereSphere(const QHttpServerRequest& request);
+    // QFuture<QHttpServerResponse> handleWebTimeUpdate(const QHttpServerRequest& request);
 
 
     void sendWebSocketTextMessage(QString command, QString message = nullptr);
 
 private:
-    HttpServerConfig config;
-    HttpRequestRouter router;
-    HttpServer* _server = 0;
+    QHttpServer* _server = 0;
     QMimeDatabase mimeDatabase;
     WebSocketHandler* _webSocketHandler = 0;
     MediaLibraryHandler* _mediaLibraryHandler = 0;
@@ -91,7 +83,7 @@ private:
     void onSetLibraryLoaded();
     void onSetLibraryLoading();
     void onLibraryLoadingStatusChange(QString message);
-    bool isAuthenticated(HttpDataPtr data);
+    bool isAuthenticated(const QHttpServerRequest& request);
 
 };
 

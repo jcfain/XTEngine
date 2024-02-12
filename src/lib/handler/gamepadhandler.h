@@ -1,7 +1,7 @@
 #ifndef GAMEPADHANDLER_H
 #define GAMEPADHANDLER_H
 
-#include <QGamepad>
+#include "QGamepad"
 #include "../tool/tcodefactory.h"
 #include "../lookup/MediaActions.h"
 #include "../tool/xtimer.h"
