@@ -1214,7 +1214,7 @@ function loadMedia(mediaList) {
 			contextMenu.classList.add("media-context-menu-heresphere");
 		
 		contextMenu.style.fontSize = fontSize;
-		contextMenu.style.width = widthInt * 0.85 + "px";
+		//contextMenu.style.width = widthInt * 0.85 + "px";
 
 		var contextMenuItem = createContextMenuItem("Regenerate thumb", regenThumbClick(obj, contextMenu));
 		contextMenuItem.classList.add("regenerateThumb", "disabled");

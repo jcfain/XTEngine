@@ -107,10 +107,13 @@ body {
 
 input:disabled,
 textarea:disabled,
+button:disabled,
 select:disabled {
     border: 0;
     box-shadow: none;
+    color: #888;
     background-color: #ccc;
+    pointer-events: none;
 }
 
 .formElement {
@@ -167,6 +170,12 @@ select:disabled {
 .formElement--column input[type='checkbox'] {
     width: max-content;
     margin: auto;
+}
+.form-buttons {  
+    margin-top: 8px;
+}
+.form-buttons button {
+    margin-right: 8px;
 }
 /* Doesnt look right in Deo */
 .styled-checkbox {
@@ -264,7 +273,8 @@ input:hover {
 }
 
 .media-item {
-    overflow: hidden;
+    position:relative;
+    overflow: visible;
     border-radius: 25px;
     margin: 5px;
     content-visibility: auto;
@@ -308,8 +318,10 @@ input:hover {
 }
 
 .media-context-menu {
+    display: flex;
+    flex-flow: column;
     text-align: center;
-    position: fixed;
+    position: absolute;
     width: 140px;
     background-color: white;
     color: black;
@@ -317,6 +329,10 @@ input:hover {
     z-index: 10;
     border-radius: 10px;
     box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px cornflowerblue;
+    left:5%;
+    top:5%;
+    height: 50%;
+    width:90%;
 }
 .media-context-menu-heresphere {
     position: relative;
@@ -327,7 +343,7 @@ input:hover {
     align-items: center;
     justify-content: center;
     font-size: smaller;
-    height: 20px;
+    flex-grow: 1;
 }
 .media-context-menu-item:not(:last-child) {
     border-bottom: lightgray solid;
@@ -730,6 +746,15 @@ section>.range-values {
     width: 100%;
     max-width: 50px;
 }
+/* .ms {
+    width: 100%;
+}
+.ms::after {
+    content: 'ms';
+    position: relative;
+    right: 16%;
+    color: black;
+} */
 
 
 @keyframes loading-spinner {
