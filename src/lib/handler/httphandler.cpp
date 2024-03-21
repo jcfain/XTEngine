@@ -408,7 +408,6 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
                 (AxisType)(value["type"].toInt()),//AxisType Type;
                 value["trackName"].toString(),//QString TrackName;
                 value["multiplierEnabled"].toBool(),//bool MultiplierEnabled;
-                float(value["multiplierValue"].toDouble()),//float MultiplierValue;
                 value["damperEnabled"].toBool(),//bool DamperEnabled;
                 float(value["damperValue"].toDouble()),//float DamperValue;
                 value["funscriptInverted"].toBool(),//bool FunscriptInverted;

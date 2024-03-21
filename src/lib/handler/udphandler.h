@@ -32,17 +32,19 @@ public:
 
 private slots:
     void onSendHandShake();
+    void onReadyRead();
 
 private:
     void run() override;
     void readData();
     void onSocketStateChange (QAbstractSocket::SocketState state);
 
+    QUdpSocket* m_udpSocket = 0;
     QFuture<void> _initFuture;
     NetworkAddress _address;
+    QHostAddress m_hostAddress;
     QWaitCondition _cond;
     QMutex _mutex;
-    QString _tcode;
     int _waitTimeout = 0;
     bool _stop = false;
     bool _isConnected = false;

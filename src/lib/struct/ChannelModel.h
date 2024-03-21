@@ -97,7 +97,6 @@ struct ChannelModel
         item.Type = Type;
         item.TrackName = TrackName;
         item.MultiplierEnabled = MultiplierEnabled;
-        item.MultiplierValue = MultiplierValue;
         item.DamperEnabled = DamperEnabled;
         item.DamperValue = DamperValue;
         item.FunscriptInverted = Inverted;

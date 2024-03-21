@@ -133,8 +133,6 @@ public:
     static void setPlayerVolume(int value);
     static void setoffSet(int value);
 
-    static float getMultiplierValue(QString channel);
-    static void setMultiplierValue(QString channel, float value);
     static bool getMultiplierChecked(QString channel);
     static void setMultiplierChecked(QString channel, bool value);
 

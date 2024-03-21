@@ -1,14 +1,16 @@
 #include "udphandler.h"
 #include <QtConcurrent/QtConcurrent>
+#include <QNetworkInterface>
 
 UdpHandler::UdpHandler(QObject *parent) :
-    NetworkDevice(parent)
+    NetworkDevice(parent),
+    m_udpSocket(new QUdpSocket(this))
 {
     qRegisterMetaType<ConnectionChangedSignal>();
+    connect(this, &UdpHandler::sendHandShake, this, &UdpHandler::onSendHandShake);
+    connect(m_udpSocket, &QUdpSocket::readyRead, this, &UdpHandler::onReadyRead);
 }
-UdpHandler::~UdpHandler()
-{
-}
+UdpHandler::~UdpHandler() {}
 
 DeviceName UdpHandler::name() {
     return DeviceName::Network;
@@ -17,9 +19,9 @@ DeviceName UdpHandler::name() {
 void UdpHandler::init(NetworkAddress address, int waitTimeout)
 {
     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connecting, "Connecting..."});
-    connect(this, &UdpHandler::sendHandShake, this, &UdpHandler::onSendHandShake);
     //_mutex.lock();
     _stop = false;
+    _isConnected = false;
     _isSelected = true;
     _waitTimeout = waitTimeout;
     _address = address;
@@ -29,31 +31,39 @@ void UdpHandler::init(NetworkAddress address, int waitTimeout)
         _stop = true;
         _initFuture.cancel();
         _initFuture.waitForFinished();
+        _stop = false;
     }
     _initFuture = QtConcurrent::run([this]() {
-        int timeouttracker = 0;
-//        QMutex mutex;
-        QWaitCondition cond;
-        QElapsedTimer mSecTimer;
-        qint64 time1 = 0;
-        qint64 time2 = 0;
-        mSecTimer.start();
-        while(!_isConnected && !_stop && timeouttracker <= 3)
+        m_hostAddress = QHostAddress(_address.address);
+        if (QAbstractSocket::IPv4Protocol == m_hostAddress.protocol() || QAbstractSocket::IPv6Protocol == m_hostAddress.protocol())
         {
-            if (time2 - time1 >= _waitTimeout + 1000 || timeouttracker == 0)
-            {
-                time1 = time2;
-                emit sendHandShake();
-                ++timeouttracker;
-            }
-            time2 = (round(mSecTimer.nsecsElapsed() / 1000000));
-//            mutex.lock();
-//            cond.wait(&mutex, 1);
-//            mutex.unlock();
+            LogHandler::Debug("IP address passed in: "+_address.address);
         }
-        if (!_stop && timeouttracker > 3)
+        else
         {
-            _stop = true;
+            LogHandler::Debug("Hostname passed in: "+_address.address);
+            QHostInfo info = QHostInfo::fromName(_address.address);
+            if(info.error() != QHostInfo::NoError) {
+                emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, info.errorString()});
+                return;
+            }
+            if (!info.addresses().isEmpty()) {
+                m_hostAddress = QHostAddress(info.addresses().constFirst());
+            } else {
+                emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "No IP for: " + _address.address + " found"});
+                return;
+            }
+        }
+        uint8_t timeouttracker = 0;
+        const uint8_t maxTries = 3;
+        while(!_isConnected && !_stop && timeouttracker <= maxTries)
+        {
+            emit sendHandShake();
+            timeouttracker++;
+            QThread::msleep(_waitTimeout);
+        }
+        if (!_stop && timeouttracker > maxTries)
+        {
             _isConnected = false;
             emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "Timed out"});
         }
@@ -64,126 +74,189 @@ void UdpHandler::onSendHandShake() {
     sendTCode("D1");
 }
 
+void UdpHandler::onReadyRead()
+{
+    QString recieved;
+    while (m_udpSocket->hasPendingDatagrams()) {
+        QNetworkDatagram datagram = m_udpSocket->receiveDatagram();
+        recieved += QString::fromUtf8(datagram.data());
+    }
+    if(recieved.isEmpty()) {
+        return;
+    }
+    LogHandler::Debug("Recieved UDP: "+recieved);
+    if(_isConnected) {
+        emit commandRecieve(recieved);
+    } else {
+        QString version = "V?";
+        if(!SettingsHandler::getDisableTCodeValidation())
+        {
+            bool validated = false;
+            if(recieved.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v2)))
+            {
+                version = "V2";
+                validated = true;
+            }
+            else if (recieved.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v3)))
+            {
+                version = "V3";
+                validated = true;
+            }
+            if (validated)
+            {
+                emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: "+version});
+                _mutex.lock();
+                _isConnected = true;
+                _mutex.unlock();
+            }
+            else
+            {
+                emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "No " + TCodeChannelLookup::getSelectedTCodeVersionName()});
+            }
+        }
+        else
+        {
+            emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: "+version});
+            _mutex.lock();
+            _isConnected = true;
+            _mutex.unlock();
+        }
+    }
+}
+
+
 void UdpHandler::sendTCode(const QString &tcode)
 {
     const QMutexLocker locker(&_mutex);
-    _tcode = tcode + "\n";
+    auto formattedTcode = tcode + "\n";
     LogHandler::Debug("Sending TCode UDP: "+tcode);
-    if (!isRunning())
-        start();
-    else
-        _cond.wakeOne();
+
+    QByteArray currentRequest;
+    currentRequest.append(formattedTcode.toUtf8());
+    m_udpSocket->writeDatagram(currentRequest, m_hostAddress, _address.port);
+    // if (!isRunning())
+    //     start();
+    // else
+    //     _cond.wakeOne();
 }
 
 void UdpHandler::run()
 {
-    bool currentAddressChanged = false;
+    // bool currentAddressChanged = false;
 
-    _mutex.lock();
-    _tcode = "";
-    QByteArray currentRequest;
-    currentRequest.append(_tcode.toUtf8());
+    // _mutex.lock();
+    // //_tcode = "";
+    // QByteArray currentRequest;
+    // currentRequest.append(_tcode.toUtf8());
 
-    QString currentAddress;
-    int currentPort = 0;
-    QHostAddress addressObj;
-    addressObj.setAddress(_address.address);
-    currentAddress = _address.address;
-    currentPort = _address.port;
-    _isConnected = false;
-    currentAddressChanged = true;
+    // QString currentAddress;
+    // int currentPort = 0;
+    // QHostAddress addressObj;
+    // addressObj.setAddress(_address.address);
+    // currentAddress = _address.address;
+    // currentPort = _address.port;
+    // _isConnected = false;
+    // currentAddressChanged = true;
 
-    _mutex.unlock();
+    // _mutex.unlock();
+    // //QScopedPointer<QUdpSocket> udpSocketRecieve(new QUdpSocket(this));
+    // //if (!udpSocketSend->bind(QHostAddress::Any, 54000))
+    // //{
+    //     //emit connectionChange({DeviceName::Network, ConnectionStatus::Error, "Error opening handshake"});
+    // //}
+    // while (!_stop)
+    // {
+    //     if (currentAddressChanged)
+    //     {
 
-    QScopedPointer<QUdpSocket> udpSocketSend(new QUdpSocket(this));
-    //QScopedPointer<QUdpSocket> udpSocketRecieve(new QUdpSocket(this));
-    //if (!udpSocketSend->bind(QHostAddress::Any, 54000))
-    //{
-        //emit connectionChange({DeviceName::Network, ConnectionStatus::Error, "Error opening handshake"});
-    //}
-    while (!_stop)
-    {
-        if (currentAddressChanged)
-        {
-            udpSocketSend->connectToHost(currentAddress, currentPort);
-            if(!udpSocketSend->waitForConnected(_waitTimeout))
-            {
-                emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "Can't connect"});
-            }
-        }
-        if(udpSocketSend->isWritable())
-        {
-            udpSocketSend->write(currentRequest);
-            if (!_isConnected)
-            {
-                QString version = "V?";
-                if(!SettingsHandler::getDisableTCodeValidation())
-                {
-                    if(udpSocketSend->waitForReadyRead(_waitTimeout))
-                    {
-                        QNetworkDatagram datagram = udpSocketSend->receiveDatagram();
+    //         //udpSocket->bind(QHostAddress::LocalHost, currentPort);
+    //         udpSocket->connectToHost(currentAddress, currentPort);
+    //         connect(udpSocket, &QUdpSocket::readyRead, this, &UdpHandler::onReadyRead);
+    //         if(!udpSocket->waitForConnected(_waitTimeout))
+    //         {
+    //             emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "Can't connect"});
+    //         }
+    //     }
+    //     if(udpSocket->isWritable())
+    //     {
+    //         udpSocket->write(currentRequest);
+    //         // if (!_isConnected)
+    //         // {
+    //         //     QString version = "V?";
+    //         //     if(!SettingsHandler::getDisableTCodeValidation())
+    //         //     {
+    //         //         if(udpSocket->waitForReadyRead(_waitTimeout))
+    //         //         {
+    //         //             QString recieved;
+    //         //             while (udpSocket->hasPendingDatagrams()) {
+    //         //                 QNetworkDatagram datagram = udpSocket->receiveDatagram();
+    //         //                 recieved += QString::fromUtf8(datagram.data());
+    //         //             }
 
-                        QString response = QString(datagram.data());
-                        bool validated = false;
-                        if(response.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v2)))
-                        {
-                            version = "V2";
-                            validated = true;
-                        }
-                        else if (response.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v3)))
-                        {
-                            version = "V3";
-                            validated = true;
-                        }
-                        if (validated)
-                        {
-                            emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: "+version});
-                            _mutex.lock();
-                            _isConnected = true;
-                            _mutex.unlock();
-                        }
-                        else
-                        {
-                            emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "No " + TCodeChannelLookup::getSelectedTCodeVersionName()});
-                        }
-                    }
-                }
-                else
-                {
-                    emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: "+version});
-                    _mutex.lock();
-                    _isConnected = true;
-                    _mutex.unlock();
-                }
-            }
-        }
+    //         //             bool validated = false;
+    //         //             if(recieved.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v2)))
+    //         //             {
+    //         //                 version = "V2";
+    //         //                 validated = true;
+    //         //             }
+    //         //             else if (recieved.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v3)))
+    //         //             {
+    //         //                 version = "V3";
+    //         //                 validated = true;
+    //         //             }
+    //         //             if (validated)
+    //         //             {
+    //         //                 emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: "+version});
+    //         //                 _mutex.lock();
+    //         //                 _isConnected = true;
+    //         //                 _mutex.unlock();
+    //         //             }
+    //         //             else
+    //         //             {
+    //         //                 emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "No " + TCodeChannelLookup::getSelectedTCodeVersionName()});
+    //         //             }
+    //         //         }
+    //         //     }
+    //         //     else
+    //         //     {
+    //         //         emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: "+version});
+    //         //         _mutex.lock();
+    //         //         _isConnected = true;
+    //         //         _mutex.unlock();
+    //         //     }
+    //         // }
+    //         // else if(_isConnected && udpSocket->bytesAvailable()) {
+    //         //     QString recieved;
+    //         //     while (udpSocket->hasPendingDatagrams()) {
+    //         //         QNetworkDatagram datagram = udpSocket->receiveDatagram();
+    //         //         recieved += QString::fromUtf8(datagram.data());
+    //         //     }
+    //         //     emit commandRecieve(recieved);
+    //         // }
+    //     }
 
-        if (!_stop)
-        {
-            _mutex.lock();
-            _cond.wait(&_mutex);
-            if(_isConnected && udpSocketSend->bytesAvailable()) {
-                QNetworkDatagram datagram = udpSocketSend->receiveDatagram();
-                emit commandRecieve(QString::fromUtf8(datagram.data()));
-            }
-            if (currentAddress != _address.address || currentPort != _address.port)
-            {
-                currentAddress = _address.address;
-                addressObj.setAddress(_address.address);
-                currentPort = _address.port;
-                currentAddressChanged = true;
-                _isConnected = false;
-            }
-            else
-            {
-                currentAddressChanged = false;
-            }
+    //     if (!_stop)
+    //     {
+    //         _mutex.lock();
+    //         _cond.wait(&_mutex);
+    //         if (currentAddress != _address.address || currentPort != _address.port)
+    //         {
+    //             currentAddress = _address.address;
+    //             addressObj.setAddress(_address.address);
+    //             currentPort = _address.port;
+    //             currentAddressChanged = true;
+    //             _isConnected = false;
+    //         }
+    //         else
+    //         {
+    //             currentAddressChanged = false;
+    //         }
 
-            currentRequest.clear();
-            currentRequest.append(_tcode.toUtf8());
-            _mutex.unlock();
-        }
-    }
+    //         currentRequest.clear();
+    //         currentRequest.append(_tcode.toUtf8());
+    //         _mutex.unlock();
+    //     }
+    // }
 }
 
 void UdpHandler::dispose()
@@ -192,14 +265,14 @@ void UdpHandler::dispose()
     _mutex.lock();
     _isConnected = false;
     _stop = true;
-    _mutex.unlock();
-    _cond.wakeOne();
+     _mutex.unlock();
+    // _cond.wakeOne();
     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Disconnected, "Disconnected"});
-    if(isRunning())
-    {
-        quit();
-        wait();
-    }
+    // if(isRunning())
+    // {
+    //     quit();
+    //     wait();
+    // }
 }
 
 bool UdpHandler::isConnected()

@@ -1274,22 +1274,6 @@ void SettingsHandler::setChannelUserMid(QString channel, int value)
     }
 }
 
-float SettingsHandler::getMultiplierValue(QString channel)
-{
-    QMutexLocker locker(&mutex);
-    if(TCodeChannelLookup::hasChannel(channel))
-        return TCodeChannelLookup::getChannel(channel)->MultiplierValue;
-    return 0.0;
-}
-void SettingsHandler::setMultiplierValue(QString channel, float value)
-{
-    QMutexLocker locker(&mutex);
-    if(TCodeChannelLookup::hasChannel(channel)) {
-        TCodeChannelLookup::getChannel(channel)->MultiplierValue = value;
-        settingsChangedEvent(true);
-    }
-}
-
 bool SettingsHandler::getMultiplierChecked(QString channel)
 {
     QMutexLocker locker(&mutex);

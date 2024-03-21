@@ -17,6 +17,7 @@ QMap<QString, QString> MediaActions::GetOtherActions(ActionType type) {
             return m_tCodeActions;
     }
 }
+
 void MediaActions::AddOtherAction(QString action, QString friendlyName, ActionType type) {
     switch(type) {
         case ActionType::NONE:

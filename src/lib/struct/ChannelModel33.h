@@ -39,7 +39,6 @@ struct ChannelModel33
     AxisType Type;
     QString TrackName;
     bool MultiplierEnabled;
-    float MultiplierValue;
     bool DamperEnabled;
     float DamperValue;
     bool FunscriptInverted;
@@ -118,7 +117,6 @@ struct ChannelModel33
         newItem.Type = (AxisType)obj["type"].toInt();
         newItem.TrackName = obj["trackName"].toString();
         newItem.MultiplierEnabled = obj["multiplierEnabled"].toBool();
-        newItem.MultiplierValue = obj["multiplierValue"].toDouble();
         newItem.DamperEnabled = obj["damperEnabled"].toBool();
         newItem.DamperValue = obj["damperValue"].toDouble();
         newItem.FunscriptInverted = obj["funscriptInverted"].toBool();
@@ -149,7 +147,6 @@ struct ChannelModel33
         obj["type"] = (int)item.Type;
         obj["trackName"] = item.TrackName;
         obj["multiplierEnabled"] = item.MultiplierEnabled;
-        obj["multiplierValue"] = item.MultiplierValue;
         obj["damperEnabled"] = item.DamperEnabled;
         obj["damperValue"] = item.DamperValue;
         obj["funscriptInverted"] = item.FunscriptInverted;

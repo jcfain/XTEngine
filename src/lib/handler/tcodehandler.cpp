@@ -83,9 +83,9 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
                 continue;
             if (SettingsHandler::getFunscriptLoaded(axis))
                 continue;
-            float multiplierValue = SettingsHandler::getMultiplierValue(axis);
-            if (multiplierValue == 0.0)
-                continue;
+            // float multiplierValue = SettingsHandler::getMultiplierValue(axis);
+            // if (multiplierValue == 0.0)
+            //     continue;
             if((channel->AxisName == TCodeChannelLookup::Suck() || channel->AxisName == TCodeChannelLookup::SuckPosition()) && (tcode.contains(TCodeChannelLookup::Suck()) || tcode.contains(TCodeChannelLookup::SuckPosition())))
                 continue;
             if (SettingsHandler::getMultiplierChecked(axis))
@@ -115,13 +115,7 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
                     }
                     else
                     {
-                        //LogHandler::Debug("Multiplier: "+ axis);
-                        float calculatedMultiplier = multiplierValue;
-                        int tcodeRandSineAngle = XMath::randSine(XMath::mapRange(currentAction->pos, 0, 100, 0, 180));
-                        int tcodeRandSineValue = XMath::mapRange(tcodeRandSineAngle, 0, 180, 0, 100);
-                        if(multiplierValue < 1.0 && multiplierValue > -1.0 && tcodeRandSineValue < channel->UserMid)
-                            calculatedMultiplier = 1 + multiplierValue;
-                        value = XMath::constrain(tcodeRandSineValue * calculatedMultiplier, 0, 100);
+                        value = XMath::rand(0,100);
                     }
                     //lowMin + (highMin-lowMin)*level,lowMax + (highMax-lowMax)*level
                     //LogHandler::Debug("randSine: "+ QString::number(value));

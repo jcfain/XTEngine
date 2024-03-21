@@ -15,6 +15,7 @@ void TCodeChannelLookup::profileChanged() {
         m_debounceTimer.start(100);
     }
 }
+
 void TCodeChannelLookup::load(QSettings* settingsToLoadFrom, bool firstLoad) {
     if (firstLoad) {
         setSelectedTCodeVersion(TCodeVersion::v3);
@@ -463,7 +464,6 @@ ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, Q
              type,
              mfsTrackName,
              false, //MultiplierEnabled
-             2.50, //MultiplierValue
              false, //DamperEnabled
              1.0, //DamperValue
              false, //FunscriptInverted
