@@ -23,27 +23,21 @@ public:
     void init(NetworkAddress _address, int waitTimeout = 5000) override;
     void dispose() override;
     void sendTCode(const QString &tcode) override;
-    bool isConnected() override;
-    DeviceName name() override;
 
 private slots:
-    void sendHandShake();
     void onConnected();
     void onClosed();
+
 private:
-    void run() override;
     QWebSocket m_webSocket;
 //    QWebSocketServer *m_pWebSocketServer;
 //    QList<QWebSocket *> m_clients;
     NetworkAddress _address;
-    QWaitCondition _cond;
-    QMutex _mutex;
-    QString _tcode;
-    int _waitTimeout = 0;
-    bool _stop = false;
-    bool _isConnected = false;
+    // QWaitCondition _cond;
+    // QMutex _mutex;
+    // QString _tcode;
+    // int _waitTimeout = 0;
     bool _isListening = false;
-    bool _isSelected = false;
 
     void onSocketStateChange (QAbstractSocket::SocketState state);
     void onTextMessageReceived(QString message);

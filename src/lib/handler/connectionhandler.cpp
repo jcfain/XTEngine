@@ -125,7 +125,7 @@ void ConnectionHandler::stopOutputDevice()
 
 void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
 {
-    if (_outputDevice && _outputDevice->isRunning())
+    if (_outputDevice && _outputDevice->isConnected())
     {
         _outputDevice->dispose();
         disconnect(_outputDevice, &OutputDeviceHandler::connectionChange, nullptr, nullptr);
@@ -142,9 +142,7 @@ void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
     else if(outputDevice == DeviceName::Serial)
     {
         setOutputDevice(_serialHandler);
-        _initFuture = QtConcurrent::run([this]() {
-            _serialHandler->init(SettingsHandler::getSerialPort());
-        });
+        _serialHandler->init(SettingsHandler::getSerialPort());
     }
     else if (outputDevice == DeviceName::Network)
     {
