@@ -509,6 +509,16 @@ input:hover {
     border: 0;
 }
 
+.min-max-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+}
+
+.min-max-button {
+    max-width: 50px;
+}
+
 section.range-label {}
 
 section>.range-values {

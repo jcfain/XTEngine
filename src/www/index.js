@@ -75,6 +75,7 @@ var selectedVoiceIndex = 0;
 var speechPitch = 5;
 var speechRate = 5;
 var speechVolume = 0.5;
+var rangeChangeAmount = 100;
 
 var shufflePlayMode = false;
 var shufflePlayModePlayedIndexed = {};
@@ -2182,8 +2183,58 @@ async function setupSliders() {
 			}, 1000);
 		}.bind(input2Node, input1Node, input2Node, rangeValuesNode, channel);
 
+		var minIncrementButton = document.createElement("button");
+		minIncrementButton.classList.add("min-max-button");
+		minIncrementButton.innerText = "+";
+		minIncrementButton.onclick = function (input1Node, input2Node) {
+			const minValue = parseInt(input1Node.value);
+			const maxValue = parseInt(input2Node.value);
+			const newValue = minValue + rangeChangeAmount;
+			input1Node.value = newValue <= maxValue ? newValue : maxValue - rangeChangeAmount;
+			input1Node.dispatchEvent(new Event('input', { bubbles: true }));
+		}.bind(input1Node, input1Node, input2Node, channel);
+
+		var minDecrementButton = document.createElement("button");
+		minDecrementButton.classList.add("min-max-button");
+		minDecrementButton.innerText = "-";
+		minDecrementButton.onclick = function (input1Node, channel) {
+			const minValue = parseInt(input1Node.value);
+			const newValue = minValue - rangeChangeAmount;
+			input1Node.value = newValue >= remoteUserSettings.availableChannels[channel.channel].min ? newValue : remoteUserSettings.availableChannels[channel.channel].min;
+			input1Node.dispatchEvent(new Event('input', { bubbles: true }));
+		}.bind(input1Node, input1Node, channel);
+
+		var maxIncrementButton = document.createElement("button");
+		maxIncrementButton.classList.add("min-max-button");
+		maxIncrementButton.innerText = "+";
+		maxIncrementButton.onclick = function (input2Node, channel) {
+			const maxValue = parseInt(input2Node.value);
+			const newValue = maxValue + rangeChangeAmount;
+			input2Node.value = newValue <= remoteUserSettings.availableChannels[channel.channel].max ? newValue : remoteUserSettings.availableChannels[channel.channel].max;
+			input2Node.dispatchEvent(new Event('input', { bubbles: true }));
+		}.bind(input2Node, input2Node, channel);
+
+		var maxDecrementButton = document.createElement("button");
+		maxDecrementButton.classList.add("min-max-button");
+		maxDecrementButton.innerText = "-";
+		maxDecrementButton.onclick = function (input1Node, input2Node) {
+			const minValue = parseInt(input1Node.value);
+			const maxValue = parseInt(input2Node.value);
+			const newValue = maxValue - rangeChangeAmount;
+			input2Node.value = newValue >= minValue ? newValue : minValue + rangeChangeAmount;
+			input2Node.dispatchEvent(new Event('input', { bubbles: true }));
+		}.bind(input1Node, input1Node, input2Node, channel);
+
+		var minmaxButtonSpan = document.createElement("span");
+		minmaxButtonSpan.classList.add("min-max-buttons");
+		minmaxButtonSpan.appendChild(minDecrementButton);
+		minmaxButtonSpan.appendChild(minIncrementButton);
+		minmaxButtonSpan.appendChild(maxDecrementButton);
+		minmaxButtonSpan.appendChild(maxIncrementButton);
+
 		sectionNode.appendChild(input1Node);
 		sectionNode.appendChild(input2Node);
+		sectionNode.appendChild(minmaxButtonSpan);
 
 		var slide1 = parseInt(input1Node.value);
 		var slide2 = parseInt(input2Node.value);
