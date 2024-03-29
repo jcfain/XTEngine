@@ -144,6 +144,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     {
         _keyboardKeyMap.insert(key, keyboardKeyMap[key].toStringList());
     }
+    QVariantMap tcodeCommandMap = settingsToLoadFrom->value("tcodeCommandMap").toMap();
+    m_tcodeCommandMap.clear();
+    foreach(auto key, tcodeCommandMap.keys())
+    {
+        m_tcodeCommandMap.insert(key, tcodeCommandMap[key].toStringList());
+    }
     _gamepadSpeed = settingsToLoadFrom->value("gamepadSpeed").toInt();
     _gamepadSpeed = _gamepadSpeed == 0 ? 1000 : _gamepadSpeed;
     _gamepadSpeedStep = settingsToLoadFrom->value("gamepadSpeedStep").toInt();
@@ -455,6 +461,13 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         }
         settingsToSaveTo->setValue("keyboardKeyMap", keyboardKeyMap);
 
+        QVariantMap tcodeCommandMap;
+        foreach(auto key, m_tcodeCommandMap.keys())
+        {
+            tcodeCommandMap.insert(key, QVariant::fromValue(m_tcodeCommandMap[key]));
+        }
+        settingsToSaveTo->setValue("tcodeCommandMap", tcodeCommandMap);
+
         settingsToSaveTo->setValue("gamepadSpeed", _gamepadSpeed);
         settingsToSaveTo->setValue("gamepadSpeedStep", _gamepadSpeedStep);
         settingsToSaveTo->setValue("xRangeStep", _xRangeStep);
@@ -605,6 +618,7 @@ void SettingsHandler::SetMapDefaults()
     SaveChannelMap();
     SetGamepadMapDefaults();
     SetKeyboardKeyDefaults();
+    SetTCodeCommandDefaults();
 }
 void SettingsHandler::SaveChannelMap(QSettings* settingsToSaveTo)
 {
@@ -659,6 +673,18 @@ void SettingsHandler::SetKeyboardKeyDefaults() {
     settings->setValue("keyboardKeyMap", keyboardKeyMap);
     settingsChangedEvent(true);
 }
+
+void SettingsHandler::SetTCodeCommandDefaults() {
+    setupTCodeCommandMap();
+    QVariantMap tcodeCommandMap;
+    foreach(auto key, m_tcodeCommandMap.keys())
+    {
+        tcodeCommandMap.insert(key, QVariant::fromValue(m_tcodeCommandMap[key]));
+    }
+    settings->setValue("tcodeCommandMap", tcodeCommandMap);
+    settingsChangedEvent(true);
+}
+
 
 void SettingsHandler::MigrateTo23()
 {
@@ -1666,6 +1692,52 @@ QString SettingsHandler::getKeyboardKey(int key, int keyModifiers) {
     return QKeySequence(keyModifiers+key).toString(QKeySequence::NativeText);
 }
 
+QMap<QString, QStringList> SettingsHandler::getTCodeCommandMap()
+{
+    return m_tcodeCommandMap;
+}
+
+QMap<QString, QStringList> SettingsHandler::getTCodeCommandMapInverse()
+{
+    m_inverseTcodeCommandMap.clear();
+    foreach (auto key, m_tcodeCommandMap.keys())
+    {
+        QStringList actions = m_tcodeCommandMap.value(key);
+        foreach(auto action, actions) {
+            QStringList existingKeys;
+            if(m_inverseTcodeCommandMap.contains(action)) {
+                existingKeys = m_inverseTcodeCommandMap.value(action);
+            }
+            existingKeys << key;
+            m_inverseTcodeCommandMap.insert(action, existingKeys);
+        }
+    }
+    return m_inverseTcodeCommandMap;
+}
+
+void SettingsHandler::setTCodeCommandMapKey(QString key, QString action)
+{
+    QMutexLocker locker(&mutex);
+    if(!m_tcodeCommandMap[key].contains(action))
+    {
+        m_tcodeCommandMap[key].append(action);
+    }
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::removeTCodeCommandMapKey(QString key, QString action)
+{
+    QMutexLocker locker(&mutex);
+    m_tcodeCommandMap[key].removeAll(action);
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::clearTCodeCommandMapKey(QString key)
+{
+    m_tcodeCommandMap[key].clear();
+    settingsChangedEvent(true);
+}
+
 void SettingsHandler::setSelectedFunscriptLibrary(QString value)
 {
     QMutexLocker locker(&mutex);
@@ -1965,6 +2037,15 @@ void SettingsHandler::setupKeyboardKeyMap() {
     };
 }
 
+void SettingsHandler::setupTCodeCommandMap() {
+    _keyboardKeyMap = {
+        { "#edge", QStringList(mediaActions.TogglePauseAllDeviceActions) },
+        { "#ok", QStringList(mediaActions.TogglePause) },
+        { "#left", QStringList(mediaActions.AltFunscriptNext) },
+        { "#right", QStringList(mediaActions.SkipToMoneyShot) }
+    };
+}
+
 void SettingsHandler::setFunscriptLoaded(QString key, bool loaded)
 {
     if (_funscriptLoaded.contains(key))
@@ -2222,6 +2303,8 @@ QMap<QString, QStringList> SettingsHandler::_gamepadButtonMap;
 QMap<QString, QStringList> SettingsHandler::_inverseGamePadMap;
 QMap<QString, QStringList> SettingsHandler::_keyboardKeyMap;
 QMap<QString, QStringList> SettingsHandler::_inverseKeyboardMap;
+QMap<QString, QStringList> SettingsHandler::m_tcodeCommandMap;
+QMap<QString, QStringList> SettingsHandler::m_inverseTcodeCommandMap;
 int SettingsHandler::_gamepadSpeed;
 int SettingsHandler::_gamepadSpeedStep;
 int SettingsHandler::_liveGamepadSpeed;

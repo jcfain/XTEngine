@@ -181,6 +181,12 @@ public:
     static void clearKeyboardMapKey(QString key);
     static QString getKeyboardKey(int key, int modifiers = 0);
 
+    static QMap<QString, QStringList> getTCodeCommandMap();
+    static QMap<QString, QStringList> getTCodeCommandMapInverse();
+    static void setTCodeCommandMapKey(QString key, QString action);
+    static void removeTCodeCommandMapKey(QString key, QString action);
+    static void clearTCodeCommandMapKey(QString key);
+
     static void setAxis(QString axis, ChannelModel33 channel);
     static void addAxis(ChannelModel33 channel);
     static void deleteAxis(QString axis);
@@ -270,6 +276,7 @@ public:
 
     static void SetGamepadMapDefaults();
     static void SetKeyboardKeyDefaults();
+    static void SetTCodeCommandDefaults();
     static void setSaveOnExit(bool enabled);
     static bool getFirstLoad();
     static void Load(QSettings* settingsToLoadFrom = 0);
@@ -336,6 +343,7 @@ private:
     static void SetMapDefaults();
     static void setupGamepadButtonMap();
     static void setupKeyboardKeyMap();
+    static void setupTCodeCommandMap();
     static void MigrateTo23();
     static void MigrateTo25();
     static void MigrateTo252();
@@ -390,6 +398,8 @@ private:
     static QMap<QString, QStringList> _inverseGamePadMap;
     static QMap<QString, QStringList> _keyboardKeyMap;
     static QMap<QString, QStringList> _inverseKeyboardMap;
+    static QMap<QString, QStringList> m_tcodeCommandMap;
+    static QMap<QString, QStringList> m_inverseTcodeCommandMap;
     static int _gamepadSpeed;
     static int _gamepadSpeedStep;
     static int _liveGamepadSpeed;
