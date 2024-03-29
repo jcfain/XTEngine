@@ -720,15 +720,38 @@ function updateSettingsUI() {
 }
 
 function updateChannelsUI() {
-	var profileNamesSelect = document.getElementById("profileNamesSelect");
-	removeAllChildNodes(profileNamesSelect);
+	// //Dropdown
+	// var profileNamesSelect = document.getElementById("profileNamesSelect");
+	// removeAllChildNodes(profileNamesSelect);
+	// remoteUserSettings["allChannelProfileNames"].forEach(x => {
+	// 	var option = document.createElement("option");
+	// 	option.value = x;
+	// 	option.innerText = x;
+	// 	profileNamesSelect.appendChild(option);
+	// });
+	// profileNamesSelect.value = remoteUserSettings.selectedChannelProfile;
+	// Radios
+	var profileNamesDiv = document.getElementById("profileNamesDiv");
+	removeAllChildNodes(profileNamesDiv);
 	remoteUserSettings["allChannelProfileNames"].forEach(x => {
-		var option = document.createElement("option");
-		option.value = x;
-		option.innerText = x;
-		profileNamesSelect.appendChild(option);
+		var radio = document.createElement("input");
+		var label = document.createElement("label");
+		radio.type = "radio";
+		radio.id = x;
+		radio.name = "motionProfileGroup";
+		radio.value = x;
+		radio.onclick = function() {
+			setSelectedProfile(this.value);
+		}
+		if(x == remoteUserSettings.selectedChannelProfile) {
+			radio.checked = true;
+		}
+		label.for = x;
+		label.innerText = x;
+		profileNamesDiv.appendChild(radio);
+		profileNamesDiv.appendChild(label);
 	});
-	profileNamesSelect.value = remoteUserSettings.selectedChannelProfile;
+
 	setupSliders();
 	setupMotionModifiers();
 }
@@ -2118,7 +2141,6 @@ async function setupSliders() {
 
 		var rangeValuesNode = document.createElement("span");
 		rangeValuesNode.classList.add("range-values")
-		sectionNode.appendChild(rangeValuesNode);
 
 		var input1Node = document.createElement("input");
 		input1Node.type = "range";
@@ -2225,16 +2247,22 @@ async function setupSliders() {
 			input2Node.dispatchEvent(new Event('input', { bubbles: true }));
 		}.bind(input1Node, input1Node, input2Node, channel);
 
-		var minmaxButtonSpan = document.createElement("span");
-		minmaxButtonSpan.classList.add("min-max-buttons");
-		minmaxButtonSpan.appendChild(minDecrementButton);
-		minmaxButtonSpan.appendChild(minIncrementButton);
-		minmaxButtonSpan.appendChild(maxDecrementButton);
-		minmaxButtonSpan.appendChild(maxIncrementButton);
+		var minmaxButtonSpanRow = document.createElement("span");
+		minmaxButtonSpanRow.classList.add("min-max-buttons");
+		var minButtonSpan = document.createElement("span");
+		minButtonSpan.appendChild(minDecrementButton);
+		minButtonSpan.appendChild(minIncrementButton);
+		var maxButtonSpan = document.createElement("span");
+		maxButtonSpan.appendChild(maxDecrementButton);
+		maxButtonSpan.appendChild(maxIncrementButton);
 
+		minmaxButtonSpanRow.appendChild(minButtonSpan);
+		minmaxButtonSpanRow.appendChild(rangeValuesNode);
+		minmaxButtonSpanRow.appendChild(maxButtonSpan);
+
+		sectionNode.appendChild(minmaxButtonSpanRow);
 		sectionNode.appendChild(input1Node);
 		sectionNode.appendChild(input2Node);
-		sectionNode.appendChild(minmaxButtonSpan);
 
 		var slide1 = parseInt(input1Node.value);
 		var slide2 = parseInt(input2Node.value);

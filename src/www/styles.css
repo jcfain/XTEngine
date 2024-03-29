@@ -213,7 +213,7 @@ select {
 
 select:hover,
 button:hover:not(.video-control):not(.media-context),
-input:hover {
+input:hover:not(.range-input) {
     background-color: lightblue;
 }
 
@@ -469,12 +469,13 @@ input:hover {
     pointer-events: none;
     position: absolute;
     overflow: hidden;
-    left: 0;
-    top: 10px;
-    width: 100%;
+    left: 46px;
+    top: 3px;
+    width: 88%;
     outline: none;
     margin: 0;
     padding: 0;
+    background-color: rgba(220, 150, 150, 0.2);
 }
 
 .range-input::-webkit-slider-thumb {
@@ -509,22 +510,24 @@ input:hover {
     border: 0;
 }
 
-.min-max-buttons {
+section .min-max-buttons {
     display: flex;
     justify-content: space-between;
-    margin-top: 16px;
 }
 
-.min-max-button {
-    max-width: 50px;
+section .min-max-button {  
+    /* max-width: 20px;
+    max-height: 20px; */
 }
 
 section.range-label {}
 
-section>.range-values {
+section .range-values {
+    align-self: center;
     font-size: 10px;
+    z-index: 1;
+    pointer-events: none;
 }
-
 
 .form-group-label {}
 
