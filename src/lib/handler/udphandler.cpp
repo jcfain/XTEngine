@@ -39,6 +39,7 @@ void UdpHandler::init(NetworkAddress address, int waitTimeout)
         }
         LogHandler::Debug("IP resolved: "+m_hostAddress.toString());
     }
+    //m_udpSocket->connectToHost(m_hostAddress, address.port);
     tryConnectDevice(waitTimeout);
 }
 
@@ -50,15 +51,20 @@ void UdpHandler::sendTCode(const QString &tcode)
     auto formattedTcode = tcode + "\n";
     currentRequest.append(formattedTcode.toUtf8());
     m_udpSocket->writeDatagram(currentRequest, m_hostAddress, _address.port);
+    //m_udpSocket->write(currentRequest);
 }
 
 void UdpHandler::onReadyRead()
 {
     QString recieved;
-    while (m_udpSocket->hasPendingDatagrams())
+    while (m_udpSocket->waitForReadyRead(100))
     {
         QNetworkDatagram datagram = m_udpSocket->receiveDatagram();
-        recieved += QString::fromUtf8(datagram.data());
+        if(datagram.isValid()) {
+            recieved += QString::fromUtf8(datagram.data());
+        } else {
+            LogHandler::Warn("Bad datagram");
+        }
     }
     LogHandler::Debug("Recieved UDP: "+recieved);
     processDeviceInput(recieved);
