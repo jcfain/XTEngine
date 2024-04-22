@@ -80,6 +80,7 @@ HEADERS += \
     lib/lookup/AxisType.h \
     lib/lookup/GamepadAxisNames.h \
     lib/lookup/MediaActions.h \
+    lib/lookup/TCodeCommand.h \
     lib/lookup/TCodeVersion.h \
     lib/lookup/XMedia.h \
     lib/lookup/enum.h \
@@ -97,9 +98,11 @@ HEADERS += \
     lib/struct/LibraryListItemMetaData.h \
     lib/struct/LibraryListItemMetaData258.h \
     lib/struct/NetworkAddress.h \
+    lib/struct/OutputDevicePacket.h \
     lib/struct/ScriptInfo.h \
     lib/struct/SerialComboboxItem.h \
     lib/struct/InputDevicePacket.h \
+    lib/tool/array-util.h \
     lib/tool/boolinq.h \
     lib/tool/heatmap.h \
     lib/tool/imagefactory.h \

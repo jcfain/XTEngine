@@ -87,8 +87,8 @@ void XTEngine::init()
 
         _httpHandler->listen();
     }
-
-    connect(_connectionHandler, &ConnectionHandler::messageRecieved, _syncHandler, &SyncHandler::searchForFunscript);
+    
+    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, &SyncHandler::searchForFunscript);
     connect(_connectionHandler, &ConnectionHandler::action, _settingsActionHandler, &SettingsActionHandler::media_action);
     connect(_connectionHandler, &ConnectionHandler::inputConnectionChange, this, [this](ConnectionChangedSignal event) {
         auto selectedInputDevice = _connectionHandler->getSelectedInputDevice();

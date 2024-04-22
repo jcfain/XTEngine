@@ -465,6 +465,7 @@ ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, Q
              mfsTrackName,
              false, //MultiplierEnabled
              false, //DamperEnabled
+             false,//bool DamperRandom;
              1.0, //DamperValue
              false, //FunscriptInverted
              false, //GamepadInverted

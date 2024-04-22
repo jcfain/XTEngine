@@ -9,6 +9,7 @@
 #include "loghandler.h"
 #include "lib/lookup/enum.h"
 #include "lib/struct/ConnectionChangedSignal.h"
+#include "lib/struct/OutputDevicePacket.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT OutputDeviceHandler : public QObject
@@ -17,7 +18,7 @@ class XTENGINE_EXPORT OutputDeviceHandler : public QObject
 
 signals:
     void connectionChange(ConnectionChangedSignal status);
-    void commandRecieve(QString command);
+    void commandRecieve(OutputDevicePacket packet);
     void sendHandShake();
 
 public:
@@ -105,7 +106,7 @@ protected:
                 return;
             m_readBuffer.remove(m_newline);
             LogHandler::Debug(tr("Recieved device command: ")+m_readBuffer);
-            emit commandRecieve(m_readBuffer);
+            processCommand(m_readBuffer);
             m_readBuffer.clear();
         }
         else if(!isConnected())
@@ -129,34 +130,9 @@ protected:
                 }
                 if (validated)
                 {
-                    if(!isConnected()) //temp
-                    { // temp
-                        setConnected(true);
-                        emit connectionChange({DeviceType::Output, m_deviceName, ConnectionStatus::Connected, "Connected: "+version});
-                    } // temp
-                }
-                else
-                {
-                    //emit connectionChange({DeviceName::Serial, ConnectionStatus::Error, "No TCode"});
-                    // Due to issue with connecting to some romeos with validation. Do not block them from using it.
                     setConnected(true);
                     emit connectionChange({DeviceType::Output, m_deviceName, ConnectionStatus::Connected, "Connected: "+version});
-                    LogHandler::Error("An INVALID response recieved: ");
-                    LogHandler::Error("response: "+m_readBuffer);
-                    //emit errorOccurred("Warning! You should be able to keep using the program if you have the correct port selected\n\nIt would be greatly appreciated if you could run the program in debug mode.\nSend the console output file to Khrull on patreon or discord. Thanks!");
                 }
-                // }
-                // else if (currentPortNameChanged || !_isConnected)
-                // {
-
-                //     LogHandler::Error(tr("Read serial handshake timeout %1")
-                //                           .arg(QTime::currentTime().toString()));
-                //     // Due to issue with connecting to some romeos with validation. Do not block them from using it.
-                //     emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Connected, "Connected: V?"});
-                //     _mutex.lock();
-                //     _isConnected = true;
-                //     _mutex.unlock();
-                // }
                 LogHandler::Debug(tr("Recieved device validation: ")+m_readBuffer);
                 m_readBuffer.clear();
             }
@@ -185,6 +161,23 @@ private:
     QRegExp m_newline;
     QFuture<void> m_initFuture;
     bool m_stop = false;
+
+    void processCommand(QString data)
+    {
+        QString command = data;
+        auto indexOfValue = data.indexOf(":");
+        double value = -1;
+        if(indexOfValue>-1) {
+            command = data.mid(0, indexOfValue);
+            bool ok;
+            value = data.midRef(indexOfValue +1).toDouble(&ok);
+            if(!ok) {
+                value = -1;
+            }
+        }
+        // TODO: how to tell if is another type?
+        emit commandRecieve({OutputDeviceCommandType::BUTTON, command, value, data});
+    }
 };
 
 #endif // OUTPUTDEVICEHANDLER_H

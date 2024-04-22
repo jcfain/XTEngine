@@ -1,5 +1,11 @@
 #include "tcodehandler.h"
 
+#include "../lookup/tcodechannellookup.h"
+#include "../tool/xmath.h"
+#include "settingshandler.h"
+#include "funscripthandler.h"
+#include "loghandler.h"
+
 TCodeHandler::TCodeHandler(QObject* parent) : QObject(parent)
 {
 }
@@ -9,20 +15,21 @@ TCodeHandler::~TCodeHandler() {
 
 }
 
-QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, QMap<QString, std::shared_ptr<FunscriptAction>> otherActions)
+QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> strokeAction, QMap<QString, std::shared_ptr<FunscriptAction>> otherActions)
 {
     QMutexLocker locker(&mutex);
-    QString tcode = "";
-    //auto availibleAxis = TCodeChannelLookup::getAvailableChannels();
     auto axisKeys = TCodeChannelLookup::getChannels();
-    if(action != nullptr)
+    QString tcode = "";
+    int strokeDistance = 0;
+    int strokeSpeed = 0;
+    if(strokeAction != nullptr)
     {
-        int distance = action->pos >= action->lastPos ? action->pos - action->lastPos : action->lastPos - action->pos;
-        if(distance > 0)
+        strokeDistance = getDistance(strokeAction->pos, strokeAction->lastPos);
+        strokeSpeed = strokeAction->speed;
+        if(strokeDistance > 0)
         {
-            int position = action->pos;
-            LogHandler::Debug("Stroke pos: " + QString::number(position) + ", at: " + QString::number(action->at));
-            int speed = action->speed;
+            int position = strokeAction->pos;
+            LogHandler::Debug("Stroke pos: " + QString::number(position) + ", at: " + QString::number(strokeAction->at));
             if (FunscriptHandler::getInverted() || SettingsHandler::getChannelFunscriptInverseChecked(TCodeChannelLookup::Stroke()))
             {
                 position = XMath::reverseNumber(position, 0, 100);
@@ -30,10 +37,10 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
             tcode += TCodeChannelLookup::Stroke();
             tcode += QString::number(calculateRange(TCodeChannelLookup::Stroke().toUtf8(), position)).rightJustified(SettingsHandler::getTCodePadding(), '0');
             // LogHandler::Debug("Stroke tcode: "+ tcode);
-            if (speed > 0)
+            if (strokeSpeed > 0)
             {
               tcode += "I";
-              tcode += QString::number(speed);
+              tcode += QString::number(strokeSpeed);
             }
         }
     }
@@ -70,7 +77,7 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
         }
     }
 
-    if(action != nullptr && SettingsHandler::getMultiplierEnabled())
+    if(strokeAction != nullptr && SettingsHandler::getMultiplierEnabled())
     {
         foreach(auto axis, axisKeys)
         {
@@ -83,28 +90,22 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
                 continue;
             if (SettingsHandler::getFunscriptLoaded(axis))
                 continue;
-            // float multiplierValue = SettingsHandler::getMultiplierValue(axis);
-            // if (multiplierValue == 0.0)
-            //     continue;
             if((channel->AxisName == TCodeChannelLookup::Suck() || channel->AxisName == TCodeChannelLookup::SuckPosition()) && (tcode.contains(TCodeChannelLookup::Suck()) || tcode.contains(TCodeChannelLookup::SuckPosition())))
                 continue;
-            if (SettingsHandler::getMultiplierChecked(axis))
+            if (channel->MultiplierEnabled)
             {
-                auto currentAction = action;
-                if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && otherActions.contains(channel->RelatedChannel))) // Establish link to related channel to axis that are NOT stroke.
-                    currentAction = otherActions.value(channel->RelatedChannel);
+                // Establish link to related channel to axis that are NOT stroke.
+                if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && otherActions.contains(channel->RelatedChannel)))
+                    strokeAction = otherActions.value(channel->RelatedChannel);
                 else if(channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && !otherActions.contains(channel->RelatedChannel) && channel->RelatedChannel != TCodeChannelLookup::Stroke())
                     continue;
-                if(currentAction == nullptr)
+                if(strokeAction == nullptr)
                     continue;
-                int distance = currentAction->pos >= currentAction->lastPos ? currentAction->pos - currentAction->lastPos : currentAction->lastPos - currentAction->pos;
-                if (distance > 0)
+                int value = -1;
+                int channelDistance = 100;
+                if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel)) && (otherActions.contains(channel->RelatedChannel) || channel->RelatedChannel == TCodeChannelLookup::Stroke()))
                 {
-                    int value = -1;
-                    if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && otherActions.contains(channel->RelatedChannel)) ||
-                            (channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && channel->RelatedChannel == TCodeChannelLookup::Stroke()))
-                    {
-                        value = currentAction->pos;
+                    value = channel->RelatedChannel == TCodeChannelLookup::Stroke() ? strokeAction->pos : otherActions.value(channel->RelatedChannel)->pos;
 //                        LogHandler::Debug("Channel: "+ axis);
 //                        LogHandler::Debug("FriendlyName: "+ channel->FriendlyName);
 //                        LogHandler::Debug("RelatedChannel: "+ channel->RelatedChannel);
@@ -112,41 +113,55 @@ QString TCodeHandler::funscriptToTCode(std::shared_ptr<FunscriptAction> action, 
 //                        LogHandler::Debug("LinkToRelatedMFS value: "+ QString::number(value));
 //                        LogHandler::Debug("currentAction->pos: "+ QString::number(currentAction->pos));
 //                        LogHandler::Debug("action->pos: "+ QString::number(action->pos));
-                    }
-                    else
-                    {
-                        value = XMath::rand(0,100);
-                    }
-                    //lowMin + (highMin-lowMin)*level,lowMax + (highMax-lowMax)*level
-                    //LogHandler::Debug("randSine: "+ QString::number(value));
-                    if (value < 0)
-                    {
-                        LogHandler::Warn("Value was less than zero: "+ QString::number(value));
-                        continue;
-                    }
-                    //LogHandler::Debug("Multiplier: "+ channel->FriendlyName + " pos: " + QString::number(value) + ", at: " + QString::number(currentAction->at));
-                    if ((channel->FunscriptInverted && channel->LinkToRelatedMFS) ||
-                            (SettingsHandler::getChannelFunscriptInverseChecked(TCodeChannelLookup::Stroke()) && !channel->FunscriptInverted && !channel->LinkToRelatedMFS) )
-                    {
-                        //LogHandler::Debug("inverted: "+ QString::number(value));
-                        value = XMath::reverseNumber(value, 0, 100);
-                    }
-                    tcode += " ";
-                    tcode += axis;
-                    tcode += QString::number(calculateRange(axis.toUtf8(), value)).rightJustified(SettingsHandler::getTCodePadding(), '0');
-                    tcode += "S";
-                    float speedModifierValue = SettingsHandler::getDamperValue(axis);
-                    if (SettingsHandler::getDamperChecked(axis) && speedModifierValue > 0.0)
-                    {
-                        auto speed = currentAction->speed > 0 ? currentAction->speed : 500;
-                        tcode += QString::number(qRound(speed * speedModifierValue));
-                    }
-                    else
-                    {
-                        tcode += QString::number(currentAction->speed > 0 ? currentAction->speed : 500);
-                    }
                 }
-
+                else
+                {
+                    int min = 0;
+                    int max = 100;
+                    // if((channelValueTracker.contains(axis) && channelValueTracker[axis] > 50)) {
+                    //     max = 50;// - (qRound(strokeDistance / 2.0f) + 1);
+                    // } else {
+                    //     min = 50;// + (qRound(strokeDistance / 2.0f) - 1);
+                    // }
+                    value = XMath::random(min, max);
+                    LogHandler::Debug("Channel: "+ axis);
+                    LogHandler::Debug("Value: "+ QString::number(value));
+                    if(channelValueTracker.contains(axis)) {
+                        channelDistance = getDistance(value, channelValueTracker[axis]);
+                        LogHandler::Debug("Last value: "+ QString::number(channelValueTracker[axis]));
+                    }
+                    channelValueTracker[axis] = value;
+                }
+                //lowMin + (highMin-lowMin)*level,lowMax + (highMax-lowMax)*level
+                //LogHandler::Debug("randSine: "+ QString::number(value));
+                if (value < 0)
+                {
+                    LogHandler::Warn("Value was less than zero: "+ QString::number(value));
+                    continue;
+                }
+                //LogHandler::Debug("Multiplier: "+ channel->FriendlyName + " pos: " + QString::number(value) + ", at: " + QString::number(currentAction->at));
+                if ((channel->FunscriptInverted && channel->LinkToRelatedMFS) ||
+                        (SettingsHandler::getChannelFunscriptInverseChecked(TCodeChannelLookup::Stroke()) && !channel->FunscriptInverted && !channel->LinkToRelatedMFS) )
+                {
+                    //LogHandler::Debug("inverted: "+ QString::number(value));
+                    value = XMath::reverseNumber(value, 0, 100);
+                }
+                tcode += " ";
+                tcode += axis;
+                tcode += QString::number(calculateRange(axis.toUtf8(), value)).rightJustified(SettingsHandler::getTCodePadding(), '0');
+                tcode += "S";
+                float channelDistancePercentage = channelDistance/100.0f;
+                auto speed = strokeAction->speed > 0 ? qRound(strokeAction->speed * channelDistancePercentage) : 500;
+                if (channel->DamperEnabled && channel->DamperValue > 0.0)
+                {
+                    float speedModifierValue = channel->DamperRandom ? XMath::random(0.1f, channel->DamperValue) : channel->DamperValue;
+                    speed = qRound(speed * speedModifierValue);
+                    tcode += QString::number(speed);
+                }
+                else
+                {
+                    tcode += QString::number(speed);
+                }
             }
 //            else
 //            {
@@ -230,6 +245,12 @@ void TCodeHandler::getChannelHome(ChannelModel33* channel, QString &tcode)
     if(!tcode.isEmpty())
         tcode += " ";
     tcode += channel->Channel;
-    tcode += QString::number(channel->Mid).rightJustified(SettingsHandler::getTCodePadding(), '0');
+    int homeValue = channel->Type == AxisType::Ramp ? channel->Min : channel->Mid;
+    tcode += QString::number(homeValue).rightJustified(SettingsHandler::getTCodePadding(), '0');
     tcode += "S1000";
+}
+
+int TCodeHandler::getDistance(int current, int last)
+{
+    return current >= last ? current - last : last - current;
 }

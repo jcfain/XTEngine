@@ -2312,7 +2312,10 @@ async function setupMotionModifiers() {
 
 	sectionNode.appendChild(multiplierEnabledNode);
 
-	var headers = ["Modifier", "Link to MFS", "Speed"]
+	var headers = [
+		//"Modifier", 
+		"Link to MFS", 
+		"Speed"]
 	headers.forEach(element => {
 		var gridHeaderNode = document.createElement("div");
 		gridHeaderNode.classList.add("form-group-control");
@@ -2378,20 +2381,20 @@ async function setupMotionModifiers() {
 			markXTPFormDirty();
 		}.bind(multiplierEnabledNode, channelName);
 
-		var multiplierValueNode = document.createElement("input");
-		multiplierValueNode.setAttribute("name", "motionModifierInput");
-		multiplierValueNode.value = channel.multiplierValue;
+		// var multiplierValueNode = document.createElement("input");
+		// multiplierValueNode.setAttribute("name", "motionModifierInput");
+		// multiplierValueNode.value = channel.multiplierValue;
 
-		multiplierValueNode.oninput = function (channelName, event) {
-			var value = parseFloat(event.target.value);
-			if (value) {
-				remoteUserSettings.availableChannels[channelName].multiplierValue = value;
-				markXTPFormDirty();
-			}
-		}.bind(multiplierValueNode, channelName);
+		// multiplierValueNode.oninput = function (channelName, event) {
+		// 	var value = parseFloat(event.target.value);
+		// 	if (value) {
+		// 		remoteUserSettings.availableChannels[channelName].multiplierValue = value;
+		// 		markXTPFormDirty();
+		// 	}
+		// }.bind(multiplierValueNode, channelName);
 
 		enabledValueNode.appendChild(multiplierEnabledNode);
-		enabledValueNode.appendChild(multiplierValueNode);
+		//enabledValueNode.appendChild(multiplierValueNode);
 
 		var linkedEnabledValueNode = document.createElement("div");
 		linkedEnabledValueNode.classList.add("form-group-control");

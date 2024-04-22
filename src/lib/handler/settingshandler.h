@@ -27,6 +27,7 @@
 #include "../struct/LibraryListItem27.h"
 #include "../struct/LibraryListItemMetaData.h"
 #include "../struct/LibraryListItemMetaData258.h"
+#include "lib/lookup/TCodeCommand.h"
 
 class XTENGINE_EXPORT SettingsHandler: public QObject
 {
@@ -183,9 +184,18 @@ public:
 
     static QMap<QString, QStringList> getTCodeCommandMap();
     static QMap<QString, QStringList> getTCodeCommandMapInverse();
+    static QStringList getTCodeCommandMapCommands(QString command);
     static void setTCodeCommandMapKey(QString key, QString action);
     static void removeTCodeCommandMapKey(QString key, QString action);
     static void clearTCodeCommandMapKey(QString key);
+
+    static QMap<QString, QString> getAllActions();
+
+    // static QMap<QString, TCodeCommand> getTCodeCommands();
+    // static void setTCodeCommands(QMap<QString, TCodeCommand> commands);
+    // static TCodeCommand* getTCodeCommand(QString command);
+    // static void addTCodeCommand(TCodeCommand command);
+    // static void removeTCodeCommand(QString key);
 
     static void setAxis(QString axis, ChannelModel33 channel);
     static void addAxis(ChannelModel33 channel);
@@ -276,7 +286,8 @@ public:
 
     static void SetGamepadMapDefaults();
     static void SetKeyboardKeyDefaults();
-    static void SetTCodeCommandDefaults();
+    // static void SetTCodeCommandDefaults();
+    static void SetTCodeCommandMapDefaults();
     static void setSaveOnExit(bool enabled);
     static bool getFirstLoad();
     static void Load(QSettings* settingsToLoadFrom = 0);
@@ -343,6 +354,7 @@ private:
     static void SetMapDefaults();
     static void setupGamepadButtonMap();
     static void setupKeyboardKeyMap();
+    // static void setupTCodeCommands();
     static void setupTCodeCommandMap();
     static void MigrateTo23();
     static void MigrateTo25();
@@ -359,6 +371,8 @@ private:
     static void MigrateTo42(QSettings* settingsToLoadFrom);
 
     static void SaveChannelMap(QSettings* settingsToSaveTo = 0);
+    static void SaveTCodeCommandMap(QSettings* settingsToSaveTo = 0);
+    // static void SaveTCodeCommands(QSettings* settingsToSaveTo = 0);
 
     static void storeMediaMetaDatas(QSettings* settingsToSaveTo = 0);
 
@@ -400,6 +414,9 @@ private:
     static QMap<QString, QStringList> _inverseKeyboardMap;
     static QMap<QString, QStringList> m_tcodeCommandMap;
     static QMap<QString, QStringList> m_inverseTcodeCommandMap;
+
+    // static QMap<QString, TCodeCommand> m_tcodeCommands;
+
     static int _gamepadSpeed;
     static int _gamepadSpeedStep;
     static int _liveGamepadSpeed;

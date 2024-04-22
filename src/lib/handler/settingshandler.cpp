@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.45b";
-const float SettingsHandler::XTEVersionNum = 0.45f;
+const QString SettingsHandler::XTEVersion = "0.451b";
+const float SettingsHandler::XTEVersionNum = 0.451f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){}
@@ -150,6 +150,15 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     {
         m_tcodeCommandMap.insert(key, tcodeCommandMap[key].toStringList());
     }
+
+    // QVariantList tcodeCommands = settingsToLoadFrom->value("tcodeCommands").toList();
+    // m_tcodeCommands.clear();
+    // foreach(auto value, tcodeCommands)
+    // {
+    //     auto command = TCodeCommand::fromVariant(value);
+    //     m_tcodeCommands.insert(command.id, command);
+    // }
+
     _gamepadSpeed = settingsToLoadFrom->value("gamepadSpeed").toInt();
     _gamepadSpeed = _gamepadSpeed == 0 ? 1000 : _gamepadSpeed;
     _gamepadSpeedStep = settingsToLoadFrom->value("gamepadSpeedStep").toInt();
@@ -369,6 +378,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
+        if(currentVersion < 0.451f) {
+            locker.unlock();
+            SetTCodeCommandMapDefaults();
+            Save();
+            Load();
+        }
 
     }
     settingsChangedEvent(false);
@@ -436,15 +451,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         settingsToSaveTo->setValue("selectedVideoRenderer", (int)_selectedVideoRenderer);
 
-//        QVariantMap availableAxis;
-//        auto availableChannels = TCodeChannelLookup::getAvailableChannels();
-//        foreach(auto axis, availableChannels->keys())
-//        {
-//            auto variant = ChannelModel33::toVariant(availableChannels->value(axis));
-//            availableAxis.insert(axis, variant);
-//        }
-//        settingsToSaveTo->setValue("availableChannels", availableAxis);
-
         SaveChannelMap(settingsToSaveTo);
 
         QVariantMap gamepadMap;
@@ -461,12 +467,14 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         }
         settingsToSaveTo->setValue("keyboardKeyMap", keyboardKeyMap);
 
-        QVariantMap tcodeCommandMap;
-        foreach(auto key, m_tcodeCommandMap.keys())
-        {
-            tcodeCommandMap.insert(key, QVariant::fromValue(m_tcodeCommandMap[key]));
-        }
-        settingsToSaveTo->setValue("tcodeCommandMap", tcodeCommandMap);
+        // QVariantList tcodeCommands;
+        // foreach (auto value, m_tcodeCommands) {
+        //     tcodeCommands.append(TCodeCommand::toVariant(value));
+        // }
+        settings->remove("tcodeCommands");
+
+        SaveTCodeCommandMap(settingsToSaveTo);
+        //SaveTCodeCommands(settingsToSaveTo);
 
         settingsToSaveTo->setValue("gamepadSpeed", _gamepadSpeed);
         settingsToSaveTo->setValue("gamepadSpeedStep", _gamepadSpeedStep);
@@ -618,7 +626,7 @@ void SettingsHandler::SetMapDefaults()
     SaveChannelMap();
     SetGamepadMapDefaults();
     SetKeyboardKeyDefaults();
-    SetTCodeCommandDefaults();
+    SetTCodeCommandMapDefaults();
 }
 void SettingsHandler::SaveChannelMap(QSettings* settingsToSaveTo)
 {
@@ -638,6 +646,31 @@ void SettingsHandler::SaveChannelMap(QSettings* settingsToSaveTo)
     }
     settingsToSaveTo->setValue("availableChannels", availableChannelVariant);
 }
+
+void SettingsHandler::SaveTCodeCommandMap(QSettings *settingsToSaveTo)
+{
+    QVariantMap tcodeCommandMap;
+    for(auto it = m_tcodeCommandMap.begin(); it != m_tcodeCommandMap.end(); it++)
+    {
+        // if(std::find_if(m_tcodeCommands.begin(), m_tcodeCommands.end(), [it](const TCodeCommand& command) {
+        //         return command.command == it.key();
+        // }) != m_tcodeCommands.end())
+        // {
+            tcodeCommandMap.insert(it.key(), QVariant::fromValue(it.value()));
+        // }
+    }
+    settingsToSaveTo->setValue("tcodeCommandMap", tcodeCommandMap);
+}
+
+// void SettingsHandler::SaveTCodeCommands(QSettings *settingsToSaveTo)
+// {
+//     QVariantList tcodeCommands;
+//     for( auto it = m_tcodeCommands.begin(); it != m_tcodeCommands.end(); it++)
+//     {
+//         tcodeCommands.append(TCodeCommand::toVariant(it.value()));
+//     }
+//     settingsToSaveTo->setValue("tcodeCommands", tcodeCommands);
+// }
 
 void SettingsHandler::storeMediaMetaDatas(QSettings* settingsToSaveTo)
 {
@@ -674,7 +707,18 @@ void SettingsHandler::SetKeyboardKeyDefaults() {
     settingsChangedEvent(true);
 }
 
-void SettingsHandler::SetTCodeCommandDefaults() {
+// void SettingsHandler::SetTCodeCommandDefaults()
+// {
+//     setupTCodeCommands();
+//     QVariantList tcodeCommands;
+//     foreach (auto value, m_tcodeCommands) {
+//         tcodeCommands.append(TCodeCommand::toVariant(value));
+//     }
+//     settings->setValue("tcodeCommands", tcodeCommands);
+//     SetTCodeCommandMapDefaults();
+// }
+
+void SettingsHandler::SetTCodeCommandMapDefaults() {
     setupTCodeCommandMap();
     QVariantMap tcodeCommandMap;
     foreach(auto key, m_tcodeCommandMap.keys())
@@ -1715,6 +1759,13 @@ QMap<QString, QStringList> SettingsHandler::getTCodeCommandMapInverse()
     return m_inverseTcodeCommandMap;
 }
 
+QStringList SettingsHandler::getTCodeCommandMapCommands(QString command)
+{
+    if (m_tcodeCommandMap.contains(command))
+        return m_tcodeCommandMap[command];
+    return QStringList();
+}
+
 void SettingsHandler::setTCodeCommandMapKey(QString key, QString action)
 {
     QMutexLocker locker(&mutex);
@@ -1737,6 +1788,59 @@ void SettingsHandler::clearTCodeCommandMapKey(QString key)
     m_tcodeCommandMap[key].clear();
     settingsChangedEvent(true);
 }
+
+QMap<QString, QString> SettingsHandler::getAllActions()
+{
+    QMap<QString, QString> actions;
+    // auto tcodeVersionMap = TCodeChannelLookup::GetSelectedVersionMap();
+    // for(auto __begin = tcodeVersionMap.begin(), __end = tcodeVersionMap.end();  __begin != __end; ++__begin) {
+    //     auto channel = TCodeChannelLookup::getChannel(TCodeChannelLookup::ToString(__begin.key()));
+    //     if(channel)
+    //         actions.insert(channel->AxisName, "Channel: " + channel->FriendlyName);
+    // }
+
+    MediaActions actionsMap;
+    for(auto __begin = actionsMap.Values.begin(), __end = actionsMap.Values.end();  __begin != __end; ++__begin) {
+        actions.insert(__begin.key(), __begin.value());
+    }
+
+    auto otherActions = MediaActions::GetOtherActions();
+    for(auto __begin = otherActions.begin(), __end = otherActions.end();  __begin != __end; ++__begin) {
+        actions.insert(__begin.key(), __begin.value());
+    }
+    return actions;
+}
+
+// QMap<QString, TCodeCommand> SettingsHandler::getTCodeCommands()
+// {
+//     return m_tcodeCommands;
+// }
+
+// void SettingsHandler::setTCodeCommands(QMap<QString, TCodeCommand> commands)
+// {
+//     m_tcodeCommands = commands;
+// }
+
+// TCodeCommand* SettingsHandler::getTCodeCommand(QString command)
+// {
+//     auto itr = std::find_if(m_tcodeCommands.begin(), m_tcodeCommands.end(), [command](const TCodeCommand&  item) {
+//         return item.command == command;
+//     });
+//     if(itr == m_tcodeCommands.end())
+//         return 0;
+
+//     return &m_tcodeCommands[itr.key()];
+// }
+
+// void SettingsHandler::addTCodeCommand(TCodeCommand command)
+// {
+//     m_tcodeCommands.insert(command.command, command);
+// }
+
+// void SettingsHandler::removeTCodeCommand(QString key)
+// {
+//     m_tcodeCommands.remove(key);
+// }
 
 void SettingsHandler::setSelectedFunscriptLibrary(QString value)
 {
@@ -2037,13 +2141,33 @@ void SettingsHandler::setupKeyboardKeyMap() {
     };
 }
 
-void SettingsHandler::setupTCodeCommandMap() {
-    _keyboardKeyMap = {
-        { "#edge", QStringList(mediaActions.TogglePauseAllDeviceActions) },
-        { "#ok", QStringList(mediaActions.TogglePause) },
-        { "#left", QStringList(mediaActions.AltFunscriptNext) },
-        { "#right", QStringList(mediaActions.SkipToMoneyShot) }
+// void SettingsHandler::setupTCodeCommands()
+// {
+//     m_tcodeCommands = {
+//         { "#edge:1", { 0, TCodeCommandType::BUTTON, "#edge:1", 0 } },
+//         { "#ok:1", { 1, TCodeCommandType::BUTTON, "#ok:1", 0 } },
+//         { "#left:1", { 2, TCodeCommandType::BUTTON, "#left:1", 0 } },
+//         { "#right:1", { 3, TCodeCommandType::BUTTON, "#right:1", 0 } },
+//     };
+// }
+
+void SettingsHandler::setupTCodeCommandMap()
+{
+    m_tcodeCommandMap = {
+        { "#edge:1", QStringList(mediaActions.TogglePauseAllDeviceActions) },
+        { "#ok:1", QStringList(mediaActions.TogglePause) },
+        { "#left:1", QStringList(mediaActions.AltFunscriptNext) },
+        { "#right:1", QStringList(mediaActions.SkipToMoneyShot) },
     };
+    // m_tcodeCommandMap.clear();
+    // for ( auto it = defaultCommands.begin(); it != defaultCommands.end(); it++ ) {
+    //     auto commandObject = std::find_if(m_tcodeCommands.begin(), m_tcodeCommands.end(),  [it] (const TCodeCommand& item) {
+    //         return item.command == it.key();
+    //     });
+    //     if(commandObject != m_tcodeCommands.end()) {
+    //         m_tcodeCommandMap.insert(it.key(), defaultCommands[it.key()]);
+    //     }
+    // }
 }
 
 void SettingsHandler::setFunscriptLoaded(QString key, bool loaded)
@@ -2305,6 +2429,9 @@ QMap<QString, QStringList> SettingsHandler::_keyboardKeyMap;
 QMap<QString, QStringList> SettingsHandler::_inverseKeyboardMap;
 QMap<QString, QStringList> SettingsHandler::m_tcodeCommandMap;
 QMap<QString, QStringList> SettingsHandler::m_inverseTcodeCommandMap;
+
+// QMap<QString, TCodeCommand> SettingsHandler::m_tcodeCommands;
+
 int SettingsHandler::_gamepadSpeed;
 int SettingsHandler::_gamepadSpeedStep;
 int SettingsHandler::_liveGamepadSpeed;

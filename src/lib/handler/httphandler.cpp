@@ -393,28 +393,30 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
             auto channel = TCodeChannelLookup::getChannel(channelName);
             if(channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None)
                 continue;
-            auto value = doc["availableChannels"][channelName];
-            ChannelModel33 channelModel = {
-                value["friendlyName"].toString(),//QString FriendlyName;
-                value["axisName"].toString(),//QString AxisName;
-                value["channel"].toString(),//QString Channel;
-                value["min"].toInt(),//int Min;
-                value["mid"].toInt(),//int Mid;
-                value["max"].toInt(),//int Max;
-                value["userMin"].toInt(),//int UserMin;
-                value["userMid"].toInt(),//int UserMid;
-                value["userMax"].toInt(),//int UserMax;
-                (AxisDimension)(value["dimension"].toInt()),//AxisDimension Dimension;
-                (AxisType)(value["type"].toInt()),//AxisType Type;
-                value["trackName"].toString(),//QString TrackName;
-                value["multiplierEnabled"].toBool(),//bool MultiplierEnabled;
-                value["damperEnabled"].toBool(),//bool DamperEnabled;
-                float(value["damperValue"].toDouble()),//float DamperValue;
-                value["funscriptInverted"].toBool(),//bool FunscriptInverted;
-                value["gamepadInverted"].toBool(),//bool GamepadInverted;
-                value["linkToRelatedMFS"].toBool(),//bool LinkToRelatedMFS;
-                value["relatedChannel"].toString()//QString RelatedChannel;
-            };
+            auto value = doc["availableChannels"][channelName].toObject();
+            ChannelModel33 channelModel = ChannelModel33::fromJson(value);
+            // ChannelModel33 channelModel = {
+            //     value["friendlyName"].toString(),//QString FriendlyName;
+            //     value["axisName"].toString(),//QString AxisName;
+            //     value["channel"].toString(),//QString Channel;
+            //     value["min"].toInt(),//int Min;
+            //     value["mid"].toInt(),//int Mid;
+            //     value["max"].toInt(),//int Max;
+            //     value["userMin"].toInt(),//int UserMin;
+            //     value["userMid"].toInt(),//int UserMid;
+            //     value["userMax"].toInt(),//int UserMax;
+            //     (AxisDimension)(value["dimension"].toInt()),//AxisDimension Dimension;
+            //     (AxisType)(value["type"].toInt()),//AxisType Type;
+            //     value["trackName"].toString(),//QString TrackName;
+            //     value["multiplierEnabled"].toBool(),//bool MultiplierEnabled;
+            //     value["damperEnabled"].toBool(),//bool DamperEnabled;
+            //     value["damperRandom"].toBool(),//bool DamperRandom;
+            //     float(value["damperValue"].toDouble()),//float DamperValue;
+            //     value["funscriptInverted"].toBool(),//bool FunscriptInverted;
+            //     value["gamepadInverted"].toBool(),//bool GamepadInverted;
+            //     value["linkToRelatedMFS"].toBool(),//bool LinkToRelatedMFS;
+            //     value["relatedChannel"].toString()//QString RelatedChannel;
+            // };
             SettingsHandler::setAxis(channelName, channelModel);
         }
 

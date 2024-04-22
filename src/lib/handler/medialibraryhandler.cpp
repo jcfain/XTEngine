@@ -485,7 +485,7 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
             {
                disconnect(ptr.data(), &XVideoPreview::durationChanged,  nullptr, nullptr);
                LogHandler::Debug("Loaded video for thumb. Duration: " + QString::number(duration));
-               qint64 randomPosition = position > 0 ? position : XMath::rand((qint64)1, duration);
+               qint64 randomPosition = position > 0 ? position : XMath::random((qint64)1, duration);
                LogHandler::Debug("Extracting at: " + QString::number(randomPosition));
                ptr->extract(videoFile, randomPosition);
             });

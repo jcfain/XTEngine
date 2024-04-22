@@ -40,6 +40,7 @@ void HereSphereHandler::init(NetworkAddress address, int waitTimeout)
         0,
         0,
         0,
+        0,
         0
     };
 }
@@ -117,7 +118,8 @@ void HereSphereHandler::messageSend(QByteArray message) {
 void HereSphereHandler::readData()
 {
     QByteArray datagram = tcpSocket->readAll();
-    QByteArray header = datagram.remove(0, 4);
+    // QByteArray header =
+        datagram.remove(0, 4);
 
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(datagram, &error);

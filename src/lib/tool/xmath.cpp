@@ -1,5 +1,11 @@
 #include "xmath.h"
 
+#include <random>
+#include <chrono>
+#include <stdlib.h>
+
+//#include "../handler/loghandler.h"
+
 int XMath::mapRange(int value, int inStart, int inEnd, int outStart, int outEnd)
 {
     double slope = (double)(outEnd - outStart) / (inEnd - inStart);
@@ -26,29 +32,34 @@ int  XMath::constrain(int value, int min, int max)
         return min;
     return value;
 }
-
-qint64 XMath::rand(qint64 min, qint64 max)
+qint64 XMath::random(qint64 min, qint64 max)
 {
-    unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
-    std::mt19937_64 mt(seed1);
-    std::uniform_int_distribution<qint64> dist(min, max);
-    return dist(mt);
+    // unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
+    // std::mt19937_64 mt(seed1);
+    // std::uniform_int_distribution<qint64> dist(min, max);
+    // return dist(mt);
+    return rand() % max + min;
 }
 
-int XMath::rand(int min, int max)
+int XMath::random(int min, int max)
 {
-    unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
-    std::mt19937 mt(seed1);
-    std::uniform_int_distribution<int> dist(min, max);
-    return dist(mt);
+    // unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
+    // std::mt19937 mt(seed1);
+    // std::uniform_int_distribution<int> dist(min, max);
+    // return dist(mt);
+    return rand() % max + min;
 }
 
-double XMath::rand(double min, double max)
+double XMath::random(double min, double max)
 {
-    unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
-    std::mt19937_64 mt(seed1);
-    std::uniform_real_distribution<double> dist(min, max);
-    return dist(mt);
+    // unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
+    // std::mt19937_64 mt(seed1);
+    // std::uniform_real_distribution<double> dist(min, max);
+    // return dist(mt);
+    std::uniform_real_distribution<double> unif(min,max);
+    std::default_random_engine re;
+    return unif(re);
+    //return rand() % max + min;
 }
 
 int XMath::middle(int min, int max)
@@ -63,7 +74,7 @@ int XMath::min(int value1, int value2)
 
 int XMath::randSine(double angle)
 {
-    double amplitude = rand(0.0, 100.0);
+    double amplitude = random(0.0, 100.0);
     if(amplitude < 50)
         angle = reverseNumber(angle, 0, 180);
     return randSine(angle, amplitude);

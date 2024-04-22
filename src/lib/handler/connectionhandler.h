@@ -16,6 +16,7 @@
 #include "gamepadhandler.h"
 #include "lib/struct/ConnectionChangedSignal.h"
 #include "lib/struct/InputDevicePacket.h"
+#include "lib/struct/OutputDevicePacket.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT ConnectionHandler : public QObject
@@ -25,7 +26,8 @@ signals:
     void connectionChange(ConnectionChangedSignal status);
     void inputConnectionChange(ConnectionChangedSignal status);
     void outputConnectionChange(ConnectionChangedSignal status);
-    void messageRecieved(InputDevicePacket packet);
+    void inputMessageRecieved(InputDevicePacket packet);
+    void outputMessageRecieved(OutputDevicePacket packet);
     void action(QString action);
     void serialPortFound(QString portFriendlyName, QString portName);
     void gamepadConnectionChange(ConnectionChangedSignal event);
@@ -81,7 +83,6 @@ private:
 
     void setOutputDevice(OutputDeviceHandler* device);
     void setInputDevice(InputDeviceHandler* device);
-
 
 };
 
