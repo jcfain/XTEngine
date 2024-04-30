@@ -3,11 +3,13 @@
 #include <QString>
 #include <QMetaType>
 
-enum class OutputDeviceCommandType {
+#include "XTEngine_global.h"
+
+enum class XTENGINE_EXPORT OutputDeviceCommandType {
     BUTTON
 };
 
-struct OutputDevicePacket
+struct XTENGINE_EXPORT OutputDevicePacket
 {
     OutputDeviceCommandType type;
     QString command;
