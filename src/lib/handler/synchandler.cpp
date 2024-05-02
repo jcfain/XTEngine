@@ -558,7 +558,7 @@ void SyncHandler::loadMFS(QString scriptFile)
             if(!loadMFS(axisName, fileInfo.absoluteFilePath()))
                 _invalidScripts.append("MFS script: " + fileInfo.absoluteFilePath());
         }
-        else if(scriptFile.endsWith(".zip") && zipFile->isReadable())
+        else if(zipFile && zipFile->isReadable())
         {
            QString fileName = scriptFileInfo.fileName();
            QString scriptFileNameNoExtension = fileName.remove(fileName.lastIndexOf('.'), scriptTemp.length() -  1);

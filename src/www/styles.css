@@ -55,6 +55,7 @@ body {
 }
 .auth-body {
     display: flex;
+    overflow: auto;
     height: 100vh;
     align-items: center;
 }
@@ -374,6 +375,7 @@ input:hover:not(.range-input) {
 }
 
 .media-item .name {
+    overflow: hidden;
     text-overflow: ellipsis;
     flex-basis: 40%;
     text-align: center;
