@@ -41,6 +41,7 @@ private:
     QString _lastError;
     QVideoSurfaceFormat m_format;
     QTimer m_debouncer;
+    bool m_processed;
 
     void setUpThumbPlayer();
     void setUpInfoPlayer();

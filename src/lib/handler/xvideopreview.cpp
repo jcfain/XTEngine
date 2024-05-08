@@ -86,6 +86,7 @@ void XVideoPreview::extract(QString file, qint64 time)
 
 void XVideoPreview::extract() {
     LogHandler::Debug("extract at: " + QString::number(_time) + " from: "+ _file);
+    m_processed = false;
     QUrl mediaUrl = QUrl::fromLocalFile(_file);
     QMediaContent mc(mediaUrl);
     _thumbPlayer->setMedia(mc);
@@ -166,21 +167,27 @@ void XVideoPreview::on_mediaStateChange(QMediaPlayer::State state)
 }
 
 void XVideoPreview::process() {
-    if(_extracting) {
-        _extracting = false;
-        if(!_lastError.isNull()) {
-            emit frameExtractionError(_lastError);
-            _lastError.clear();
-        }
-        else if(!_lastImage.isNull()) {
-            emit frameExtracted(_lastImage);
-            //_lastImage = QImage();
-        }
-    }
-    else if(_loadingInfo && _lastDuration > 0)
+    if(!m_processed)
     {
-        _loadingInfo = false;
-        emit durationChanged(_lastDuration);
+        if(_extracting) {
+            _extracting = false;
+            if(!_lastError.isNull()) {
+                m_processed = true;
+                emit frameExtractionError(_lastError);
+                _lastError.clear();
+            }
+            else if(!_lastImage.isNull()) {
+                m_processed = true;
+                emit frameExtracted(_lastImage);
+                //_lastImage = QImage();
+            }
+        }
+        else if(_loadingInfo && _lastDuration > 0)
+        {
+            _loadingInfo = false;
+            m_processed = true;
+            emit durationChanged(_lastDuration);
+        }
     }
 }
 void XVideoPreview::on_durationChanged(qint64 duration)
