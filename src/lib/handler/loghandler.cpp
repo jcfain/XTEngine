@@ -4,6 +4,7 @@
 
 void LogHandler::Debug(QString message)
 {
+    QMutexLocker locker(&mutex);
     if (_debugMode)
     {
         qDebug() << "XTP DEBUG " + QDateTime::currentDateTime().toString("hh:mm:ss:zzz") +": " +  message;
@@ -12,16 +13,19 @@ void LogHandler::Debug(QString message)
 
 void LogHandler::Info(QString message)
 {
+    QMutexLocker locker(&mutex);
     qInfo() << "XTP INFO " + QDateTime::currentDateTime().toString("hh:mm:ss:zzz") +": " +  message;
 }
 
 void LogHandler::Warn(QString message)
 {
+    QMutexLocker locker(&mutex);
     qWarning() << "XTP WARN " + QDateTime::currentDateTime().toString("hh:mm:ss:zzz") + ": " + message;
 }
 
 void LogHandler::Error(QString message)
 {
+    QMutexLocker locker(&mutex);
     qCritical() << "XTP ERROR " + QDateTime::currentDateTime().toString("hh:mm:ss:zzz") +": " +  message;
 }
 
