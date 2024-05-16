@@ -21,6 +21,7 @@ public:
     QString getAllHome();
     QString getSwitchedHome();
     QString getChannelHome(QString channel);
+    QString formatTCode(QString channel, int value, QString modifier, int modifierValue);
 
 private:
     QMutex mutex;

@@ -51,6 +51,10 @@ SOURCES += \
 
 HEADERS += \
     XTEngine_global.h \
+    lib/handler/Motion/MotionGenerator.hpp \
+    lib/handler/Motion/MotionHandler.hpp \
+    lib/handler/Motion/motionChannel.h \
+    lib/handler/Motion/motionProfile.h \
     lib/handler/connectionhandler.h \
     lib/handler/crypthandler.h \
     lib/handler/deohandler.h \

@@ -237,6 +237,18 @@ QString TCodeHandler::getChannelHome(QString channel)
     return tcode;
 }
 
+QString TCodeHandler::formatTCode(QString channel, int value, QString modifier, int modifierValue)
+{
+    QString formattedTCode;
+    formattedTCode = QString::number(calculateRange(channel.toUtf8(), value)).rightJustified(SettingsHandler::getTCodePadding(), '0');
+    if(!modifier.isEmpty())
+    {
+        formattedTCode += modifier;
+        formattedTCode += QString::number(modifierValue);
+    }
+    return formattedTCode;
+}
+
 void TCodeHandler::getChannelHome(ChannelModel33* channel, QString &tcode)
 {
     if(channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None || channel->Channel == TCodeChannelLookup::Suck() || channel->Channel == TCodeChannelLookup::SuckPosition()) {

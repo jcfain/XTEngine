@@ -2170,6 +2170,20 @@ void SettingsHandler::setupTCodeCommandMap()
     // }
 }
 
+void SettingsHandler::setupMotionProfiles()
+{
+    auto channelProfiles = TCodeChannelLookup::getChannelProfiles();
+    foreach(auto profileName, channelProfiles) {
+        auto motionProfile = MotionProfile(profileName);
+        auto channels = TCodeChannelLookup::getChannels(profileName);
+        foreach (auto channelName, channels) {
+            auto channel = TCodeChannelLookup::getChannel(channelName);
+            motionProfile.addDefaultChannel(channel->Channel);
+        }
+        m_motionProfiles.append(motionProfile);
+    }
+}
+
 void SettingsHandler::setFunscriptLoaded(QString key, bool loaded)
 {
     if (_funscriptLoaded.contains(key))
@@ -2359,6 +2373,60 @@ int SettingsHandler::getLubePulseFrequency()
     return _channelPulseFrequency;
 }
 
+QList<MotionChannel> SettingsHandler::getMotionChannels(QString profileName)
+{
+    if(!profileName.isEmpty())
+    {
+        const auto motionProfile = std::find_if(m_motionProfiles.begin(), m_motionProfiles.end(), [profileName](const MotionProfile profile) {
+            return profile.motionProfileName == profileName;
+        });
+        if(motionProfile != m_motionProfiles.end()) {
+            return motionProfile->channels;
+        }
+    }
+    return m_motionProfiles.isEmpty() ? QList<MotionChannel>() : m_motionProfiles.first().channels;
+}
+
+QList<MotionProfile> SettingsHandler::motionProfiles()
+{
+    return m_motionProfiles;
+}
+
+void SettingsHandler::setMotionProfiles(const QList<MotionProfile> &newMotionProfiles)
+{
+    m_motionProfiles = newMotionProfiles;
+}
+
+MotionProfile* SettingsHandler::getMotionProfile(const QString &name)
+{
+    if(!name.isEmpty())
+    {
+        const auto motionProfile = std::find_if(m_motionProfiles.begin(), m_motionProfiles.end(), [name](const MotionProfile profile) {
+            return profile.motionProfileName == name;
+        });
+        if(motionProfile != m_motionProfiles.end()) {
+            return &motionProfile.i->t();
+        }
+    }
+    return 0;
+}
+
+void SettingsHandler::removeMotionProfile(const QString &name)
+{
+
+}
+
+void SettingsHandler::addMotionProfile(const MotionProfile &motionProfile)
+{
+
+}
+
+void SettingsHandler::updateMotionProfile(const MotionProfile &motionProfile)
+{
+
+}
+
+
 LibraryListItemMetaData258 SettingsHandler::getLibraryListItemMetaData(QString path)
 {
     QMutexLocker locker(&mutex);
@@ -2489,6 +2557,8 @@ QString SettingsHandler::_hashedWebPass;
 
 QList<DecoderModel> SettingsHandler::decoderPriority;
 XVideoRenderer SettingsHandler::_selectedVideoRenderer;
+
+QList<MotionProfile> SettingsHandler::m_motionProfiles;
 
 QStringList SettingsHandler::_libraryExclusions;
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::_playlists;

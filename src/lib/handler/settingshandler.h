@@ -28,6 +28,7 @@
 #include "../struct/LibraryListItemMetaData.h"
 #include "../struct/LibraryListItemMetaData258.h"
 #include "lib/lookup/TCodeCommand.h"
+#include "Motion/motionProfile.h"
 
 class XTENGINE_EXPORT SettingsHandler: public QObject
 {
@@ -284,6 +285,8 @@ public:
     static void setLubePulseFrequency(int value);
     static int getLubePulseFrequency();
 
+    static QList<MotionChannel> getMotionChannels(QString profile = nullptr);
+
     static void SetGamepadMapDefaults();
     static void SetKeyboardKeyDefaults();
     // static void SetTCodeCommandDefaults();
@@ -344,6 +347,14 @@ public:
     static const QString &hashedWebPass();
     static void setHashedWebPass(const QString &newHashedWebPass);
 
+    static QList<MotionProfile> motionProfiles();
+    static void setMotionProfiles(const QList<MotionProfile> &newMotionProfiles);
+
+    static MotionProfile* getMotionProfile(const QString &name);
+    static void removeMotionProfile(const QString &name);
+    static void addMotionProfile(const MotionProfile &motionProfile);
+    static void updateMotionProfile(const MotionProfile &motionProfile);
+
 private:
     SettingsHandler();
     ~SettingsHandler();
@@ -356,6 +367,7 @@ private:
     static void setupKeyboardKeyMap();
     // static void setupTCodeCommands();
     static void setupTCodeCommandMap();
+    static void setupMotionProfiles();
     static void MigrateTo23();
     static void MigrateTo25();
     static void MigrateTo252();
@@ -471,6 +483,8 @@ private:
     static QString _channelPulseChannel;
     static qint64 _channelPulseFrequency;
     static int _channelPulseAmount;
+
+    static QList<MotionProfile> m_motionProfiles;
 
     static QHash<QString, bool> _funscriptLoaded;
     static QSettings* settings;
