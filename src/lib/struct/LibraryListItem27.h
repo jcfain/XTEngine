@@ -143,7 +143,7 @@ public:
         return fromJson(obj);
     }
 
-    static QVariant toVariant(LibraryListItem27 item)
+    static QVariant toVariant(const LibraryListItem27 item)
     {
         QJsonObject obj;
         //obj["id"] = item.ID;
@@ -163,7 +163,7 @@ public:
         return QVariant::fromValue(obj);
      }
 
-    static LibraryListItem27 fromJson(QJsonObject obj) {
+    static LibraryListItem27 fromJson(const QJsonObject obj) {
         LibraryListItem27 newItem;
         //newItem.ID = obj["id"].toInt();
         newItem.path = obj["path"].toString();
@@ -180,7 +180,7 @@ public:
         return newItem;
     }
 
-    static void copyProperties(LibraryListItem27 from, LibraryListItem27 &to) {
+    static void copyProperties(const LibraryListItem27 from, LibraryListItem27 &to) {
         to.path = from.path;
         to.duration = from.duration;
         to.mediaExtension = from.mediaExtension;
