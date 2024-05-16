@@ -4,7 +4,6 @@
 #include <QObject>
 #include <QFileInfo>
 #include <QtConcurrent/QtConcurrent>
-#include <algorithm>
 #include <QImage>
 
 #include "../struct/LibraryListItem27.h"
@@ -25,26 +24,30 @@ signals:
     void libraryLoaded();
     void libraryStopped();
     void libraryChange();
-    void itemAdded(LibraryListItem27 item, int index, int newSize);
-    void itemRemoved(LibraryListItem27 item, int index, int newSize);
-    void itemUpdated(LibraryListItem27 item, int index);
+    void itemAdded(int index, int newSize);
+    void itemRemoved(int index, int newSize);
+    void itemUpdated(int index);
     void alternateFunscriptsFound(QList<ScriptInfo> scriptInfos);
     //void playListItem(LibraryListItem27 item);
 
     void thumbProcessBegin();
     void thumbProcessEnd();
     void saveNewThumbLoading(LibraryListItem27 item);
-    void saveNewThumb(LibraryListItem27 item, bool vrMode, QString thumbFile);
-    void saveThumbError(LibraryListItem27 item, bool vrMode, QString error);
+    void saveNewThumb(LibraryListItem27 item, QString thumbFile);
+    void saveThumbError(LibraryListItem27 item, QString error);
     void frameExtracted(LibraryListItem27 item, bool vrMode, QImage frame);
     void frameExtractedError(LibraryListItem27 item, bool vrMode, const QString &errorMessage);
 //    void videoLoadError(LibraryListItem27 item, bool vrMode, QtAV::AVError er);
 public:
     MediaLibraryHandler(QObject* parent = nullptr);
     ~MediaLibraryHandler();
-    void saveSingleThumb(QString id, qint64 position = 0);
-    void startThumbProcess(bool vrMode = false);
+    void saveSingleThumbAsync(QString id, qint64 position = 0);
+    void startThumbProcess();
     void stopThumbProcess();
+    void saveSingleThumb(QString id, qint64 position = 0);
+    void saveThumb(int index, qint64 position = 0);
+    void startThumbProcessAsync(bool vrMode = false);
+    void stopThumbProcessAsync();
     void loadLibraryAsync();
     bool isLibraryLoading();
     void stopLibraryLoading();
@@ -71,6 +74,7 @@ public:
     LibraryListItem27* findItemByPartialThumbPath(QString partialThumbPath);
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
+    void updateToolTip(int index, bool scriptDiscovery = false);
     void updateToolTip(LibraryListItem27 &item, bool scriptDiscovery = false);
     void cleanGlobalThumbDirectory();
     void findAlternateFunscripts(QString path);
@@ -85,19 +89,23 @@ private:
     QFuture<void> _loadingLibraryFuture;
     QTimer _thumbTimeoutTimer;
     QMutex _mutex;
+    QFuture<void> m_thumbFuture;
     //XVideoPreview* _extractor = 0;
 
     void on_load_library(QStringList paths, bool vrMode);
     void onLibraryLoaded();
     //void saveThumbs(QList<LibraryListItem27> items, qint64 position = 0, bool vrMode = false);
     void onPrepareLibraryLoad();
-    void onLibraryItemFound(LibraryListItem27 item);
-    void onSaveThumb(QString itemID, bool vrMode, QString errorMessage = nullptr);
+    void onLibraryItemFound(LibraryListItem27 &item);
+    void onSaveThumbAsync(QString itemID, bool vrMode, QString errorMessage = nullptr);
     void setThumbPath(LibraryListItem27 &item);
-    void setThumbState(ThumbState state, LibraryListItem27 &item);
+    void setThumbState(ThumbState state, LibraryListItem27* item);
+    void setThumbState(ThumbState state, int itemIndex);
     void saveNewThumbs(bool vrMode = false);
-    void saveThumb(LibraryListItem27 &item, qint64 position = 0, bool vrMode = false);
+    void saveThumbAsync(LibraryListItem27 &item, qint64 position = 0, bool vrMode = false);
     void assignID(LibraryListItem27 &item);
+
+    void onSaveThumb(QString itemID, QString errorMessage = nullptr);
 
     LibraryListItem27 createLibraryListItemFromFunscript(QString funscript);
     void discoverMFS1(LibraryListItem27 &item);

@@ -2,6 +2,7 @@
 #include <QProcess>
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QThread>
 
 XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent), _thumbNailVideoSurface(0), _thumbPlayer(0)
 {
@@ -69,6 +70,7 @@ void XVideoPreview::tearDownPlayer()
 void XVideoPreview::extract(QString file, qint64 time)
 {
     setUpThumbPlayer();
+    m_processed = false;
     _file = file;
     if(_file.isNull()) {
         LogHandler::Error("In valid file path.");
@@ -81,7 +83,13 @@ void XVideoPreview::extract(QString file, qint64 time)
         return;
     }
     _time = time;
-    m_debouncer.start(100);
+    //m_debouncer.start(100);
+    // QTimer::singleShot(this, [this]() {
+    //     LogHandler::Debug("Extract debounce");
+    //     extract();
+    // });
+    LogHandler::Debug("Extract");
+    extract();
 }
 
 void XVideoPreview::extract() {
@@ -90,9 +98,12 @@ void XVideoPreview::extract() {
     QUrl mediaUrl = QUrl::fromLocalFile(_file);
     QMediaContent mc(mediaUrl);
     _thumbPlayer->setMedia(mc);
+    m_errored = false;
+    _lastError.clear();
 //    bool isFFmpeg = checkForFFMpeg();
     if(_time > -1)
     {
+        m_imageExtracted = false;
         _loadingInfo = false;
         _extracting = true;
 //        if(!isFFmpeg)
@@ -114,6 +125,7 @@ void XVideoPreview::load(QString file)
     }
     LogHandler::Debug("load: "+ file);
     _loadingInfo = true;
+    m_durationRetrieved = false;
     extract(file);
 }
 
@@ -122,6 +134,81 @@ void XVideoPreview::stop()
     if(_thumbPlayer->state() == QMediaPlayer::PlayingState)
         _thumbPlayer->stop();
     _thumbPlayer->setMedia(QMediaContent());
+}
+
+#include <QtConcurrent/QtConcurrent>
+bool XVideoPreview::waitForImage(qint64 timeout)
+{
+    if(m_thumbFuture.isRunning()) {
+        m_thumbFuture.cancel();
+        m_thumbFuture.waitForFinished();
+    }
+    if(m_processed)
+    {
+        return !m_errored;
+    }
+    m_thumbFuture = QtConcurrent::run([this, timeout] () -> bool {
+        if(_extracting) {
+            QElapsedTimer timer;
+            // timer.setSingleShot(true);
+            timer.start();
+            while(!m_thumbFuture.isCanceled() && !m_errored && !m_imageExtracted && !timer.hasExpired(timeout)) {
+                int time = timer.elapsed();
+                QThread::msleep(100);
+            }
+            if(!m_errored && !timer.hasExpired(timeout)) {
+                m_errored = true;
+                _lastError = "Thumb extract timed out";
+            }
+            timer.invalidate();
+        }
+        return !m_errored;
+    });
+    return m_thumbFuture.result();
+}
+bool XVideoPreview::waitForDuration(qint64 timeout)
+{
+    if(m_durationFuture.isRunning()) {
+        m_durationFuture.cancel();
+        m_durationFuture.waitForFinished();
+    }
+    if(m_processed)
+    {
+        return !m_errored;
+    }
+    m_durationFuture = QtConcurrent::run([this, timeout] () -> bool {
+        if(!_extracting) {
+            QElapsedTimer timer;
+            //timer.setSingleShot(true);
+            timer.start();
+            while(!m_durationFuture.isCanceled() && !m_errored && !m_durationRetrieved && !timer.hasExpired(timeout)) {
+                int time = timer.elapsed();
+                QThread::msleep(100);
+            }
+            if(!m_errored && timer.hasExpired(timeout)) {
+                m_errored = true;
+                _lastError = "Duration timed out";
+            }
+            timer.invalidate();
+        }
+        return !m_errored;
+    });
+    return m_durationFuture.result();
+}
+
+QImage XVideoPreview::getImage()
+{
+    return _lastImage;
+}
+
+qint64 XVideoPreview::getDuration()
+{
+    return _lastDuration;
+}
+
+QString XVideoPreview::getError()
+{
+    return _lastError;
 }
 
 // Private
@@ -173,11 +260,12 @@ void XVideoPreview::process() {
             _extracting = false;
             if(!_lastError.isNull()) {
                 m_processed = true;
+                m_errored = true;
                 emit frameExtractionError(_lastError);
-                _lastError.clear();
             }
             else if(!_lastImage.isNull()) {
                 m_processed = true;
+                m_imageExtracted = true;
                 emit frameExtracted(_lastImage);
                 //_lastImage = QImage();
             }
@@ -186,6 +274,7 @@ void XVideoPreview::process() {
         {
             _loadingInfo = false;
             m_processed = true;
+            m_durationRetrieved = true;
             emit durationChanged(_lastDuration);
         }
     }

@@ -4,6 +4,7 @@
 
 #include <QMediaPlayer>
 #include <QTimer>
+#include <QFuture>
 //#include <QProcess>
 //#include <QCoreApplication>
 //#include <QFileInfo>
@@ -26,6 +27,22 @@ public:
     void load(QString file);
     void stop();
 
+    /**
+     * @brief waitForImage
+     * @param timeout
+     * @return true if successful.
+     */
+    bool waitForImage(qint64 timeout = 30000);
+    /**
+     * @brief waitForDuration
+     * @param timeout
+     * @return true if successful.
+     */
+    bool waitForDuration(qint64 timeout = 30000);
+    QImage getImage();
+    qint64 getDuration();
+    QString getError();
+
 private:
     void extract();
     XVideoSurface* _thumbNailVideoSurface;
@@ -42,6 +59,11 @@ private:
     QVideoSurfaceFormat m_format;
     QTimer m_debouncer;
     bool m_processed;
+    bool m_errored;
+    bool m_imageExtracted;
+    bool m_durationRetrieved;
+    QFuture<bool> m_durationFuture;
+    QFuture<bool> m_thumbFuture;
 
     void setUpThumbPlayer();
     void setUpInfoPlayer();
