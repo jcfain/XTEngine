@@ -24,15 +24,18 @@ public:
 
 private slots:
     void onReadyRead();
+    void onConnected();
 
 private:
     void readData();
     void onSocketStateChange (QAbstractSocket::SocketState state);
+    void sendHeartbeat();
 
     QUdpSocket* m_udpSocket = 0;
     NetworkAddress _address;
     QHostAddress m_hostAddress;
-
+    QTimer m_heartBeatTimer;
+    QMutex m_socketMutex;
 };
 
 #endif // UDPHANDLER_H

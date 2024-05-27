@@ -210,7 +210,7 @@ void HereSphereHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             _isConnected = false;
             if(SettingsHandler::getSelectedInputDevice() == DeviceName::HereSphere)
             {
-                LogHandler::Debug("HereSphere retrying: " + _address.address);
+                LogHandler::Debug("HereSphere retrying: " +QString::number(m_connectTries) + " " + _address.address);
                 tearDown();
                 QTimer::singleShot(2000, [this] () {
                     init(_address, _waitTimeout);

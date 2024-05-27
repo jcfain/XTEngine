@@ -216,6 +216,9 @@ public:
     static void setLiveActionPaused(bool value);
     static int getLiveOffSet();
     static void setLiveOffset(int value);
+    static bool isSmartOffSet();
+    static int getSmartOffSet();
+    static void setSmartOffset(int value);
 
     static void setDecoderPriority(QList<DecoderModel> value);
     static QList<DecoderModel> getDecoderPriority();
@@ -423,6 +426,8 @@ private:
     static bool _liveGamepadConnected;
     static bool _liveActionPaused;
     static int _liveOffset;
+    static bool m_smartOffsetEnabled;
+    static int m_smartOffset;
 
     static int _xRangeStep;
     static bool _liveMultiplierEnabled;

@@ -111,6 +111,7 @@ HEADERS += \
     lib/tool/tcodefactory.h \
     lib/tool/videoformat.h \
     lib/tool/xmath.h \
+    lib/tool/xnetwork.h \
     lib/tool/xtimer.h \
     xtengine.h
 

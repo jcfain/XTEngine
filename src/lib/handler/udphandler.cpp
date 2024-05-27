@@ -2,6 +2,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QNetworkInterface>
 #include "loghandler.h"
+#include "../tool/xnetwork.h"
 #include "settingshandler.h"
 
 UdpHandler::UdpHandler(QObject *parent) :
@@ -10,6 +11,12 @@ UdpHandler::UdpHandler(QObject *parent) :
 {
     qRegisterMetaType<ConnectionChangedSignal>();
     connect(m_udpSocket, &QUdpSocket::readyRead, this, &UdpHandler::onReadyRead, Qt::QueuedConnection);
+    connect(this, &UdpHandler::connectionChange, this, [this](ConnectionChangedSignal signal) {
+        if(signal.status == ConnectionStatus::Connected) {
+            onConnected();
+        }
+    });
+    connect(&m_heartBeatTimer, &QTimer::timeout, this, &UdpHandler::sendHeartbeat, Qt::QueuedConnection);
 }
 UdpHandler::~UdpHandler() {}
 
@@ -41,12 +48,13 @@ void UdpHandler::init(NetworkAddress address, int waitTimeout)
     }
     //m_udpSocket->connectToHost(m_hostAddress, address.port);
     tryConnectDevice(waitTimeout);
+
 }
 
 void UdpHandler::sendTCode(const QString &tcode)
 {
     LogHandler::Debug("Sending TCode UDP: "+tcode);
-
+    QMutexLocker locker(&m_socketMutex);
     QByteArray currentRequest;
     auto formattedTcode = tcode + "\n";
     currentRequest.append(formattedTcode.toUtf8());
@@ -70,10 +78,34 @@ void UdpHandler::onReadyRead()
     processDeviceInput(recieved);
 }
 
+void UdpHandler::onConnected()
+{
+    sendHeartbeat();
+    m_heartBeatTimer.start(30000);
+}
+
+void UdpHandler::sendHeartbeat()
+{
+    LogHandler::Debug("UDP heart beat check");
+    int replyTimeInMS = 0;
+    if (XNetwork::ping(m_hostAddress, replyTimeInMS)) {
+        LogHandler::Debug("UDP address detected!");
+        int roundTrip = replyTimeInMS * 2;
+        if(SettingsHandler::isSmartOffSet())
+            LogHandler::Debug("Adjusting live offset by: "+QString::number(roundTrip) + "ms");
+        SettingsHandler::setSmartOffset(roundTrip);
+    } else {
+        LogHandler::Debug("UDP heart beat check failed!");
+        dispose();
+        emit connectionChange({DeviceType::Output, m_deviceName, ConnectionStatus::Disconnected, "Disconnected"});
+    }
+}
+
 void UdpHandler::dispose()
 {
     LogHandler::Debug("Udp dispose "+ _address.address);
     m_udpSocket->close();
+    m_heartBeatTimer.stop();
     OutputDeviceHandler::dispose();
 }
 

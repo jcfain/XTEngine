@@ -1273,6 +1273,21 @@ void SettingsHandler::setLiveOffset(int value)
     settingsChangedEvent(true);
 }
 
+bool SettingsHandler::isSmartOffSet()
+{
+    return m_smartOffsetEnabled;
+}
+
+int SettingsHandler::getSmartOffSet()
+{
+    return m_smartOffsetEnabled ? m_smartOffset : 0;
+}
+
+void SettingsHandler::setSmartOffset(int value)
+{
+    m_smartOffset = value;
+}
+
 bool SettingsHandler::getDisableTCodeValidation()
 {
     return _disableTCodeValidation;
@@ -2438,6 +2453,8 @@ int SettingsHandler::_liveGamepadSpeed;
 bool SettingsHandler::_liveGamepadConnected;
 bool SettingsHandler::_liveActionPaused;
 int SettingsHandler::_liveOffset;
+bool SettingsHandler::m_smartOffsetEnabled = true;
+int SettingsHandler::m_smartOffset = 0;
 
 int SettingsHandler::_xRangeStep;
 bool SettingsHandler::_liveMultiplierEnabled = false;
