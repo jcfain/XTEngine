@@ -2453,7 +2453,7 @@ int SettingsHandler::_liveGamepadSpeed;
 bool SettingsHandler::_liveGamepadConnected;
 bool SettingsHandler::_liveActionPaused;
 int SettingsHandler::_liveOffset;
-bool SettingsHandler::m_smartOffsetEnabled = true;
+bool SettingsHandler::m_smartOffsetEnabled = false;
 int SettingsHandler::m_smartOffset = 0;
 
 int SettingsHandler::_xRangeStep;
