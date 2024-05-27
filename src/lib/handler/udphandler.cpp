@@ -21,11 +21,11 @@ void UdpHandler::init(NetworkAddress address, int waitTimeout)
     m_hostAddress = QHostAddress(_address.address);
     if (QAbstractSocket::IPv4Protocol == m_hostAddress.protocol() || QAbstractSocket::IPv6Protocol == m_hostAddress.protocol())
     {
-        LogHandler::Debug("IP address passed in: "+_address.address);
+        LogHandler::Debug("IP address passed in to UDP: "+_address.address);
     }
     else
     {
-        LogHandler::Debug("Hostname passed in: "+_address.address);
+        LogHandler::Debug("Hostname passed in to UDP: "+_address.address);
         QHostInfo info = QHostInfo::fromName(_address.address);
         if(info.error() != QHostInfo::NoError) {
             emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, info.errorString()});
