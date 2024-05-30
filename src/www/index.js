@@ -1754,6 +1754,36 @@ function playVideo(obj) {
 		clearPlayingMediaItem();
 	}
 	setPlayingMediaItem(obj);
+	if(obj["subtitle"]) {
+		if(externalStreaming && confirm("This media has a subtitle file? Would you like to save it to your device for use?")) {
+			var subtitle_path =  "/media" + obj.subtitleRelative;
+			const ext = obj.subtitleRelative.substring(obj.subtitleRelative.lastIndexOf("."), obj.subtitleRelative.length);
+			download(subtitle_path, obj.displayName + ext);
+		} else if(!externalStreaming) {
+			if(subtitle_path, obj["subtitle"].endsWith("vtt")) {
+				const tracks = videoNode.querySelectorAll("track");
+				let track;
+				if(!tracks.length) {
+					track = document.createElement("track");
+					track.default = true;
+					videoNode.appendChild(track);
+				} else {
+					track = tracks[0];
+				}
+				track.src = "/media" + obj.subtitleRelative;
+			} else {
+				var tracks = videoNode.querySelectorAll('track')
+				for (var i = 0; i < tracks.length; i++) {
+					tracks[i].src = undefined;
+				}
+			}
+		}
+	} else {
+		var tracks = videoNode.querySelectorAll('track')
+		for (var i = 0; i < tracks.length; i++) {
+			tracks[i].src = undefined;
+		}
+	}
 	if (externalStreaming) {
 		var file_path =  "/media" + obj.relativePath;// + "?sessionID="+cookies.sessionID;
 		window.open(file_path);
@@ -1771,6 +1801,13 @@ function playVideo(obj) {
 	// 	loadMediaFunscript(playingmediaItem.scriptNoExtensionRelativePath, playingmediaItem.isMFS);
 	// else
 	//videoNode.play();
+}
+
+function download(dataurl, filename) {
+	const link = document.createElement("a");
+	link.href = dataurl;
+	link.download = filename;
+	link.click();
 }
 
 function stopVideoClick() {

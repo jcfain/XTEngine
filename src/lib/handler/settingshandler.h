@@ -304,7 +304,7 @@ public:
     static bool Import(QString file);
 
 
-    static QStringList getVideoExtensions()
+    static const QStringList getVideoExtensions()
     {
         return QStringList()
                 << "mp4"
@@ -325,7 +325,7 @@ public:
                 << "swf"
                 << "avchd";
     }
-    static QStringList getAudioExtensions()
+    static const QStringList getAudioExtensions()
     {
         return QStringList()
                 << "m4a"
@@ -335,12 +335,18 @@ public:
                 << "wav"
                 << "wma";
     }
-    static QStringList getImageExtensions()
+    static const QStringList getSubtitleExtensions()
+    {
+        return QStringList()
+               << "vtt"
+               << "srt";
+    }
+    static const QStringList getImageExtensions()
     {
         return QStringList() << "jpg" << "jpeg" << "png" << "jfif" << "webp" << "gif";
     }
 
-    static QString getThumbFormatExtension() {
+    static const QString getThumbFormatExtension() {
         return "jpg";
     }
 

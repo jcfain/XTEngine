@@ -69,6 +69,8 @@ public:
     LibraryListItem27* findItemByPartialMediaPath(QString partialMediaPath);
     LibraryListItem27* findItemByThumbPath(QString thumbPath);
     LibraryListItem27* findItemByPartialThumbPath(QString partialThumbPath);
+    LibraryListItem27* findItemBySubtitle(QString subtitle);
+    LibraryListItem27* findItemByPartialSubtitle(QString partialSubtitle);
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
     void updateToolTip(LibraryListItem27 &item, bool scriptDiscovery = false);

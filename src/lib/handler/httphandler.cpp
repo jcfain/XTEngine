@@ -71,6 +71,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     extensions += SettingsHandler::getAudioExtensions().join("|");
     //router.addRoute("GET", "^/home", this, &HttpHandler::handleHome);
     router.addRoute("GET", "^/media/(.*\\.(("+extensions+")$))?[.]*$", this, &HttpHandler::handleVideoStream);
+    router.addRoute("GET", "^/media/(.*\\.(("+SettingsHandler::getSubtitleExtensions().join("|")+")$))?[.]*$", this, &HttpHandler::handleSubtitle);
     router.addRoute("GET", "^/media$", this, &HttpHandler::handleVideoList);
     router.addRoute("GET", "^/thumb/.*$", this, &HttpHandler::handleThumbFile);
     router.addRoute("GET", "^/funscript/(.*\\.((funscript)$))?[.]*$", this, &HttpHandler::handleFunscriptFile);
@@ -637,7 +638,14 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     relativePath = relativePath.replace(item.libraryPath +"/", "");
     object["path"] = hostAddress + "media/" + QString(QUrl::toPercentEncoding(relativePath));
     object["relativePath"] = "/" + QString(QUrl::toPercentEncoding(relativePath));
-    QString scriptNoExtensionRelativePath = item.scriptNoExtension;
+    if(!item.subtitle.isEmpty())
+    {
+        QString relativeSubtitlePath = item.subtitle;
+        relativeSubtitlePath = relativeSubtitlePath.replace(item.libraryPath +"/", "");
+        object["subtitle"] = hostAddress + "media/" + QString(QUrl::toPercentEncoding(relativeSubtitlePath));
+        object["subtitleRelative"] = "/" + QString(QUrl::toPercentEncoding(relativeSubtitlePath));
+    }
+    QString scriptNoExtensionRelativePath = item.pathNoExtension;
     scriptNoExtensionRelativePath = scriptNoExtensionRelativePath.replace(item.libraryPath, "");
     object["scriptNoExtensionRelativePath"] = "funscript/" + QString(QUrl::toPercentEncoding(scriptNoExtensionRelativePath));
     QString thumbFile = item.thumbFile;
@@ -902,6 +910,29 @@ HttpPromise HttpHandler::handleThumbFile(HttpDataPtr data)
     return HttpPromise::resolve(data);
 }
 
+HttpPromise HttpHandler::handleSubtitle(HttpDataPtr data)
+{
+    if(!isAuthenticated(data)) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+    auto match = data->state["match"].value<QRegularExpressionMatch>();
+    QString parameter = match.captured();
+    QString apiStr("/media/");
+    QString subtitleFileName = parameter.replace(parameter.indexOf(apiStr), apiStr.size(), "");
+    LibraryListItem27* libraryItem = _mediaLibraryHandler->findItemByPartialSubtitle(subtitleFileName);
+    if(!libraryItem || libraryItem->subtitle.isEmpty())
+    {
+        data->response->setStatus(HttpStatus::NotFound);
+        return HttpPromise::resolve(data);
+    }
+    QString mimeType = mimeDatabase.mimeTypeForFile(libraryItem->subtitle, QMimeDatabase::MatchExtension).name();
+    data->response->sendFile(libraryItem->subtitle, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
+    data->response->setStatus(HttpStatus::Ok);
+    //buffer->deleteLater();
+    return HttpPromise::resolve(data);
+}
+
 HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
 {
 //    if(!SettingsHandler::hashedWebPass().isEmpty()) {
@@ -943,7 +974,6 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
                         resolve(data);
                         return;
                     }
-                    LogHandler::Debug("Looking for media in library: " + mediaName);
                     LibraryListItem27* libraryItem = _mediaLibraryHandler->findItemByPartialMediaPath(mediaName);
                     if(!libraryItem) {
                         LogHandler::Error(QString("Media item not found (%1)").arg(mediaName));
