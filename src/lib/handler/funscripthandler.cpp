@@ -213,7 +213,7 @@ bool FunscriptHandler::exists(QString path)
 std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(qint64 millis)
 {
     QMutexLocker locker(&mutex);
-    millis += SettingsHandler::getLiveOffSet();
+    millis += SettingsHandler::getLiveOffSet() + SettingsHandler::getSmartOffSet();
     qint64 closestMillis = findClosest(millis, atList);
     if(closestMillis == -1)
         return nullptr;

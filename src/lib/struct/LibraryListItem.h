@@ -65,7 +65,7 @@ struct XTENGINE_EXPORT LibraryListItem
         item.name = name;
         item.nameNoExtension = nameNoExtension;
         item.script = script;
-        item.scriptNoExtension = scriptNoExtension;
+        item.pathNoExtension = scriptNoExtension;
         item.mediaExtension = mediaExtension;
         item.thumbFile = thumbFile;
         item.zipFile = zipFile;

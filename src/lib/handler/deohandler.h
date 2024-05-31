@@ -39,9 +39,17 @@ private:
     void sendKeepAlive();
     void tearDown();
 
-    InputDevicePacket* currentPacket = nullptr;
-    QTcpSocket* tcpSocket = nullptr;
-    QTimer* keepAliveTimer = nullptr;
+    InputDevicePacket currentPacket;
+    InputDevicePacket blankPacket = {
+        NULL,
+        0,
+        0,
+        0,
+        0,
+        0
+    };
+    QTcpSocket tcpSocket;
+    QTimer keepAliveTimer;
     QMutex _mutex;
     NetworkAddress _address;
     QString _sendCommand;
@@ -50,6 +58,7 @@ private:
     bool _isPlaying = false;
     bool _isSelected = false;
     qint64 _currentTime;
+    uint8_t m_connectTries;
 };
 
 #endif // DEOHANDLER_H

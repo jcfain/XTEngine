@@ -47,6 +47,7 @@ public:
     HttpPromise handleActiveSessions(HttpDataPtr data);
     HttpPromise handleExpireSession(HttpDataPtr data);
     HttpPromise handleLogout(HttpDataPtr data);
+    HttpPromise handleSubtitle(HttpDataPtr data);
     HttpPromise handleVideoStream(HttpDataPtr data);
     HttpPromise handleVideoList(HttpDataPtr data);
     HttpPromise handleThumbFile(HttpDataPtr data);

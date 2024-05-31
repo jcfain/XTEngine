@@ -41,7 +41,7 @@ public:
         name = item->name;
         nameNoExtension = item->nameNoExtension;
         script = item->script;
-        scriptNoExtension = item->scriptNoExtension;
+        pathNoExtension = item->pathNoExtension;
         mediaExtension = item->mediaExtension;
         thumbFile = item->thumbFile;
         zipFile = item->zipFile;
@@ -49,18 +49,25 @@ public:
         duration = item->duration;
         ID = item->ID;
         libraryPath = item->libraryPath;
+        hasScript = item->hasScript;
+        MFSScripts = item->MFSScripts;
+        subtitle = item->subtitle;
         isMFS = item->isMFS;
         toolTip = item->toolTip;
         thumbState = item->thumbState;
         thumbFileExists = item->thumbFileExists;
         managedThumb = item->managedThumb;
+        thumbNails = item->thumbNails;
+        thumbFileLoading = item->thumbFileLoading;
+        thumbFileLoadingCurrent = item->thumbFileLoadingCurrent;
+        thumbFileError = item->thumbFileError;
     }
     LibraryListItemType type;
     QString path;
     QString name;
     QString nameNoExtension;
     QString script;
-    QString scriptNoExtension;
+    QString pathNoExtension;
     QString mediaExtension;
     QString thumbFile;
     QString zipFile;
@@ -71,6 +78,7 @@ public:
     QString ID;
     QString libraryPath;
     bool hasScript;
+    QString subtitle;
     QStringList MFSScripts;
     bool isMFS;
     QString toolTip;
@@ -90,7 +98,8 @@ public:
         dataStream << object.name;
         dataStream << object.nameNoExtension;
         dataStream << object.script;
-        dataStream << object.scriptNoExtension;
+        dataStream << object.pathNoExtension;
+        dataStream << object.subtitle;
         dataStream << object.mediaExtension;
         dataStream << object.thumbFile;
         dataStream << object.zipFile;
@@ -115,7 +124,8 @@ public:
         dataStream >> object.name;
         dataStream >> object.nameNoExtension;
         dataStream >> object.script;
-        dataStream >> object.scriptNoExtension;
+        dataStream >> object.pathNoExtension;
+        dataStream >> object.subtitle;
         dataStream >> object.mediaExtension;
         dataStream >> object.thumbFile;
         dataStream >> object.zipFile;
@@ -154,7 +164,7 @@ public:
         obj["name"] = item.name;
         obj["nameNoExtension"] = item.nameNoExtension;
         obj["script"] = item.script;
-        obj["scriptNoExtension"] = item.scriptNoExtension;
+        obj["scriptNoExtension"] = item.pathNoExtension;
         obj["thumbFile"] = item.thumbFile;
         obj["type"] = (int)item.type;
         obj["zipFile"] = item.zipFile;
@@ -173,7 +183,7 @@ public:
         newItem.name = obj["name"].toString();
         newItem.nameNoExtension = obj["nameNoExtension"].toString();
         newItem.script = obj["script"].toString();
-        newItem.scriptNoExtension = obj["scriptNoExtension"].toString();
+        newItem.pathNoExtension = obj["scriptNoExtension"].toString();
         newItem.thumbFile = obj["thumbFile"].toString();
         newItem.type = (LibraryListItemType)obj["type"].toInt();
         newItem.zipFile = obj["zipFile"].toString();
@@ -188,7 +198,7 @@ public:
         to.name = from.name;
         to.nameNoExtension = from.nameNoExtension;
         to.script = from.script;
-        to.scriptNoExtension = from.scriptNoExtension;
+        to.pathNoExtension = from.pathNoExtension;
         to.thumbFile = from.thumbFile;
         to.type = from.type;
         to.zipFile = from.zipFile;
@@ -202,6 +212,7 @@ public:
         to.thumbState = from.thumbState;
         to.thumbFileExists = from.thumbFileExists;
         to.managedThumb = from.managedThumb;
+        to.subtitle = from.subtitle;
     }
 //    //waiting ? "://images/icons/loading.png" : "://images/icons/loading_current.png"
 };

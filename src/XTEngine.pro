@@ -111,6 +111,7 @@ HEADERS += \
     lib/tool/tcodefactory.h \
     lib/tool/videoformat.h \
     lib/tool/xmath.h \
+    lib/tool/xnetwork.h \
     lib/tool/xtimer.h \
     xtengine.h
 
@@ -209,7 +210,7 @@ include($$PWD/../../HttpServer/3rdparty/qtpromise/qtpromise.pri)
 #mypackagerule.command = exec my_package_script.sh
 #QMAKE_EXTRA_TARGETS += mypackagerule
 
-copydata.commands = $(COPY_DIR) $$shell_path($$PWD/www) $$shell_path($$DESTDIR/www)
+copydata.commands = $(COPY_DIR) $$shell_path($$PWD/www) $$OUT_PWD
 first.depends = $(first) copydata
 export(first.depends)
 export(copydata.commands)

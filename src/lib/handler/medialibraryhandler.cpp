@@ -34,7 +34,7 @@ void MediaLibraryHandler::stopLibraryLoading()
         _loadingLibraryFuture.cancel();
         _loadingLibraryFuture.waitForFinished();
         _loadingLibraryStop = false;
-        emit libraryLoadingStatus("Loading medai stopped");
+        emit libraryLoadingStatus("Loading media stopped");
     }
 }
 
@@ -50,6 +50,8 @@ void MediaLibraryHandler::onPrepareLibraryLoad()
 
 void MediaLibraryHandler::loadLibraryAsync()
 {
+    if(isLibraryLoading())
+        return;
     LogHandler::Debug("loadLibraryAsync");
     onPrepareLibraryLoad();
     stopLibraryLoading();
@@ -181,25 +183,25 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             QString fileNameNoExtension = fileNameTemp.remove(fileNameTemp.lastIndexOf('.'), fileNameTemp.length() -  1);
             QString scriptFile = fileNameNoExtension + ".funscript";
             QString scriptPath;
-            QString scriptNoExtension = videoPathTemp.remove(videoPathTemp.lastIndexOf('.'), videoPathTemp.length() - 1);
+            QString pathNoExtension = videoPathTemp.remove(videoPathTemp.lastIndexOf('.'), videoPathTemp.length() - 1);
             fileNameTemp = fileinfo.fileName();
             QString mediaExtension = "*" + fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameTemp.lastIndexOf('.')));
 
-            if (SettingsHandler::getSelectedFunscriptLibrary() == Q_NULLPTR)
-            {
-                scriptPath = scriptNoExtension + ".funscript";
-            }
-            else
-            {
-                scriptNoExtension = SettingsHandler::getSelectedFunscriptLibrary() + QDir::separator() + fileNameNoExtension;
-                scriptPath = SettingsHandler::getSelectedFunscriptLibrary() + QDir::separator() + scriptFile;
-            }
+            // if (SettingsHandler::getSelectedFunscriptLibrary() == Q_NULLPTR)
+            // {
+                scriptPath = pathNoExtension + ".funscript";// Not used
+            // }
+            // else //Not used
+            // {
+            //     pathNoExtension = SettingsHandler::getSelectedFunscriptLibrary() + QDir::separator() + fileNameNoExtension;
+            //     scriptPath = SettingsHandler::getSelectedFunscriptLibrary() + QDir::separator() + scriptFile;
+            // }
             if (!QFileInfo::exists(scriptPath))
             {
                 scriptPath = nullptr;
             }
             LibraryListItemType libratyItemType = vrMode || isStereo(fileName) ? LibraryListItemType::VR : LibraryListItemType::Video;
-            QString zipFile = scriptNoExtension + ".zip";
+            QString zipFile = pathNoExtension + ".zip";
             if(!QFileInfo::exists(zipFile)) {
                 zipFile = nullptr;
             }
@@ -213,7 +215,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             item.name = fileName; // name
             item.nameNoExtension = fileNameNoExtension; //nameNoExtension
             item.script = scriptPath; // script
-            item.scriptNoExtension = scriptNoExtension;
+            item.pathNoExtension = pathNoExtension;
             item.hasScript = !scriptPath.isEmpty() || !zipFile.isEmpty();
             item.mediaExtension = mediaExtension;
             item.thumbFile = nullptr;
@@ -292,13 +294,14 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 fileNameTemp = fileinfo.fileName();
                 QString mediaExtension = "*" + fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameTemp.lastIndexOf('.')));
 
+
                 LibraryListItem27 item;
                 item.type = LibraryListItemType::FunscriptType;
                 item.path = scriptPath; // path
                 item.name = fileName; // name
                 item.nameNoExtension = fileNameNoExtension; //nameNoExtension
                 item.script = scriptPath; // script
-                item.scriptNoExtension = scriptNoExtension;
+                item.pathNoExtension = scriptNoExtension;
                 item.hasScript = true;
                 item.mediaExtension = mediaExtension;
                 item.zipFile = zipFile;
@@ -367,7 +370,7 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     item.name = fileName; // name
     item.nameNoExtension = fileNameNoExtension; //nameNoExtension
     item.script = scriptPath; // script
-    item.scriptNoExtension = fileNameNoExtension;
+    item.pathNoExtension = fileNameNoExtension;
     item.mediaExtension = mediaExtension;
     item.zipFile = zipFile;
     item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime().date() : fileinfo.created().date();
@@ -766,26 +769,33 @@ void MediaLibraryHandler::addItemFront(LibraryListItem27 item) {
     _cachedLibraryItems.push_front(item);
     _mutex.unlock();
     auto index = 0;
-    //if(!isLibraryLoading()) {
-        emit itemAdded(index, _cachedLibraryItems.count());
-        //emit libraryChange();
-    //}
+    if(!isLibraryLoading()) {
+        emit itemAdded(item, index, _cachedLibraryItems.count());
+    }
 }
 void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
     _mutex.lock();
     _cachedLibraryItems.push_back(item);
     auto index = _cachedLibraryItems.count() - 1;
     _mutex.unlock();
-    //if(!isLibraryLoading()) {
-        emit itemAdded(index, _cachedLibraryItems.count());
-        //emit libraryChange();
-    //}
+    if(!isLibraryLoading()) {
+        emit itemAdded(item, index, _cachedLibraryItems.count());
+    }
 }
 void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
 {
     assignID(libraryListItem);
     setThumbPath(libraryListItem);
     updateToolTip(libraryListItem);
+    foreach(QString type, SettingsHandler::getSubtitleExtensions())
+    {
+        QString subtitilePath = libraryListItem.pathNoExtension + "."+ type;
+        if(QFileInfo::exists(subtitilePath))
+        {
+            libraryListItem.subtitle = subtitilePath;
+            break;
+        }
+    }
 }
 
 void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)
@@ -993,14 +1003,14 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDi
 void MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
     auto channels = TCodeChannelLookup::getChannels();
     QString script;
-    script.reserve(item.scriptNoExtension.length() + 1 + 5 + 10);
+    script.reserve(item.pathNoExtension.length() + 1 + 5 + 10);
     foreach(auto axisName, channels)
     {
         auto track = TCodeChannelLookup::getChannel(axisName);
         if(axisName == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfOscillate || track->TrackName.isEmpty())
             continue;
 
-        script = item.scriptNoExtension + "." + track->TrackName + ".funscript";
+        script = item.pathNoExtension + "." + track->TrackName + ".funscript";
         if (QFileInfo::exists(script))
         {
             item.hasScript = true;
@@ -1015,13 +1025,13 @@ void MediaLibraryHandler::discoverMFS2(LibraryListItem27 &item) {
     QStringList funscripts = TCodeChannelLookup::getValidMFSExtensions();
     foreach(auto scriptExtension, funscripts)
     {
-        if (QFileInfo::exists(item.scriptNoExtension + scriptExtension))
+        if (QFileInfo::exists(item.pathNoExtension + scriptExtension))
         {
             item.hasScript = true;
             item.isMFS = true;
             item.toolTip += "\n";
-            item.toolTip += item.scriptNoExtension + scriptExtension;
-            item.MFSScripts << item.scriptNoExtension + scriptExtension;
+            item.toolTip += item.pathNoExtension + scriptExtension;
+            item.MFSScripts << item.pathNoExtension + scriptExtension;
         }
     }
 }
@@ -1367,4 +1377,26 @@ LibraryListItem27* MediaLibraryHandler::findItemByPartialThumbPath(QString parti
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
     return 0;
 
+}
+
+LibraryListItem27 *MediaLibraryHandler::findItemBySubtitle(QString subtitle)
+{
+    const QMutexLocker locker(&_mutex);
+    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [subtitle](const LibraryListItem27& item) {
+        return item.subtitle == subtitle;
+    });
+    if(itr != _cachedLibraryItems.end())
+        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
+    return 0;
+}
+
+LibraryListItem27 *MediaLibraryHandler::findItemByPartialSubtitle(QString partialSubtitle)
+{
+    const QMutexLocker locker(&_mutex);
+    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [partialSubtitle](const LibraryListItem27& item) {
+        return item.subtitle.startsWith(partialSubtitle) || item.subtitle.endsWith(partialSubtitle);
+    });
+    if(itr != _cachedLibraryItems.end())
+        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
+    return 0;
 }
