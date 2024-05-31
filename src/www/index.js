@@ -216,6 +216,20 @@ function sendWebsocketMessage(command, message) {
 	}
 }
 
+function download(dataurl, filename) {
+	const link = document.createElement("a");
+	link.href = dataurl;
+	link.download = filename;
+	link.click();
+}
+
+function downloadSubtitle(mediaItem) {
+	var subtitle_path =  "/media" + mediaItem.subtitleRelative;
+	const ext = mediaItem.subtitleRelative.substring(mediaItem.subtitleRelative.lastIndexOf("."), mediaItem.subtitleRelative.length);
+	download(subtitle_path, mediaItem.displayName + ext);
+}
+
+
 function onInputDeviceConnectionChange(input, device) {
 	selectedInputDevice = device;
 	sendInputDeviceConnectionChange(device, input.checked);
@@ -1166,6 +1180,13 @@ function loadMedia(mediaList) {
 			contextMenu.classList.add("hidden");
 		}
 	};
+	
+	var downloadSubtitleClick = function (mediaItem, contextMenu) {
+		return function () {
+			downloadSubtitle(mediaItem);
+			contextMenu.classList.add("hidden");
+		}
+	};
 
 	var regenThumbClick = function (mediaItem, contextMenu) {
 		return function () {
@@ -1240,6 +1261,18 @@ function loadMedia(mediaList) {
 		contextMenu.style.fontSize = fontSize;
 		//contextMenu.style.width = widthInt * 0.85 + "px";
 
+		if(obj.subtitle) {
+			var icon = document.createElement("img");
+			icon.src = "://images/icons/cc.svg";
+			icon.style.width = widthInt * 0.10 + "px";;
+			icon.style.height = widthInt * 0.10 + "px";
+			icon.classList.add("media-cc");
+			//icon.appendChild(iconUse);
+			info.appendChild(icon);
+			var contextSubtitleMenuItem = createContextMenuItem("Download subtitle", downloadSubtitleClick(obj, contextMenu));
+			contextSubtitleMenuItem.classList.add("downloadSubtitle");
+			contextMenu.appendChild(contextSubtitleMenuItem);
+		}
 		var contextMenuItem = createContextMenuItem("Regenerate thumb", regenThumbClick(obj, contextMenu));
 		contextMenuItem.classList.add("regenerateThumb", "disabled");
 		contextMenu.appendChild(contextMenuItem);
@@ -1746,7 +1779,6 @@ function getNextShuffleMediaItem() {
 	shufflePlayModePlayedIndexed[id] = true;
 	return currentDisplayedMedia[randomIndex];
 }
-
 function playVideo(obj) {
 	if (playingmediaItem) {
 		if (playingmediaItem.id === obj.id)
@@ -1755,12 +1787,8 @@ function playVideo(obj) {
 	}
 	setPlayingMediaItem(obj);
 	if(obj["subtitle"]) {
-		if(externalStreaming && confirm("This media has a subtitle file? Would you like to save it to your device for use?")) {
-			var subtitle_path =  "/media" + obj.subtitleRelative;
-			const ext = obj.subtitleRelative.substring(obj.subtitleRelative.lastIndexOf("."), obj.subtitleRelative.length);
-			download(subtitle_path, obj.displayName + ext);
-		} else if(!externalStreaming) {
-			if(subtitle_path, obj["subtitle"].endsWith("vtt")) {
+		if(!externalStreaming) {
+			if(obj["subtitle"].endsWith("vtt")) { // Only vtt is supported by html video element
 				const tracks = videoNode.querySelectorAll("track");
 				let track;
 				if(!tracks.length) {
@@ -1801,13 +1829,6 @@ function playVideo(obj) {
 	// 	loadMediaFunscript(playingmediaItem.scriptNoExtensionRelativePath, playingmediaItem.isMFS);
 	// else
 	//videoNode.play();
-}
-
-function download(dataurl, filename) {
-	const link = document.createElement("a");
-	link.href = dataurl;
-	link.download = filename;
-	link.click();
 }
 
 function stopVideoClick() {

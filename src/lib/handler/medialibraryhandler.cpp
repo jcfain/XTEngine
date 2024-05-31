@@ -34,7 +34,7 @@ void MediaLibraryHandler::stopLibraryLoading()
         _loadingLibraryFuture.cancel();
         _loadingLibraryFuture.waitForFinished();
         _loadingLibraryStop = false;
-        emit libraryLoadingStatus("Loading medai stopped");
+        emit libraryLoadingStatus("Loading media stopped");
     }
 }
 
@@ -51,6 +51,8 @@ void MediaLibraryHandler::onPrepareLibraryLoad()
 void MediaLibraryHandler::loadLibraryAsync()
 {
     LogHandler::Debug("loadLibraryAsync");
+    if(isLibraryLoading())
+        return;
     onPrepareLibraryLoad();
     stopLibraryLoading();
     LogHandler::Debug("loadLibraryAsync after stop");
@@ -665,10 +667,10 @@ void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
     _cachedLibraryItems.push_back(item);
     auto index = _cachedLibraryItems.count() - 1;
     _mutex.unlock();
-    //if(!isLibraryLoading()) {
+    if(!isLibraryLoading()) {
         emit itemAdded(item, index, _cachedLibraryItems.count());
         //emit libraryChange();
-    //}
+    }
 }
 void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
 {

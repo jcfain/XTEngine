@@ -367,6 +367,15 @@ input:hover:not(.range-input) {
     cursor: not-allowed;
 }
 
+.media-cc {
+    position: absolute;
+    background: white;
+    border-radius: 25px;
+    /* position: absolute;
+    left: calc(100% - 23px);
+    top: calc(100% - 23px); */
+}
+
 .media-link {
     display: flex;
     flex-flow: column nowrap;
