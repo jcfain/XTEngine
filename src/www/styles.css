@@ -369,7 +369,7 @@ input:hover:not(.range-input) {
 
 .media-cc {
     position: absolute;
-    background: white;
+    background-color: rgba(255, 255, 255, 0.5);
     border-radius: 25px;
     /* position: absolute;
     left: calc(100% - 23px);

@@ -50,9 +50,9 @@ void MediaLibraryHandler::onPrepareLibraryLoad()
 
 void MediaLibraryHandler::loadLibraryAsync()
 {
-    LogHandler::Debug("loadLibraryAsync");
     if(isLibraryLoading())
         return;
+    LogHandler::Debug("loadLibraryAsync");
     onPrepareLibraryLoad();
     stopLibraryLoading();
     LogHandler::Debug("loadLibraryAsync after stop");
@@ -657,10 +657,10 @@ void MediaLibraryHandler::addItemFront(LibraryListItem27 item) {
     _cachedLibraryItems.push_front(item);
     _mutex.unlock();
     auto index = 0;
-    //if(!isLibraryLoading()) {
+    if(!isLibraryLoading()) {
         emit itemAdded(item, index, _cachedLibraryItems.count());
         //emit libraryChange();
-    //}
+    }
 }
 void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
     _mutex.lock();
