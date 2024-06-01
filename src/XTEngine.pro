@@ -39,6 +39,7 @@ SOURCES += \
     lib/handler/xtpwebhandler.cpp \
     lib/handler/xvideopreview.cpp \
     lib/handler/xvideosurface.cpp \
+    lib/handler/thumbhandler.cpp \
     lib/lookup/MediaActions.cpp \
     lib/lookup/tcodechannellookup.cpp \
     lib/tool/heatmap.cpp \
@@ -74,6 +75,7 @@ HEADERS += \
     lib/handler/xtpwebhandler.h \
     lib/handler/xvideopreview.h \
     lib/handler/xvideosurface.h \
+    lib/handler/thumbhandler.h \
     lib/interface/networkdevice.h \
     lib/lookup/AxisDimension.h \
     lib/lookup/AxisNames.h \
