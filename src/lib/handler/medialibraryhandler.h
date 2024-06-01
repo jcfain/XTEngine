@@ -9,6 +9,7 @@
 
 #include "../struct/LibraryListItem27.h"
 #include "../struct/ScriptInfo.h"
+#include "xvideopreview.h"
 
 #include "XTEngine_global.h"
 
@@ -43,6 +44,7 @@ public:
     MediaLibraryHandler(QObject* parent = nullptr);
     ~MediaLibraryHandler();
     void saveSingleThumb(QString id, qint64 position = 0);
+    bool thumbProcessRunning();
     void startThumbProcess(bool vrMode = false);
     void stopThumbProcess();
     void loadLibraryAsync();
@@ -105,7 +107,7 @@ private:
     void discoverMFS1(LibraryListItem27 &item);
     void discoverMFS2(LibraryListItem27 &item);
 
-
+    XVideoPreview xVideoPreview;
 
 };
 
