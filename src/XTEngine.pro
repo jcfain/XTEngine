@@ -85,6 +85,7 @@ HEADERS += \
     lib/lookup/XMedia.h \
     lib/lookup/enum.h \
     lib/lookup/tcodechannellookup.h \
+    lib/lookup/xtags.h \
     lib/lookup/xvideorenderer.h \
     lib/struct/Bookmark.h \
     lib/struct/ChannelModel.h \

@@ -2,6 +2,7 @@
 
 #include "settingshandler.h"
 #include "../tool/imagefactory.h"
+#include "../lookup/xtags.h"
 
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     : QObject(parent),
@@ -10,11 +11,14 @@ MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     _thumbTimeoutTimer.setSingleShot(true);
     connect(this, &MediaLibraryHandler::prepareLibraryLoad, this, &MediaLibraryHandler::onPrepareLibraryLoad);
     connect(this, &MediaLibraryHandler::libraryLoaded, this, &MediaLibraryHandler::onLibraryLoaded);
+    connect(this, &MediaLibraryHandler::thumbProcessEnd, this, &MediaLibraryHandler::startMetadataProcess);
 }
 
 MediaLibraryHandler::~MediaLibraryHandler()
 {
     stopLibraryLoading();
+    stopThumbProcess();
+    stopMetadataProcess();
 }
 bool MediaLibraryHandler::isLibraryLoading()
 {
@@ -40,6 +44,7 @@ void MediaLibraryHandler::stopLibraryLoading()
 void MediaLibraryHandler::onPrepareLibraryLoad()
 {
     stopThumbProcess();
+    stopMetadataProcess();
     _mutex.lock();
     _cachedLibraryItems.clear();
     _mutex.unlock();
@@ -373,6 +378,144 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     return item;
 }
 
+
+void MediaLibraryHandler::stopMetadataProcess()
+{
+    if(_metadataFuture.isRunning()) {
+        _metadataFuture.cancel();
+        _metadataFuture.waitForFinished();
+    }
+}
+
+void MediaLibraryHandler::startMetadataProcess()
+{
+    if(!_cachedLibraryItems.count())
+        return;
+    LogHandler::Debug("Start metadata process");
+    emit metadataProcessBegin();
+    emit backgroundProcessStateChange("Processing metadata...");
+    _metadataFuture = QtConcurrent::run([this](){
+        XTags tags;
+        bool saveSettings = false;
+        auto cachedLibraryItems = _cachedLibraryItems;
+        auto allMetadata = SettingsHandler::getLibraryListItemMetaData();
+        emit backgroundProcessStateChange("Cleaning metadata...");
+        auto keys = allMetadata.keys();
+        foreach (auto key, keys) {
+            if(_metadataFuture.isCanceled()) {
+                LogHandler::Debug("Cancel metadata process");
+                emit metadataProcessEnd();
+                return;
+            }
+            if(!QFileInfo::exists(key)) {
+                SettingsHandler::removeLibraryListItemMetaData(key);
+                saveSettings = true;
+            }
+            float percentage = round(((float)keys.indexOf(key)/keys.length()) * 100);
+            emit backgroundProcessStateChange("Cleaning metadata: "+ QString::number(percentage) + "%");
+        }
+
+        foreach (auto item, cachedLibraryItems) {
+            if(_metadataFuture.isCanceled()) {
+                LogHandler::Debug("Cancel metadata process");
+                emit metadataProcessEnd();
+                return;
+            }
+            bool itemChanged = false;
+            //int index = cachedLibraryItems.indexOf(item);
+            //auto realItem = &_cachedLibraryItems[index];
+            if(discoverMFS2(item)) {
+                itemChanged = true;
+            }
+
+            foreach(QString type, SettingsHandler::getSubtitleExtensions())
+            {
+                QString subtitilePath = item.pathNoExtension + "."+ type;
+                if(QFileInfo::exists(subtitilePath))
+                {
+                    item.subtitle = subtitilePath;
+                    itemChanged = true;
+                    break;
+                }
+            }
+
+            if(!item.path.isEmpty())// path is ID for metadata
+            {
+                bool metadataChanged = false;
+                auto metadata = SettingsHandler::getLibraryListItemMetaData(item);
+                if(item.isMFS && !metadata.tags.contains(tags.MFS)) {
+                    metadata.tags.append(tags.MFS);
+                    metadataChanged = true;
+                }
+                else if(!item.isMFS && metadata.tags.contains(tags.MFS)) {
+                    metadata.tags.removeAll(tags.MFS);
+                    metadataChanged = true;
+                }
+
+                if(item.type == LibraryListItemType::Video && !metadata.tags.contains(tags.VIDEO_2D)) {
+                    metadata.tags.append(tags.VIDEO_2D);
+                    metadataChanged = true;
+                } else if(item.type == LibraryListItemType::VR && !metadata.tags.contains(tags.VR)) {
+                    metadata.tags.append(tags.VR);
+                    metadataChanged = true;
+                } else if(item.type == LibraryListItemType::Audio && !metadata.tags.contains(tags.AUDIO)) {
+                    metadata.tags.append(tags.AUDIO);
+                    metadataChanged = true;
+                } else if(item.type == LibraryListItemType::FunscriptType && !metadata.tags.contains(tags.FUNSCRIPT)) {
+                    metadata.tags.append(tags.FUNSCRIPT);
+                    metadataChanged = true;
+                }
+                // else if(item.type == LibraryListItemType::PlaylistInternal && !metadata.tags.contains(tags.PLAYLIST_INTERNAL)) {
+                //     metadata.tags.append(tags.PLAYLIST_INTERNAL);
+                //     metadataChanged = true;
+                // }
+
+                if(!item.subtitle.isEmpty() && !metadata.tags.contains(tags.SUBTITLE)) {
+                    metadata.tags.append(tags.SUBTITLE);
+                    metadataChanged = true;
+                } else if(item.subtitle.isEmpty() && metadata.tags.contains(tags.SUBTITLE)) {
+                    metadata.tags.removeAll(tags.SUBTITLE);
+                    metadataChanged = true;
+                }
+
+                if(item.type != LibraryListItemType::PlaylistInternal)
+                {
+                    if(!item.hasScript && !metadata.tags.contains(tags.MISSING_SCRIPT)) {
+                        metadata.tags.append(tags.MISSING_SCRIPT);
+                        metadataChanged = true;
+                    } else if(item.hasScript && metadata.tags.contains(tags.MISSING_SCRIPT)) {
+                        metadata.tags.removeAll(tags.MISSING_SCRIPT);
+                        metadataChanged = true;
+                    }
+                }
+
+                if(metadataChanged) {
+                    saveSettings = true;
+                    SettingsHandler::updateLibraryListItemMetaData(metadata, false);
+                }
+            }
+
+            // Waaaay too slow.
+            // if(item.md5.isEmpty()) {
+            //     item.md5 = XMath::calculateMD5(item.path);
+            //     itemChanged = true;
+            // }
+
+            if(itemChanged) {
+                updateItem(item, false);
+            }
+
+            float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
+            emit backgroundProcessStateChange("Processing metadata: "+ QString::number(percentage) + "%");
+        }
+        if(saveSettings)
+            SettingsHandler::Save();
+        LogHandler::Debug("End metadata process");
+        emit metadataProcessEnd();
+        emit backgroundProcessStateChange(nullptr);
+    });
+}
+
 void MediaLibraryHandler::onLibraryLoaded()
 {
     startThumbProcess();
@@ -381,6 +524,12 @@ void MediaLibraryHandler::onLibraryLoaded()
 
 void MediaLibraryHandler::startThumbProcess(bool vrMode)
 {
+    LogHandler::Debug("Start thumb process, vrMode: " + QString::number(vrMode));
+    if(!vrMode)
+    {
+        emit thumbProcessBegin();
+        emit backgroundProcessStateChange("Processing thumbs...");
+    }
     QString thumbPath = SettingsHandler::getSelectedThumbsDir();
     QDir thumbDir(thumbPath);
     if (!thumbDir.exists())
@@ -388,10 +537,8 @@ void MediaLibraryHandler::startThumbProcess(bool vrMode)
         thumbDir.mkdir(thumbPath);
     }
     stopThumbProcess();
-    LogHandler::Debug("Start thumb process, vrMode: " + QString::number(vrMode));
     _thumbProcessIsRunning = true;
     saveNewThumbs(vrMode);
-    emit thumbProcessBegin();
 }
 
 void MediaLibraryHandler::stopThumbProcess()
@@ -454,7 +601,9 @@ void MediaLibraryHandler::saveNewThumbs(bool vrMode)
         else
         {
             LogHandler::Debug("Thumb process finished");
-            emit thumbProcessEnd();
+
+            emit backgroundProcessStateChange(nullptr);
+            emit thumbProcessEnd();// Must be callsed after backgroundProcessStateChange for queue order
         }
     }
 }
@@ -635,16 +784,25 @@ LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
     //emit playListItem(item);
     return item;
 }
-void MediaLibraryHandler::updateItem(LibraryListItem27 item) {
+void MediaLibraryHandler::updateItem(LibraryListItem27 item, bool notify) {
     auto index = findItemIndexByID(item.ID);
     if(index > -1) {
         _mutex.lock();
         LibraryListItem27::copyProperties(item, _cachedLibraryItems[index]);
         _mutex.unlock();
-        emit itemUpdated(_cachedLibraryItems[index], index);
-        return;
+        if(notify) {
+            emit itemUpdated(_cachedLibraryItems[index], index);
+        }
     }
 }
+
+void MediaLibraryHandler::updateItem(int index)
+{
+    if(index > -1) {
+        emit itemUpdated(_cachedLibraryItems[index], index);
+    }
+}
+
 void MediaLibraryHandler::removeFromCache(LibraryListItem27 itemToRemove) {
     auto index = findItemIndexByID(itemToRemove.ID);
     _mutex.lock();
@@ -680,15 +838,6 @@ void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
     assignID(libraryListItem);
     setThumbPath(libraryListItem);
     updateToolTip(libraryListItem);
-    foreach(QString type, SettingsHandler::getSubtitleExtensions())
-    {
-        QString subtitilePath = libraryListItem.pathNoExtension + "."+ type;
-        if(QFileInfo::exists(subtitilePath))
-        {
-            libraryListItem.subtitle = subtitilePath;
-            break;
-        }
-    }
 }
 
 void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)
@@ -860,20 +1009,20 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDi
         {
             localData.toolTip += localData.script;
         }
-        if(!SettingsHandler::getMFSDiscoveryDisabled() || MFSDiscovery) {
-//            LogHandler::Debug("before discoverMFS1: "+QString::number(mSecTimer.elapsed() - lastTime));
-//            lastTime = mSecTimer.elapsed();
-//            discoverMFS1(localData);
-//            LogHandler::Debug("after discoverMFS1: "+QString::number(mSecTimer.elapsed() - lastTime));
-//            lastTime = mSecTimer.elapsed();
+//         if(!SettingsHandler::getMFSDiscoveryDisabled() || MFSDiscovery) {
+// //            LogHandler::Debug("before discoverMFS1: "+QString::number(mSecTimer.elapsed() - lastTime));
+// //            lastTime = mSecTimer.elapsed();
+// //            discoverMFS1(localData);
+// //            LogHandler::Debug("after discoverMFS1: "+QString::number(mSecTimer.elapsed() - lastTime));
+// //            lastTime = mSecTimer.elapsed();
 
-            discoverMFS2(localData);
+//             discoverMFS2(localData);
 
-            if(MFSDiscovery)//Update on tooltip demand
-                updateItem(localData);
-        } else {
-            localData.toolTip += "Unknown";
-        }
+//             if(MFSDiscovery)//Update on tooltip demand
+//                 updateItem(localData);
+//         } else {
+//             localData.toolTip += "Unknown";
+//         }
     }
     else if (localData.type == LibraryListItemType::PlaylistInternal)
     {
@@ -890,7 +1039,7 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDi
     }
 }
 
-void MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
+bool MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
     auto channels = TCodeChannelLookup::getChannels();
     QString script;
     script.reserve(item.pathNoExtension.length() + 1 + 5 + 10);
@@ -910,8 +1059,9 @@ void MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
             item.MFSScripts << script;
         }
     }
+    return item.isMFS;
 }
-void MediaLibraryHandler::discoverMFS2(LibraryListItem27 &item) {
+bool MediaLibraryHandler::discoverMFS2(LibraryListItem27 &item) {
     QStringList funscripts = TCodeChannelLookup::getValidMFSExtensions();
     foreach(auto scriptExtension, funscripts)
     {
@@ -924,10 +1074,15 @@ void MediaLibraryHandler::discoverMFS2(LibraryListItem27 &item) {
             item.MFSScripts << item.pathNoExtension + scriptExtension;
         }
     }
+    return item.isMFS;
 }
 
 void MediaLibraryHandler::cleanGlobalThumbDirectory() {
-    foreach(auto libraryListItem, _cachedLibraryItems) {
+
+    if(_thumbProcessIsRunning)
+        return;
+    auto cachedLibraryItems = _cachedLibraryItems;
+    foreach(auto libraryListItem, cachedLibraryItems) {
         if(_loadingLibraryStop) {
             LogHandler::Debug("thumb cleanup stopped 1");
             emit libraryStopped();

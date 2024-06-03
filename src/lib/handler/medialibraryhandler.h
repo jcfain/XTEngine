@@ -32,8 +32,11 @@ signals:
     void alternateFunscriptsFound(QList<ScriptInfo> scriptInfos);
     //void playListItem(LibraryListItem27 item);
 
+    void backgroundProcessStateChange(QString message);
     void thumbProcessBegin();
     void thumbProcessEnd();
+    void metadataProcessBegin();
+    void metadataProcessEnd();
     void saveNewThumbLoading(LibraryListItem27 item);
     void saveNewThumb(LibraryListItem27 item, bool vrMode, QString thumbFile);
     void saveThumbError(LibraryListItem27 item, bool vrMode, QString error);
@@ -51,7 +54,8 @@ public:
     bool isLibraryLoading();
     void stopLibraryLoading();
     LibraryListItem27 setupPlaylistItem(QString name);
-    void updateItem(LibraryListItem27 item);
+    void updateItem(LibraryListItem27 item, bool notify = true);
+    void updateItem(int index);
     void removeFromCache(LibraryListItem27 item);
     void addItemFront(LibraryListItem27 item);
     void addItemBack(LibraryListItem27 item);
@@ -86,6 +90,7 @@ private:
     int _thumbNailSearchIterator = 0;
     QList<LibraryListItem27> _cachedLibraryItems;
     //QList<LibraryListItem27> _cachedVRItems;
+    QFuture<void> _metadataFuture;
     QFuture<void> _loadingLibraryFuture;
     QTimer _thumbTimeoutTimer;
     QMutex _mutex;
@@ -104,8 +109,10 @@ private:
     void assignID(LibraryListItem27 &item);
 
     LibraryListItem27 createLibraryListItemFromFunscript(QString funscript);
-    void discoverMFS1(LibraryListItem27 &item);
-    void discoverMFS2(LibraryListItem27 &item);
+    void startMetadataProcess();
+    void stopMetadataProcess();
+    bool discoverMFS1(LibraryListItem27 &item);
+    bool discoverMFS2(LibraryListItem27 &item);
 
     XVideoPreview xVideoPreview;
 

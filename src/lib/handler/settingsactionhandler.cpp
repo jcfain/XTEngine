@@ -271,10 +271,10 @@ void SettingsActionHandler::media_action(QString action)
         }
         if (XMediaStateHandler::isPlaying())
         {
-           QString path = XMediaStateHandler::getPlaying().path;
-           if(!path.isEmpty())
+           const LibraryListItem27 item = XMediaStateHandler::getPlaying();
+           if(!item.path.isEmpty())
            {
-               auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(path);
+               auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(item);
                int newOffset = 0;
                if(!reset) {
                     newOffset = increase ? libraryListItemMetaData.offset + SettingsHandler::getFunscriptOffsetStep() : libraryListItemMetaData.offset - SettingsHandler::getFunscriptOffsetStep();

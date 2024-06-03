@@ -117,7 +117,7 @@ void XTEngine::init()
     connect(_syncHandler, &SyncHandler::funscriptLoaded, this, [this](QString funscriptPath) {
         // Generate first load moneyshot based off heatmap if not already set.
         auto funscript = _syncHandler->getFunscriptHandler()->currentFunscript();
-        auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(XMediaStateHandler::getPlaying().path);
+        auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(XMediaStateHandler::getPlaying());
         if(libraryListItemMetaData.moneyShotMillis > 0)
             return;
 

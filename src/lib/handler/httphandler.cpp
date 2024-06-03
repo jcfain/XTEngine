@@ -669,7 +669,7 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["playing"] = false;
     object["managedThumb"] = item.managedThumb;
 
-    auto metaData = SettingsHandler::getLibraryListItemMetaData(item.path);
+    auto metaData = SettingsHandler::getLibraryListItemMetaData(item);
     object["metaData"] = LibraryListItemMetaData258::toJson(metaData);
     if(item.isMFS)
         object["displayName"] = "(MFS) " + item.nameNoExtension;

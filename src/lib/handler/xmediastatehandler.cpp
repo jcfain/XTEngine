@@ -51,7 +51,7 @@ void XMediaStateHandler::stop()
 
 void XMediaStateHandler::processMetaData()
 {
-    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(m_playingItem.path);
+    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(m_playingItem);
     SettingsHandler::setLiveOffset(libraryListItemMetaData.offset);
 }
 

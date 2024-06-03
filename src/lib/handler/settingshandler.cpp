@@ -24,7 +24,7 @@ bool SettingsHandler::getFirstLoad()
 
 void SettingsHandler::setMoneyShot(LibraryListItem27 libraryListItem, qint64 currentPosition, bool userSet)
 {
-    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem.path);
+    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem);
     if(!userSet && libraryListItemMetaData.moneyShotMillis > 0)
         return;
     libraryListItemMetaData.moneyShotMillis = currentPosition;
@@ -32,7 +32,7 @@ void SettingsHandler::setMoneyShot(LibraryListItem27 libraryListItem, qint64 cur
 }
 void SettingsHandler::addBookmark(LibraryListItem27 libraryListItem, QString name, qint64 currentPosition)
 {
-    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem.path);
+    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem);
     libraryListItemMetaData.bookmarks.append({name, currentPosition});
     SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
 }
@@ -178,7 +178,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _hideStandAloneFunscriptsInLibrary = settingsToLoadFrom->value("hideStandAloneFunscriptsInLibrary").toBool();
     _showVRInLibraryView = settingsToLoadFrom->value("showVRInLibraryView").toBool();
     _skipPlayingSTandAloneFunscriptsInLibrary = settingsToLoadFrom->value("skipPlayingSTandAloneFunscriptsInLibrary").toBool();
-    m_MFSDiscoveryDisabled = settingsToLoadFrom->value("MFSDiscoveryDisabled").toBool();
 
     _enableHttpServer = settingsToLoadFrom->value("enableHttpServer").toBool();
     _httpServerRoot = settingsToLoadFrom->value("httpServerRoot").toString();
@@ -512,7 +511,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("hideStandAloneFunscriptsInLibrary", _hideStandAloneFunscriptsInLibrary);
         settingsToSaveTo->setValue("showVRInLibraryView", _showVRInLibraryView);
         settingsToSaveTo->setValue("skipPlayingSTandAloneFunscriptsInLibrary", _skipPlayingSTandAloneFunscriptsInLibrary);
-        settingsToSaveTo->setValue("MFSDiscoveryDisabled", m_MFSDiscoveryDisabled);
 
         settingsToSaveTo->setValue("enableHttpServer", _enableHttpServer);
         settingsToSaveTo->setValue("httpServerRoot", _httpServerRoot);
@@ -766,6 +764,7 @@ void SettingsHandler::MigrateLibraryMetaDataTo258()
         {
             _libraryListItemMetaDatas.insert(key, {
                                                      libraryListItemMetaData.libraryItemPath, // libraryItemPath
+                                                    libraryListItemMetaData.watched, // libraryItemPath
                                                      libraryListItemMetaData.lastPlayPosition, // lastPlayPosition
                                                      libraryListItemMetaData.lastLoopEnabled, // lastLoopEnabled
                                                      libraryListItemMetaData.lastLoopStart, // lastLoopStart
@@ -773,7 +772,8 @@ void SettingsHandler::MigrateLibraryMetaDataTo258()
                                                      0, // offset
                                                      libraryListItemMetaData.moneyShotMillis, // moneyShotMillis
                                                      libraryListItemMetaData.bookmarks, // bookmarks
-                                                     libraryListItemMetaData.funscripts
+                                                     libraryListItemMetaData.funscripts,
+                                                     libraryListItemMetaData.tags
                                               });
             foreach(auto bookmark, libraryListItemMetaDatas[key].value<LibraryListItemMetaData258>().bookmarks)
                 _libraryListItemMetaDatas[key].bookmarks.append(bookmark);
@@ -1624,12 +1624,6 @@ bool SettingsHandler::getShowVRInLibraryView() {
     return _showVRInLibraryView;
 }
 
-void SettingsHandler::setMFSDiscoveryDisabled(bool value) {
-    m_MFSDiscoveryDisabled = value;
-}
-bool SettingsHandler::getMFSDiscoveryDisabled() {
-    return m_MFSDiscoveryDisabled;
-}
 QMap<QString, QStringList>  SettingsHandler::getGamePadMap()
 {
     return _gamepadButtonMap;
@@ -2197,7 +2191,6 @@ bool SettingsHandler::getFunscriptLoaded(QString key)
     return false;
 }
 
-
 bool SettingsHandler::getSkipToMoneyShotPlaysFunscript()
 {
     return _skipToMoneyShotPlaysFunscript;
@@ -2374,18 +2367,26 @@ int SettingsHandler::getLubePulseFrequency()
     return _channelPulseFrequency;
 }
 
-LibraryListItemMetaData258 SettingsHandler::getLibraryListItemMetaData(QString path)
+
+QHash<QString, LibraryListItemMetaData258> SettingsHandler::getLibraryListItemMetaData()
+{
+    return _libraryListItemMetaDatas;
+}
+
+LibraryListItemMetaData258 SettingsHandler::getLibraryListItemMetaData(const LibraryListItem27 item)
 {
     QMutexLocker locker(&mutex);
-    if(_libraryListItemMetaDatas.contains(path))
+    if(_libraryListItemMetaDatas.contains(item.path))
     {
-        return _libraryListItemMetaDatas.value(path);
+        return _libraryListItemMetaDatas.value(item.path);
     }
     //Default meta data
     QList<QString> funscripts;
     QList<Bookmark> bookmarks;
-    _libraryListItemMetaDatas.insert(path, {
-                                         path, // libraryItemPath
+    QList<QString> tags;
+    _libraryListItemMetaDatas.insert(item.path, {
+                                         item.path, // libraryItemPath
+                                         false,
                                          -1, // lastPlayPosition
                                          false, // lastLoopEnabled
                                          -1, // lastLoopStart
@@ -2393,18 +2394,27 @@ LibraryListItemMetaData258 SettingsHandler::getLibraryListItemMetaData(QString p
                                          0, // offset
                                          -1, // moneyShotMillis
                                          bookmarks, // bookmarks
-                                         funscripts
+                                         funscripts,
+                                         tags
                                      });
-    return _libraryListItemMetaDatas.value(path);
+    return _libraryListItemMetaDatas.value(item.path);
 }
 
-void SettingsHandler::updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData)
+void SettingsHandler::removeLibraryListItemMetaData(const QString key)
+{
+    _libraryListItemMetaDatas.remove(key);
+}
+
+void SettingsHandler::updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData, bool sync)
 {
     QMutexLocker locker(&mutex);
     _libraryListItemMetaDatas.insert(libraryListItemMetaData.libraryItemPath, libraryListItemMetaData);
-    storeMediaMetaDatas();
-    settings->sync();
-    //settingsChangedEvent(true);
+    if(sync)
+    {
+        storeMediaMetaDatas();
+        settings->sync();
+        //settingsChangedEvent(true);
+    }
 }
 
 QSettings* SettingsHandler::settings;
@@ -2426,7 +2436,6 @@ bool SettingsHandler::_useMediaDirForThumbs;
 int SettingsHandler::_selectedOutputDevice;
 NetworkDeviceType SettingsHandler::_selectedNetworkDeviceType;
 int SettingsHandler::_librarySortMode;
-bool SettingsHandler::m_MFSDiscoveryDisabled;
 int SettingsHandler::playerVolume;
 int SettingsHandler::offSet;
 bool SettingsHandler::_disableTCodeValidation;

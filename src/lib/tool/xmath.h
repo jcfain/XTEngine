@@ -21,6 +21,7 @@ public:
     static int reverseNumber(int num, int min, int max);
     static int lerp(int a, int b, float f);
     static float calculateSpeed(qint64 timeStart, int posStart, qint64 timeEnd, int posEnd);
+    static QString calculateMD5(QString path);
 };
 
 #endif // XMATH_H

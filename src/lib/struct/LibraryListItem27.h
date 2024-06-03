@@ -73,6 +73,7 @@ public:
     QString zipFile;
     QDate modifiedDate;
     quint64 duration;
+    QString md5;
 
     // Live members
     QString ID;
@@ -105,6 +106,7 @@ public:
         dataStream << object.zipFile;
         dataStream << object.modifiedDate;
         dataStream << object.duration;
+        dataStream << object.md5;
         dataStream << object.isMFS;
         dataStream << object.libraryPath;
         dataStream << object.toolTip;
@@ -131,6 +133,7 @@ public:
         dataStream >> object.zipFile;
         dataStream >> object.modifiedDate;
         dataStream >> object.duration;
+        dataStream >> object.md5;
         dataStream >> object.isMFS;
         dataStream >> object.libraryPath;
         dataStream >> object.toolTip;
@@ -159,6 +162,7 @@ public:
         //obj["id"] = item.ID;
         obj["path"] = item.path;
         obj["duration"] = QString::number(item.duration);
+        obj["md5"] = item.md5;
         obj["mediaExtension"] = item.mediaExtension;;
         obj["modifiedDate"] = item.modifiedDate.toString();
         obj["name"] = item.name;
@@ -178,6 +182,7 @@ public:
         //newItem.ID = obj["id"].toInt();
         newItem.path = obj["path"].toString();
         newItem.duration = obj["path"].toString().toLongLong();
+        newItem.md5 = obj["md5"].toString();
         newItem.mediaExtension = obj["mediaExtension"].toString();
         newItem.modifiedDate = QDate::fromString(obj["modifiedDate"].toString());
         newItem.name = obj["name"].toString();
@@ -193,6 +198,7 @@ public:
     static void copyProperties(const LibraryListItem27 from, LibraryListItem27 &to) {
         to.path = from.path;
         to.duration = from.duration;
+        to.md5 = from.md5;
         to.mediaExtension = from.mediaExtension;
         to.modifiedDate = from.modifiedDate;
         to.name = from.name;

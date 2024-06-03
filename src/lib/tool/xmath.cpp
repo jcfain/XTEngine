@@ -3,6 +3,9 @@
 #include <random>
 #include <chrono>
 #include <stdlib.h>
+#include <QCryptographicHash>
+#include <QFile>
+#include <QFileInfo>
 
 //#include "../handler/loghandler.h"
 
@@ -103,4 +106,29 @@ float XMath::calculateSpeed(qint64 timeStart, int posStart, qint64 timeEnd, int 
     if(timeDiff <= 0 || posDiff <= 0)
         return 0;
     return ((float)posDiff / (float)timeDiff) * 100;
+}
+
+QString XMath::calculateMD5(QString path)
+{
+    QCryptographicHash hash(QCryptographicHash::Md5);
+    QFile in(path);
+    QFileInfo fileInfo(path);
+    qint64 imageSize = fileInfo.size();
+
+    const int bufferSize = 10000;
+    if (in.open(QIODevice::ReadOnly)) {
+        char buf[bufferSize];
+        int bytesRead;
+
+        int readSize = min(imageSize, bufferSize);
+        while (readSize > 0 && (bytesRead = in.read(buf, readSize)) > 0) {
+            imageSize -= bytesRead;
+            hash.addData(buf, bytesRead);
+            readSize = min(imageSize, bufferSize);
+        }
+
+        in.close();
+        return QString(hash.result().toHex());
+    }
+    return nullptr;
 }

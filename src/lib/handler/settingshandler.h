@@ -161,9 +161,6 @@ public:
     static void setShowVRInLibraryView(bool value);
     static bool getShowVRInLibraryView();
 
-    static void setMFSDiscoveryDisabled(bool value);
-    static bool getMFSDiscoveryDisabled();
-
     static void setGamepadEnabled(bool value);
     ///Returns assigned actions per gamepad button
     static QMap<QString, QStringList> getGamePadMap();
@@ -239,8 +236,10 @@ public:
     static void setFunscriptLoaded(QString key, bool loaded);
     static bool getFunscriptLoaded(QString key);
 
-    static LibraryListItemMetaData258 getLibraryListItemMetaData(QString path);
-    static void updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData);
+    static QHash<QString, LibraryListItemMetaData258> getLibraryListItemMetaData();
+    static LibraryListItemMetaData258 getLibraryListItemMetaData(const LibraryListItem27 item);
+    static void removeLibraryListItemMetaData(const QString key);
+    static void updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData, bool sync = true);
 
     static QString GetHashedPass();
     static void SetHashedPass(QString value);
@@ -444,7 +443,6 @@ private:
     static int thumbSize;
     static int thumbSizeList;
     static int videoIncrement;
-    static bool m_MFSDiscoveryDisabled;
 
     static QList<DecoderModel> decoderPriority;
     static XVideoRenderer _selectedVideoRenderer;
