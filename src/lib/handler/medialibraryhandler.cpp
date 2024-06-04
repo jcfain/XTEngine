@@ -441,8 +441,8 @@ void MediaLibraryHandler::startMetadataProcess()
                 if(QFileInfo::exists(subtitilePath))
                 {
                     item.subtitle = subtitilePath;
-                    // if(!rolesChanged.contains(Qt::DisplayRole))
-                    //     rolesChanged.append(Qt::DisplayRole);
+                    if(!rolesChanged.contains(Qt::DecorationRole))
+                        rolesChanged.append(Qt::DecorationRole);
                     break;
                 }
             }

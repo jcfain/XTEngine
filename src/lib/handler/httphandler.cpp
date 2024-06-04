@@ -52,7 +52,16 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         if(_mediaLibraryHandler->isLibraryLoading())
             return;
         auto item = _mediaLibraryHandler->getLibraryCache().value(index);
-        _webSocketHandler->sendUpdateItem(item, roles);
+
+        QString roleslist;
+        foreach (int role, roles) {
+            roleslist += QString::number(role);
+            if(roles.indexOf(role) < roles.length() - 1)
+                roleslist +=",";
+        }
+        QJsonDocument doc(createMediaObject(item, m_hostAddress));
+        QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
+        _webSocketHandler->sendUpdateItem(itemJson, roleslist);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, item.thumbFileLoadingCurrent);});
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::thumbProcessBegin, this, [this]() {onLibraryLoadingStatusChange("Loading thumbs...");});
@@ -148,6 +157,7 @@ HttpPromise HttpHandler::handle(HttpDataPtr data)
         }
         else if(path == "/")
         {
+            m_hostAddress = "http://" + data->request->headerDefault("Host", "") + "/";
             LogHandler::Debug("Sending root auth-min.html");
             if(!QFileInfo::exists(root+"/auth-min.html"))
             {
@@ -162,6 +172,7 @@ HttpPromise HttpHandler::handle(HttpDataPtr data)
         }
 
     } else if(path == "/") {
+        m_hostAddress = "http://" + data->request->headerDefault("Host", "") + "/";
         LogHandler::Debug("Sending root index-min.html");
         if(!QFileInfo::exists(root+"/index-min.html"))
         {
@@ -616,13 +627,12 @@ HttpPromise HttpHandler::handleVideoList(HttpDataPtr data)
     }
 
     QJsonArray media;
-    QString hostAddress = "http://" + data->request->headerDefault("Host", "") + "/";
     foreach(auto item, _mediaLibraryHandler->getLibraryCache())
     {
         QJsonObject object;
         if(item.type == LibraryListItemType::PlaylistInternal || item.type == LibraryListItemType::FunscriptType)
             continue;
-        media.append(createMediaObject(item, hostAddress));
+        media.append(createMediaObject(item, m_hostAddress));
     }
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(media));
     data->response->compressBody();

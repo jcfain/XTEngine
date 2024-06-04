@@ -34,7 +34,7 @@ public:
     void sendCommand(QString command, QString message = nullptr, QWebSocket* client = 0);
     void sendDeviceConnectionStatus(ConnectionChangedSignal status, QWebSocket* client = 0);
     void sendUpdateThumb(QString id, QString thumb, QString error = nullptr);
-    void sendUpdateItem(LibraryListItem27 item, QVector<int> roles, QString error = nullptr);
+    void sendUpdateItem(QString itemJson, QString rolesList, QString error = nullptr);
 
 private:
     QWebSocketServer *m_pWebSocketServer;

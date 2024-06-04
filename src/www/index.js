@@ -21,7 +21,7 @@ var ChannelType = {
 	Range: 1,
 	Switch: 2,
 	HalfRange: 3
-}
+};
 
 var AxisDimension = {
 	None: 0,
@@ -39,7 +39,21 @@ var MediaType = {
     Audio: 2,
     FunscriptType: 3,
     VR: 4
-}
+};
+
+var Roles = {
+	DisplayRole: 0,
+	DecorationRole: 1,
+	EditRole: 2,
+	ToolTipRole: 3,
+	StatusTipRole: 4,
+	WhatsThisRole: 5,
+	// Metadata
+	FontRole: 6,
+	TextAlignmentRole: 7,
+	BackgroundRole: 8,
+	ForegroundRole: 9
+};
 
 var debounceTracker = {};// Use to create timeout handles on the fly.
 var wsUri;
@@ -203,6 +217,9 @@ function debug(message) {
 	if (debugMode)
 		console.log(message);
 }
+function error(message) {
+	console.error(message);
+}
 
 function sendWebsocketMessage(command, message) {
 	if (websocket && xtpConnected) {
@@ -215,20 +232,6 @@ function sendWebsocketMessage(command, message) {
 		websocket.send(JSON.stringify(obj));
 	}
 }
-
-function download(dataurl, filename) {
-	const link = document.createElement("a");
-	link.href = dataurl;
-	link.download = filename;
-	link.click();
-}
-
-function downloadSubtitle(mediaItem) {
-	var subtitle_path =  "/media" + mediaItem.subtitleRelative;
-	const ext = mediaItem.subtitleRelative.substring(mediaItem.subtitleRelative.lastIndexOf("."), mediaItem.subtitleRelative.length);
-	download(subtitle_path, mediaItem.displayName + ext);
-}
-
 
 function onInputDeviceConnectionChange(input, device) {
 	selectedInputDevice = device;
@@ -381,6 +384,12 @@ function wsCallBackFunction(evt) {
 					mediaListGlobal[index].thumbFileExists = true;
 				}
 				break;
+			case "updateItem":
+				var message = data["message"];
+				var libraryItem = message["item"];
+				var roles = message["roles"];
+				updateItem(libraryItem, roles);
+				break;
 			case "textToSpeech":
 				var message = data["message"];
 				onTextToSpeech(message);
@@ -401,7 +410,7 @@ function wsCallBackFunction(evt) {
 		}
 	}
 	catch (e) {
-		console.error(e.toString());
+		error(e.toString());
 	}
 }
 
@@ -1181,13 +1190,6 @@ function loadMedia(mediaList) {
 		}
 	};
 	
-	var downloadSubtitleClick = function (mediaItem, contextMenu) {
-		return function () {
-			downloadSubtitle(mediaItem);
-			contextMenu.classList.add("hidden");
-		}
-	};
-
 	var regenThumbClick = function (mediaItem, contextMenu) {
 		return function () {
 			sendUpdateThumb(mediaItem);
@@ -1234,12 +1236,14 @@ function loadMedia(mediaList) {
 		divnode.title = obj.name;
 
 		var info = document.createElement("button");
+		info.id = obj.id + "InfoButton";
 		info.classList.add("media-context");
-		if(userAgentIsHereSphere)
-			info.classList.add("media-context-heresphere");
+		// if(userAgentIsHereSphere)
+		// 	info.classList.add("media-context-heresphere");
 		info.style.width = widthInt * 0.20 + "px";
 		info.style.height = widthInt * 0.20 + "px";
 		var contextMenu = document.createElement("div"); 
+		contextMenu.id = obj.id + "ContextMenu";
 		info.onclick = toggleContext(contextMenu, obj);
 		info.dataset.title = "Media actions";
 		// var icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -1255,24 +1259,12 @@ function loadMedia(mediaList) {
 		//icon.appendChild(iconUse);
 		info.appendChild(icon);
 		contextMenu.classList.add("media-context-menu", "hidden");
-		if(userAgentIsHereSphere)
-			contextMenu.classList.add("media-context-menu-heresphere");
+		// if(userAgentIsHereSphere)
+		// 	contextMenu.classList.add("media-context-menu-heresphere");
 		
 		contextMenu.style.fontSize = fontSize;
 		//contextMenu.style.width = widthInt * 0.85 + "px";
 
-		if(obj.subtitle) {
-			var icon = document.createElement("img");
-			icon.src = "://images/icons/cc.svg";
-			icon.style.width = widthInt * 0.10 + "px";;
-			icon.style.height = widthInt * 0.10 + "px";
-			icon.classList.add("media-cc");
-			//icon.appendChild(iconUse);
-			info.appendChild(icon);
-			var contextSubtitleMenuItem = createContextMenuItem("Download subtitle", downloadSubtitleClick(obj, contextMenu));
-			contextSubtitleMenuItem.classList.add("downloadSubtitle");
-			contextMenu.appendChild(contextSubtitleMenuItem);
-		}
 		var contextMenuItem = createContextMenuItem("Regenerate thumb", regenThumbClick(obj, contextMenu));
 		contextMenuItem.classList.add("regenerateThumb", "disabled");
 		contextMenu.appendChild(contextMenuItem);
@@ -1292,12 +1284,7 @@ function loadMedia(mediaList) {
 
 		var anode = document.createElement("a");
 		anode.className += "media-link"
-		if (obj.isMFS) {
-			divnode.className += " media-item-mfs"
-		}
-		if (!obj.hasScript) {
-			divnode.className += " media-item-noscript"
-		}
+		
 		//anode.style.width = width;
 		//anode.style.height = height;
 		anode.onclick = createClickHandler(obj);
@@ -1321,11 +1308,14 @@ function loadMedia(mediaList) {
 		image.style.height = thumbSizeGlobal - textHeight + "px";
 		//image.onerror=onThumbLoadError(image, 1)
 		var namenode = document.createElement("div");
+		namenode.id = obj.id + "DisplayName";
 		namenode.innerText = obj.displayName;
 		namenode.className += "name"
 		namenode.style.width = width;
 		namenode.style.height = textHeight + "px";
 		namenode.style.fontSize = fontSize;
+
+		updateScriptStatus(obj, divnode, namenode);
 
 		divnode.appendChild(anode);
 		anode.appendChild(image);
@@ -1335,6 +1325,10 @@ function loadMedia(mediaList) {
 		medialistNode.appendChild(divnode);
 		if (playingmediaItem && playingmediaItem.id === obj.id)
 			setPlayingMediaItem(obj);
+
+		if(obj.subtitle) {// Must be after divnode has been appended
+			updateSubTitle(obj, divnode, contextMenu);
+		}
 
 	}
 	if(!disableLazyLoad)
@@ -1397,6 +1391,94 @@ function setupLazyLoad() {
 		lazyImageObserver.observe(lazyImage);
 	  });
 	}
+}
+
+function updateItem(libraryItem, roles)
+{
+	var mediaNode;
+	if(roles.findIndex(x => x == Roles.DisplayRole) > -1) {
+		mediaNode = updateScriptStatus(libraryItem);
+	}
+	if(roles.findIndex(x => x == Roles.DecorationRole) > -1) {
+		mediaNode = updateSubTitle(libraryItem, mediaNode);
+	}
+}
+
+function updateSubTitle(libraryItem, mediaNode, contextMenu) {
+	if(!mediaNode)
+		mediaNode = document.getElementById(libraryItem.id);
+	if (!mediaNode)
+		return undefined;
+	if(!contextMenu)
+		contextMenu = mediaNode.getElementById(libraryItem.id+"ContextMenu");
+	if (!contextMenu)
+		return mediaNode;
+
+	var index = mediaListGlobal.findIndex(x => x.id === libraryItem.id);
+
+	var contextButton = document.getElementById(libraryItem.id + "InfoButton");
+	var ccIcon = document.getElementById(libraryItem.id+ "ccIconImg")
+	if(ccIcon)
+		contextButton.removeChild(ccIcon);
+
+	var contextMenuItems = contextMenu.getElementsByClassName("downloadSubtitle");
+	if(contextMenuItems.length)
+		contextMenu.removeChild(contextMenuItems[0]);
+	
+	if(libraryItem.subtitle) {
+		var icon = document.createElement("img");
+		icon.id = libraryItem.id+ "ccIconImg";
+		icon.src = "://images/icons/cc.svg";
+		widthInt = thumbSizeGlobal + (thumbSizeGlobal * 0.15);
+		icon.style.width = widthInt * 0.10 + "px";;
+		icon.style.height = widthInt * 0.10 + "px";
+		icon.classList.add("media-cc");
+		//icon.appendChild(iconUse);
+		contextButton.appendChild(icon);
+		
+		var subtitle_path =  "/media" + libraryItem.subtitleRelative;
+		const ext = libraryItem.subtitleRelative.substring(libraryItem.subtitleRelative.lastIndexOf("."), libraryItem.subtitleRelative.length);
+		const link = document.createElement("a");
+		link.href = subtitle_path;
+		link.setAttribute('download', libraryItem.displayName + ext);
+		link.innerText = "Download subtitle";
+		link.onclick = contextMenu.classList.add("hidden");
+		var contextSubtitleMenuItem = createContextMenuItem(undefined, undefined);
+		contextSubtitleMenuItem.classList.add("downloadSubtitle");
+		contextSubtitleMenuItem.appendChild(link);
+		contextMenu.appendChild(contextSubtitleMenuItem);
+	}
+
+	mediaListGlobal[index].subtitle = libraryItem.subtitle;
+	mediaListGlobal[index].subtitleRelative = libraryItem.subtitleRelative;
+	return mediaNode;
+}
+
+function updateScriptStatus(libraryItem, mediaNode, displayNameNode) {
+	if(!mediaNode)
+		mediaNode = document.getElementById(libraryItem.id);
+	if (!mediaNode)
+		return undefined;
+	if(!displayNameNode)
+		displayNameNode = document.getElementById(libraryItem.id + "DisplayName");
+	if(!displayNameNode)
+		return undefined;
+	displayNameNode.innerText = libraryItem.displayName;
+	if (libraryItem.isMFS) {
+		mediaNode.classList.add("media-item-mfs");
+	} else {
+		mediaNode.classList.remove("media-item-mfs");
+	}
+	if (!libraryItem.hasScript) {
+		mediaNode.classList.add("media-item-noscript");
+	} else {
+		mediaNode.classList.remove("media-item-noscript");
+	}
+	var index = mediaListGlobal.findIndex(x => x.id === libraryItem.id);
+	mediaListGlobal[index].displayName = libraryItem.displayName;
+	mediaListGlobal[index].isMFS = libraryItem.isMFS;
+	mediaListGlobal[index].hasScript = libraryItem.hasScript;
+	return mediaNode;
 }
 
 function onThumbLoadError(imageElement, tries) {
@@ -1464,7 +1546,7 @@ function sort(value, userClick) {
 	if (!userClick) {
 		//document.getElementById("sortBy").value = value;
 		if (value) {
-			document.getElementById(value.toString()).click();
+			document.getElementById(value.toString()).checked = true;
 		}
 	}
 	else {
@@ -1496,7 +1578,7 @@ function show(value, userClick) {
 	if (!userClick) {
 		// document.getElementById("show").value = value;
 		if (value) {
-			document.getElementById(value.toString()).click();
+			document.getElementById(value.toString()).checked = true;
 		}
 	} else {
 		window.localStorage.setItem("show", JSON.stringify(value));
@@ -2011,7 +2093,7 @@ function playPreviousVideo() {
 function setThumbSize(value, userClick) {
 	if (!userClick) {
 		if (value) {
-			document.getElementById(value.toString()).click();
+			document.getElementById(value.toString()).checked = true;
 			//document.getElementById("thumbSize").value = value.toString();
 		}
 	} else {
