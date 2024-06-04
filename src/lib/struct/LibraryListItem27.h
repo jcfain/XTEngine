@@ -6,6 +6,7 @@
 #include <QVariant>
 #include <QDataStream>
 #include <QJsonObject>
+#include <QJsonArray>
 #include "XTEngine_global.h"
 
 
@@ -154,6 +155,40 @@ public:
     {
         QJsonObject obj = item.toJsonObject();
         return fromJson(obj);
+    }
+
+    static QJsonObject toJson(const LibraryListItem27 item)
+    {
+        QJsonObject obj;
+        obj["path"] = item.path;
+        obj["duration"] = QString::number(item.duration);
+        obj["md5"] = item.md5;
+        obj["mediaExtension"] = item.mediaExtension;;
+        obj["modifiedDate"] = item.modifiedDate.toString();
+        obj["name"] = item.name;
+        obj["nameNoExtension"] = item.nameNoExtension;
+        obj["script"] = item.script;
+        obj["scriptNoExtension"] = item.pathNoExtension;
+        obj["thumbFile"] = item.thumbFile;
+        obj["type"] = (int)item.type;
+        obj["zipFile"] = item.zipFile;
+
+        //Live
+        obj["id"] = item.ID;
+        obj["libraryPath"] = item.libraryPath;
+        obj["hasScript"] = item.hasScript;
+        QJsonArray mfsScripts;
+        foreach (auto script, item.MFSScripts) {
+            mfsScripts.append(script);
+        }
+        obj["MFSScripts"] = mfsScripts;
+        obj["isMFS"] = item.isMFS;
+        obj["tooltip"] = item.toolTip;
+        obj["thumbState"] = (int)item.thumbState;
+        obj["thumbFileExists"] = item.thumbFileExists;
+        obj["managedThumb"] = item.managedThumb;
+        obj["subtitle"] = item.subtitle;
+        return obj;
     }
 
     static QVariant toVariant(const LibraryListItem27 item)

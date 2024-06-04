@@ -26,9 +26,9 @@ signals:
     void libraryLoaded();
     void libraryStopped();
     void libraryChange();
-    void itemAdded(LibraryListItem27 item, int index, int newSize);
-    void itemRemoved(LibraryListItem27 item, int index, int newSize);
-    void itemUpdated(LibraryListItem27 item, int index);
+    void itemAdded(int index, int newSize);
+    void itemRemoved(int index, int newSize);
+    void itemUpdated(int index, QVector<int> roles);
     void alternateFunscriptsFound(QList<ScriptInfo> scriptInfos);
     //void playListItem(LibraryListItem27 item);
 
@@ -54,8 +54,8 @@ public:
     bool isLibraryLoading();
     void stopLibraryLoading();
     LibraryListItem27 setupPlaylistItem(QString name);
-    void updateItem(LibraryListItem27 item, bool notify = true);
-    void updateItem(int index);
+    void updateItem(LibraryListItem27 item, QVector<int> roles, bool notify = true);
+    void updateItem(int index, QVector<int> roles);
     void removeFromCache(LibraryListItem27 item);
     void addItemFront(LibraryListItem27 item);
     void addItemBack(LibraryListItem27 item);

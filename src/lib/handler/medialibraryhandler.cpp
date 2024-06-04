@@ -421,11 +421,18 @@ void MediaLibraryHandler::startMetadataProcess()
                 emit metadataProcessEnd();
                 return;
             }
-            bool itemChanged = false;
+            QVector<int> rolesChanged;
             //int index = cachedLibraryItems.indexOf(item);
             //auto realItem = &_cachedLibraryItems[index];
             if(discoverMFS2(item)) {
-                itemChanged = true;
+                if(!rolesChanged.contains(Qt::DisplayRole))
+                    rolesChanged.append(Qt::DisplayRole);
+                if(!rolesChanged.contains(Qt::ToolTipRole))
+                    rolesChanged.append(Qt::ToolTipRole);
+                if(!rolesChanged.contains(Qt::ForegroundRole))
+                    rolesChanged.append(Qt::ForegroundRole);
+                if(!rolesChanged.contains(Qt::FontRole))
+                    rolesChanged.append(Qt::FontRole);
             }
 
             foreach(QString type, SettingsHandler::getSubtitleExtensions())
@@ -434,7 +441,8 @@ void MediaLibraryHandler::startMetadataProcess()
                 if(QFileInfo::exists(subtitilePath))
                 {
                     item.subtitle = subtitilePath;
-                    itemChanged = true;
+                    // if(!rolesChanged.contains(Qt::DisplayRole))
+                    //     rolesChanged.append(Qt::DisplayRole);
                     break;
                 }
             }
@@ -501,8 +509,8 @@ void MediaLibraryHandler::startMetadataProcess()
             //     itemChanged = true;
             // }
 
-            if(itemChanged) {
-                updateItem(item, false);
+            if(rolesChanged.count()) {
+                updateItem(item, rolesChanged);
             }
 
             float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
@@ -784,22 +792,22 @@ LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
     //emit playListItem(item);
     return item;
 }
-void MediaLibraryHandler::updateItem(LibraryListItem27 item, bool notify) {
+void MediaLibraryHandler::updateItem(LibraryListItem27 item, QVector<int> roles, bool notify) {
     auto index = findItemIndexByID(item.ID);
     if(index > -1) {
         _mutex.lock();
         LibraryListItem27::copyProperties(item, _cachedLibraryItems[index]);
         _mutex.unlock();
         if(notify) {
-            emit itemUpdated(_cachedLibraryItems[index], index);
+            emit itemUpdated(index, {roles});
         }
     }
 }
 
-void MediaLibraryHandler::updateItem(int index)
+void MediaLibraryHandler::updateItem(int index, QVector<int> roles)
 {
     if(index > -1) {
-        emit itemUpdated(_cachedLibraryItems[index], index);
+        emit itemUpdated(index, roles);
     }
 }
 
@@ -809,7 +817,7 @@ void MediaLibraryHandler::removeFromCache(LibraryListItem27 itemToRemove) {
     _cachedLibraryItems.removeOne(itemToRemove);
     _mutex.unlock();
     //if(!isLibraryLoading()) {
-        emit itemRemoved(itemToRemove, index, _cachedLibraryItems.count());
+        emit itemRemoved(index, _cachedLibraryItems.count());
         //emit libraryChange();
     //}
 }
@@ -819,7 +827,7 @@ void MediaLibraryHandler::addItemFront(LibraryListItem27 item) {
     _mutex.unlock();
     auto index = 0;
     if(!isLibraryLoading()) {
-        emit itemAdded(item, index, _cachedLibraryItems.count());
+        emit itemAdded(index, _cachedLibraryItems.count());
         //emit libraryChange();
     }
 }
@@ -829,7 +837,7 @@ void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
     auto index = _cachedLibraryItems.count() - 1;
     _mutex.unlock();
     if(!isLibraryLoading()) {
-        emit itemAdded(item, index, _cachedLibraryItems.count());
+        emit itemAdded(index, _cachedLibraryItems.count());
         //emit libraryChange();
     }
 }
@@ -864,7 +872,7 @@ void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)
             int index = findItemIndexByID(item.ID);
             if(index > -1) {
                 _cachedLibraryItems[index].thumbFile = newName;
-                emit itemUpdated(item, index);
+                emit itemUpdated(index, {Qt::DecorationRole});
             }
         } else {
             LogHandler::Error("File rename failed: "+ newName);
@@ -890,7 +898,7 @@ void MediaLibraryHandler::unlockThumb(LibraryListItem27 &item)
             int index = findItemIndexByID(item.ID);
             if(index > -1) {
                 _cachedLibraryItems[index].thumbFile = newName;
-                emit itemUpdated(item, index);
+                emit itemUpdated(index, {Qt::DecorationRole});
             }
         } else {
             LogHandler::Error("File NOT renamed: "+ newName);
@@ -901,7 +909,7 @@ void MediaLibraryHandler::unlockThumb(LibraryListItem27 &item)
 void MediaLibraryHandler::setThumbState(ThumbState state, LibraryListItem27 &item) {
     item.thumbState = state;
     int index = findItemIndexByID(item.ID);
-    emit itemUpdated(item, index);
+    emit itemUpdated(index, {Qt::DecorationRole});
 }
 
 void MediaLibraryHandler::setThumbPath(LibraryListItem27 &libraryListItem)
@@ -1137,7 +1145,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
             } else if(!hasLocalLocked.isEmpty()) {
                 libraryListItem.thumbFile = hasLocalLocked;
             }
-            updateItem(libraryListItem);
+            updateItem(cachedLibraryItems.indexOf(libraryListItem), {Qt::DecorationRole});
         }
     }
 

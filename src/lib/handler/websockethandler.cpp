@@ -179,3 +179,21 @@ void  WebSocketHandler::sendUpdateThumb(QString id, QString thumb, QString error
         messageJson = "{ \"id\": \""+id+"\", \"thumb\": \""+thumb+"\", \"errorMessage\": \""+errorMessage+"\"}";
     sendCommand("updateThumb", messageJson);
 }
+
+void WebSocketHandler::sendUpdateItem(LibraryListItem27 item, QVector<int> roles, QString error)
+{
+    QString messageJson;
+    QString roleslist;
+    foreach (int role, roles) {
+        roleslist += QString::number(role);
+        if(roles.indexOf(role) < roles.length())
+            roleslist +=",";
+    }
+    QJsonDocument doc(LibraryListItem27::toJson(item));
+    QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
+    if(error.isEmpty())
+        messageJson = "{ \"item\": "+itemJson+", \"roles\": ["+roleslist+"]}";
+    else
+        messageJson = "{ \"item\": "+itemJson+", \"roles\": \""+roleslist+"\", \"errorMessage\": \""+error+"\"}";
+    sendCommand("updateItem", messageJson);
+}

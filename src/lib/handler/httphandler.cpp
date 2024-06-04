@@ -48,6 +48,12 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         }
         _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb);
     });
+    connect(_mediaLibraryHandler, &MediaLibraryHandler::itemUpdated, this, [this](int index, QVector<int> roles) {
+        if(_mediaLibraryHandler->isLibraryLoading())
+            return;
+        auto item = _mediaLibraryHandler->getLibraryCache().value(index);
+        _webSocketHandler->sendUpdateItem(item, roles);
+    });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, item.thumbFileLoadingCurrent);});
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::thumbProcessBegin, this, [this]() {onLibraryLoadingStatusChange("Loading thumbs...");});
 
@@ -921,11 +927,14 @@ HttpPromise HttpHandler::handleSubtitle(HttpDataPtr data)
     QString apiStr("/media/");
     QString subtitleFileName = parameter.replace(parameter.indexOf(apiStr), apiStr.size(), "");
     LibraryListItem27* libraryItem = _mediaLibraryHandler->findItemByPartialSubtitle(subtitleFileName);
-    if(!libraryItem || libraryItem->subtitle.isEmpty())
+    if(!libraryItem || libraryItem->subtitle.isEmpty() || !QFileInfo::exists(libraryItem->subtitle))
     {
         data->response->setStatus(HttpStatus::NotFound);
         return HttpPromise::resolve(data);
     }
+    QFileInfo fileInfo(libraryItem->subtitle);
+    data->response->setHeader("Content-Disposition", "attachment");
+    data->response->setHeader("filename", fileInfo.fileName());
     QString mimeType = mimeDatabase.mimeTypeForFile(libraryItem->subtitle, QMimeDatabase::MatchExtension).name();
     data->response->sendFile(libraryItem->subtitle, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
     data->response->setStatus(HttpStatus::Ok);
