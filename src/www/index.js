@@ -410,7 +410,10 @@ function wsCallBackFunction(evt) {
 		}
 	}
 	catch (e) {
-		error(e.toString());
+		if(typeof e == "string")
+			error(e);
+		else
+			error(e.toString());
 	}
 }
 
@@ -1410,7 +1413,7 @@ function updateSubTitle(libraryItem, mediaNode, contextMenu) {
 	if (!mediaNode)
 		return undefined;
 	if(!contextMenu)
-		contextMenu = mediaNode.getElementById(libraryItem.id+"ContextMenu");
+		contextMenu = document.getElementById(libraryItem.id+"ContextMenu");
 	if (!contextMenu)
 		return mediaNode;
 
@@ -1442,11 +1445,11 @@ function updateSubTitle(libraryItem, mediaNode, contextMenu) {
 		link.href = subtitle_path;
 		link.setAttribute('download', libraryItem.displayName + ext);
 		link.innerText = "Download subtitle";
-		link.onclick = contextMenu.classList.add("hidden");
-		var contextSubtitleMenuItem = createContextMenuItem(undefined, undefined);
+		//link.onclick = contextMenu.classList.add("hidden");
+		var contextSubtitleMenuItem = createContextMenuItem("", undefined);
 		contextSubtitleMenuItem.classList.add("downloadSubtitle");
 		contextSubtitleMenuItem.appendChild(link);
-		contextMenu.appendChild(contextSubtitleMenuItem);
+		contextMenu.insertBefore(contextSubtitleMenuItem, contextMenu.firstChild);
 	}
 
 	mediaListGlobal[index].subtitle = libraryItem.subtitle;
