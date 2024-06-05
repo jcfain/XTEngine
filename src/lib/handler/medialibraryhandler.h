@@ -32,7 +32,7 @@ signals:
     void alternateFunscriptsFound(QList<ScriptInfo> scriptInfos);
     //void playListItem(LibraryListItem27 item);
 
-    void backgroundProcessStateChange(QString message);
+    void backgroundProcessStateChange(QString message, float percentage);
     void thumbProcessBegin();
     void thumbProcessEnd();
     void metadataProcessBegin();

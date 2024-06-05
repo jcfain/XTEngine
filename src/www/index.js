@@ -198,6 +198,9 @@ var metaDataSaveStateNode = document.getElementById("metaDataSaveState");
 var deviceConnectionStatusRetryButtonNodes = document.getElementsByName("deviceStatusRetryButton");
 var deviceConnectionStatusRetryButtonImageNodes = document.getElementsByName("connectionStatusIconImage");
 
+var progressNode = document.getElementById("statusOutput");
+var progressLabelNode = document.getElementById("statusOutputLabel");
+
 /* 	
 	deoVideoNode = document.getElementById("deoVideoPlayer");
 	deoSourceNode = document.getElementById("deoVideoSource");
@@ -407,6 +410,12 @@ function wsCallBackFunction(evt) {
 			case "channelProfileChanged":
 				getServerChannels();
 				break;
+			case "statusOutput":
+				var messageObj = data["message"];
+				var message = messageObj["message"]
+				var percentage = messageObj["percentage"]
+				setStatusOutput(message, percentage);
+				break;
 		}
 	}
 	catch (e) {
@@ -417,6 +426,19 @@ function wsCallBackFunction(evt) {
 	}
 }
 
+function setStatusOutput(message, percentage) {
+	if(!message && !progressNode.classList.contains("hidden-visibility")) {
+		progressNode.classList.add("hidden-visibility")
+		progressLabelNode.classList.add("hidden-visibility");
+	} else if(message && progressNode.classList.contains("hidden-visibility")) {
+		progressNode.classList.remove("hidden-visibility");
+		progressLabelNode.classList.remove("hidden-visibility");
+	}
+	// !message ? progressNode.classList.add("hidden-visibility") : progressNode.classList.remove("hidden-visibility");
+	// !message ? progressLabelNode.classList.add("hidden-visibility") : progressLabelNode.classList.remove("hidden-visibility");
+	progressLabelNode.innerText = (!message ? "" : message) + (percentage > -1 ? ": "+percentage+"%" : "");
+	progressNode.value = (percentage > -1 ? percentage : 0);
+}
 function setMediaLoading() {
 	clearMediaList();
 	var mediaLoadingElement = document.getElementById("mediaLoading");

@@ -393,18 +393,19 @@ void MediaLibraryHandler::startMetadataProcess()
         return;
     LogHandler::Debug("Start metadata process");
     emit metadataProcessBegin();
-    emit backgroundProcessStateChange("Processing metadata...");
+    emit backgroundProcessStateChange("Processing metadata...", -1);
     _metadataFuture = QtConcurrent::run([this](){
         XTags tags;
         bool saveSettings = false;
         auto cachedLibraryItems = _cachedLibraryItems;
         auto allMetadata = SettingsHandler::getLibraryListItemMetaData();
-        emit backgroundProcessStateChange("Cleaning metadata...");
+        emit backgroundProcessStateChange("Cleaning metadata...", -1);
         auto keys = allMetadata.keys();
         foreach (auto key, keys) {
             if(_metadataFuture.isCanceled()) {
                 LogHandler::Debug("Cancel metadata process");
                 emit metadataProcessEnd();
+                emit backgroundProcessStateChange(nullptr, -1);
                 return;
             }
             if(!QFileInfo::exists(key)) {
@@ -412,13 +413,14 @@ void MediaLibraryHandler::startMetadataProcess()
                 saveSettings = true;
             }
             float percentage = round(((float)keys.indexOf(key)/keys.length()) * 100);
-            emit backgroundProcessStateChange("Cleaning metadata: "+ QString::number(percentage) + "%");
+            emit backgroundProcessStateChange("Cleaning metadata", percentage);
         }
 
         foreach (auto item, cachedLibraryItems) {
             if(_metadataFuture.isCanceled()) {
                 LogHandler::Debug("Cancel metadata process");
                 emit metadataProcessEnd();
+                emit backgroundProcessStateChange(nullptr, -1);
                 return;
             }
             QVector<int> rolesChanged;
@@ -514,13 +516,13 @@ void MediaLibraryHandler::startMetadataProcess()
             }
 
             float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
-            emit backgroundProcessStateChange("Processing metadata: "+ QString::number(percentage) + "%");
+            emit backgroundProcessStateChange("Processing metadata", percentage);
         }
         if(saveSettings)
             SettingsHandler::Save();
         LogHandler::Debug("End metadata process");
         emit metadataProcessEnd();
-        emit backgroundProcessStateChange(nullptr);
+        emit backgroundProcessStateChange(nullptr, -1);
     });
 }
 
@@ -536,7 +538,7 @@ void MediaLibraryHandler::startThumbProcess(bool vrMode)
     if(!vrMode)
     {
         emit thumbProcessBegin();
-        emit backgroundProcessStateChange("Processing thumbs...");
+        emit backgroundProcessStateChange("Processing thumbs...", -1);
     }
     QString thumbPath = SettingsHandler::getSelectedThumbsDir();
     QDir thumbDir(thumbPath);
@@ -589,6 +591,7 @@ void MediaLibraryHandler::saveNewThumbs(bool vrMode)
     if (_thumbProcessIsRunning && _thumbNailSearchIterator < _cachedLibraryItems.count())
     {
         LibraryListItem27 &item = _cachedLibraryItems[_thumbNailSearchIterator];
+        emit backgroundProcessStateChange("Processing thumbs", round((_thumbNailSearchIterator/(float)_cachedLibraryItems.length())*100));
         _thumbNailSearchIterator++;
         QFileInfo thumbInfo(item.thumbFile);
         if (isLibraryItemVideo(item) && !thumbInfo.exists())
@@ -610,7 +613,7 @@ void MediaLibraryHandler::saveNewThumbs(bool vrMode)
         {
             LogHandler::Debug("Thumb process finished");
 
-            emit backgroundProcessStateChange(nullptr);
+            emit backgroundProcessStateChange(nullptr, -1);
             emit thumbProcessEnd();// Must be callsed after backgroundProcessStateChange for queue order
         }
     }
@@ -1090,12 +1093,15 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
     if(_thumbProcessIsRunning)
         return;
     auto cachedLibraryItems = _cachedLibraryItems;
+    emit backgroundProcessStateChange("Cleaning thumbs...", -1);
     foreach(auto libraryListItem, cachedLibraryItems) {
         if(_loadingLibraryStop) {
             LogHandler::Debug("thumb cleanup stopped 1");
+            emit backgroundProcessStateChange(nullptr, -1);
             emit libraryStopped();
             return;
         }
+        emit backgroundProcessStateChange("Cleaning duplicate thumbs:", round((cachedLibraryItems.indexOf(libraryListItem)/(float)cachedLibraryItems.length())*100));
         if(libraryListItem.type != LibraryListItemType::VR && libraryListItem.type != LibraryListItemType::Video)
             continue;
         QString hasGlobal;
@@ -1121,6 +1127,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
         foreach(QString ext, imageExtensions) {
             if(_loadingLibraryStop) {
                 LogHandler::Debug("thumb cleanup stopped 2");
+                emit backgroundProcessStateChange(nullptr, -1);
                 emit libraryStopped();
                 return;
             }
@@ -1149,22 +1156,28 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
         }
     }
 
+    QDir dir(SettingsHandler::getSelectedThumbsDir(),"*." + SettingsHandler::getThumbFormatExtension(), QDir::NoSort, QDir::Filter::Files);
+    int fileCount = dir.count();
     QDirIterator thumbs(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*." + SettingsHandler::getThumbFormatExtension(), QDir::Files, QDirIterator::Subdirectories);
 
+    qint64 currentFileCount = 0;
     while (thumbs.hasNext())
     {
         if(_loadingLibraryStop) {
             LogHandler::Debug("thumb cleanup stopped 3");
+            emit backgroundProcessStateChange(nullptr, -1);
             emit libraryStopped();
             return;
         }
-
+        emit backgroundProcessStateChange("Cleaning stale thumbs", round((currentFileCount/(float)fileCount)*100));
         QString filepath = thumbs.next();
 //        QFileInfo fileinfo(filepath);
 //        QString fileName = fileinfo.fileName();
         if(!findItemByThumbPath(filepath))
             QFile::remove(filepath);
+        currentFileCount++;
     }
+    emit backgroundProcessStateChange(nullptr, -1);
 }
 
 void MediaLibraryHandler::findAlternateFunscripts(QString path)

@@ -63,6 +63,13 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
         _webSocketHandler->sendUpdateItem(itemJson, roleslist);
     });
+    connect(_mediaLibraryHandler, &MediaLibraryHandler::backgroundProcessStateChange, this, [this](QString message, float percentage) {
+        QJsonObject obj;
+        obj["message"] = message;
+        obj["percentage"] = percentage;
+        QJsonDocument doc(obj);
+        _webSocketHandler->sendCommand("statusOutput", QString(doc.toJson(QJsonDocument::Compact)));
+    });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, item.thumbFileLoadingCurrent);});
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::thumbProcessBegin, this, [this]() {onLibraryLoadingStatusChange("Loading thumbs...");});
 

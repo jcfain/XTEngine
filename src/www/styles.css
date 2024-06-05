@@ -17,6 +17,10 @@ body {
   display: none !important;
 }
 
+.hidden-visibility {
+    visibility: hidden;
+}
+
 .disabled {
     background-color: lightgray;
     pointer-events: none;
@@ -32,21 +36,30 @@ body {
 }
 
 .headerSection {
-    flex-basis: 33%;
+    flex-basis: 25%;
 }
 
 .headerLogoSection {
     display: flex;
     justify-content: center;
-    flex-basis: 33%;
+    flex-basis: 55%;
     flex-flow: column;
     align-items: center;
+}
+
+.headerActionSection {
+    flex-basis: 15%;
 }
 
 .headerLogo {
     height: 50px;
     max-width: fit-content;
 }
+
+.header-logout-button {
+    align-self: flex-end;
+}
+
 .auth-container {
     margin: 0 auto;
     display: flex;
@@ -89,6 +102,12 @@ body {
 
 .toolBarGroupEnd {
     justify-content: flex-end;
+}
+
+.pregress-status {
+    height: 10px;
+    position: inherit;
+    margin: auto;
 }
 
 .save-status {
