@@ -65,6 +65,7 @@ var remoteUserSettings;
 var mediaListGlobal = [];
 var sortedMedia = [];
 var filteredMedia = [];
+var filteredTagsMedia = [];
 var selectedMediaItemMetaData = null;
 var playingmediaItem;
 var playingmediaItemNode;
@@ -81,6 +82,7 @@ var serverRetryTimeout;
 var serverRetryTimeoutTries = 0;
 var videoStallTimeout;
 var userFilterCriteria;
+var userTagFilterCriteria = [];
 var filterDebounce;
 var enableTextToSpeech = true;
 var systemVoices = [];
@@ -600,6 +602,8 @@ function getServerSettings(retry) {
 			remoteUserSettings = xhr.response;
 			
 			setupChannelData();
+
+			setupSystemTags();
 			
 			initWebSocket();
 		} else if(status == 401) {
@@ -657,6 +661,33 @@ function setupChannelData() {
 			return remoteUserSettings["availableChannels"][k];
 		});
 	funscriptChannels.sort();
+}
+
+function setupSystemTags() {
+	const tags = remoteUserSettings["tags"];
+	const tagsNode = document.getElementById("tagFilterOptions");
+	var tagFilterClick = function (tagCheckbox) {
+		return function () {
+			filterByTag(tagCheckbox);
+		}
+	};
+	removeAllChildNodes(tagsNode);
+	tags.forEach((x, i) => {
+		const divNode = document.createElement("div");
+		const label = document.createElement("label");
+		label.innerText = x;
+		label.setAttribute("for", x+"TagCheckbox" + i);
+		const checkbox = document.createElement("input");
+		checkbox.type = "checkbox";
+		checkbox.value = x;
+		//checkbox.classList.add("styled-checkbox");
+		checkbox.id = x+"TagCheckbox" + i;
+		checkbox.name = "TagCheckbox";
+		checkbox.onclick = tagFilterClick(checkbox);
+		divNode.appendChild(checkbox);
+		divNode.appendChild(label);
+		tagsNode.appendChild(divNode);
+	})
 }
 
 function setSelectedProfile(profileName) {
@@ -1146,9 +1177,14 @@ function updateMediaUI() {
 }
 
 function getCurrentDisplayedMedia() {
-	if(filteredMedia.length > 0) {
-		return filteredMedia;
-	} 
+	let allFiltered = [];
+	filteredMedia.forEach(x => allFiltered.push(x));
+	filteredTagsMedia.forEach(x => allFiltered.push(x));
+	// if(filteredMedia.length > 0) {
+	// 	return filteredMedia;
+	// } 
+	if(allFiltered.length)
+		return allFiltered;
 	return JSON.parse(JSON.stringify(sortedMedia || []))
 }
 
@@ -1613,16 +1649,19 @@ function show(value, userClick) {
 }
 
 function filter(criteria) {
-	filteredMedia = [];
 	if (filterDebounce) 
 		clearTimeout(filterDebounce);
 	filterDebounce = setTimeout(function () {
+		filteredMedia = [];
 		var filterInput = document.getElementById("filterInput");
 		filterInput.enabled = false;
 		userFilterCriteria = criteria;
 		var mediaItems = document.getElementsByClassName("media-item");
 		for (var item of mediaItems) {
-			item.hidden = isFiltered(criteria, item.textContent);
+			const libraryItem = mediaListGlobal.find(x => x.id === item.id);
+
+			const doNotShowItem = isFiltered(criteria, item.textContent);
+			item.hidden = (doNotShowItem) || (!doNotShowItem && isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags))
 			if(!item.hidden)
 				filteredMedia.push(mediaListGlobal.find(x => x.id === item.id));
 		};
@@ -1636,6 +1675,45 @@ function isFiltered(criteria, textToSearch) {
 		return false;
 	else
 		return !textToSearch.trim().toUpperCase().includes(criteria.trim().toUpperCase());
+}
+
+function filterByTag(tagCheckbox) {
+	filteredMedia = [];
+	var tagsFilterOptions = document.getElementsByName("TagCheckbox");
+	tagsFilterOptions.forEach(x => x.enabled = false);
+	if(tagCheckbox.checked)
+		userTagFilterCriteria.push(tagCheckbox.value);
+	else {
+		var index = userTagFilterCriteria.findIndex(x => x == tagCheckbox.value);
+		if(index > -1)
+			userTagFilterCriteria.splice(index, 1);
+	}
+	var mediaItems = document.getElementsByClassName("media-item");
+	for (var item of mediaItems) {
+		const libraryItem = mediaListGlobal.find(x => x.id === item.id);
+
+		const doNotShowItem = isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags);
+		item.hidden = (doNotShowItem) || (!doNotShowItem && isFiltered(userFilterCriteria, item.textContent));
+		if(!item.hidden)
+			filteredMedia.push(libraryItem);
+	};
+	tagsFilterOptions.forEach(x => x.enabled = true);
+}
+
+function isTagFiltered(selectedTags, mediaTags) {
+	if (!selectedTags || !selectedTags.length || !mediaTags || !mediaTags.length)
+		return false;
+	else {
+		// let matches = selectedTags.filter(x => {
+		// 	return mediaTags.every(y => );
+		//   });
+		  for(let i=0; i<selectedTags.length; i++) {
+			if(!mediaTags.includes(selectedTags[i]))
+				return true;
+		  }
+		return false;
+		//return !selectedTags.findIndex(x => mediaTags.findIndex(y => y==x)>-1) > -1;
+	}
 }
 /* 
 function onClickUseDeoWebCheckbox(checkbox)
@@ -1985,6 +2063,12 @@ function onToggleFilterInput(searchButton) {
 	var filterInput = document.getElementById('filterInput');
 	filterInput.classList.toggle('hidden');
 	searchButton.classList.toggle('icon-button-down');
+}
+
+function onToggleTagInput(tagButton) {
+	var filterInput = document.getElementById('tagFilterOptions');
+	filterInput.classList.toggle('hidden');
+	tagButton.classList.toggle('icon-button-down');
 }
 
 function setPlayingMediaItem(obj) {

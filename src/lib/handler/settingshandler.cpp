@@ -248,8 +248,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _hashedWebPass = settingsToLoadFrom->value("userWebData").toString();
 
     m_customTCodeCommands = settingsToLoadFrom->value("customTCodeCommands").toStringList();
-    for(auto command: m_customTCodeCommands) {
+    foreach(auto command, m_customTCodeCommands) {
         MediaActions::AddOtherAction(command, "TCode command: " + command, ActionType::TCODE);
+    }
+
+
+    QStringList tags = settingsToLoadFrom->value("xTags").toStringList();
+    foreach (auto tag, tags) {
+        m_xTags.addTag(tag);
     }
 
 
@@ -531,6 +537,13 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         settingsToSaveTo->setValue("customTCodeCommands", m_customTCodeCommands);
 
+        QVariantList tagsList;
+        foreach(auto tag, m_xTags.getUserTags())
+        {
+            tagsList.append(tag);
+        }
+        settingsToSaveTo->setValue("xTags", tagsList);
+
         settingsToSaveTo->sync();
 
         settingsChangedEvent(false);
@@ -680,6 +693,16 @@ void SettingsHandler::storeMediaMetaDatas(QSettings* settingsToSaveTo)
         libraryListItemMetaDatas.insert(libraryListItemMetaData, LibraryListItemMetaData258::toVariant(_libraryListItemMetaDatas[libraryListItemMetaData]));
     }
     settingsToSaveTo->setValue("libraryListItemMetaDatas", libraryListItemMetaDatas);
+}
+
+XTags SettingsHandler::getXTags()
+{
+    return m_xTags;
+}
+
+QStringList SettingsHandler::getTags()
+{
+    return m_xTags.getTags();
 }
 
 void SettingsHandler::SetGamepadMapDefaults()
@@ -2519,3 +2542,5 @@ XVideoRenderer SettingsHandler::_selectedVideoRenderer;
 QStringList SettingsHandler::_libraryExclusions;
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::_playlists;
 QHash<QString, LibraryListItemMetaData258> SettingsHandler::_libraryListItemMetaDatas;
+
+XTags SettingsHandler::m_xTags;

@@ -311,6 +311,19 @@ input:hover:not(.range-input) {
     z-index: 10;
 }
 
+.media-tag-filter-input {
+    width: 16vw;
+    border-radius: 25px;
+    left: calc(100vw - 27vw);
+    position: absolute;
+    z-index: 10;
+    top: 160px;
+    display: flex;
+    background-color: #000000;
+    flex-flow: column;padding: 16px;
+    border: 1px solid aliceblue;
+}
+
 .media-item:hover {
     cursor: pointer;
 }
@@ -475,16 +488,22 @@ input:hover:not(.range-input) {
     margin-top: 16px;
     z-index: 10;
 } 
-.shuffle-media-button {
+.tag-media-button {
     position: fixed;
     left: calc(100vw - 85px);
     margin-top: 63px;
+    z-index: 10;
+} 
+.shuffle-media-button {
+    position: fixed;
+    left: calc(100vw - 85px);
+    margin-top: 110px;
     z-index: 10;
 }
 .random-media-button {
     position: fixed;
     left: calc(100vw - 85px);
-    margin-top: 110px;
+    margin-top: 157px;
     z-index: 10;
 } 
 .range-slider {

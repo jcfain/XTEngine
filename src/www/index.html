@@ -152,8 +152,11 @@
 			<!-- 		<button id="refreshButton" title="Refresh the media from XTP" class="refresh-media-button icon-button" onclick="getServerLibrary()">
 			<img class="buttonImage" src="://images/icons/reload.svg"/>
 		</button> -->
-		<button id="searchButton" title="Search media" class="search-media-button icon-button" onclick="onToggleFilterInput(this)">
+		<button id="tagButton" title="Filter tags" class="search-media-button icon-button" onclick="onToggleFilterInput(this)">
 			<img class="buttonImage" src="://images/icons/search.svg"/>
+		</button> 
+		<button id="searchButton" title="Search media" class="tag-media-button icon-button" onclick="onToggleTagInput(this)">
+			<img class="buttonImage" src="://images/icons/tag.svg"/>
 		</button> 
 		<button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button" onclick="toggleShufflePlay()">
 			<img class="buttonImage" src="://images/icons/shuffle.svg"/ >
@@ -162,6 +165,8 @@
 			<img class="buttonImage" src="://images/icons/reload.svg"/ >
 		</button> 
 		<input id="filterInput" class="media-filter-input hidden" placeholder="Filter" oninput="filter(this.value)" />
+		<!-- <select id="tagFilterSelect" class="media-tag-filter-input hidden" multiple oninput="filterByTag(this.value)"></select>  -->
+		<div id="tagFilterOptions" class="media-tag-filter-input hidden"></div>
 
 			<div id="noMedia" style="text-align: center;" hidden>No media found</div>
 			<div id="mediaLoading" class="no-media">

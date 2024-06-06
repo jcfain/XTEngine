@@ -395,7 +395,7 @@ void MediaLibraryHandler::startMetadataProcess()
     emit metadataProcessBegin();
     emit backgroundProcessStateChange("Processing metadata...", -1);
     _metadataFuture = QtConcurrent::run([this](){
-        XTags tags;
+        XTags tags = SettingsHandler::getXTags();
         bool saveSettings = false;
         auto cachedLibraryItems = _cachedLibraryItems;
         auto allMetadata = SettingsHandler::getLibraryListItemMetaData();
@@ -426,7 +426,7 @@ void MediaLibraryHandler::startMetadataProcess()
             QVector<int> rolesChanged;
             //int index = cachedLibraryItems.indexOf(item);
             //auto realItem = &_cachedLibraryItems[index];
-            if(discoverMFS2(item)) {
+            if(!item.isMFS && discoverMFS2(item)) {
                 if(!rolesChanged.contains(Qt::DisplayRole))
                     rolesChanged.append(Qt::DisplayRole);
                 if(!rolesChanged.contains(Qt::ToolTipRole))
@@ -495,6 +495,20 @@ void MediaLibraryHandler::startMetadataProcess()
                         metadataChanged = true;
                     } else if(item.hasScript && metadata.tags.contains(tags.MISSING_SCRIPT)) {
                         metadata.tags.removeAll(tags.MISSING_SCRIPT);
+                        metadataChanged = true;
+                    }
+                    if(item.hasScript && !metadata.tags.contains(tags.HAS_SCRIPT)) {
+                        metadata.tags.append(tags.HAS_SCRIPT);
+                        metadataChanged = true;
+                    } else if(!item.hasScript && metadata.tags.contains(tags.HAS_SCRIPT)) {
+                        metadata.tags.removeAll(tags.HAS_SCRIPT);
+                        metadataChanged = true;
+                    }
+                }
+
+                foreach (QString tag, tags.getAutoTags()) {
+                    if(!metadata.tags.contains(tag) && item.path.contains(tag, Qt::CaseInsensitive)) {
+                        metadata.tags.append(tag);
                         metadataChanged = true;
                     }
                 }
@@ -1090,7 +1104,7 @@ bool MediaLibraryHandler::discoverMFS2(LibraryListItem27 &item) {
 
 void MediaLibraryHandler::cleanGlobalThumbDirectory() {
 
-    if(_thumbProcessIsRunning)
+    if(thumbProcessRunning() || isLibraryLoading())
         return;
     auto cachedLibraryItems = _cachedLibraryItems;
     emit backgroundProcessStateChange("Cleaning thumbs...", -1);

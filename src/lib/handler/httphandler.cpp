@@ -389,6 +389,13 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     root["connection"] = connectionSettingsJson;
     root["hasLaunchPass"] = !SettingsHandler::GetHashedPass().isEmpty();
 
+    QJsonArray tags;
+    QStringList allTags = SettingsHandler::getTags();
+    foreach (QString tag, allTags) {
+        tags.append(tag);
+    }
+    root["tags"] = tags;
+
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
     data->response->compressBody();
     return HttpPromise::resolve(data);

@@ -28,6 +28,7 @@
 #include "../struct/LibraryListItemMetaData.h"
 #include "../struct/LibraryListItemMetaData258.h"
 #include "lib/lookup/TCodeCommand.h"
+#include "../lookup/xtags.h"
 
 class XTENGINE_EXPORT SettingsHandler: public QObject
 {
@@ -241,6 +242,8 @@ public:
     static void removeLibraryListItemMetaData(const QString key);
     static void updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData, bool sync = true);
 
+    static XTags getAvailableTags();
+
     static QString GetHashedPass();
     static void SetHashedPass(QString value);
 
@@ -351,6 +354,9 @@ public:
 
     static const QString &hashedWebPass();
     static void setHashedWebPass(const QString &newHashedWebPass);
+
+    static XTags getXTags();
+    static QStringList getTags();
 
 private:
     SettingsHandler();
@@ -480,6 +486,8 @@ private:
     static QString _channelPulseChannel;
     static qint64 _channelPulseFrequency;
     static int _channelPulseAmount;
+
+    static XTags m_xTags;
 
     static QHash<QString, bool> _funscriptLoaded;
     static QSettings* settings;
