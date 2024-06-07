@@ -843,6 +843,10 @@ section .range-values {
         width: 50vw;
         left: 25vw;
     }
+    .media-tag-filter-input {
+        width: 50vw;
+        left: 25vw;
+    }
     .auth-container {
         width: 85%;
         margin: 0;

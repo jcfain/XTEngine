@@ -55,6 +55,7 @@ var Roles = {
 	ForegroundRole: 9
 };
 
+var mediaLoading = false;
 var debounceTracker = {};// Use to create timeout handles on the fly.
 var wsUri;
 var websocket = null;
@@ -63,9 +64,7 @@ var xtpFormDirty = false;
 var userAgent;
 var remoteUserSettings;
 var mediaListGlobal = [];
-var sortedMedia = [];
-var filteredMedia = [];
-var filteredTagsMedia = [];
+var mediaListDisplayed = [];
 var selectedMediaItemMetaData = null;
 var playingmediaItem;
 var playingmediaItemNode;
@@ -148,6 +147,10 @@ var videoMediaName = document.getElementById("videoMediaName");
 const storedHash = window.localStorage.getItem("storedHash");
 var sortByGlobal = JSON.parse(window.localStorage.getItem("sortBy"));
 var showGlobal = JSON.parse(window.localStorage.getItem("show"));
+if(showGlobal == null) {
+	window.localStorage.setItem("show", JSON.stringify("All"));
+	showGlobal = "All";
+}
 var thumbSizeGlobal = JSON.parse(window.localStorage.getItem("thumbSize"));
 var selectedSyncConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedSyncConnection"));
 var selectedOutputConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedOutputConnection"));
@@ -364,6 +367,7 @@ function wsCallBackFunction(evt) {
 			case "mediaLoaded":
 				var mediaLoadingElement = document.getElementById("mediaLoading");
 				mediaLoadingElement.style.display = "none"
+				mediaLoading = false;
 				getServerLibrary();
 				break;
 			case "mediaLoading":
@@ -442,6 +446,7 @@ function setStatusOutput(message, percentage) {
 	progressNode.value = (percentage > -1 ? percentage : 0);
 }
 function setMediaLoading() {
+	mediaLoading = true;
 	clearMediaList();
 	var mediaLoadingElement = document.getElementById("mediaLoading");
 	mediaLoadingElement.style.display = "flex"
@@ -666,11 +671,6 @@ function setupChannelData() {
 function setupSystemTags() {
 	const tags = remoteUserSettings["tags"];
 	const tagsNode = document.getElementById("tagFilterOptions");
-	var tagFilterClick = function (tagCheckbox) {
-		return function () {
-			filterByTag(tagCheckbox);
-		}
-	};
 	removeAllChildNodes(tagsNode);
 	tags.forEach((x, i) => {
 		const divNode = document.createElement("div");
@@ -683,7 +683,7 @@ function setupSystemTags() {
 		//checkbox.classList.add("styled-checkbox");
 		checkbox.id = x+"TagCheckbox" + i;
 		checkbox.name = "TagCheckbox";
-		checkbox.onclick = tagFilterClick(checkbox);
+		checkbox.onclick = onFilterByTagClicked(checkbox);
 		divNode.appendChild(checkbox);
 		divNode.appendChild(label);
 		tagsNode.appendChild(divNode);
@@ -843,11 +843,11 @@ function getServerLibrary() {
 		var status = xhr.status;
 		if (status === 200) {
 			mediaListGlobal = xhr.response;
-			/* 	
-				if(useDeoWeb && mediaListObj.length > 0)
-					loadVideo(mediaListObj[0]); 
-			*/
-			updateMediaUI();
+			setThumbSize(thumbSizeGlobal, false);
+			sort(sortByGlobal, false);
+			mediaListDisplayed = getDisplayedMediaList(showGlobal, false);
+			loadMedia(mediaListDisplayed);
+			filter();
 		} else {
 			systemError('Error getting media list: ' + err);
 		}
@@ -1169,25 +1169,6 @@ function onSaveFail(error, node) {
 	node.title = error;
 }
 
-function updateMediaUI() {
-	setThumbSize(thumbSizeGlobal, false);
-	sort(sortByGlobal, false);
-	sortedMedia = show(showGlobal, false);
-	loadMedia(sortedMedia)
-}
-
-function getCurrentDisplayedMedia() {
-	let allFiltered = [];
-	filteredMedia.forEach(x => allFiltered.push(x));
-	filteredTagsMedia.forEach(x => allFiltered.push(x));
-	// if(filteredMedia.length > 0) {
-	// 	return filteredMedia;
-	// } 
-	if(allFiltered.length)
-		return allFiltered;
-	return JSON.parse(JSON.stringify(sortedMedia || []))
-}
-
 function clearMediaList() {
 	var medialistNode = document.getElementById("mediaList");
 	removeAllChildNodes(medialistNode);
@@ -1198,8 +1179,10 @@ function loadMedia(mediaList) {
 
 	var noMediaElement = document.getElementById("noMedia");
 	if (!mediaList || mediaList.length == 0) {
-		noMediaElement.innerHTML = "No media found<br>Current filter: " + showGlobal;
-		noMediaElement.hidden = false;
+		if(!mediaLoading) {
+			noMediaElement.innerHTML = "No media found<br>Current filter: " + showGlobal;
+			noMediaElement.hidden = false;
+		}
 		return;
 	}
 	noMediaElement.hidden = true;
@@ -1614,6 +1597,7 @@ function sort(value, userClick) {
 		window.localStorage.setItem("sortBy", JSON.stringify(value));
 		sortByGlobal = value;
 	}
+	return mediaListGlobal;
 }
 
 //https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
@@ -1621,51 +1605,47 @@ function fy(a,b,c,d){//array,placeholder,placeholder,placeholder
 	c=a.length;while(c)b=Math.random()*c--|0,d=a[c],a[c]=a[b],a[b]=d
 }
 
-function show(value, userClick) {
-	if (!value)
-		value = "All";
-	var filteredMedia = [];
-	switch (value) {
+function getDisplayedMediaList(showValue, userClick) {
+	let filteredMediaScoped = [];
+	//let mediaListGlobalCopy = JSON.parse(JSON.stringify(mediaListGlobal));
+	switch (showValue) {
 		case "All":
-			filteredMedia = mediaListGlobal;
+			filteredMediaScoped = JSON.parse(JSON.stringify(mediaListGlobal));
 			break;
 		case "3DOnly":
-			filteredMedia = mediaListGlobal.filter(x => x.type === MediaType.VR);
+			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.VR);
 			break;
 		case "2DAndAudioOnly":
-			filteredMedia = mediaListGlobal.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video);
+			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video);
 			break;
 	}
-	if (!userClick) {
-		// document.getElementById("show").value = value;
-		if (value) {
-			document.getElementById(value.toString()).checked = true;
+	
+	if(userClick != undefined) {
+		if (!userClick) {
+			document.getElementById(showValue.toString()).checked = true;
 		}
-	} else {
-		window.localStorage.setItem("show", JSON.stringify(value));
-		showGlobal = value;
 	}
-	return filteredMedia;
+	return filteredMediaScoped
 }
 
 function filter(criteria) {
+	userFilterCriteria = criteria;
+	var filterInput = document.getElementById("filterInput");
+	filterInput.enabled = false;
+	var mediaItems = document.getElementsByClassName("media-item");
+	for (var item of mediaItems) {
+		const libraryItem = mediaListDisplayed.find(x => x.id === item.id);
+
+		item.hidden = isFiltered(userFilterCriteria, item.textContent) || isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags);
+	};
+	filterInput.enabled = true;
+}
+
+function debounceFilter(criteria) {
 	if (filterDebounce) 
 		clearTimeout(filterDebounce);
 	filterDebounce = setTimeout(function () {
-		filteredMedia = [];
-		var filterInput = document.getElementById("filterInput");
-		filterInput.enabled = false;
-		userFilterCriteria = criteria;
-		var mediaItems = document.getElementsByClassName("media-item");
-		for (var item of mediaItems) {
-			const libraryItem = mediaListGlobal.find(x => x.id === item.id);
-
-			const doNotShowItem = isFiltered(criteria, item.textContent);
-			item.hidden = (doNotShowItem) || (!doNotShowItem && isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags))
-			if(!item.hidden)
-				filteredMedia.push(mediaListGlobal.find(x => x.id === item.id));
-		};
-		filterInput.enabled = true;
+		filter(criteria);
 		filterDebounce = undefined;
 	}, 1000);
 }
@@ -1677,25 +1657,30 @@ function isFiltered(criteria, textToSearch) {
 		return !textToSearch.trim().toUpperCase().includes(criteria.trim().toUpperCase());
 }
 
-function filterByTag(tagCheckbox) {
-	filteredMedia = [];
+var onFilterByTagClicked = function (tagCheckbox) {
+	return function () {
+		if(tagCheckbox) {
+			if(tagCheckbox.checked)
+				userTagFilterCriteria.push(tagCheckbox.value);
+			else {
+				var index = userTagFilterCriteria.findIndex(x => x == tagCheckbox.value);
+				if(index > -1)
+					userTagFilterCriteria.splice(index, 1);
+			}
+			filterByTag(userTagFilterCriteria);
+		}
+	}
+};
+
+function filterByTag(filterCriteria) {
+	userTagFilterCriteria = filterCriteria;
 	var tagsFilterOptions = document.getElementsByName("TagCheckbox");
 	tagsFilterOptions.forEach(x => x.enabled = false);
-	if(tagCheckbox.checked)
-		userTagFilterCriteria.push(tagCheckbox.value);
-	else {
-		var index = userTagFilterCriteria.findIndex(x => x == tagCheckbox.value);
-		if(index > -1)
-			userTagFilterCriteria.splice(index, 1);
-	}
 	var mediaItems = document.getElementsByClassName("media-item");
 	for (var item of mediaItems) {
-		const libraryItem = mediaListGlobal.find(x => x.id === item.id);
+		const libraryItem = mediaListDisplayed.find(x => x.id === item.id);
 
-		const doNotShowItem = isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags);
-		item.hidden = (doNotShowItem) || (!doNotShowItem && isFiltered(userFilterCriteria, item.textContent));
-		if(!item.hidden)
-			filteredMedia.push(libraryItem);
+		item.hidden = isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags) || isFiltered(userFilterCriteria, item.textContent);
 	};
 	tagsFilterOptions.forEach(x => x.enabled = true);
 }
@@ -1704,15 +1689,11 @@ function isTagFiltered(selectedTags, mediaTags) {
 	if (!selectedTags || !selectedTags.length || !mediaTags || !mediaTags.length)
 		return false;
 	else {
-		// let matches = selectedTags.filter(x => {
-		// 	return mediaTags.every(y => );
-		//   });
 		  for(let i=0; i<selectedTags.length; i++) {
 			if(!mediaTags.includes(selectedTags[i]))
 				return true;
 		  }
 		return false;
-		//return !selectedTags.findIndex(x => mediaTags.findIndex(y => y==x)>-1) > -1;
 	}
 }
 /* 
@@ -1933,7 +1914,7 @@ function disableTextToSpeech(message) {
 }
 
 function toggleShufflePlay() {
-	if(!sortedMedia.length)
+	if(!mediaListDisplayed.length)
 		return;
 	shufflePlayMode = !shufflePlayMode;
 	if(shufflePlayMode) {
@@ -2161,7 +2142,7 @@ function playNextVideoClick() {
 }
 
 function playNextVideo() {
-	if(sortedMedia.length == 0)
+	if(mediaListDisplayed.length == 0)
 		return;
 	if(shufflePlayMode) {
 		playVideo(getNextShuffleMediaItem())
@@ -2185,7 +2166,7 @@ function playPreviousVideoClick() {
 	playPreviousVideo();
 }
 function playPreviousVideo() {
-	if(sortedMedia.length == 0)
+	if(mediaListDisplayed.length == 0)
 		return;
 	var currentDisplayedMedia = getCurrentDisplayedMedia();
 	if(playingmediaItem) {
@@ -2344,22 +2325,35 @@ function tabClick(tab, tabNumber) {
 	tab.style.backgroundColor = '#8DA1BF';
 }
 
+function getCurrentDisplayedMedia() {
+	var displayedElementIDs = document.querySelectorAll(".media-item:not([hidden])").map(x => x.id);
+	return mediaListGlobal.filter(x => {
+		displayedElementIDs.includes(x.id);
+	});
+}
+
 function showChange(value) {
-	sort(sortByGlobal, true);
-	sortedMedia = show(value, true);
-	loadMedia(sortedMedia);
+	if (!value)
+		showGlobal = "All";
+	else
+		showGlobal = value;
+	window.localStorage.setItem("show", JSON.stringify(value));
+	mediaListDisplayed = getDisplayedMediaList(value, true);
+	loadMedia(mediaListDisplayed);
+	filter();
 }
 
 function sortChange(value) {
 	sort(value, true);
-	sortedMedia = show(showGlobal, true);
-	loadMedia(sortedMedia);
+	mediaListDisplayed = getDisplayedMediaList(value, false);
+	loadMedia(mediaListDisplayed);
+	filter();
 }
 
 function thumbSizeChange(value) {
 	setThumbSize(value, true);
-	sortedMedia = show(showGlobal, true);
-	loadMedia(sortedMedia);
+	loadMedia(mediaListDisplayed);
+	filter();
 }
 
 async function setupSliders() {
