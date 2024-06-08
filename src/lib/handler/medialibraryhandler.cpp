@@ -231,6 +231,9 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             item.libraryPath = path;
             setLiveProperties(item);
 
+            auto metadata = SettingsHandler::getLibraryListItemMetaData(item);
+            item.isMFS = metadata.tags.contains(SettingsHandler::getXTags().MFS);
+
             if(!vrMode && !scriptPath.isEmpty())
                 funscriptsWithMedia.append(scriptPath);
             if(!vrMode && !zipFile.isEmpty())
@@ -480,16 +483,16 @@ void MediaLibraryHandler::startMetadataProcess()
                 //     metadataChanged = true;
                 // }
 
-                if(!item.subtitle.isEmpty() && !metadata.tags.contains(tags.SUBTITLE)) {
-                    metadata.tags.append(tags.SUBTITLE);
-                    metadataChanged = true;
-                } else if(item.subtitle.isEmpty() && metadata.tags.contains(tags.SUBTITLE)) {
-                    metadata.tags.removeAll(tags.SUBTITLE);
-                    metadataChanged = true;
-                }
-
                 if(item.type != LibraryListItemType::PlaylistInternal)
                 {
+
+                    if(!item.subtitle.isEmpty() && !metadata.tags.contains(tags.SUBTITLE)) {
+                        metadata.tags.append(tags.SUBTITLE);
+                        metadataChanged = true;
+                    } else if(item.subtitle.isEmpty() && metadata.tags.contains(tags.SUBTITLE)) {
+                        metadata.tags.removeAll(tags.SUBTITLE);
+                        metadataChanged = true;
+                    }
                     if(!item.hasScript && !metadata.tags.contains(tags.MISSING_SCRIPT)) {
                         metadata.tags.append(tags.MISSING_SCRIPT);
                         metadataChanged = true;
@@ -502,6 +505,13 @@ void MediaLibraryHandler::startMetadataProcess()
                         metadataChanged = true;
                     } else if(!item.hasScript && metadata.tags.contains(tags.HAS_SCRIPT)) {
                         metadata.tags.removeAll(tags.HAS_SCRIPT);
+                        metadataChanged = true;
+                    }
+                    if(!metadata.tags.contains(tags.VIEWED) && !metadata.tags.contains(tags.UNVIEWED)) {
+                        metadata.tags.append(tags.UNVIEWED);
+                        metadataChanged = true;
+                    } else if(metadata.tags.contains(tags.VIEWED) && metadata.tags.contains(tags.UNVIEWED)) {
+                        metadata.tags.removeAll(tags.UNVIEWED);
                         metadataChanged = true;
                     }
                 }

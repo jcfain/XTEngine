@@ -49,6 +49,17 @@ void XMediaStateHandler::stop()
     m_playingItem = LibraryListItem27();
 }
 
+void XMediaStateHandler::updateDuration(qint64 currentPos, qint64 duration)
+{
+    if(duration > 0 && currentPos > -1 && (duration - currentPos) > (duration * 0.5))
+    {
+        auto metadata = SettingsHandler::getLibraryListItemMetaData(m_playingItem);
+        metadata.tags.removeAll(SettingsHandler::getXTags().UNVIEWED);
+        metadata.tags.append(SettingsHandler::getXTags().VIEWED);
+        SettingsHandler::updateLibraryListItemMetaData(metadata);
+    }
+}
+
 void XMediaStateHandler::processMetaData()
 {
     auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(m_playingItem);

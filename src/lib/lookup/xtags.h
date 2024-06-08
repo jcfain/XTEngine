@@ -15,10 +15,13 @@ public:
     const QString SUBTITLE = "subtitle";
     const QString MISSING_SCRIPT = "missingScript";
     const QString HAS_SCRIPT = "hasScript";
+    const QString VIEWED = "viewed";
+    const QString UNVIEWED = "unviewed";
     //Auto tags
     const QString PMV = "pmv";
     const QString MUSIC = "music";
     const QString POV = "pov";
+    const QString JOI = "joi";
     void addTag(const QString& tag) {
         m_userTags.append(tag);
     }
@@ -60,12 +63,15 @@ private:
         PLAYLIST_INTERNAL,
         SUBTITLE,
         MISSING_SCRIPT,
-        HAS_SCRIPT
+        HAS_SCRIPT,
+        VIEWED,
+        UNVIEWED
     };
     const QStringList m_autoTags = {
         PMV,
         MUSIC,
-        POV
+        POV,
+        JOI
     };
     QStringList m_userTags;
 };

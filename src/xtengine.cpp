@@ -89,6 +89,9 @@ void XTEngine::init()
     }
     
     connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, &SyncHandler::searchForFunscript);
+    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, this, [](InputDevicePacket packet) {
+        XMediaStateHandler::updateDuration(packet.currentTime, packet.duration);
+    });
     connect(_connectionHandler, &ConnectionHandler::action, _settingsActionHandler, &SettingsActionHandler::media_action);
     connect(_connectionHandler, &ConnectionHandler::inputConnectionChange, this, [this](ConnectionChangedSignal event) {
         auto selectedInputDevice = _connectionHandler->getSelectedInputDevice();
