@@ -477,6 +477,9 @@ void MediaLibraryHandler::startMetadataProcess()
                 } else if(item.type == LibraryListItemType::FunscriptType && !metadata.tags.contains(tags.FUNSCRIPT)) {
                     metadata.tags.append(tags.FUNSCRIPT);
                     metadataChanged = true;
+                } else if(item.type == LibraryListItemType::PlaylistInternal && !metadata.tags.contains(tags.PLAYLIST_INTERNAL)) {
+                    metadata.tags.append(tags.PLAYLIST_INTERNAL);
+                    metadataChanged = true;
                 }
                 // else if(item.type == LibraryListItemType::PlaylistInternal && !metadata.tags.contains(tags.PLAYLIST_INTERNAL)) {
                 //     metadata.tags.append(tags.PLAYLIST_INTERNAL);
