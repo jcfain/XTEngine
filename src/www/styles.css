@@ -809,6 +809,10 @@ section .range-values {
     width: 100%;
     max-width: 50px;
 }
+
+.system-tags {
+    height: 257px;
+}
 /* .ms {
     width: 100%;
 }

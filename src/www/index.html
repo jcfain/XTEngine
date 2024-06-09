@@ -265,8 +265,7 @@
 			-->
 				<div class="tab-row">
 					<button id="tabLocalTab" class="tab-section-tab" onclick="tabClick(this, 0)">Local</button>
-					<button id="tabConnectionsTab" class="tab-section-tab"
-						onclick="tabClick(this, 1)">Connections</button>
+					<button id="tabConnectionsTab" class="tab-section-tab" onclick="tabClick(this, 1)">Connections</button>
 					<button id="tabTCodeTab" class="tab-section-tab" onclick="tabClick(this, 2)">TCode</button>
 					<button id="tabFunscriptTab" class="tab-section-tab" onclick="tabClick(this, 3)">Funscript</button>
 					<button id="tabBrowserInfoTab" class="tab-section-tab" onclick="tabClick(this, 4)">System</button>
@@ -564,6 +563,13 @@
 								<tbody id="sessionInfoBody"></tbody>
 							</table>
 						</div>
+						
+						<h3>System tags</h3>
+						<div id="systemTags">
+							<select id="systemTagsSelect" class="system-tags" multiple="multiple" onChange="systemTagsSelectChange(this)"></select>
+						</div>
+						<button id="addTagButton" onclick="addSystemTag()">Add</button>
+						<button id="removeTagButton" disabled="true" onclick="removeSystemTags()">Remove</button>
 					</div>
 				</section>
 				<!-- 				<div class="formElement">

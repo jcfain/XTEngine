@@ -670,8 +670,11 @@ function setupChannelData() {
 
 function setupSystemTags() {
 	const tags = remoteUserSettings["tags"];
-	const tagsNode = document.getElementById("tagFilterOptions");
-	removeAllChildNodes(tagsNode);
+	const systemTagsSelect = document.getElementById("systemTagsSelect");
+	for(let i=0;i<systemTagsSelect.options.length;i++) {
+		systemTagsSelect.options.remove(i);
+	}
+	const tagsFIlterNode = document.getElementById("tagFilterOptions");
 	tags.forEach((x, i) => {
 		const divNode = document.createElement("div");
 		const label = document.createElement("label");
@@ -686,8 +689,56 @@ function setupSystemTags() {
 		checkbox.onclick = onFilterByTagClicked(checkbox);
 		divNode.appendChild(checkbox);
 		divNode.appendChild(label);
-		tagsNode.appendChild(divNode);
-	})
+		tagsFIlterNode.appendChild(divNode);
+
+		const option = document.createElement("option");
+		option.value = x;
+		option.innerText = x;
+		systemTagsSelect.options.add(option);
+	});
+}
+
+function systemTagsSelectChange(selectElement) {
+	document.getElementById("removeTagButton").disabled = selectElement.options.selectedIndex == -1;
+}
+
+function addSystemTag() {
+	const tags = remoteUserSettings["tags"];
+	var name = prompt('Tag name');
+	if(tags.findIndex(x => x == name) > -1) {
+		showAlertWindow(`Tag ${x} already exists!`);
+		return;
+	}
+	const systemTagsSelect = document.getElementById("systemTagsSelect");
+	const option = document.createElement("option");
+	option.value = name;
+	option.innerText = name;
+	systemTagsSelect.options.add(option);
+
+	tags.push(name);
+}
+
+function removeSystemTags() {
+	const tags = remoteUserSettings["tags"];
+	const systemTagsSelect = document.getElementById("systemTagsSelect");
+	let selected = [];
+	// for (var i=0; i<systemTagsSelect.options.length; i++) {
+	//   opt = systemTagsSelect.options[i];
+  
+	//   if (opt.selected) {
+	// 	tags.splice(tags.findIndex(x => x == opt.value), 1);
+	// 	selected.push(i)
+	//   }
+	// }
+	// for (var i=selected.length-1; i>-1; i--) {
+	// 	let selectedIndex = systemTagsSelect.options.selectedIndex;
+	// 	systemTagsSelect.options.remove(selected[i]);
+	// }
+	while(systemTagsSelect.options.selectedIndex > -1) {
+		const opt = systemTagsSelect.options[systemTagsSelect.options.selectedIndex];
+		tags.splice(tags.findIndex(x => x == opt.value), 1);
+		systemTagsSelect.options.remove(systemTagsSelect.options.selectedIndex);
+	}
 }
 
 function setSelectedProfile(profileName) {
