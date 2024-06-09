@@ -51,12 +51,17 @@ void XMediaStateHandler::stop()
 
 void XMediaStateHandler::updateDuration(qint64 currentPos, qint64 duration)
 {
-    if(duration > 0 && currentPos > -1 && (duration - currentPos) > (duration * 0.5))
+    const qint64 timeLeft = duration - currentPos;
+    const qint64 viewedThreshold = duration * 0.5;
+    if(duration > 0 && currentPos > -1 && timeLeft < viewedThreshold)
     {
         auto metadata = SettingsHandler::getLibraryListItemMetaData(m_playingItem);
-        metadata.tags.removeAll(SettingsHandler::getXTags().UNVIEWED);
-        metadata.tags.append(SettingsHandler::getXTags().VIEWED);
-        SettingsHandler::updateLibraryListItemMetaData(metadata);
+        if(!metadata.tags.contains(SettingsHandler::getXTags().VIEWED))
+        {
+            metadata.tags.removeAll(SettingsHandler::getXTags().UNVIEWED);
+            metadata.tags.append(SettingsHandler::getXTags().VIEWED);
+            SettingsHandler::updateLibraryListItemMetaData(metadata);
+        }
     }
 }
 

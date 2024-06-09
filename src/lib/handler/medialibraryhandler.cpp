@@ -522,6 +522,10 @@ void MediaLibraryHandler::startMetadataProcess()
                         metadataChanged = true;
                     }
                 }
+                // metadata.tags.removeAll(tags.VIEWED);
+                // metadata.tags.removeAll(tags.UNVIEWED);
+                // metadata.tags.append(tags.UNVIEWED);
+                // metadataChanged = true;
 
                 if(metadataChanged) {
                     saveSettings = true;

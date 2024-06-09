@@ -1928,8 +1928,8 @@ function toggleShufflePlay() {
 }
 
 function getNextShuffleMediaItem() {
-	var currentDisplayedMedia = getCurrentDisplayedMedia();
-	if(!currentDisplayedMedia.length) {
+	var currentDisplayedMedia = getCurrentDisplayedMediaNodes();
+	if(!currentDisplayedMedia || !currentDisplayedMedia.length) {
 		return;
 	}
 	if(Object.keys(shufflePlayModePlayedIndexed).length === currentDisplayedMedia.length) {
@@ -2147,9 +2147,12 @@ function playNextVideo() {
 	if(shufflePlayMode) {
 		playVideo(getNextShuffleMediaItem())
 	} else {
-		var currentDisplayedMedia = getCurrentDisplayedMedia();
+		var currentDisplayedMedia = getCurrentDisplayedMediaNodes();
+		if(!currentDisplayedMedia || !currentDisplayedMedia.length) {
+			return;
+		}
 		if(playingmediaItem) {
-			var playingIndex = currentDisplayedMedia.findIndex(x => x.path === playingmediaItem.path);
+			var playingIndex = currentDisplayedMedia.findIndex(x => x.id === playingmediaItem.id);
 			playingIndex++;
 		} else {
 			playingIndex = 0;
@@ -2168,9 +2171,12 @@ function playPreviousVideoClick() {
 function playPreviousVideo() {
 	if(mediaListDisplayed.length == 0)
 		return;
-	var currentDisplayedMedia = getCurrentDisplayedMedia();
+	var currentDisplayedMedia = getCurrentDisplayedMediaNodes();
+	if(!currentDisplayedMedia || !currentDisplayedMedia.length) {
+		return;
+	}
 	if(playingmediaItem) {
-		var playingIndex = currentDisplayedMedia.findIndex(x => x.path === playingmediaItem.path);
+		var playingIndex = currentDisplayedMedia.findIndex(x => x.id === playingmediaItem.id);
 		playingIndex--;
 	} else {
 		playingIndex = -1;
@@ -2325,10 +2331,10 @@ function tabClick(tab, tabNumber) {
 	tab.style.backgroundColor = '#8DA1BF';
 }
 
-function getCurrentDisplayedMedia() {
-	var displayedElementIDs = document.querySelectorAll(".media-item:not([hidden])").map(x => x.id);
-	return mediaListGlobal.filter(x => {
-		displayedElementIDs.includes(x.id);
+function getCurrentDisplayedMediaNodes() {
+	var displayedElementIDs = Array.from(document.querySelectorAll(".media-item:not([hidden])")).map(x => x.id);
+	return mediaListDisplayed.filter(x => {
+		return displayedElementIDs.includes(x.id);
 	});
 }
 

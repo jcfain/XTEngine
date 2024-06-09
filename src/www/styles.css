@@ -306,18 +306,19 @@ input:hover:not(.range-input) {
     width: 25vw;
     border-radius: 5px;
     height: 24px;
-    left: calc(100vw - 35vw);
+    right: 100px;
     position: absolute;
     z-index: 10;
+    margin-top: 16px;
 }
 
-.media-tag-filter-input {
-    width: 16vw;
+.media-tag-filter-input {  
+    width: 150px;
     border-radius: 25px;
-    left: calc(100vw - 27vw);
+    right: 100px;
     position: absolute;
     z-index: 10;
-    top: 160px;
+    margin-top: 60px;
     display: flex;
     background-color: #000000;
     flex-flow: column;padding: 16px;
@@ -507,11 +508,11 @@ input:hover:not(.range-input) {
     z-index: 10;
 } 
 .range-slider {
-    display: flex;
-    flex-flow: column;
+    /* display: flex;
+    flex-flow: column; */
     position: relative;
-    width: 100%;
-    text-align: center;
+    /* width: 100%;
+    text-align: center; */
 }
 
 .range-input {
@@ -520,7 +521,7 @@ input:hover:not(.range-input) {
     overflow: hidden;
     left: 46px;
     top: 3px;
-    width: 88%;
+    width: calc(100% - 92px);
     outline: none;
     margin: 0;
     padding: 0;
@@ -841,11 +842,9 @@ section .range-values {
     
     .media-filter-input {
         width: 50vw;
-        left: 25vw;
+        right: 25vw;
     }
     .media-tag-filter-input {
-        width: 50vw;
-        left: 25vw;
     }
     .auth-container {
         width: 85%;

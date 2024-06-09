@@ -84,6 +84,7 @@ private:
     QTimer m_sessionPolice;
     int m_sessionTimeout = 900; // 15 Min
     QString m_hostAddress;
+    QFuture<void> m_hlsFuture;
 
     QJsonObject createMediaObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);

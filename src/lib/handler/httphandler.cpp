@@ -989,8 +989,7 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
         const QtPromise::QPromiseResolve<HttpDataPtr> &resolve,
         const QtPromise::QPromiseReject<HttpDataPtr> &reject)
         {
-
-            QtConcurrent::run([=]()
+            m_hlsFuture = QtConcurrent::run([=]()
             {
                 try
                 {
