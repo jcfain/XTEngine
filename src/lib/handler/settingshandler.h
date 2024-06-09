@@ -357,6 +357,15 @@ public:
 
     static XTags getXTags();
     static QStringList getTags();
+    static QStringList getUserTags();
+    static QStringList getUserSmartTags();
+    static void removeUserTag(QString tag);
+    static void addUserTag(QString tag);
+    static void removeUserSmartTag(QString tag);
+    static void addUserSmartTag(QString tag);
+
+    static float viewedThreshold();
+    static void setViewedThreshold(float newViewedThreshold);
 
 private:
     SettingsHandler();
@@ -486,6 +495,8 @@ private:
     static QString _channelPulseChannel;
     static qint64 _channelPulseFrequency;
     static int _channelPulseAmount;
+
+    static float m_viewedThreshold;
 
     static XTags m_xTags;
 

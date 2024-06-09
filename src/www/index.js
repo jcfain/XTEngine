@@ -1935,12 +1935,14 @@ function getNextShuffleMediaItem() {
 	if(Object.keys(shufflePlayModePlayedIndexed).length === currentDisplayedMedia.length) {
 		shufflePlayModePlayedIndexed = {};
 	}
-	var randomIndex = Math.floor(Math.random() * (currentDisplayedMedia.length - 1));
-	var id = currentDisplayedMedia[randomIndex].id;
-	while(shufflePlayModePlayedIndexed[id]) {
+	// Find a media item that hasnt been played.
+	var randomIndex;
+	var id;
+	do {
 		randomIndex = Math.floor(Math.random() * (currentDisplayedMedia.length - 1));
 		id = currentDisplayedMedia[randomIndex].id;
-	}
+	} while(shufflePlayModePlayedIndexed[id]);
+
 	document.getElementById(id).scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
 	shufflePlayModePlayedIndexed[id] = true;
 	return currentDisplayedMedia[randomIndex];
@@ -1951,7 +1953,8 @@ function playVideo(obj) {
 			return;
 		clearPlayingMediaItem();
 	}
-	setPlayingMediaItem(obj);
+	setPlayingMediaItem(mediaListGlobal[mediaListGlobal.findIndex(x => x.id==obj.id)]);
+	sendMediaState();
 	if(obj["subtitle"]) {
 		if(!externalStreaming) {
 			if(obj["subtitle"].endsWith("vtt")) { // Only vtt is supported by html video element
@@ -2111,11 +2114,11 @@ function onVideoStall(event) {
 	if(playingmediaItem)
 		playingmediaItem.playing = false;
 	sendMediaState();
-	// Band aid to fix next video NOT playing due to current stalling at end.
-	videoStallTimeout = setTimeout(() => {
-		playNextVideo();
-		videoStallTimeout = undefined;
-	}, 20000);
+	// // Band aid to fix next video NOT playing due to current stalling at end.
+	// videoStallTimeout = setTimeout(() => {
+	// 	playNextVideo();
+	// 	videoStallTimeout = undefined;
+	// }, 20000);
 }
 function onVideoPlaying(event) {
 	debug("Video playing");

@@ -516,7 +516,7 @@ void MediaLibraryHandler::startMetadataProcess()
                     }
                 }
 
-                foreach (QString tag, tags.getAutoTags()) {
+                foreach (QString tag, tags.getUserSmartags()) {
                     if(!metadata.tags.contains(tag) && item.path.contains(tag, Qt::CaseInsensitive)) {
                         metadata.tags.append(tag);
                         metadataChanged = true;

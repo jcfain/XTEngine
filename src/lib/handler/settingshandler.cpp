@@ -253,9 +253,32 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     }
 
 
-    QStringList tags = settingsToLoadFrom->value("xTags").toStringList();
-    foreach (auto tag, tags) {
-        m_xTags.addTag(tag);
+    QStringList tags = settingsToLoadFrom->value("tags").toStringList();
+    if(tags.isEmpty()) {
+        foreach (auto tag, m_xTags.getBuiltInTags()) {
+            m_xTags.addTag(tag);
+        }
+    } else {
+        foreach (auto tag, tags) {
+            m_xTags.addTag(tag);
+        }
+    }
+
+    QStringList smartTags = settingsToLoadFrom->value("smartTags").toStringList();
+    if(smartTags.isEmpty()) {
+        foreach (auto tag, m_xTags.getBuiltInSmartags()) {
+            m_xTags.addSmartTag(tag);
+        }
+    } else {
+        foreach (auto tag, smartTags) {
+            m_xTags.addSmartTag(tag);
+        }
+    }
+
+
+    m_viewedThreshold = settingsToLoadFrom->value("viewedThreshold").toFloat();
+    if(!m_viewedThreshold) {
+        m_viewedThreshold = 0.9f;
     }
 
 
@@ -537,12 +560,22 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         settingsToSaveTo->setValue("customTCodeCommands", m_customTCodeCommands);
 
+        settingsToSaveTo->setValue("viewedThreshold", m_viewedThreshold);
+
+
         QVariantList tagsList;
         foreach(auto tag, m_xTags.getUserTags())
         {
             tagsList.append(tag);
         }
-        settingsToSaveTo->setValue("xTags", tagsList);
+        settingsToSaveTo->setValue("tags", tagsList);
+
+        QVariantList smartTagsList;
+        foreach(auto tag, m_xTags.getUserSmartags())
+        {
+            smartTagsList.append(tag);
+        }
+        settingsToSaveTo->setValue("smartTags", smartTagsList);
 
         settingsToSaveTo->sync();
 
@@ -695,6 +728,16 @@ void SettingsHandler::storeMediaMetaDatas(QSettings* settingsToSaveTo)
     settingsToSaveTo->setValue("libraryListItemMetaDatas", libraryListItemMetaDatas);
 }
 
+float SettingsHandler::viewedThreshold()
+{
+    return m_viewedThreshold;
+}
+
+void SettingsHandler::setViewedThreshold(float newViewedThreshold)
+{
+    m_viewedThreshold = newViewedThreshold;
+}
+
 XTags SettingsHandler::getXTags()
 {
     return m_xTags;
@@ -703,6 +746,36 @@ XTags SettingsHandler::getXTags()
 QStringList SettingsHandler::getTags()
 {
     return m_xTags.getTags();
+}
+
+QStringList SettingsHandler::getUserTags()
+{
+    return m_xTags.getUserTags();
+}
+
+void SettingsHandler::removeUserTag(QString tag)
+{
+    m_xTags.removeTag(tag);
+}
+
+void SettingsHandler::addUserTag(QString tag)
+{
+    m_xTags.addTag(tag);
+}
+
+void SettingsHandler::removeUserSmartTag(QString tag)
+{
+    m_xTags.removeSmartTag(tag);
+}
+
+void SettingsHandler::addUserSmartTag(QString tag)
+{
+    m_xTags.addSmartTag(tag);
+}
+
+QStringList SettingsHandler::getUserSmartTags()
+{
+    return m_xTags.getUserSmartags();
 }
 
 void SettingsHandler::SetGamepadMapDefaults()
@@ -2538,6 +2611,8 @@ QString SettingsHandler::_hashedWebPass;
 
 QList<DecoderModel> SettingsHandler::decoderPriority;
 XVideoRenderer SettingsHandler::_selectedVideoRenderer;
+
+float SettingsHandler::m_viewedThreshold;
 
 QStringList SettingsHandler::_libraryExclusions;
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::_playlists;

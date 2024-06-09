@@ -22,6 +22,12 @@ public:
     const QString MUSIC = "music";
     const QString POV = "pov";
     const QString JOI = "joi";
+    QStringList getBuiltInTags() {
+        return m_builtin;
+    }
+    QStringList getBuiltInSmartags() {
+        return m_builtInSmartTags;
+    }
     void addTag(const QString& tag) {
         m_userTags.append(tag);
     }
@@ -31,8 +37,17 @@ public:
     void removeTag(const QString& tag) {
         m_userTags.removeAll(tag);
     }
-    QStringList getAutoTags() {
-        return m_autoTags;
+    void addSmartTag(const QString& tag) {
+        m_userSmartTags.append(tag);
+    }
+    bool hasSmartTag(const QString& tag) {
+        return m_userSmartTags.contains(tag);
+    }
+    void removeSmartTag(const QString& tag) {
+        m_userSmartTags.removeAll(tag);
+    }
+    QStringList getUserSmartags() {
+        return m_userSmartTags;
     }
     QStringList getUserTags() {
         return m_userTags;
@@ -40,15 +55,15 @@ public:
     void clearUserTags() {
         m_userTags.clear();
     }
+    void clearUserSmaetTags() {
+        m_userSmartTags.clear();
+    }
     QStringList getTags() {
         QStringList allTags;
-        foreach (QString tag, m_builtin) {
-            allTags.append(tag);
-        }
         foreach (QString tag, m_userTags) {
             allTags.append(tag);
         }
-        foreach (QString tag, m_autoTags) {
+        foreach (QString tag, m_userSmartTags) {
             allTags.append(tag);
         }
         return allTags;
@@ -67,13 +82,14 @@ private:
         VIEWED,
         UNVIEWED
     };
-    const QStringList m_autoTags = {
+    const QStringList m_builtInSmartTags = {
         PMV,
         MUSIC,
         POV,
         JOI
     };
     QStringList m_userTags;
+    QStringList m_userSmartTags;
 };
 
 #endif // XTAGS_H
