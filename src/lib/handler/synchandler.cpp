@@ -805,8 +805,7 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
                 funscriptPath = SettingsHandler::getDeoDnlaFunscript(videoPath);
                 if(!funscriptPath.isEmpty())
                 {
-                    QFileInfo funscriptFile(funscriptPath);
-                    if(!funscriptFile.exists())
+                    if(!QFile::exists(funscriptPath))
                     {
                         SettingsHandler::removeLinkedVRFunscript(videoPath);
                         funscriptPath = nullptr;

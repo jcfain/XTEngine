@@ -378,6 +378,7 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     }
 
     QJsonObject root;
+    root["xteVersion"] = SettingsHandler::XTEVersion;
     root["webSocketServerPort"] = _webSocketHandler->getServerPort();
 
     root["availableChannels"] = createSelectedChannels();

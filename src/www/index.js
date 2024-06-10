@@ -645,6 +645,8 @@ function getServerSettings(retry) {
 		var status = xhr.status;
 		if (status === 200) {
 			remoteUserSettings = xhr.response;
+
+			document.getElementById("xteVersion").innerText = remoteUserSettings["xteVersion"];
 			
 			setupChannelData();
 
