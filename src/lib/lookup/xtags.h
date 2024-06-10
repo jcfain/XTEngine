@@ -29,6 +29,8 @@ public:
         return m_builtInSmartTags;
     }
     void addTag(const QString& tag) {
+        if(m_userTags.contains(tag))
+            return;
         m_userTags.append(tag);
     }
     bool hasTag(const QString& tag) {
@@ -38,6 +40,8 @@ public:
         m_userTags.removeAll(tag);
     }
     void addSmartTag(const QString& tag) {
+        if(m_userSmartTags.contains(tag))
+            return;
         m_userSmartTags.append(tag);
     }
     bool hasSmartTag(const QString& tag) {
