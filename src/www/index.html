@@ -566,7 +566,7 @@
 						
 						<div id="systemTags" class="system-tags">
 							<div id="userTags" class="system-tags-section">
-								<h3>System tags</h3>
+								<h3 id="userTagsHeader">System tags</h3>
 								<div>
 									<select id="systemTagsSelect" class="system-tags-select" multiple="multiple" onChange="systemTagsSelectChange(this)"></select>
 								</div>
@@ -574,7 +574,7 @@
 								<button id="removeTagButton" disabled="true" class="system-tags-section-button" onclick="removeSystemTags(false)">Remove</button>
 							</div>
 							<div id="smartTags" class="system-tags-section">
-								<h3>Smart tags</h3>
+								<h3 id="smartTagsHeader" title="Smart tags are a special tag. When in the system and the metadata is being processed,\nthis processing will look for the tag text in the video path.\nif found, the tag is automattically added to the media.">Smart tags</h3>
 								<div>
 									<select id="smartTagsSelect" class="system-tags-select" multiple="multiple" onChange="smartagsSelectChange(this)"></select>
 								</div>
