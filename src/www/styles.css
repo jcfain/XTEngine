@@ -811,6 +811,15 @@ section .range-values {
 }
 
 .system-tags {
+    display: flex;
+}
+.system-tags-section {
+    margin-right: 8px;
+}
+.system-tags-section-button {
+    width: 50%;
+}
+.system-tags-select {
     height: 257px;
 }
 /* .ms {

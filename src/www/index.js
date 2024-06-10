@@ -199,6 +199,8 @@ playPreviousButton.addEventListener('click', playPreviousVideoClick);
 // }, true);
 
 var saveStateNode = document.getElementById("saveState");
+var mediaReloadRequiredNode = document.getElementById("mediaReloadRequired");
+
 var metaDataSaveStateNode = document.getElementById("metaDataSaveState");
 var deviceConnectionStatusRetryButtonNodes = document.getElementsByName("deviceStatusRetryButton");
 var deviceConnectionStatusRetryButtonImageNodes = document.getElementsByName("connectionStatusIconImage");
@@ -295,6 +297,31 @@ function sendUpdateMoneyShotAtPos(item) {
 	sendWebsocketMessage("setMoneyShot", { itemID: item.id, pos: pos });
 }
 
+function setSaveState(node, saving, error) {
+	if(!node)
+		node = saveStateNode;
+	node.innerText = saving ? "Saving settings..." : "Save success!";
+	if(!error) {
+		if(!saving) {
+			node.style.color = "green";
+			setTimeout(() => {
+				node.style.visibility = "hidden";
+				node.style.opacity = "0";
+			}, 5000);
+		} else {
+			node.style.color = "white";
+		}
+		node.style.visibility = "visible";
+		node.style.opacity = "1";
+	} else {
+		node.style.visibility = "visible";
+		node.style.opacity = "1";
+		node.style.color = "red";
+		node.innerText = "Save fail";
+		node.title = error;
+	}
+}
+
 
 function restartXTP() {
 	showAlertWindow("Confirm", `Are you sure you want restart XTP? 
@@ -309,6 +336,7 @@ function restartXTP() {
 }
 function refreshXTPLibrary() {
 	sendWebsocketMessage("reloadLibrary");
+	mediaReloadRequiredNode.classList.add('hidden');
 }
 
 function initWebSocket() {
@@ -421,6 +449,18 @@ function wsCallBackFunction(evt) {
 				var message = messageObj["message"]
 				var percentage = messageObj["percentage"]
 				setStatusOutput(message, percentage);
+				break;
+			case "tagsUpdate":
+				var messageObj = data["message"];
+				var smartTags = messageObj["smartTags"]
+				var userTags = messageObj["userTags"]
+				remoteUserSettings["allTags"] = [];
+				remoteUserSettings["allTags"].push(...userTags, ...smartTags);
+				remoteUserSettings["userTags"] = []
+				remoteUserSettings["userTags"].push(...userTags);
+				remoteUserSettings["smartTags"] = []
+				remoteUserSettings["smartTags"].push(...smartTags);
+				setupSystemTags();
 				break;
 		}
 	}
@@ -669,12 +709,9 @@ function setupChannelData() {
 }
 
 function setupSystemTags() {
-	const tags = remoteUserSettings["tags"];
-	const systemTagsSelect = document.getElementById("systemTagsSelect");
-	for(let i=0;i<systemTagsSelect.options.length;i++) {
-		systemTagsSelect.options.remove(i);
-	}
+	const tags = remoteUserSettings["allTags"];
 	const tagsFIlterNode = document.getElementById("tagFilterOptions");
+	removeAllChildNodes(tagsFIlterNode);
 	tags.forEach((x, i) => {
 		const divNode = document.createElement("div");
 		const label = document.createElement("label");
@@ -691,54 +728,86 @@ function setupSystemTags() {
 		divNode.appendChild(label);
 		tagsFIlterNode.appendChild(divNode);
 
+	});
+
+	const userTagsSelect = document.getElementById("systemTagsSelect");
+	while(userTagsSelect.options.length > 0) {
+		userTagsSelect.options.remove(userTagsSelect.options.length - 1);
+	}
+	const userTags = remoteUserSettings["userTags"];
+	userTags.forEach((x, i) => {
 		const option = document.createElement("option");
 		option.value = x;
 		option.innerText = x;
-		systemTagsSelect.options.add(option);
+		userTagsSelect.options.add(option);
+	});
+	
+	const smartTagsSelect = document.getElementById("smartTagsSelect");
+	while(smartTagsSelect.options.length > 0) {
+		smartTagsSelect.options.remove(smartTagsSelect.options.length - 1);
+	}
+	const smartTags = remoteUserSettings["smartTags"];
+	smartTags.forEach((x, i) => {
+		const option = document.createElement("option");
+		option.value = x;
+		option.innerText = x;
+		smartTagsSelect.options.add(option);
 	});
 }
 
 function systemTagsSelectChange(selectElement) {
 	document.getElementById("removeTagButton").disabled = selectElement.options.selectedIndex == -1;
 }
+function smartagsSelectChange(selectElement) {
+	document.getElementById("removeSmartTagButton").disabled = selectElement.options.selectedIndex == -1;
+}
 
-function addSystemTag() {
-	const tags = remoteUserSettings["tags"];
-	var name = prompt('Tag name');
-	if(tags.findIndex(x => x == name) > -1) {
-		showAlertWindow(`Tag ${x} already exists!`);
+function addSystemTag(smartMode) {
+	let tags = remoteUserSettings[smartMode ? "smartTags" : "userTags"];
+	const otherTagName = !smartMode ? "smartTags" : "userTags";
+	let other = remoteUserSettings[otherTagName];
+	var name = prompt(smartMode ? 'Smart tag name' : 'Tag name');
+	if(!name || !name.trim().length) {
 		return;
 	}
-	const systemTagsSelect = document.getElementById("systemTagsSelect");
+	if(tags.findIndex(x => x == name) > -1) {
+		showAlertWindow("Tag exists", `Tag '${name}' already exists!`);
+		return;
+	}
+	if(other.findIndex(x => x == name) > -1) {
+		showAlertWindow("Tag exists", `Tag '${name}' already exists in ${otherTagName}!`);
+		return;
+	}
+	const settingMemberName = smartMode ? "smartTagsToAdd" : "tagsToAdd";
+	if(!remoteUserSettings[settingMemberName])
+		remoteUserSettings[settingMemberName] = [];
+	remoteUserSettings[settingMemberName].push(name);
+	const systemTagsSelect = document.getElementById(smartMode ? "smartTagsSelect" : "systemTagsSelect");
 	const option = document.createElement("option");
 	option.value = name;
 	option.innerText = name;
 	systemTagsSelect.options.add(option);
+	if(smartMode)
+		mediaReloadRequiredNode.classList.remove('hidden');
 
-	tags.push(name);
+	//tags.push(name);
+
+	markXTPFormDirty();
 }
 
-function removeSystemTags() {
-	const tags = remoteUserSettings["tags"];
-	const systemTagsSelect = document.getElementById("systemTagsSelect");
-	let selected = [];
-	// for (var i=0; i<systemTagsSelect.options.length; i++) {
-	//   opt = systemTagsSelect.options[i];
-  
-	//   if (opt.selected) {
-	// 	tags.splice(tags.findIndex(x => x == opt.value), 1);
-	// 	selected.push(i)
-	//   }
-	// }
-	// for (var i=selected.length-1; i>-1; i--) {
-	// 	let selectedIndex = systemTagsSelect.options.selectedIndex;
-	// 	systemTagsSelect.options.remove(selected[i]);
-	// }
+function removeSystemTags(smartMode) {
+	let tags = remoteUserSettings[smartMode ? "smartTags" : "userTags"];
+	const systemTagsSelect = document.getElementById(smartMode ? "smartTagsSelect" : "systemTagsSelect");
+	const settingMemberName = smartMode ? "smartTagsToRemove" : "tagsToRemove";
+	if(!remoteUserSettings[settingMemberName])
+		remoteUserSettings[settingMemberName] = [];
 	while(systemTagsSelect.options.selectedIndex > -1) {
 		const opt = systemTagsSelect.options[systemTagsSelect.options.selectedIndex];
-		tags.splice(tags.findIndex(x => x == opt.value), 1);
+		remoteUserSettings[settingMemberName].push(opt.value);
+		//tags.splice(tags.findIndex(x => x == opt.value), 1);
 		systemTagsSelect.options.remove(systemTagsSelect.options.selectedIndex);
 	}
+	markXTPFormDirty();
 }
 
 function setSelectedProfile(profileName) {
@@ -1143,7 +1212,11 @@ function getMediaFunscripts(path, isMFS) {
 	xhr.send();
 }
 
+function onSaveToXTPClick() {
+	postServerSettings();
+}
 function postServerSettings() {
+	setSaveState(null, true);
 	var xhr = new XMLHttpRequest();
 	xhr.open('POST', "/settings", true);
 	xhr.setRequestHeader('Content-Type', 'application/json');
@@ -1201,23 +1274,10 @@ function postMediaState(mediaState) {
 }
 
 function onSaveSuccess(node) {
-	if(!node)
-		node = saveStateNode;
-	node.style.visibility = "visible";
-	node.style.opacity = "1";
-	node.style.color = "green";
-	node.innerText = "Save success";
-	setTimeout(() => {
-		node.style.visibility = "hidden";
-		node.style.opacity = "0";
-	}, 5000);
+	setSaveState(node, false);
 }
 function onSaveFail(error, node) {
-	node.style.visibility = "visible";
-	node.style.opacity = "1";
-	node.style.color = "red";
-	node.innerText = "Save fail";
-	node.title = error;
+	setSaveState(node, false, error);
 }
 
 function clearMediaList() {
@@ -2136,6 +2196,12 @@ function onVideoLoading(event) {
 	dataLoading();
 	if(playingmediaItem)
 		playingmediaItem.loaded = false;
+	// SOmetimes the stall signal is sent but the loading modal is never removed.
+	videoStallTimeout = setTimeout(() => {
+		//playNextVideo();
+		dataLoaded();
+		videoStallTimeout = undefined;
+	}, 20000);
 }
 function onVideoLoad(event) {
 	debug("Data loaded");
@@ -2165,11 +2231,14 @@ function onVideoStall(event) {
 	if(playingmediaItem)
 		playingmediaItem.playing = false;
 	sendMediaState();
-	// // Band aid to fix next video NOT playing due to current stalling at end.
-	// videoStallTimeout = setTimeout(() => {
-	// 	playNextVideo();
-	// 	videoStallTimeout = undefined;
-	// }, 20000);
+	if(videoStallTimeout)
+		clearTimeout(videoStallTimeout);
+	// SOmetimes the stall signal is sent but the loading modal is never removed.
+	videoStallTimeout = setTimeout(() => {
+		//playNextVideo();
+		dataLoaded();
+		videoStallTimeout = undefined;
+	}, 20000);
 }
 function onVideoPlaying(event) {
 	debug("Video playing");

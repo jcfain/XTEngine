@@ -404,6 +404,8 @@ void MediaLibraryHandler::startMetadataProcess()
         auto allMetadata = SettingsHandler::getLibraryListItemMetaData();
         emit backgroundProcessStateChange("Cleaning metadata...", -1);
         auto keys = allMetadata.keys();
+        auto allTags = SettingsHandler::getTags();
+        bool metadataChanged = false;
         foreach (auto key, keys) {
             if(_metadataFuture.isCanceled()) {
                 LogHandler::Debug("Cancel metadata process");
@@ -414,6 +416,12 @@ void MediaLibraryHandler::startMetadataProcess()
             if(!QFileInfo::exists(key)) {
                 SettingsHandler::removeLibraryListItemMetaData(key);
                 saveSettings = true;
+            }
+            foreach (auto tag, allMetadata[key].tags) {
+                if(!allTags.contains(tag)) {
+                    allMetadata[key].tags.removeAll(tag);
+                    metadataChanged = true;
+                }
             }
             float percentage = round(((float)keys.indexOf(key)/keys.length()) * 100);
             emit backgroundProcessStateChange("Cleaning metadata", percentage);
@@ -454,7 +462,6 @@ void MediaLibraryHandler::startMetadataProcess()
 
             if(!item.path.isEmpty())// path is ID for metadata
             {
-                bool metadataChanged = false;
                 auto metadata = SettingsHandler::getLibraryListItemMetaData(item);
                 if(item.isMFS && !metadata.tags.contains(tags.MFS)) {
                     metadata.tags.append(tags.MFS);

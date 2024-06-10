@@ -6,7 +6,27 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     HttpRequestHandler(parent)
 {
     _mediaLibraryHandler = mediaLibraryHandler;
+
+
     _webSocketHandler = new WebSocketHandler(this);
+
+    connect(SettingsHandler::instance(), &SettingsHandler::tagsChanged, this, [this]() {
+        QJsonObject obj;
+        QJsonArray userTags;
+        QJsonArray smartTags;
+        foreach(auto tag, SettingsHandler::getUserTags()) {
+            userTags.append(tag);
+        }
+        foreach(auto tag, SettingsHandler::getUserSmartTags()) {
+            smartTags.append(tag);
+        }
+        obj["userTags"] = userTags;
+        obj["smartTags"] = smartTags;
+        QJsonDocument doc(obj);
+        QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
+        _webSocketHandler->sendCommand("tagsUpdate", itemJson);
+    });
+
     connect(_webSocketHandler, &WebSocketHandler::connectOutputDevice, this, &HttpHandler::connectOutputDevice);
     connect(_webSocketHandler, &WebSocketHandler::connectInputDevice, this, &HttpHandler::connectInputDevice);
     connect(_webSocketHandler, &WebSocketHandler::tcode, this, &HttpHandler::tcode);
@@ -394,7 +414,21 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     foreach (QString tag, allTags) {
         tags.append(tag);
     }
-    root["tags"] = tags;
+    root["allTags"] = tags;
+
+    QJsonArray userTagsArray;
+    QStringList userTags = SettingsHandler::getUserTags();
+    foreach (QString tag, userTags) {
+        userTagsArray.append(tag);
+    }
+    root["userTags"] = userTagsArray;
+
+    QJsonArray smartTagsArray;
+    QStringList smartTags = SettingsHandler::getUserSmartTags();
+    foreach (QString tag, smartTags) {
+        smartTagsArray.append(tag);
+    }
+    root["smartTags"] = smartTagsArray;
 
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
     data->response->compressBody();
@@ -427,28 +461,6 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
                 continue;
             auto value = doc["availableChannels"][channelName].toObject();
             ChannelModel33 channelModel = ChannelModel33::fromJson(value);
-            // ChannelModel33 channelModel = {
-            //     value["friendlyName"].toString(),//QString FriendlyName;
-            //     value["axisName"].toString(),//QString AxisName;
-            //     value["channel"].toString(),//QString Channel;
-            //     value["min"].toInt(),//int Min;
-            //     value["mid"].toInt(),//int Mid;
-            //     value["max"].toInt(),//int Max;
-            //     value["userMin"].toInt(),//int UserMin;
-            //     value["userMid"].toInt(),//int UserMid;
-            //     value["userMax"].toInt(),//int UserMax;
-            //     (AxisDimension)(value["dimension"].toInt()),//AxisDimension Dimension;
-            //     (AxisType)(value["type"].toInt()),//AxisType Type;
-            //     value["trackName"].toString(),//QString TrackName;
-            //     value["multiplierEnabled"].toBool(),//bool MultiplierEnabled;
-            //     value["damperEnabled"].toBool(),//bool DamperEnabled;
-            //     value["damperRandom"].toBool(),//bool DamperRandom;
-            //     float(value["damperValue"].toDouble()),//float DamperValue;
-            //     value["funscriptInverted"].toBool(),//bool FunscriptInverted;
-            //     value["gamepadInverted"].toBool(),//bool GamepadInverted;
-            //     value["linkToRelatedMFS"].toBool(),//bool LinkToRelatedMFS;
-            //     value["relatedChannel"].toString()//QString RelatedChannel;
-            // };
             SettingsHandler::setAxis(channelName, channelModel);
         }
 
@@ -484,6 +496,38 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
             SettingsHandler::setSerialPort(serialPort);
             if(selectedOutputDevice == DeviceName::Serial)
                 emit connectOutputDevice(DeviceName::Serial, true);
+        }
+        if(!doc["tagsToRemove"].isNull())
+        {
+            QJsonArray tagsToRemove = doc["tagsToRemove"].toArray();
+            foreach (auto tag, tagsToRemove) {
+                QString tagString = tag.toString();
+                SettingsHandler::removeUserTag(tagString);
+            }
+        }
+        if(!doc["tagsToAdd"].isNull())
+        {
+            QJsonArray tagsToAdd = doc["tagsToAdd"].toArray();
+            foreach (auto tag, tagsToAdd) {
+                QString tagString = tag.toString();
+                SettingsHandler::addUserTag(tagString);
+            }
+        }
+        if(!doc["smartTagsToAdd"].isNull())
+        {
+            QJsonArray smartTagsToAdd = doc["smartTagsToAdd"].toArray();
+            foreach (auto tag, smartTagsToAdd) {
+                QString tagString = tag.toString();
+                SettingsHandler::addUserSmartTag(tagString);
+            }
+        }
+        if(!doc["smartTagsToRemove"].isNull())
+        {
+            QJsonArray smartTagsToRemove = doc["smartTagsToRemove"].toArray();
+            foreach (auto tag, smartTagsToRemove) {
+                QString tagString = tag.toString();
+                SettingsHandler::removeUserSmartTag(tagString);
+            }
         }
         SettingsHandler::Save();
     }

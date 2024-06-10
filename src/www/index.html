@@ -564,12 +564,24 @@
 							</table>
 						</div>
 						
-						<h3>System tags</h3>
-						<div id="systemTags">
-							<select id="systemTagsSelect" class="system-tags" multiple="multiple" onChange="systemTagsSelectChange(this)"></select>
+						<div id="systemTags" class="system-tags">
+							<div id="userTags" class="system-tags-section">
+								<h3>System tags</h3>
+								<div>
+									<select id="systemTagsSelect" class="system-tags-select" multiple="multiple" onChange="systemTagsSelectChange(this)"></select>
+								</div>
+								<button id="addTagButton" class="system-tags-section-button" onclick="addSystemTag(false)">Add</button>
+								<button id="removeTagButton" disabled="true" class="system-tags-section-button" onclick="removeSystemTags(false)">Remove</button>
+							</div>
+							<div id="smartTags" class="system-tags-section">
+								<h3>Smart tags</h3>
+								<div>
+									<select id="smartTagsSelect" class="system-tags-select" multiple="multiple" onChange="smartagsSelectChange(this)"></select>
+								</div>
+								<button id="addSmartTagButton" class="system-tags-section-button" onclick="addSystemTag(true)">Add</button>
+								<button id="removeSmartTagButton" disabled="true" class="system-tags-section-button" onclick="removeSystemTags(true)">Remove</button>
+							</div>
 						</div>
-						<button id="addTagButton" onclick="addSystemTag()">Add</button>
-						<button id="removeTagButton" disabled="true" onclick="removeSystemTags()">Remove</button>
 					</div>
 				</section>
 				<!-- 				<div class="formElement">
@@ -604,6 +616,7 @@
 					<a id="tcodeDeviceSettingsLink" hidden="true" target="_blank">TCode device settings</a>
 				</div>
 				<div class="modal-footer-content">
+					<span id="mediaReloadRequired" class="hidden">Media reload required after save</span>
 					<span id="saveState" class="save-status"></span>
 					<button id="defaultSettingsButton"
 						title="This will only reset the local browser settings to default. Your settings stored on the XTP machine will remain."
@@ -618,7 +631,7 @@
 					</button>
 					<button id="saveToXTPButton" disabled="true"
 						title="This will save all XTP settings to your XTP machines data storage."
-						onclick="postServerSettings()">
+						onclick="onSaveToXTPClick()">
 						Save to XTP
 					</button>
 					<!-- <button id="defaultSettingsButton" onclick="deleteLocalSettings()">

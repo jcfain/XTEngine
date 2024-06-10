@@ -4,7 +4,9 @@ const QString SettingsHandler::XTEVersion = "0.454b";
 const float SettingsHandler::XTEVersionNum = 0.454f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
-SettingsHandler::SettingsHandler(){}
+SettingsHandler::SettingsHandler(){
+    m_settingsChangedNotificationDebounce.setSingleShot(true);
+}
 SettingsHandler::~SettingsHandler()
 {
     delete settings;
@@ -254,25 +256,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
 
     QStringList tags = settingsToLoadFrom->value("tags").toStringList();
-    if(tags.isEmpty()) {
-        foreach (auto tag, m_xTags.getBuiltInTags()) {
-            m_xTags.addTag(tag);
-        }
-    } else {
-        foreach (auto tag, tags) {
-            m_xTags.addTag(tag);
-        }
+    foreach (auto tag, tags) {
+        m_xTags.addTag(tag);
     }
-
     QStringList smartTags = settingsToLoadFrom->value("smartTags").toStringList();
-    if(smartTags.isEmpty()) {
-        foreach (auto tag, m_xTags.getBuiltInSmartags()) {
-            m_xTags.addSmartTag(tag);
-        }
-    } else {
-        foreach (auto tag, smartTags) {
-            m_xTags.addSmartTag(tag);
-        }
+    foreach (auto tag, smartTags) {
+        m_xTags.addSmartTag(tag);
     }
 
 
@@ -409,6 +398,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.451f) {
             locker.unlock();
             SetTCodeCommandMapDefaults();
+            Save();
+            Load();
+        }
+        if(currentVersion < 0.454f) {
+            locker.unlock();
+            SetSystemTagDefaults();
             Save();
             Load();
         }
@@ -752,25 +747,62 @@ QStringList SettingsHandler::getUserTags()
 {
     return m_xTags.getUserTags();
 }
-
 void SettingsHandler::removeUserTag(QString tag)
 {
+    if(tag.isEmpty())
+        return;
     m_xTags.removeTag(tag);
+    if(!m_settingsChangedNotificationDebounce.isActive()) {
+        m_settingsChangedNotificationDebounce.callOnTimeout(
+            [] () {emit instance()->tagsChanged();}
+            );
+    }
+    m_settingsChangedNotificationDebounce.start(500);
 }
 
 void SettingsHandler::addUserTag(QString tag)
 {
+    if(tag.isEmpty())
+        return;
     m_xTags.addTag(tag);
+    if(!m_settingsChangedNotificationDebounce.isActive()) {
+        m_settingsChangedNotificationDebounce.callOnTimeout(
+            [] () {emit instance()->tagsChanged();}
+            );
+    }
+    m_settingsChangedNotificationDebounce.start(500);
+}
+
+bool SettingsHandler::hasTag(QString tag)
+{
+    return m_xTags.hasTag(tag);
 }
 
 void SettingsHandler::removeUserSmartTag(QString tag)
 {
     m_xTags.removeSmartTag(tag);
+    if(!m_settingsChangedNotificationDebounce.isActive()) {
+        m_settingsChangedNotificationDebounce.callOnTimeout(
+            [] () {emit instance()->tagsChanged();}
+            );
+    }
+    m_settingsChangedNotificationDebounce.start(500);
 }
 
 void SettingsHandler::addUserSmartTag(QString tag)
 {
     m_xTags.addSmartTag(tag);
+    if(!m_settingsChangedNotificationDebounce.isActive()) {
+        m_settingsChangedNotificationDebounce.callOnTimeout(
+            [] () {emit instance()->tagsChanged();}
+            );
+    }
+    m_settingsChangedNotificationDebounce.start(500);
+}
+
+bool SettingsHandler::hasSmartTag(QString tag)
+{
+    return m_xTags.hasSmartTag(tag);
 }
 
 QStringList SettingsHandler::getUserSmartTags()
@@ -821,6 +853,30 @@ void SettingsHandler::SetTCodeCommandMapDefaults() {
     }
     settings->setValue("tcodeCommandMap", tcodeCommandMap);
     settingsChangedEvent(true);
+}
+
+void SettingsHandler::SetSmartTagDefaults()
+{
+    m_xTags.clearUserSmartTags();
+    foreach (auto tag, m_xTags.getBuiltInSmartTags()) {
+        m_xTags.addSmartTag(tag);
+    }
+    emit instance()->tagsChanged();
+}
+
+void SettingsHandler::SetUserTagDefaults()
+{
+    m_xTags.clearUserTags();
+    foreach (auto tag, m_xTags.getBuiltInTags()) {
+        m_xTags.addTag(tag);
+    }
+    emit instance()->tagsChanged();
+}
+
+void SettingsHandler::SetSystemTagDefaults()
+{
+    SetSmartTagDefaults();
+    SetUserTagDefaults();
 }
 
 
@@ -2617,5 +2673,7 @@ float SettingsHandler::m_viewedThreshold;
 QStringList SettingsHandler::_libraryExclusions;
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::_playlists;
 QHash<QString, LibraryListItemMetaData258> SettingsHandler::_libraryListItemMetaDatas;
+
+QTimer SettingsHandler::m_settingsChangedNotificationDebounce;
 
 XTags SettingsHandler::m_xTags;

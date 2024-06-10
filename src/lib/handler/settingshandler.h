@@ -36,6 +36,7 @@ class XTENGINE_EXPORT SettingsHandler: public QObject
 signals:
     void settingsChanged(bool dirty);
     void messageSend(QString message, XLogLevel loglevel);
+    void tagsChanged();
 
 public slots:
     void setMoneyShot(LibraryListItem27 selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
@@ -293,6 +294,9 @@ public:
     static void SetKeyboardKeyDefaults();
     // static void SetTCodeCommandDefaults();
     static void SetTCodeCommandMapDefaults();
+    static void SetSmartTagDefaults();
+    static void SetUserTagDefaults();
+    static void SetSystemTagDefaults();
     static void setSaveOnExit(bool enabled);
     static bool getFirstLoad();
     static void Load(QSettings* settingsToLoadFrom = 0);
@@ -361,8 +365,10 @@ public:
     static QStringList getUserSmartTags();
     static void removeUserTag(QString tag);
     static void addUserTag(QString tag);
+    static bool hasTag(QString tag);
     static void removeUserSmartTag(QString tag);
     static void addUserSmartTag(QString tag);
+    static bool hasSmartTag(QString tag);
 
     static float viewedThreshold();
     static void setViewedThreshold(float newViewedThreshold);
@@ -500,6 +506,7 @@ private:
 
     static XTags m_xTags;
 
+    static QTimer m_settingsChangedNotificationDebounce;
     static QHash<QString, bool> _funscriptLoaded;
     static QSettings* settings;
     static QMutex mutex;

@@ -25,7 +25,7 @@ public:
     QStringList getBuiltInTags() {
         return m_builtin;
     }
-    QStringList getBuiltInSmartags() {
+    QStringList getBuiltInSmartTags() {
         return m_builtInSmartTags;
     }
     void addTag(const QString& tag) {
@@ -55,7 +55,7 @@ public:
     void clearUserTags() {
         m_userTags.clear();
     }
-    void clearUserSmaetTags() {
+    void clearUserSmartTags() {
         m_userSmartTags.clear();
     }
     QStringList getTags() {
