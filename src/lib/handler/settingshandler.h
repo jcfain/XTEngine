@@ -27,6 +27,8 @@
 #include "../struct/LibraryListItem27.h"
 #include "../struct/LibraryListItemMetaData.h"
 #include "../struct/LibraryListItemMetaData258.h"
+#include "lib/lookup/TCodeCommand.h"
+#include "../lookup/xtags.h"
 
 class XTENGINE_EXPORT SettingsHandler: public QObject
 {
@@ -34,6 +36,7 @@ class XTENGINE_EXPORT SettingsHandler: public QObject
 signals:
     void settingsChanged(bool dirty);
     void messageSend(QString message, XLogLevel loglevel);
+    void tagsChanged();
 
 public slots:
     void setMoneyShot(LibraryListItem27 selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
@@ -133,8 +136,6 @@ public:
     static void setPlayerVolume(int value);
     static void setoffSet(int value);
 
-    static float getMultiplierValue(QString channel);
-    static void setMultiplierValue(QString channel, float value);
     static bool getMultiplierChecked(QString channel);
     static void setMultiplierChecked(QString channel, bool value);
 
@@ -162,9 +163,6 @@ public:
     static void setShowVRInLibraryView(bool value);
     static bool getShowVRInLibraryView();
 
-    static void setMFSDiscoveryDisabled(bool value);
-    static bool getMFSDiscoveryDisabled();
-
     static void setGamepadEnabled(bool value);
     ///Returns assigned actions per gamepad button
     static QMap<QString, QStringList> getGamePadMap();
@@ -182,6 +180,21 @@ public:
     static void removeKeyboardMapKey(QString key, QString action);
     static void clearKeyboardMapKey(QString key);
     static QString getKeyboardKey(int key, int modifiers = 0);
+
+    static QMap<QString, QStringList> getTCodeCommandMap();
+    static QMap<QString, QStringList> getTCodeCommandMapInverse();
+    static QStringList getTCodeCommandMapCommands(QString command);
+    static void setTCodeCommandMapKey(QString key, QString action);
+    static void removeTCodeCommandMapKey(QString key, QString action);
+    static void clearTCodeCommandMapKey(QString key);
+
+    static QMap<QString, QString> getAllActions();
+
+    // static QMap<QString, TCodeCommand> getTCodeCommands();
+    // static void setTCodeCommands(QMap<QString, TCodeCommand> commands);
+    // static TCodeCommand* getTCodeCommand(QString command);
+    // static void addTCodeCommand(TCodeCommand command);
+    // static void removeTCodeCommand(QString key);
 
     static void setAxis(QString axis, ChannelModel33 channel);
     static void addAxis(ChannelModel33 channel);
@@ -202,6 +215,9 @@ public:
     static void setLiveActionPaused(bool value);
     static int getLiveOffSet();
     static void setLiveOffset(int value);
+    static bool isSmartOffSet();
+    static int getSmartOffSet();
+    static void setSmartOffset(int value);
 
     static void setDecoderPriority(QList<DecoderModel> value);
     static QList<DecoderModel> getDecoderPriority();
@@ -222,8 +238,12 @@ public:
     static void setFunscriptLoaded(QString key, bool loaded);
     static bool getFunscriptLoaded(QString key);
 
-    static LibraryListItemMetaData258 getLibraryListItemMetaData(QString path);
-    static void updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData);
+    static QHash<QString, LibraryListItemMetaData258> getLibraryListItemMetaData();
+    static LibraryListItemMetaData258 getLibraryListItemMetaData(const LibraryListItem27 item);
+    static void removeLibraryListItemMetaData(const QString key);
+    static void updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData, bool sync = true);
+
+    static XTags getAvailableTags();
 
     static QString GetHashedPass();
     static void SetHashedPass(QString value);
@@ -272,6 +292,11 @@ public:
 
     static void SetGamepadMapDefaults();
     static void SetKeyboardKeyDefaults();
+    // static void SetTCodeCommandDefaults();
+    static void SetTCodeCommandMapDefaults();
+    static void SetSmartTagDefaults();
+    static void SetUserTagDefaults();
+    static void SetSystemTagDefaults();
     static void setSaveOnExit(bool enabled);
     static bool getFirstLoad();
     static void Load(QSettings* settingsToLoadFrom = 0);
@@ -285,7 +310,7 @@ public:
     static bool Import(QString file);
 
 
-    static QStringList getVideoExtensions()
+    static const QStringList getVideoExtensions()
     {
         return QStringList()
                 << "mp4"
@@ -306,7 +331,7 @@ public:
                 << "swf"
                 << "avchd";
     }
-    static QStringList getAudioExtensions()
+    static const QStringList getAudioExtensions()
     {
         return QStringList()
                 << "m4a"
@@ -316,17 +341,37 @@ public:
                 << "wav"
                 << "wma";
     }
-    static QStringList getImageExtensions()
+    static const QStringList getSubtitleExtensions()
+    {
+        return QStringList()
+               << "vtt"
+               << "srt";
+    }
+    static const QStringList getImageExtensions()
     {
         return QStringList() << "jpg" << "jpeg" << "png" << "jfif" << "webp" << "gif";
     }
 
-    static QString getThumbFormatExtension() {
+    static const QString getThumbFormatExtension() {
         return "jpg";
     }
 
     static const QString &hashedWebPass();
     static void setHashedWebPass(const QString &newHashedWebPass);
+
+    static XTags getXTags();
+    static QStringList getTags();
+    static QStringList getUserTags();
+    static QStringList getUserSmartTags();
+    static void removeUserTag(QString tag);
+    static void addUserTag(QString tag);
+    static bool hasTag(QString tag);
+    static void removeUserSmartTag(QString tag);
+    static void addUserSmartTag(QString tag);
+    static bool hasSmartTag(QString tag);
+
+    static float viewedThreshold();
+    static void setViewedThreshold(float newViewedThreshold);
 
 private:
     SettingsHandler();
@@ -338,6 +383,8 @@ private:
     static void SetMapDefaults();
     static void setupGamepadButtonMap();
     static void setupKeyboardKeyMap();
+    // static void setupTCodeCommands();
+    static void setupTCodeCommandMap();
     static void MigrateTo23();
     static void MigrateTo25();
     static void MigrateTo252();
@@ -353,6 +400,8 @@ private:
     static void MigrateTo42(QSettings* settingsToLoadFrom);
 
     static void SaveChannelMap(QSettings* settingsToSaveTo = 0);
+    static void SaveTCodeCommandMap(QSettings* settingsToSaveTo = 0);
+    // static void SaveTCodeCommands(QSettings* settingsToSaveTo = 0);
 
     static void storeMediaMetaDatas(QSettings* settingsToSaveTo = 0);
 
@@ -392,12 +441,19 @@ private:
     static QMap<QString, QStringList> _inverseGamePadMap;
     static QMap<QString, QStringList> _keyboardKeyMap;
     static QMap<QString, QStringList> _inverseKeyboardMap;
+    static QMap<QString, QStringList> m_tcodeCommandMap;
+    static QMap<QString, QStringList> m_inverseTcodeCommandMap;
+
+    // static QMap<QString, TCodeCommand> m_tcodeCommands;
+
     static int _gamepadSpeed;
     static int _gamepadSpeedStep;
     static int _liveGamepadSpeed;
     static bool _liveGamepadConnected;
     static bool _liveActionPaused;
     static int _liveOffset;
+    static bool m_smartOffsetEnabled;
+    static int m_smartOffset;
 
     static int _xRangeStep;
     static bool _liveMultiplierEnabled;
@@ -408,7 +464,6 @@ private:
     static int thumbSize;
     static int thumbSizeList;
     static int videoIncrement;
-    static bool m_MFSDiscoveryDisabled;
 
     static QList<DecoderModel> decoderPriority;
     static XVideoRenderer _selectedVideoRenderer;
@@ -447,6 +502,11 @@ private:
     static qint64 _channelPulseFrequency;
     static int _channelPulseAmount;
 
+    static float m_viewedThreshold;
+
+    static XTags m_xTags;
+
+    static QTimer m_settingsChangedNotificationDebounce;
     static QHash<QString, bool> _funscriptLoaded;
     static QSettings* settings;
     static QMutex mutex;

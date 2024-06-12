@@ -1,16 +1,11 @@
 #ifndef TCODEHANDLER_H
 #define TCODEHANDLER_H
-#include "../struct/Funscript.h"
-#include "../struct/ChannelModel33.h"
-#include "../struct/GamepadState.h"
-#include "../lookup/tcodechannellookup.h"
-#include "../lookup/AxisNames.h"
-#include "../tool/xmath.h"
-#include "settingshandler.h"
-#include "funscripthandler.h"
-#include "loghandler.h"
 #include <QMap>
 #include <QPair>
+#include <QMutex>
+
+#include "../struct/Funscript.h"
+#include "../struct/ChannelModel33.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT TCodeHandler : QObject
@@ -30,6 +25,8 @@ public:
 private:
     QMutex mutex;
     void getChannelHome(ChannelModel33* channel, QString &tcode);
+    QMap<QString, int> channelValueTracker;
+    int getDistance(int current, int last);
 };
 
 #endif // TCODEHANDLER_H

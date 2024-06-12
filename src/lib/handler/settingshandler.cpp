@@ -1,10 +1,12 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.45b";
-const float SettingsHandler::XTEVersionNum = 0.45f;
+const QString SettingsHandler::XTEVersion = "0.454b";
+const float SettingsHandler::XTEVersionNum = 0.454f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
-SettingsHandler::SettingsHandler(){}
+SettingsHandler::SettingsHandler(){
+    m_settingsChangedNotificationDebounce.setSingleShot(true);
+}
 SettingsHandler::~SettingsHandler()
 {
     delete settings;
@@ -24,7 +26,7 @@ bool SettingsHandler::getFirstLoad()
 
 void SettingsHandler::setMoneyShot(LibraryListItem27 libraryListItem, qint64 currentPosition, bool userSet)
 {
-    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem.path);
+    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem);
     if(!userSet && libraryListItemMetaData.moneyShotMillis > 0)
         return;
     libraryListItemMetaData.moneyShotMillis = currentPosition;
@@ -32,7 +34,7 @@ void SettingsHandler::setMoneyShot(LibraryListItem27 libraryListItem, qint64 cur
 }
 void SettingsHandler::addBookmark(LibraryListItem27 libraryListItem, QString name, qint64 currentPosition)
 {
-    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem.path);
+    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem);
     libraryListItemMetaData.bookmarks.append({name, currentPosition});
     SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
 }
@@ -144,6 +146,21 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     {
         _keyboardKeyMap.insert(key, keyboardKeyMap[key].toStringList());
     }
+    QVariantMap tcodeCommandMap = settingsToLoadFrom->value("tcodeCommandMap").toMap();
+    m_tcodeCommandMap.clear();
+    foreach(auto key, tcodeCommandMap.keys())
+    {
+        m_tcodeCommandMap.insert(key, tcodeCommandMap[key].toStringList());
+    }
+
+    // QVariantList tcodeCommands = settingsToLoadFrom->value("tcodeCommands").toList();
+    // m_tcodeCommands.clear();
+    // foreach(auto value, tcodeCommands)
+    // {
+    //     auto command = TCodeCommand::fromVariant(value);
+    //     m_tcodeCommands.insert(command.id, command);
+    // }
+
     _gamepadSpeed = settingsToLoadFrom->value("gamepadSpeed").toInt();
     _gamepadSpeed = _gamepadSpeed == 0 ? 1000 : _gamepadSpeed;
     _gamepadSpeedStep = settingsToLoadFrom->value("gamepadSpeedStep").toInt();
@@ -163,7 +180,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _hideStandAloneFunscriptsInLibrary = settingsToLoadFrom->value("hideStandAloneFunscriptsInLibrary").toBool();
     _showVRInLibraryView = settingsToLoadFrom->value("showVRInLibraryView").toBool();
     _skipPlayingSTandAloneFunscriptsInLibrary = settingsToLoadFrom->value("skipPlayingSTandAloneFunscriptsInLibrary").toBool();
-    m_MFSDiscoveryDisabled = settingsToLoadFrom->value("MFSDiscoveryDisabled").toBool();
 
     _enableHttpServer = settingsToLoadFrom->value("enableHttpServer").toBool();
     _httpServerRoot = settingsToLoadFrom->value("httpServerRoot").toString();
@@ -234,8 +250,24 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _hashedWebPass = settingsToLoadFrom->value("userWebData").toString();
 
     m_customTCodeCommands = settingsToLoadFrom->value("customTCodeCommands").toStringList();
-    for(auto command: m_customTCodeCommands) {
+    foreach(auto command, m_customTCodeCommands) {
         MediaActions::AddOtherAction(command, "TCode command: " + command, ActionType::TCODE);
+    }
+
+
+    QStringList tags = settingsToLoadFrom->value("tags").toStringList();
+    foreach (auto tag, tags) {
+        m_xTags.addTag(tag);
+    }
+    QStringList smartTags = settingsToLoadFrom->value("smartTags").toStringList();
+    foreach (auto tag, smartTags) {
+        m_xTags.addSmartTag(tag);
+    }
+
+
+    m_viewedThreshold = settingsToLoadFrom->value("viewedThreshold").toFloat();
+    if(!m_viewedThreshold) {
+        m_viewedThreshold = 0.9f;
     }
 
 
@@ -363,6 +395,18 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
+        if(currentVersion < 0.451f) {
+            locker.unlock();
+            SetTCodeCommandMapDefaults();
+            Save();
+            Load();
+        }
+        if(currentVersion < 0.454f) {
+            locker.unlock();
+            SetSystemTagDefaults();
+            Save();
+            Load();
+        }
 
     }
     settingsChangedEvent(false);
@@ -430,15 +474,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         settingsToSaveTo->setValue("selectedVideoRenderer", (int)_selectedVideoRenderer);
 
-//        QVariantMap availableAxis;
-//        auto availableChannels = TCodeChannelLookup::getAvailableChannels();
-//        foreach(auto axis, availableChannels->keys())
-//        {
-//            auto variant = ChannelModel33::toVariant(availableChannels->value(axis));
-//            availableAxis.insert(axis, variant);
-//        }
-//        settingsToSaveTo->setValue("availableChannels", availableAxis);
-
         SaveChannelMap(settingsToSaveTo);
 
         QVariantMap gamepadMap;
@@ -454,6 +489,15 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
             keyboardKeyMap.insert(key, QVariant::fromValue(_keyboardKeyMap[key]));
         }
         settingsToSaveTo->setValue("keyboardKeyMap", keyboardKeyMap);
+
+        // QVariantList tcodeCommands;
+        // foreach (auto value, m_tcodeCommands) {
+        //     tcodeCommands.append(TCodeCommand::toVariant(value));
+        // }
+        settings->remove("tcodeCommands");
+
+        SaveTCodeCommandMap(settingsToSaveTo);
+        //SaveTCodeCommands(settingsToSaveTo);
 
         settingsToSaveTo->setValue("gamepadSpeed", _gamepadSpeed);
         settingsToSaveTo->setValue("gamepadSpeedStep", _gamepadSpeedStep);
@@ -491,7 +535,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("hideStandAloneFunscriptsInLibrary", _hideStandAloneFunscriptsInLibrary);
         settingsToSaveTo->setValue("showVRInLibraryView", _showVRInLibraryView);
         settingsToSaveTo->setValue("skipPlayingSTandAloneFunscriptsInLibrary", _skipPlayingSTandAloneFunscriptsInLibrary);
-        settingsToSaveTo->setValue("MFSDiscoveryDisabled", m_MFSDiscoveryDisabled);
 
         settingsToSaveTo->setValue("enableHttpServer", _enableHttpServer);
         settingsToSaveTo->setValue("httpServerRoot", _httpServerRoot);
@@ -511,6 +554,23 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("channelPulseFrequency", _channelPulseFrequency);
 
         settingsToSaveTo->setValue("customTCodeCommands", m_customTCodeCommands);
+
+        settingsToSaveTo->setValue("viewedThreshold", m_viewedThreshold);
+
+
+        QVariantList tagsList;
+        foreach(auto tag, m_xTags.getUserTags())
+        {
+            tagsList.append(tag);
+        }
+        settingsToSaveTo->setValue("tags", tagsList);
+
+        QVariantList smartTagsList;
+        foreach(auto tag, m_xTags.getUserSmartags())
+        {
+            smartTagsList.append(tag);
+        }
+        settingsToSaveTo->setValue("smartTags", smartTagsList);
 
         settingsToSaveTo->sync();
 
@@ -605,6 +665,7 @@ void SettingsHandler::SetMapDefaults()
     SaveChannelMap();
     SetGamepadMapDefaults();
     SetKeyboardKeyDefaults();
+    SetTCodeCommandMapDefaults();
 }
 void SettingsHandler::SaveChannelMap(QSettings* settingsToSaveTo)
 {
@@ -625,6 +686,31 @@ void SettingsHandler::SaveChannelMap(QSettings* settingsToSaveTo)
     settingsToSaveTo->setValue("availableChannels", availableChannelVariant);
 }
 
+void SettingsHandler::SaveTCodeCommandMap(QSettings *settingsToSaveTo)
+{
+    QVariantMap tcodeCommandMap;
+    for(auto it = m_tcodeCommandMap.begin(); it != m_tcodeCommandMap.end(); it++)
+    {
+        // if(std::find_if(m_tcodeCommands.begin(), m_tcodeCommands.end(), [it](const TCodeCommand& command) {
+        //         return command.command == it.key();
+        // }) != m_tcodeCommands.end())
+        // {
+            tcodeCommandMap.insert(it.key(), QVariant::fromValue(it.value()));
+        // }
+    }
+    settingsToSaveTo->setValue("tcodeCommandMap", tcodeCommandMap);
+}
+
+// void SettingsHandler::SaveTCodeCommands(QSettings *settingsToSaveTo)
+// {
+//     QVariantList tcodeCommands;
+//     for( auto it = m_tcodeCommands.begin(); it != m_tcodeCommands.end(); it++)
+//     {
+//         tcodeCommands.append(TCodeCommand::toVariant(it.value()));
+//     }
+//     settingsToSaveTo->setValue("tcodeCommands", tcodeCommands);
+// }
+
 void SettingsHandler::storeMediaMetaDatas(QSettings* settingsToSaveTo)
 {
     if(!settingsToSaveTo)
@@ -635,6 +721,93 @@ void SettingsHandler::storeMediaMetaDatas(QSettings* settingsToSaveTo)
         libraryListItemMetaDatas.insert(libraryListItemMetaData, LibraryListItemMetaData258::toVariant(_libraryListItemMetaDatas[libraryListItemMetaData]));
     }
     settingsToSaveTo->setValue("libraryListItemMetaDatas", libraryListItemMetaDatas);
+}
+
+float SettingsHandler::viewedThreshold()
+{
+    return m_viewedThreshold;
+}
+
+void SettingsHandler::setViewedThreshold(float newViewedThreshold)
+{
+    m_viewedThreshold = newViewedThreshold;
+}
+
+XTags SettingsHandler::getXTags()
+{
+    return m_xTags;
+}
+
+QStringList SettingsHandler::getTags()
+{
+    return m_xTags.getTags();
+}
+
+QStringList SettingsHandler::getUserTags()
+{
+    return m_xTags.getUserTags();
+}
+void SettingsHandler::removeUserTag(QString tag)
+{
+    if(tag.isEmpty())
+        return;
+    m_xTags.removeTag(tag);
+    if(!m_settingsChangedNotificationDebounce.isActive()) {
+        m_settingsChangedNotificationDebounce.callOnTimeout(
+            [] () {emit instance()->tagsChanged();}
+            );
+    }
+    m_settingsChangedNotificationDebounce.start(500);
+}
+
+void SettingsHandler::addUserTag(QString tag)
+{
+    if(tag.isEmpty())
+        return;
+    m_xTags.addTag(tag);
+    if(!m_settingsChangedNotificationDebounce.isActive()) {
+        m_settingsChangedNotificationDebounce.callOnTimeout(
+            [] () {emit instance()->tagsChanged();}
+            );
+    }
+    m_settingsChangedNotificationDebounce.start(500);
+}
+
+bool SettingsHandler::hasTag(QString tag)
+{
+    return m_xTags.hasTag(tag);
+}
+
+void SettingsHandler::removeUserSmartTag(QString tag)
+{
+    m_xTags.removeSmartTag(tag);
+    if(!m_settingsChangedNotificationDebounce.isActive()) {
+        m_settingsChangedNotificationDebounce.callOnTimeout(
+            [] () {emit instance()->tagsChanged();}
+            );
+    }
+    m_settingsChangedNotificationDebounce.start(500);
+}
+
+void SettingsHandler::addUserSmartTag(QString tag)
+{
+    m_xTags.addSmartTag(tag);
+    if(!m_settingsChangedNotificationDebounce.isActive()) {
+        m_settingsChangedNotificationDebounce.callOnTimeout(
+            [] () {emit instance()->tagsChanged();}
+            );
+    }
+    m_settingsChangedNotificationDebounce.start(500);
+}
+
+bool SettingsHandler::hasSmartTag(QString tag)
+{
+    return m_xTags.hasSmartTag(tag);
+}
+
+QStringList SettingsHandler::getUserSmartTags()
+{
+    return m_xTags.getUserSmartags();
 }
 
 void SettingsHandler::SetGamepadMapDefaults()
@@ -659,6 +832,53 @@ void SettingsHandler::SetKeyboardKeyDefaults() {
     settings->setValue("keyboardKeyMap", keyboardKeyMap);
     settingsChangedEvent(true);
 }
+
+// void SettingsHandler::SetTCodeCommandDefaults()
+// {
+//     setupTCodeCommands();
+//     QVariantList tcodeCommands;
+//     foreach (auto value, m_tcodeCommands) {
+//         tcodeCommands.append(TCodeCommand::toVariant(value));
+//     }
+//     settings->setValue("tcodeCommands", tcodeCommands);
+//     SetTCodeCommandMapDefaults();
+// }
+
+void SettingsHandler::SetTCodeCommandMapDefaults() {
+    setupTCodeCommandMap();
+    QVariantMap tcodeCommandMap;
+    foreach(auto key, m_tcodeCommandMap.keys())
+    {
+        tcodeCommandMap.insert(key, QVariant::fromValue(m_tcodeCommandMap[key]));
+    }
+    settings->setValue("tcodeCommandMap", tcodeCommandMap);
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::SetSmartTagDefaults()
+{
+    m_xTags.clearUserSmartTags();
+    foreach (auto tag, m_xTags.getBuiltInSmartTags()) {
+        m_xTags.addSmartTag(tag);
+    }
+    emit instance()->tagsChanged();
+}
+
+void SettingsHandler::SetUserTagDefaults()
+{
+    m_xTags.clearUserTags();
+    foreach (auto tag, m_xTags.getBuiltInTags()) {
+        m_xTags.addTag(tag);
+    }
+    emit instance()->tagsChanged();
+}
+
+void SettingsHandler::SetSystemTagDefaults()
+{
+    SetSmartTagDefaults();
+    SetUserTagDefaults();
+}
+
 
 void SettingsHandler::MigrateTo23()
 {
@@ -696,6 +916,7 @@ void SettingsHandler::MigrateLibraryMetaDataTo258()
         {
             _libraryListItemMetaDatas.insert(key, {
                                                      libraryListItemMetaData.libraryItemPath, // libraryItemPath
+                                                    libraryListItemMetaData.watched, // libraryItemPath
                                                      libraryListItemMetaData.lastPlayPosition, // lastPlayPosition
                                                      libraryListItemMetaData.lastLoopEnabled, // lastLoopEnabled
                                                      libraryListItemMetaData.lastLoopStart, // lastLoopStart
@@ -703,7 +924,8 @@ void SettingsHandler::MigrateLibraryMetaDataTo258()
                                                      0, // offset
                                                      libraryListItemMetaData.moneyShotMillis, // moneyShotMillis
                                                      libraryListItemMetaData.bookmarks, // bookmarks
-                                                     libraryListItemMetaData.funscripts
+                                                     libraryListItemMetaData.funscripts,
+                                                     libraryListItemMetaData.tags
                                               });
             foreach(auto bookmark, libraryListItemMetaDatas[key].value<LibraryListItemMetaData258>().bookmarks)
                 _libraryListItemMetaDatas[key].bookmarks.append(bookmark);
@@ -1203,6 +1425,21 @@ void SettingsHandler::setLiveOffset(int value)
     settingsChangedEvent(true);
 }
 
+bool SettingsHandler::isSmartOffSet()
+{
+    return m_smartOffsetEnabled;
+}
+
+int SettingsHandler::getSmartOffSet()
+{
+    return m_smartOffsetEnabled ? m_smartOffset : 0;
+}
+
+void SettingsHandler::setSmartOffset(int value)
+{
+    m_smartOffset = value;
+}
+
 bool SettingsHandler::getDisableTCodeValidation()
 {
     return _disableTCodeValidation;
@@ -1270,22 +1507,6 @@ void SettingsHandler::setChannelUserMid(QString channel, int value)
         TCodeChannelLookup::getChannel(channel)->UserMid = value;
         if(channel == TCodeChannelLookup::Stroke())
             TCodeChannelLookup::setLiveXRangeMid(value);
-        settingsChangedEvent(true);
-    }
-}
-
-float SettingsHandler::getMultiplierValue(QString channel)
-{
-    QMutexLocker locker(&mutex);
-    if(TCodeChannelLookup::hasChannel(channel))
-        return TCodeChannelLookup::getChannel(channel)->MultiplierValue;
-    return 0.0;
-}
-void SettingsHandler::setMultiplierValue(QString channel, float value)
-{
-    QMutexLocker locker(&mutex);
-    if(TCodeChannelLookup::hasChannel(channel)) {
-        TCodeChannelLookup::getChannel(channel)->MultiplierValue = value;
         settingsChangedEvent(true);
     }
 }
@@ -1555,12 +1776,6 @@ bool SettingsHandler::getShowVRInLibraryView() {
     return _showVRInLibraryView;
 }
 
-void SettingsHandler::setMFSDiscoveryDisabled(bool value) {
-    m_MFSDiscoveryDisabled = value;
-}
-bool SettingsHandler::getMFSDiscoveryDisabled() {
-    return m_MFSDiscoveryDisabled;
-}
 QMap<QString, QStringList>  SettingsHandler::getGamePadMap()
 {
     return _gamepadButtonMap;
@@ -1681,6 +1896,112 @@ QString SettingsHandler::getKeyboardKey(int key, int keyModifiers) {
 
     return QKeySequence(keyModifiers+key).toString(QKeySequence::NativeText);
 }
+
+QMap<QString, QStringList> SettingsHandler::getTCodeCommandMap()
+{
+    return m_tcodeCommandMap;
+}
+
+QMap<QString, QStringList> SettingsHandler::getTCodeCommandMapInverse()
+{
+    m_inverseTcodeCommandMap.clear();
+    foreach (auto key, m_tcodeCommandMap.keys())
+    {
+        QStringList actions = m_tcodeCommandMap.value(key);
+        foreach(auto action, actions) {
+            QStringList existingKeys;
+            if(m_inverseTcodeCommandMap.contains(action)) {
+                existingKeys = m_inverseTcodeCommandMap.value(action);
+            }
+            existingKeys << key;
+            m_inverseTcodeCommandMap.insert(action, existingKeys);
+        }
+    }
+    return m_inverseTcodeCommandMap;
+}
+
+QStringList SettingsHandler::getTCodeCommandMapCommands(QString command)
+{
+    if (m_tcodeCommandMap.contains(command))
+        return m_tcodeCommandMap[command];
+    return QStringList();
+}
+
+void SettingsHandler::setTCodeCommandMapKey(QString key, QString action)
+{
+    QMutexLocker locker(&mutex);
+    if(!m_tcodeCommandMap[key].contains(action))
+    {
+        m_tcodeCommandMap[key].append(action);
+    }
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::removeTCodeCommandMapKey(QString key, QString action)
+{
+    QMutexLocker locker(&mutex);
+    m_tcodeCommandMap[key].removeAll(action);
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::clearTCodeCommandMapKey(QString key)
+{
+    m_tcodeCommandMap[key].clear();
+    settingsChangedEvent(true);
+}
+
+QMap<QString, QString> SettingsHandler::getAllActions()
+{
+    QMap<QString, QString> actions;
+    // auto tcodeVersionMap = TCodeChannelLookup::GetSelectedVersionMap();
+    // for(auto __begin = tcodeVersionMap.begin(), __end = tcodeVersionMap.end();  __begin != __end; ++__begin) {
+    //     auto channel = TCodeChannelLookup::getChannel(TCodeChannelLookup::ToString(__begin.key()));
+    //     if(channel)
+    //         actions.insert(channel->AxisName, "Channel: " + channel->FriendlyName);
+    // }
+
+    MediaActions actionsMap;
+    for(auto __begin = actionsMap.Values.begin(), __end = actionsMap.Values.end();  __begin != __end; ++__begin) {
+        actions.insert(__begin.key(), __begin.value());
+    }
+
+    auto otherActions = MediaActions::GetOtherActions();
+    for(auto __begin = otherActions.begin(), __end = otherActions.end();  __begin != __end; ++__begin) {
+        actions.insert(__begin.key(), __begin.value());
+    }
+    return actions;
+}
+
+// QMap<QString, TCodeCommand> SettingsHandler::getTCodeCommands()
+// {
+//     return m_tcodeCommands;
+// }
+
+// void SettingsHandler::setTCodeCommands(QMap<QString, TCodeCommand> commands)
+// {
+//     m_tcodeCommands = commands;
+// }
+
+// TCodeCommand* SettingsHandler::getTCodeCommand(QString command)
+// {
+//     auto itr = std::find_if(m_tcodeCommands.begin(), m_tcodeCommands.end(), [command](const TCodeCommand&  item) {
+//         return item.command == command;
+//     });
+//     if(itr == m_tcodeCommands.end())
+//         return 0;
+
+//     return &m_tcodeCommands[itr.key()];
+// }
+
+// void SettingsHandler::addTCodeCommand(TCodeCommand command)
+// {
+//     m_tcodeCommands.insert(command.command, command);
+// }
+
+// void SettingsHandler::removeTCodeCommand(QString key)
+// {
+//     m_tcodeCommands.remove(key);
+// }
 
 void SettingsHandler::setSelectedFunscriptLibrary(QString value)
 {
@@ -1981,6 +2302,35 @@ void SettingsHandler::setupKeyboardKeyMap() {
     };
 }
 
+// void SettingsHandler::setupTCodeCommands()
+// {
+//     m_tcodeCommands = {
+//         { "#edge:1", { 0, TCodeCommandType::BUTTON, "#edge:1", 0 } },
+//         { "#ok:1", { 1, TCodeCommandType::BUTTON, "#ok:1", 0 } },
+//         { "#left:1", { 2, TCodeCommandType::BUTTON, "#left:1", 0 } },
+//         { "#right:1", { 3, TCodeCommandType::BUTTON, "#right:1", 0 } },
+//     };
+// }
+
+void SettingsHandler::setupTCodeCommandMap()
+{
+    m_tcodeCommandMap = {
+        { "#edge:1", QStringList(mediaActions.TogglePauseAllDeviceActions) },
+        { "#ok:1", QStringList(mediaActions.TogglePause) },
+        { "#left:1", QStringList(mediaActions.AltFunscriptNext) },
+        { "#right:1", QStringList(mediaActions.SkipToMoneyShot) },
+    };
+    // m_tcodeCommandMap.clear();
+    // for ( auto it = defaultCommands.begin(); it != defaultCommands.end(); it++ ) {
+    //     auto commandObject = std::find_if(m_tcodeCommands.begin(), m_tcodeCommands.end(),  [it] (const TCodeCommand& item) {
+    //         return item.command == it.key();
+    //     });
+    //     if(commandObject != m_tcodeCommands.end()) {
+    //         m_tcodeCommandMap.insert(it.key(), defaultCommands[it.key()]);
+    //     }
+    // }
+}
+
 void SettingsHandler::setFunscriptLoaded(QString key, bool loaded)
 {
     if (_funscriptLoaded.contains(key))
@@ -1992,7 +2342,6 @@ bool SettingsHandler::getFunscriptLoaded(QString key)
         return _funscriptLoaded[key];
     return false;
 }
-
 
 bool SettingsHandler::getSkipToMoneyShotPlaysFunscript()
 {
@@ -2170,18 +2519,26 @@ int SettingsHandler::getLubePulseFrequency()
     return _channelPulseFrequency;
 }
 
-LibraryListItemMetaData258 SettingsHandler::getLibraryListItemMetaData(QString path)
+
+QHash<QString, LibraryListItemMetaData258> SettingsHandler::getLibraryListItemMetaData()
+{
+    return _libraryListItemMetaDatas;
+}
+
+LibraryListItemMetaData258 SettingsHandler::getLibraryListItemMetaData(const LibraryListItem27 item)
 {
     QMutexLocker locker(&mutex);
-    if(_libraryListItemMetaDatas.contains(path))
+    if(_libraryListItemMetaDatas.contains(item.path))
     {
-        return _libraryListItemMetaDatas.value(path);
+        return _libraryListItemMetaDatas.value(item.path);
     }
     //Default meta data
     QList<QString> funscripts;
     QList<Bookmark> bookmarks;
-    _libraryListItemMetaDatas.insert(path, {
-                                         path, // libraryItemPath
+    QList<QString> tags;
+    _libraryListItemMetaDatas.insert(item.path, {
+                                         item.path, // libraryItemPath
+                                         false,
                                          -1, // lastPlayPosition
                                          false, // lastLoopEnabled
                                          -1, // lastLoopStart
@@ -2189,18 +2546,27 @@ LibraryListItemMetaData258 SettingsHandler::getLibraryListItemMetaData(QString p
                                          0, // offset
                                          -1, // moneyShotMillis
                                          bookmarks, // bookmarks
-                                         funscripts
+                                         funscripts,
+                                         tags
                                      });
-    return _libraryListItemMetaDatas.value(path);
+    return _libraryListItemMetaDatas.value(item.path);
 }
 
-void SettingsHandler::updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData)
+void SettingsHandler::removeLibraryListItemMetaData(const QString key)
+{
+    _libraryListItemMetaDatas.remove(key);
+}
+
+void SettingsHandler::updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData, bool sync)
 {
     QMutexLocker locker(&mutex);
     _libraryListItemMetaDatas.insert(libraryListItemMetaData.libraryItemPath, libraryListItemMetaData);
-    storeMediaMetaDatas();
-    settings->sync();
-    //settingsChangedEvent(true);
+    if(sync)
+    {
+        storeMediaMetaDatas();
+        settings->sync();
+        //settingsChangedEvent(true);
+    }
 }
 
 QSettings* SettingsHandler::settings;
@@ -2222,7 +2588,6 @@ bool SettingsHandler::_useMediaDirForThumbs;
 int SettingsHandler::_selectedOutputDevice;
 NetworkDeviceType SettingsHandler::_selectedNetworkDeviceType;
 int SettingsHandler::_librarySortMode;
-bool SettingsHandler::m_MFSDiscoveryDisabled;
 int SettingsHandler::playerVolume;
 int SettingsHandler::offSet;
 bool SettingsHandler::_disableTCodeValidation;
@@ -2238,12 +2603,19 @@ QMap<QString, QStringList> SettingsHandler::_gamepadButtonMap;
 QMap<QString, QStringList> SettingsHandler::_inverseGamePadMap;
 QMap<QString, QStringList> SettingsHandler::_keyboardKeyMap;
 QMap<QString, QStringList> SettingsHandler::_inverseKeyboardMap;
+QMap<QString, QStringList> SettingsHandler::m_tcodeCommandMap;
+QMap<QString, QStringList> SettingsHandler::m_inverseTcodeCommandMap;
+
+// QMap<QString, TCodeCommand> SettingsHandler::m_tcodeCommands;
+
 int SettingsHandler::_gamepadSpeed;
 int SettingsHandler::_gamepadSpeedStep;
 int SettingsHandler::_liveGamepadSpeed;
 bool SettingsHandler::_liveGamepadConnected;
 bool SettingsHandler::_liveActionPaused;
 int SettingsHandler::_liveOffset;
+bool SettingsHandler::m_smartOffsetEnabled = false;
+int SettingsHandler::m_smartOffset = 0;
 
 int SettingsHandler::_xRangeStep;
 bool SettingsHandler::_liveMultiplierEnabled = false;
@@ -2296,6 +2668,12 @@ QString SettingsHandler::_hashedWebPass;
 QList<DecoderModel> SettingsHandler::decoderPriority;
 XVideoRenderer SettingsHandler::_selectedVideoRenderer;
 
+float SettingsHandler::m_viewedThreshold;
+
 QStringList SettingsHandler::_libraryExclusions;
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::_playlists;
 QHash<QString, LibraryListItemMetaData258> SettingsHandler::_libraryListItemMetaDatas;
+
+QTimer SettingsHandler::m_settingsChangedNotificationDebounce;
+
+XTags SettingsHandler::m_xTags;

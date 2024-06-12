@@ -180,3 +180,13 @@ void  WebSocketHandler::sendUpdateThumb(QString id, QString thumb, QString error
         messageJson = "{ \"id\": \""+id+"\", \"thumb\": \""+thumb+"\", \"errorMessage\": \""+errorMessage+"\"}";
     sendCommand("updateThumb", messageJson);
 }
+
+void WebSocketHandler::sendUpdateItem(QString itemJson, QString roleslist, QString error)
+{
+    QString messageJson;
+    if(error.isEmpty())
+        messageJson = "{ \"item\": "+itemJson+", \"roles\": ["+roleslist+"]}";
+    else
+        messageJson = "{ \"item\": "+itemJson+", \"roles\": \""+roleslist+"\", \"errorMessage\": \""+error+"\"}";
+    sendCommand("updateItem", messageJson);
+}

@@ -21,7 +21,7 @@ var ChannelType = {
 	Range: 1,
 	Switch: 2,
 	HalfRange: 3
-}
+};
 
 var AxisDimension = {
 	None: 0,
@@ -39,8 +39,23 @@ var MediaType = {
     Audio: 2,
     FunscriptType: 3,
     VR: 4
-}
+};
 
+var Roles = {
+	DisplayRole: 0,
+	DecorationRole: 1,
+	EditRole: 2,
+	ToolTipRole: 3,
+	StatusTipRole: 4,
+	WhatsThisRole: 5,
+	// Metadata
+	FontRole: 6,
+	TextAlignmentRole: 7,
+	BackgroundRole: 8,
+	ForegroundRole: 9
+};
+
+var mediaLoading = false;
 var debounceTracker = {};// Use to create timeout handles on the fly.
 var wsUri;
 var websocket = null;
@@ -49,8 +64,7 @@ var xtpFormDirty = false;
 var userAgent;
 var remoteUserSettings;
 var mediaListGlobal = [];
-var sortedMedia = [];
-var filteredMedia = [];
+var mediaListDisplayed = [];
 var selectedMediaItemMetaData = null;
 var playingmediaItem;
 var playingmediaItemNode;
@@ -67,6 +81,7 @@ var serverRetryTimeout;
 var serverRetryTimeoutTries = 0;
 var videoStallTimeout;
 var userFilterCriteria;
+var userTagFilterCriteria = [];
 var filterDebounce;
 var enableTextToSpeech = true;
 var systemVoices = [];
@@ -75,6 +90,7 @@ var selectedVoiceIndex = 0;
 var speechPitch = 5;
 var speechRate = 5;
 var speechVolume = 0.5;
+var rangeChangeAmount = 100;
 
 var shufflePlayMode = false;
 var shufflePlayModePlayedIndexed = {};
@@ -131,6 +147,10 @@ var videoMediaName = document.getElementById("videoMediaName");
 const storedHash = window.localStorage.getItem("storedHash");
 var sortByGlobal = JSON.parse(window.localStorage.getItem("sortBy"));
 var showGlobal = JSON.parse(window.localStorage.getItem("show"));
+if(showGlobal == null) {
+	window.localStorage.setItem("show", JSON.stringify("All"));
+	showGlobal = "All";
+}
 var thumbSizeGlobal = JSON.parse(window.localStorage.getItem("thumbSize"));
 var selectedSyncConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedSyncConnection"));
 var selectedOutputConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedOutputConnection"));
@@ -179,9 +199,14 @@ playPreviousButton.addEventListener('click', playPreviousVideoClick);
 // }, true);
 
 var saveStateNode = document.getElementById("saveState");
+var mediaReloadRequiredNode = document.getElementById("mediaReloadRequired");
+
 var metaDataSaveStateNode = document.getElementById("metaDataSaveState");
 var deviceConnectionStatusRetryButtonNodes = document.getElementsByName("deviceStatusRetryButton");
 var deviceConnectionStatusRetryButtonImageNodes = document.getElementsByName("connectionStatusIconImage");
+
+var progressNode = document.getElementById("statusOutput");
+var progressLabelNode = document.getElementById("statusOutputLabel");
 
 /* 	
 	deoVideoNode = document.getElementById("deoVideoPlayer");
@@ -201,6 +226,9 @@ debugMode = true;
 function debug(message) {
 	if (debugMode)
 		console.log(message);
+}
+function error(message) {
+	console.error(message);
 }
 
 function sendWebsocketMessage(command, message) {
@@ -269,6 +297,31 @@ function sendUpdateMoneyShotAtPos(item) {
 	sendWebsocketMessage("setMoneyShot", { itemID: item.id, pos: pos });
 }
 
+function setSaveState(node, saving, error) {
+	if(!node)
+		node = saveStateNode;
+	node.innerText = saving ? "Saving settings..." : "Save success!";
+	if(!error) {
+		if(!saving) {
+			node.style.color = "green";
+			setTimeout(() => {
+				node.style.visibility = "hidden";
+				node.style.opacity = "0";
+			}, 5000);
+		} else {
+			node.style.color = "white";
+		}
+		node.style.visibility = "visible";
+		node.style.opacity = "1";
+	} else {
+		node.style.visibility = "visible";
+		node.style.opacity = "1";
+		node.style.color = "red";
+		node.innerText = "Save fail";
+		node.title = error;
+	}
+}
+
 
 function restartXTP() {
 	showAlertWindow("Confirm", `Are you sure you want restart XTP? 
@@ -283,6 +336,7 @@ function restartXTP() {
 }
 function refreshXTPLibrary() {
 	sendWebsocketMessage("reloadLibrary");
+	mediaReloadRequiredNode.classList.add('hidden');
 }
 
 function initWebSocket() {
@@ -341,6 +395,7 @@ function wsCallBackFunction(evt) {
 			case "mediaLoaded":
 				var mediaLoadingElement = document.getElementById("mediaLoading");
 				mediaLoadingElement.style.display = "none"
+				mediaLoading = false;
 				getServerLibrary();
 				break;
 			case "mediaLoading":
@@ -366,6 +421,12 @@ function wsCallBackFunction(evt) {
 					mediaListGlobal[index].thumbFileExists = true;
 				}
 				break;
+			case "updateItem":
+				var message = data["message"];
+				var libraryItem = message["item"];
+				var roles = message["roles"];
+				updateItem(libraryItem, roles);
+				break;
 			case "textToSpeech":
 				var message = data["message"];
 				onTextToSpeech(message);
@@ -383,14 +444,49 @@ function wsCallBackFunction(evt) {
 			case "channelProfileChanged":
 				getServerChannels();
 				break;
+			case "statusOutput":
+				var messageObj = data["message"];
+				var message = messageObj["message"]
+				var percentage = messageObj["percentage"]
+				setStatusOutput(message, percentage);
+				break;
+			case "tagsUpdate":
+				var messageObj = data["message"];
+				var smartTags = messageObj["smartTags"]
+				var userTags = messageObj["userTags"]
+				remoteUserSettings["allTags"] = [];
+				remoteUserSettings["allTags"].push(...userTags, ...smartTags);
+				remoteUserSettings["userTags"] = []
+				remoteUserSettings["userTags"].push(...userTags);
+				remoteUserSettings["smartTags"] = []
+				remoteUserSettings["smartTags"].push(...smartTags);
+				setupSystemTags();
+				break;
 		}
 	}
 	catch (e) {
-		console.error(e.toString());
+		if(typeof e == "string")
+			error(e);
+		else
+			error(e.toString());
 	}
 }
 
+function setStatusOutput(message, percentage) {
+	if(!message && !progressNode.classList.contains("hidden-visibility")) {
+		progressNode.classList.add("hidden-visibility")
+		progressLabelNode.classList.add("hidden-visibility");
+	} else if(message && progressNode.classList.contains("hidden-visibility")) {
+		progressNode.classList.remove("hidden-visibility");
+		progressLabelNode.classList.remove("hidden-visibility");
+	}
+	// !message ? progressNode.classList.add("hidden-visibility") : progressNode.classList.remove("hidden-visibility");
+	// !message ? progressLabelNode.classList.add("hidden-visibility") : progressLabelNode.classList.remove("hidden-visibility");
+	progressLabelNode.innerText = (!message ? "" : message) + (percentage > -1 ? ": "+percentage+"%" : "");
+	progressNode.value = (percentage > -1 ? percentage : 0);
+}
 function setMediaLoading() {
+	mediaLoading = true;
 	clearMediaList();
 	var mediaLoadingElement = document.getElementById("mediaLoading");
 	mediaLoadingElement.style.display = "flex"
@@ -549,8 +645,12 @@ function getServerSettings(retry) {
 		var status = xhr.status;
 		if (status === 200) {
 			remoteUserSettings = xhr.response;
+
+			document.getElementById("xteVersion").innerText = remoteUserSettings["xteVersion"];
 			
 			setupChannelData();
+
+			setupSystemTags();
 			
 			initWebSocket();
 		} else if(status == 401) {
@@ -608,6 +708,108 @@ function setupChannelData() {
 			return remoteUserSettings["availableChannels"][k];
 		});
 	funscriptChannels.sort();
+}
+
+function setupSystemTags() {
+	const tags = remoteUserSettings["allTags"];
+	const tagsFIlterNode = document.getElementById("tagFilterOptions");
+	removeAllChildNodes(tagsFIlterNode);
+	tags.forEach((x, i) => {
+		const divNode = document.createElement("div");
+		const label = document.createElement("label");
+		label.innerText = x;
+		label.setAttribute("for", x+"TagCheckbox" + i);
+		const checkbox = document.createElement("input");
+		checkbox.type = "checkbox";
+		checkbox.value = x;
+		//checkbox.classList.add("styled-checkbox");
+		checkbox.id = x+"TagCheckbox" + i;
+		checkbox.name = "TagCheckbox";
+		checkbox.onclick = onFilterByTagClicked(checkbox);
+		divNode.appendChild(checkbox);
+		divNode.appendChild(label);
+		tagsFIlterNode.appendChild(divNode);
+
+	});
+
+	const userTagsSelect = document.getElementById("systemTagsSelect");
+	while(userTagsSelect.options.length > 0) {
+		userTagsSelect.options.remove(userTagsSelect.options.length - 1);
+	}
+	const userTags = remoteUserSettings["userTags"];
+	userTags.forEach((x, i) => {
+		const option = document.createElement("option");
+		option.value = x;
+		option.innerText = x;
+		userTagsSelect.options.add(option);
+	});
+	
+	const smartTagsSelect = document.getElementById("smartTagsSelect");
+	while(smartTagsSelect.options.length > 0) {
+		smartTagsSelect.options.remove(smartTagsSelect.options.length - 1);
+	}
+	const smartTags = remoteUserSettings["smartTags"];
+	smartTags.forEach((x, i) => {
+		const option = document.createElement("option");
+		option.value = x;
+		option.innerText = x;
+		smartTagsSelect.options.add(option);
+	});
+}
+
+function systemTagsSelectChange(selectElement) {
+	document.getElementById("removeTagButton").disabled = selectElement.options.selectedIndex == -1;
+}
+function smartagsSelectChange(selectElement) {
+	document.getElementById("removeSmartTagButton").disabled = selectElement.options.selectedIndex == -1;
+}
+
+function addSystemTag(smartMode) {
+	let tags = remoteUserSettings[smartMode ? "smartTags" : "userTags"];
+	const otherTagName = !smartMode ? "smartTags" : "userTags";
+	let other = remoteUserSettings[otherTagName];
+	var name = prompt(smartMode ? 'Smart tag name' : 'Tag name');
+	if(!name || !name.trim().length) {
+		return;
+	}
+	if(tags.findIndex(x => x == name) > -1) {
+		showAlertWindow("Tag exists", `Tag '${name}' already exists!`);
+		return;
+	}
+	if(other.findIndex(x => x == name) > -1) {
+		showAlertWindow("Tag exists", `Tag '${name}' already exists in ${otherTagName}!`);
+		return;
+	}
+	const settingMemberName = smartMode ? "smartTagsToAdd" : "tagsToAdd";
+	if(!remoteUserSettings[settingMemberName])
+		remoteUserSettings[settingMemberName] = [];
+	remoteUserSettings[settingMemberName].push(name);
+	const systemTagsSelect = document.getElementById(smartMode ? "smartTagsSelect" : "systemTagsSelect");
+	const option = document.createElement("option");
+	option.value = name;
+	option.innerText = name;
+	systemTagsSelect.options.add(option);
+	if(smartMode)
+		mediaReloadRequiredNode.classList.remove('hidden');
+
+	//tags.push(name);
+
+	markXTPFormDirty();
+}
+
+function removeSystemTags(smartMode) {
+	let tags = remoteUserSettings[smartMode ? "smartTags" : "userTags"];
+	const systemTagsSelect = document.getElementById(smartMode ? "smartTagsSelect" : "systemTagsSelect");
+	const settingMemberName = smartMode ? "smartTagsToRemove" : "tagsToRemove";
+	if(!remoteUserSettings[settingMemberName])
+		remoteUserSettings[settingMemberName] = [];
+	while(systemTagsSelect.options.selectedIndex > -1) {
+		const opt = systemTagsSelect.options[systemTagsSelect.options.selectedIndex];
+		remoteUserSettings[settingMemberName].push(opt.value);
+		//tags.splice(tags.findIndex(x => x == opt.value), 1);
+		systemTagsSelect.options.remove(systemTagsSelect.options.selectedIndex);
+	}
+	markXTPFormDirty();
 }
 
 function setSelectedProfile(profileName) {
@@ -719,15 +921,38 @@ function updateSettingsUI() {
 }
 
 function updateChannelsUI() {
-	var profileNamesSelect = document.getElementById("profileNamesSelect");
-	removeAllChildNodes(profileNamesSelect);
+	// //Dropdown
+	// var profileNamesSelect = document.getElementById("profileNamesSelect");
+	// removeAllChildNodes(profileNamesSelect);
+	// remoteUserSettings["allChannelProfileNames"].forEach(x => {
+	// 	var option = document.createElement("option");
+	// 	option.value = x;
+	// 	option.innerText = x;
+	// 	profileNamesSelect.appendChild(option);
+	// });
+	// profileNamesSelect.value = remoteUserSettings.selectedChannelProfile;
+	// Radios
+	var profileNamesDiv = document.getElementById("profileNamesDiv");
+	removeAllChildNodes(profileNamesDiv);
 	remoteUserSettings["allChannelProfileNames"].forEach(x => {
-		var option = document.createElement("option");
-		option.value = x;
-		option.innerText = x;
-		profileNamesSelect.appendChild(option);
+		var radio = document.createElement("input");
+		var label = document.createElement("label");
+		radio.type = "radio";
+		radio.id = x;
+		radio.name = "motionProfileGroup";
+		radio.value = x;
+		radio.onclick = function() {
+			setSelectedProfile(this.value);
+		}
+		if(x == remoteUserSettings.selectedChannelProfile) {
+			radio.checked = true;
+		}
+		label.for = x;
+		label.innerText = x;
+		profileNamesDiv.appendChild(radio);
+		profileNamesDiv.appendChild(label);
 	});
-	profileNamesSelect.value = remoteUserSettings.selectedChannelProfile;
+
 	setupSliders();
 	setupMotionModifiers();
 }
@@ -740,11 +965,11 @@ function getServerLibrary() {
 		var status = xhr.status;
 		if (status === 200) {
 			mediaListGlobal = xhr.response;
-			/* 	
-				if(useDeoWeb && mediaListObj.length > 0)
-					loadVideo(mediaListObj[0]); 
-			*/
-			updateMediaUI();
+			setThumbSize(thumbSizeGlobal, false);
+			sort(sortByGlobal, false);
+			mediaListDisplayed = getDisplayedMediaList(showGlobal, false);
+			loadMedia(mediaListDisplayed);
+			filter();
 		} else {
 			systemError('Error getting media list: ' + err);
 		}
@@ -989,7 +1214,11 @@ function getMediaFunscripts(path, isMFS) {
 	xhr.send();
 }
 
+function onSaveToXTPClick() {
+	postServerSettings();
+}
 function postServerSettings() {
+	setSaveState(null, true);
 	var xhr = new XMLHttpRequest();
 	xhr.open('POST', "/settings", true);
 	xhr.setRequestHeader('Content-Type', 'application/json');
@@ -1047,37 +1276,10 @@ function postMediaState(mediaState) {
 }
 
 function onSaveSuccess(node) {
-	if(!node)
-		node = saveStateNode;
-	node.style.visibility = "visible";
-	node.style.opacity = "1";
-	node.style.color = "green";
-	node.innerText = "Save success";
-	setTimeout(() => {
-		node.style.visibility = "hidden";
-		node.style.opacity = "0";
-	}, 5000);
+	setSaveState(node, false);
 }
 function onSaveFail(error, node) {
-	node.style.visibility = "visible";
-	node.style.opacity = "1";
-	node.style.color = "red";
-	node.innerText = "Save fail";
-	node.title = error;
-}
-
-function updateMediaUI() {
-	setThumbSize(thumbSizeGlobal, false);
-	sort(sortByGlobal, false);
-	sortedMedia = show(showGlobal, false);
-	loadMedia(sortedMedia)
-}
-
-function getCurrentDisplayedMedia() {
-	if(filteredMedia.length > 0) {
-		return filteredMedia;
-	} 
-	return JSON.parse(JSON.stringify(sortedMedia || []))
+	setSaveState(node, false, error);
 }
 
 function clearMediaList() {
@@ -1090,8 +1292,10 @@ function loadMedia(mediaList) {
 
 	var noMediaElement = document.getElementById("noMedia");
 	if (!mediaList || mediaList.length == 0) {
-		noMediaElement.innerHTML = "No media found<br>Current filter: " + showGlobal;
-		noMediaElement.hidden = false;
+		if(!mediaLoading) {
+			noMediaElement.innerHTML = "No media found<br>Current filter: " + showGlobal;
+			noMediaElement.hidden = false;
+		}
 		return;
 	}
 	noMediaElement.hidden = true;
@@ -1142,7 +1346,7 @@ function loadMedia(mediaList) {
 			contextMenu.classList.add("hidden");
 		}
 	};
-
+	
 	var regenThumbClick = function (mediaItem, contextMenu) {
 		return function () {
 			sendUpdateThumb(mediaItem);
@@ -1189,12 +1393,14 @@ function loadMedia(mediaList) {
 		divnode.title = obj.name;
 
 		var info = document.createElement("button");
+		info.id = obj.id + "InfoButton";
 		info.classList.add("media-context");
-		if(userAgentIsHereSphere)
-			info.classList.add("media-context-heresphere");
+		// if(userAgentIsHereSphere)
+		// 	info.classList.add("media-context-heresphere");
 		info.style.width = widthInt * 0.20 + "px";
 		info.style.height = widthInt * 0.20 + "px";
 		var contextMenu = document.createElement("div"); 
+		contextMenu.id = obj.id + "ContextMenu";
 		info.onclick = toggleContext(contextMenu, obj);
 		info.dataset.title = "Media actions";
 		// var icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -1210,11 +1416,11 @@ function loadMedia(mediaList) {
 		//icon.appendChild(iconUse);
 		info.appendChild(icon);
 		contextMenu.classList.add("media-context-menu", "hidden");
-		if(userAgentIsHereSphere)
-			contextMenu.classList.add("media-context-menu-heresphere");
+		// if(userAgentIsHereSphere)
+		// 	contextMenu.classList.add("media-context-menu-heresphere");
 		
 		contextMenu.style.fontSize = fontSize;
-		contextMenu.style.width = widthInt * 0.85 + "px";
+		//contextMenu.style.width = widthInt * 0.85 + "px";
 
 		var contextMenuItem = createContextMenuItem("Regenerate thumb", regenThumbClick(obj, contextMenu));
 		contextMenuItem.classList.add("regenerateThumb", "disabled");
@@ -1235,12 +1441,7 @@ function loadMedia(mediaList) {
 
 		var anode = document.createElement("a");
 		anode.className += "media-link"
-		if (obj.isMFS) {
-			divnode.className += " media-item-mfs"
-		}
-		if (!obj.hasScript) {
-			divnode.className += " media-item-noscript"
-		}
+		
 		//anode.style.width = width;
 		//anode.style.height = height;
 		anode.onclick = createClickHandler(obj);
@@ -1264,11 +1465,14 @@ function loadMedia(mediaList) {
 		image.style.height = thumbSizeGlobal - textHeight + "px";
 		//image.onerror=onThumbLoadError(image, 1)
 		var namenode = document.createElement("div");
+		namenode.id = obj.id + "DisplayName";
 		namenode.innerText = obj.displayName;
 		namenode.className += "name"
 		namenode.style.width = width;
 		namenode.style.height = textHeight + "px";
 		namenode.style.fontSize = fontSize;
+
+		updateScriptStatus(obj, divnode, namenode);
 
 		divnode.appendChild(anode);
 		anode.appendChild(image);
@@ -1278,6 +1482,10 @@ function loadMedia(mediaList) {
 		medialistNode.appendChild(divnode);
 		if (playingmediaItem && playingmediaItem.id === obj.id)
 			setPlayingMediaItem(obj);
+
+		if(obj.subtitle) {// Must be after divnode has been appended
+			updateSubTitle(obj, divnode, contextMenu);
+		}
 
 	}
 	if(!disableLazyLoad)
@@ -1340,6 +1548,94 @@ function setupLazyLoad() {
 		lazyImageObserver.observe(lazyImage);
 	  });
 	}
+}
+
+function updateItem(libraryItem, roles)
+{
+	var mediaNode;
+	if(roles.findIndex(x => x == Roles.DisplayRole) > -1) {
+		mediaNode = updateScriptStatus(libraryItem);
+	}
+	if(roles.findIndex(x => x == Roles.DecorationRole) > -1) {
+		mediaNode = updateSubTitle(libraryItem, mediaNode);
+	}
+}
+
+function updateSubTitle(libraryItem, mediaNode, contextMenu) {
+	if(!mediaNode)
+		mediaNode = document.getElementById(libraryItem.id);
+	if (!mediaNode)
+		return undefined;
+	if(!contextMenu)
+		contextMenu = document.getElementById(libraryItem.id+"ContextMenu");
+	if (!contextMenu)
+		return mediaNode;
+
+	var index = mediaListGlobal.findIndex(x => x.id === libraryItem.id);
+
+	var contextButton = document.getElementById(libraryItem.id + "InfoButton");
+	var ccIcon = document.getElementById(libraryItem.id+ "ccIconImg")
+	if(ccIcon)
+		contextButton.removeChild(ccIcon);
+
+	var contextMenuItems = contextMenu.getElementsByClassName("downloadSubtitle");
+	if(contextMenuItems.length)
+		contextMenu.removeChild(contextMenuItems[0]);
+	
+	if(libraryItem.subtitle) {
+		var icon = document.createElement("img");
+		icon.id = libraryItem.id+ "ccIconImg";
+		icon.src = "://images/icons/cc.svg";
+		widthInt = thumbSizeGlobal + (thumbSizeGlobal * 0.15);
+		icon.style.width = widthInt * 0.10 + "px";;
+		icon.style.height = widthInt * 0.10 + "px";
+		icon.classList.add("media-cc");
+		//icon.appendChild(iconUse);
+		contextButton.appendChild(icon);
+		
+		var subtitle_path =  "/media" + libraryItem.subtitleRelative;
+		const ext = libraryItem.subtitleRelative.substring(libraryItem.subtitleRelative.lastIndexOf("."), libraryItem.subtitleRelative.length);
+		const link = document.createElement("a");
+		link.href = subtitle_path;
+		link.setAttribute('download', libraryItem.displayName + ext);
+		link.innerText = "Download subtitle";
+		//link.onclick = contextMenu.classList.add("hidden");
+		var contextSubtitleMenuItem = createContextMenuItem("", undefined);
+		contextSubtitleMenuItem.classList.add("downloadSubtitle");
+		contextSubtitleMenuItem.appendChild(link);
+		contextMenu.insertBefore(contextSubtitleMenuItem, contextMenu.firstChild);
+	}
+
+	mediaListGlobal[index].subtitle = libraryItem.subtitle;
+	mediaListGlobal[index].subtitleRelative = libraryItem.subtitleRelative;
+	return mediaNode;
+}
+
+function updateScriptStatus(libraryItem, mediaNode, displayNameNode) {
+	if(!mediaNode)
+		mediaNode = document.getElementById(libraryItem.id);
+	if (!mediaNode)
+		return undefined;
+	if(!displayNameNode)
+		displayNameNode = document.getElementById(libraryItem.id + "DisplayName");
+	if(!displayNameNode)
+		return undefined;
+	displayNameNode.innerText = libraryItem.displayName;
+	if (libraryItem.isMFS) {
+		mediaNode.classList.add("media-item-mfs");
+	} else {
+		mediaNode.classList.remove("media-item-mfs");
+	}
+	if (!libraryItem.hasScript) {
+		mediaNode.classList.add("media-item-noscript");
+	} else {
+		mediaNode.classList.remove("media-item-noscript");
+	}
+	var index = mediaListGlobal.findIndex(x => x.id === libraryItem.id);
+	mediaListGlobal[index].displayName = libraryItem.displayName;
+	mediaListGlobal[index].isMFS = libraryItem.isMFS;
+	mediaListGlobal[index].hasScript = libraryItem.hasScript;
+	return mediaNode;
 }
 
 function onThumbLoadError(imageElement, tries) {
@@ -1407,13 +1703,14 @@ function sort(value, userClick) {
 	if (!userClick) {
 		//document.getElementById("sortBy").value = value;
 		if (value) {
-			document.getElementById(value.toString()).click();
+			document.getElementById(value.toString()).checked = true;
 		}
 	}
 	else {
 		window.localStorage.setItem("sortBy", JSON.stringify(value));
 		sortByGlobal = value;
 	}
+	return mediaListGlobal;
 }
 
 //https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
@@ -1421,48 +1718,47 @@ function fy(a,b,c,d){//array,placeholder,placeholder,placeholder
 	c=a.length;while(c)b=Math.random()*c--|0,d=a[c],a[c]=a[b],a[b]=d
 }
 
-function show(value, userClick) {
-	if (!value)
-		value = "All";
-	var filteredMedia = [];
-	switch (value) {
+function getDisplayedMediaList(showValue, userClick) {
+	let filteredMediaScoped = [];
+	//let mediaListGlobalCopy = JSON.parse(JSON.stringify(mediaListGlobal));
+	switch (showValue) {
 		case "All":
-			filteredMedia = mediaListGlobal;
+			filteredMediaScoped = JSON.parse(JSON.stringify(mediaListGlobal));
 			break;
 		case "3DOnly":
-			filteredMedia = mediaListGlobal.filter(x => x.type === MediaType.VR);
+			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.VR);
 			break;
 		case "2DAndAudioOnly":
-			filteredMedia = mediaListGlobal.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video);
+			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video);
 			break;
 	}
-	if (!userClick) {
-		// document.getElementById("show").value = value;
-		if (value) {
-			document.getElementById(value.toString()).click();
+	
+	if(userClick != undefined) {
+		if (!userClick) {
+			document.getElementById(showValue.toString()).checked = true;
 		}
-	} else {
-		window.localStorage.setItem("show", JSON.stringify(value));
-		showGlobal = value;
 	}
-	return filteredMedia;
+	return filteredMediaScoped
 }
 
 function filter(criteria) {
-	filteredMedia = [];
+	userFilterCriteria = criteria;
+	var filterInput = document.getElementById("filterInput");
+	filterInput.enabled = false;
+	var mediaItems = document.getElementsByClassName("media-item");
+	for (var item of mediaItems) {
+		const libraryItem = mediaListDisplayed.find(x => x.id === item.id);
+
+		item.hidden = isFiltered(userFilterCriteria, item.textContent) || isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags);
+	};
+	filterInput.enabled = true;
+}
+
+function debounceFilter(criteria) {
 	if (filterDebounce) 
 		clearTimeout(filterDebounce);
 	filterDebounce = setTimeout(function () {
-		var filterInput = document.getElementById("filterInput");
-		filterInput.enabled = false;
-		userFilterCriteria = criteria;
-		var mediaItems = document.getElementsByClassName("media-item");
-		for (var item of mediaItems) {
-			item.hidden = isFiltered(criteria, item.textContent);
-			if(!item.hidden)
-				filteredMedia.push(mediaListGlobal.find(x => x.id === item.id));
-		};
-		filterInput.enabled = true;
+		filter(criteria);
 		filterDebounce = undefined;
 	}, 1000);
 }
@@ -1472,6 +1768,46 @@ function isFiltered(criteria, textToSearch) {
 		return false;
 	else
 		return !textToSearch.trim().toUpperCase().includes(criteria.trim().toUpperCase());
+}
+
+var onFilterByTagClicked = function (tagCheckbox) {
+	return function () {
+		if(tagCheckbox) {
+			if(tagCheckbox.checked)
+				userTagFilterCriteria.push(tagCheckbox.value);
+			else {
+				var index = userTagFilterCriteria.findIndex(x => x == tagCheckbox.value);
+				if(index > -1)
+					userTagFilterCriteria.splice(index, 1);
+			}
+			filterByTag(userTagFilterCriteria);
+		}
+	}
+};
+
+function filterByTag(filterCriteria) {
+	userTagFilterCriteria = filterCriteria;
+	var tagsFilterOptions = document.getElementsByName("TagCheckbox");
+	tagsFilterOptions.forEach(x => x.enabled = false);
+	var mediaItems = document.getElementsByClassName("media-item");
+	for (var item of mediaItems) {
+		const libraryItem = mediaListDisplayed.find(x => x.id === item.id);
+
+		item.hidden = isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags) || isFiltered(userFilterCriteria, item.textContent);
+	};
+	tagsFilterOptions.forEach(x => x.enabled = true);
+}
+
+function isTagFiltered(selectedTags, mediaTags) {
+	if (!selectedTags || !selectedTags.length || !mediaTags || !mediaTags.length)
+		return false;
+	else {
+		  for(let i=0; i<selectedTags.length; i++) {
+			if(!mediaTags.includes(selectedTags[i]))
+				return true;
+		  }
+		return false;
+	}
 }
 /* 
 function onClickUseDeoWebCheckbox(checkbox)
@@ -1691,7 +2027,7 @@ function disableTextToSpeech(message) {
 }
 
 function toggleShufflePlay() {
-	if(!sortedMedia.length)
+	if(!mediaListDisplayed.length)
 		return;
 	shufflePlayMode = !shufflePlayMode;
 	if(shufflePlayMode) {
@@ -1705,31 +2041,59 @@ function toggleShufflePlay() {
 }
 
 function getNextShuffleMediaItem() {
-	var currentDisplayedMedia = getCurrentDisplayedMedia();
-	if(!currentDisplayedMedia.length) {
+	var currentDisplayedMedia = getCurrentDisplayedMediaNodes();
+	if(!currentDisplayedMedia || !currentDisplayedMedia.length) {
 		return;
 	}
 	if(Object.keys(shufflePlayModePlayedIndexed).length === currentDisplayedMedia.length) {
 		shufflePlayModePlayedIndexed = {};
 	}
-	var randomIndex = Math.floor(Math.random() * (currentDisplayedMedia.length - 1));
-	var id = currentDisplayedMedia[randomIndex].id;
-	while(shufflePlayModePlayedIndexed[id]) {
+	// Find a media item that hasnt been played.
+	var randomIndex;
+	var id;
+	do {
 		randomIndex = Math.floor(Math.random() * (currentDisplayedMedia.length - 1));
 		id = currentDisplayedMedia[randomIndex].id;
-	}
+	} while(shufflePlayModePlayedIndexed[id]);
+
 	document.getElementById(id).scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
 	shufflePlayModePlayedIndexed[id] = true;
 	return currentDisplayedMedia[randomIndex];
 }
-
 function playVideo(obj) {
 	if (playingmediaItem) {
 		if (playingmediaItem.id === obj.id)
 			return;
 		clearPlayingMediaItem();
 	}
-	setPlayingMediaItem(obj);
+	setPlayingMediaItem(mediaListGlobal[mediaListGlobal.findIndex(x => x.id==obj.id)]);
+	sendMediaState();
+	if(obj["subtitle"]) {
+		if(!externalStreaming) {
+			if(obj["subtitle"].endsWith("vtt")) { // Only vtt is supported by html video element
+				const tracks = videoNode.querySelectorAll("track");
+				let track;
+				if(!tracks.length) {
+					track = document.createElement("track");
+					track.default = true;
+					videoNode.appendChild(track);
+				} else {
+					track = tracks[0];
+				}
+				track.src = "/media" + obj.subtitleRelative;
+			} else {
+				var tracks = videoNode.querySelectorAll('track')
+				for (var i = 0; i < tracks.length; i++) {
+					tracks[i].src = undefined;
+				}
+			}
+		}
+	} else {
+		var tracks = videoNode.querySelectorAll('track')
+		for (var i = 0; i < tracks.length; i++) {
+			tracks[i].src = undefined;
+		}
+	}
 	if (externalStreaming) {
 		var file_path =  "/media" + obj.relativePath;// + "?sessionID="+cookies.sessionID;
 		window.open(file_path);
@@ -1798,6 +2162,12 @@ function onToggleFilterInput(searchButton) {
 	searchButton.classList.toggle('icon-button-down');
 }
 
+function onToggleTagInput(tagButton) {
+	var filterInput = document.getElementById('tagFilterOptions');
+	filterInput.classList.toggle('hidden');
+	tagButton.classList.toggle('icon-button-down');
+}
+
 function setPlayingMediaItem(obj) {
 	playingmediaItem = obj;
 	playingmediaItemNode = document.getElementById(obj.id);
@@ -1828,6 +2198,12 @@ function onVideoLoading(event) {
 	dataLoading();
 	if(playingmediaItem)
 		playingmediaItem.loaded = false;
+	// SOmetimes the stall signal is sent but the loading modal is never removed.
+	videoStallTimeout = setTimeout(() => {
+		//playNextVideo();
+		dataLoaded();
+		videoStallTimeout = undefined;
+	}, 20000);
 }
 function onVideoLoad(event) {
 	debug("Data loaded");
@@ -1857,9 +2233,12 @@ function onVideoStall(event) {
 	if(playingmediaItem)
 		playingmediaItem.playing = false;
 	sendMediaState();
-	// Band aid to fix next video NOT playing due to current stalling at end.
+	if(videoStallTimeout)
+		clearTimeout(videoStallTimeout);
+	// SOmetimes the stall signal is sent but the loading modal is never removed.
 	videoStallTimeout = setTimeout(() => {
-		playNextVideo();
+		//playNextVideo();
+		dataLoaded();
 		videoStallTimeout = undefined;
 	}, 20000);
 }
@@ -1888,14 +2267,17 @@ function playNextVideoClick() {
 }
 
 function playNextVideo() {
-	if(sortedMedia.length == 0)
+	if(mediaListDisplayed.length == 0)
 		return;
 	if(shufflePlayMode) {
 		playVideo(getNextShuffleMediaItem())
 	} else {
-		var currentDisplayedMedia = getCurrentDisplayedMedia();
+		var currentDisplayedMedia = getCurrentDisplayedMediaNodes();
+		if(!currentDisplayedMedia || !currentDisplayedMedia.length) {
+			return;
+		}
 		if(playingmediaItem) {
-			var playingIndex = currentDisplayedMedia.findIndex(x => x.path === playingmediaItem.path);
+			var playingIndex = currentDisplayedMedia.findIndex(x => x.id === playingmediaItem.id);
 			playingIndex++;
 		} else {
 			playingIndex = 0;
@@ -1912,11 +2294,14 @@ function playPreviousVideoClick() {
 	playPreviousVideo();
 }
 function playPreviousVideo() {
-	if(sortedMedia.length == 0)
+	if(mediaListDisplayed.length == 0)
 		return;
-	var currentDisplayedMedia = getCurrentDisplayedMedia();
+	var currentDisplayedMedia = getCurrentDisplayedMediaNodes();
+	if(!currentDisplayedMedia || !currentDisplayedMedia.length) {
+		return;
+	}
 	if(playingmediaItem) {
-		var playingIndex = currentDisplayedMedia.findIndex(x => x.path === playingmediaItem.path);
+		var playingIndex = currentDisplayedMedia.findIndex(x => x.id === playingmediaItem.id);
 		playingIndex--;
 	} else {
 		playingIndex = -1;
@@ -1929,7 +2314,7 @@ function playPreviousVideo() {
 function setThumbSize(value, userClick) {
 	if (!userClick) {
 		if (value) {
-			document.getElementById(value.toString()).click();
+			document.getElementById(value.toString()).checked = true;
 			//document.getElementById("thumbSize").value = value.toString();
 		}
 	} else {
@@ -2071,22 +2456,35 @@ function tabClick(tab, tabNumber) {
 	tab.style.backgroundColor = '#8DA1BF';
 }
 
+function getCurrentDisplayedMediaNodes() {
+	var displayedElementIDs = Array.from(document.querySelectorAll(".media-item:not([hidden])")).map(x => x.id);
+	return mediaListDisplayed.filter(x => {
+		return displayedElementIDs.includes(x.id);
+	});
+}
+
 function showChange(value) {
-	sort(sortByGlobal, true);
-	sortedMedia = show(value, true);
-	loadMedia(sortedMedia);
+	if (!value)
+		showGlobal = "All";
+	else
+		showGlobal = value;
+	window.localStorage.setItem("show", JSON.stringify(value));
+	mediaListDisplayed = getDisplayedMediaList(value, true);
+	loadMedia(mediaListDisplayed);
+	filter();
 }
 
 function sortChange(value) {
 	sort(value, true);
-	sortedMedia = show(showGlobal, true);
-	loadMedia(sortedMedia);
+	mediaListDisplayed = getDisplayedMediaList(value, false);
+	loadMedia(mediaListDisplayed);
+	filter();
 }
 
 function thumbSizeChange(value) {
 	setThumbSize(value, true);
-	sortedMedia = show(showGlobal, true);
-	loadMedia(sortedMedia);
+	loadMedia(mediaListDisplayed);
+	filter();
 }
 
 async function setupSliders() {
@@ -2117,7 +2515,6 @@ async function setupSliders() {
 
 		var rangeValuesNode = document.createElement("span");
 		rangeValuesNode.classList.add("range-values")
-		sectionNode.appendChild(rangeValuesNode);
 
 		var input1Node = document.createElement("input");
 		input1Node.type = "range";
@@ -2182,6 +2579,62 @@ async function setupSliders() {
 			}, 1000);
 		}.bind(input2Node, input1Node, input2Node, rangeValuesNode, channel);
 
+		var minIncrementButton = document.createElement("button");
+		minIncrementButton.classList.add("min-max-button");
+		minIncrementButton.innerText = "+";
+		minIncrementButton.onclick = function (input1Node, input2Node) {
+			const minValue = parseInt(input1Node.value);
+			const maxValue = parseInt(input2Node.value);
+			const newValue = minValue + rangeChangeAmount;
+			input1Node.value = newValue <= maxValue ? newValue : maxValue - rangeChangeAmount;
+			input1Node.dispatchEvent(new Event('input', { bubbles: true }));
+		}.bind(input1Node, input1Node, input2Node, channel);
+
+		var minDecrementButton = document.createElement("button");
+		minDecrementButton.classList.add("min-max-button");
+		minDecrementButton.innerText = "-";
+		minDecrementButton.onclick = function (input1Node, channel) {
+			const minValue = parseInt(input1Node.value);
+			const newValue = minValue - rangeChangeAmount;
+			input1Node.value = newValue >= remoteUserSettings.availableChannels[channel.channel].min ? newValue : remoteUserSettings.availableChannels[channel.channel].min;
+			input1Node.dispatchEvent(new Event('input', { bubbles: true }));
+		}.bind(input1Node, input1Node, channel);
+
+		var maxIncrementButton = document.createElement("button");
+		maxIncrementButton.classList.add("min-max-button");
+		maxIncrementButton.innerText = "+";
+		maxIncrementButton.onclick = function (input2Node, channel) {
+			const maxValue = parseInt(input2Node.value);
+			const newValue = maxValue + rangeChangeAmount;
+			input2Node.value = newValue <= remoteUserSettings.availableChannels[channel.channel].max ? newValue : remoteUserSettings.availableChannels[channel.channel].max;
+			input2Node.dispatchEvent(new Event('input', { bubbles: true }));
+		}.bind(input2Node, input2Node, channel);
+
+		var maxDecrementButton = document.createElement("button");
+		maxDecrementButton.classList.add("min-max-button");
+		maxDecrementButton.innerText = "-";
+		maxDecrementButton.onclick = function (input1Node, input2Node) {
+			const minValue = parseInt(input1Node.value);
+			const maxValue = parseInt(input2Node.value);
+			const newValue = maxValue - rangeChangeAmount;
+			input2Node.value = newValue >= minValue ? newValue : minValue + rangeChangeAmount;
+			input2Node.dispatchEvent(new Event('input', { bubbles: true }));
+		}.bind(input1Node, input1Node, input2Node, channel);
+
+		var minmaxButtonSpanRow = document.createElement("span");
+		minmaxButtonSpanRow.classList.add("min-max-buttons");
+		var minButtonSpan = document.createElement("span");
+		minButtonSpan.appendChild(minDecrementButton);
+		minButtonSpan.appendChild(minIncrementButton);
+		var maxButtonSpan = document.createElement("span");
+		maxButtonSpan.appendChild(maxDecrementButton);
+		maxButtonSpan.appendChild(maxIncrementButton);
+
+		minmaxButtonSpanRow.appendChild(minButtonSpan);
+		minmaxButtonSpanRow.appendChild(rangeValuesNode);
+		minmaxButtonSpanRow.appendChild(maxButtonSpan);
+
+		sectionNode.appendChild(minmaxButtonSpanRow);
 		sectionNode.appendChild(input1Node);
 		sectionNode.appendChild(input2Node);
 
@@ -2233,7 +2686,10 @@ async function setupMotionModifiers() {
 
 	sectionNode.appendChild(multiplierEnabledNode);
 
-	var headers = ["Modifier", "Link to MFS", "Speed"]
+	var headers = [
+		//"Modifier", 
+		"Link to MFS", 
+		"Speed"]
 	headers.forEach(element => {
 		var gridHeaderNode = document.createElement("div");
 		gridHeaderNode.classList.add("form-group-control");
@@ -2299,20 +2755,20 @@ async function setupMotionModifiers() {
 			markXTPFormDirty();
 		}.bind(multiplierEnabledNode, channelName);
 
-		var multiplierValueNode = document.createElement("input");
-		multiplierValueNode.setAttribute("name", "motionModifierInput");
-		multiplierValueNode.value = channel.multiplierValue;
+		// var multiplierValueNode = document.createElement("input");
+		// multiplierValueNode.setAttribute("name", "motionModifierInput");
+		// multiplierValueNode.value = channel.multiplierValue;
 
-		multiplierValueNode.oninput = function (channelName, event) {
-			var value = parseFloat(event.target.value);
-			if (value) {
-				remoteUserSettings.availableChannels[channelName].multiplierValue = value;
-				markXTPFormDirty();
-			}
-		}.bind(multiplierValueNode, channelName);
+		// multiplierValueNode.oninput = function (channelName, event) {
+		// 	var value = parseFloat(event.target.value);
+		// 	if (value) {
+		// 		remoteUserSettings.availableChannels[channelName].multiplierValue = value;
+		// 		markXTPFormDirty();
+		// 	}
+		// }.bind(multiplierValueNode, channelName);
 
 		enabledValueNode.appendChild(multiplierEnabledNode);
-		enabledValueNode.appendChild(multiplierValueNode);
+		//enabledValueNode.appendChild(multiplierValueNode);
 
 		var linkedEnabledValueNode = document.createElement("div");
 		linkedEnabledValueNode.classList.add("form-group-control");

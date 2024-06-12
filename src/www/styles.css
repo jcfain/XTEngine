@@ -17,6 +17,10 @@ body {
   display: none !important;
 }
 
+.hidden-visibility {
+    visibility: hidden;
+}
+
 .disabled {
     background-color: lightgray;
     pointer-events: none;
@@ -32,21 +36,30 @@ body {
 }
 
 .headerSection {
-    flex-basis: 33%;
+    flex-basis: 25%;
 }
 
 .headerLogoSection {
     display: flex;
     justify-content: center;
-    flex-basis: 33%;
+    flex-basis: 55%;
     flex-flow: column;
     align-items: center;
+}
+
+.headerActionSection {
+    flex-basis: 15%;
 }
 
 .headerLogo {
     height: 50px;
     max-width: fit-content;
 }
+
+.header-logout-button {
+    align-self: flex-end;
+}
+
 .auth-container {
     margin: 0 auto;
     display: flex;
@@ -55,6 +68,7 @@ body {
 }
 .auth-body {
     display: flex;
+    overflow: auto;
     height: 100vh;
     align-items: center;
 }
@@ -90,6 +104,12 @@ body {
     justify-content: flex-end;
 }
 
+.pregress-status {
+    height: 10px;
+    position: inherit;
+    margin: auto;
+}
+
 .save-status {
     visibility: hidden;
     opacity: 0;
@@ -107,10 +127,13 @@ body {
 
 input:disabled,
 textarea:disabled,
+button:disabled,
 select:disabled {
     border: 0;
     box-shadow: none;
+    color: #888;
     background-color: #ccc;
+    pointer-events: none;
 }
 
 .formElement {
@@ -168,6 +191,12 @@ select:disabled {
     width: max-content;
     margin: auto;
 }
+.form-buttons {  
+    margin-top: 8px;
+}
+.form-buttons button {
+    margin-right: 8px;
+}
 /* Doesnt look right in Deo */
 .styled-checkbox {
     width: 20px;
@@ -204,7 +233,7 @@ select {
 
 select:hover,
 button:hover:not(.video-control):not(.media-context),
-input:hover {
+input:hover:not(.range-input) {
     background-color: lightblue;
 }
 
@@ -264,7 +293,8 @@ input:hover {
 }
 
 .media-item {
-    overflow: hidden;
+    position:relative;
+    overflow: visible;
     border-radius: 25px;
     margin: 5px;
     content-visibility: auto;
@@ -276,9 +306,23 @@ input:hover {
     width: 25vw;
     border-radius: 5px;
     height: 24px;
-    left: calc(100vw - 35vw);
+    right: 100px;
     position: absolute;
     z-index: 10;
+    margin-top: 16px;
+}
+
+.media-tag-filter-input {  
+    width: 150px;
+    border-radius: 25px;
+    right: 100px;
+    position: absolute;
+    z-index: 10;
+    margin-top: 60px;
+    display: flex;
+    background-color: #000000;
+    flex-flow: column;padding: 16px;
+    border: 1px solid aliceblue;
 }
 
 .media-item:hover {
@@ -308,8 +352,10 @@ input:hover {
 }
 
 .media-context-menu {
+    display: flex;
+    flex-flow: column;
     text-align: center;
-    position: fixed;
+    position: absolute;
     width: 140px;
     background-color: white;
     color: black;
@@ -317,6 +363,10 @@ input:hover {
     z-index: 10;
     border-radius: 10px;
     box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px cornflowerblue;
+    left:5%;
+    top:5%;
+    height: 50%;
+    width:90%;
 }
 .media-context-menu-heresphere {
     position: relative;
@@ -327,7 +377,7 @@ input:hover {
     align-items: center;
     justify-content: center;
     font-size: smaller;
-    height: 20px;
+    flex-grow: 1;
 }
 .media-context-menu-item:not(:last-child) {
     border-bottom: lightgray solid;
@@ -350,6 +400,15 @@ input:hover {
     cursor: not-allowed;
 }
 
+.media-cc {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 25px;
+    /* position: absolute;
+    left: calc(100% - 23px);
+    top: calc(100% - 23px); */
+}
+
 .media-link {
     display: flex;
     flex-flow: column nowrap;
@@ -358,6 +417,7 @@ input:hover {
 }
 
 .media-item .name {
+    overflow: hidden;
     text-overflow: ellipsis;
     flex-basis: 40%;
     text-align: center;
@@ -429,36 +489,43 @@ input:hover {
     margin-top: 16px;
     z-index: 10;
 } 
-.shuffle-media-button {
+.tag-media-button {
     position: fixed;
     left: calc(100vw - 85px);
     margin-top: 63px;
+    z-index: 10;
+} 
+.shuffle-media-button {
+    position: fixed;
+    left: calc(100vw - 85px);
+    margin-top: 110px;
     z-index: 10;
 }
 .random-media-button {
     position: fixed;
     left: calc(100vw - 85px);
-    margin-top: 110px;
+    margin-top: 157px;
     z-index: 10;
 } 
 .range-slider {
-    display: flex;
-    flex-flow: column;
+    /* display: flex;
+    flex-flow: column; */
     position: relative;
-    width: 100%;
-    text-align: center;
+    /* width: 100%;
+    text-align: center; */
 }
 
 .range-input {
     pointer-events: none;
     position: absolute;
     overflow: hidden;
-    left: 0;
-    top: 10px;
-    width: 100%;
+    left: 46px;
+    top: 3px;
+    width: calc(100% - 92px);
     outline: none;
     margin: 0;
     padding: 0;
+    background-color: rgba(220, 150, 150, 0.2);
 }
 
 .range-input::-webkit-slider-thumb {
@@ -493,12 +560,24 @@ input:hover {
     border: 0;
 }
 
-section.range-label {}
-
-section>.range-values {
-    font-size: 10px;
+section .min-max-buttons {
+    display: flex;
+    justify-content: space-between;
 }
 
+section .min-max-button {  
+    /* max-width: 20px;
+    max-height: 20px; */
+}
+
+section.range-label {}
+
+section .range-values {
+    align-self: center;
+    font-size: 10px;
+    z-index: 1;
+    pointer-events: none;
+}
 
 .form-group-label {}
 
@@ -731,6 +810,28 @@ section>.range-values {
     max-width: 50px;
 }
 
+.system-tags {
+    display: flex;
+}
+.system-tags-section {
+    margin-right: 8px;
+}
+.system-tags-section-button {
+    width: 50%;
+}
+.system-tags-select {
+    height: 257px;
+}
+/* .ms {
+    width: 100%;
+}
+.ms::after {
+    content: 'ms';
+    position: relative;
+    right: 16%;
+    color: black;
+} */
+
 
 @keyframes loading-spinner {
     0% {
@@ -754,7 +855,9 @@ section>.range-values {
     
     .media-filter-input {
         width: 50vw;
-        left: 25vw;
+        right: 25vw;
+    }
+    .media-tag-filter-input {
     }
     .auth-container {
         width: 85%;

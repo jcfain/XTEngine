@@ -12,14 +12,10 @@ WebsocketDeviceHandler::~WebsocketDeviceHandler()
 {
 }
 
-DeviceName WebsocketDeviceHandler::name() {
-    return DeviceName::Network;
-}
-
 void WebsocketDeviceHandler::init(NetworkAddress address, int waitTimeout)
 {
     _address = address;
-    if(_isListening || _isConnected) {
+    if(_isListening || isConnected()) {
         m_webSocket.close();
     }
     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connecting, "Connecting..."});
@@ -30,21 +26,14 @@ void WebsocketDeviceHandler::init(NetworkAddress address, int waitTimeout)
     m_webSocket.open(QUrl("ws://" + address.address + ":" + QString::number(address.port) + "/ws"));
     _isListening = true;
 }
-void WebsocketDeviceHandler::run() {
-
-}
-
-void WebsocketDeviceHandler::sendHandShake() {
-    sendTCode("D1");
-}
 
 void WebsocketDeviceHandler::onConnected() {
     connect(&m_webSocket, &QWebSocket::textMessageReceived, this, &WebsocketDeviceHandler::onTextMessageReceived);
     if(SettingsHandler::getDisableTCodeValidation()) {
         emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: No validate"});
-        _isConnected = true;
+        setConnected(true);
     } else {
-        sendHandShake();
+        emit sendHandShake();
     }
 
 }
@@ -52,65 +41,50 @@ void WebsocketDeviceHandler::onConnected() {
 void WebsocketDeviceHandler::onClosed() {
     disconnect(&m_webSocket, nullptr, nullptr, nullptr);
     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Disconnected, "Disconnected"});
-    _isConnected = false;
+    setConnected(false);
 }
 
 void WebsocketDeviceHandler::onTextMessageReceived(QString response)
 {
-    QString version = "V?";
-    bool validated = false;
-    if(response.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v2)))
-    {
-        version = "V2";
-        validated = true;
-    }
-    else if (response.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v3)))
-    {
-        version = "V3";
-        validated = true;
-    }
-    if (validated)
-    {
-        emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: "+version});
-        _isConnected = true;
-    }
-    else
-    {
-        emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "No " + TCodeChannelLookup::getSelectedTCodeVersionName()});
-        dispose();
-    }
+    processDeviceInput(response);
+    // QString version = "V?";
+    // bool validated = false;
+    // if(response.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v2)))
+    // {
+    //     version = "V2";
+    //     validated = true;
+    // }
+    // else if (response.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v3)))
+    // {
+    //     version = "V3";
+    //     validated = true;
+    // }
+    // if (validated)
+    // {
+    //     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: "+version});
+    //     _isConnected = true;
+    // }
+    // else
+    // {
+    //     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "No " + TCodeChannelLookup::getSelectedTCodeVersionName()});
+    //     dispose();
+    // }
 }
 
 void WebsocketDeviceHandler::sendTCode(const QString &tcode)
 {
     //const QMutexLocker locker(&_mutex);
-    _tcode = tcode + "\n";
+    QString tcodeFormatted = tcode + "\n";
     LogHandler::Debug("Sending TCode websocket: "+tcode);
-    m_webSocket.sendTextMessage(_tcode);
+    m_webSocket.sendTextMessage(tcodeFormatted);
 }
 
 void WebsocketDeviceHandler::dispose()
 {
-    LogHandler::Debug("websocket dispose "+ _address.address);
-    //_mutex.lock();
+    LogHandler::Debug("Websocket dispose "+ _address.address);
     m_webSocket.close();
-//    _stop = true;
-//    _mutex.unlock();
-//    _cond.wakeOne();
-//    emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Disconnected, "Disconnected"});
-//    if(isRunning())
-//    {
-//        quit();
-//        wait();
-//    }
+    OutputDeviceHandler::dispose();
 }
-
-bool WebsocketDeviceHandler::isConnected()
-{
-    QMutexLocker locker(&_mutex);
-    return _isConnected;
-}
-
 
 
 void WebsocketDeviceHandler::onSocketStateChange (QAbstractSocket::SocketState state)

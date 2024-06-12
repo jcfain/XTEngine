@@ -1,19 +1,16 @@
 #include "deohandler.h"
 
 HereSphereHandler::HereSphereHandler(QObject *parent) :
-    InputDeviceHandler(parent)
+    InputDeviceHandler(parent),
+    m_connectTries(0)
 {
+    qRegisterMetaType<ConnectionChangedSignal>();
+    qRegisterMetaType<InputDevicePacket>();
 }
 
 HereSphereHandler::~HereSphereHandler()
 {
     _isConnected = false;
-    if (tcpSocket != nullptr)
-        delete tcpSocket;
-//    if (keepAliveTimer != nullptr)
-//        delete keepAliveTimer;
-    if (currentPacket != nullptr)
-        delete currentPacket;
 }
 
 DeviceName HereSphereHandler::name() {
@@ -22,21 +19,21 @@ DeviceName HereSphereHandler::name() {
 
 void HereSphereHandler::init(NetworkAddress address, int waitTimeout)
 {
-    qRegisterMetaType<ConnectionChangedSignal>();
-    qRegisterMetaType<InputDevicePacket>();
     emit connectionChange({DeviceType::Input, DeviceName::HereSphere, ConnectionStatus::Connecting, "Waiting..."});
+
     _waitTimeout = waitTimeout;
     _address = address;
 
     QHostAddress addressObj;
     addressObj.setAddress(_address.address);
-    tcpSocket = new QTcpSocket(this);
-    connect(tcpSocket, &QTcpSocket::stateChanged, this, &HereSphereHandler::onSocketStateChange);
-    connect(tcpSocket, &QTcpSocket::errorOccurred, this, &HereSphereHandler::tcpErrorOccured);
-    tcpSocket->connectToHost(addressObj, _address.port);
-    currentPacket = new InputDevicePacket
+    connect(&tcpSocket, &QTcpSocket::stateChanged, this, &HereSphereHandler::onSocketStateChange);
+    connect(&tcpSocket, &QTcpSocket::errorOccurred, this, &HereSphereHandler::tcpErrorOccured);
+    m_connectTries++;
+    tcpSocket.connectToHost(addressObj, _address.port);
+    currentPacket =
     {
         nullptr,
+        0,
         0,
         0,
         0,
@@ -53,29 +50,29 @@ void HereSphereHandler::sendKeepAlive()
     }
     else
     {
-        keepAliveTimer->stop();
+        keepAliveTimer.stop();
     }
 }
 
 void HereSphereHandler::send(const QString &command)
 {
     _sendCommand = command;
-    if (command != nullptr)
+    if (!command.isEmpty())
     {
         LogHandler::Debug("Sending to Deo/Heresphere: "+command);
         QByteArray currentRequest(4, '\0');
         currentRequest.append(command.toUtf8());
-        tcpSocket->write(currentRequest, currentRequest.size());
-        tcpSocket->waitForBytesWritten();
+        tcpSocket.write(currentRequest, currentRequest.size());
+        tcpSocket.waitForBytesWritten();
     }
     else
     {
         //LogHandler::Debug("Sending Deo/Heresphere keep alive");
         QByteArray data(4, '\0');
-        tcpSocket->write(data, data.size());
-        tcpSocket->waitForBytesWritten();
+        tcpSocket.write(data, data.size());
+        tcpSocket.waitForBytesWritten();
     }
-    tcpSocket->flush();
+    tcpSocket.flush();
 }
 
 void HereSphereHandler::sendPacket(InputDevicePacket packet) {
@@ -98,17 +95,13 @@ void HereSphereHandler::tearDown()
 
     _isConnected = false;
     _isPlaying = false;
-    if (keepAliveTimer != nullptr)
-        disconnect(keepAliveTimer, &QTimer::timeout, this, &HereSphereHandler::sendKeepAlive);
-    if (keepAliveTimer != nullptr && keepAliveTimer->isActive())
-        keepAliveTimer->stop();
-    if (tcpSocket != nullptr)
-    {
-        disconnect(tcpSocket, &QTcpSocket::stateChanged, this, &HereSphereHandler::onSocketStateChange);
-        disconnect(tcpSocket, &QTcpSocket::errorOccurred, this, &HereSphereHandler::tcpErrorOccured);
-        if (tcpSocket->isOpen())
-            tcpSocket->disconnectFromHost();
-    }
+    disconnect(&keepAliveTimer, &QTimer::timeout, this, &HereSphereHandler::sendKeepAlive);
+    if (keepAliveTimer.isActive())
+        keepAliveTimer.stop();
+    disconnect(&tcpSocket, &QTcpSocket::stateChanged, this, &HereSphereHandler::onSocketStateChange);
+    disconnect(&tcpSocket, &QTcpSocket::errorOccurred, this, &HereSphereHandler::tcpErrorOccured);
+    if (tcpSocket.isOpen())
+        tcpSocket.disconnectFromHost();
 }
 
 void HereSphereHandler::messageSend(QByteArray message) {
@@ -116,8 +109,8 @@ void HereSphereHandler::messageSend(QByteArray message) {
 }
 void HereSphereHandler::readData()
 {
-    QByteArray datagram = tcpSocket->readAll();
-    QByteArray header = datagram.remove(0, 4);
+    QByteArray datagram = tcpSocket.readAll();
+    datagram.remove(0, 4);
 
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(datagram, &error);
@@ -147,7 +140,7 @@ void HereSphereHandler::readData()
 //        LogHandler::Debug("Deo playbackSpeed: "+QString::number(playbackSpeed));
 //        LogHandler::Debug("Deo playing: "+QString::number(playing));
         _mutex.lock();
-        currentPacket = new InputDevicePacket
+        currentPacket =
         {
             path,
             duration,
@@ -160,7 +153,7 @@ void HereSphereHandler::readData()
         _currentTime = currentTime;
         //LogHandler::Debug("Deo _isPlaying: "+QString::number(_isPlaying));
         _mutex.unlock();
-        emit messageRecieved(*currentPacket);
+        emit messageRecieved(currentPacket);
 
     }
 }
@@ -191,15 +184,7 @@ bool HereSphereHandler::isPlaying()
 InputDevicePacket HereSphereHandler::getCurrentPacket()
 {
     const QMutexLocker locker(&_mutex);
-    InputDevicePacket blankPacket = {
-        NULL,
-        0,
-        0,
-        0,
-        0,
-        0
-    };
-    return (currentPacket == nullptr) ? blankPacket : *currentPacket;
+    return !_isConnected ? blankPacket : currentPacket;
 }
 
 void HereSphereHandler::onSocketStateChange (QAbstractSocket::SocketState state)
@@ -208,41 +193,24 @@ void HereSphereHandler::onSocketStateChange (QAbstractSocket::SocketState state)
     switch(state) {
         case QAbstractSocket::SocketState::ConnectedState:
         {
-            //_mutex.lock();
             _isConnected = true;
+            m_connectTries = 0;
             LogHandler::Debug("Deo/HereSphere connected");
             send(nullptr);
-            if (keepAliveTimer != nullptr && keepAliveTimer->isActive())
-                keepAliveTimer->stop();
-            keepAliveTimer = new QTimer(this);
-            //_mutex.unlock();
-            connect(keepAliveTimer, &QTimer::timeout, this, &HereSphereHandler::sendKeepAlive);
-            keepAliveTimer->start(1000);
-            connect(tcpSocket, &QTcpSocket::readyRead, this, &HereSphereHandler::readData);
+            if (keepAliveTimer.isActive())
+                keepAliveTimer.stop();
+            connect(&keepAliveTimer, &QTimer::timeout, this, &HereSphereHandler::sendKeepAlive);
+            keepAliveTimer.start(1000);
+            connect(&tcpSocket, &QTcpSocket::readyRead, this, &HereSphereHandler::readData);
             emit connectionChange({DeviceType::Input, DeviceName::HereSphere, ConnectionStatus::Connected, "Connected"});
             break;
         }
         case QAbstractSocket::SocketState::UnconnectedState:
         {
-//            //_mutex.lock();
-//            _isConnected = false;
-//            _isPlaying = false;
-//            //_mutex.unlock();
-//            if (keepAliveTimer != nullptr)
-//            {
-//                disconnect(keepAliveTimer, &QTimer::timeout, this, &DeoHandler::sendKeepAlive);
-//            }
-//            if (keepAliveTimer != nullptr && keepAliveTimer->isActive())
-//            {
-//                keepAliveTimer->stop();
-//            }
+            _isConnected = false;
             if(SettingsHandler::getSelectedInputDevice() == DeviceName::HereSphere)
             {
-                LogHandler::Debug("HereSphere retrying: " + _address.address);
-//                LogHandler::Debug("port: " + QString::number(_address.port));
-//                QHostAddress addressObj;
-//                addressObj.setAddress(_address.address);
-//                tcpSocket->connectToHost(addressObj, _address.port);
+                LogHandler::Debug("HereSphere retrying: " +QString::number(m_connectTries) + " " + _address.address);
                 tearDown();
                 QTimer::singleShot(2000, [this] () {
                     init(_address, _waitTimeout);
@@ -291,122 +259,122 @@ void HereSphereHandler::tcpErrorOccured(QAbstractSocket::SocketError state)
     {
         case QAbstractSocket::SocketError::AddressInUseError:
         {
-            LogHandler::Error("Deo/HereSphere AddressInUseError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere AddressInUseError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::ConnectionRefusedError:
         {
-            LogHandler::Error("Deo/HereSphere ConnectionRefusedError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ConnectionRefusedError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::DatagramTooLargeError:
         {
-            LogHandler::Error("Deo/HereSphere DatagramTooLargeError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere DatagramTooLargeError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::HostNotFoundError:
         {
-            LogHandler::Error("Deo/HereSphere HostNotFoundError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere HostNotFoundError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::NetworkError:
         {
-            LogHandler::Error("Deo/HereSphere NetworkError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere NetworkError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::OperationError:
         {
-            LogHandler::Error("Deo/HereSphere OperationError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere OperationError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyAuthenticationRequiredError:
         {
-            LogHandler::Error("Deo/HereSphere ProxyAuthenticationRequiredError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyAuthenticationRequiredError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyConnectionClosedError:
         {
-            LogHandler::Error("Deo/HereSphere ProxyConnectionClosedError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyConnectionClosedError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyConnectionRefusedError:
         {
-            LogHandler::Error("Deo/HereSphere ProxyConnectionRefusedError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyConnectionRefusedError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyConnectionTimeoutError:
         {
-            LogHandler::Error("Deo/HereSphere ProxyConnectionTimeoutError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyConnectionTimeoutError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyNotFoundError:
         {
-            LogHandler::Error("Deo/HereSphere ProxyNotFoundError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyNotFoundError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::ProxyProtocolError:
         {
-            LogHandler::Error("Deo/HereSphere ProxyProtocolError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere ProxyProtocolError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::RemoteHostClosedError:
         {
-            LogHandler::Error("Deo/HereSphere RemoteHostClosedError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere RemoteHostClosedError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::SocketAccessError:
         {
-            LogHandler::Error("Deo/HereSphere SocketAccessError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SocketAccessError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::SocketAddressNotAvailableError:
         {
-            LogHandler::Error("Deo/HereSphere SocketAddressNotAvailableError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SocketAddressNotAvailableError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::SocketResourceError:
         {
-            LogHandler::Error("Deo/HereSphere SocketResourceError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SocketResourceError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::SocketTimeoutError:
         {
-            LogHandler::Error("Deo/HereSphere SocketTimeoutError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SocketTimeoutError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::SslHandshakeFailedError:
         {
-            LogHandler::Error("Deo/HereSphere SslHandshakeFailedError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SslHandshakeFailedError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::SslInternalError:
         {
-            LogHandler::Error("Deo/HereSphere SslInternalError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SslInternalError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::SslInvalidUserDataError:
         {
-            LogHandler::Error("Deo/HereSphere SslInvalidUserDataError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere SslInvalidUserDataError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::TemporaryError:
         {
-            LogHandler::Error("Deo/HereSphere TemporaryError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere TemporaryError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::UnfinishedSocketOperationError:
         {
-            LogHandler::Error("Deo/HereSphere UnfinishedSocketOperationError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere UnfinishedSocketOperationError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::UnknownSocketError:
         {
-            LogHandler::Error("Deo/HereSphere UnknownSocketError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere UnknownSocketError: "+tcpSocket.errorString());
             break;
         }
         case QAbstractSocket::SocketError::UnsupportedSocketOperationError:
         {
-            LogHandler::Error("Deo/HereSphere UnsupportedSocketOperationError: "+tcpSocket->errorString());
+            LogHandler::Error("Deo/HereSphere UnsupportedSocketOperationError: "+tcpSocket.errorString());
             break;
         }
     }

@@ -9,6 +9,7 @@
 
 #include "../struct/LibraryListItem27.h"
 #include "../struct/ScriptInfo.h"
+#include "xvideopreview.h"
 
 #include "XTEngine_global.h"
 
@@ -25,14 +26,17 @@ signals:
     void libraryLoaded();
     void libraryStopped();
     void libraryChange();
-    void itemAdded(LibraryListItem27 item, int index, int newSize);
-    void itemRemoved(LibraryListItem27 item, int index, int newSize);
-    void itemUpdated(LibraryListItem27 item, int index);
+    void itemAdded(int index, int newSize);
+    void itemRemoved(int index, int newSize);
+    void itemUpdated(int index, QVector<int> roles);
     void alternateFunscriptsFound(QList<ScriptInfo> scriptInfos);
     //void playListItem(LibraryListItem27 item);
 
+    void backgroundProcessStateChange(QString message, float percentage);
     void thumbProcessBegin();
     void thumbProcessEnd();
+    void metadataProcessBegin();
+    void metadataProcessEnd();
     void saveNewThumbLoading(LibraryListItem27 item);
     void saveNewThumb(LibraryListItem27 item, bool vrMode, QString thumbFile);
     void saveThumbError(LibraryListItem27 item, bool vrMode, QString error);
@@ -43,13 +47,15 @@ public:
     MediaLibraryHandler(QObject* parent = nullptr);
     ~MediaLibraryHandler();
     void saveSingleThumb(QString id, qint64 position = 0);
+    bool thumbProcessRunning();
     void startThumbProcess(bool vrMode = false);
     void stopThumbProcess();
     void loadLibraryAsync();
     bool isLibraryLoading();
     void stopLibraryLoading();
     LibraryListItem27 setupPlaylistItem(QString name);
-    void updateItem(LibraryListItem27 item);
+    void updateItem(LibraryListItem27 item, QVector<int> roles, bool notify = true);
+    void updateItem(int index, QVector<int> roles);
     void removeFromCache(LibraryListItem27 item);
     void addItemFront(LibraryListItem27 item);
     void addItemBack(LibraryListItem27 item);
@@ -69,6 +75,8 @@ public:
     LibraryListItem27* findItemByPartialMediaPath(QString partialMediaPath);
     LibraryListItem27* findItemByThumbPath(QString thumbPath);
     LibraryListItem27* findItemByPartialThumbPath(QString partialThumbPath);
+    LibraryListItem27* findItemBySubtitle(QString subtitle);
+    LibraryListItem27* findItemByPartialSubtitle(QString partialSubtitle);
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
     void updateToolTip(LibraryListItem27 &item, bool scriptDiscovery = false);
@@ -82,6 +90,7 @@ private:
     int _thumbNailSearchIterator = 0;
     QList<LibraryListItem27> _cachedLibraryItems;
     //QList<LibraryListItem27> _cachedVRItems;
+    QFuture<void> _metadataFuture;
     QFuture<void> _loadingLibraryFuture;
     QTimer _thumbTimeoutTimer;
     QMutex _mutex;
@@ -100,10 +109,12 @@ private:
     void assignID(LibraryListItem27 &item);
 
     LibraryListItem27 createLibraryListItemFromFunscript(QString funscript);
-    void discoverMFS1(LibraryListItem27 &item);
-    void discoverMFS2(LibraryListItem27 &item);
+    void startMetadataProcess();
+    void stopMetadataProcess();
+    bool discoverMFS1(LibraryListItem27 &item);
+    bool discoverMFS2(LibraryListItem27 &item);
 
-
+    XVideoPreview xVideoPreview;
 
 };
 

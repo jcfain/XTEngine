@@ -1,5 +1,5 @@
-#ifndef VRPACKET_H
-#define VRPACKET_H
+#ifndef INPUTDEVICEPACKET_H
+#define INPUTDEVICEPACKET_H
 #include <QString>
 #include <QMetaType>
 
@@ -14,4 +14,4 @@ struct InputDevicePacket
 };
 
 Q_DECLARE_METATYPE(InputDevicePacket);
-#endif // DEOPACKET_H
+#endif // INPUTDEVICEPACKET_H

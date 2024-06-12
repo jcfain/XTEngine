@@ -96,9 +96,9 @@ private:
     QFuture<void> _funscriptMediaFuture;
     QFuture<void> _funscriptVRFuture;
     QFuture<void> _funscriptStandAloneFuture;
+    QFuture<void> _funscriptSearchFuture;
     QList<QString> _invalidScripts;
 
-    bool _funscriptSearchRunning = false;
     bool _funscriptSearchNotFound = false;
     QString _lastSearchedMediaPath;
 

@@ -1,8 +1,6 @@
 #ifndef CRYPTHANDLER_H
 #define CRYPTHANDLER_H
 
-#include "XTEngine_global.h"
-
 #include <QObject>
 #include <QCryptographicHash>
 #include "XTEngine_global.h"

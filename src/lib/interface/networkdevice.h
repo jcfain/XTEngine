@@ -9,7 +9,7 @@ class XTENGINE_EXPORT NetworkDevice : public OutputDeviceHandler
 {
 
 public:
-    explicit NetworkDevice(QObject *parent = nullptr) : OutputDeviceHandler(parent) {
+    explicit NetworkDevice(QObject *parent = nullptr) : OutputDeviceHandler(DeviceName::Network, parent) {
 
     };
     ~NetworkDevice() {};

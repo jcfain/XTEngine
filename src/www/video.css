@@ -2,6 +2,7 @@
    #Custom HTML5 Video Player
    ========================================================================== 
    MIT https://github.com/Freshman-tech/custom-html5-video/
+   Modifications Jason Fain
    */
 
 .video-container {
@@ -12,7 +13,7 @@
     position: sticky;
     position: -webkit-sticky;
     top: 0;
-    z-index: 5;
+    z-index: 14;
 }
 
 video {

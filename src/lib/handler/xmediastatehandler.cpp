@@ -49,9 +49,25 @@ void XMediaStateHandler::stop()
     m_playingItem = LibraryListItem27();
 }
 
+void XMediaStateHandler::updateDuration(qint64 currentPos, qint64 duration)
+{
+    const qint64 timeLeft = duration - currentPos;
+    const qint64 viewedThreshold = duration * SettingsHandler::viewedThreshold();
+    if(duration > 0 && currentPos > -1 && timeLeft < viewedThreshold)
+    {
+        auto metadata = SettingsHandler::getLibraryListItemMetaData(m_playingItem);
+        if(!metadata.tags.contains(SettingsHandler::getXTags().VIEWED))
+        {
+            metadata.tags.removeAll(SettingsHandler::getXTags().UNVIEWED);
+            metadata.tags.append(SettingsHandler::getXTags().VIEWED);
+            SettingsHandler::updateLibraryListItemMetaData(metadata);
+        }
+    }
+}
+
 void XMediaStateHandler::processMetaData()
 {
-    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(m_playingItem.path);
+    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(m_playingItem);
     SettingsHandler::setLiveOffset(libraryListItemMetaData.offset);
 }
 

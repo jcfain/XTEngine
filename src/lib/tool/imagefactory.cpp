@@ -49,7 +49,7 @@ void ImageFactory::clearCache() {
 
 QSize ImageFactory::calculateMaxSize(QSize size)
 {
-    return {size.width(), (int)round(size.height()-size.height()/3.5)};
+    return {size.width(), (int)qRound(size.height()-size.height()/3.5)};
 }
 
 QHash<QString, QPixmap> ImageFactory::_imageCache;

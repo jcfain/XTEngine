@@ -6,6 +6,7 @@
 #include <QVariant>
 #include <QDataStream>
 #include <QJsonObject>
+#include <QJsonArray>
 #include "XTEngine_global.h"
 
 
@@ -41,7 +42,7 @@ public:
         name = item->name;
         nameNoExtension = item->nameNoExtension;
         script = item->script;
-        scriptNoExtension = item->scriptNoExtension;
+        pathNoExtension = item->pathNoExtension;
         mediaExtension = item->mediaExtension;
         thumbFile = item->thumbFile;
         zipFile = item->zipFile;
@@ -49,28 +50,37 @@ public:
         duration = item->duration;
         ID = item->ID;
         libraryPath = item->libraryPath;
+        hasScript = item->hasScript;
+        MFSScripts = item->MFSScripts;
+        subtitle = item->subtitle;
         isMFS = item->isMFS;
         toolTip = item->toolTip;
         thumbState = item->thumbState;
         thumbFileExists = item->thumbFileExists;
         managedThumb = item->managedThumb;
+        thumbNails = item->thumbNails;
+        thumbFileLoading = item->thumbFileLoading;
+        thumbFileLoadingCurrent = item->thumbFileLoadingCurrent;
+        thumbFileError = item->thumbFileError;
     }
     LibraryListItemType type;
     QString path;
     QString name;
     QString nameNoExtension;
     QString script;
-    QString scriptNoExtension;
+    QString pathNoExtension;
     QString mediaExtension;
     QString thumbFile;
     QString zipFile;
     QDate modifiedDate;
     quint64 duration;
+    QString md5;
 
     // Live members
     QString ID;
     QString libraryPath;
     bool hasScript;
+    QString subtitle;
     QStringList MFSScripts;
     bool isMFS;
     QString toolTip;
@@ -90,12 +100,14 @@ public:
         dataStream << object.name;
         dataStream << object.nameNoExtension;
         dataStream << object.script;
-        dataStream << object.scriptNoExtension;
+        dataStream << object.pathNoExtension;
+        dataStream << object.subtitle;
         dataStream << object.mediaExtension;
         dataStream << object.thumbFile;
         dataStream << object.zipFile;
         dataStream << object.modifiedDate;
         dataStream << object.duration;
+        dataStream << object.md5;
         dataStream << object.isMFS;
         dataStream << object.libraryPath;
         dataStream << object.toolTip;
@@ -115,12 +127,14 @@ public:
         dataStream >> object.name;
         dataStream >> object.nameNoExtension;
         dataStream >> object.script;
-        dataStream >> object.scriptNoExtension;
+        dataStream >> object.pathNoExtension;
+        dataStream >> object.subtitle;
         dataStream >> object.mediaExtension;
         dataStream >> object.thumbFile;
         dataStream >> object.zipFile;
         dataStream >> object.modifiedDate;
         dataStream >> object.duration;
+        dataStream >> object.md5;
         dataStream >> object.isMFS;
         dataStream >> object.libraryPath;
         dataStream >> object.toolTip;
@@ -143,18 +157,53 @@ public:
         return fromJson(obj);
     }
 
-    static QVariant toVariant(LibraryListItem27 item)
+    static QJsonObject toJson(const LibraryListItem27 item)
     {
         QJsonObject obj;
-        //obj["id"] = item.ID;
         obj["path"] = item.path;
         obj["duration"] = QString::number(item.duration);
+        obj["md5"] = item.md5;
         obj["mediaExtension"] = item.mediaExtension;;
         obj["modifiedDate"] = item.modifiedDate.toString();
         obj["name"] = item.name;
         obj["nameNoExtension"] = item.nameNoExtension;
         obj["script"] = item.script;
-        obj["scriptNoExtension"] = item.scriptNoExtension;
+        obj["scriptNoExtension"] = item.pathNoExtension;
+        obj["thumbFile"] = item.thumbFile;
+        obj["type"] = (int)item.type;
+        obj["zipFile"] = item.zipFile;
+
+        //Live
+        obj["id"] = item.ID;
+        obj["libraryPath"] = item.libraryPath;
+        obj["hasScript"] = item.hasScript;
+        QJsonArray mfsScripts;
+        foreach (auto script, item.MFSScripts) {
+            mfsScripts.append(script);
+        }
+        obj["MFSScripts"] = mfsScripts;
+        obj["isMFS"] = item.isMFS;
+        obj["tooltip"] = item.toolTip;
+        obj["thumbState"] = (int)item.thumbState;
+        obj["thumbFileExists"] = item.thumbFileExists;
+        obj["managedThumb"] = item.managedThumb;
+        obj["subtitle"] = item.subtitle;
+        return obj;
+    }
+
+    static QVariant toVariant(const LibraryListItem27 item)
+    {
+        QJsonObject obj;
+        //obj["id"] = item.ID;
+        obj["path"] = item.path;
+        obj["duration"] = QString::number(item.duration);
+        obj["md5"] = item.md5;
+        obj["mediaExtension"] = item.mediaExtension;;
+        obj["modifiedDate"] = item.modifiedDate.toString();
+        obj["name"] = item.name;
+        obj["nameNoExtension"] = item.nameNoExtension;
+        obj["script"] = item.script;
+        obj["scriptNoExtension"] = item.pathNoExtension;
         obj["thumbFile"] = item.thumbFile;
         obj["type"] = (int)item.type;
         obj["zipFile"] = item.zipFile;
@@ -163,32 +212,34 @@ public:
         return QVariant::fromValue(obj);
      }
 
-    static LibraryListItem27 fromJson(QJsonObject obj) {
+    static LibraryListItem27 fromJson(const QJsonObject obj) {
         LibraryListItem27 newItem;
         //newItem.ID = obj["id"].toInt();
         newItem.path = obj["path"].toString();
         newItem.duration = obj["path"].toString().toLongLong();
+        newItem.md5 = obj["md5"].toString();
         newItem.mediaExtension = obj["mediaExtension"].toString();
         newItem.modifiedDate = QDate::fromString(obj["modifiedDate"].toString());
         newItem.name = obj["name"].toString();
         newItem.nameNoExtension = obj["nameNoExtension"].toString();
         newItem.script = obj["script"].toString();
-        newItem.scriptNoExtension = obj["scriptNoExtension"].toString();
+        newItem.pathNoExtension = obj["scriptNoExtension"].toString();
         newItem.thumbFile = obj["thumbFile"].toString();
         newItem.type = (LibraryListItemType)obj["type"].toInt();
         newItem.zipFile = obj["zipFile"].toString();
         return newItem;
     }
 
-    static void copyProperties(LibraryListItem27 from, LibraryListItem27 &to) {
+    static void copyProperties(const LibraryListItem27 from, LibraryListItem27 &to) {
         to.path = from.path;
         to.duration = from.duration;
+        to.md5 = from.md5;
         to.mediaExtension = from.mediaExtension;
         to.modifiedDate = from.modifiedDate;
         to.name = from.name;
         to.nameNoExtension = from.nameNoExtension;
         to.script = from.script;
-        to.scriptNoExtension = from.scriptNoExtension;
+        to.pathNoExtension = from.pathNoExtension;
         to.thumbFile = from.thumbFile;
         to.type = from.type;
         to.zipFile = from.zipFile;
@@ -202,6 +253,7 @@ public:
         to.thumbState = from.thumbState;
         to.thumbFileExists = from.thumbFileExists;
         to.managedThumb = from.managedThumb;
+        to.subtitle = from.subtitle;
     }
 //    //waiting ? "://images/icons/loading.png" : "://images/icons/loading_current.png"
 };

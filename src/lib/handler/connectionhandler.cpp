@@ -57,21 +57,29 @@ bool ConnectionHandler::isInputDeviceConnected()
 void ConnectionHandler::setOutputDevice(OutputDeviceHandler* device)
 {
     if(!device && _outputDevice) {
-        disconnect(_outputDevice, &OutputDeviceHandler::connectionChange, nullptr, nullptr);
-        disconnect(_outputDevice, &OutputDeviceHandler::commandRecieve, nullptr, nullptr);
+        disconnect(_outputDevice, &OutputDeviceHandler::connectionChange, this, nullptr);
+        disconnect(_outputDevice, &OutputDeviceHandler::commandRecieve, this, nullptr);
         _outputDevice->dispose();
     }
     _outputDevice = device;
     if(_outputDevice) {
         connect(_outputDevice, &OutputDeviceHandler::connectionChange, this, &ConnectionHandler::on_output_connectionChanged, Qt::UniqueConnection);
-        connect(_outputDevice, &OutputDeviceHandler::commandRecieve, this, &ConnectionHandler::action);
+        connect(_outputDevice, &OutputDeviceHandler::commandRecieve, this, &ConnectionHandler::outputMessageRecieved);
+        connect(_outputDevice, &OutputDeviceHandler::commandRecieve, this, [this](OutputDevicePacket packet) {
+            if(!packet.original.isEmpty()) {
+                auto actions = SettingsHandler::getTCodeCommandMapCommands(packet.original);
+                foreach(QString actionValue, actions) {
+                    emit action(actionValue);
+                }
+            }
+        });
     }
 }
 void ConnectionHandler::setInputDevice(InputDeviceHandler* device)
 {
     if(!device && _inputDevice) {
-        disconnect(_inputDevice, &InputDeviceHandler::connectionChange, nullptr, nullptr);
-        disconnect(_inputDevice, &InputDeviceHandler::messageRecieved, nullptr, nullptr);
+        disconnect(_inputDevice, &InputDeviceHandler::connectionChange, this, nullptr);
+        disconnect(_inputDevice, &InputDeviceHandler::messageRecieved, this, nullptr);
         _inputDevice->dispose();
     }
     _inputDevice = device;
@@ -79,10 +87,11 @@ void ConnectionHandler::setInputDevice(InputDeviceHandler* device)
         connect(_inputDevice, &InputDeviceHandler::connectionChange, this, &ConnectionHandler::on_input_connectionChanged, Qt::UniqueConnection);
         connect(_inputDevice, &InputDeviceHandler::messageRecieved, this, [this](InputDevicePacket packet){
             if(_inputDevice->isConnected())
-                emit messageRecieved(packet);
+                emit inputMessageRecieved(packet);
         });
     }
 }
+
 OutputDeviceHandler* ConnectionHandler::getSelectedOutputDevice() {
     return _outputDevice;
 }
@@ -125,7 +134,7 @@ void ConnectionHandler::stopOutputDevice()
 
 void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
 {
-    if (_outputDevice && _outputDevice->isRunning())
+    if (_outputDevice && _outputDevice->isConnected())
     {
         _outputDevice->dispose();
         disconnect(_outputDevice, &OutputDeviceHandler::connectionChange, nullptr, nullptr);
@@ -142,9 +151,7 @@ void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
     else if(outputDevice == DeviceName::Serial)
     {
         setOutputDevice(_serialHandler);
-        _initFuture = QtConcurrent::run([this]() {
-            _serialHandler->init(SettingsHandler::getSerialPort());
-        });
+        _serialHandler->init(SettingsHandler::getSerialPort());
     }
     else if (outputDevice == DeviceName::Network)
     {

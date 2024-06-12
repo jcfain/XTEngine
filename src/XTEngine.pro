@@ -80,10 +80,12 @@ HEADERS += \
     lib/lookup/AxisType.h \
     lib/lookup/GamepadAxisNames.h \
     lib/lookup/MediaActions.h \
+    lib/lookup/TCodeCommand.h \
     lib/lookup/TCodeVersion.h \
     lib/lookup/XMedia.h \
     lib/lookup/enum.h \
     lib/lookup/tcodechannellookup.h \
+    lib/lookup/xtags.h \
     lib/lookup/xvideorenderer.h \
     lib/struct/Bookmark.h \
     lib/struct/ChannelModel.h \
@@ -97,9 +99,11 @@ HEADERS += \
     lib/struct/LibraryListItemMetaData.h \
     lib/struct/LibraryListItemMetaData258.h \
     lib/struct/NetworkAddress.h \
+    lib/struct/OutputDevicePacket.h \
     lib/struct/ScriptInfo.h \
     lib/struct/SerialComboboxItem.h \
     lib/struct/InputDevicePacket.h \
+    lib/tool/array-util.h \
     lib/tool/boolinq.h \
     lib/tool/heatmap.h \
     lib/tool/imagefactory.h \
@@ -108,6 +112,7 @@ HEADERS += \
     lib/tool/tcodefactory.h \
     lib/tool/videoformat.h \
     lib/tool/xmath.h \
+    lib/tool/xnetwork.h \
     lib/tool/xtimer.h \
     xtengine.h
 

@@ -50,6 +50,8 @@ public:
     // QFuture<QHttpServerResponse> handleAvailableSerialPorts(const QHttpServerRequest& request);
     // QFuture<QHttpServerResponse> handleSettingsUpdate(const QHttpServerRequest& request);
     // QFuture<QHttpServerResponse> handleMediaItemMetadataUpdate(const QHttpServerRequest& request);
+    
+    //HttpPromise handleSubtitle(HttpDataPtr data);
 
     // //HttpPromise handleChannelsUpdate(HttpDataPtr data);
     // QFuture<QHttpServerResponse> handleDeviceConnected(const QHttpServerRequest& request);
@@ -74,6 +76,8 @@ private:
     QStringList m_authenticatedForMedia;
     QTimer m_sessionPolice;
     int m_sessionTimeout = 900; // 15 Min
+    QString m_hostAddress;
+    QFuture<void> m_hlsFuture;
 
     QJsonObject createMediaObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);
