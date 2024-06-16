@@ -123,6 +123,8 @@ void WebSocketHandler::processTextMessage(QString message)
         emit saveSingleThumb(itemID, pos);
     } else if (command == "reloadLibrary") {
         emit reloadLibrary();
+    } else if(command == "startMetadataProcess") {
+        emit startMetadataProcess();
     }
 }
 

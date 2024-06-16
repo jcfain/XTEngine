@@ -45,3 +45,20 @@ function closeAlertWindow() {
 		alertModalBody.innerText = undefined;
 	}, 275)
 }
+
+function createCheckBoxDiv(id, name, value, labelText, onCheckedChange) {
+	const divNode = document.createElement("div");
+	const label = document.createElement("label");
+	label.innerText = labelText;
+	label.setAttribute("for", id);
+	const checkbox = document.createElement("input");
+	checkbox.type = "checkbox";
+	checkbox.value = value;
+	//checkbox.classList.add("styled-checkbox");
+	checkbox.id = id;
+	checkbox.name = name;
+	checkbox.onclick = onCheckedChange(checkbox);
+	divNode.appendChild(checkbox);
+	divNode.appendChild(label);
+	return divNode;
+}

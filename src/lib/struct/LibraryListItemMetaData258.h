@@ -20,6 +20,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     qint64 lastLoopEnd;
     int offset;
     qint64 moneyShotMillis;
+    QString toolTip;
     QList<Bookmark> bookmarks;
     QList<QString> funscripts;
     QList<QString> tags;
@@ -34,6 +35,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream << object.lastLoopEnd;
         dataStream << object.offset;
         dataStream << object.moneyShotMillis;
+        dataStream << object.toolTip;
         foreach(auto bookmark, object.bookmarks )
             dataStream << bookmark;
         foreach(auto funscript, object.funscripts )
@@ -53,6 +55,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream >> object.lastLoopEnd;
         dataStream >> object.offset;
         dataStream >> object.moneyShotMillis;
+        dataStream >> object.toolTip;
         foreach(auto bookmark, object.bookmarks )
             dataStream >> bookmark;
         foreach(auto funscript, object.funscripts )
@@ -108,6 +111,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         obj["offset"] = item.offset;
         obj["moneyShotMillis"] = QString::number(item.moneyShotMillis);
         obj["moneyShotSecs"] = item.moneyShotMillis / 1000;
+        obj["toolTip"] = item.toolTip;
         QJsonArray bookmarks;
         foreach(Bookmark bookmark, item.bookmarks) {
             QJsonObject bookmarkObj;
@@ -139,6 +143,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         newItem.lastLoopEnd = obj["lastLoopEnd"].toString().toLongLong();
         newItem.offset = obj["offset"].toInt();
         newItem.moneyShotMillis = obj["moneyShotMillis"].toString().toLongLong();
+        newItem.toolTip = obj["toolTip"].toString();
         foreach(auto bookmark, obj["bookmarks"].toArray())
         {
             Bookmark bookMark;

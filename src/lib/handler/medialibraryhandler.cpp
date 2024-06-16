@@ -11,7 +11,9 @@ MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     _thumbTimeoutTimer.setSingleShot(true);
     connect(this, &MediaLibraryHandler::prepareLibraryLoad, this, &MediaLibraryHandler::onPrepareLibraryLoad);
     connect(this, &MediaLibraryHandler::libraryLoaded, this, &MediaLibraryHandler::onLibraryLoaded);
-    connect(this, &MediaLibraryHandler::thumbProcessEnd, this, &MediaLibraryHandler::startMetadataProcess);
+    connect(this, &MediaLibraryHandler::thumbProcessEnd, this, [this]() {
+        MediaLibraryHandler::startMetadataProcess(SettingsHandler::getForceMetaDataFullProcess());
+    });
 }
 
 MediaLibraryHandler::~MediaLibraryHandler()
@@ -390,23 +392,23 @@ void MediaLibraryHandler::stopMetadataProcess()
     }
 }
 
-void MediaLibraryHandler::startMetadataProcess()
+void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
 {
     if(!_cachedLibraryItems.count())
         return;
     LogHandler::Debug("Start metadata process");
     emit metadataProcessBegin();
     emit backgroundProcessStateChange("Processing metadata...", -1);
-    _metadataFuture = QtConcurrent::run([this](){
+    _metadataFuture = QtConcurrent::run([this, fullProcess](){
         XTags tags = SettingsHandler::getXTags();
         bool saveSettings = false;
         auto cachedLibraryItems = _cachedLibraryItems;
         auto allMetadata = SettingsHandler::getLibraryListItemMetaData();
         emit backgroundProcessStateChange("Cleaning metadata...", -1);
-        auto keys = allMetadata.keys();
+        auto allMetadatakeys = allMetadata.keys();
         auto allTags = SettingsHandler::getTags();
         bool metadataChanged = false;
-        foreach (auto key, keys) {
+        foreach (auto key, allMetadatakeys) {
             if(_metadataFuture.isCanceled()) {
                 LogHandler::Debug("Cancel metadata process");
                 emit metadataProcessEnd();
@@ -423,20 +425,54 @@ void MediaLibraryHandler::startMetadataProcess()
                     metadataChanged = true;
                 }
             }
-            float percentage = round(((float)keys.indexOf(key)/keys.length()) * 100);
+            float percentage = round(((float)allMetadatakeys.indexOf(key)/allMetadatakeys.length()) * 100);
             emit backgroundProcessStateChange("Cleaning metadata", percentage);
         }
 
-        foreach (auto item, cachedLibraryItems) {
+        foreach (LibraryListItem27 item, cachedLibraryItems) {
             if(_metadataFuture.isCanceled()) {
                 LogHandler::Debug("Cancel metadata process");
                 emit metadataProcessEnd();
                 emit backgroundProcessStateChange(nullptr, -1);
                 return;
             }
+
             QVector<int> rolesChanged;
-            //int index = cachedLibraryItems.indexOf(item);
-            //auto realItem = &_cachedLibraryItems[index];
+            LibraryListItemMetaData258 metadata = processMetadata(item, metadataChanged, rolesChanged, fullProcess);
+            if(rolesChanged.count()) {
+                updateItem(item, rolesChanged);
+            }
+
+            if(metadataChanged) {
+                saveSettings = true;
+                SettingsHandler::updateLibraryListItemMetaData(metadata, false);
+            }
+
+            float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
+            emit backgroundProcessStateChange("Processing metadata", percentage);
+        }
+        if(saveSettings)
+            SettingsHandler::Save();
+        LogHandler::Debug("End metadata process");
+        emit metadataProcessEnd();
+        emit backgroundProcessStateChange(nullptr, -1);
+        SettingsHandler::setForceMetaDataFullProcessComplete();
+    });
+}
+
+LibraryListItemMetaData258 MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess)
+{
+    LibraryListItemMetaData258 metadata;
+    bool hasExistingMetadata = SettingsHandler::hasLibraryListItemMetaData(item);
+    if(!hasExistingMetadata || fullProcess)// path is ID for metadata
+    {
+        if(updateToolTip(item)) {
+            if(!rolesChanged.contains(Qt::ToolTipRole))
+                rolesChanged.append(Qt::ToolTipRole);
+        }
+
+        if(item.type != LibraryListItemType::PlaylistInternal)
+        {
             if(!item.isMFS && discoverMFS2(item)) {
                 if(!rolesChanged.contains(Qt::DisplayRole))
                     rolesChanged.append(Qt::DisplayRole);
@@ -459,89 +495,101 @@ void MediaLibraryHandler::startMetadataProcess()
                     break;
                 }
             }
+            metadata = SettingsHandler::getLibraryListItemMetaData(item);
+            if(metadata.toolTip != item.toolTip) {
+                metadataChanged = true;
+                metadata.toolTip = item.toolTip;
+            }
 
-            if(!item.path.isEmpty())// path is ID for metadata
+            if(item.isMFS && !metadata.tags.contains(XTags::MFS)) {
+                metadata.tags.append(XTags::MFS);
+                metadataChanged = true;
+            }
+            else if(!item.isMFS && metadata.tags.contains(XTags::MFS)) {
+                metadata.tags.removeAll(XTags::MFS);
+                metadataChanged = true;
+            }
+
+            auto userTags = SettingsHandler::getTags();
+
+            if(item.type == LibraryListItemType::Video &&
+                userTags.contains(XTags::VIDEO_2D) &&
+                !metadata.tags.contains(XTags::VIDEO_2D)) {
+                metadata.tags.append(XTags::VIDEO_2D);
+                metadataChanged = true;
+            } else if(item.type == LibraryListItemType::VR &&
+                       userTags.contains(XTags::VR) &&
+                       !metadata.tags.contains(XTags::VR)) {
+                metadata.tags.append(XTags::VR);
+                metadataChanged = true;
+            } else if(item.type == LibraryListItemType::Audio &&
+                       userTags.contains(XTags::AUDIO) &&
+                       !metadata.tags.contains(XTags::AUDIO)) {
+                metadata.tags.append(XTags::AUDIO);
+                metadataChanged = true;
+            } else if(item.type == LibraryListItemType::FunscriptType &&
+                       userTags.contains(XTags::FUNSCRIPT) &&
+                       !metadata.tags.contains(XTags::FUNSCRIPT)) {
+                metadata.tags.append(XTags::FUNSCRIPT);
+                metadataChanged = true;
+            }
+            // Playlists do not have a way to link to metadata atm.
+            // else if(item.type == LibraryListItemType::PlaylistInternal && !metadata.tags.contains(tags.PLAYLIST_INTERNAL)) {
+            //     metadata.tags.append(tags.PLAYLIST_INTERNAL);
+            //     metadataChanged = true;
+            // }
+
+
+            if(userTags.contains(XTags::SUBTITLE))
             {
-                auto metadata = SettingsHandler::getLibraryListItemMetaData(item);
-                if(item.isMFS && !metadata.tags.contains(tags.MFS)) {
-                    metadata.tags.append(tags.MFS);
+                if(!item.subtitle.isEmpty() &&
+                    !metadata.tags.contains(XTags::SUBTITLE)) {
+                    metadata.tags.append(XTags::SUBTITLE);
                     metadataChanged = true;
-                }
-                else if(!item.isMFS && metadata.tags.contains(tags.MFS)) {
-                    metadata.tags.removeAll(tags.MFS);
+                } else if(item.subtitle.isEmpty() && metadata.tags.contains(XTags::SUBTITLE)) {
+                    metadata.tags.removeAll(XTags::SUBTITLE);
                     metadataChanged = true;
-                }
-
-                if(item.type == LibraryListItemType::Video && !metadata.tags.contains(tags.VIDEO_2D)) {
-                    metadata.tags.append(tags.VIDEO_2D);
-                    metadataChanged = true;
-                } else if(item.type == LibraryListItemType::VR && !metadata.tags.contains(tags.VR)) {
-                    metadata.tags.append(tags.VR);
-                    metadataChanged = true;
-                } else if(item.type == LibraryListItemType::Audio && !metadata.tags.contains(tags.AUDIO)) {
-                    metadata.tags.append(tags.AUDIO);
-                    metadataChanged = true;
-                } else if(item.type == LibraryListItemType::FunscriptType && !metadata.tags.contains(tags.FUNSCRIPT)) {
-                    metadata.tags.append(tags.FUNSCRIPT);
-                    metadataChanged = true;
-                } else if(item.type == LibraryListItemType::PlaylistInternal && !metadata.tags.contains(tags.PLAYLIST_INTERNAL)) {
-                    metadata.tags.append(tags.PLAYLIST_INTERNAL);
-                    metadataChanged = true;
-                }
-                // else if(item.type == LibraryListItemType::PlaylistInternal && !metadata.tags.contains(tags.PLAYLIST_INTERNAL)) {
-                //     metadata.tags.append(tags.PLAYLIST_INTERNAL);
-                //     metadataChanged = true;
-                // }
-
-                if(item.type != LibraryListItemType::PlaylistInternal)
-                {
-
-                    if(!item.subtitle.isEmpty() && !metadata.tags.contains(tags.SUBTITLE)) {
-                        metadata.tags.append(tags.SUBTITLE);
-                        metadataChanged = true;
-                    } else if(item.subtitle.isEmpty() && metadata.tags.contains(tags.SUBTITLE)) {
-                        metadata.tags.removeAll(tags.SUBTITLE);
-                        metadataChanged = true;
-                    }
-                    if(!item.hasScript && !metadata.tags.contains(tags.MISSING_SCRIPT)) {
-                        metadata.tags.append(tags.MISSING_SCRIPT);
-                        metadataChanged = true;
-                    } else if(item.hasScript && metadata.tags.contains(tags.MISSING_SCRIPT)) {
-                        metadata.tags.removeAll(tags.MISSING_SCRIPT);
-                        metadataChanged = true;
-                    }
-                    if(item.hasScript && !metadata.tags.contains(tags.HAS_SCRIPT)) {
-                        metadata.tags.append(tags.HAS_SCRIPT);
-                        metadataChanged = true;
-                    } else if(!item.hasScript && metadata.tags.contains(tags.HAS_SCRIPT)) {
-                        metadata.tags.removeAll(tags.HAS_SCRIPT);
-                        metadataChanged = true;
-                    }
-                    if(!metadata.tags.contains(tags.VIEWED) && !metadata.tags.contains(tags.UNVIEWED)) {
-                        metadata.tags.append(tags.UNVIEWED);
-                        metadataChanged = true;
-                    } else if(metadata.tags.contains(tags.VIEWED) && metadata.tags.contains(tags.UNVIEWED)) {
-                        metadata.tags.removeAll(tags.UNVIEWED);
-                        metadataChanged = true;
-                    }
-                }
-
-                foreach (QString tag, tags.getUserSmartags()) {
-                    if(!metadata.tags.contains(tag) && item.path.contains(tag, Qt::CaseInsensitive)) {
-                        metadata.tags.append(tag);
-                        metadataChanged = true;
-                    }
-                }
-                // metadata.tags.removeAll(tags.VIEWED);
-                // metadata.tags.removeAll(tags.UNVIEWED);
-                // metadata.tags.append(tags.UNVIEWED);
-                // metadataChanged = true;
-
-                if(metadataChanged) {
-                    saveSettings = true;
-                    SettingsHandler::updateLibraryListItemMetaData(metadata, false);
                 }
             }
+            if(userTags.contains(XTags::MISSING_SCRIPT))
+            {
+                if(!item.hasScript && !metadata.tags.contains(XTags::MISSING_SCRIPT)) {
+                    metadata.tags.append(XTags::MISSING_SCRIPT);
+                    metadataChanged = true;
+                } else if(item.hasScript && metadata.tags.contains(XTags::MISSING_SCRIPT)) {
+                    metadata.tags.removeAll(XTags::MISSING_SCRIPT);
+                    metadataChanged = true;
+                }
+            }
+            if(userTags.contains(XTags::HAS_SCRIPT))
+            {
+                if(item.hasScript && !metadata.tags.contains(XTags::HAS_SCRIPT)) {
+                    metadata.tags.append(XTags::HAS_SCRIPT);
+                    metadataChanged = true;
+                } else if(!item.hasScript && metadata.tags.contains(XTags::HAS_SCRIPT)) {
+                    metadata.tags.removeAll(XTags::HAS_SCRIPT);
+                    metadataChanged = true;
+                }
+            }
+
+            if(!metadata.tags.contains(XTags::VIEWED) && !metadata.tags.contains(XTags::UNVIEWED)) {
+                metadata.tags.append(XTags::UNVIEWED);
+                metadataChanged = true;
+            } else if(metadata.tags.contains(XTags::VIEWED) && metadata.tags.contains(XTags::UNVIEWED)) {
+                metadata.tags.removeAll(XTags::UNVIEWED);
+                metadataChanged = true;
+            }
+
+            foreach (QString tag, SettingsHandler::getUserSmartTags()) {
+                if(!metadata.tags.contains(tag) && item.path.contains(tag, Qt::CaseInsensitive)) {
+                    metadata.tags.append(tag);
+                    metadataChanged = true;
+                }
+            }
+            // metadata.tags.removeAll(tags.VIEWED);
+            // metadata.tags.removeAll(tags.UNVIEWED);
+            // metadata.tags.append(tags.UNVIEWED);
+            // metadataChanged = true;
 
             // Waaaay too slow.
             // if(item.md5.isEmpty()) {
@@ -549,19 +597,20 @@ void MediaLibraryHandler::startMetadataProcess()
             //     itemChanged = true;
             // }
 
-            if(rolesChanged.count()) {
-                updateItem(item, rolesChanged);
-            }
-
-            float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
-            emit backgroundProcessStateChange("Processing metadata", percentage);
         }
-        if(saveSettings)
-            SettingsHandler::Save();
-        LogHandler::Debug("End metadata process");
-        emit metadataProcessEnd();
-        emit backgroundProcessStateChange(nullptr, -1);
-    });
+    } else {
+        metadata = SettingsHandler::getLibraryListItemMetaData(item);
+        item.toolTip = metadata.toolTip;
+        item.isMFS = metadata.tags.contains(XTags::MFS);
+        if(!rolesChanged.contains(Qt::ToolTipRole))
+            rolesChanged.append(Qt::ToolTipRole);
+        if(!rolesChanged.contains(Qt::ForegroundRole))
+            rolesChanged.append(Qt::ForegroundRole);
+        bool scriptExists = QFileInfo::exists(item.script);
+        bool zipScripExists = QFileInfo::exists(item.zipFile);
+        item.hasScript = scriptExists || zipScripExists;
+    }
+    return metadata;
 }
 
 void MediaLibraryHandler::onLibraryLoaded()
@@ -813,10 +862,18 @@ QList<LibraryListItem27> MediaLibraryHandler::getPlaylist(QString name) {
     auto playlists = SettingsHandler::getPlaylists();
     auto playlist = playlists.value(name);
     foreach (auto item, playlist) {
-        LibraryListItem27& itemRef = playlist[playlist.indexOf(item)];
+        int index = playlist.indexOf(item);
+        float percentage = round(((float)playlist.indexOf(item)/playlist.length()) * 100);
+        emit backgroundProcessStateChange("Loading playlist", percentage);
+        LibraryListItem27& itemRef = playlist[index];
         setLiveProperties(itemRef);
+        bool metaDataChanged = false;
+        QVector<int> rollesChanged;
+        processMetadata(itemRef, metaDataChanged, rollesChanged);
         setThumbState(itemRef.thumbFileExists ? ThumbState::Ready : ThumbState::Error, itemRef);
     }
+
+    emit backgroundProcessStateChange(nullptr, -1);
     return playlist;
 }
 LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
@@ -886,7 +943,6 @@ void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
 {
     assignID(libraryListItem);
     setThumbPath(libraryListItem);
-    updateToolTip(libraryListItem);
 }
 
 void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)
@@ -1031,9 +1087,10 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &libraryListItem)
 
 }
 
-void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDiscovery)
+bool MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
 {
     localData.isMFS = false;
+    bool itemChanged = false;
     bool scriptExists = QFileInfo::exists(localData.script);
     bool zipScripExists = QFileInfo::exists(localData.zipFile);
     localData.hasScript = scriptExists || zipScripExists;
@@ -1041,6 +1098,7 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDi
     {
         localData.toolTip = localData.nameNoExtension + "\nMedia:";
         localData.toolTip = localData.path + "\nNo script file of the same name found.\nRight click and Play with chosen funscript.";
+        itemChanged = true;
     }
     else if (localData.type != LibraryListItemType::PlaylistInternal)
     {
@@ -1058,6 +1116,7 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDi
         {
             localData.toolTip += localData.script;
         }
+        itemChanged = true;
 //         if(!SettingsHandler::getMFSDiscoveryDisabled() || MFSDiscovery) {
 // //            LogHandler::Debug("before discoverMFS1: "+QString::number(mSecTimer.elapsed() - lastTime));
 // //            lastTime = mSecTimer.elapsed();
@@ -1085,7 +1144,9 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDi
             localData.toolTip += ": ";
             localData.toolTip += playlist[i].nameNoExtension;
         }
+        itemChanged = true;
     }
+    return itemChanged;
 }
 
 bool MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
@@ -1274,6 +1335,26 @@ void MediaLibraryHandler::findAlternateFunscripts(QString path)
         }
         emit alternateFunscriptsFound(funscriptsWithMedia);
     });
+}
+
+bool MediaLibraryHandler::metadataProcessing()
+{
+    return _metadataFuture.isRunning();
+}
+
+LibraryListItemMetaData258 MediaLibraryHandler::processMetadata(LibraryListItem27 &item)
+{
+    bool metadataChanged = false;
+    QVector<int> roleChanged;
+    auto metadata = processMetadata(item, metadataChanged, roleChanged, true);
+    if(roleChanged.count()) {
+        updateItem(item, roleChanged);
+    }
+
+    if(metadataChanged) {
+        SettingsHandler::updateLibraryListItemMetaData(metadata, true);
+    }
+    return metadata;
 }
 
 void MediaLibraryHandler::assignID(LibraryListItem27 &item)

@@ -192,9 +192,13 @@ select:disabled {
     margin: auto;
 }
 .form-buttons {  
-    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
 }
 .form-buttons button {
+    font-size: max(0.5em, 0.1em + 1cqi);
+}
+.form-buttons button:not(:last-child) {
     margin-right: 8px;
 }
 /* Doesnt look right in Deo */
@@ -323,6 +327,18 @@ input:hover:not(.range-input) {
     background-color: #000000;
     flex-flow: column;padding: 16px;
     border: 1px solid aliceblue;
+    max-height: min(500px,calc(100vh - 200px));
+}
+
+.media-tag-filter-container {  
+    padding: 4px;
+    overflow-y: auto;
+}
+
+.media-tag-metadata-container {  
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
 }
 
 .media-item:hover {
@@ -655,7 +671,6 @@ section .range-values {
     height: fit-content;
 }
 .modal-content--other {
-    width: fit-content;
     height: fit-content;
 }
 .modal-header {
@@ -680,6 +695,7 @@ section .range-values {
     display: flex;
     width: 100%;
     justify-content: space-between;
+    margin-top: 8px;
 }
 
 .modal-footer-content {

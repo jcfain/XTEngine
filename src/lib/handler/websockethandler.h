@@ -24,6 +24,7 @@ signals:
     void skipToNextAction();
     void saveSingleThumb(QString itemID, qint64 pos);
     void reloadLibrary();
+    void startMetadataProcess();
 public:
     WebSocketHandler(QObject *parent = nullptr);
     ~WebSocketHandler();

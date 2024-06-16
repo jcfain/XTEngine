@@ -240,8 +240,12 @@ public:
 
     static QHash<QString, LibraryListItemMetaData258> getLibraryListItemMetaData();
     static LibraryListItemMetaData258 getLibraryListItemMetaData(const LibraryListItem27 item);
+    static bool hasLibraryListItemMetaData(const LibraryListItem27 item);
     static void removeLibraryListItemMetaData(const QString key);
     static void updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData, bool sync = true);
+    static bool getForceMetaDataFullProcess();
+    static void setForceMetaDataFullProcess(bool enable);
+    static void setForceMetaDataFullProcessComplete();
 
     static XTags getAvailableTags();
 
@@ -505,6 +509,7 @@ private:
     static float m_viewedThreshold;
 
     static XTags m_xTags;
+    static inline bool m_forceMetaDataFullProcess = false;
 
     static QTimer m_settingsChangedNotificationDebounce;
     static QHash<QString, bool> _funscriptLoaded;

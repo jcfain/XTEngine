@@ -9,6 +9,7 @@
 
 #include "../struct/LibraryListItem27.h"
 #include "../struct/ScriptInfo.h"
+#include "../struct/LibraryListItemMetaData258.h"
 #include "xvideopreview.h"
 
 #include "XTEngine_global.h"
@@ -79,9 +80,11 @@ public:
     LibraryListItem27* findItemByPartialSubtitle(QString partialSubtitle);
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
-    void updateToolTip(LibraryListItem27 &item, bool scriptDiscovery = false);
     void cleanGlobalThumbDirectory();
     void findAlternateFunscripts(QString path);
+    bool metadataProcessing();
+    LibraryListItemMetaData258 processMetadata(LibraryListItem27 &item);
+    void startMetadataProcess(bool fullProcess = false);
 
 private:
     int _libraryItemIDTracker = 1;
@@ -109,8 +112,9 @@ private:
     void assignID(LibraryListItem27 &item);
 
     LibraryListItem27 createLibraryListItemFromFunscript(QString funscript);
-    void startMetadataProcess();
+    LibraryListItemMetaData258 processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess = false);
     void stopMetadataProcess();
+    bool updateToolTip(LibraryListItem27 &item);
     bool discoverMFS1(LibraryListItem27 &item);
     bool discoverMFS2(LibraryListItem27 &item);
 

@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.454b";
-const float SettingsHandler::XTEVersionNum = 0.454f;
+const QString SettingsHandler::XTEVersion = "0.455b";
+const float SettingsHandler::XTEVersionNum = 0.455f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -286,6 +286,8 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         }
     }
 
+    m_forceMetaDataFullProcess = settingsToLoadFrom->value("forceMetaDataFullProcess").toBool();
+
     if(!m_firstLoad)
     {
         if(currentVersion < 0.2f)
@@ -407,7 +409,9 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
-
+        if(currentVersion < 0.455f) {
+            setForceMetaDataFullProcess(true);
+        }
     }
     settingsChangedEvent(false);
 }
@@ -556,6 +560,8 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("customTCodeCommands", m_customTCodeCommands);
 
         settingsToSaveTo->setValue("viewedThreshold", m_viewedThreshold);
+
+        settingsToSaveTo->setValue("forceMetaDataFullProcess", m_forceMetaDataFullProcess);
 
 
         QVariantList tagsList;
@@ -923,6 +929,7 @@ void SettingsHandler::MigrateLibraryMetaDataTo258()
                                                      libraryListItemMetaData.lastLoopEnd, // lastLoopEnd
                                                      0, // offset
                                                      libraryListItemMetaData.moneyShotMillis, // moneyShotMillis
+                                                     "",
                                                      libraryListItemMetaData.bookmarks, // bookmarks
                                                      libraryListItemMetaData.funscripts,
                                                      libraryListItemMetaData.tags
@@ -2545,11 +2552,17 @@ LibraryListItemMetaData258 SettingsHandler::getLibraryListItemMetaData(const Lib
                                          -1, // lastLoopEnd
                                          0, // offset
                                          -1, // moneyShotMillis
+                                         "",
                                          bookmarks, // bookmarks
                                          funscripts,
                                          tags
                                      });
     return _libraryListItemMetaDatas.value(item.path);
+}
+
+bool SettingsHandler::hasLibraryListItemMetaData(const LibraryListItem27 item)
+{
+    return !item.path.isEmpty() && _libraryListItemMetaDatas.contains(item.path);
 }
 
 void SettingsHandler::removeLibraryListItemMetaData(const QString key)
@@ -2567,6 +2580,21 @@ void SettingsHandler::updateLibraryListItemMetaData(LibraryListItemMetaData258 l
         settings->sync();
         //settingsChangedEvent(true);
     }
+}
+
+bool SettingsHandler::getForceMetaDataFullProcess()
+{
+    return m_forceMetaDataFullProcess;
+}
+
+void SettingsHandler::setForceMetaDataFullProcess(bool enable)
+{
+    m_forceMetaDataFullProcess = enable;
+}
+
+void SettingsHandler::setForceMetaDataFullProcessComplete()
+{
+    m_forceMetaDataFullProcess = false;
 }
 
 QSettings* SettingsHandler::settings;

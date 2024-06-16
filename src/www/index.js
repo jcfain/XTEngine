@@ -1,3 +1,4 @@
+const webVersion = "v0.455b";
 
 var DeviceType = {
 	Serial: 0,
@@ -94,6 +95,9 @@ var rangeChangeAmount = 100;
 
 var shufflePlayMode = false;
 var shufflePlayModePlayedIndexed = {};
+
+const tagCheckboxesName = "TagCheckbox";
+const metadataTagCheckboxesName = "MetadataTagCheckbox";
 //var funscriptSyncWorker;
 //var useDeoWeb;
 //var deoVideoNode;
@@ -198,6 +202,9 @@ playPreviousButton.addEventListener('click', playPreviousVideoClick);
 // 	userError("There was an issue loading media.");
 // }, true);
 
+const xtpWebVersionNode = document.getElementById("webVersion");
+xtpWebVersionNode.innerText = webVersion;
+
 var saveStateNode = document.getElementById("saveState");
 var mediaReloadRequiredNode = document.getElementById("mediaReloadRequired");
 
@@ -255,6 +262,14 @@ function onOutputDeviceConnectionChange(input, device) {
 	sendOutputDeviceConnectionChange(device, input.checked);
 	window.localStorage.setItem("selectedOutputConnection", parseInt(device, 10));
 	sendMediaState();
+}
+
+function startMetadataProcess() {
+	showAlertWindow("Process metadata", "This will set metadata using the algrorith on first scan.<br>Adding smart tags and mfs tags based on the scan.<br>It will not change any user tags set by you.",sendMetadataProcess);
+}
+function sendMetadataProcess() {
+	sendWebsocketMessage("startMetadataProcess");
+	closeAlertWindow();
 }
 
 function tcodeDeviceConnectRetry() {
@@ -713,23 +728,16 @@ function setupChannelData() {
 function setupSystemTags() {
 	const tags = remoteUserSettings["allTags"];
 	const tagsFIlterNode = document.getElementById("tagFilterOptions");
+	const metaDataTagsNode = document.getElementById("metaDataTags");
 	removeAllChildNodes(tagsFIlterNode);
+	removeAllChildNodes(metaDataTagsNode);
+	const containter = document.createElement("div");
+	containter.classList.add("media-tag-filter-container")
+	tagsFIlterNode.appendChild(containter);
 	tags.forEach((x, i) => {
-		const divNode = document.createElement("div");
-		const label = document.createElement("label");
-		label.innerText = x;
-		label.setAttribute("for", x+"TagCheckbox" + i);
-		const checkbox = document.createElement("input");
-		checkbox.type = "checkbox";
-		checkbox.value = x;
-		//checkbox.classList.add("styled-checkbox");
-		checkbox.id = x+"TagCheckbox" + i;
-		checkbox.name = "TagCheckbox";
-		checkbox.onclick = onFilterByTagClicked(checkbox);
-		divNode.appendChild(checkbox);
-		divNode.appendChild(label);
-		tagsFIlterNode.appendChild(divNode);
+		containter.appendChild(createCheckBoxDiv(x+tagCheckboxesName+i, tagCheckboxesName, x, x, onFilterByTagClicked));
 
+		metaDataTagsNode.appendChild(createCheckBoxDiv(x+metadataTagCheckboxesName+i, metadataTagCheckboxesName, x, x, onMetadataTagCheckboxClicked));
 	});
 
 	const userTagsSelect = document.getElementById("systemTagsSelect");
@@ -1787,7 +1795,7 @@ var onFilterByTagClicked = function (tagCheckbox) {
 
 function filterByTag(filterCriteria) {
 	userTagFilterCriteria = filterCriteria;
-	var tagsFilterOptions = document.getElementsByName("TagCheckbox");
+	var tagsFilterOptions = document.getElementsByName(tagCheckboxesName);
 	tagsFilterOptions.forEach(x => x.enabled = false);
 	var mediaItems = document.getElementsByClassName("media-item");
 	for (var item of mediaItems) {
@@ -2400,6 +2408,10 @@ function openMetaDataModal(mediaItem) {
 	selectedMediaItemMetaData = mediaItem["metaData"];
 	document.getElementById("mediaOffset").value = selectedMediaItemMetaData["offset"];
 	document.getElementById("moneyShotMillis").value = selectedMediaItemMetaData["moneyShotMillis"];
+	const tagCheckboxes = document.getElementsByName(metadataTagCheckboxesName);
+	tagCheckboxes.forEach(x => {
+		x.checked = selectedMediaItemMetaData.tags.findIndex(y => y == x.value) > -1;
+	})
 	mediaItemSettingsModalNode.style.visibility = "visible";
 	mediaItemSettingsModalNode.style.opacity = 1;
 }
@@ -2431,9 +2443,23 @@ function resetMoneyShot() {
 	metaDataChange();
 }
 
-function setMoneyShotFromCurrent() {
-	
-}
+var onMetadataTagCheckboxClicked = function (tagCheckbox) {
+	return function () {
+		let tagsChanged = false;
+		if(tagCheckbox && selectedMediaItemMetaData) {
+			const index = selectedMediaItemMetaData.tags.findIndex(x => x == tagCheckbox.value);
+			if(tagCheckbox.checked && index == -1) {
+				selectedMediaItemMetaData.tags.push(tagCheckbox.value);
+				tagsChanged = true;
+			} else if(!tagCheckbox.checked && index > -1) {
+				selectedMediaItemMetaData.tags.splice(index, 1);
+				tagsChanged = true;
+			}
+		}
+		if(tagsChanged)
+			metaDataChange();
+	}
+};
 
 function tabClick(tab, tabNumber) {
 	var allTabs = document.getElementsByClassName("tab-section-tab")
@@ -3109,4 +3135,23 @@ function keyboardShortcuts(event) {
 			
 		}
 	}
+}
+
+
+
+function createCheckBoxDiv(id, name, value, labelText, onCheckedChange) {
+	const divNode = document.createElement("div");
+	const label = document.createElement("label");
+	label.innerText = labelText;
+	label.setAttribute("for", id);
+	const checkbox = document.createElement("input");
+	checkbox.type = "checkbox";
+	checkbox.value = value;
+	//checkbox.classList.add("styled-checkbox");
+	checkbox.id = id;
+	checkbox.name = name;
+	checkbox.onclick = onCheckedChange(checkbox);
+	divNode.appendChild(checkbox);
+	divNode.appendChild(label);
+	return divNode;
 }

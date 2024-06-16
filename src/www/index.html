@@ -193,31 +193,35 @@
 					</label>
 					<input id="mediaOffset" type="number" step="1" oninput="metaDataChange()" />
 				</div>
-				<div class="form-buttons">
-					<button onclick="addToSelectedMetaData(10)">
-						+10
-					</button>
-					<button onclick="addToSelectedMetaData(50)">
-						+50
-					</button>
-					<button onclick="addToSelectedMetaData(100)">
-						+100
-					</button>
-					<button onclick="addToSelectedMetaData(500)">
-						+500
-					</button>
-					<button onclick="addToSelectedMetaData(-10)">
-						-10
-					</button>
-					<button onclick="addToSelectedMetaData(-50)">
-						-50
-					</button>
-					<button onclick="addToSelectedMetaData(-100)">
-						-100
-					</button>
-					<button onclick="addToSelectedMetaData(-500)">
-						-500
-					</button>
+				<div class="formElement">
+					<label>
+					</label>
+					<div class="form-buttons">
+						<button onclick="addToSelectedMetaData(10)">
+							+10
+						</button>
+						<button onclick="addToSelectedMetaData(50)">
+							+50
+						</button>
+						<button onclick="addToSelectedMetaData(100)">
+							+100
+						</button>
+						<button onclick="addToSelectedMetaData(500)">
+							+500
+						</button>
+						<button onclick="addToSelectedMetaData(-10)">
+							-10
+						</button>
+						<button onclick="addToSelectedMetaData(-50)">
+							-50
+						</button>
+						<button onclick="addToSelectedMetaData(-100)">
+							-100
+						</button>
+						<button onclick="addToSelectedMetaData(-500)">
+							-500
+						</button>
+					</div>
 				</div>
 				<div class="formElement">
 					<label
@@ -226,10 +230,19 @@
 					</label>
 					<input id="moneyShotMillis" type="number" step="1" oninput="metaDataChange()" />
 				</div>
-				<div class="form-buttons">
-					<button onclick="resetMoneyShot()">
-						Reset money shot
-					</button>
+				<div class="formElement">
+					<label>
+					</label>
+					<div class="form-buttons">
+						<button onclick="resetMoneyShot()">
+							Reset money shot
+						</button>
+					</div>
+				</div>
+				<div class="formElement">
+					<label>Tags
+					</label>
+					<div id="metaDataTags" class="media-tag-metadata-container"></div>
 				</div>
 			</div>
 			<div class="modal-footer">
@@ -551,7 +564,8 @@
 							<span id="xteVersion"></span>
 						</div>
 						<div>
-							<span>XTP Web: v0.454b</span>
+							<span>XTP Web: </span>
+							<span id="webVersion"></span>
 						</div>
 						<h3>Current browser information</h3>
 						<div id="browserInfo"></div>
@@ -590,6 +604,7 @@
 								<button id="removeSmartTagButton" disabled="true" class="system-tags-section-button" onclick="removeSystemTags(true)">Remove</button>
 							</div>
 						</div>
+						<button id="startMetadataProcessButton" style="margin-top:8px" onclick="startMetadataProcess()">Process metadata</button>
 					</div>
 				</section>
 				<!-- 				<div class="formElement">

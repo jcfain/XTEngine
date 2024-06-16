@@ -45,7 +45,14 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _mediaLibraryHandler->saveSingleThumb(itemID, pos);
     });
     connect(_webSocketHandler, &WebSocketHandler::reloadLibrary, _mediaLibraryHandler, &MediaLibraryHandler::loadLibraryAsync);
-
+    connect(_webSocketHandler, &WebSocketHandler::startMetadataProcess, this, [this]() {
+        if(!_mediaLibraryHandler->isLibraryLoading() &&
+            !_mediaLibraryHandler->metadataProcessing() &&
+            !_mediaLibraryHandler->thumbProcessRunning())
+        {
+            _mediaLibraryHandler->startMetadataProcess(true);
+        }
+    });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoadingStatus, this, &HttpHandler::onLibraryLoadingStatusChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoaded, this, &HttpHandler::onSetLibraryLoaded);
