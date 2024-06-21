@@ -633,8 +633,16 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
     {
         _funscriptSearchFuture = QtConcurrent::run([this, packet, videoPath]() {
             QFileInfo videoFile(videoPath);
-            QString libraryScriptFile = videoFile.fileName().remove(videoFile.fileName().lastIndexOf('.'), videoFile.fileName().length() -  1) + ".funscript";
-            QString libraryScriptZipFile = videoFile.fileName().remove(videoFile.fileName().lastIndexOf('.'), videoFile.fileName().length() -  1) + ".zip";
+            QString libraryScriptFile;
+            QString libraryScriptZipFile;
+            int extensionIndex = videoFile.fileName().lastIndexOf('.');
+            if(extensionIndex < 0) {
+                libraryScriptFile = videoFile.fileName() + ".funscript";
+                libraryScriptZipFile = videoFile.fileName() + ".zip";
+            } else {
+                libraryScriptFile = videoFile.fileName().remove(videoFile.fileName().lastIndexOf('.'), videoFile.fileName().length() -  1) + ".funscript";
+                libraryScriptZipFile = videoFile.fileName().remove(videoFile.fileName().lastIndexOf('.'), videoFile.fileName().length() -  1) + ".zip";
+            }
             QStringList libraryPaths = SettingsHandler::getSelectedLibrary();
             QStringList vrLibraryPaths = SettingsHandler::getVRLibrary();
             QString funscriptPath;
@@ -653,9 +661,16 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
                     localpath = path.remove("media/");
                 else if(path.startsWith("/storage/emulated/0/Interactive/"))
                     localpath = path.remove("/storage/emulated/0/Interactive/");
+                QString localFunscriptPath;
+                QString localFunscriptZipPath;
                 int indexOfSuffix = localpath.lastIndexOf(".");
-                QString localFunscriptPath = localpath.replace(indexOfSuffix, localpath.length() - indexOfSuffix, ".funscript");
-                QString localFunscriptZipPath = localpath.replace(indexOfSuffix, localpath.length() - indexOfSuffix, ".zip");
+                if(indexOfSuffix < 0) {
+                    localFunscriptPath = localpath + ".funscript";
+                    localFunscriptZipPath = localpath + ".zip";
+                } else {
+                    localFunscriptPath = localpath.replace(indexOfSuffix, localpath.length() - indexOfSuffix, ".funscript");
+                    localFunscriptZipPath = localpath.replace(indexOfSuffix, localpath.length() - indexOfSuffix, ".zip");
+                }
                 foreach(QString libraryPath, libraryPaths)
                 {
                     if(_funscriptSearchFuture.isCanceled()) {
@@ -686,10 +701,17 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
             {
                 //Check the input device media directory for funscript.
                 QString tempPath = videoPath;
-                QString tempZipPath = videoPath;
+
+                QString localFunscriptPath;
+                QString localFunscriptZipPath;
                 int indexOfSuffix = tempPath.lastIndexOf(".");
-                QString localFunscriptPath = tempPath.replace(indexOfSuffix, tempPath.length() - indexOfSuffix, ".funscript");
-                QString localFunscriptZipPath = tempZipPath.replace(indexOfSuffix, tempZipPath.length() - indexOfSuffix, ".zip");
+                if(indexOfSuffix < 0) {
+                    localFunscriptPath = tempPath + ".funscript";
+                    localFunscriptZipPath = tempPath + ".zip";
+                } else {
+                    localFunscriptPath = tempPath.replace(indexOfSuffix, tempPath.length() - indexOfSuffix, ".funscript");
+                    localFunscriptZipPath = tempPath.replace(indexOfSuffix, tempPath.length() - indexOfSuffix, ".zip");
+                }
                 foreach(QString libraryPath, libraryPaths)
                 {
                     if(_funscriptSearchFuture.isCanceled()) {
@@ -700,10 +722,10 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
                     QString libraryScriptPath = libraryPath + separator + localFunscriptPath;
                     QString libraryScriptZipPath = libraryPath + separator + localFunscriptZipPath;
                     LogHandler::Debug("searchForFunscript Searching local path: "+localFunscriptPath);
-                    if(QFile::exists(localFunscriptPath))
+                    if(QFile::exists(libraryScriptPath))
                     {
                         LogHandler::Debug("searchForFunscript script found in path of media");
-                        funscriptPath = localFunscriptPath;
+                        funscriptPath = libraryScriptPath;
                     }
                     else if (QFile::exists(libraryScriptZipPath))
                     {
@@ -746,7 +768,7 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
                         return;
                     }
                     LogHandler::Debug("searchForFunscript: Search ALL sub directories of library: "+libraryPath);
-                    if(!libraryPath.isEmpty() && QFileInfo(libraryPath).exists()) {
+                    if(!libraryPath.isEmpty() && QFile::exists(libraryPath)) {
                         QDirIterator directory(libraryPath,QDirIterator::Subdirectories);
                         while (directory.hasNext()) {
                             if(_funscriptSearchFuture.isCanceled()) {
@@ -776,7 +798,7 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
                         _funscriptSearchNotFound = true;
                         return;
                     }
-                    if(QFileInfo(vrLibraryPath).exists()) {
+                    if(QFile::exists(vrLibraryPath)) {
                         LogHandler::Debug("searchForFunscript: Search ALL sub directories of VR Library: "+vrLibraryPath);
                         QDirIterator directory(vrLibraryPath,QDirIterator::Subdirectories);
                         while (directory.hasNext()) {
