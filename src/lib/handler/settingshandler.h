@@ -36,6 +36,7 @@ class XTENGINE_EXPORT SettingsHandler: public QObject
 signals:
     void settingsChanged(bool dirty);
     void messageSend(QString message, XLogLevel loglevel);
+    void messageSendWait(QString message, XLogLevel loglevel, QFunctionPointer callback);
     void tagsChanged();
 
 public slots:
@@ -374,7 +375,7 @@ public:
     static void addUserSmartTag(QString tag);
     static bool hasSmartTag(QString tag);
 
-    static float viewedThreshold();
+    static float getViewedThreshold();
     static void setViewedThreshold(float newViewedThreshold);
 
 private:

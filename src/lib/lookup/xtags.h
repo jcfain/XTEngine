@@ -11,7 +11,7 @@ public:
     const static inline QString VIDEO_2D = "2d";
     const static inline QString AUDIO = "audio";
     const static inline QString FUNSCRIPT = "funscript";
-    const static inline QString PLAYLIST_INTERNAL = "playlistInternal";
+    //const static inline QString PLAYLIST_INTERNAL = "playlistInternal";
     const static inline QString SUBTITLE = "subtitle";
     const static inline QString MISSING_SCRIPT = "missingScript";
     const static inline QString HAS_SCRIPT = "hasScript";
@@ -83,7 +83,7 @@ private:
         VIDEO_2D,
         AUDIO,
         FUNSCRIPT,
-        PLAYLIST_INTERNAL,
+        //PLAYLIST_INTERNAL,
         SUBTITLE,
         MISSING_SCRIPT,
         HAS_SCRIPT,

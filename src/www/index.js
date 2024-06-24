@@ -1,4 +1,4 @@
-const webVersion = "v0.455b";
+const webVersion = "v0.456b";
 
 var DeviceType = {
 	Serial: 0,
@@ -773,17 +773,25 @@ function smartagsSelectChange(selectElement) {
 }
 
 function addSystemTag(smartMode) {
-	let tags = remoteUserSettings[smartMode ? "smartTags" : "userTags"];
-	const otherTagName = !smartMode ? "smartTags" : "userTags";
-	let other = remoteUserSettings[otherTagName];
-	var name = prompt(smartMode ? 'Smart tag name' : 'Tag name');
+	var callback = function(value) {
+		systemTagAdded(value, smartMode);
+	}
+	//var name = prompt(smartMode ? 'Smart tag name' : 'Tag name');
+	showGetTextWindow(smartMode ? 'Add smart tag' : 'Add tag', "Name", callback);
+}
+
+function systemTagAdded(name, smartMode) {
 	if(!name || !name.trim().length) {
+		showAlertWindow("Empty", `Tag cant be empty!`);
 		return;
 	}
+	let tags = remoteUserSettings[smartMode ? "smartTags" : "userTags"];
 	if(tags.findIndex(x => x == name) > -1) {
 		showAlertWindow("Tag exists", `Tag '${name}' already exists!`);
 		return;
 	}
+	const otherTagName = !smartMode ? "smartTags" : "userTags";
+	let other = remoteUserSettings[otherTagName];
 	if(other.findIndex(x => x == name) > -1) {
 		showAlertWindow("Tag exists", `Tag '${name}' already exists in ${otherTagName}!`);
 		return;
@@ -799,6 +807,7 @@ function addSystemTag(smartMode) {
 	systemTagsSelect.options.add(option);
 	if(smartMode)
 		mediaReloadRequiredNode.classList.remove('hidden');
+	closeTextWindow();
 
 	//tags.push(name);
 

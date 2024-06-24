@@ -644,8 +644,11 @@ section .range-values {
     -webkit-transition: opacity 250ms, visibility 250ms linear;
     transition: opacity 250ms, visibility 250ms linear;
 }
-.modal--alert {
+.modal--text {
     z-index: 16;
+}
+.modal--alert {
+    z-index: 17;
 }
 
 /* Modal Content/Box */
@@ -668,6 +671,10 @@ section .range-values {
 }
 .modal-content--alert {
     width: fit-content;
+    height: fit-content;
+}
+.modal-content--text {
+    width: 30vw;
     height: fit-content;
 }
 .modal-content--other {

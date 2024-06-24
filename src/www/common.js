@@ -1,5 +1,6 @@
 
 var alertModelNode = document.getElementById("alertModal");
+var textModelNode = document.getElementById("textModal");
 
 function userError(message) {
 	//alert(message);
@@ -43,6 +44,35 @@ function closeAlertWindow() {
 		confirmButton.onclick = undefined;
 		var alertModalBody = document.getElementById("alertModalBody");
 		alertModalBody.innerText = undefined;
+	}, 275)
+}
+
+function showGetTextWindow(header, message, yesCallback) {
+	if(textModelNode.style.visibility != "visible") {
+		var textModalInput = document.getElementById("textModalInput");
+		var headerNode = document.getElementById("text-modal-title");
+		headerNode.innerText = header;
+		var textModalLabel = document.getElementById("textModalLabel");
+		textModalLabel.innerHTML = message;
+		var confirmButton = document.getElementById("textConfirmButton");
+		confirmButton.onclick = function(textModalInput) { 
+			yesCallback(textModalInput.value);
+		}.bind(textModalInput, textModalInput);
+		textModelNode.style.visibility = "visible";
+		textModelNode.style.opacity = 1;
+	} else {
+		systemError("Two text windows opened");
+	}
+}
+	
+function closeTextWindow() {
+	textModelNode.style.visibility = "hidden";
+	textModelNode.style.opacity = 0;
+	setTimeout(function() {
+		var confirmButton = document.getElementById("textConfirmButton");
+		confirmButton.onclick = undefined;
+		var textModalInput = document.getElementById("textModalInput");
+		textModalInput.value = "";
 	}, 275)
 }
 

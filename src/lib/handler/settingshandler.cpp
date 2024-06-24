@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.455b";
-const float SettingsHandler::XTEVersionNum = 0.455f;
+const QString SettingsHandler::XTEVersion = "0.456b";
+const float SettingsHandler::XTEVersionNum = 0.456f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -68,6 +68,17 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
     float currentVersion = settingsToLoadFrom->value("version").toFloat();
     m_firstLoad = currentVersion == 0;
+
+    // if(XTEVersionNum > currentVersion)
+    // {
+    //     emit instance()->messageSendWait(
+    //         "This appears to be an older version of XTP. If you continue you may overwrite settings of the newer version of XTP. Coninue?",
+    //         XLogLevel::Warning,
+    //         [currentVersion]() {
+
+    //         });
+    //     return; // TODO: how to get a response?
+    // }
 
     TCodeChannelLookup::load(settingsToLoadFrom, m_firstLoad);
 
@@ -729,7 +740,7 @@ void SettingsHandler::storeMediaMetaDatas(QSettings* settingsToSaveTo)
     settingsToSaveTo->setValue("libraryListItemMetaDatas", libraryListItemMetaDatas);
 }
 
-float SettingsHandler::viewedThreshold()
+float SettingsHandler::getViewedThreshold()
 {
     return m_viewedThreshold;
 }

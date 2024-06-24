@@ -690,6 +690,34 @@
 		</div>
 	</div>
 
+	<div id="textModal" class="modal modal--text">
+		<div class="modal-content modal-content--text">
+			<div class="modal-header">
+				<span id="text-modal-title" class="modal-title"></span>
+				<button class="close-modal icon-button" onclick="closeTextWindow()">
+					<image class="buttonImage" src="://images/icons/x.svg" />
+				</button>
+			</div>
+			<div id="textModalBody" class="modal-body modal-body--alert">
+				<div class="formElement">
+					<label id="textModalLabel" for="textModalInput">Enter value</label>
+					<input id="textModalInput" type="text"/>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<div class="modal-footer-content"> </div>
+				<div class="modal-footer-content">
+					<button id="textConfirmButton">
+						Ok
+					</button>
+					<button id="textCancelButton" onclick="closeTextWindow()">
+						cancel
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<svg style="display: none">
 		<defs>
 			<symbol id="pause" viewBox="0 0 24 24">

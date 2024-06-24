@@ -52,7 +52,7 @@ void XMediaStateHandler::stop()
 void XMediaStateHandler::updateDuration(qint64 currentPos, qint64 duration)
 {
     const qint64 timeLeft = duration - currentPos;
-    const qint64 viewedThreshold = duration * SettingsHandler::viewedThreshold();
+    const qint64 viewedThreshold = duration * SettingsHandler::getViewedThreshold();
     if(duration > 0 && currentPos > -1 && timeLeft < viewedThreshold)
     {
         auto metadata = SettingsHandler::getLibraryListItemMetaData(m_playingItem);
