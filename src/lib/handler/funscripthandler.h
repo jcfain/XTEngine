@@ -34,7 +34,7 @@ public:
     qint64 getMax();
     qint64 getNext();
     std::shared_ptr<FunscriptAction> getPosition(qint64 at);
-    QString channel();
+    QString channel() const;
 
     void play(QString funscript);
     void stop();

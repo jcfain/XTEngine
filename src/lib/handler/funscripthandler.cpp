@@ -13,7 +13,7 @@ FunscriptHandler::~FunscriptHandler()
     SettingsHandler::setFunscriptLoaded(_channel, _loaded);
 }
 
-QString FunscriptHandler::channel()
+QString FunscriptHandler::channel() const
 {
     return _channel;
 }
@@ -124,7 +124,7 @@ qint64 FunscriptHandler::getNext() {
     }
     return getMin();
 }
-#include <QTime>
+
 void FunscriptHandler::JSonToFunscript(QJsonObject json)
 {
     if(!funscript)
@@ -246,6 +246,8 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(qint64 millis)
 //        LogHandler::Debug("nextActionIndex: "+ QString::number(nextActionIndex));
         //LogHandler::Debug("nextActionPos: "+ QString::number(funscript->actions.value(nextMillis)));
         qint64 executionMillis = lastActionIndex == -1 ? closestMillis : nextMillis;
+        if(!funscript)
+            return nullptr;
         int pos = funscript->actions.value(executionMillis);
         if(_modifier != 1)
         {

@@ -68,6 +68,13 @@ void UdpHandler::onReadyRead()
     while (m_udpSocket->waitForReadyRead(100))
     {
         QNetworkDatagram datagram = m_udpSocket->receiveDatagram();
+        auto senderAddress = datagram.senderAddress();
+        auto it = std::find_if(m_connectedHosts.begin(), m_connectedHosts.end(),
+                                [senderAddress](const QHostAddress &address) {
+                                   return senderAddress.toIPv4Address() == address.toIPv4Address();
+                                });
+        if(it == m_connectedHosts.end())
+            m_connectedHosts.append(senderAddress);
         if(datagram.isValid()) {
             recieved += QString::fromUtf8(datagram.data());
         } else {
@@ -88,16 +95,27 @@ void UdpHandler::sendHeartbeat()
 {
     LogHandler::Debug("UDP heart beat check");
     int replyTimeInMS = 0;
-    if (XNetwork::ping(m_hostAddress, replyTimeInMS)) {
-        LogHandler::Debug("UDP address detected!");
-        int roundTrip = replyTimeInMS * 2;
-        if(SettingsHandler::isSmartOffSet())
-            LogHandler::Debug("Adjusting live offset by: "+QString::number(roundTrip) + "ms");
-        SettingsHandler::setSmartOffset(roundTrip);
-    } else {
-        LogHandler::Debug("UDP heart beat check failed!");
+    QList<QHostAddress> hostsToremove;
+    foreach (QHostAddress address, m_connectedHosts) {
+        if (XNetwork::ping(address, replyTimeInMS)) {
+            LogHandler::Debug("UDP address detected!");
+            int roundTrip = replyTimeInMS * 2;
+            if(SettingsHandler::isSmartOffSet())
+                LogHandler::Debug("Adjusting live offset by: "+QString::number(roundTrip) + "ms");
+            SettingsHandler::setSmartOffset(roundTrip);
+        } else {
+            LogHandler::Debug("UDP heart beat check failed!");
+            hostsToremove.append(address);
+        }
+    }
+    foreach (QHostAddress address, hostsToremove) {
+        m_connectedHosts.removeAll(address);
+    }
+    if(m_connectedHosts.empty())
+    {
         dispose();
         emit connectionChange({DeviceType::Output, m_deviceName, ConnectionStatus::Disconnected, "Disconnected"});
+        return;
     }
 }
 

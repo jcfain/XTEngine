@@ -36,6 +36,7 @@ private:
     QHostAddress m_hostAddress;
     QTimer m_heartBeatTimer;
     QMutex m_socketMutex;
+    QList<QHostAddress> m_connectedHosts;
 };
 
 #endif // UDPHANDLER_H

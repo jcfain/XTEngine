@@ -16,6 +16,12 @@
 #include "lib/handler/outputdevicehandler.h"
 #include "XTEngine_global.h"
 
+struct SyncLoadState {
+    bool hasScript;
+    QString mainScript;
+    QStringList invalidScripts;
+};
+
 class XTENGINE_EXPORT SyncHandler: public QObject
 {
     Q_OBJECT
@@ -46,7 +52,7 @@ public:
     void setPause(bool paused);
     bool isPaused();
     void playStandAlone(QString funscript = nullptr);
-    void swapScript(QString funscript);
+    void swapScript(const LibraryListItem27 &libraryItem);
     void skipToMoneyShot();
     void setStandAloneLoop(bool enabled);
     void syncInputDeviceFunscript(QString funscript);
@@ -62,8 +68,8 @@ public:
     void stopAll();
     void clear();
     void reset();
-    QList<QString> load(QString funscript);
-    QList<QString> swap(QString funscript);
+    SyncLoadState load(const LibraryListItem27 &libraryItem);
+    SyncLoadState swap(const LibraryListItem27 &libraryItem);
     bool isLoaded();
     bool isPlaying();
     bool isPlayingStandAlone();
@@ -74,7 +80,7 @@ public:
 
 private:
     TCodeHandler* _tcodeHandler;
-    FunscriptHandler* _funscriptHandler = 0;
+    //FunscriptHandler* _funscriptHandler = 0;
     QList<FunscriptHandler*> _funscriptHandlers;
     InputDeviceHandler* _inputDeviceHandler = 0;
     OutputDeviceHandler* _outputDeviceHandler = 0;
@@ -97,14 +103,14 @@ private:
     QFuture<void> _funscriptVRFuture;
     QFuture<void> _funscriptStandAloneFuture;
     QFuture<void> _funscriptSearchFuture;
-    QList<QString> _invalidScripts;
 
     bool _funscriptSearchNotFound = false;
     QString _lastSearchedMediaPath;
 
-    QList<QString> load(QString funscript, bool reset);
-    bool load(QByteArray funscript);
-    void loadMFS(QString funscript);
+    SyncLoadState load(const LibraryListItem27 &libraryItem, bool reset);
+    SyncLoadState load(QString funscript);
+    //bool load(QByteArray funscript);
+    bool loadMFS(QString funscript, SyncLoadState &loadState);
     bool loadMFS(QString channel, QString funscript);
     bool loadMFS(QString channel, QByteArray funscript);
 

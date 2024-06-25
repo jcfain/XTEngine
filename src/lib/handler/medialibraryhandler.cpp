@@ -1304,8 +1304,9 @@ void MediaLibraryHandler::findAlternateFunscripts(QString path)
                 containerType = ScriptContainerType::ZIP;
             }
             //Is alternate script?
-            if(scriptInfo.baseName().startsWith(fileName)) {
-                LogHandler::Debug("Found possible alt script: " + scriptInfo.baseName());
+            auto baseName = scriptInfo.baseName();
+            if(baseName.startsWith(fileName)) {
+                LogHandler::Debug("Found possible alt script: " + baseName);
                 // Ignore mfs files
                 LogHandler::Debug("Is MFS?");
                 QString trackname;
@@ -1313,7 +1314,7 @@ void MediaLibraryHandler::findAlternateFunscripts(QString path)
                     auto track = TCodeChannelLookup::getChannel(channel);
                     if(channel == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfOscillate || track->TrackName.isEmpty())
                         continue;
-                    if(filepath.endsWith("."+track->TrackName+".funscript")) {
+                    if(filepath.endsWith("."+track->TrackName+".funscript") && !path.endsWith("."+track->TrackName+".funscript")) {
                         LogHandler::Debug("Is MFS track: " + track->TrackName);
                         trackname = track->TrackName;
                         containerType = ScriptContainerType::MFS;
