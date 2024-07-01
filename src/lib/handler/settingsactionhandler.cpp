@@ -271,17 +271,17 @@ void SettingsActionHandler::media_action(QString action)
         }
         if (XMediaStateHandler::isPlaying())
         {
-           const LibraryListItem27 item = XMediaStateHandler::getPlaying();
-           if(!item.path.isEmpty())
+           LibraryListItem27* item = XMediaStateHandler::getPlaying();
+           if(item)
            {
-               auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(item);
+               //SettingsHandler::getLibraryListItemMetaData(item);
                int newOffset = 0;
                if(!reset) {
-                    newOffset = increase ? libraryListItemMetaData.offset + SettingsHandler::getFunscriptOffsetStep() : libraryListItemMetaData.offset - SettingsHandler::getFunscriptOffsetStep();
+                   newOffset = increase ? item->metadata.offset + SettingsHandler::getFunscriptOffsetStep() : item->metadata.offset - SettingsHandler::getFunscriptOffsetStep();
                }
-               libraryListItemMetaData.offset = newOffset;
+               item->metadata.offset = newOffset;
                SettingsHandler::setLiveOffset(newOffset);
-               SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
+               SettingsHandler::updateLibraryListItemMetaData(item);
                emit actionExecuted(action, verb + " offset to " + QString::number(newOffset));
            }
         }

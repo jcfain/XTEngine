@@ -26,17 +26,15 @@ bool SettingsHandler::getFirstLoad()
 
 void SettingsHandler::setMoneyShot(LibraryListItem27 libraryListItem, qint64 currentPosition, bool userSet)
 {
-    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem);
-    if(!userSet && libraryListItemMetaData.moneyShotMillis > 0)
+    if(!userSet && libraryListItem.metadata.moneyShotMillis > 0)
         return;
-    libraryListItemMetaData.moneyShotMillis = currentPosition;
-    SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
+    libraryListItem.metadata.moneyShotMillis = currentPosition;
+    SettingsHandler::updateLibraryListItemMetaData(libraryListItem);
 }
 void SettingsHandler::addBookmark(LibraryListItem27 libraryListItem, QString name, qint64 currentPosition)
 {
-    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem);
-    libraryListItemMetaData.bookmarks.append({name, currentPosition});
-    SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
+    libraryListItem.metadata.bookmarks.append({name, currentPosition});
+    SettingsHandler::updateLibraryListItemMetaData(libraryListItem);
 }
 
 QSettings* SettingsHandler::getSettings() {
@@ -927,23 +925,26 @@ void SettingsHandler::MigrateLibraryMetaDataTo258()
     QVariantHash libraryListItemMetaDatas = settings->value("libraryListItemMetaDatas").toHash();
     foreach(auto key, libraryListItemMetaDatas.keys())
     {
-        auto libraryListItemMetaData = libraryListItemMetaDatas[key].value<LibraryListItemMetaData258>();
+        LibraryListItemMetaData258 libraryListItemMetaData = libraryListItemMetaDatas[key].value<LibraryListItemMetaData258>();
         QFile file(libraryListItemMetaData.libraryItemPath);
         if(file.exists())
         {
             _libraryListItemMetaDatas.insert(key, {
-                                                     libraryListItemMetaData.libraryItemPath, // libraryItemPath
+                                                    libraryListItemMetaData.libraryItemPath, // libraryItemPath
                                                     libraryListItemMetaData.watched, // libraryItemPath
-                                                     libraryListItemMetaData.lastPlayPosition, // lastPlayPosition
-                                                     libraryListItemMetaData.lastLoopEnabled, // lastLoopEnabled
-                                                     libraryListItemMetaData.lastLoopStart, // lastLoopStart
-                                                     libraryListItemMetaData.lastLoopEnd, // lastLoopEnd
-                                                     0, // offset
-                                                     libraryListItemMetaData.moneyShotMillis, // moneyShotMillis
-                                                     "",
-                                                     libraryListItemMetaData.bookmarks, // bookmarks
-                                                     libraryListItemMetaData.funscripts,
-                                                     libraryListItemMetaData.tags
+                                                    libraryListItemMetaData.lastPlayPosition, // lastPlayPosition
+                                                    libraryListItemMetaData.lastLoopEnabled, // lastLoopEnabled
+                                                    libraryListItemMetaData.lastLoopStart, // lastLoopStart
+                                                    libraryListItemMetaData.lastLoopEnd, // lastLoopEnd
+                                                    0, // offset
+                                                    libraryListItemMetaData.moneyShotMillis, // moneyShotMillis
+                                                    "",
+                                                    "",
+                                                    false,
+                                                    libraryListItemMetaData.bookmarks, // bookmarks
+                                                    libraryListItemMetaData.funscripts,
+                                                    libraryListItemMetaData.tags,
+                                                    libraryListItemMetaData.MFSScripts
                                               });
             foreach(auto bookmark, libraryListItemMetaDatas[key].value<LibraryListItemMetaData258>().bookmarks)
                 _libraryListItemMetaDatas[key].bookmarks.append(bookmark);
@@ -2543,17 +2544,19 @@ QHash<QString, LibraryListItemMetaData258> SettingsHandler::getLibraryListItemMe
     return _libraryListItemMetaDatas;
 }
 
-LibraryListItemMetaData258 SettingsHandler::getLibraryListItemMetaData(const LibraryListItem27 item)
+void SettingsHandler::getLibraryListItemMetaData(LibraryListItem27& item)
 {
     QMutexLocker locker(&mutex);
     if(_libraryListItemMetaDatas.contains(item.path))
     {
-        return _libraryListItemMetaDatas.value(item.path);
+        item.metadata = _libraryListItemMetaDatas.value(item.path);
+        return;// _libraryListItemMetaDatas.value(item.path);
     }
     //Default meta data
     QList<QString> funscripts;
     QList<Bookmark> bookmarks;
     QList<QString> tags;
+    QList<QString> MFSScripts;
     _libraryListItemMetaDatas.insert(item.path, {
                                          item.path, // libraryItemPath
                                          false,
@@ -2564,11 +2567,14 @@ LibraryListItemMetaData258 SettingsHandler::getLibraryListItemMetaData(const Lib
                                          0, // offset
                                          -1, // moneyShotMillis
                                          "",
+                                         "",
+                                         false,
                                          bookmarks, // bookmarks
                                          funscripts,
-                                         tags
+                                         tags,
+                                         MFSScripts
                                      });
-    return _libraryListItemMetaDatas.value(item.path);
+    item.metadata = _libraryListItemMetaDatas.value(item.path);
 }
 
 bool SettingsHandler::hasLibraryListItemMetaData(const LibraryListItem27 item)
@@ -2576,15 +2582,21 @@ bool SettingsHandler::hasLibraryListItemMetaData(const LibraryListItem27 item)
     return !item.path.isEmpty() && _libraryListItemMetaDatas.contains(item.path);
 }
 
+void SettingsHandler::removeLibraryListItemMetaData(LibraryListItem27& item)
+{
+    _libraryListItemMetaDatas.remove(item.path);
+    getLibraryListItemMetaData(item);
+}
+
 void SettingsHandler::removeLibraryListItemMetaData(const QString key)
 {
     _libraryListItemMetaDatas.remove(key);
 }
 
-void SettingsHandler::updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData, bool sync)
+void SettingsHandler::updateLibraryListItemMetaData(const LibraryListItem27 item, bool sync)
 {
     QMutexLocker locker(&mutex);
-    _libraryListItemMetaDatas.insert(libraryListItemMetaData.libraryItemPath, libraryListItemMetaData);
+    _libraryListItemMetaDatas.insert(item.path, item.metadata);
     if(sync)
     {
         storeMediaMetaDatas();

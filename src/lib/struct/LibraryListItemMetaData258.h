@@ -21,9 +21,12 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     int offset;
     qint64 moneyShotMillis;
     QString toolTip;
+    QString subtitle;
+    bool isMFS;
     QList<Bookmark> bookmarks;
     QList<QString> funscripts;
     QList<QString> tags;
+    QStringList MFSScripts;
 
     friend QDataStream & operator<<(QDataStream &dataStream, const LibraryListItemMetaData258 &object )
     {
@@ -36,12 +39,16 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream << object.offset;
         dataStream << object.moneyShotMillis;
         dataStream << object.toolTip;
+        dataStream << object.subtitle;
+        dataStream << object.isMFS;
         foreach(auto bookmark, object.bookmarks )
             dataStream << bookmark;
         foreach(auto funscript, object.funscripts )
             dataStream << funscript;
         foreach(auto tag, object.tags )
             dataStream << tag;
+        foreach(auto script, object.MFSScripts )
+            dataStream << script;
         return dataStream;
     }
 
@@ -56,12 +63,16 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream >> object.offset;
         dataStream >> object.moneyShotMillis;
         dataStream >> object.toolTip;
+        dataStream >> object.subtitle;
+        dataStream >> object.isMFS;
         foreach(auto bookmark, object.bookmarks )
             dataStream >> bookmark;
         foreach(auto funscript, object.funscripts )
             dataStream >> funscript;
         foreach(auto tag, object.tags )
             dataStream >> tag;
+        foreach(auto script, object.MFSScripts )
+            dataStream >> script;
         return dataStream;
     }
     friend bool operator==(const LibraryListItemMetaData258 &p1, const LibraryListItemMetaData258 &p2)
@@ -112,6 +123,8 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         obj["moneyShotMillis"] = QString::number(item.moneyShotMillis);
         obj["moneyShotSecs"] = item.moneyShotMillis / 1000;
         obj["toolTip"] = item.toolTip;
+        obj["subtitle"] = item.subtitle;
+        obj["isMFS"] = item.isMFS;
         QJsonArray bookmarks;
         foreach(Bookmark bookmark, item.bookmarks) {
             QJsonObject bookmarkObj;
@@ -130,6 +143,11 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
             tags.append(tag);
         }
         obj["tags"] = tags;
+        QJsonArray mfsScripts;
+        foreach (auto script, item.MFSScripts) {
+            mfsScripts.append(script);
+        }
+        obj["MFSScripts"] = mfsScripts;
         return obj;
     }
 
@@ -144,6 +162,8 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         newItem.offset = obj["offset"].toInt();
         newItem.moneyShotMillis = obj["moneyShotMillis"].toString().toLongLong();
         newItem.toolTip = obj["toolTip"].toString();
+        newItem.subtitle = obj["subtitle"].toString();
+        newItem.isMFS = obj["isMFS"].toBool();
         foreach(auto bookmark, obj["bookmarks"].toArray())
         {
             Bookmark bookMark;
@@ -158,6 +178,10 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         foreach(auto tag, obj["tags"].toArray())
         {
             newItem.tags.append(tag.toString());
+        }
+        foreach(auto script, obj["MFSScripts"].toArray())
+        {
+            newItem.MFSScripts.append(script.toString());
         }
         return newItem;
     }

@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include "XTEngine_global.h"
+#include "LibraryListItemMetaData258.h"
 
 
 struct XTENGINE_EXPORT LibraryThumbNail {
@@ -51,10 +52,7 @@ public:
         ID = item->ID;
         libraryPath = item->libraryPath;
         hasScript = item->hasScript;
-        MFSScripts = item->MFSScripts;
-        subtitle = item->subtitle;
-        isMFS = item->isMFS;
-        toolTip = item->toolTip;
+        metadata = LibraryListItemMetaData258(item->metadata);
         thumbState = item->thumbState;
         thumbFileExists = item->thumbFileExists;
         managedThumb = item->managedThumb;
@@ -80,10 +78,7 @@ public:
     QString ID;
     QString libraryPath;
     bool hasScript;
-    QString subtitle;
-    QStringList MFSScripts;
-    bool isMFS;
-    QString toolTip;
+    LibraryListItemMetaData258 metadata;
     ThumbState thumbState = ThumbState::Waiting;
     bool thumbFileExists = false;
     bool managedThumb = false;
@@ -101,16 +96,13 @@ public:
         dataStream << object.nameNoExtension;
         dataStream << object.script;
         dataStream << object.pathNoExtension;
-        dataStream << object.subtitle;
         dataStream << object.mediaExtension;
         dataStream << object.thumbFile;
         dataStream << object.zipFile;
         dataStream << object.modifiedDate;
         dataStream << object.duration;
         dataStream << object.md5;
-        dataStream << object.isMFS;
         dataStream << object.libraryPath;
-        dataStream << object.toolTip;
         dataStream << object.thumbFileExists;
         dataStream << (int)object.thumbState;
         dataStream << object.thumbFileLoading;
@@ -128,16 +120,13 @@ public:
         dataStream >> object.nameNoExtension;
         dataStream >> object.script;
         dataStream >> object.pathNoExtension;
-        dataStream >> object.subtitle;
         dataStream >> object.mediaExtension;
         dataStream >> object.thumbFile;
         dataStream >> object.zipFile;
         dataStream >> object.modifiedDate;
         dataStream >> object.duration;
         dataStream >> object.md5;
-        dataStream >> object.isMFS;
         dataStream >> object.libraryPath;
-        dataStream >> object.toolTip;
         dataStream >> object.thumbFileExists;
         dataStream >> object.thumbState;
         dataStream >> object.thumbFileLoading;
@@ -177,17 +166,10 @@ public:
         obj["id"] = item.ID;
         obj["libraryPath"] = item.libraryPath;
         obj["hasScript"] = item.hasScript;
-        QJsonArray mfsScripts;
-        foreach (auto script, item.MFSScripts) {
-            mfsScripts.append(script);
-        }
-        obj["MFSScripts"] = mfsScripts;
-        obj["isMFS"] = item.isMFS;
-        obj["tooltip"] = item.toolTip;
         obj["thumbState"] = (int)item.thumbState;
         obj["thumbFileExists"] = item.thumbFileExists;
         obj["managedThumb"] = item.managedThumb;
-        obj["subtitle"] = item.subtitle;
+        obj["metadata"] = LibraryListItemMetaData258::toJson(item.metadata);
         return obj;
     }
 
@@ -247,13 +229,10 @@ public:
         to.ID = from.ID;
         to.libraryPath = from.libraryPath;
         to.hasScript = from.hasScript;
-        to.MFSScripts = from.MFSScripts;
-        to.isMFS = from.isMFS;
-        to.toolTip = from.toolTip;
         to.thumbState = from.thumbState;
         to.thumbFileExists = from.thumbFileExists;
         to.managedThumb = from.managedThumb;
-        to.subtitle = from.subtitle;
+        to.metadata = LibraryListItemMetaData258(from.metadata);
     }
 //    //waiting ? "://images/icons/loading.png" : "://images/icons/loading_current.png"
 };

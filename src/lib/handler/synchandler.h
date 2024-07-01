@@ -72,6 +72,7 @@ public:
     SyncLoadState swap(const LibraryListItem27 &libraryItem);
     bool isLoaded();
     bool isPlaying();
+    bool isPlayingInternal();
     bool isPlayingStandAlone();
     bool isPlayingVR();
     QString getPlayingStandAloneScript();
@@ -83,7 +84,7 @@ private:
     //FunscriptHandler* _funscriptHandler = 0;
     QList<FunscriptHandler*> _funscriptHandlers;
     InputDeviceHandler* _inputDeviceHandler = 0;
-    OutputDeviceHandler* _outputDeviceHandler = 0;
+    //OutputDeviceHandler* _outputDeviceHandler = 0;
 
 
     QMutex _mutex;

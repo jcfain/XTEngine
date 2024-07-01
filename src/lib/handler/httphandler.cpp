@@ -563,7 +563,9 @@ HttpPromise HttpHandler::handleMediaItemMetadataUpdate(HttpDataPtr data)
     else
     {
         auto metaData = LibraryListItemMetaData258::fromJson(doc.object());
-        SettingsHandler::updateLibraryListItemMetaData(metaData);
+        auto libraryItem = _mediaLibraryHandler->findItemByMediaPath(metaData.libraryItemPath);
+        libraryItem->metadata = metaData;
+        SettingsHandler::updateLibraryListItemMetaData(libraryItem);
         SettingsHandler::setLiveOffset(metaData.offset);
     }
     data->response->setStatus(HttpStatus::Ok);
@@ -712,7 +714,7 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["id"] = item.ID;
     object["type"] = (int)item.type;
     object["name"] = item.nameNoExtension;
-    if(item.isMFS)
+    if(item.metadata.isMFS)
         object["displayName"] = "(MFS) " + item.nameNoExtension;
     else
         object["displayName"] = item.nameNoExtension;
@@ -720,9 +722,9 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     relativePath = relativePath.replace(item.libraryPath +"/", "");
     object["path"] = hostAddress + "media/" + QString(QUrl::toPercentEncoding(relativePath));
     object["relativePath"] = "/" + QString(QUrl::toPercentEncoding(relativePath));
-    if(!item.subtitle.isEmpty())
+    if(!item.metadata.subtitle.isEmpty())
     {
-        QString relativeSubtitlePath = item.subtitle;
+        QString relativeSubtitlePath = item.metadata.subtitle;
         relativeSubtitlePath = relativeSubtitlePath.replace(item.libraryPath +"/", "");
         object["subtitle"] = hostAddress + "media/" + QString(QUrl::toPercentEncoding(relativeSubtitlePath));
         object["subtitleRelative"] = "/" + QString(QUrl::toPercentEncoding(relativeSubtitlePath));
@@ -739,8 +741,8 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["thumbSize"] = SettingsHandler::getThumbSize();
     object["duration"] = QJsonValue::fromVariant(item.duration);
     object["modifiedDate"] = item.modifiedDate.toString(Qt::DateFormat::ISODate);
-    object["isMFS"] = item.isMFS;
-    object["tooltip"] = item.toolTip;
+    object["isMFS"] = item.metadata.isMFS;
+    object["tooltip"] = item.metadata.toolTip;
     object["hasScript"] = !item.script.isEmpty() || !item.zipFile.isEmpty();
     object["thumbState"] = (int)item.thumbState;
     object["thumbFileLoading"] = item.thumbFileLoading;
@@ -751,9 +753,8 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["playing"] = false;
     object["managedThumb"] = item.managedThumb;
 
-    auto metaData = SettingsHandler::getLibraryListItemMetaData(item);
-    object["metaData"] = LibraryListItemMetaData258::toJson(metaData);
-    if(item.isMFS)
+    object["metaData"] = LibraryListItemMetaData258::toJson(item.metadata);
+    if(item.metadata.isMFS)
         object["displayName"] = "(MFS) " + item.nameNoExtension;
 
     return object;
@@ -1003,16 +1004,16 @@ HttpPromise HttpHandler::handleSubtitle(HttpDataPtr data)
     QString apiStr("/media/");
     QString subtitleFileName = parameter.replace(parameter.indexOf(apiStr), apiStr.size(), "");
     LibraryListItem27* libraryItem = _mediaLibraryHandler->findItemByPartialSubtitle(subtitleFileName);
-    if(!libraryItem || libraryItem->subtitle.isEmpty() || !QFileInfo::exists(libraryItem->subtitle))
+    if(!libraryItem || libraryItem->metadata.subtitle.isEmpty() || !QFileInfo::exists(libraryItem->metadata.subtitle))
     {
         data->response->setStatus(HttpStatus::NotFound);
         return HttpPromise::resolve(data);
     }
-    QFileInfo fileInfo(libraryItem->subtitle);
+    QFileInfo fileInfo(libraryItem->metadata.subtitle);
     data->response->setHeader("Content-Disposition", "attachment");
     data->response->setHeader("filename", fileInfo.fileName());
-    QString mimeType = mimeDatabase.mimeTypeForFile(libraryItem->subtitle, QMimeDatabase::MatchExtension).name();
-    data->response->sendFile(libraryItem->subtitle, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
+    QString mimeType = mimeDatabase.mimeTypeForFile(libraryItem->metadata.subtitle, QMimeDatabase::MatchExtension).name();
+    data->response->sendFile(libraryItem->metadata.subtitle, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
     data->response->setStatus(HttpStatus::Ok);
     //buffer->deleteLater();
     return HttpPromise::resolve(data);

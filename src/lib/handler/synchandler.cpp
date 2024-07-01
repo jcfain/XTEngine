@@ -43,6 +43,10 @@ bool SyncHandler::isPlaying()
 {
     return _isVRFunscriptPlaying || _isMediaFunscriptPlaying || _isStandAloneFunscriptPlaying;
 }
+bool SyncHandler::isPlayingInternal()
+{
+    return _isMediaFunscriptPlaying;
+}
 bool SyncHandler::isPlayingStandAlone()
 {
     return _isStandAloneFunscriptPlaying;
@@ -278,7 +282,7 @@ void SyncHandler::playStandAlone(QString funscript) {
                     if(currentVRPacket.duration > 0)
                         setPause(!currentVRPacket.playing);
                 }
-                if(!isPaused() && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected())
+                if(!isPaused() && !SettingsHandler::getLiveActionPaused())
                 {
                     if(_seekTime > -1)
                     {
@@ -411,7 +415,7 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
             if (timer2 - timer1 >= 1)
             {
                 timer1 = timer2;
-                if(!isPaused() && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected())
+                if(!isPaused() && !SettingsHandler::getLiveActionPaused())
                 {
                     qint64 currentTime = getMediaPosition();//_videoHandler->position();
                     // actionPosition = _funscriptHandler->getPosition(currentTime);
@@ -468,7 +472,7 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
         qint64 duration;
         qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
         bool lastStatePlaying = false;
-        while (_isVRFunscriptPlaying && _inputDeviceHandler && _inputDeviceHandler->isConnected() && _outputDeviceHandler && _outputDeviceHandler->isConnected() && !_isOtherMediaPlaying)
+        while (_isVRFunscriptPlaying && _inputDeviceHandler && _inputDeviceHandler->isConnected() && !_isOtherMediaPlaying)
         {
             //execute once every millisecond
             if (timer2 - timer1 >= 1)
@@ -479,7 +483,7 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
                     emit sendTCode("DSTOP");
                 lastStatePlaying = currentVRPacket.playing;
                 //timer.start();
-                if(!isPaused() && !SettingsHandler::getLiveActionPaused() && _outputDeviceHandler && _outputDeviceHandler->isConnected() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
+                if(!isPaused() && !SettingsHandler::getLiveActionPaused() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
                 {
                     if(videoPath.isEmpty())
                         videoPath = currentVRPacket.path;
@@ -643,7 +647,7 @@ void SyncHandler::on_input_device_change(InputDeviceHandler* inputDeviceHandler)
 }
 
 void SyncHandler::on_output_device_change(OutputDeviceHandler* outputDeviceHandler) {
-    _outputDeviceHandler = outputDeviceHandler;
+   // _outputDeviceHandler = outputDeviceHandler;
 }
 
 void SyncHandler::on_other_media_state_change(XMediaState state) {
@@ -662,8 +666,8 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
         return;
     }
 
-    if(!(_outputDeviceHandler && _outputDeviceHandler->isConnected()))
-        return;
+    // if(!(_outputDeviceHandler && _outputDeviceHandler->isConnected()))
+    //     return;
 
     QString videoPath = packet.path.isEmpty() ? packet.path : QUrl::fromPercentEncoding(packet.path.toUtf8());
     if(!videoPath.isEmpty() && videoPath != _lastSearchedMediaPath)

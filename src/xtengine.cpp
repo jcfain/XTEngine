@@ -50,12 +50,16 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
         }
     });
     _mediaLibraryHandler = new MediaLibraryHandler(this);
+    XMediaStateHandler::setMediaLibraryHandler(_mediaLibraryHandler);
     _connectionHandler = new ConnectionHandler(this);
     _syncHandler = new SyncHandler(this);
     m_heatmap = new HeatMap(this);
     connect(m_heatmap, &HeatMap::maxHeat, this, [](qint64 maxHeatAt) {
-        if(maxHeatAt > 0)
-            SettingsHandler::instance()->setMoneyShot(XMediaStateHandler::getPlaying(), maxHeatAt, false);
+        if(maxHeatAt > 0) {
+            auto item = XMediaStateHandler::getPlaying();
+            if(item)
+                SettingsHandler::instance()->setMoneyShot(item, maxHeatAt, false);
+        }
     });
 
     connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, [this]() {
@@ -123,8 +127,8 @@ void XTEngine::init()
         if(funscriptHandler)
         {
             auto funscript = funscriptHandler->currentFunscript();
-            auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(XMediaStateHandler::getPlaying());
-            if(libraryListItemMetaData.moneyShotMillis > 0)
+            auto playingItem = XMediaStateHandler::getPlaying();
+            if(playingItem && playingItem->metadata.moneyShotMillis > 0)
                 return;
 
             if(funscript) {
@@ -166,7 +170,7 @@ void XTEngine::onFunscriptSearchResult(QString mediaPath, QString funscriptPath,
 
 void XTEngine::skipToNextAction()
 {
-    if(SettingsHandler::getEnableHttpServer() && _syncHandler->isLoaded())
+    if(SettingsHandler::getEnableHttpServer() && _syncHandler->isPlayingVR())
     {
         qint64 nextActionMillis = _syncHandler->getFunscriptNext();
         if(nextActionMillis > 1500)

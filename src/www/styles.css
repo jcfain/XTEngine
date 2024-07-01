@@ -473,15 +473,27 @@ input:hover:not(.range-input) {
 .media-item-mfs:not(.media-context):not(.media-item-playing):hover a {
     color: gold;
 }
+.media-item-mfs.media-item-playing {
+    color: cornflowerblue;
+    box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
+}
+
+.media-item-mfs-noscript:not(.media-item-playing) a {
+    color: cyan;
+}
+
+.media-item-mfs-noscript:not(.media-context):not(.media-item-playing):hover a {
+    color: lightcyan;
+}
+
+.media-item-mfs-noscript.media-item-playing {
+    color: cornflowerblue;
+    box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
+}
 
 .media-item-playing {
     color: cornflowerblue;
     box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px cornflowerblue;
-}
-
-.media-item-mfs.media-item-playing {
-    color: cornflowerblue;
-    box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
 }
 
 .media-item-playing .media-link {

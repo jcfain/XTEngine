@@ -639,7 +639,9 @@
 					<a id="tcodeDeviceSettingsLink" hidden="true" target="_blank">TCode device settings</a>
 				</div>
 				<div class="modal-footer-content">
-					<span id="mediaReloadRequired" class="hidden">Media reload required after save</span>
+					<span id="mediaReloadRequired" class="hidden">Full metadata process required AFTER save
+						<button id="startMetadataProcessButton" style="margin-top:8px" onclick="startMetadataProcess()">Process metadata</button>
+					</span>
 					<span id="saveState" class="save-status"></span>
 					<button id="defaultSettingsButton"
 						title="This will only reset the local browser settings to default. Your settings stored on the XTP machine will remain."

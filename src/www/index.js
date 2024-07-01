@@ -1407,7 +1407,7 @@ function loadMedia(mediaList) {
 		divnode.className += "media-item"
 		divnode.style.width = width;
 		divnode.style.height = height;
-		divnode.title = obj.name;
+		divnode.title = obj.tooltip;
 
 		var info = document.createElement("button");
 		info.id = obj.id + "InfoButton";
@@ -1638,8 +1638,11 @@ function updateScriptStatus(libraryItem, mediaNode, displayNameNode) {
 	if(!displayNameNode)
 		return undefined;
 	displayNameNode.innerText = libraryItem.displayName;
-	if (libraryItem.isMFS) {
+	if (libraryItem.isMFS && libraryItem.hasScript) {
 		mediaNode.classList.add("media-item-mfs");
+	} else if(libraryItem.isMFS && !libraryItem.hasScript) {
+		mediaNode.classList.remove("media-item-mfs");
+		mediaNode.classList.add("media-item-mfs-noscript");
 	} else {
 		mediaNode.classList.remove("media-item-mfs");
 	}
@@ -2511,7 +2514,7 @@ function showChange(value) {
 
 function sortChange(value) {
 	sort(value, true);
-	mediaListDisplayed = getDisplayedMediaList(value, false);
+	mediaListDisplayed = getDisplayedMediaList(showGlobal, false);
 	loadMedia(mediaListDisplayed);
 	filter();
 }

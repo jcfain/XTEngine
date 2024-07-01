@@ -124,6 +124,14 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 {
                     int min = 0;
                     int max = 100;
+                    int lastPos = channelValueTracker.contains(axis) ? channelValueTracker[axis] : -1;
+                    //int userMid = TCodeChannelLookup::getChannel(axis)->UserMid;
+                    if(lastPos > -1)
+                    {
+                        min = lastPos < 50 ? 50 : 0;
+                        max = lastPos > 50 ? 50 : 100;
+                    }
+
                     // if((channelValueTracker.contains(axis) && channelValueTracker[axis] > 50)) {
                     //     max = 50;// - (qRound(strokeDistance / 2.0f) + 1);
                     // } else {
@@ -132,8 +140,8 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                     value = XMath::random(min, max);
                     LogHandler::Debug("Channel: "+ axis);
                     LogHandler::Debug("Value: "+ QString::number(value));
-                    if(channelValueTracker.contains(axis)) {
-                        channelDistance = getDistance(value, channelValueTracker[axis]);
+                    if(lastPos > -1) {
+                        channelDistance = getDistance(value, lastPos);
                         LogHandler::Debug("Last value: "+ QString::number(channelValueTracker[axis]));
                     }
                     channelValueTracker[axis] = value;
@@ -181,16 +189,16 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
 int TCodeHandler::calculateRange(const char* channel, int rawValue)
 {
     int xMax = TCodeChannelLookup::getChannel(channel)->UserMax;
-    //int xMin = TCodeChannelLookup::getChannel(channel)->UserMin;
-    int xMid = TCodeChannelLookup::getChannel(channel)->UserMid;
+    int xMin = TCodeChannelLookup::getChannel(channel)->UserMin;
+    //int xMid = TCodeChannelLookup::getChannel(channel)->UserMid;
     // Update for live x range switch
     if(QString(channel) == TCodeChannelLookup::Stroke())
     {
         xMax = TCodeChannelLookup::getLiveXRangeMax();
-        //xMin = TCodeChannelLookup::getLiveXRangeMin();
-        xMid = TCodeChannelLookup::getLiveXRangeMid();
+        xMin = TCodeChannelLookup::getLiveXRangeMin();
+        //xMid = TCodeChannelLookup::getLiveXRangeMid();
     }
-    return XMath::mapRange(rawValue, 50, 100, xMid, xMax);
+    return XMath::mapRange(rawValue, 0, 100, xMin, xMax);
 }
 
 QString TCodeHandler::getRunningHome()

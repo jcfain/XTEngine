@@ -1,37 +1,40 @@
 #include "xmediastatehandler.h"
 #include "settingshandler.h"
 
-//XMediaStateHandler::XMediaStateHandler(QObject *parent)
-//    : QObject{parent}
-//{
-
-//}
+// XMediaStateHandler::XMediaStateHandler(MediaLibraryHandler* libraryHandler, QObject *parent):
+//     m_libraryHandler(libraryHandler) {}
 
 //XMediaStateHandler::~XMediaStateHandler()
 //{
 
 //}
 
+void XMediaStateHandler::setMediaLibraryHandler(MediaLibraryHandler *libraryHandler)
+{
+    m_libraryHandler = libraryHandler;
+}
+
 bool XMediaStateHandler::isPlaying()
 {
-    return !m_playingItem.ID.isEmpty();
+    return m_playingItem && !m_playingItem->ID.isEmpty();
 }
 
 bool XMediaStateHandler::isExternal()
 {
-    return isPlaying() && m_isInternal;
+    return isPlaying() && !m_isInternal;
 }
 
-void XMediaStateHandler::setPlaying(LibraryListItem27 playingItem, bool internal)
-{
-    m_playingItem = LibraryListItem27(playingItem);
-    m_isInternal = internal;
-}
+// void XMediaStateHandler::setPlaying(LibraryListItem27& playingItem, bool internal)
+// {
+//     m_playingItem = LibraryListItem27(playingItem);
+//     m_playingItemRef = &playingItem;
+//     m_isInternal = internal;
+// }
 
-void XMediaStateHandler::setPlaying(LibraryListItem27* playingItem, bool internal)
+void XMediaStateHandler::setPlaying(const LibraryListItem27 playingItem, bool internal)
 {
-    if(playingItem) {
-        m_playingItem = LibraryListItem27(playingItem);
+    if(!playingItem.ID.isEmpty() && m_libraryHandler) {
+        m_playingItem = m_libraryHandler->findItemByID(playingItem.ID);
         m_isInternal = internal;
         processMetaData();
     } else {
@@ -39,37 +42,40 @@ void XMediaStateHandler::setPlaying(LibraryListItem27* playingItem, bool interna
     }
 }
 
-LibraryListItem27 XMediaStateHandler::getPlaying()
+LibraryListItem27* XMediaStateHandler::getPlaying()
 {
     return m_playingItem;
 }
 
 void XMediaStateHandler::stop()
 {
-    m_playingItem = LibraryListItem27();
+    m_playingItem = 0;
 }
 
 void XMediaStateHandler::updateDuration(qint64 currentPos, qint64 duration)
 {
+    if(!m_playingItem)
+        return;
     const qint64 timeLeft = duration - currentPos;
     const qint64 viewedThreshold = duration * SettingsHandler::getViewedThreshold();
     if(duration > 0 && currentPos > -1 && timeLeft < viewedThreshold)
     {
-        auto metadata = SettingsHandler::getLibraryListItemMetaData(m_playingItem);
-        if(!metadata.tags.contains(SettingsHandler::getXTags().VIEWED))
+        if(!m_playingItem->metadata.tags.contains(SettingsHandler::getXTags().VIEWED))
         {
-            metadata.tags.removeAll(SettingsHandler::getXTags().UNVIEWED);
-            metadata.tags.append(SettingsHandler::getXTags().VIEWED);
-            SettingsHandler::updateLibraryListItemMetaData(metadata);
+            m_playingItem->metadata.tags.removeAll(SettingsHandler::getXTags().UNVIEWED);
+            m_playingItem->metadata.tags.append(SettingsHandler::getXTags().VIEWED);
+            SettingsHandler::updateLibraryListItemMetaData(m_playingItem);
         }
     }
 }
 
 void XMediaStateHandler::processMetaData()
 {
-    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(m_playingItem);
-    SettingsHandler::setLiveOffset(libraryListItemMetaData.offset);
+    if(!m_playingItem)
+        return;
+    SettingsHandler::setLiveOffset(m_playingItem->metadata.offset);
 }
 
-LibraryListItem27 XMediaStateHandler::m_playingItem;
+LibraryListItem27* XMediaStateHandler::m_playingItem;
+MediaLibraryHandler* XMediaStateHandler::m_libraryHandler = 0;
 bool XMediaStateHandler::m_isInternal;

@@ -83,7 +83,7 @@ public:
     void cleanGlobalThumbDirectory();
     void findAlternateFunscripts(QString path);
     bool metadataProcessing();
-    LibraryListItemMetaData258 processMetadata(LibraryListItem27 &item);
+    void processMetadata(LibraryListItem27 &item);
     void startMetadataProcess(bool fullProcess = false);
 
 private:
@@ -112,7 +112,7 @@ private:
     void assignID(LibraryListItem27 &item);
 
     LibraryListItem27 createLibraryListItemFromFunscript(QString funscript);
-    LibraryListItemMetaData258 processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess = false);
+    void processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess = false);
     void stopMetadataProcess();
     bool updateToolTip(LibraryListItem27 &item);
     bool discoverMFS1(LibraryListItem27 &item);

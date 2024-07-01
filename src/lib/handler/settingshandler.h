@@ -240,10 +240,11 @@ public:
     static bool getFunscriptLoaded(QString key);
 
     static QHash<QString, LibraryListItemMetaData258> getLibraryListItemMetaData();
-    static LibraryListItemMetaData258 getLibraryListItemMetaData(const LibraryListItem27 item);
+    static void getLibraryListItemMetaData(LibraryListItem27& item);
     static bool hasLibraryListItemMetaData(const LibraryListItem27 item);
+    static void removeLibraryListItemMetaData(LibraryListItem27& item);
     static void removeLibraryListItemMetaData(const QString key);
-    static void updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData, bool sync = true);
+    static void updateLibraryListItemMetaData(const LibraryListItem27 item, bool sync = true);
     static bool getForceMetaDataFullProcess();
     static void setForceMetaDataFullProcess(bool enable);
     static void setForceMetaDataFullProcessComplete();
