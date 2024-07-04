@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.456b";
-const float SettingsHandler::XTEVersionNum = 0.456f;
+const QString SettingsHandler::XTEVersion = "0.457b";
+const float SettingsHandler::XTEVersionNum = 0.457f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -297,6 +297,8 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
     m_forceMetaDataFullProcess = settingsToLoadFrom->value("forceMetaDataFullProcess").toBool();
 
+    m_disableHeartBeat = settingsToLoadFrom->value("disableHeartBeat").toBool();
+
     if(!m_firstLoad)
     {
         if(currentVersion < 0.2f)
@@ -418,7 +420,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
-        if(currentVersion < 0.455f) {
+        if(currentVersion < 0.455f || currentVersion < 0.457f) {
             setForceMetaDataFullProcess(true);
         }
     }
@@ -571,6 +573,9 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("viewedThreshold", m_viewedThreshold);
 
         settingsToSaveTo->setValue("forceMetaDataFullProcess", m_forceMetaDataFullProcess);
+
+        settingsToSaveTo->setValue("disableHeartBeat", m_disableHeartBeat);
+
 
 
         QVariantList tagsList;
@@ -892,6 +897,17 @@ void SettingsHandler::SetSystemTagDefaults()
 {
     SetSmartTagDefaults();
     SetUserTagDefaults();
+}
+
+void SettingsHandler::setDisableHeartBeat(bool value)
+{
+    m_disableHeartBeat = value;
+    settingsChangedEvent(true);
+}
+
+bool SettingsHandler::getDisableHeartBeat()
+{
+    return m_disableHeartBeat;
 }
 
 
@@ -2720,6 +2736,7 @@ QList<DecoderModel> SettingsHandler::decoderPriority;
 XVideoRenderer SettingsHandler::_selectedVideoRenderer;
 
 float SettingsHandler::m_viewedThreshold;
+bool SettingsHandler::m_disableHeartBeat;
 
 QStringList SettingsHandler::_libraryExclusions;
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::_playlists;

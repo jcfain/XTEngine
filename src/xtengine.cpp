@@ -151,13 +151,13 @@ void XTEngine::init()
 
 void XTEngine::onFunscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration)
 {
-    if (_connectionHandler->isOutputDeviceConnected())
-    {
+    // if (_connectionHandler->isOutputDeviceConnected())
+    // {
         if(!funscriptPath.isEmpty())
         {
             LogHandler::Debug("Starting sync: "+funscriptPath);
             auto fileName = QUrl(mediaPath).fileName();
-            auto itemRef = _mediaLibraryHandler->findItemByName(QUrl(mediaPath).fileName());
+            auto itemRef = _mediaLibraryHandler->findItemByName(fileName);
             if(!itemRef) {
                 LogHandler::Error("NO vr item found in media library");
             } else {
@@ -165,7 +165,7 @@ void XTEngine::onFunscriptSearchResult(QString mediaPath, QString funscriptPath,
             }
             _syncHandler->syncInputDeviceFunscript(funscriptPath);
         }
-    }
+    // }
 }
 
 void XTEngine::skipToNextAction()

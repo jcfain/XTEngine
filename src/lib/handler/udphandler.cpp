@@ -87,35 +87,41 @@ void UdpHandler::onReadyRead()
 
 void UdpHandler::onConnected()
 {
-    sendHeartbeat();
-    m_heartBeatTimer.start(30000);
+    if(!SettingsHandler::getDisableHeartBeat())
+    {
+        sendHeartbeat();
+        m_heartBeatTimer.start(30000);
+    }
 }
 
 void UdpHandler::sendHeartbeat()
 {
-    LogHandler::Debug("UDP heart beat check");
-    int replyTimeInMS = 0;
-    QList<QHostAddress> hostsToremove;
-    foreach (QHostAddress address, m_connectedHosts) {
-        if (XNetwork::ping(address, replyTimeInMS)) {
-            LogHandler::Debug("UDP address detected!");
-            int roundTrip = replyTimeInMS * 2;
-            if(SettingsHandler::isSmartOffSet())
-                LogHandler::Debug("Adjusting live offset by: "+QString::number(roundTrip) + "ms");
-            SettingsHandler::setSmartOffset(roundTrip);
-        } else {
-            LogHandler::Debug("UDP heart beat check failed!");
-            hostsToremove.append(address);
-        }
-    }
-    foreach (QHostAddress address, hostsToremove) {
-        m_connectedHosts.removeAll(address);
-    }
-    if(m_connectedHosts.empty())
+    if(!SettingsHandler::getDisableHeartBeat())
     {
-        dispose();
-        emit connectionChange({DeviceType::Output, m_deviceName, ConnectionStatus::Disconnected, "Disconnected"});
-        return;
+        LogHandler::Debug("UDP heart beat check");
+        int replyTimeInMS = 0;
+        QList<QHostAddress> hostsToremove;
+        foreach (QHostAddress address, m_connectedHosts) {
+            if (XNetwork::ping(address, replyTimeInMS)) {
+                LogHandler::Debug("UDP address detected!");
+                int roundTrip = replyTimeInMS * 2;
+                if(SettingsHandler::isSmartOffSet())
+                    LogHandler::Debug("Adjusting live offset by: "+QString::number(roundTrip) + "ms");
+                SettingsHandler::setSmartOffset(roundTrip);
+            } else {
+                LogHandler::Debug("UDP heart beat check failed!");
+                hostsToremove.append(address);
+            }
+        }
+        foreach (QHostAddress address, hostsToremove) {
+            m_connectedHosts.removeAll(address);
+        }
+        if(m_connectedHosts.empty())
+        {
+            dispose();
+            emit connectionChange({DeviceType::Output, m_deviceName, ConnectionStatus::Disconnected, "Disconnected"});
+            return;
+        }
     }
 }
 

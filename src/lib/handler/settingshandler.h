@@ -303,6 +303,9 @@ public:
     static void SetSmartTagDefaults();
     static void SetUserTagDefaults();
     static void SetSystemTagDefaults();
+    static void setDisableHeartBeat(bool value);
+    static bool getDisableHeartBeat();
+
     static void setSaveOnExit(bool enabled);
     static bool getFirstLoad();
     static void Load(QSettings* settingsToLoadFrom = 0);
@@ -509,6 +512,7 @@ private:
     static int _channelPulseAmount;
 
     static float m_viewedThreshold;
+    static bool m_disableHeartBeat;
 
     static XTags m_xTags;
     static inline bool m_forceMetaDataFullProcess = false;
