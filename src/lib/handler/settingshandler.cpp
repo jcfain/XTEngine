@@ -950,6 +950,7 @@ void SettingsHandler::MigrateLibraryMetaDataTo258()
         if(file.exists())
         {
             _libraryListItemMetaDatas.insert(key, {
+                                                   key,
                                                     libraryListItemMetaData.libraryItemPath, // libraryItemPath
                                                     libraryListItemMetaData.watched, // libraryItemPath
                                                     libraryListItemMetaData.lastPlayPosition, // lastPlayPosition
@@ -2595,7 +2596,8 @@ void SettingsHandler::getLibraryListItemMetaData(LibraryListItem27& item)
     QList<Bookmark> bookmarks;
     QList<QString> tags;
     QList<QString> MFSScripts;
-    _libraryListItemMetaDatas.insert(item.path, {
+    _libraryListItemMetaDatas.insert(item.nameNoExtension, {
+                                         item.nameNoExtension,
                                          item.path, // libraryItemPath
                                          false,
                                          -1, // lastPlayPosition
@@ -2612,7 +2614,7 @@ void SettingsHandler::getLibraryListItemMetaData(LibraryListItem27& item)
                                          tags,
                                          MFSScripts
                                      });
-    item.metadata = _libraryListItemMetaDatas.value(item.path);
+    item.metadata = _libraryListItemMetaDatas.value(item.nameNoExtension);
 }
 
 bool SettingsHandler::hasLibraryListItemMetaData(const LibraryListItem27 item)

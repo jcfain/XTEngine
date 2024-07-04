@@ -494,6 +494,9 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
     bool hasExistingMetadata = SettingsHandler::hasLibraryListItemMetaData(item);
     if(!hasExistingMetadata || fullProcess)// path is ID for metadata
     {
+        item.metadata.libraryItemPath = item.path;
+        item.metadata.key = item.nameNoExtension;
+        metadataChanged = true;
         if(updateToolTip(item)) {
             metadataChanged = true;
             if(!rolesChanged.contains(Qt::ToolTipRole))

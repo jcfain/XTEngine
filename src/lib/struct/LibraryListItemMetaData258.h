@@ -12,6 +12,7 @@
 
 struct XTENGINE_EXPORT LibraryListItemMetaData258
 {
+    QString key;
     QString libraryItemPath;
     bool watched;
     qint64 lastPlayPosition;
@@ -30,6 +31,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
 
     friend QDataStream & operator<<(QDataStream &dataStream, const LibraryListItemMetaData258 &object )
     {
+        dataStream << object.key;
         dataStream << object.libraryItemPath;
         dataStream << object.watched;
         dataStream << object.lastPlayPosition;
@@ -54,6 +56,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
 
     friend QDataStream & operator>>(QDataStream &dataStream, LibraryListItemMetaData258 &object)
     {
+        dataStream >> object.key;
         dataStream >> object.libraryItemPath;
         dataStream >> object.watched;
         dataStream >> object.lastPlayPosition;
@@ -113,6 +116,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     static QJsonObject toJson(LibraryListItemMetaData258 item)
     {
         QJsonObject obj;
+        obj["key"] = item.key;
         obj["libraryItemPath"] = item.libraryItemPath;
         obj["watched"] = item.watched;
         obj["lastPlayPosition"] = QString::number(item.lastPlayPosition);
@@ -153,6 +157,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
 
     static LibraryListItemMetaData258 fromJson(QJsonObject obj) {
         LibraryListItemMetaData258 newItem;
+        newItem.key = obj["key"].toString();
         newItem.libraryItemPath = obj["libraryItemPath"].toString();
         newItem.watched = obj["watched"].toBool();
         newItem.lastPlayPosition = obj["lastPlayPosition"].toString().toLongLong();
