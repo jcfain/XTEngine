@@ -114,6 +114,8 @@ void WebSocketHandler::processTextMessage(QString message)
         emit restartService();
     } else if (command == "cleanupThumbs") {
         emit cleanupThumbs();
+    } else if (command == "cleanupMetadata") {
+        emit cleanupMetadata();
     } else if (command == "skipToMoneyShot") {
         emit skipToMoneyShot();
     } else if (command == "skipToNextAction") {

@@ -407,6 +407,7 @@ private:
     static void DeMigrateLibraryMetaDataTo258();
     static void MigrateTo32a(QSettings* settingsToLoadFrom);
     static void MigrateTo42(QSettings* settingsToLoadFrom);
+    static void MigrateTo46(QSettings* settingsToLoadFrom);
 
     static void SaveChannelMap(QSettings* settingsToSaveTo = 0);
     static void SaveTCodeCommandMap(QSettings* settingsToSaveTo = 0);

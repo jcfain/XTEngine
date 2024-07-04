@@ -54,6 +54,14 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             _mediaLibraryHandler->startMetadataProcess(true);
         }
     });
+    connect(_webSocketHandler, &WebSocketHandler::cleanupMetadata, this, [this]() {
+        if(!_mediaLibraryHandler->isLibraryLoading() &&
+            !_mediaLibraryHandler->metadataProcessing() &&
+            !_mediaLibraryHandler->thumbProcessRunning())
+        {
+            _mediaLibraryHandler->startMetadataCleanProcess();
+        }
+    });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoadingStatus, this, &HttpHandler::onLibraryLoadingStatusChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoaded, this, &HttpHandler::onSetLibraryLoaded);

@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.458b";
-const float SettingsHandler::XTEVersionNum = 0.458f;
+const QString SettingsHandler::XTEVersion = "0.459b";
+const float SettingsHandler::XTEVersionNum = 0.459f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -420,8 +420,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
-        if(currentVersion < 0.455f || currentVersion < 0.457f) {
+        if(currentVersion < 0.459f) {
+            locker.unlock();
+            MigrateTo46(settingsToLoadFrom);
             setForceMetaDataFullProcess(true);
+            Save();
+            Load();
         }
     }
     settingsChangedEvent(false);
@@ -1109,6 +1113,24 @@ void  SettingsHandler::MigrateTo42(QSettings* settingsToLoadFrom) {
     foreach(auto axis, availableChannelJson.keys())
     {
         TCodeChannelLookup::addChannel(axis, ChannelModel33::fromVariant(availableChannelJson.value(axis)), "Default");
+    }
+}
+
+void SettingsHandler::MigrateTo46(QSettings *settingsToLoadFrom)
+{
+    auto metaDatas = _libraryListItemMetaDatas;
+    auto metadataKeys = metaDatas.keys();
+    _libraryListItemMetaDatas.clear();
+    foreach (auto path, metadataKeys) {
+        QFileInfo fileInfo(path);
+        if(fileInfo.exists())
+        {
+            auto fileName = fileInfo.fileName();
+            int index = fileName.lastIndexOf(".");
+            if(index > -1)
+                fileName.remove(index, fileName.length());
+            _libraryListItemMetaDatas.insert(fileName, metaDatas.value(path));
+        }
     }
 }
 
@@ -2563,9 +2585,9 @@ QHash<QString, LibraryListItemMetaData258> SettingsHandler::getLibraryListItemMe
 void SettingsHandler::getLibraryListItemMetaData(LibraryListItem27& item)
 {
     QMutexLocker locker(&mutex);
-    if(_libraryListItemMetaDatas.contains(item.path))
+    if(_libraryListItemMetaDatas.contains(item.nameNoExtension))
     {
-        item.metadata = _libraryListItemMetaDatas.value(item.path);
+        item.metadata = _libraryListItemMetaDatas.value(item.nameNoExtension);
         return;// _libraryListItemMetaDatas.value(item.path);
     }
     //Default meta data
@@ -2595,12 +2617,12 @@ void SettingsHandler::getLibraryListItemMetaData(LibraryListItem27& item)
 
 bool SettingsHandler::hasLibraryListItemMetaData(const LibraryListItem27 item)
 {
-    return !item.path.isEmpty() && _libraryListItemMetaDatas.contains(item.path);
+    return !item.nameNoExtension.isEmpty() && _libraryListItemMetaDatas.contains(item.nameNoExtension);
 }
 
 void SettingsHandler::removeLibraryListItemMetaData(LibraryListItem27& item)
 {
-    _libraryListItemMetaDatas.remove(item.path);
+    _libraryListItemMetaDatas.remove(item.nameNoExtension);
     getLibraryListItemMetaData(item);
 }
 
@@ -2612,7 +2634,7 @@ void SettingsHandler::removeLibraryListItemMetaData(const QString key)
 void SettingsHandler::updateLibraryListItemMetaData(const LibraryListItem27 item, bool sync)
 {
     QMutexLocker locker(&mutex);
-    _libraryListItemMetaDatas.insert(item.path, item.metadata);
+    _libraryListItemMetaDatas.insert(item.nameNoExtension, item.metadata);
     if(sync)
     {
         storeMediaMetaDatas();

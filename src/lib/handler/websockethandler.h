@@ -21,6 +21,7 @@ signals:
     void newWebSocketConnected(QWebSocket* client);
     void restartService();
     void cleanupThumbs();
+    void cleanupMetadata();
     void skipToMoneyShot();
     void skipToNextAction();
     void saveSingleThumb(QString itemID, qint64 pos);

@@ -87,6 +87,7 @@ public:
     bool metadataProcessing();
     void processMetadata(LibraryListItem27 &item);
     void startMetadataProcess(bool fullProcess = false);
+    void startMetadataCleanProcess();
 
 private:
     int _libraryItemIDTracker = 1;

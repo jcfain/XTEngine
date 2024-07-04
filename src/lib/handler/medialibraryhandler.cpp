@@ -180,12 +180,14 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             QString videoPathTemp = fileinfo.filePath();
             QString fileName = fileinfo.fileName();
             QString fileNameTemp = fileinfo.fileName();
-            QString fileNameNoExtension = fileNameTemp.remove(fileNameTemp.lastIndexOf('.'), fileNameTemp.length() -  1);
+            int fileNameExtIndex = fileNameTemp.lastIndexOf('.');
+            QString fileNameNoExtension = fileNameExtIndex > -1 ? fileNameTemp.remove(fileNameExtIndex, fileNameTemp.length() -  1) : fileNameTemp;
             QString scriptFile = fileNameNoExtension + ".funscript";
             QString scriptPath;
-            QString pathNoExtension = videoPathTemp.remove(videoPathTemp.lastIndexOf('.'), videoPathTemp.length() - 1);
+            int videoPathExtIndex = videoPathTemp.lastIndexOf('.');
+            QString pathNoExtension = videoPathExtIndex > -1 ? videoPathTemp.remove(videoPathExtIndex, videoPathTemp.length() - 1) : videoPathTemp;
             fileNameTemp = fileinfo.fileName();
-            QString mediaExtension = "*" + fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameTemp.lastIndexOf('.')));
+            QString mediaExtension = "*" + (fileNameExtIndex > -1 ? fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameExtIndex)) : "");
 
             // if (SettingsHandler::getSelectedFunscriptLibrary() == Q_NULLPTR)
             // {
@@ -259,24 +261,28 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 QString fileNameTemp = fileinfo.fileName();
                 QString scriptPath = fileinfo.filePath();
                 QString scriptPathTemp = fileinfo.filePath();
-                QString scriptNoExtension = scriptPathTemp.remove(scriptPathTemp.lastIndexOf('.'), scriptPathTemp.length() - 1);
+                int scriptPathExtIndex = scriptPathTemp.lastIndexOf('.');
+                QString scriptNoExtension = scriptPathExtIndex > -1 ? scriptPathTemp.remove(scriptPathExtIndex, scriptPathTemp.length() - 1) : scriptPathTemp;
                 QString scriptNoExtensionTemp = QString(scriptNoExtension);
                 if(funscriptsWithMedia.contains(scriptPath, Qt::CaseSensitivity::CaseInsensitive))
                     continue;
-
-                QString scriptMFSExt = scriptNoExtensionTemp.remove(0, scriptNoExtensionTemp.length() - (scriptNoExtensionTemp.length() - scriptNoExtensionTemp.lastIndexOf('.')));
-                bool isMfs = false;
-                foreach(auto axisName, TCodeChannelLookup::getChannels())
+                int scriptNoExtensionIndex = scriptNoExtensionTemp.lastIndexOf('.');
+                if(scriptNoExtensionIndex > -1)
                 {
-                    auto track = TCodeChannelLookup::getChannel(axisName);
-                    if("."+track->TrackName == scriptMFSExt)
+                    QString scriptMFSExt = scriptNoExtensionTemp.remove(0, scriptNoExtensionTemp.length() - (scriptNoExtensionTemp.length() - scriptNoExtensionIndex));
+                    bool isMfs = false;
+                    foreach(auto axisName, TCodeChannelLookup::getChannels())
                     {
-                        isMfs = true;
-                        break;
+                        auto track = TCodeChannelLookup::getChannel(axisName);
+                        if("."+track->TrackName == scriptMFSExt)
+                        {
+                            isMfs = true;
+                            break;
+                        }
                     }
+                    if(isMfs)
+                        continue;
                 }
-                if(isMfs)
-                    continue;
 
                 QString fileDir = fileinfo.dir().path();
                 bool isExcluded = false;
@@ -293,9 +299,10 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                     zipFile = scriptPath;
                 }
                 fileNameTemp = fileinfo.fileName();
-                QString fileNameNoExtension = fileNameTemp.remove(fileNameTemp.lastIndexOf('.'), fileNameTemp.length() -  1);
+                int fileNameExtIndex = fileNameTemp.lastIndexOf('.');
+                QString fileNameNoExtension = fileNameExtIndex > -1 ? fileNameTemp.remove(fileNameExtIndex, fileNameTemp.length() -  1) : fileNameTemp;
                 fileNameTemp = fileinfo.fileName();
-                QString mediaExtension = "*" + fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameTemp.lastIndexOf('.')));
+                QString mediaExtension = "*" + (fileNameExtIndex > -1 ? fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameExtIndex)) : "");
 
 
                 LibraryListItem27 item;
@@ -346,7 +353,8 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     QString fileNameTemp = fileinfo.fileName();
     QString scriptPath = fileinfo.filePath();
     QString scriptPathTemp = fileinfo.filePath();
-    QString scriptNoExtension = scriptPathTemp.remove(scriptPathTemp.lastIndexOf('.'), scriptPathTemp.length() - 1);
+    int scriptPathExtIndex = scriptPathTemp.lastIndexOf('.');
+    QString scriptNoExtension = scriptPathExtIndex > -1 ? scriptPathTemp.remove(scriptPathExtIndex, scriptPathTemp.length() - 1) : scriptPathTemp;
     QString scriptNoExtensionTemp = QString(scriptNoExtension);
     QString fileDir = fileinfo.dir().path();
     QString zipFile = nullptr;
@@ -356,9 +364,10 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
         scriptPath = nullptr;
     }
     fileNameTemp = fileinfo.fileName();
-    QString fileNameNoExtension = fileNameTemp.remove(fileNameTemp.lastIndexOf('.'), fileNameTemp.length() -  1);
+    int fileNameExtIndex = fileNameTemp.lastIndexOf('.');
+    QString fileNameNoExtension = fileNameExtIndex > -1 ? fileNameTemp.remove(fileNameExtIndex, fileNameTemp.length() -  1) : fileNameTemp;
     fileNameTemp = fileinfo.fileName();
-    QString mediaExtension = "*" + fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameTemp.lastIndexOf('.')));
+    QString mediaExtension = "*" + (fileNameExtIndex > -1 ? fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameExtIndex)) : "");
     LibraryListItem27 item;
     item.type = LibraryListItemType::FunscriptType;
     item.path = scriptPath; // path
@@ -398,40 +407,15 @@ void MediaLibraryHandler::stopMetadataProcess()
 
 void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
 {
-    if(!_cachedLibraryItems.count())
+    if(!_cachedLibraryItems.count() || _metadataFuture.isRunning())
         return;
-    LogHandler::Debug("Start metadata process");
-    emit metadataProcessBegin();
-    emit backgroundProcessStateChange("Processing metadata...", -1);
     _metadataFuture = QtConcurrent::run([this, fullProcess](){
-        XTags tags = SettingsHandler::getXTags();
+        LogHandler::Debug("Start metadata process");
+        emit metadataProcessBegin();
+        emit backgroundProcessStateChange("Processing metadata...", -1);
+        //XTags tags = SettingsHandler::getXTags();
         bool saveSettings = false;
         auto cachedLibraryItems = _cachedLibraryItems;
-        auto allMetadata = SettingsHandler::getLibraryListItemMetaData();
-        emit backgroundProcessStateChange("Cleaning metadata...", -1);
-        auto allMetadatakeys = allMetadata.keys();
-        auto allTags = SettingsHandler::getTags();
-        bool metadataChanged = false;
-        foreach (auto key, allMetadatakeys) {
-            if(_metadataFuture.isCanceled()) {
-                LogHandler::Debug("Cancel metadata process");
-                emit metadataProcessEnd();
-                emit backgroundProcessStateChange(nullptr, -1);
-                return;
-            }
-            if(!QFileInfo::exists(key)) {
-                SettingsHandler::removeLibraryListItemMetaData(key);
-                saveSettings = true;
-            }
-            foreach (auto tag, allMetadata[key].tags) {
-                if(!allTags.contains(tag)) {
-                    allMetadata[key].tags.removeAll(tag);
-                    metadataChanged = true;
-                }
-            }
-            float percentage = round(((float)allMetadatakeys.indexOf(key)/allMetadatakeys.length()) * 100);
-            emit backgroundProcessStateChange("Cleaning metadata", percentage);
-        }
 
         foreach (LibraryListItem27 item, cachedLibraryItems) {
             if(_metadataFuture.isCanceled()) {
@@ -440,6 +424,7 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
                 emit backgroundProcessStateChange(nullptr, -1);
                 return;
             }
+            bool metadataChanged = false;
 
             QVector<int> rolesChanged;
             processMetadata(item, metadataChanged, rolesChanged, fullProcess);
@@ -461,6 +446,46 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
         emit metadataProcessEnd();
         emit backgroundProcessStateChange(nullptr, -1);
         SettingsHandler::setForceMetaDataFullProcessComplete();
+    });
+}
+
+void MediaLibraryHandler::startMetadataCleanProcess()
+{
+    if(_metadataFuture.isRunning())
+        return;
+    _metadataFuture = QtConcurrent::run([this](){
+        bool saveSettings = false;
+        auto allMetadata = SettingsHandler::getLibraryListItemMetaData();
+        emit backgroundProcessStateChange("Cleaning metadata...", -1);
+        auto allMetadatakeys = allMetadata.keys();
+        auto allTags = SettingsHandler::getTags();
+        foreach (auto key, allMetadatakeys) {
+            if(_metadataFuture.isCanceled()) {
+                LogHandler::Debug("Cancel metadata clean process");
+                emit metadataProcessEnd();
+                emit backgroundProcessStateChange(nullptr, -1);
+                return;
+            }
+            auto item = findItemByNameNoExtension(key);
+            if(!item) {
+                SettingsHandler::removeLibraryListItemMetaData(key);
+                saveSettings = true;
+            } else {
+                foreach (auto tag, allMetadata[key].tags) {
+                    if(!allTags.contains(tag)) {
+                        allMetadata[key].tags.removeAll(tag);
+                    }
+                }
+            }
+            float percentage = round(((float)allMetadatakeys.indexOf(key)/allMetadatakeys.length()) * 100);
+            emit backgroundProcessStateChange("Cleaning metadata", percentage);
+        }
+        emit metadataProcessEnd();
+        emit backgroundProcessStateChange(nullptr, -1);
+        LogHandler::Debug("End metadata clean process");
+
+        if(saveSettings)
+            SettingsHandler::Save();
     });
 }
 
@@ -964,8 +989,9 @@ void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)
         QString localpath = path;
         QString thumbTemp = localpath;
         int indexOfSuffix = localpath.lastIndexOf(".");
-        QString extension = thumbTemp.remove(0, thumbTemp.length() - (thumbTemp.length() - thumbTemp.lastIndexOf('.')));
-        QString newName = localpath.replace(indexOfSuffix, localpath.length() - indexOfSuffix, ".lock"+extension);
+        int thumbExtIndex = thumbTemp.lastIndexOf('.');
+        QString extension = thumbExtIndex > -1 ? thumbTemp.remove(0, thumbTemp.length() - (thumbTemp.length() - thumbExtIndex)) : "";
+        QString newName = indexOfSuffix > -1 ? localpath.replace(indexOfSuffix, localpath.length() - indexOfSuffix, ".lock"+extension) : localpath + ".lock";
         bool success = file.rename(newName);
         if(success) {
             LogHandler::Debug("File renamed: "+ newName);

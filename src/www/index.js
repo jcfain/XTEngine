@@ -267,11 +267,19 @@ function onOutputDeviceConnectionChange(input, device) {
 function startMetadataProcess() {
 	showAlertWindow("Process metadata", "This will set metadata using the algrorith on first scan.<br>Adding smart tags and mfs tags based on the scan.<br>It will not change any user tags set by you.",sendMetadataProcess);
 }
+function startMetadataCleanProcess() {
+	showAlertWindow("Clean metadata", "This will compare the metadata with the currently loaded libraries<br>and delete any that do not exist any more.<br><u><b>DO NOT RUN</b></u> unless you have all your media currently loaded!",sendMetadataCleanProcess);
+}
+
 function startThumbCleanupProcess() {
-	showAlertWindow("Clean thumbs", "This will go through the thumbs and remove any thumbs where the media do not exist or they not have an image in the media directory.",sendCleanupThumbsProcess);
+	showAlertWindow("Clean thumbs", "This will go through the thumbs and remove any thumbs where the media<br>do not exist or they not have an image in the media directory.",sendCleanupThumbsProcess);
 }
 function sendMetadataProcess() {
 	sendWebsocketMessage("startMetadataProcess");
+	closeAlertWindow();
+}
+function sendMetadataCleanProcess() {
+	sendWebsocketMessage("cleanupMetadata");
 	closeAlertWindow();
 }
 function sendCleanupThumbsProcess() {
