@@ -24,7 +24,7 @@ public:
 
 private:
     static MediaLibraryHandler* m_libraryHandler;
-    static LibraryListItem27* m_playingItem;
+    static LibraryListItem27 m_playingItem;
     static bool m_isInternal;
 
     static void processMetaData();

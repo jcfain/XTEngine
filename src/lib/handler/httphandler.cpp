@@ -44,6 +44,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::saveSingleThumb, this, [this](QString itemID, qint64 pos) {
         _mediaLibraryHandler->saveSingleThumb(itemID, pos);
     });
+    connect(_webSocketHandler, &WebSocketHandler::cleanupThumbs, this, &HttpHandler::cleanupThumbs);
     connect(_webSocketHandler, &WebSocketHandler::reloadLibrary, _mediaLibraryHandler, &MediaLibraryHandler::loadLibraryAsync);
     connect(_webSocketHandler, &WebSocketHandler::startMetadataProcess, this, [this]() {
         if(!_mediaLibraryHandler->isLibraryLoading() &&
@@ -1166,6 +1167,11 @@ void HttpHandler::sendWebSocketTextMessage(QString command, QString message)
 {
     if(_webSocketHandler)
         _webSocketHandler->sendCommand(command, message);
+}
+
+void HttpHandler::stopAllMedia()
+{
+    sendWebSocketTextMessage("stopAllMedia");
 }
 
 void HttpHandler::onSetLibraryLoaded()

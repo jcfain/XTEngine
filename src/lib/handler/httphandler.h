@@ -32,6 +32,7 @@ signals:
     void connectOutputDevice(DeviceName deviceName, bool checked);
     void connectInputDevice(DeviceName deviceName, bool checked);
     void restartService();
+    void cleanupThumbs();
     void skipToMoneyShot();
     void skipToNextAction();
 
@@ -68,6 +69,7 @@ public:
 
 
     void sendWebSocketTextMessage(QString command, QString message = nullptr);
+    void stopAllMedia();
 
 private:
     HttpServerConfig config;

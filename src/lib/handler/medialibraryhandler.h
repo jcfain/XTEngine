@@ -38,6 +38,8 @@ signals:
     void thumbProcessEnd();
     void metadataProcessBegin();
     void metadataProcessEnd();
+    void cleanUpThumbsFinished();
+    void cleanUpThumbsFailed();
     void saveNewThumbLoading(LibraryListItem27 item);
     void saveNewThumb(LibraryListItem27 item, bool vrMode, QString thumbFile);
     void saveThumbError(LibraryListItem27 item, bool vrMode, QString error);
@@ -89,12 +91,12 @@ public:
 private:
     int _libraryItemIDTracker = 1;
     bool _thumbProcessIsRunning = false;
-    bool _loadingLibraryStop = false;
     int _thumbNailSearchIterator = 0;
     QList<LibraryListItem27> _cachedLibraryItems;
     //QList<LibraryListItem27> _cachedVRItems;
     QFuture<void> _metadataFuture;
     QFuture<void> _loadingLibraryFuture;
+    QFuture<void> m_thumbCleanupFuture;
     QTimer _thumbTimeoutTimer;
     QMutex _mutex;
     //XVideoPreview* _extractor = 0;
@@ -111,7 +113,9 @@ private:
     void saveThumb(LibraryListItem27 &item, qint64 position = 0, bool vrMode = false);
     void assignID(LibraryListItem27 &item);
 
+    void stopAllSubProcesses();
     LibraryListItem27 createLibraryListItemFromFunscript(QString funscript);
+    void stopThumbCleanupProcess();
     void processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess = false);
     void stopMetadataProcess();
     bool updateToolTip(LibraryListItem27 &item);

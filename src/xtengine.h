@@ -21,6 +21,7 @@ class XTENGINE_EXPORT XTEngine: public QObject
 {
     Q_OBJECT
 signals:
+    void stopAllMedia();
 
 private slots:
     void onFunscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration);

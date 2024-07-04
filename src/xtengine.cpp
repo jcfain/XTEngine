@@ -51,6 +51,9 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     });
     _mediaLibraryHandler = new MediaLibraryHandler(this);
     XMediaStateHandler::setMediaLibraryHandler(_mediaLibraryHandler);
+    // connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, [this](){
+    //     emit stopAllMedia();
+    // });
     _connectionHandler = new ConnectionHandler(this);
     _syncHandler = new SyncHandler(this);
     m_heatmap = new HeatMap(this);
@@ -85,8 +88,10 @@ void XTEngine::init()
         connect(_httpHandler, &HttpHandler::restartService, SettingsHandler::instance(), &SettingsHandler::Restart);
         connect(_httpHandler, &HttpHandler::skipToMoneyShot, this, &XTEngine::skipToMoneyShot);
         connect(_httpHandler, &HttpHandler::skipToNextAction, this, &XTEngine::skipToNextAction);
+        connect(_httpHandler, &HttpHandler::cleanupThumbs, _mediaLibraryHandler, &MediaLibraryHandler::cleanGlobalThumbDirectory);
         connect(_httpHandler, &HttpHandler::connectInputDevice, _connectionHandler, &ConnectionHandler::initInputDevice);
         connect(_httpHandler, &HttpHandler::connectOutputDevice, _connectionHandler, &ConnectionHandler::initOutputDevice);
+        connect(this, &XTEngine::stopAllMedia, _httpHandler, &HttpHandler::stopAllMedia);
         connect(_connectionHandler, &ConnectionHandler::connectionChange, _httpHandler, &HttpHandler::on_DeviceConnection_StateChange);
 
         _httpHandler->listen();

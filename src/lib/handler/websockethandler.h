@@ -20,6 +20,7 @@ signals:
     void changeChannelProfile(QString name);
     void newWebSocketConnected(QWebSocket* client);
     void restartService();
+    void cleanupThumbs();
     void skipToMoneyShot();
     void skipToNextAction();
     void saveSingleThumb(QString itemID, qint64 pos);

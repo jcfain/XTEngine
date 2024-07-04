@@ -18,9 +18,7 @@ MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
 
 MediaLibraryHandler::~MediaLibraryHandler()
 {
-    stopLibraryLoading();
-    stopThumbProcess();
-    stopMetadataProcess();
+    stopAllSubProcesses();
 }
 bool MediaLibraryHandler::isLibraryLoading()
 {
@@ -35,22 +33,19 @@ void MediaLibraryHandler::stopLibraryLoading()
 {
     if(_loadingLibraryFuture.isRunning())
     {
-        _loadingLibraryStop = true;
         _loadingLibraryFuture.cancel();
         _loadingLibraryFuture.waitForFinished();
-        _loadingLibraryStop = false;
         emit libraryLoadingStatus("Loading media stopped");
     }
 }
 
 void MediaLibraryHandler::onPrepareLibraryLoad()
 {
-    stopThumbProcess();
-    stopMetadataProcess();
+    stopAllSubProcesses();
     _mutex.lock();
     _cachedLibraryItems.clear();
     _mutex.unlock();
-    emit libraryLoaded();
+    //emit libraryLoaded();
     _libraryItemIDTracker = 1;
 }
 
@@ -60,7 +55,6 @@ void MediaLibraryHandler::loadLibraryAsync()
         return;
     LogHandler::Debug("loadLibraryAsync");
     onPrepareLibraryLoad();
-    stopLibraryLoading();
     LogHandler::Debug("loadLibraryAsync after stop");
     QStringList library = SettingsHandler::getSelectedLibrary();
     QStringList vrLibrary = SettingsHandler::getVRLibrary();
@@ -166,7 +160,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 
         while (library.hasNext())
         {
-            if(_loadingLibraryStop)
+            if(_loadingLibraryFuture.isCanceled())
             {
                 LogHandler::Debug("libraryStopped 1");
                 emit libraryStopped();
@@ -254,7 +248,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             QDirIterator funscripts(path, funscriptTypes, QDir::Files, QDirIterator::Subdirectories);
             while (funscripts.hasNext())
             {
-                if(_loadingLibraryStop)
+                if(_loadingLibraryFuture.isCanceled())
                 {
                     LogHandler::Debug("libraryStopped 2");
                     emit libraryStopped();
@@ -383,10 +377,20 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     return item;
 }
 
+void MediaLibraryHandler::stopThumbCleanupProcess()
+{
+    if(m_thumbCleanupFuture.isRunning())
+    {
+        m_thumbCleanupFuture.cancel();
+        m_thumbCleanupFuture.waitForFinished();
+    }
+}
+
 
 void MediaLibraryHandler::stopMetadataProcess()
 {
-    if(_metadataFuture.isRunning()) {
+    if(_metadataFuture.isRunning())
+    {
         _metadataFuture.cancel();
         _metadataFuture.waitForFinished();
     }
@@ -1189,94 +1193,102 @@ bool MediaLibraryHandler::discoverMFS2(LibraryListItem27 &item) {
 
 void MediaLibraryHandler::cleanGlobalThumbDirectory() {
 
-    if(thumbProcessRunning() || isLibraryLoading())
-        return;
-    auto cachedLibraryItems = _cachedLibraryItems;
-    emit backgroundProcessStateChange("Cleaning thumbs...", -1);
-    foreach(auto libraryListItem, cachedLibraryItems) {
-        if(_loadingLibraryStop) {
-            LogHandler::Debug("thumb cleanup stopped 1");
-            emit backgroundProcessStateChange(nullptr, -1);
-            emit libraryStopped();
+    m_thumbCleanupFuture = QtConcurrent::run([this]() {
+        if(thumbProcessRunning() || isLibraryLoading())
+        {
+            emit cleanUpThumbsFailed();
             return;
         }
-        emit backgroundProcessStateChange("Cleaning duplicate thumbs:", round((cachedLibraryItems.indexOf(libraryListItem)/(float)cachedLibraryItems.length())*100));
-        if(libraryListItem.type != LibraryListItemType::VR && libraryListItem.type != LibraryListItemType::Video)
-            continue;
-        QString hasGlobal;
-        QString hasGlobalLocked;
-        QString hasLocal;
-        QString hasLocalLocked;
-        QFileInfo mediaInfo(libraryListItem.path);
-        QString globalPath = SettingsHandler::getSelectedThumbsDir() + libraryListItem.name;
-
-        QString filepathGlobal = globalPath + "." + SettingsHandler::getThumbFormatExtension();
-        if(QFileInfo::exists(filepathGlobal))
-        {
-            hasGlobal = filepathGlobal;
-        }
-        QString filepathGlobalLocked = globalPath + ".lock." + SettingsHandler::getThumbFormatExtension();
-        if(QFileInfo::exists(filepathGlobalLocked))
-        {
-            hasGlobalLocked = filepathGlobalLocked;
-        }
-
-        QString absolutePath = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension;
-        QStringList imageExtensions = SettingsHandler::getImageExtensions();
-        foreach(QString ext, imageExtensions) {
-            if(_loadingLibraryStop) {
-                LogHandler::Debug("thumb cleanup stopped 2");
+        auto cachedLibraryItems = _cachedLibraryItems;
+        emit backgroundProcessStateChange("Cleaning thumbs...", -1);
+        foreach(auto libraryListItem, cachedLibraryItems) {
+            if(m_thumbCleanupFuture.isCanceled()) {
+                LogHandler::Debug("thumb cleanup stopped 1");
                 emit backgroundProcessStateChange(nullptr, -1);
-                emit libraryStopped();
+                emit cleanUpThumbsFailed();
                 return;
             }
-            QString filepathLocked = absolutePath + ".lock." + ext;
-            if(QFileInfo::exists(filepathLocked))
-            {
-                hasLocalLocked = filepathLocked;
-            }
-            QString filepath = absolutePath + "." + ext;
-            if(QFileInfo::exists(filepath))
-            {
-                hasLocal = filepath;
-            }
-        }
-        if((!hasLocal.isEmpty() || !hasLocalLocked.isEmpty()) && (!hasGlobal.isEmpty() || !hasGlobalLocked.isEmpty())) {
-            if(!hasGlobal.isEmpty())
-                QFile::remove(hasGlobal);
-            if(!hasGlobalLocked.isEmpty())
-                QFile::remove(hasGlobalLocked);
-            if(!hasLocal.isEmpty()) {
-                libraryListItem.thumbFile = hasLocal;
-            } else if(!hasLocalLocked.isEmpty()) {
-                libraryListItem.thumbFile = hasLocalLocked;
-            }
-            updateItem(cachedLibraryItems.indexOf(libraryListItem), {Qt::DecorationRole});
-        }
-    }
+            emit backgroundProcessStateChange("Cleaning duplicate thumbs:", round((cachedLibraryItems.indexOf(libraryListItem)/(float)cachedLibraryItems.length())*100));
+            if(libraryListItem.type != LibraryListItemType::VR && libraryListItem.type != LibraryListItemType::Video)
+                continue;
+            QString hasGlobal;
+            QString hasGlobalLocked;
+            QString hasLocal;
+            QString hasLocalLocked;
+            QFileInfo mediaInfo(libraryListItem.path);
+            QString globalPath = SettingsHandler::getSelectedThumbsDir() + libraryListItem.name;
 
-    QDir dir(SettingsHandler::getSelectedThumbsDir(),"*." + SettingsHandler::getThumbFormatExtension(), QDir::NoSort, QDir::Filter::Files);
-    int fileCount = dir.count();
-    QDirIterator thumbs(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*." + SettingsHandler::getThumbFormatExtension(), QDir::Files, QDirIterator::Subdirectories);
+            QString filepathGlobal = globalPath + "." + SettingsHandler::getThumbFormatExtension();
+            if(QFileInfo::exists(filepathGlobal))
+            {
+                hasGlobal = filepathGlobal;
+            }
+            QString filepathGlobalLocked = globalPath + ".lock." + SettingsHandler::getThumbFormatExtension();
+            if(QFileInfo::exists(filepathGlobalLocked))
+            {
+                hasGlobalLocked = filepathGlobalLocked;
+            }
 
-    qint64 currentFileCount = 0;
-    while (thumbs.hasNext())
-    {
-        if(_loadingLibraryStop) {
-            LogHandler::Debug("thumb cleanup stopped 3");
-            emit backgroundProcessStateChange(nullptr, -1);
-            emit libraryStopped();
-            return;
+            QString absolutePath = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension;
+            QStringList imageExtensions = SettingsHandler::getImageExtensions();
+            foreach(QString ext, imageExtensions) {
+                if(m_thumbCleanupFuture.isCanceled())
+                {
+                    LogHandler::Debug("thumb cleanup stopped 2");
+                    emit backgroundProcessStateChange(nullptr, -1);
+                    emit cleanUpThumbsFailed();
+                    return;
+                }
+                QString filepathLocked = absolutePath + ".lock." + ext;
+                if(QFileInfo::exists(filepathLocked))
+                {
+                    hasLocalLocked = filepathLocked;
+                }
+                QString filepath = absolutePath + "." + ext;
+                if(QFileInfo::exists(filepath))
+                {
+                    hasLocal = filepath;
+                }
+            }
+            if((!hasLocal.isEmpty() || !hasLocalLocked.isEmpty()) && (!hasGlobal.isEmpty() || !hasGlobalLocked.isEmpty())) {
+                if(!hasGlobal.isEmpty())
+                    QFile::remove(hasGlobal);
+                if(!hasGlobalLocked.isEmpty())
+                    QFile::remove(hasGlobalLocked);
+                if(!hasLocal.isEmpty()) {
+                    libraryListItem.thumbFile = hasLocal;
+                } else if(!hasLocalLocked.isEmpty()) {
+                    libraryListItem.thumbFile = hasLocalLocked;
+                }
+                updateItem(cachedLibraryItems.indexOf(libraryListItem), {Qt::DecorationRole});
+            }
         }
-        emit backgroundProcessStateChange("Cleaning stale thumbs", round((currentFileCount/(float)fileCount)*100));
-        QString filepath = thumbs.next();
-//        QFileInfo fileinfo(filepath);
-//        QString fileName = fileinfo.fileName();
-        if(!findItemByThumbPath(filepath))
-            QFile::remove(filepath);
-        currentFileCount++;
-    }
-    emit backgroundProcessStateChange(nullptr, -1);
+
+        QDir dir(SettingsHandler::getSelectedThumbsDir(),"*." + SettingsHandler::getThumbFormatExtension(), QDir::NoSort, QDir::Filter::Files);
+        int fileCount = dir.count();
+        QDirIterator thumbs(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*." + SettingsHandler::getThumbFormatExtension(), QDir::Files, QDirIterator::Subdirectories);
+
+        qint64 currentFileCount = 0;
+        while (thumbs.hasNext())
+        {
+            if(m_thumbCleanupFuture.isCanceled())
+            {
+                LogHandler::Debug("thumb cleanup stopped 2");
+                emit backgroundProcessStateChange(nullptr, -1);
+                emit cleanUpThumbsFailed();
+                return;
+            }
+            emit backgroundProcessStateChange("Cleaning stale thumbs", round((currentFileCount/(float)fileCount)*100));
+            QString filepath = thumbs.next();
+    //        QFileInfo fileinfo(filepath);
+    //        QString fileName = fileinfo.fileName();
+            if(!findItemByThumbPath(filepath))
+                QFile::remove(filepath);
+            currentFileCount++;
+        }
+        emit backgroundProcessStateChange(nullptr, -1);
+        emit cleanUpThumbsFinished();
+    });
 }
 
 void MediaLibraryHandler::findAlternateFunscripts(QString path)
@@ -1364,6 +1376,14 @@ void MediaLibraryHandler::assignID(LibraryListItem27 &item)
     QString name = item.nameNoExtension;
     item.ID = name.remove(" ") + "Item" + QString::number(_libraryItemIDTracker);
     _libraryItemIDTracker++;
+}
+
+void MediaLibraryHandler::stopAllSubProcesses()
+{
+    stopLibraryLoading();
+    stopThumbProcess();
+    stopMetadataProcess();
+    stopThumbCleanupProcess();
 }
 
 QString MediaLibraryHandler::getScreenType(QString mediaPath)

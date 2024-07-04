@@ -1,4 +1,4 @@
-const webVersion = "v0.456b";
+const webVersion = "v0.458b";
 
 var DeviceType = {
 	Serial: 0,
@@ -267,11 +267,17 @@ function onOutputDeviceConnectionChange(input, device) {
 function startMetadataProcess() {
 	showAlertWindow("Process metadata", "This will set metadata using the algrorith on first scan.<br>Adding smart tags and mfs tags based on the scan.<br>It will not change any user tags set by you.",sendMetadataProcess);
 }
+function startThumbCleanupProcess() {
+	showAlertWindow("Clean thumbs", "This will go through the thumbs and remove any thumbs where the media do not exist or they not have an image in the media directory.",sendCleanupThumbsProcess);
+}
 function sendMetadataProcess() {
 	sendWebsocketMessage("startMetadataProcess");
 	closeAlertWindow();
 }
-
+function sendCleanupThumbsProcess() {
+	sendWebsocketMessage("cleanupThumbs");
+	closeAlertWindow();
+}
 function tcodeDeviceConnectRetry() {
 	sendWebsocketMessage("connectOutputDevice", { deviceName: remoteUserSettings.connection.output.selectedDevice });
 }
@@ -397,6 +403,9 @@ function wsCallBackFunction(evt) {
 	try {
 		var data = JSON.parse(evt.data);
 		switch (data["command"]) {
+			case "stopAllMedia":
+				stopVideo();
+				break;
 			case "outputDeviceStatus":
 				var status = data["message"];
 				var deviceName = status["deviceName"];
