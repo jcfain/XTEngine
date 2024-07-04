@@ -661,7 +661,7 @@ function checkPass() {
         }
     }
     xhr.onerror = function () {
-        onSaveFail(xhr.statusText);
+        onSaveFail(xhr);
     };
     if(storedHash) {
         xhr.send("{\"hashedPass\":\""+storedHash+"\", \"remember\":\""+!!storedHash+"\"}");
@@ -889,7 +889,7 @@ function getServerSessions() {
 			}
 		}.bind(this);
 		xhr.onerror = function(evnt, retry) {
-			onSaveFail(xhr.status.statusText);
+			onSaveFail(xhr);
 		};
 		xhr.send();
 	}
@@ -922,7 +922,7 @@ function deleteSession (sessionID) {
 		}
 	}
 	xhr.onerror = function () {
-		onSaveFail(xhr.statusText);
+		onSaveFail(xhr);
 	};
 	xhr.send();
 }
@@ -1260,7 +1260,7 @@ function postServerSettings() {
 		if (xhr.readyState === 4) {
 			var status = xhr.status;
 			if (status !== 200)
-				onSaveFail(xhr.statusText);
+				onSaveFail(xhr);
 			else {
 				onSaveSuccess();
 				markXTPFormClean();
@@ -1268,7 +1268,7 @@ function postServerSettings() {
 		}
 	}
 	xhr.onerror = function () {
-		onSaveFail(xhr.statusText);
+		onSaveFail(xhr);
 	};
 	xhr.send(JSON.stringify(remoteUserSettings));
 }
@@ -1281,7 +1281,7 @@ function postMediaItemMetaData(metaData) {
 		if (xhr.readyState === 4) {
 			var status = xhr.status;
 			if (status !== 200)
-				onSaveFail(xhr.statusText, metaDataSaveStateNode);
+				onSaveFail(xhr, metaDataSaveStateNode);
 			else {
 				onSaveSuccess(metaDataSaveStateNode);
 				document.getElementById("saveMediaItemMetaDataButton").disabled = true;
@@ -1289,7 +1289,7 @@ function postMediaItemMetaData(metaData) {
 		}
 	}
 	xhr.onerror = function () {
-		onSaveFail(xhr.statusText, metaDataSaveStateNode);
+		onSaveFail(xhr, metaDataSaveStateNode);
 	};
 	xhr.send(JSON.stringify(metaData));
 }
@@ -1312,8 +1312,16 @@ function postMediaState(mediaState) {
 function onSaveSuccess(node) {
 	setSaveState(node, false);
 }
-function onSaveFail(error, node) {
-	setSaveState(node, false, error);
+function onSaveFail(xhr, node) {
+	const statusTest = xhr.statusText ? xhr.statusText : xhr.status.statusText;
+	if(xhr.response)
+	{
+		try {
+			const obj = JSON.parse(xhr.response);
+			showAlertWindow(statusTest, obj.message);
+		} catch(e){ }
+	}
+	setSaveState(node, false, statusTest);
 }
 
 function clearMediaList() {
