@@ -92,6 +92,7 @@ private:
     QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createHeresphereObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createSelectedChannels();
+    QJsonDocument createError(QString message);
     void on_webSocketClient_Connected(QWebSocket* client);
     void onSetLibraryLoaded();
     void onSetLibraryLoading();

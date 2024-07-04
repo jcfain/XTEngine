@@ -573,9 +573,16 @@ HttpPromise HttpHandler::handleMediaItemMetadataUpdate(HttpDataPtr data)
     {
         auto metaData = LibraryListItemMetaData258::fromJson(doc.object());
         auto libraryItem = _mediaLibraryHandler->findItemByMediaPath(metaData.libraryItemPath);
-        libraryItem->metadata = metaData;
-        SettingsHandler::updateLibraryListItemMetaData(libraryItem);
-        SettingsHandler::setLiveOffset(metaData.offset);
+        if(libraryItem)
+        {
+            libraryItem->metadata = metaData;
+            SettingsHandler::updateLibraryListItemMetaData(libraryItem);
+            SettingsHandler::setLiveOffset(metaData.offset);
+        } else {
+            SettingsHandler::setForceMetaDataFullProcess(true);
+            data->response->setStatus(HttpStatus::Conflict, createError("Invalid metadata item please process metadata<br> In System tab under settings."));
+            return HttpPromise::resolve(data);
+        }
     }
     data->response->setStatus(HttpStatus::Ok);
     return HttpPromise::resolve(data);
@@ -845,6 +852,15 @@ QJsonObject HttpHandler::createSelectedChannels() {
         }
     }
     return availableChannelsJson;
+}
+
+QJsonDocument HttpHandler::createError(QString message)
+{
+    QJsonDocument doc;
+    QJsonObject error;
+    error["message"] = message;
+    doc.setObject(error);
+    return doc;
 }
 HttpPromise HttpHandler::handleDeo(HttpDataPtr data)
 {

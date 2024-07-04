@@ -445,7 +445,8 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
         LogHandler::Debug("End metadata process");
         emit metadataProcessEnd();
         emit backgroundProcessStateChange(nullptr, -1);
-        SettingsHandler::setForceMetaDataFullProcessComplete();
+        if(cachedLibraryItems.length())
+            SettingsHandler::setForceMetaDataFullProcessComplete();
     });
 }
 
