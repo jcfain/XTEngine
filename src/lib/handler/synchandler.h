@@ -106,6 +106,7 @@ private:
     QFuture<void> _funscriptSearchFuture;
 
     bool _funscriptSearchNotFound = false;
+    bool m_stopFunscript = false;
     QString _lastSearchedMediaPath;
 
     SyncLoadState load(const LibraryListItem27 &libraryItem, bool reset);
@@ -116,6 +117,16 @@ private:
     bool loadMFS(QString channel, QByteArray funscript);
 
     void sendPulse(qint64 currentMsecs, qint64 &nextPulseTime);
+
+    QString searchForFunscript(QString videoPath, QStringList extensions, QStringList libraryPaths);
+    QString searchForFunscriptDeep(QString videoPath, QStringList extensions, QStringList libraryPaths);
+    QString searchForFunscript(QString videoPath, QStringList extensions, QString pathToSearch);
+    QString searchForFunscriptHttp(QString videoPath, QStringList extensions, QString pathToSearch);
+    QString searchForFunscriptMFS(QString mediaPath, QStringList libraryPaths);
+    QString searchForFunscriptMFSDeep(QString mediaPath, QStringList libraryPaths);
+
+    // QStringList getFunscriptPaths(QString videoPath, QStringList extensions, QString path);
+    // QString getNameNoExtension(QString file);
 };
 
 #endif // SYNCHANDLER_H

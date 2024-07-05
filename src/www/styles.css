@@ -626,7 +626,9 @@ section .range-values {
 /* grid-template-columns: 5% 10% 15% 27% 15% 27%; */
 .form-group-section-connection {}
 
-.form-group-control-header {}
+.form-group-control-header {
+    justify-content: center;
+}
 
 .form-group-control-header>* {}
 

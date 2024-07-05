@@ -2776,9 +2776,6 @@ async function setupMotionModifiers() {
 		var channel = availableChannels[i];
 		var channelName = channel.channel;
 
-		if (channel.dimension === AxisDimension.Heave)
-			continue;
-
 		var formElementNode = document.createElement("div");
 		formElementNode.classList.add("formElement");
 

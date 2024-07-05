@@ -105,6 +105,7 @@ HEADERS += \
     lib/struct/InputDevicePacket.h \
     lib/tool/array-util.h \
     lib/tool/boolinq.h \
+    lib/tool/file-util.h \
     lib/tool/heatmap.h \
     lib/tool/imagefactory.h \
     lib/tool/simplecrypt.h \

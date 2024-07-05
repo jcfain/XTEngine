@@ -97,7 +97,7 @@ void XTEngine::init()
         _httpHandler->listen();
     }
     
-    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, &SyncHandler::searchForFunscript);
+    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, QOverload<InputDevicePacket>::of(&SyncHandler::searchForFunscript));
     connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, this, [](InputDevicePacket packet) {
         XMediaStateHandler::updateDuration(packet.currentTime, packet.duration);
     });
