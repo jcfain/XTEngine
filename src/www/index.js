@@ -39,7 +39,8 @@ var MediaType = {
     Video: 1,
     Audio: 2,
     FunscriptType: 3,
-    VR: 4
+    VR: 4,
+	ExternalType: 5
 };
 
 var Roles = {
@@ -458,6 +459,12 @@ function wsCallBackFunction(evt) {
 				var libraryItem = message["item"];
 				var roles = message["roles"];
 				updateItem(libraryItem, roles);
+				break;
+			case "addItem":
+				var message = data["message"];
+				var libraryItem = message["item"];
+				var roles = message["roles"];
+				addItem(libraryItem);
 				break;
 			case "textToSpeech":
 				var message = data["message"];
@@ -1416,6 +1423,7 @@ function loadMedia(mediaList) {
 	var fontSize = 0;
 	for (var i = 0; i < mediaList.length; i++) {
 		var obj = mediaList[i];
+
 		if (!thumbSizeGlobal) {
 			setThumbSize(obj.thumbSize, true);
 			setThumbSize(obj.thumbSize, false);
@@ -1602,6 +1610,11 @@ function updateItem(libraryItem, roles)
 		mediaNode = updateSubTitle(libraryItem, mediaNode);
 	}
 }
+function addItem(libraryItem)
+{
+	mediaListGlobal.push(libraryItem);
+	showChange(showGlobal);
+}
 
 function updateSubTitle(libraryItem, mediaNode, contextMenu) {
 	if(!mediaNode)
@@ -1771,10 +1784,10 @@ function getDisplayedMediaList(showValue, userClick) {
 			filteredMediaScoped = JSON.parse(JSON.stringify(mediaListGlobal));
 			break;
 		case "3DOnly":
-			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.VR);
+			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.VR || x.metaData.tags.includes("vr"));
 			break;
 		case "2DAndAudioOnly":
-			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video);
+			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video || x.metaData.tags.includes("2d") || x.metaData.tags.includes("audio"));
 			break;
 	}
 	
@@ -2110,6 +2123,16 @@ function playVideo(obj) {
 		if (playingmediaItem.id === obj.id)
 			return;
 		clearPlayingMediaItem();
+	}
+	const index = mediaListGlobal.findIndex(x => x.id==obj.id);
+	if(index == -1) {
+		showAlertWindow("Error", "Unknown media Item. If this is an item outside the slected media libraries, try refreshing the page. If that doesnt work. Im sorry.");
+		return;
+	}
+	const selectedMediaItem = mediaListGlobal[index];
+	if(selectedMediaItem.type == MediaType.ExternalType) {
+		showAlertWindow("Error", "Cannot play external media items from this interface.<br>You can only modify media metadata.<br>Start the media item from the original location.");
+		return;
 	}
 	setPlayingMediaItem(mediaListGlobal[mediaListGlobal.findIndex(x => x.id==obj.id)]);
 	sendMediaState();

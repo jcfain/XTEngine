@@ -269,24 +269,30 @@ void SettingsActionHandler::media_action(QString action)
             reset = true;
             verb = "reset";
         }
-        if (XMediaStateHandler::isPlaying())
+        int newOffset = 0;
+        if(!reset)
         {
-           LibraryListItem27* item = XMediaStateHandler::getPlaying();
-           if(item)
-           {
-               //SettingsHandler::getLibraryListItemMetaData(item);
-               int newOffset = 0;
-               if(!reset) {
-                   newOffset = increase ? item->metadata.offset + SettingsHandler::getFunscriptOffsetStep() : item->metadata.offset - SettingsHandler::getFunscriptOffsetStep();
+            if (XMediaStateHandler::isPlaying())
+            {
+               LibraryListItem27* item = XMediaStateHandler::getPlaying();
+               if(item)
+               {
+                   //SettingsHandler::getLibraryListItemMetaData(item);
+                   if(!reset) {
+                       newOffset = increase ? item->metadata.offset + SettingsHandler::getFunscriptOffsetStep() : item->metadata.offset - SettingsHandler::getFunscriptOffsetStep();
+                   }
+                   item->metadata.offset = newOffset;
+                   SettingsHandler::setLiveOffset(newOffset);
+                   SettingsHandler::updateLibraryListItemMetaData(item);
+                   emit actionExecuted(action, verb + " offset to " + QString::number(newOffset));
                }
-               item->metadata.offset = newOffset;
-               SettingsHandler::setLiveOffset(newOffset);
-               SettingsHandler::updateLibraryListItemMetaData(item);
-               emit actionExecuted(action, verb + " offset to " + QString::number(newOffset));
-           }
+            }
+            else
+            {
+                newOffset = increase ? SettingsHandler::getLiveOffSet() + SettingsHandler::getFunscriptOffsetStep() : SettingsHandler::getLiveOffSet() - SettingsHandler::getFunscriptOffsetStep();
+            }
         }
-        else
-            emit actionExecuted(action, "Nothing playing to " + verb + " offset.");
+        SettingsHandler::setLiveOffset(newOffset);
     }
     else if (action == actions.SkipToMoneyShot)
     {

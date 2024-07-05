@@ -38,6 +38,8 @@ public:
     void sendDeviceConnectionStatus(ConnectionChangedSignal status, QWebSocket* client = 0);
     void sendUpdateThumb(QString id, QString thumb, QString error = nullptr);
     void sendUpdateItem(QString itemJson, QString rolesList, QString error = nullptr);
+    void sendAddItem(QString itemJson, QString error = nullptr);
+
 
 private:
     QWebSocketServer *m_pWebSocketServer;

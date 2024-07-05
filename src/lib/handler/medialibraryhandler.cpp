@@ -3,6 +3,7 @@
 #include "settingshandler.h"
 #include "../tool/imagefactory.h"
 #include "../lookup/xtags.h"
+#include "../tool/file-util.h"
 
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     : QObject(parent),
@@ -920,6 +921,24 @@ LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
     setLiveProperties(item);
     addItemFront(item);
     //emit playListItem(item);
+    return item;
+}
+
+LibraryListItem27 MediaLibraryHandler::setupTempExternalItem(QString mediapath, QString scriptPath, quint64 duration)
+{
+    LibraryListItem27 item;
+    QFileInfo fileInfo(mediapath);
+    item.type = LibraryListItemType::External;
+    item.name = fileInfo.fileName();
+    item.path = mediapath;
+    item.script = scriptPath;
+    item.hasScript = !scriptPath.isEmpty();
+    item.nameNoExtension = XFileUtil::getNameNoExtension(fileInfo.fileName()); //nameNoExtension
+    item.modifiedDate = QDateTime::currentDateTime().date();
+    item.duration = duration;
+    setLiveProperties(item);
+    processMetadata(item);
+    addItemBack(item);
     return item;
 }
 void MediaLibraryHandler::updateItem(LibraryListItem27 item, QVector<int> roles, bool notify) {

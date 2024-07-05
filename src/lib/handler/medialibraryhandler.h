@@ -57,6 +57,7 @@ public:
     bool isLibraryLoading();
     void stopLibraryLoading();
     LibraryListItem27 setupPlaylistItem(QString name);
+    LibraryListItem27 setupTempExternalItem(QString mediapath, QString scriptPath = nullptr, quint64 duration = 0);
     void updateItem(LibraryListItem27 item, QVector<int> roles, bool notify = true);
     void updateItem(int index, QVector<int> roles);
     void removeFromCache(LibraryListItem27 item);

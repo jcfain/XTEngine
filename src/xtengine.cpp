@@ -164,7 +164,10 @@ void XTEngine::onFunscriptSearchResult(QString mediaPath, QString funscriptPath,
             auto fileName = QUrl(mediaPath).fileName();
             auto itemRef = _mediaLibraryHandler->findItemByName(fileName);
             if(!itemRef) {
-                LogHandler::Error("NO vr item found in media library");
+                LogHandler::Error("No external item found in media library. Setting up temporary item for: "+mediaPath);
+                _mediaLibraryHandler->setupTempExternalItem(mediaPath, funscriptPath, mediaDuration);
+                itemRef = _mediaLibraryHandler->findItemByName(fileName);
+                XMediaStateHandler::setPlaying(itemRef);
             } else {
                 XMediaStateHandler::setPlaying(itemRef);
             }

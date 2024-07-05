@@ -195,3 +195,13 @@ void WebSocketHandler::sendUpdateItem(QString itemJson, QString roleslist, QStri
         messageJson = "{ \"item\": "+itemJson+", \"roles\": \""+roleslist+"\", \"errorMessage\": \""+error+"\"}";
     sendCommand("updateItem", messageJson);
 }
+
+void WebSocketHandler::sendAddItem(QString itemJson, QString error)
+{
+    QString messageJson;
+    if(error.isEmpty())
+        messageJson = "{ \"item\": "+itemJson+"}";
+    else
+        messageJson = "{ \"item\": "+itemJson+", \"errorMessage\": \""+error+"\"}";
+    sendCommand("addItem", messageJson);
+}

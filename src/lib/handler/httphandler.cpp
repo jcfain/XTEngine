@@ -99,6 +99,14 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
         _webSocketHandler->sendUpdateItem(itemJson, roleslist);
     });
+    connect(_mediaLibraryHandler, &MediaLibraryHandler::itemAdded, this, [this](int index, int newSize) {
+        if(_mediaLibraryHandler->isLibraryLoading())
+            return;
+        auto item = _mediaLibraryHandler->getLibraryCache().value(index);
+        QJsonDocument doc(createMediaObject(item, m_hostAddress));
+        QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
+        _webSocketHandler->sendAddItem(itemJson);
+    });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::backgroundProcessStateChange, this, [this](QString message, float percentage) {
         QJsonObject obj;
         obj["message"] = message;
@@ -572,12 +580,12 @@ HttpPromise HttpHandler::handleMediaItemMetadataUpdate(HttpDataPtr data)
     else
     {
         auto metaData = LibraryListItemMetaData258::fromJson(doc.object());
+        SettingsHandler::setLiveOffset(metaData.offset);
         auto libraryItem = _mediaLibraryHandler->findItemByMediaPath(metaData.libraryItemPath);
         if(libraryItem)
         {
             libraryItem->metadata = metaData;
             SettingsHandler::updateLibraryListItemMetaData(libraryItem);
-            SettingsHandler::setLiveOffset(metaData.offset);
         } else {
             SettingsHandler::setForceMetaDataFullProcess(true);
             data->response->setStatus(HttpStatus::Conflict, createError("Invalid metadata item please process metadata<br> In System tab under settings."));

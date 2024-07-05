@@ -22,7 +22,8 @@ enum class LibraryListItemType {
     Video,
     Audio,
     FunscriptType,
-    VR
+    VR,
+    External
 };
 
 enum class ThumbState {
