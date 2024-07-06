@@ -1,4 +1,4 @@
-const webVersion = "v0.459b";
+const webVersion = "v0.46b";
 
 var DeviceType = {
 	Serial: 0,
@@ -2134,7 +2134,7 @@ function playVideo(obj) {
 		showAlertWindow("Error", "Cannot play external media items from this interface.<br>You can only modify media metadata.<br>Start the media item from the original location.");
 		return;
 	}
-	setPlayingMediaItem(mediaListGlobal[mediaListGlobal.findIndex(x => x.id==obj.id)]);
+	setPlayingMediaItem(selectedMediaItem);
 	sendMediaState();
 	if(obj["subtitle"]) {
 		if(!externalStreaming) {
