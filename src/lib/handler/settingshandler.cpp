@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.46b";
-const float SettingsHandler::XTEVersionNum = 0.46f;
+const QString SettingsHandler::XTEVersion = "0.461b";
+const float SettingsHandler::XTEVersionNum = 0.461f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -423,6 +423,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.459f) {
             locker.unlock();
             MigrateTo46(settingsToLoadFrom);
+            setForceMetaDataFullProcess(true);
+            Save();
+            Load();
+        }
+        if(currentVersion < 0.461f) {
+            locker.unlock();
             setForceMetaDataFullProcess(true);
             Save();
             Load();

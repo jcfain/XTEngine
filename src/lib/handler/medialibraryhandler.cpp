@@ -230,8 +230,6 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             item.libraryPath = path;
             setLiveProperties(item);
 
-            SettingsHandler::getLibraryListItemMetaData(item);
-            item.metadata.isMFS = item.metadata.tags.contains(SettingsHandler::getXTags().MFS);
 
             if(!vrMode && !scriptPath.isEmpty())
                 funscriptsWithMedia.append(scriptPath);
@@ -994,7 +992,12 @@ void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
 {
     assignID(libraryListItem);
     setThumbPath(libraryListItem);
-    SettingsHandler::getLibraryListItemMetaData(libraryListItem);
+    if(SettingsHandler::hasLibraryListItemMetaData(libraryListItem)) {
+        SettingsHandler::getLibraryListItemMetaData(libraryListItem);
+        libraryListItem.metadata.isMFS = libraryListItem.metadata.tags.contains(SettingsHandler::getXTags().MFS);
+    } else {
+        LogHandler::Debug("New item found: "+libraryListItem.nameNoExtension);
+    }
 }
 
 void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)
