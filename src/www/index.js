@@ -2774,7 +2774,7 @@ async function setupMotionModifiers() {
 
 	var headers = [
 		//"Modifier", 
-		"Link to MFS", 
+		"Link to script", 
 		"Speed"]
 	headers.forEach(element => {
 		var gridHeaderNode = document.createElement("div");

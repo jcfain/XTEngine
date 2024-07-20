@@ -505,7 +505,7 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
 
         if(item.type != LibraryListItemType::PlaylistInternal)
         {
-            if(!item.metadata.isMFS && discoverMFS2(item)) {
+            if(!item.metadata.isMFS && discoverMFS(item)) {
                 metadataChanged = true;
                 if(!rolesChanged.contains(Qt::DisplayRole))
                     rolesChanged.append(Qt::DisplayRole);
@@ -581,10 +581,10 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
             }
             if(userTags.contains(XTags::MISSING_SCRIPT))
             {
-                if(!item.hasScript && !item.metadata.tags.contains(XTags::MISSING_SCRIPT)) {
+                if(!item.hasScript && !item.metadata.isMFS && !item.metadata.tags.contains(XTags::MISSING_SCRIPT)) {
                     item.metadata.tags.append(XTags::MISSING_SCRIPT);
                     metadataChanged = true;
-                } else if(item.hasScript && item.metadata.tags.contains(XTags::MISSING_SCRIPT)) {
+                } else if((item.hasScript  || item.metadata.isMFS) && item.metadata.tags.contains(XTags::MISSING_SCRIPT)) {
                     item.metadata.tags.removeAll(XTags::MISSING_SCRIPT);
                     metadataChanged = true;
                 }
@@ -1205,35 +1205,34 @@ bool MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
     return itemChanged;
 }
 
-bool MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
-    auto channels = TCodeChannelLookup::getChannels();
-    QString script;
-    script.reserve(item.pathNoExtension.length() + 1 + 5 + 10);
-    foreach(auto axisName, channels)
-    {
-        auto track = TCodeChannelLookup::getChannel(axisName);
-        if(axisName == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfOscillate || track->TrackName.isEmpty())
-            continue;
+// bool MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
+//     auto channels = TCodeChannelLookup::getChannels();
+//     QString script;
+//     script.reserve(item.pathNoExtension.length() + 1 + 5 + 10);
+//     foreach(auto axisName, channels)
+//     {
+//         auto track = TCodeChannelLookup::getChannel(axisName);
+//         if(axisName == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfOscillate || track->TrackName.isEmpty())
+//             continue;
 
-        script = item.pathNoExtension + "." + track->TrackName + ".funscript";
-        if (QFileInfo::exists(script))
-        {
-            item.hasScript = true;
-            item.metadata.isMFS = true;
-            item.metadata.toolTip += "\n";
-            item.metadata.toolTip += script;
-            item.metadata.MFSScripts << script;
-        }
-    }
-    return item.metadata.isMFS;
-}
-bool MediaLibraryHandler::discoverMFS2(LibraryListItem27 &item) {
+//         script = item.pathNoExtension + "." + track->TrackName + ".funscript";
+//         if (QFileInfo::exists(script))
+//         {
+//             item.hasScript = true;
+//             item.metadata.isMFS = true;
+//             item.metadata.toolTip += "\n";
+//             item.metadata.toolTip += script;
+//             item.metadata.MFSScripts << script;
+//         }
+//     }
+//     return item.metadata.isMFS;
+// }
+bool MediaLibraryHandler::discoverMFS(LibraryListItem27 &item) {
     QStringList funscripts = TCodeChannelLookup::getValidMFSExtensions();
     foreach(auto scriptExtension, funscripts)
     {
         if (QFileInfo::exists(item.pathNoExtension + scriptExtension))
         {
-            item.hasScript = true;
             item.metadata.isMFS = true;
             item.metadata.toolTip += "\n";
             item.metadata.toolTip += item.pathNoExtension + scriptExtension;

@@ -100,18 +100,18 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 continue;
             if (channel->MultiplierEnabled)
             {
-                // Establish link to related channel to axis that are NOT stroke.
-                if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && actions.contains(channel->RelatedChannel)))
-                    mainAction = actions.value(channel->RelatedChannel);
-                else if(channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && !actions.contains(channel->RelatedChannel) && channel->RelatedChannel != TCodeChannelLookup::Stroke())
-                    continue;
-                if(mainAction == nullptr)
-                    continue;
+                // // Establish link to related channel to axis that are NOT stroke.
+                // if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && actions.contains(channel->RelatedChannel)))
+                //     mainAction = actions.value(channel->RelatedChannel);
+                // else if(channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && !actions.contains(channel->RelatedChannel) && channel->RelatedChannel != TCodeChannelLookup::Stroke())
+                //     continue;
+                // if(mainAction == nullptr)
+                //     continue;
                 int value = -1;
                 int channelDistance = 100;
-                if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel)) && (actions.contains(channel->RelatedChannel) || channel->RelatedChannel == TCodeChannelLookup::Stroke()))
+                if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel)) && (actions.contains(channel->RelatedChannel)))
                 {
-                    value = channel->RelatedChannel == TCodeChannelLookup::Stroke() ? mainAction->pos : actions.value(channel->RelatedChannel)->pos;
+                    value = actions.value(channel->RelatedChannel)->pos;
 //                        LogHandler::Debug("Channel: "+ axis);
 //                        LogHandler::Debug("FriendlyName: "+ channel->FriendlyName);
 //                        LogHandler::Debug("RelatedChannel: "+ channel->RelatedChannel);
@@ -151,7 +151,12 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 if (value < 0)
                 {
                     LogHandler::Warn("Value was less than zero: "+ QString::number(value));
-                    continue;
+                    value = 0;
+                }
+                if (value > 100)
+                {
+                    LogHandler::Warn("Value was greater than 100: "+ QString::number(value));
+                    value = 100;
                 }
                 //LogHandler::Debug("Multiplier: "+ channel->FriendlyName + " pos: " + QString::number(value) + ", at: " + QString::number(currentAction->at));
                 if ((channel->FunscriptInverted && channel->LinkToRelatedMFS) ||
@@ -162,7 +167,15 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 }
                 tcode += " ";
                 tcode += axis;
-                tcode += QString::number(calculateRange(axis.toUtf8(), value)).rightJustified(SettingsHandler::getTCodePadding(), '0');
+                int range = calculateRange(axis.toUtf8(), value);
+                if(range < 0) {
+                    LogHandler::Warn("Value cant be less than zero: "+ QString::number(range) +" originalValue: " + QString::number(value));
+                    range = 0;
+                }
+                // if(range > 9999) {
+                //     LogHandler::Warn("Value cant be greater than 9999: "+ QString::number(range) +" originalValue: " + QString::number(value));
+                // }
+                tcode += QString::number(range).rightJustified(SettingsHandler::getTCodePadding(), '0');
                 tcode += "S";
                 float channelDistancePercentage = channelDistance/100.0f;
                 auto speed = mainAction->speed > 0 ? qRound(mainAction->speed * channelDistancePercentage) : 500;

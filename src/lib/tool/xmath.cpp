@@ -41,7 +41,24 @@ qint64 XMath::random(qint64 min, qint64 max)
     // std::mt19937_64 mt(seed1);
     // std::uniform_int_distribution<qint64> dist(min, max);
     // return dist(mt);
-    return rand() % max + min;
+    //return rand() % (max + min);
+    qint64 rangeValue = max-min;
+    unsigned long
+        // max <= RAND_MAX < ULONG_MAX, so this is okay.
+        num_bins = (unsigned long) rangeValue + 1,
+        num_rand = (unsigned long) RAND_MAX + 1,
+        bin_size = num_rand / num_bins,
+        defect   = num_rand % num_bins;
+
+    long x;
+    do {
+        x = rand();
+    }
+    // This is carefully written not to overflow
+    while (num_rand - defect <= (unsigned long)x);
+
+    // Truncated division is intentional
+    return min + (x/bin_size);
 }
 
 int XMath::random(int min, int max)
@@ -50,7 +67,9 @@ int XMath::random(int min, int max)
     // std::mt19937 mt(seed1);
     // std::uniform_int_distribution<int> dist(min, max);
     // return dist(mt);
-    return rand() % max + min;
+    //return rand() % (max + min);// Assumes 0 <= max <= RAND_MAX
+    // Returns in the closed interval [0, max]
+    return random((qint64)min, (qint64)max);
 }
 
 double XMath::random(double min, double max)

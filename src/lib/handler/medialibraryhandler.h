@@ -121,8 +121,7 @@ private:
     void processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess = false);
     void stopMetadataProcess();
     bool updateToolTip(LibraryListItem27 &item);
-    bool discoverMFS1(LibraryListItem27 &item);
-    bool discoverMFS2(LibraryListItem27 &item);
+    bool discoverMFS(LibraryListItem27 &item);
 
     XVideoPreview xVideoPreview;
 
