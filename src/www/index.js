@@ -1,4 +1,4 @@
-const webVersion = "v0.46b";
+const webVersion = "v0.462b";
 
 var DeviceType = {
 	Serial: 0,
