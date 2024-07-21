@@ -13,6 +13,7 @@ class WebSocketHandler: public QObject
 {
     Q_OBJECT
 signals:
+    void settingChange(QString settingName, QVariant value);
     void connectOutputDevice(DeviceName deviceName, bool checked);
     void connectInputDevice(DeviceName deviceName, bool checked);
     void tcode(QString tcode);
@@ -34,7 +35,9 @@ public:
     QUrl getUrl();
     QString getServerName();
     int getServerPort();
+    void onSettingChange(QString setting, QVariant value);
     void sendCommand(QString command, QString message = nullptr, QWebSocket* client = 0);
+    void sendCommand(QString command, QJsonObject message, QWebSocket* client = 0);
     void sendDeviceConnectionStatus(ConnectionChangedSignal status, QWebSocket* client = 0);
     void sendUpdateThumb(QString id, QString thumb, QString error = nullptr);
     void sendUpdateItem(QString itemJson, QString rolesList, QString error = nullptr);

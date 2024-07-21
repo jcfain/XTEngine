@@ -26,6 +26,7 @@ SOURCES += \
     lib/handler/httphandler.cpp \
     lib/handler/loghandler.cpp \
     lib/handler/medialibraryhandler.cpp \
+    lib/handler/scheduler.cpp \
     lib/handler/serialhandler.cpp \
     lib/handler/settingsactionhandler.cpp \
     lib/handler/settingshandler.cpp \
@@ -61,6 +62,7 @@ HEADERS += \
     lib/handler/loghandler.h \
     lib/handler/medialibraryhandler.h \
     lib/handler/outputdevicehandler.h \
+    lib/handler/scheduler.h \
     lib/handler/serialhandler.h \
     lib/handler/settingsactionhandler.h \
     lib/handler/settingshandler.h \
@@ -103,6 +105,7 @@ HEADERS += \
     lib/struct/ScriptInfo.h \
     lib/struct/SerialComboboxItem.h \
     lib/struct/InputDevicePacket.h \
+    lib/struct/schedulerdetails.h \
     lib/tool/array-util.h \
     lib/tool/boolinq.h \
     lib/tool/file-util.h \

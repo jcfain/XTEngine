@@ -22,8 +22,8 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
     QString tcode = "";
     std::shared_ptr<FunscriptAction> mainAction = 0;
     QList<QString> actionKeys = actions.keys();
-    // int mainDistance = 0;
-    // int mainSpeed = 0;
+    //int mainDistance = 0;
+    //int mainSpeed = 0;
     // if(strokeAction != nullptr)
     // {
     //     strokeDistance = getDistance(strokeAction->pos, strokeAction->lastPos);
@@ -59,8 +59,8 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
         if (axisModel->Channel == TCodeChannelLookup::Stroke())
         {
             mainAction = axisAction;
-            // mainDistance = getDistance(mainAction->pos, mainAction->lastPos);
-            // mainSpeed = mainAction->speed;
+            //mainDistance = getDistance(mainAction->pos, mainAction->lastPos);
+            //mainSpeed = mainAction->speed;
         }
         int position = axisAction->pos;
         LogHandler::Debug("Channel: "+ axisModel->FriendlyName + " pos: " + QString::number(position) + ", at: " + QString::number(axisAction->at));
@@ -83,7 +83,7 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
         mainAction = actions.first();
     }
 
-    if(mainAction && SettingsHandler::getMultiplierEnabled())
+    if(SettingsHandler::getMultiplierEnabled())
     {
         foreach(auto axis, axisKeys)
         {
@@ -108,7 +108,7 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 // if(mainAction == nullptr)
                 //     continue;
                 int value = -1;
-                int channelDistance = 100;
+                // int channelDistance = 100;
                 if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel)) && (actions.contains(channel->RelatedChannel)))
                 {
                     value = actions.value(channel->RelatedChannel)->pos;
@@ -138,12 +138,12 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                     //     min = 50;// + (qRound(strokeDistance / 2.0f) - 1);
                     // }
                     value = XMath::random(min, max);
-                    LogHandler::Debug("Channel: "+ axis);
-                    LogHandler::Debug("Value: "+ QString::number(value));
-                    if(lastPos > -1) {
-                        channelDistance = getDistance(value, lastPos);
-                        LogHandler::Debug("Last value: "+ QString::number(channelValueTracker[axis]));
-                    }
+                    // LogHandler::Debug("Channel: "+ axis);
+                    // LogHandler::Debug("Value: "+ QString::number(value));
+                    // if(lastPos > -1) {
+                    //     channelDistance = getDistance(value, lastPos);
+                    //     LogHandler::Debug("Last value: "+ QString::number(channelValueTracker[axis]));
+                    // }
                     channelValueTracker[axis] = value;
                 }
                 //lowMin + (highMin-lowMin)*level,lowMax + (highMax-lowMax)*level
@@ -177,8 +177,9 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 // }
                 tcode += QString::number(range).rightJustified(SettingsHandler::getTCodePadding(), '0');
                 tcode += "S";
-                float channelDistancePercentage = channelDistance/100.0f;
-                auto speed = mainAction->speed > 0 ? qRound(mainAction->speed * channelDistancePercentage) : 500;
+                // float channelDistancePercentage = channelDistance/100.0f;
+
+                auto speed = mainAction && mainAction->speed > 0 ? mainAction->speed : XMath::random(250, 1500);
                 if (channel->DamperEnabled && channel->DamperValue > 0.0)
                 {
                     float speedModifierValue = channel->DamperRandom ? XMath::random(0.1f, channel->DamperValue) : channel->DamperValue;

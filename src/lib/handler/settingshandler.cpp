@@ -1,7 +1,7 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.461b";
-const float SettingsHandler::XTEVersionNum = 0.461f;
+const QString SettingsHandler::XTEVersion = "0.462b";
+const float SettingsHandler::XTEVersionNum = 0.462f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -35,6 +35,122 @@ void SettingsHandler::addBookmark(LibraryListItem27 libraryListItem, QString nam
 {
     libraryListItem.metadata.bookmarks.append({name, currentPosition});
     SettingsHandler::updateLibraryListItemMetaData(libraryListItem);
+}
+
+void SettingsHandler::settingChange(QString settingName, QVariant value)
+{
+    QVariant currentValue = settings->value(settingName);
+    switch(currentValue.type())
+    {
+        case QVariant::Date:
+        {
+            QDate realValue;
+            if(value.type() == QVariant::String)
+                realValue = QDate::fromString(value.toString());
+            else
+                realValue = value.toDate();
+            if(realValue.isValid())
+                settings->setValue(settingName, realValue);
+            break;
+        }
+        case QVariant::Time:
+        {
+            QTime realValue;
+            if(value.type() == QVariant::String)
+                realValue = QTime::fromString(value.toString());
+            else
+                realValue = value.toTime();
+            if(realValue.isValid())
+                settings->setValue(settingName, realValue);
+            break;
+        }
+        case QVariant::DateTime:
+        {
+            QDateTime realValue;
+            if(value.type() == QVariant::String)
+                realValue = QDateTime::fromString(value.toString());
+            else
+                realValue = value.toDateTime();
+            if(realValue.isValid())
+                settings->setValue(settingName, realValue);
+            break;
+        }
+        case QVariant::LongLong:
+        case QVariant::ULongLong:
+        {
+            qint64 realValue = 0;
+            if(value.type() == QVariant::String)
+                realValue = value.toString().toLongLong();
+            else
+                realValue = value.toLongLong();
+            settings->setValue(settingName, realValue);
+            break;
+        }
+        // Follow through on primitives
+        case QVariant::String:
+        case QVariant::Bool:
+        case QVariant::Int:
+        case QVariant::UInt:
+        case QVariant::Double:
+        case QVariant::Map:
+        case QVariant::List:
+        case QVariant::StringList:
+            settings->setValue(settingName, value);
+            break;
+        // XTE doesnt uses the following at this time.
+        case QVariant::Char:
+        case QVariant::ByteArray:
+        case QVariant::BitArray:
+        case QVariant::UserType:
+        case QVariant::Url:
+        case QVariant::Locale:
+        case QVariant::Rect:
+        case QVariant::RectF:
+        case QVariant::Size:
+        case QVariant::SizeF:
+        case QVariant::Line:
+        case QVariant::LineF:
+        case QVariant::Point:
+        case QVariant::PointF:
+        case QVariant::RegExp:
+        case QVariant::RegularExpression:
+        case QVariant::Hash:
+        case QVariant::EasingCurve:
+        case QVariant::Uuid:
+        case QVariant::ModelIndex:
+        case QVariant::PersistentModelIndex:
+        case QVariant::LastCoreType:
+        case QVariant::Font:
+        case QVariant::Pixmap:
+        case QVariant::Brush:
+        case QVariant::Color:
+        case QVariant::Palette:
+        case QVariant::Image:
+        case QVariant::Polygon:
+        case QVariant::Region:
+        case QVariant::Bitmap:
+        case QVariant::Cursor:
+        case QVariant::KeySequence:
+        case QVariant::Pen:
+        case QVariant::TextLength:
+        case QVariant::TextFormat:
+        case QVariant::Matrix:
+        case QVariant::Transform:
+        case QVariant::Matrix4x4:
+        case QVariant::Vector2D:
+        case QVariant::Vector3D:
+        case QVariant::Vector4D:
+        case QVariant::Quaternion:
+        case QVariant::PolygonF:
+        case QVariant::Icon:
+        case QVariant::LastGuiType:
+        case QVariant::SizePolicy:
+        case QVariant::LastType:
+            break;
+        default:
+            break;
+    }
+    Load();
 }
 
 QSettings* SettingsHandler::getSettings() {
@@ -273,12 +389,16 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         m_xTags.addSmartTag(tag);
     }
 
+    m_viewedThreshold = settingsToLoadFrom->value("viewedThreshold", 0.9f).toFloat();
 
-    m_viewedThreshold = settingsToLoadFrom->value("viewedThreshold").toFloat();
-    if(!m_viewedThreshold) {
-        m_viewedThreshold = 0.9f;
-    }
-
+    m_scheduleLibraryLoadEnabled = settingsToLoadFrom->value("scheduleLibraryLoadEnabled", false).toBool();
+    m_scheduleLibraryLoadTime = settingsToLoadFrom->value("scheduleLibraryLoadTime", QTime(2,0)).toTime();
+    // if(!m_scheduleLibraryLoadTime.isValid()) {
+    //     m_scheduleLibraryLoadTime = QTime(2,0);
+    // }
+    // QString value = "h: " + QString::number(m_scheduleLibraryLoadTime.hour()) + ", m: " + QString::number(m_scheduleLibraryLoadTime.minute()) + " s: " + QString::number(m_scheduleLibraryLoadTime.second()) + ", ms: " + QString::number(m_scheduleLibraryLoadTime.msec());
+    // LogHandler::Debug(value);
+    m_scheduleLibraryLoadFullProcess = settingsToLoadFrom->value("scheduleLibraryLoadFullProcess", true).toBool();
 
     if(!m_firstLoad && currentVersion < 0.258f)
     {
@@ -295,9 +415,9 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         }
     }
 
-    m_forceMetaDataFullProcess = settingsToLoadFrom->value("forceMetaDataFullProcess").toBool();
+    m_forceMetaDataFullProcess = settingsToLoadFrom->value("forceMetaDataFullProcess", false).toBool();
 
-    m_disableHeartBeat = settingsToLoadFrom->value("disableHeartBeat").toBool();
+    m_disableHeartBeat = settingsToLoadFrom->value("disableHeartBeat", false).toBool();
 
     if(!m_firstLoad)
     {
@@ -586,7 +706,9 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         settingsToSaveTo->setValue("disableHeartBeat", m_disableHeartBeat);
 
-
+        settingsToSaveTo->setValue("scheduleLibraryLoadEnabled", m_scheduleLibraryLoadEnabled);
+        settingsToSaveTo->setValue("scheduleLibraryLoadTime", m_scheduleLibraryLoadTime);
+        settingsToSaveTo->setValue("scheduleLibraryLoadFullProcess", m_scheduleLibraryLoadFullProcess);
 
         QVariantList tagsList;
         foreach(auto tag, m_xTags.getUserTags())
@@ -751,6 +873,39 @@ void SettingsHandler::storeMediaMetaDatas(QSettings* settingsToSaveTo)
         libraryListItemMetaDatas.insert(libraryListItemMetaData, LibraryListItemMetaData258::toVariant(_libraryListItemMetaDatas[libraryListItemMetaData]));
     }
     settingsToSaveTo->setValue("libraryListItemMetaDatas", libraryListItemMetaDatas);
+}
+
+bool SettingsHandler::scheduleLibraryLoadFullProcess()
+{
+    return m_scheduleLibraryLoadFullProcess;
+}
+
+void SettingsHandler::setScheduleLibraryLoadFullProcess(bool newScheduleLibraryLoadFullProcess)
+{
+    m_scheduleLibraryLoadFullProcess = newScheduleLibraryLoadFullProcess;
+    settingsChangedEvent(true);
+}
+
+QTime SettingsHandler::scheduleLibraryLoadTime()
+{
+    return m_scheduleLibraryLoadTime;
+}
+
+void SettingsHandler::setScheduleLibraryLoadTime(QTime newScheduleLibraryLoadTime)
+{
+    m_scheduleLibraryLoadTime = newScheduleLibraryLoadTime;
+    settingsChangedEvent(true);
+}
+
+bool SettingsHandler::scheduleLibraryLoadEnabled()
+{
+    return m_scheduleLibraryLoadEnabled;
+}
+
+void SettingsHandler::setScheduleLibraryLoadEnabled(bool newScheduleLibraryLoadEnabled)
+{
+    m_scheduleLibraryLoadEnabled = newScheduleLibraryLoadEnabled;
+    settingsChangedEvent(true);
 }
 
 float SettingsHandler::getViewedThreshold()
@@ -2767,6 +2922,10 @@ XVideoRenderer SettingsHandler::_selectedVideoRenderer;
 
 float SettingsHandler::m_viewedThreshold;
 bool SettingsHandler::m_disableHeartBeat;
+
+bool SettingsHandler::m_scheduleLibraryLoadEnabled;
+QTime SettingsHandler::m_scheduleLibraryLoadTime;
+bool SettingsHandler::m_scheduleLibraryLoadFullProcess;
 
 QStringList SettingsHandler::_libraryExclusions;
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::_playlists;

@@ -59,6 +59,7 @@ var Roles = {
 
 var mediaLoading = false;
 var debounceTracker = {};// Use to create timeout handles on the fly.
+var settingChangeDebounce;
 var wsUri;
 var websocket = null;
 var xtpConnected = false;
@@ -325,6 +326,14 @@ function sendUpdateThumbAtPos(item) {
 function sendUpdateMoneyShotAtPos(item) {
 	var pos = videoNode.currentTime;
 	sendWebsocketMessage("setMoneyShot", { itemID: item.id, pos: pos });
+}
+function settingChange(key, value) {
+	if(settingChangeDebounce)
+		clearTimeout(settingChangeDebounce);
+	settingChangeDebounce = setTimeout(function() {
+		sendWebsocketMessage("settingChange", { key: key, value: value });
+		markXTPFormDirty();
+	}, 500);
 }
 
 function setSaveState(node, saving, error) {
@@ -686,6 +695,9 @@ function getServerSettings(retry) {
 			remoteUserSettings = xhr.response;
 
 			document.getElementById("xteVersion").innerText = remoteUserSettings["xteVersion"];
+			document.getElementById("scheduleLibraryLoadEnabled").checked = remoteUserSettings["scheduleLibraryLoadEnabled"];
+			document.getElementById("scheduleLibraryLoadTime").value = remoteUserSettings["scheduleLibraryLoadTime"];
+			document.getElementById("scheduleLibraryLoadFullProcess").checked = remoteUserSettings["scheduleLibraryLoadFullProcess"];
 			
 			setupChannelData();
 

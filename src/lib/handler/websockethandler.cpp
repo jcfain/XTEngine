@@ -47,6 +47,13 @@ int WebSocketHandler::getServerPort()
     return m_pWebSocketServer->serverPort();
 }
 
+void WebSocketHandler::onSettingChange(QString setting, QVariant value)
+{
+    QJsonObject obj;
+    obj[setting] = QJsonValue::fromVariant(value);
+    sendCommand("settingChange", obj);
+}
+
 void WebSocketHandler::sendCommand(QString command, QString message, QWebSocket* client)
 {
     QString commandJson;
@@ -61,6 +68,21 @@ void WebSocketHandler::sendCommand(QString command, QString message, QWebSocket*
     else
         for (QWebSocket *pClient : qAsConst(m_clients))
         pClient->sendTextMessage(commandJson);
+}
+
+void WebSocketHandler::sendCommand(QString command, QJsonObject message, QWebSocket* client)
+{
+    QJsonDocument doc;
+    QJsonObject obj;
+    obj["command"] = command;
+    obj["message"] = message;
+    doc.setObject(obj);
+    QString fullMessage = QString(doc.toJson(QJsonDocument::Compact));
+    if(client)
+        client->sendTextMessage(fullMessage);
+    else
+        for (QWebSocket *pClient : qAsConst(m_clients))
+            pClient->sendTextMessage(fullMessage);
 }
 
 void WebSocketHandler::onNewConnection()
@@ -99,6 +121,9 @@ void WebSocketHandler::processTextMessage(QString message)
     if (command == "tcode") {
         QString commandMessage = json["message"].toString();
         emit tcode(commandMessage);
+    } else if (command == "settingChange") {
+        QJsonObject obj = json["message"].toObject();
+        emit settingChange(obj["key"].toString(), obj["value"].toVariant());
     } else if (command == "setChannelRange") {
         QJsonObject obj = json["message"].toObject();
         emit setChannelRange(obj["channelName"].toString(), obj["min"].toInt(), obj["max"].toInt());

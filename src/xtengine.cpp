@@ -51,6 +51,11 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     });
     _mediaLibraryHandler = new MediaLibraryHandler(this);
     XMediaStateHandler::setMediaLibraryHandler(_mediaLibraryHandler);
+
+    m_scheduler = new Scheduler(_mediaLibraryHandler, this);
+    bool enabled = SettingsHandler::scheduleLibraryLoadEnabled();
+    if(enabled)
+        m_scheduler->startLibraryLoadSchedule();
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, [this](){
     //     emit stopAllMedia();
     // });
@@ -93,6 +98,7 @@ void XTEngine::init()
         connect(_httpHandler, &HttpHandler::connectOutputDevice, _connectionHandler, &ConnectionHandler::initOutputDevice);
         connect(this, &XTEngine::stopAllMedia, _httpHandler, &HttpHandler::stopAllMedia);
         connect(_connectionHandler, &ConnectionHandler::connectionChange, _httpHandler, &HttpHandler::on_DeviceConnection_StateChange);
+        connect(_httpHandler, &HttpHandler::settingChange, SettingsHandler::settingChange);
 
         _httpHandler->listen();
     }
@@ -152,6 +158,13 @@ void XTEngine::init()
     _connectionHandler->init();
 
     _mediaLibraryHandler->loadLibraryAsync();
+}
+
+void XTEngine::scheduleLibraryLoadEnableChange(bool enabled)
+{
+    enabled ?
+        m_scheduler->startLibraryLoadSchedule() :
+        m_scheduler->stopLibraryLoadSchedule();
 }
 
 void XTEngine::onFunscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration)

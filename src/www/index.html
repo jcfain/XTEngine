@@ -607,6 +607,22 @@
 						<button id="startMetadataProcessButton" style="margin-top:8px" onclick="startMetadataProcess()">Process metadata</button>
 						<button id="startMetadataCleanProcessButton" style="margin-top:8px" onclick="startMetadataCleanProcess()">Clean metadata</button>
 						<button id="cleanupThumbsButton" style="margin-top:8px" onclick="startThumbCleanupProcess()">Clean up thumbs</button>
+						<h3>Library load schedule</h3>
+						<div class="formElement">
+							<label for="scheduleLibraryLoadEnabled">Enabled</label>
+							<input id="scheduleLibraryLoadEnabled" type="checkbox"
+								onclick="settingChange(this.id, this.checked)" />
+						</div>
+						<div class="formElement">
+							<label for="scheduleLibraryLoadTime">At time</label>
+							<input id="scheduleLibraryLoadTime" type="time" name="scheduleLibraryLoad" min="00:00" max="23:59"
+								onchange="settingChange(this.id, this.value)" />
+						</div>
+						<div class="formElement">
+							<label for="scheduleLibraryLoadFullProcess">Full metadata process</label>
+							<input id="scheduleLibraryLoadFullProcess" type="checkbox"
+								onclick="settingChange(this.id, this.checked)" />
+						</div>
 					</div>
 				</section>
 				<!-- 				<div class="formElement">

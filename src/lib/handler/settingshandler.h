@@ -42,6 +42,7 @@ signals:
 public slots:
     void setMoneyShot(LibraryListItem27 selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
     void addBookmark(LibraryListItem27 LibraryListItem27, QString name, qint64 currentPosition);
+    static void settingChange(QString settingName, QVariant value);
 
 public:
     static SettingsHandler* instance(){
@@ -382,6 +383,15 @@ public:
     static float getViewedThreshold();
     static void setViewedThreshold(float newViewedThreshold);
 
+    static bool scheduleLibraryLoadEnabled();
+    static void setScheduleLibraryLoadEnabled(bool newScheduleLibraryLoadEnabled);
+
+    static QTime scheduleLibraryLoadTime();
+    static void setScheduleLibraryLoadTime(QTime newScheduleLibraryLoadTime);
+
+    static bool scheduleLibraryLoadFullProcess();
+    static void setScheduleLibraryLoadFullProcess(bool newScheduleLibraryLoadFullProcess);
+
 private:
     SettingsHandler();
     ~SettingsHandler();
@@ -515,8 +525,13 @@ private:
     static float m_viewedThreshold;
     static bool m_disableHeartBeat;
 
+    static bool m_scheduleLibraryLoadEnabled;
+    static QTime m_scheduleLibraryLoadTime;
+    static bool m_scheduleLibraryLoadFullProcess;
+
     static XTags m_xTags;
     static inline bool m_forceMetaDataFullProcess = false;
+
 
     static QTimer m_settingsChangedNotificationDebounce;
     static QHash<QString, bool> _funscriptLoaded;

@@ -23,7 +23,10 @@ MediaLibraryHandler::~MediaLibraryHandler()
 }
 bool MediaLibraryHandler::isLibraryLoading()
 {
-    return _loadingLibraryFuture.isRunning();
+    return _loadingLibraryFuture.isRunning() ||
+           _thumbProcessIsRunning ||
+           _metadataFuture.isRunning() ||
+           m_thumbCleanupFuture.isRunning();
 }
 
 bool MediaLibraryHandler::isLibraryItemVideo(LibraryListItem27 item) {
@@ -52,8 +55,10 @@ void MediaLibraryHandler::onPrepareLibraryLoad()
 
 void MediaLibraryHandler::loadLibraryAsync()
 {
-    if(isLibraryLoading())
+    if(isLibraryLoading()) {
+        LogHandler::Warn("loadLibraryAsync called when process already running");
         return;
+    }
     LogHandler::Debug("loadLibraryAsync");
     onPrepareLibraryLoad();
     LogHandler::Debug("loadLibraryAsync after stop");
@@ -66,12 +71,9 @@ void MediaLibraryHandler::loadLibraryAsync()
         emit libraryStopped();
         return;
     }
-    if(!isLibraryLoading())
-    {
-        _loadingLibraryFuture = QtConcurrent::run([this, library, vrLibrary]() {
-            on_load_library(library.isEmpty() ? vrLibrary : library, library.isEmpty());
-        });
-    }
+    _loadingLibraryFuture = QtConcurrent::run([this, library, vrLibrary]() {
+        on_load_library(library.isEmpty() ? vrLibrary : library, library.isEmpty());
+    });
 }
 
 void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)

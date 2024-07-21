@@ -27,6 +27,7 @@ class XTENGINE_EXPORT HttpHandler : public HttpRequestHandler
     Q_OBJECT
 signals:
     void error(QString error);
+    void settingChange(QString settingName, QVariant value);
     void xtpWebPacketRecieve(QByteArray data);
     void tcode(QString tcode);
     void connectOutputDevice(DeviceName deviceName, bool checked);

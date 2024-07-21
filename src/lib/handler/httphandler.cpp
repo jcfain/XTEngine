@@ -22,9 +22,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         }
         obj["userTags"] = userTags;
         obj["smartTags"] = smartTags;
-        QJsonDocument doc(obj);
-        QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
-        _webSocketHandler->sendCommand("tagsUpdate", itemJson);
+        _webSocketHandler->sendCommand("tagsUpdate", obj);
     });
 
     connect(_webSocketHandler, &WebSocketHandler::connectOutputDevice, this, &HttpHandler::connectOutputDevice);
@@ -62,6 +60,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             _mediaLibraryHandler->startMetadataCleanProcess();
         }
     });
+    connect(_webSocketHandler, &WebSocketHandler::settingChange, this, &HttpHandler::settingChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoadingStatus, this, &HttpHandler::onLibraryLoadingStatusChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoaded, this, &HttpHandler::onSetLibraryLoaded);
@@ -111,8 +110,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         QJsonObject obj;
         obj["message"] = message;
         obj["percentage"] = percentage;
-        QJsonDocument doc(obj);
-        _webSocketHandler->sendCommand("statusOutput", QString(doc.toJson(QJsonDocument::Compact)));
+        _webSocketHandler->sendCommand("statusOutput", obj);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, item.thumbFileLoadingCurrent);});
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::thumbProcessBegin, this, [this]() {onLibraryLoadingStatusChange("Loading thumbs...");});
@@ -454,6 +452,10 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
         smartTagsArray.append(tag);
     }
     root["smartTags"] = smartTagsArray;
+
+    root["scheduleLibraryLoadEnabled"] = SettingsHandler::scheduleLibraryLoadEnabled();
+    root["scheduleLibraryLoadTime"] = SettingsHandler::scheduleLibraryLoadTime().toString("hh:mm");
+    root["scheduleLibraryLoadFullProcess"] = SettingsHandler::scheduleLibraryLoadFullProcess();
 
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
     data->response->compressBody();
