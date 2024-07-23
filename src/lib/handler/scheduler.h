@@ -12,6 +12,7 @@ public:
 
     void startLibraryLoadSchedule();
     void stopLibraryLoadSchedule();
+    void runTimeChange(QTime time);
 signals:
 private:
     MediaLibraryHandler* m_mediaLibraryHandler;

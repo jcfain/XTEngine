@@ -34,6 +34,7 @@ class XTENGINE_EXPORT SettingsHandler: public QObject
 {
     Q_OBJECT
 signals:
+    void settingChange(QString settingName, QVariant value);
     void settingsChanged(bool dirty);
     void messageSend(QString message, XLogLevel loglevel);
     void messageSendWait(QString message, XLogLevel loglevel, QFunctionPointer callback);
@@ -42,7 +43,7 @@ signals:
 public slots:
     void setMoneyShot(LibraryListItem27 selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
     void addBookmark(LibraryListItem27 LibraryListItem27, QString name, qint64 currentPosition);
-    static void settingChange(QString settingName, QVariant value);
+    static void changeSetting(QString settingName, QVariant value);
 
 public:
     static SettingsHandler* instance(){

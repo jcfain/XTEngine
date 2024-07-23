@@ -2,6 +2,7 @@
 
 #include "lib/handler/xmediastatehandler.h"
 #include "lib/struct/ScriptInfo.h"
+#include "lib/lookup/SettingMap.h"
 
 XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
 {
@@ -53,8 +54,7 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     XMediaStateHandler::setMediaLibraryHandler(_mediaLibraryHandler);
 
     m_scheduler = new Scheduler(_mediaLibraryHandler, this);
-    bool enabled = SettingsHandler::scheduleLibraryLoadEnabled();
-    if(enabled)
+    if(SettingsHandler::scheduleLibraryLoadEnabled())
         m_scheduler->startLibraryLoadSchedule();
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, [this](){
     //     emit stopAllMedia();
@@ -98,10 +98,22 @@ void XTEngine::init()
         connect(_httpHandler, &HttpHandler::connectOutputDevice, _connectionHandler, &ConnectionHandler::initOutputDevice);
         connect(this, &XTEngine::stopAllMedia, _httpHandler, &HttpHandler::stopAllMedia);
         connect(_connectionHandler, &ConnectionHandler::connectionChange, _httpHandler, &HttpHandler::on_DeviceConnection_StateChange);
-        connect(_httpHandler, &HttpHandler::settingChange, SettingsHandler::settingChange);
+        connect(_httpHandler, &HttpHandler::settingChange, SettingsHandler::changeSetting);
 
         _httpHandler->listen();
     }
+
+    connect(SettingsHandler::instance(), &SettingsHandler::settingChange, this, [this](QString key, QVariant value) {
+        if(key == SettingKeys::scheduleLibraryLoadTime)
+        {
+            QTime newTime = QTime::fromString(value.toString());
+            if(newTime.isValid())
+                m_scheduler->runTimeChange(newTime);
+        } else if(key == SettingKeys::scheduleLibraryLoadEnabled)
+        {
+            scheduleLibraryLoadEnableChange(value.toBool());
+        }
+    });
     
     connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, QOverload<InputDevicePacket>::of(&SyncHandler::searchForFunscript));
     connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, this, [](InputDevicePacket packet) {

@@ -56,6 +56,9 @@ public:
     TCodeFactory* tcodeFactory() {
         return _tcodeFactory;
     }
+    Scheduler* scheduler() {
+        return m_scheduler;
+    }
     void scheduleLibraryLoadEnableChange(bool enabled);
 //    XMediaStateHandler* xMediaStateHandler() {
 //        return m_xMediaStateHandler;

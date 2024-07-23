@@ -1,5 +1,7 @@
 #include "settingshandler.h"
 
+#include "../lookup/SettingMap.h"
+
 const QString SettingsHandler::XTEVersion = "0.462b";
 const float SettingsHandler::XTEVersionNum = 0.462f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
@@ -37,9 +39,10 @@ void SettingsHandler::addBookmark(LibraryListItem27 libraryListItem, QString nam
     SettingsHandler::updateLibraryListItemMetaData(libraryListItem);
 }
 
-void SettingsHandler::settingChange(QString settingName, QVariant value)
+void SettingsHandler::changeSetting(QString settingName, QVariant value)
 {
     QVariant currentValue = settings->value(settingName);
+    bool hasChanged = false;
     switch(currentValue.type())
     {
         case QVariant::Date:
@@ -49,8 +52,10 @@ void SettingsHandler::settingChange(QString settingName, QVariant value)
                 realValue = QDate::fromString(value.toString());
             else
                 realValue = value.toDate();
-            if(realValue.isValid())
+            if(realValue.isValid()) {
                 settings->setValue(settingName, realValue);
+                hasChanged = true;
+            }
             break;
         }
         case QVariant::Time:
@@ -60,8 +65,10 @@ void SettingsHandler::settingChange(QString settingName, QVariant value)
                 realValue = QTime::fromString(value.toString());
             else
                 realValue = value.toTime();
-            if(realValue.isValid())
+            if(realValue.isValid()) {
                 settings->setValue(settingName, realValue);
+                hasChanged = true;
+            }
             break;
         }
         case QVariant::DateTime:
@@ -71,8 +78,10 @@ void SettingsHandler::settingChange(QString settingName, QVariant value)
                 realValue = QDateTime::fromString(value.toString());
             else
                 realValue = value.toDateTime();
-            if(realValue.isValid())
+            if(realValue.isValid()) {
                 settings->setValue(settingName, realValue);
+                hasChanged = true;
+            }
             break;
         }
         case QVariant::LongLong:
@@ -84,6 +93,7 @@ void SettingsHandler::settingChange(QString settingName, QVariant value)
             else
                 realValue = value.toLongLong();
             settings->setValue(settingName, realValue);
+            hasChanged = true;
             break;
         }
         // Follow through on primitives
@@ -95,8 +105,11 @@ void SettingsHandler::settingChange(QString settingName, QVariant value)
         case QVariant::Map:
         case QVariant::List:
         case QVariant::StringList:
+        {
             settings->setValue(settingName, value);
+            hasChanged = true;
             break;
+        }
         // XTE doesnt uses the following at this time.
         case QVariant::Char:
         case QVariant::ByteArray:
@@ -151,6 +164,12 @@ void SettingsHandler::settingChange(QString settingName, QVariant value)
             break;
     }
     Load();
+
+    if(hasChanged)
+    {
+        settingsChangedEvent(true);
+        emit instance()->settingChange(settingName, value);
+    }
 }
 
 QSettings* SettingsHandler::getSettings() {
@@ -391,14 +410,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
     m_viewedThreshold = settingsToLoadFrom->value("viewedThreshold", 0.9f).toFloat();
 
-    m_scheduleLibraryLoadEnabled = settingsToLoadFrom->value("scheduleLibraryLoadEnabled", false).toBool();
-    m_scheduleLibraryLoadTime = settingsToLoadFrom->value("scheduleLibraryLoadTime", QTime(2,0)).toTime();
+    m_scheduleLibraryLoadEnabled = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadEnabled, false).toBool();
+    m_scheduleLibraryLoadTime = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadTime, QTime(2,0)).toTime();
     // if(!m_scheduleLibraryLoadTime.isValid()) {
     //     m_scheduleLibraryLoadTime = QTime(2,0);
     // }
     // QString value = "h: " + QString::number(m_scheduleLibraryLoadTime.hour()) + ", m: " + QString::number(m_scheduleLibraryLoadTime.minute()) + " s: " + QString::number(m_scheduleLibraryLoadTime.second()) + ", ms: " + QString::number(m_scheduleLibraryLoadTime.msec());
     // LogHandler::Debug(value);
-    m_scheduleLibraryLoadFullProcess = settingsToLoadFrom->value("scheduleLibraryLoadFullProcess", true).toBool();
+    m_scheduleLibraryLoadFullProcess = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadFullProcess, true).toBool();
 
     if(!m_firstLoad && currentVersion < 0.258f)
     {
@@ -706,9 +725,9 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         settingsToSaveTo->setValue("disableHeartBeat", m_disableHeartBeat);
 
-        settingsToSaveTo->setValue("scheduleLibraryLoadEnabled", m_scheduleLibraryLoadEnabled);
-        settingsToSaveTo->setValue("scheduleLibraryLoadTime", m_scheduleLibraryLoadTime);
-        settingsToSaveTo->setValue("scheduleLibraryLoadFullProcess", m_scheduleLibraryLoadFullProcess);
+        settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadEnabled, m_scheduleLibraryLoadEnabled);
+        settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadTime, m_scheduleLibraryLoadTime);
+        settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadFullProcess, m_scheduleLibraryLoadFullProcess);
 
         QVariantList tagsList;
         foreach(auto tag, m_xTags.getUserTags())
@@ -882,8 +901,7 @@ bool SettingsHandler::scheduleLibraryLoadFullProcess()
 
 void SettingsHandler::setScheduleLibraryLoadFullProcess(bool newScheduleLibraryLoadFullProcess)
 {
-    m_scheduleLibraryLoadFullProcess = newScheduleLibraryLoadFullProcess;
-    settingsChangedEvent(true);
+    changeSetting(SettingKeys::scheduleLibraryLoadFullProcess, newScheduleLibraryLoadFullProcess);
 }
 
 QTime SettingsHandler::scheduleLibraryLoadTime()
@@ -893,8 +911,7 @@ QTime SettingsHandler::scheduleLibraryLoadTime()
 
 void SettingsHandler::setScheduleLibraryLoadTime(QTime newScheduleLibraryLoadTime)
 {
-    m_scheduleLibraryLoadTime = newScheduleLibraryLoadTime;
-    settingsChangedEvent(true);
+    changeSetting(SettingKeys::scheduleLibraryLoadTime, newScheduleLibraryLoadTime);
 }
 
 bool SettingsHandler::scheduleLibraryLoadEnabled()
@@ -904,8 +921,7 @@ bool SettingsHandler::scheduleLibraryLoadEnabled()
 
 void SettingsHandler::setScheduleLibraryLoadEnabled(bool newScheduleLibraryLoadEnabled)
 {
-    m_scheduleLibraryLoadEnabled = newScheduleLibraryLoadEnabled;
-    settingsChangedEvent(true);
+    changeSetting(SettingKeys::scheduleLibraryLoadEnabled, newScheduleLibraryLoadEnabled);
 }
 
 float SettingsHandler::getViewedThreshold()
