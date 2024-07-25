@@ -182,24 +182,20 @@ void XTEngine::scheduleLibraryLoadEnableChange(bool enabled)
 
 void XTEngine::onFunscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration)
 {
-    // if (_connectionHandler->isOutputDeviceConnected())
-    // {
-        if(!funscriptPath.isEmpty())
-        {
-            LogHandler::Debug("Starting sync: "+funscriptPath);
-            auto fileName = QUrl(mediaPath).fileName();
-            auto itemRef = _mediaLibraryHandler->findItemByName(fileName);
-            if(!itemRef) {
-                LogHandler::Error("No external item found in media library. Setting up temporary item for: "+mediaPath);
-                _mediaLibraryHandler->setupTempExternalItem(mediaPath, funscriptPath, mediaDuration);
-                itemRef = _mediaLibraryHandler->findItemByName(fileName);
-                XMediaStateHandler::setPlaying(itemRef);
-            } else {
-                XMediaStateHandler::setPlaying(itemRef);
-            }
-            _syncHandler->syncInputDeviceFunscript(funscriptPath);
-        }
-    // }
+    if(funscriptPath.isEmpty() || mediaPath.isEmpty() || _mediaLibraryHandler->isLibraryLoading())
+        return;
+    LogHandler::Debug("Starting sync: "+funscriptPath);
+    auto fileName = QUrl(mediaPath).fileName();
+    auto itemRef = _mediaLibraryHandler->findItemByName(fileName);
+    if(!itemRef) {
+        LogHandler::Error("No external item found in media library. Setting up temporary item for: "+mediaPath);
+        _mediaLibraryHandler->setupTempExternalItem(mediaPath, funscriptPath, mediaDuration);
+        itemRef = _mediaLibraryHandler->findItemByName(fileName);
+        XMediaStateHandler::setPlaying(itemRef);
+    } else {
+        XMediaStateHandler::setPlaying(itemRef);
+    }
+    _syncHandler->syncInputDeviceFunscript(itemRef);
 }
 
 void XTEngine::skipToNextAction()

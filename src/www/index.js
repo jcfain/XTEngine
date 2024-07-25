@@ -535,6 +535,7 @@ function setStatusOutput(message, percentage) {
 }
 function setMediaLoading() {
 	mediaLoading = true;
+	stopVideo();
 	clearMediaList();
 	var mediaLoadingElement = document.getElementById("mediaLoading");
 	mediaLoadingElement.style.display = "flex"

@@ -82,8 +82,7 @@ SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem, bool reset
         }
     }
     SyncLoadState loadState;
-    QString path = libraryItem.script.isEmpty() ? libraryItem.path : libraryItem.script;
-    loadMFS(path, loadState);
+    loadMFS(libraryItem, loadState);
     return loadState;
 }
 
@@ -418,13 +417,13 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
     });
 }
 
-void SyncHandler::syncInputDeviceFunscript(QString funscript)
+void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
 {
-    load(funscript);
+    load(libraryItem);
     QMutexLocker locker(&_mutex);
     _isVRFunscriptPlaying = true;
     LogHandler::Debug("syncInputDeviceFunscript start thread");
-    _funscriptVRFuture = QtConcurrent::run([this, funscript]()
+    _funscriptVRFuture = QtConcurrent::run([this]()
     {
         std::shared_ptr<FunscriptAction> actionPosition;
         QMap<QString, std::shared_ptr<FunscriptAction>> actions;
@@ -509,7 +508,7 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
 
         QMutexLocker locker(&_mutex);
         _isVRFunscriptPlaying = false;
-        emit funscriptVREnded(videoPath, funscript, duration);
+        //emit funscriptVREnded(videoPath, funscript, duration);
         LogHandler::Debug("exit syncInputDeviceFunscript");
     });
 }
@@ -523,9 +522,10 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
 bool SyncHandler::loadMFS(QString channel, QString funscript)
 {
     FunscriptHandler* otherFunscript = new FunscriptHandler(channel);
-    if(!otherFunscript->load(funscript))
+    if(!otherFunscript->load(funscript)) {
+        delete otherFunscript;
         return false;
-    else
+    } else
         _funscriptHandlers.append(otherFunscript);
     return true;
 }
@@ -533,18 +533,22 @@ bool SyncHandler::loadMFS(QString channel, QString funscript)
 bool SyncHandler::loadMFS(QString channel, QByteArray funscript)
 {
     FunscriptHandler* otherFunscript = new FunscriptHandler(channel);
-    if(!otherFunscript->load(funscript))
+    if(!otherFunscript->load(funscript)) {
+        delete otherFunscript;
         return false;
-    else
+    } else
         _funscriptHandlers.append(otherFunscript);
     return true;
 }
 
-bool SyncHandler::loadMFS(QString path, SyncLoadState &loadState)
+bool SyncHandler::loadMFS(const LibraryListItem27 &libraryItem, SyncLoadState &loadState)
 {
-    QString pathTemp = path;
-    QString pathNoExtension = pathTemp.remove(pathTemp.lastIndexOf('.'), pathTemp.length() -  1);
-    QFileInfo pathInfo(path);
+    QString path = libraryItem.script.isEmpty() ? libraryItem.path : libraryItem.script;
+    QString pathNoExtension = libraryItem.type == LibraryListItemType::External ?
+        XFileUtil::getPathNoExtension(path) :
+        //path.remove(path.lastIndexOf('.'), path.length() -  1) :
+        libraryItem.pathNoExtension;
+    //QFileInfo pathInfo(path);
     QZipReader* zipFile = 0;
     if(path.endsWith(".zip"))
         zipFile = new QZipReader(path, QIODevice::ReadOnly);
@@ -558,6 +562,19 @@ bool SyncHandler::loadMFS(QString path, SyncLoadState &loadState)
         if(track->Type == AxisType::HalfOscillate)
             continue;
 
+        // IF we are the stroke channel and media doesnt exist in the XTP library,
+        // then loop below will incorrectly think this is the L0 funscript as we
+        // dont have the video path here.
+        // Check every channel as a work around for now.
+        if(libraryItem.type == LibraryListItemType::External && axisName == TCodeChannelLookup::Stroke())
+        {
+            foreach(auto axisName2, availibleAxis)
+            {
+                auto track2 = TCodeChannelLookup::getChannel(axisName2);
+                if(pathNoExtension.endsWith("."+ track2->TrackName))
+                    continue;
+            }
+        }
         QFileInfo fileInfo(pathNoExtension + (axisName == TCodeChannelLookup::Stroke() ? "" : "."+ track->TrackName) + ".funscript");
         if(fileInfo.exists())
         {
@@ -572,12 +589,12 @@ bool SyncHandler::loadMFS(QString path, SyncLoadState &loadState)
         }
         else if(zipFile && zipFile->isReadable())
         {
-           QString fileName = pathInfo.fileName();
-           QString scriptFileNameNoExtension = fileName.remove(fileName.lastIndexOf('.'), pathTemp.length() -  1);
-           QString trackFileName = scriptFileNameNoExtension + (axisName == TCodeChannelLookup::Stroke() ? "" : "."+ track->TrackName) + ".funscript";
-           QByteArray data = zipFile->fileData(trackFileName);
-           if (!data.isEmpty())
-           {
+            QString scriptFileNameNoExtension = XFileUtil::getNameNoExtension(pathNoExtension);
+            //fileName.remove(fileName.lastIndexOf('.'), pathTemp.length() -  1);
+            QString trackFileName = scriptFileNameNoExtension + (axisName == TCodeChannelLookup::Stroke() ? "" : "."+ track->TrackName) + ".funscript";
+            QByteArray data = zipFile->fileData(trackFileName);
+            if (!data.isEmpty())
+            {
                LogHandler::Debug("Loading track from zip: "+ trackFileName);
                if(!loadMFS(axisName, data))
                    loadState.invalidScripts.append("Zip script: " + trackFileName);

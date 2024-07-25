@@ -33,7 +33,7 @@ signals:
     void funscriptStarted();
     void funscriptEnded();
     void funscriptLoaded(QString funscriptPath);
-    void funscriptVREnded(QString videoPath, QString funscriptPath, qint64 duration);
+    //void funscriptVREnded(QString videoPath, QString funscriptPath, qint64 duration);
     void togglePaused(bool paused);
     void sendTCode(QString tcode);
     void channelPositionChange(QString channel, int position);
@@ -55,7 +55,7 @@ public:
     void swapScript(const LibraryListItem27 &libraryItem);
     void skipToMoneyShot();
     void setStandAloneLoop(bool enabled);
-    void syncInputDeviceFunscript(QString funscript);
+    void syncInputDeviceFunscript(const LibraryListItem27 &libraryItem);
     void syncOtherMediaFunscript(std::function<qint64()> getMediaPosition);
     void setFunscriptTime(qint64 secs);
     qint64 getFunscriptTime();
@@ -112,7 +112,7 @@ private:
     SyncLoadState load(const LibraryListItem27 &libraryItem, bool reset);
     SyncLoadState load(QString funscript);
     //bool load(QByteArray funscript);
-    bool loadMFS(QString funscript, SyncLoadState &loadState);
+    bool loadMFS(const LibraryListItem27 &libraryItem, SyncLoadState &loadState);
     bool loadMFS(QString channel, QString funscript);
     bool loadMFS(QString channel, QByteArray funscript);
 

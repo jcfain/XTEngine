@@ -35,6 +35,12 @@ public:
         return indexOfSuffix > 0 ? tempName.remove(indexOfSuffix, tempName.length()) : tempName;
     }
 
+    static QString getPathNoExtension(QString file)
+    {
+        int indexOfSuffix = file.lastIndexOf(".");
+        return indexOfSuffix > 0 ? file.remove(indexOfSuffix, file.length()) : file;
+    }
+
     static QString searchForFileRecursive(QString videoPath, QStringList extensions, QString pathToSearch, const bool &cancel)
     {
         QString funscriptPath;

@@ -163,8 +163,7 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                     value = 100;
                 }
                 //LogHandler::Debug("Multiplier: "+ channel->FriendlyName + " pos: " + QString::number(value) + ", at: " + QString::number(currentAction->at));
-                if ((channel->FunscriptInverted && channel->LinkToRelatedMFS) ||
-                        (SettingsHandler::getChannelFunscriptInverseChecked(TCodeChannelLookup::Stroke()) && !channel->FunscriptInverted && !channel->LinkToRelatedMFS) )
+                if (channel->FunscriptInverted && channel->LinkToRelatedMFS)
                 {
                     //LogHandler::Debug("inverted: "+ QString::number(value));
                     value = XMath::reverseNumber(value, 0, 100);
