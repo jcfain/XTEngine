@@ -2,8 +2,8 @@
 
 #include "../lookup/SettingMap.h"
 
-const QString SettingsHandler::XTEVersion = "0.462b";
-const float SettingsHandler::XTEVersionNum = 0.462f;
+const QString SettingsHandler::XTEVersion = "0.463b";
+const float SettingsHandler::XTEVersionNum = 0.463f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
