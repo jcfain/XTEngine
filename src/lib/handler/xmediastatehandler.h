@@ -17,6 +17,7 @@ public:
     //static void setPlaying(LibraryListItem27& playingItem, bool internal = true);
     static void setPlaying(const LibraryListItem27 playingItem, bool internal = true);
     static LibraryListItem27* getPlaying();
+    static QString getPlayingID();
     static void stop();
     static void updateDuration(qint64 currentPos, qint64 duration);
 

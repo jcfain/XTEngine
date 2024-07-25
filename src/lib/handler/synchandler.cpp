@@ -274,7 +274,7 @@ void SyncHandler::playStandAlone(QString funscript) {
                         }
                     }
                     QString tcode = _tcodeHandler->funscriptToTCode(actions);
-                    if(tcode != nullptr)
+                    if(!tcode.isEmpty())
                         emit sendTCode(tcode);
                     actions.clear();
 
@@ -399,7 +399,7 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
                         }
                     }
                     QString tcode = _tcodeHandler->funscriptToTCode(actions);
-                    if(tcode != nullptr)
+                    if(!tcode.isEmpty())
                         emit sendTCode(tcode);
                     actions.clear();
 
@@ -493,7 +493,7 @@ void SyncHandler::syncInputDeviceFunscript(QString funscript)
                         }
                     }
                     QString tcode = _tcodeHandler->funscriptToTCode(actions);
-                    if(tcode != nullptr)
+                    if(!tcode.isEmpty())
                         emit sendTCode(tcode);
                     actions.clear();
                //     LogHandler::Debug("timer "+QString::number((round(timer.nsecsElapsed()) / 1000000)));

@@ -49,6 +49,11 @@ LibraryListItem27* XMediaStateHandler::getPlaying()
     return m_playingItem.ID.isEmpty() ? 0 : m_libraryHandler->findItemByID(m_playingItem.ID);
 }
 
+QString XMediaStateHandler::getPlayingID()
+{
+    return m_playingItem.ID;
+}
+
 void XMediaStateHandler::stop()
 {
     m_playingItem.ID = "";

@@ -396,6 +396,7 @@ public:
 private:
     SettingsHandler();
     ~SettingsHandler();
+    static QMap<QString, QVariant> m_changedSettings;
     static QString _applicationDirPath;
     static SettingsHandler* m_instance;
     static bool _settingsChanged;
@@ -526,9 +527,9 @@ private:
     static float m_viewedThreshold;
     static bool m_disableHeartBeat;
 
-    static bool m_scheduleLibraryLoadEnabled;
-    static QTime m_scheduleLibraryLoadTime;
-    static bool m_scheduleLibraryLoadFullProcess;
+    // static bool m_scheduleLibraryLoadEnabled;
+    // static QTime m_scheduleLibraryLoadTime;
+    // static bool m_scheduleLibraryLoadFullProcess;
 
     static XTags m_xTags;
     static inline bool m_forceMetaDataFullProcess = false;

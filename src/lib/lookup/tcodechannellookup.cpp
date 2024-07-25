@@ -11,9 +11,7 @@ TCodeChannelLookup::~TCodeChannelLookup() {
 }
 
 void TCodeChannelLookup::profileChanged() {
-    if(!m_debounceTimer.isActive() || m_debounceTimer.remainingTime() > 0) {
-        m_debounceTimer.start(100);
-    }
+    m_debounceTimer.start(100);
 }
 
 void TCodeChannelLookup::load(QSettings* settingsToLoadFrom, bool firstLoad) {

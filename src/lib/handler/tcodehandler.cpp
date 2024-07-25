@@ -17,9 +17,11 @@ TCodeHandler::~TCodeHandler() {
 
 QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAction>> actions)
 {
+    if(actions.isEmpty())
+        return nullptr;
     QMutexLocker locker(&mutex);
     auto axisKeys = TCodeChannelLookup::getChannels();
-    QString tcode = "";
+    QString tcode = nullptr;
     std::shared_ptr<FunscriptAction> mainAction = 0;
     QList<QString> actionKeys = actions.keys();
     //int mainDistance = 0;
@@ -126,10 +128,12 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                     int max = 100;
                     int lastPos = channelValueTracker.contains(axis) ? channelValueTracker[axis] : -1;
                     //int userMid = TCodeChannelLookup::getChannel(axis)->UserMid;
+
+                    bool opposite = XMath::random(0, 100) > 50;
                     if(lastPos > -1)
                     {
-                        min = lastPos < 50 ? 50 : 0;
-                        max = lastPos > 50 ? 50 : 100;
+                        min = lastPos < 50 && opposite ? 50 : 0;
+                        max = lastPos > 50 && opposite ? 50 : 100;
                     }
 
                     // if((channelValueTracker.contains(axis) && channelValueTracker[axis] > 50)) {
@@ -197,7 +201,7 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
 //            }
         }
     }
-    return tcode.isEmpty() ? nullptr : tcode;
+    return tcode;
 }
 
 int TCodeHandler::calculateRange(const char* channel, int rawValue)
