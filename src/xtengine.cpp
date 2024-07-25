@@ -98,7 +98,7 @@ void XTEngine::init()
         connect(_httpHandler, &HttpHandler::connectOutputDevice, _connectionHandler, &ConnectionHandler::initOutputDevice);
         connect(this, &XTEngine::stopAllMedia, _httpHandler, &HttpHandler::stopAllMedia);
         connect(_connectionHandler, &ConnectionHandler::connectionChange, _httpHandler, &HttpHandler::on_DeviceConnection_StateChange);
-        connect(_httpHandler, &HttpHandler::settingChange, SettingsHandler::changeSetting);
+        connect(_httpHandler, &HttpHandler::settingChange, qOverload<QString, QVariant>(SettingsHandler::changeSetting));
 
         _httpHandler->listen();
     }
@@ -109,7 +109,8 @@ void XTEngine::init()
             QTime newTime = QTime::fromString(value.toString());
             if(newTime.isValid())
                 m_scheduler->runTimeChange(newTime);
-        } else if(key == SettingKeys::scheduleLibraryLoadEnabled)
+        }
+        else if(key == SettingKeys::scheduleLibraryLoadEnabled)
         {
             scheduleLibraryLoadEnableChange(value.toBool());
         }

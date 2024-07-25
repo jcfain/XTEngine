@@ -19,6 +19,7 @@
 #include "../lookup/GamepadAxisNames.h"
 #include "../lookup/MediaActions.h"
 #include "../lookup/xvideorenderer.h"
+#include "../lookup/SettingMap.h"
 #include "../tool/xmath.h"
 #include "../struct/ChannelModel.h"
 #include "../struct/ChannelModel33.h"
@@ -38,12 +39,14 @@ signals:
     void settingsChanged(bool dirty);
     void messageSend(QString message, XLogLevel loglevel);
     void messageSendWait(QString message, XLogLevel loglevel, QFunctionPointer callback);
+    void restartRequired(bool enabled);
     void tagsChanged();
 
 public slots:
+    static void changeSetting(QString settingName, QVariant value);
+    static void changeSetting(QString settingName, QVariant value, bool restart);
     void setMoneyShot(LibraryListItem27 selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
     void addBookmark(LibraryListItem27 LibraryListItem27, QString name, qint64 currentPosition);
-    static void changeSetting(QString settingName, QVariant value);
 
 public:
     static SettingsHandler* instance(){
@@ -52,6 +55,9 @@ public:
         return m_instance;
     }
     static QSettings* getSettings();
+    static QVariant getSetting(QString settingName);
+    static QString getSettingPath(const SettingMap &setting);
+    static QString getSettingPath(const QString &settingName);
     static const QString XTEVersion;
     static const QString XTEVersionTimeStamp;
     static const float XTEVersionNum;
@@ -382,16 +388,20 @@ public:
     static bool hasSmartTag(QString tag);
 
     static float getViewedThreshold();
-    static void setViewedThreshold(float newViewedThreshold);
+    static void setViewedThreshold(float value);
 
     static bool scheduleLibraryLoadEnabled();
-    static void setScheduleLibraryLoadEnabled(bool newScheduleLibraryLoadEnabled);
+    static void setScheduleLibraryLoadEnabled(bool value);
 
     static QTime scheduleLibraryLoadTime();
-    static void setScheduleLibraryLoadTime(QTime newScheduleLibraryLoadTime);
+    static void setScheduleLibraryLoadTime(QTime value);
 
     static bool scheduleLibraryLoadFullProcess();
-    static void setScheduleLibraryLoadFullProcess(bool newScheduleLibraryLoadFullProcess);
+    static void setScheduleLibraryLoadFullProcess(bool value);
+
+    static bool processMetadataOnStart();
+    static void setProcessMetadataOnStart(bool value);
+
 
 private:
     SettingsHandler();

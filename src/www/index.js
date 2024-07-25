@@ -1,4 +1,4 @@
-const webVersion = "v0.462b";
+const webVersion = "v0.463b";
 
 var DeviceType = {
 	Serial: 0,
@@ -698,6 +698,8 @@ function getServerSettings(retry) {
 			document.getElementById("scheduleLibraryLoadEnabled").checked = remoteUserSettings["scheduleLibraryLoadEnabled"];
 			document.getElementById("scheduleLibraryLoadTime").value = remoteUserSettings["scheduleLibraryLoadTime"];
 			document.getElementById("scheduleLibraryLoadFullProcess").checked = remoteUserSettings["scheduleLibraryLoadFullProcess"];
+			document.getElementById("processMetadataOnStart").checked = remoteUserSettings["processMetadataOnStart"];
+			
 			
 			setupChannelData();
 

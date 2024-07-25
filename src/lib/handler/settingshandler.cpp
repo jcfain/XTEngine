@@ -1,6 +1,5 @@
 #include "settingshandler.h"
 
-#include "../lookup/SettingMap.h"
 
 const QString SettingsHandler::XTEVersion = "0.463b";
 const float SettingsHandler::XTEVersionNum = 0.463f;
@@ -39,153 +38,225 @@ void SettingsHandler::addBookmark(LibraryListItem27 libraryListItem, QString nam
     SettingsHandler::updateLibraryListItemMetaData(libraryListItem);
 }
 
+QVariant SettingsHandler::getSetting(QString settingName)
+{
+    const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
+    return settings->value(getSettingPath(settingMap), settingMap.defaultValue);
+}
+
+QString SettingsHandler::getSettingPath(const SettingMap &setting)
+{
+    return setting.group + "/" + setting.key;
+}
+
+QString SettingsHandler::getSettingPath(const QString &settingName)
+{
+    const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
+    return getSettingPath(settingMap);
+}
+
 void SettingsHandler::changeSetting(QString settingName, QVariant value)
 {
-    QVariant currentValue = settings->value(settingName);
+    changeSetting(settingName, value, false);
+}
+
+void SettingsHandler::changeSetting(QString settingName, QVariant value, bool restart)
+{
+    QMutexLocker locker(&mutex);
+    QVariant currentValue = settings->value(getSettingPath(settingName));
     if(currentValue == value)
         return;
 
+    LogHandler::Debug("Enter changeSetting debounce");
     m_changedSettings.insert(settingName, value);
-    QTimer::singleShot(500, [currentValue, value, settingName] () {
-        bool hasChanged = false;
-        switch(currentValue.type())
-        {
-            case QVariant::Date:
+    QTimer::singleShot(100, instance(), [restart] () {
+        QMutexLocker locker(&mutex);
+        auto keys = m_changedSettings.keys();
+        foreach(auto key, keys) {
+            bool hasChanged = false;
+            QString settingName = key;
+            QVariant value = m_changedSettings.value(key);
+            const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
+            QVariant::Type valueType = settingMap.defaultValue.type();
+            QString settingPath = getSettingPath(settingMap);
+            switch(valueType)
             {
-                QDate realValue;
-                if(value.type() == QVariant::String)
-                    realValue = QDate::fromString(value.toString());
-                else
-                    realValue = value.toDate();
-                if(realValue.isValid()) {
-                    settings->setValue(settingName, realValue);
-                    hasChanged = true;
+                case QVariant::Date:
+                {
+                    QDate realValue;
+                    if(value.type() == QVariant::String)
+                        realValue = QDate::fromString(value.toString());
+                    else
+                        realValue = value.toDate();
+                    if(realValue.isValid()) {
+                        settings->setValue(settingPath, realValue);
+                        hasChanged = true;
+                    }
+                    break;
                 }
-                break;
-            }
-            case QVariant::Time:
-            {
-                QTime realValue;
-                if(value.type() == QVariant::String)
-                    realValue = QTime::fromString(value.toString());
-                else
-                    realValue = value.toTime();
-                if(realValue.isValid()) {
-                    settings->setValue(settingName, realValue);
-                    hasChanged = true;
+                case QVariant::Time:
+                {
+                    QTime realValue;
+                    if(value.type() == QVariant::String)
+                        realValue = QTime::fromString(value.toString());
+                    else
+                        realValue = value.toTime();
+                    if(realValue.isValid()) {
+                        settings->setValue(settingPath, realValue);
+                        hasChanged = true;
+                    }
+                    break;
                 }
-                break;
-            }
-            case QVariant::DateTime:
-            {
-                QDateTime realValue;
-                if(value.type() == QVariant::String)
-                    realValue = QDateTime::fromString(value.toString());
-                else
-                    realValue = value.toDateTime();
-                if(realValue.isValid()) {
-                    settings->setValue(settingName, realValue);
-                    hasChanged = true;
+                case QVariant::DateTime:
+                {
+                    QDateTime realValue;
+                    if(value.type() == QVariant::String)
+                        realValue = QDateTime::fromString(value.toString());
+                    else
+                        realValue = value.toDateTime();
+                    if(realValue.isValid()) {
+                        settings->setValue(settingPath, realValue);
+                        hasChanged = true;
+                    }
+                    break;
                 }
-                break;
+                case QVariant::LongLong:
+                case QVariant::ULongLong:
+                {
+                    qint64 realValue = 0;
+                    if(value.type() == QVariant::String)
+                        realValue = value.toString().toLongLong();
+                    else
+                        realValue = value.toLongLong();
+                    settings->setValue(settingPath, realValue);
+                    hasChanged = true;
+                    break;
+                }
+                // Follow through on primitives
+                case QVariant::String:
+                // {
+                //     settings->setValue(settingPath, value.toString());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::Bool:
+                // {
+                //     settings->setValue(settingPath, value.toBool());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::Int:
+                // {
+                //     settings->setValue(settingPath, value.toInt());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::UInt:
+                // {
+                //     settings->setValue(settingPath, value.toUInt());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::Double:
+                // {
+                //     settings->setValue(settingPath, value.toDouble());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::Map:
+                // {
+                //     settings->setValue(settingPath, value.toMap());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::List:
+                // {
+                //     settings->setValue(settingPath, value.toList());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::StringList:
+                // {
+                //     settings->setValue(settingPath, value.toStringList());
+                //     hasChanged = true;
+                //     break;
+                // }
+                {
+                    settings->setValue(settingPath, value);
+                    hasChanged = true;
+                    break;
+                }
+                // XTE doesnt uses the following at this time.
+                case QVariant::Char:
+                case QVariant::ByteArray:
+                case QVariant::BitArray:
+                case QVariant::UserType:
+                case QVariant::Url:
+                case QVariant::Locale:
+                case QVariant::Rect:
+                case QVariant::RectF:
+                case QVariant::Size:
+                case QVariant::SizeF:
+                case QVariant::Line:
+                case QVariant::LineF:
+                case QVariant::Point:
+                case QVariant::PointF:
+                case QVariant::RegExp:
+                case QVariant::RegularExpression:
+                case QVariant::Hash:
+                case QVariant::EasingCurve:
+                case QVariant::Uuid:
+                case QVariant::ModelIndex:
+                case QVariant::PersistentModelIndex:
+                case QVariant::LastCoreType:
+                case QVariant::Font:
+                case QVariant::Pixmap:
+                case QVariant::Brush:
+                case QVariant::Color:
+                case QVariant::Palette:
+                case QVariant::Image:
+                case QVariant::Polygon:
+                case QVariant::Region:
+                case QVariant::Bitmap:
+                case QVariant::Cursor:
+                case QVariant::KeySequence:
+                case QVariant::Pen:
+                case QVariant::TextLength:
+                case QVariant::TextFormat:
+                case QVariant::Matrix:
+                case QVariant::Transform:
+                case QVariant::Matrix4x4:
+                case QVariant::Vector2D:
+                case QVariant::Vector3D:
+                case QVariant::Vector4D:
+                case QVariant::Quaternion:
+                case QVariant::PolygonF:
+                case QVariant::Icon:
+                case QVariant::LastGuiType:
+                case QVariant::SizePolicy:
+                case QVariant::LastType:
+                    break;
+                default:
+                    break;
             }
-            case QVariant::LongLong:
-            case QVariant::ULongLong:
-            {
-                qint64 realValue = 0;
-                if(value.type() == QVariant::String)
-                    realValue = value.toString().toLongLong();
-                else
-                    realValue = value.toLongLong();
-                settings->setValue(settingName, realValue);
-                hasChanged = true;
-                break;
-            }
-            // Follow through on primitives
-            case QVariant::String:
-            case QVariant::Bool:
-            case QVariant::Int:
-            case QVariant::UInt:
-            case QVariant::Double:
-            case QVariant::Map:
-            case QVariant::List:
-            case QVariant::StringList:
-            {
-                settings->setValue(settingName, value);
-                hasChanged = true;
-                break;
-            }
-            // XTE doesnt uses the following at this time.
-            case QVariant::Char:
-            case QVariant::ByteArray:
-            case QVariant::BitArray:
-            case QVariant::UserType:
-            case QVariant::Url:
-            case QVariant::Locale:
-            case QVariant::Rect:
-            case QVariant::RectF:
-            case QVariant::Size:
-            case QVariant::SizeF:
-            case QVariant::Line:
-            case QVariant::LineF:
-            case QVariant::Point:
-            case QVariant::PointF:
-            case QVariant::RegExp:
-            case QVariant::RegularExpression:
-            case QVariant::Hash:
-            case QVariant::EasingCurve:
-            case QVariant::Uuid:
-            case QVariant::ModelIndex:
-            case QVariant::PersistentModelIndex:
-            case QVariant::LastCoreType:
-            case QVariant::Font:
-            case QVariant::Pixmap:
-            case QVariant::Brush:
-            case QVariant::Color:
-            case QVariant::Palette:
-            case QVariant::Image:
-            case QVariant::Polygon:
-            case QVariant::Region:
-            case QVariant::Bitmap:
-            case QVariant::Cursor:
-            case QVariant::KeySequence:
-            case QVariant::Pen:
-            case QVariant::TextLength:
-            case QVariant::TextFormat:
-            case QVariant::Matrix:
-            case QVariant::Transform:
-            case QVariant::Matrix4x4:
-            case QVariant::Vector2D:
-            case QVariant::Vector3D:
-            case QVariant::Vector4D:
-            case QVariant::Quaternion:
-            case QVariant::PolygonF:
-            case QVariant::Icon:
-            case QVariant::LastGuiType:
-            case QVariant::SizePolicy:
-            case QVariant::LastType:
-                break;
-            default:
-                break;
-        }
 
-        if(hasChanged)
-        {
-            LogHandler::Debug("Enter setting change debounce");
-            auto keys = m_changedSettings.keys();
-            foreach(auto key, keys) {
+            if(hasChanged)
+            {
+                LogHandler::Debug("Setting changed: "+key);
                 emit instance()->settingChange(key, m_changedSettings[key]);
-                LogHandler::Debug("Setting change: "+key);
+                settingsChangedEvent(true);
+                if(restart)
+                    emit instance()->restartRequired(true);
             }
-            m_changedSettings.clear();
-            settingsChangedEvent(true);
         }
+        m_changedSettings.clear();
    });
 }
 
 QSettings* SettingsHandler::getSettings() {
     return settings;
 }
+
 void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 {
     QMutexLocker locker(&mutex);
@@ -902,32 +973,42 @@ void SettingsHandler::storeMediaMetaDatas(QSettings* settingsToSaveTo)
 
 bool SettingsHandler::scheduleLibraryLoadFullProcess()
 {
-    return settings->value(SettingKeys::scheduleLibraryLoadFullProcess, false).toBool();
+    return getSetting(SettingKeys::scheduleLibraryLoadFullProcess).toBool();
 }
 
-void SettingsHandler::setScheduleLibraryLoadFullProcess(bool newScheduleLibraryLoadFullProcess)
+void SettingsHandler::setScheduleLibraryLoadFullProcess(bool value)
 {
-    changeSetting(SettingKeys::scheduleLibraryLoadFullProcess, newScheduleLibraryLoadFullProcess);
+    changeSetting(SettingKeys::scheduleLibraryLoadFullProcess, value);
+}
+
+bool SettingsHandler::processMetadataOnStart()
+{
+    return getSetting(SettingKeys::processMetadataOnStart).toBool();
+}
+
+void SettingsHandler::setProcessMetadataOnStart(bool value)
+{
+    changeSetting(SettingKeys::processMetadataOnStart, value);
 }
 
 QTime SettingsHandler::scheduleLibraryLoadTime()
 {
-    return settings->value(SettingKeys::scheduleLibraryLoadTime, QTime(2,0)).toTime();
+    return getSetting(SettingKeys::scheduleLibraryLoadTime).toTime();
 }
 
-void SettingsHandler::setScheduleLibraryLoadTime(QTime newScheduleLibraryLoadTime)
+void SettingsHandler::setScheduleLibraryLoadTime(QTime value)
 {
-    changeSetting(SettingKeys::scheduleLibraryLoadTime, newScheduleLibraryLoadTime);
+    changeSetting(SettingKeys::scheduleLibraryLoadTime, value);
 }
 
 bool SettingsHandler::scheduleLibraryLoadEnabled()
 {
-    return settings->value(SettingKeys::scheduleLibraryLoadEnabled, true).toBool();
+    return getSetting(SettingKeys::scheduleLibraryLoadEnabled).toBool();
 }
 
-void SettingsHandler::setScheduleLibraryLoadEnabled(bool newScheduleLibraryLoadEnabled)
+void SettingsHandler::setScheduleLibraryLoadEnabled(bool value)
 {
-    changeSetting(SettingKeys::scheduleLibraryLoadEnabled, newScheduleLibraryLoadEnabled);
+    changeSetting(SettingKeys::scheduleLibraryLoadEnabled, value);
 }
 
 float SettingsHandler::getViewedThreshold()

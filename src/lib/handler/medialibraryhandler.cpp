@@ -13,7 +13,7 @@ MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     connect(this, &MediaLibraryHandler::prepareLibraryLoad, this, &MediaLibraryHandler::onPrepareLibraryLoad);
     connect(this, &MediaLibraryHandler::libraryLoaded, this, &MediaLibraryHandler::onLibraryLoaded);
     connect(this, &MediaLibraryHandler::thumbProcessEnd, this, [this]() {
-        MediaLibraryHandler::startMetadataProcess(SettingsHandler::getForceMetaDataFullProcess());
+        MediaLibraryHandler::startMetadataProcess(SettingsHandler::getForceMetaDataFullProcess() || SettingsHandler::processMetadataOnStart());
     });
 }
 

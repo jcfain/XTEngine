@@ -456,6 +456,7 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     root["scheduleLibraryLoadEnabled"] = SettingsHandler::scheduleLibraryLoadEnabled();
     root["scheduleLibraryLoadTime"] = SettingsHandler::scheduleLibraryLoadTime().toString("hh:mm");
     root["scheduleLibraryLoadFullProcess"] = SettingsHandler::scheduleLibraryLoadFullProcess();
+    root["processMetadataOnStart"] = SettingsHandler::processMetadataOnStart();
 
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
     data->response->compressBody();
