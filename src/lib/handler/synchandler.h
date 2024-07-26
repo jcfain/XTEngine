@@ -29,6 +29,10 @@ signals:
     void funscriptPositionChanged(qint64 msecs);
     void funscriptStandaloneDurationChanged(qint64 duration);
     void funscriptStatusChanged(XMediaStatus status);
+    void syncEnd();
+    void syncStart();
+    void syncStopping();
+    /// For standalone funscripts
     void funscriptStopped();
     void funscriptStarted();
     void funscriptEnded();

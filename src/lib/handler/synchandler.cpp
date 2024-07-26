@@ -128,6 +128,7 @@ void SyncHandler::stopStandAloneFunscript()
     locker.unlock();
     if(_funscriptStandAloneFuture.isRunning())
     {
+        emit syncStopping();
         _funscriptStandAloneFuture.cancel();
         _funscriptStandAloneFuture.waitForFinished();
         emit funscriptStopped();
@@ -142,6 +143,7 @@ void SyncHandler::stopOtherMediaFunscript()
     locker.unlock();
     if(_funscriptMediaFuture.isRunning())
     {
+        emit syncStopping();
         _funscriptMediaFuture.cancel();
         _funscriptMediaFuture.waitForFinished();
     }
@@ -155,6 +157,7 @@ void SyncHandler::stopInputDeviceFunscript()
     locker.unlock();
     if(_funscriptVRFuture.isRunning())
     {
+        emit syncStopping();
         _funscriptVRFuture.cancel();
         _funscriptVRFuture.waitForFinished();
     }
@@ -239,6 +242,7 @@ void SyncHandler::playStandAlone(QString funscript) {
         qint64 timer1 = 0;
         qint64 timer2 = 0;
         mSecTimer.start();
+        emit syncStart();
         while (_isStandAloneFunscriptPlaying)
         {
             if (timer2 - timer1 >= 1)
@@ -273,11 +277,14 @@ void SyncHandler::playStandAlone(QString funscript) {
                         }
                     }
                     QString tcode = _tcodeHandler->funscriptToTCode(actions);
-                    if(!tcode.isEmpty())
+                    if(_funscriptStandAloneFuture.isCanceled())
+                        break;
+                    if(!tcode.isEmpty() && !isPaused())
+                    {
                         emit sendTCode(tcode);
+                        sendPulse(mSecTimer.elapsed(), nextPulseTime);
+                    }
                     actions.clear();
-
-                    sendPulse(mSecTimer.elapsed(), nextPulseTime);
                 } else {
                     QThread::msleep(100);
                 }
@@ -309,7 +316,9 @@ void SyncHandler::playStandAlone(QString funscript) {
         _currentTime = 0;
         emit funscriptEnded();
         emit funscriptStandaloneDurationChanged(0);
+        emit sendTCode("DSTOP");
         LogHandler::Debug("exit play Funscript stand alone thread");
+        emit syncEnd();
     });
 }
 
@@ -377,6 +386,7 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
         qint64 timer1 = 0;
         qint64 timer2 = 0;
         mSecTimer.start();
+        emit syncStart();
         while (_isMediaFunscriptPlaying && _isOtherMediaPlaying)
         {
             if (timer2 - timer1 >= 1)
@@ -398,11 +408,15 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
                         }
                     }
                     QString tcode = _tcodeHandler->funscriptToTCode(actions);
-                    if(!tcode.isEmpty())
+                    if(_funscriptMediaFuture.isCanceled())
+                        break;
+                    if(!tcode.isEmpty() && !isPaused())
+                    {
                         emit sendTCode(tcode);
+                        sendPulse(mSecTimer.elapsed(), nextPulseTime);
+                    }
                     actions.clear();
 
-                    sendPulse(mSecTimer.elapsed(), nextPulseTime);
                 } else {
                     QThread::msleep(100);
                 }
@@ -412,8 +426,9 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
         }
         _currentLocalVideoTime = 0;
         _isMediaFunscriptPlaying = false;
-        emit funscriptEnded();
+        emit sendTCode("DSTOP");
         LogHandler::Debug("exit syncFunscript");
+        emit syncEnd();
     });
 }
 
@@ -439,6 +454,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
         qint64 duration;
         qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
         bool lastStatePlaying = false;
+        emit syncStart();
         while (_isVRFunscriptPlaying && _inputDeviceHandler && _inputDeviceHandler->isConnected() && !_isOtherMediaPlaying)
         {
             //execute once every millisecond
@@ -492,11 +508,15 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                         }
                     }
                     QString tcode = _tcodeHandler->funscriptToTCode(actions);
-                    if(!tcode.isEmpty())
+                    if(_funscriptVRFuture.isCanceled())
+                        break;
+                    if(!tcode.isEmpty() && !isPaused())
+                    {
                         emit sendTCode(tcode);
+                    //     LogHandler::Debug("timer "+QString::number((round(timer.nsecsElapsed()) / 1000000)));
+                        sendPulse(timer1, nextPulseTime);
+                    }
                     actions.clear();
-               //     LogHandler::Debug("timer "+QString::number((round(timer.nsecsElapsed()) / 1000000)));
-                    sendPulse(timer1, nextPulseTime);
                 //}
                 } else {
                     QThread::msleep(100);
@@ -508,8 +528,10 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
 
         QMutexLocker locker(&_mutex);
         _isVRFunscriptPlaying = false;
+        emit sendTCode("DSTOP");
         //emit funscriptVREnded(videoPath, funscript, duration);
         LogHandler::Debug("exit syncInputDeviceFunscript");
+        emit syncEnd();
     });
 }
 

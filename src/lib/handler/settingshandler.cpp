@@ -2661,7 +2661,7 @@ void SettingsHandler::setFunscriptLoaded(QString key, bool loaded)
 bool SettingsHandler::getFunscriptLoaded(QString key)
 {
     if (_funscriptLoaded.contains(key))
-        return _funscriptLoaded[key];
+        return _funscriptLoaded.value(key);
     return false;
 }
 

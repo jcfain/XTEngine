@@ -111,9 +111,12 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 //     continue;
                 int value = -1;
                 // int channelDistance = 100;
-                if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel)) && (actions.contains(channel->RelatedChannel)))
+                if (channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel))
                 {
-                    value = actions.value(channel->RelatedChannel)->pos;
+                    if(actions.contains(channel->RelatedChannel))
+                        value = actions.value(channel->RelatedChannel)->pos;
+                    else
+                        continue;
 //                        LogHandler::Debug("Channel: "+ axis);
 //                        LogHandler::Debug("FriendlyName: "+ channel->FriendlyName);
 //                        LogHandler::Debug("RelatedChannel: "+ channel->RelatedChannel);
@@ -179,14 +182,14 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 //     LogHandler::Warn("Value cant be greater than 9999: "+ QString::number(range) +" originalValue: " + QString::number(value));
                 // }
                 tcode += QString::number(range).rightJustified(SettingsHandler::getTCodePadding(), '0');
-                tcode += "S";
+                tcode += channel->LinkToRelatedMFS ? "I" : "S";
                 // float channelDistancePercentage = channelDistance/100.0f;
 
                 auto speed = mainAction && mainAction->speed > 0 ? mainAction->speed : XMath::random(250, 1500);
                 if (channel->DamperEnabled && channel->DamperValue > 0.0)
                 {
                     float speedModifierValue = channel->DamperRandom ? XMath::random(0.1f, channel->DamperValue) : channel->DamperValue;
-                    speed = qRound(speed * speedModifierValue);
+                    speed = qRound(channel->LinkToRelatedMFS ? speed/speedModifierValue : speed * speedModifierValue);
                     tcode += QString::number(speed);
                 }
                 else
