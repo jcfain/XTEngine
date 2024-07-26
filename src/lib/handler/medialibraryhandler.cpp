@@ -21,6 +21,13 @@ MediaLibraryHandler::~MediaLibraryHandler()
 {
     stopAllSubProcesses();
 }
+
+
+bool MediaLibraryHandler::isLoadingMediaPaths()
+{
+    return _loadingLibraryFuture.isRunning();
+}
+
 bool MediaLibraryHandler::isLibraryLoading()
 {
     return _loadingLibraryFuture.isRunning() ||

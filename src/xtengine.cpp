@@ -116,7 +116,12 @@ void XTEngine::init()
         }
     });
     
-    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, QOverload<InputDevicePacket>::of(&SyncHandler::searchForFunscript));
+    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, [this](InputDevicePacket packet) {
+        if(!_mediaLibraryHandler->isLoadingMediaPaths())
+            _syncHandler->searchForFunscript(packet);
+        else
+            LogHandler::Warn("Waiting for media paths to load to search for funscripts....");
+    });
     connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, this, [](InputDevicePacket packet) {
         XMediaStateHandler::updateDuration(packet.currentTime, packet.duration);
     });
@@ -182,7 +187,23 @@ void XTEngine::scheduleLibraryLoadEnableChange(bool enabled)
 
 void XTEngine::onFunscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration)
 {
-    if(funscriptPath.isEmpty() || mediaPath.isEmpty() || _mediaLibraryHandler->isLibraryLoading())
+    bool error = false;
+    if(funscriptPath.isEmpty())
+    {
+        LogHandler::Warn("Funscript path was empty when starting sync");
+        error = true;
+    }
+    if(mediaPath.isEmpty())
+    {
+        LogHandler::Warn("Media path was empty when starting sync");
+        error = true;
+    }
+    if(_mediaLibraryHandler->isLoadingMediaPaths())
+    {
+        LogHandler::Warn("Please wait for library paths has been loaded before starting sync...");
+        error = true;
+    }
+    if(error)
         return;
     LogHandler::Debug("Starting sync: "+funscriptPath);
     auto fileName = QUrl(mediaPath).fileName();

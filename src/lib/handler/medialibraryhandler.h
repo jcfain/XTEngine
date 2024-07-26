@@ -54,6 +54,7 @@ public:
     void startThumbProcess(bool vrMode = false);
     void stopThumbProcess();
     void loadLibraryAsync();
+    bool isLoadingMediaPaths();
     bool isLibraryLoading();
     void stopLibraryLoading();
     LibraryListItem27 setupPlaylistItem(QString name);
