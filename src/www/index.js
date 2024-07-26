@@ -2994,10 +2994,10 @@ async function setUpInversionMotionModifier() {
 		var invertedEnabledNode = document.createElement("input");
 		invertedEnabledNode.setAttribute("name", "motionModifierInputInverted");
 		invertedEnabledNode.type = "checkbox";
-		invertedEnabledNode.checked = channel.inverted;
+		invertedEnabledNode.checked = channel.funscriptInverted;
 
 		invertedEnabledNode.oninput = function (channelName, event) {
-			remoteUserSettings.availableChannels[channelName].inverted = event.target.checked;
+			remoteUserSettings.availableChannels[channelName].funscriptInverted = event.target.checked;
 			markXTPFormDirty();
 		}.bind(invertedEnabledNode, channelName);
 
