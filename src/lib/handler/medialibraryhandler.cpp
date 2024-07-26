@@ -448,13 +448,15 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
             float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
             emit backgroundProcessStateChange("Processing metadata", percentage);
         }
+        if(SettingsHandler::getForceMetaDataFullProcess() && cachedLibraryItems.length()) {
+            SettingsHandler::setForceMetaDataFullProcessComplete();
+            saveSettings = true;
+        }
         if(saveSettings)
             SettingsHandler::Save();
         LogHandler::Debug("End metadata process");
         emit metadataProcessEnd();
         emit backgroundProcessStateChange(nullptr, -1);
-        if(cachedLibraryItems.length())
-            SettingsHandler::setForceMetaDataFullProcessComplete();
     });
 }
 
