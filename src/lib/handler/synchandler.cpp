@@ -696,7 +696,7 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
     if (!_funscriptSearchFuture.isRunning() && !_funscriptSearchNotFound)
     {
         _funscriptSearchFuture = QtConcurrent::run([this, packet, videoPath]() {
-
+            LogHandler::Debug("searchForFunscript thread start for media: "+videoPath);
             QStringList extensions = QStringList() << ".funscript" << ".zip";
             QStringList libraryPaths = SettingsHandler::getVRLibrary();
             QStringList mainLibraryPaths = SettingsHandler::getSelectedLibrary();
@@ -751,6 +751,7 @@ QString SyncHandler::searchForFunscript(QString videoPath, QStringList extension
             _funscriptSearchNotFound = true;
             return funscriptPath;
         }
+        LogHandler::Debug("searchForFunscript in library: "+libraryPath);
         funscriptPath = searchForFunscriptHttp(videoPath, extensions, libraryPath);
         if(!funscriptPath.isEmpty())
             return funscriptPath;
@@ -765,6 +766,7 @@ QString SyncHandler::searchForFunscript(QString videoPath, QStringList extension
 QString SyncHandler::searchForFunscriptDeep(QString videoPath, QStringList extensions, QStringList pathsToSearch)
 {
     QString funscriptPath;
+    LogHandler::Debug("searchForFunscript deep "+ videoPath);
     foreach(QString libraryPath, pathsToSearch)
     {
         if(_funscriptSearchFuture.isCanceled()) {
@@ -781,6 +783,7 @@ QString SyncHandler::searchForFunscriptDeep(QString videoPath, QStringList exten
 QString SyncHandler::searchForFunscript(QString videoPath, QStringList extensions, QString pathToSearch)
 {
     //Check the input device media directory for funscript.
+    LogHandler::Debug("searchForFunscript local: "+ videoPath);
     QString funscriptPath;
     QStringList libraryScriptPaths = XFileUtil::getFunscriptPaths(videoPath, extensions, pathToSearch);
     foreach (QString libraryScriptPath, libraryScriptPaths)
@@ -803,7 +806,7 @@ QString SyncHandler::searchForFunscriptHttp(QString videoPath, QStringList exten
         videoPath.startsWith("media") ||
         videoPath.startsWith("/storage/emulated/0/Interactive/"))
     {
-        LogHandler::Debug("searchForFunscript Funscript is http: "+ videoPath);
+        LogHandler::Debug("searchForFunscript from http: "+ videoPath);
         QUrl funscriptUrl = QUrl(videoPath);
         QString path = funscriptUrl.path();
         QString localpath = path;
@@ -817,9 +820,16 @@ QString SyncHandler::searchForFunscriptHttp(QString videoPath, QStringList exten
         QFileInfo fileInfo(localpath);
         QString localpathTemp = localpath;
         QString mediaPath = pathToSearch + XFileUtil::getSeperator(pathToSearch) + localpathTemp.remove(fileInfo.fileName());
+        LogHandler::Debug("searchForFunscript http in library path: "+ mediaPath);
         funscriptPath = searchForFunscript(localpath, extensions, mediaPath);
-        if(!funscriptPath.isEmpty())
+        if(!funscriptPath.isEmpty()) {
+            LogHandler::Debug("searchForFunscript from http found: "+ funscriptPath);
             return funscriptPath;
+        } else {
+            LogHandler::Debug("searchForFunscript from http not found");
+        }
+    } else {
+        LogHandler::Debug("searchForFunscript not http");
     }
     return funscriptPath;
 }
@@ -827,12 +837,14 @@ QString SyncHandler::searchForFunscriptHttp(QString videoPath, QStringList exten
 
 QString SyncHandler::searchForFunscriptMFS(QString mediaPath, QStringList pathsToSearch)
 {
+    LogHandler::Debug("searchForFunscript mfs: "+ mediaPath);
     QStringList extensions = TCodeChannelLookup::getValidMFSExtensions();
     return searchForFunscript(mediaPath, extensions, pathsToSearch);
 }
 
 QString SyncHandler::searchForFunscriptMFSDeep(QString mediaPath, QStringList pathsToSearch)
 {
+    LogHandler::Debug("searchForFunscript mfs deep: "+ mediaPath);
     QStringList extensions = TCodeChannelLookup::getValidMFSExtensions();
     return searchForFunscriptDeep(mediaPath, extensions, pathsToSearch);
 }
