@@ -2182,7 +2182,8 @@ function playVideo(obj) {
 		window.open(file_path);
 		return;
 	}
-	showVideo();
+	if(!isVideoShown())
+		showVideo();
 	dataLoading();
 	videoSourceNode.setAttribute("src", "/media" + obj.relativePath);
 	videoNode.setAttribute("title", obj.name);
