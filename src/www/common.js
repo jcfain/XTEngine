@@ -94,5 +94,33 @@ function createCheckBoxDiv(id, name, value, labelText, onCheckedChange) {
 }
 
 function scale(number, inMin, inMax, outMin, outMax) {
-    return (number - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+    return (((number - inMin) * (outMax - outMin)) / (inMax - inMin)) + outMin;
+}
+
+function getChannelColor(channel) {
+	switch (channel)
+	{
+		case "L0":
+			return "red";
+		case "L1":
+			return "yellow";
+		case "L2":
+			return "orange";
+		case "R0":
+			return "blue";
+		case "R1":
+			return "green";
+		case "R2":
+			return "purple";
+		case "V0":
+			return "pink";
+		case "V1":
+			return "aliceblue";
+		case "A0":
+			return "cyan";
+		case "A1":
+			return "magenta";
+		default:
+			return "white"
+	}
 }

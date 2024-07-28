@@ -26,9 +26,20 @@
     height: 8px;
     position: inherit;
     margin: auto;
+    --scrollbar-background: #ccc;
 }
-
-
+.script-status-progress::-moz-progress-bar {
+    /* Fallback */
+    background-color: #ccc;
+    /* Dynamic value */
+    background-color: var(--scrollbar-background);
+}
+.script-status-progress::-webkit-progress-value {
+    /* Fallback */
+    background-color: #ccc;
+    /* Dynamic value */
+    background-color: var(--scrollbar-background);
+}
 
 @media only screen and (-webkit-min-device-pixel-ratio: 2.75) {
     .script-status-model {

@@ -2,9 +2,9 @@ const scriptStatusElement = document.getElementById("scriptStatus");
 const scriptStatusContainerElement = document.getElementById("scriptStatusContainer");
 const scriptStatusButton = document.getElementById("scriptStatusButton");
 
-let currentMedia = undefined;
 let currentChannels = {};
 let isShown = false;
+let lerpInterval = undefined;
 
 function toggleScriptStatusModal() {
     scriptStatusElement.classList.toggle("hidden");
@@ -17,11 +17,17 @@ function setupchannel(channel) {
         currentChannels[channel].element.classList.remove("hidden");
         return;
     }
+//     progress::-moz-progress-bar { background: blue; }
+// progress::-webkit-progress-value { background: blue; }
+// progress { color: blue; }
     let userChannel = remoteUserSettings.availableChannelsArray.find(x => x.channel == channel);
     let div = document.createElement("div");
     div.id = channel;
     div.classList.add("script-status-div");
     let element = document.createElement("progress");
+    const channelColor = getChannelColor(channel);
+    element.style.setProperty("color" , channelColor);
+    element.style.setProperty("--scrollbar-background", channelColor);
     element.classList.add("script-status-progress");
     let elementLabel = document.createElement("label");
     elementLabel.classList.add("script-status-label");
@@ -52,9 +58,12 @@ function setChannelStatus(channel, value, time, timeType) {
     let channelsObj = currentChannels[channel];
     if(channelsObj.timeout)
         clearTimeout(channelsObj.timeout);
-    channelsObj.progress.value = value;
+    //channelsObj.progress.value = value;
+    startLerp(channelsObj, value, time);
     channelsObj.timeout = setTimeout(function() {
         channelsObj.element.classList.add("hidden");
+        if(channelsObj.lerpInterval)
+            clearInterval(channelsObj.lerpInterval);
     }, 10000);
 
     //let mapped = scale(value, 0, 100, 0, canvas.width)
@@ -63,7 +72,45 @@ function setChannelStatus(channel, value, time, timeType) {
     // lerp(context, )
 }
 
+function startLerp(channelsObj, targetValue, targetTime) {
+    if(channelsObj.lerpInterval)
+        clearInterval(channelsObj.lerpInterval);
+    const startValue = channelsObj.progress.value;
+    if(startValue == targetValue)
+        return;
+    channelsObj["currentTime"] = startValue > targetValue ? targetTime : 0;
+    channelsObj["currentValue"] = startValue;
+    // debug("startValue: "+startValue);
+    // debug("targetValue: "+ targetValue);
+    // debug("targetTime: "+ targetTime);
+    // debug("currentTime: "+ channelsObj.currentTime);
+    const interval = 10;
+    //const posScale = Math.abs(startValue - targetValue) / (targetTime / interval);
 
+    const posScale = Math.abs(startValue - targetValue) * (interval / targetTime);
+    channelsObj["lerpInterval"] = setInterval(function(channelsObj, targetValue, targetTime, startValue, interval, posScale) {
+        // let timeScale = scale(channelsObj.currentTime, 0, targetTime, 0.0, 1.0);
+        // debug("timescale: "+ timeScale);
+        // debug("currentTime: "+ channelsObj.currentTime);
+        // channelsObj.progress.value = startValue > targetValue ? lerp(targetValue, startValue, timeScale) : lerp(startValue, targetValue, timeScale);
+        // debug("value: "+ channelsObj.progress.value);
+        // channelsObj.currentTime = startValue > targetValue ? channelsObj.currentTime -= interval : channelsObj.currentTime += interval;
+        // debug("new currentTime: "+ channelsObj.currentTime);
+        // if(startValue > targetValue ? channelsObj.currentTime <= 0 : channelsObj.currentTime >= targetTime) {
+        //     debug("Clear interval target: "+targetValue);
+        //     clearInterval(channelsObj.lerpInterval);
+        // }
+        
+        channelsObj.currentTime = startValue > targetValue ? channelsObj.currentTime -= interval : channelsObj.currentTime += interval;
+        startValue > targetValue ? channelsObj.currentValue -= posScale : channelsObj.currentValue += posScale;
+        if(startValue > targetValue ? channelsObj.currentTime <= 0 : channelsObj.currentTime >= targetTime) {
+            debug("Clear interval target: "+targetValue);
+            clearInterval(channelsObj.lerpInterval);
+            return;
+        }
+        channelsObj.progress.value = channelsObj.currentValue;
+    }, interval, channelsObj, targetValue, targetTime, startValue, interval, posScale);
+}
 /*
  * pA : the first point
  * pB : the second point
@@ -106,6 +153,9 @@ function draw(context, pointA, pointB, level = 1){
     y = lerp(y, endY, 0.1);
     requestAnimationFrame(update);
   }
-  function lerp(min, max, fraction) {
-    return (max - min) * fraction + min;
+//   function lerp(min, max, fraction) {
+//     return (max - min) * fraction + min;
+//   }
+  function lerp(startValue, targetValue, timeScale) {
+    return startValue*timeScale + targetValue*(1-timeScale);
   }

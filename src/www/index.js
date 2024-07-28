@@ -1,4 +1,5 @@
 const webVersion = "v0.463b";
+var debugMode = false;
 
 var DeviceType = {
 	Serial: 0,
@@ -237,7 +238,6 @@ var progressLabelNode = document.getElementById("statusOutputLabel");
 setupTextToSpeech();
 getServerSettings();
 
-debugMode = true;
 function debug(message) {
 	if (debugMode)
 		console.log(message);
