@@ -1,6 +1,7 @@
 const scriptStatusElement = document.getElementById("scriptStatus");
 const scriptStatusContainerElement = document.getElementById("scriptStatusContainer");
 const scriptStatusButton = document.getElementById("scriptStatusButton");
+const noScriptInputEmlement = document.getElementById("noScriptInput");
 
 let currentChannels = {};
 let isShown = false;
@@ -43,6 +44,7 @@ function setupchannel(channel) {
     channelsObj["element"] = div;
     channelsObj["progress"] = element
     channelsObj["channel"] = userChannel
+    channelsObj["hidden"] = false;
     currentChannels[channel] = channelsObj;
     div.appendChild(elementLabel);
     div.appendChild(element);
@@ -54,6 +56,8 @@ function setChannelStatus(channel, value, time, timeType) {
     //ChannelTimeType.Speed;
     if(!isShown)
         return;
+    if(!noScriptInputEmlement.classList.contains("hidden"))
+        noScriptInputEmlement.classList.add("hidden");
     setupchannel(channel);
     let channelsObj = currentChannels[channel];
     if(channelsObj.timeout)
@@ -62,8 +66,11 @@ function setChannelStatus(channel, value, time, timeType) {
     startLerp(channelsObj, value, time);
     channelsObj.timeout = setTimeout(function() {
         channelsObj.element.classList.add("hidden");
+        channelsObj.hidden = true;
         if(channelsObj.lerpInterval)
             clearInterval(channelsObj.lerpInterval);
+        if(Object.keys(currentChannels).every(x => currentChannels[x].hidden))
+            noScriptInputEmlement.classList.remove("hidden");
     }, 10000);
 
     //let mapped = scale(value, 0, 100, 0, canvas.width)
