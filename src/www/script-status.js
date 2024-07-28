@@ -4,10 +4,12 @@ const scriptStatusButton = document.getElementById("scriptStatusButton");
 
 let currentMedia = undefined;
 let currentChannels = {};
+let isShown = false;
 
 function toggleScriptStatusModal() {
     scriptStatusElement.classList.toggle("hidden");
 	scriptStatusButton.classList.toggle('icon-button-down');
+    isShown = !scriptStatusElement.classList.contains("hidden");
 }
 
 function setupchannel(channel) {
@@ -34,6 +36,7 @@ function setupchannel(channel) {
     channelsObj["timeout"] = undefined;
     channelsObj["element"] = div;
     channelsObj["progress"] = element
+    channelsObj["channel"] = userChannel
     currentChannels[channel] = channelsObj;
     div.appendChild(elementLabel);
     div.appendChild(element);
@@ -43,6 +46,8 @@ function setupchannel(channel) {
 function setChannelStatus(channel, value, time, timeType) {
     //ChannelTimeType.Interval;
     //ChannelTimeType.Speed;
+    if(!isShown)
+        return;
     setupchannel(channel);
     let channelsObj = currentChannels[channel];
     if(channelsObj.timeout)

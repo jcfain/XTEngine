@@ -65,7 +65,7 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
             //mainSpeed = mainAction->speed;
         }
         int position = axisAction->pos;
-        LogHandler::Debug("Channel: "+ axisModel->FriendlyName + " pos: " + QString::number(position) + ", at: " + QString::number(axisAction->at));
+        //LogHandler::Debug("Channel: "+ axisModel->FriendlyName + " pos: " + QString::number(position) + ", at: " + QString::number(axisAction->at));
         if (axisModel->FunscriptInverted)
         {
             position = XMath::reverseNumber(position, 0, 100);

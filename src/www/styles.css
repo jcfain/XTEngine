@@ -327,7 +327,7 @@ input:hover:not(.range-input) {
     background-color: #000000;
     flex-flow: column;padding: 16px;
     border: 1px solid aliceblue;
-    max-height: min(500px,calc(100vh - 200px));
+    max-height: min(275px,calc(100vh - 200px));
 }
 
 .media-tag-filter-container {  
