@@ -21,7 +21,7 @@ public:
         QString separator = getSeperator(path);
         QStringList funscriptPaths;
         foreach (QString funscript, funscripts) {
-            funscriptPaths << path + separator + funscript;
+            funscriptPaths << path + (path.endsWith(separator) ? "" : separator) + funscript;
         }
 
         return funscriptPaths;
@@ -55,10 +55,10 @@ public:
                 }
                 directory.next();
                 if (QFileInfo(directory.filePath()).isFile()) {
-                    QString separator = getSeperator(directory.filePath());
+                    //QString separator = getSeperator(directory.filePath());
                     QString fileName = directory.fileName();
                     foreach (QString extension, extensions) {
-                        if (fileName.contains(nameNoExtension + separator + extension)) {
+                        if (fileName.contains(nameNoExtension + extension)) {
                             funscriptPath = directory.filePath();
                             LogHandler::Debug("searchForFileRecursive File found: "+funscriptPath);
                             return funscriptPath;

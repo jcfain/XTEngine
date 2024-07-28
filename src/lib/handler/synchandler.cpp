@@ -75,7 +75,7 @@ SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem, bool reset
         if(_funscriptHandlers.length() > 0)
         {
             foreach (auto handler, _funscriptHandlers) {
-                emit channelPositionChange(handler->channel(), 0);
+                emit channelPositionChange(handler->channel(), 0, 0, ChannelTimeType::None);
             }
             qDeleteAll(_funscriptHandlers);
             _funscriptHandlers.clear();
@@ -170,7 +170,7 @@ void SyncHandler::clear()
     if(_funscriptHandlers.length() > 0)
     {
         foreach (auto handler, _funscriptHandlers) {
-            emit channelPositionChange(handler->channel(), 0);
+            emit channelPositionChange(handler->channel(), 0, 0, ChannelTimeType::None);
         }
         qDeleteAll(_funscriptHandlers);
         _funscriptHandlers.clear();
@@ -273,7 +273,7 @@ void SyncHandler::playStandAlone(QString funscript) {
                         if(action != nullptr)
                         {
                             actions.insert(funscriptHandler->channel(), action);
-                            emit channelPositionChange(funscriptHandler->channel(), action->pos);
+                            emit channelPositionChange(funscriptHandler->channel(), action->pos, action->speed, ChannelTimeType::Interval);
                         }
                     }
                     QString tcode = _tcodeHandler->funscriptToTCode(actions);
@@ -404,7 +404,7 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
                         if(action != nullptr)
                         {
                             actions.insert(funscriptHandlerOther->channel(), action);
-                            emit channelPositionChange(funscriptHandlerOther->channel(), action->pos);
+                            emit channelPositionChange(funscriptHandlerOther->channel(), action->pos, action->speed, ChannelTimeType::Interval);
                         }
                     }
                     QString tcode = _tcodeHandler->funscriptToTCode(actions);
@@ -504,7 +504,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                         if(action != nullptr)
                         {
                             actions.insert(funscriptHandler->channel(), action);
-                            emit channelPositionChange(funscriptHandler->channel(), action->pos);
+                            emit channelPositionChange(funscriptHandler->channel(), action->pos, action->speed, ChannelTimeType::Interval);
                         }
                     }
                     QString tcode = _tcodeHandler->funscriptToTCode(actions);
@@ -581,7 +581,7 @@ bool SyncHandler::loadMFS(const LibraryListItem27 &libraryItem, SyncLoadState &l
     foreach(auto axisName, availibleAxis)
     {
         auto track = TCodeChannelLookup::getChannel(axisName);
-        if(track->Type == AxisType::HalfOscillate)
+        if(track->Type == ChannelType::HalfOscillate)
             continue;
 
         // IF we are the stroke channel and media doesnt exist in the XTP library,

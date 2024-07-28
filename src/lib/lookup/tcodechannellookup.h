@@ -31,7 +31,7 @@ public:
     static void load(QSettings* settingsToLoadFrom, bool firstLoad = false);
     static QString PositiveModifier;
     static QString NegativeModifier;
-    static QHash<TCodeVersion,  QMap<AxisName,  QString>> TCodeVersionMap;
+    static QHash<TCodeVersion,  QMap<ChannelName,  QString>> TCodeVersionMap;
     static void changeSelectedTCodeVersion(TCodeVersion version);
     static QString getSelectedChannelProfile();
     static void setSelectedChannelProfile(QString value);
@@ -39,7 +39,7 @@ public:
     static int getTCodeMaxValue();
     static QString getSelectedTCodeVersionName();
     static QString getTCodeVersionName(TCodeVersion version);
-    static QMap<AxisName, QString> GetSelectedVersionMap();
+    static QMap<ChannelName, QString> GetSelectedVersionMap();
     static bool ChannelExists(QString channel);
     static QStringList getValidMFSExtensions();
     static void addChannelsProfile(QString name, QMap<QString, ChannelModel33> channels = QMap<QString, ChannelModel33>());
@@ -73,7 +73,7 @@ public:
     static void setChannelRangeLive(QString channel, int min, int max);
 
     static QMap<QString, ChannelModel33> getDefaultChannelProfile();
-    static QString ToString(AxisName channel);
+    static QString ToString(ChannelName channel);
     static QString None();
     static QString Stroke();
     static QString StrokeUp();
@@ -108,7 +108,7 @@ private:
     static ChannelModel33* m_defaultChannel;
     static int m_channelCount;
     static TCodeVersion m_selectedTCodeVersion;
-    static QMap<AxisName,  QString> m_selectedTCodeVersionMap;
+    static QMap<ChannelName,  QString> m_selectedTCodeVersionMap;
     static QMap<QString, QMap<QString, ChannelModel33>> m_availableChanels;
     static QString m_selectedChannelProfile;
     static QString NA;
@@ -126,7 +126,7 @@ private:
     static QString A2;
     static void setValidMFSExtensions();
     static QStringList m_validMFSExtensions;
-    static ChannelModel33 setupAvailableChannel(QString friendlyName, QString axisName, QString channel, AxisDimension dimension, AxisType type, QString mfsTrackName, QString relatedChannel);
+    static ChannelModel33 setupAvailableChannel(QString friendlyName, QString axisName, QString channel, ChannelDimension dimension, ChannelType type, QString mfsTrackName, QString relatedChannel);
 
     static int _liveXRangeMax;
     static int _liveXRangeMid;

@@ -5,6 +5,7 @@
 	<title>XTP Web</title>
 	<link rel="stylesheet" type="text/css" href="video-min.css" />
 	<link rel="stylesheet" type="text/css" href="styles-min.css" />
+	<link rel="stylesheet" type="text/css" href="script-status.css" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta name="robots" content="noindex">
 
@@ -158,6 +159,9 @@
 		<button id="tagButton" title="Filter tags" class="tag-media-button icon-button" onclick="onToggleTagInput(this)">
 			<img class="buttonImage" src="://images/icons/tag.svg"/>
 		</button> 
+		<button id="scriptStatusButton" title="Script status" class="script-status-button icon-button" onclick="toggleScriptStatusModal()">
+			<img class="buttonImage" src="://images/icons/equalizer.svg"/ >
+		</button> 
 		<button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button" onclick="toggleShufflePlay()">
 			<img class="buttonImage" src="://images/icons/shuffle.svg"/ >
 		</button> 
@@ -167,6 +171,9 @@
 		<input id="filterInput" class="media-filter-input hidden" placeholder="Filter" oninput="debounceFilter(this.value)" />
 		<!-- <select id="tagFilterSelect" class="media-tag-filter-input hidden" multiple oninput="filterByTag(this.value)"></select>  -->
 		<div id="tagFilterOptions" class="media-tag-filter-input hidden"></div>
+		<div id="scriptStatus" class="script-status-model hidden">
+			<div id="scriptStatusContainer"  class="script-status-container"></div>
+		</div>
 
 			<div id="noMedia" style="text-align: center;" hidden>No media found</div>
 			<div id="mediaLoading" class="no-media">
@@ -814,6 +821,7 @@
 	</svg>
 	<script type="text/javascript" src="common-min.js"></script>
 	<script type="text/javascript" src="video-min.js"></script>
+	<script type="text/javascript" src="script-status-min.js"></script>
 	<script type="text/javascript" src="index-min.js"></script>
 	
 </body>

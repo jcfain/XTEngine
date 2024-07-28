@@ -24,7 +24,13 @@ var ChannelType = {
 	HalfRange: 3
 };
 
-var AxisDimension = {
+const ChannelTimeType = {
+	None: 0,
+	Interval: 1,
+	Speed: 2
+}
+
+const ChannelDimension = {
 	None: 0,
 	Heave: 1,
 	Surge: 2,
@@ -510,6 +516,14 @@ function wsCallBackFunction(evt) {
 				remoteUserSettings["smartTags"].push(...smartTags);
 				setupSystemTags();
 				break;
+			case "channelPositionChange":
+				var messageObj = data["message"];
+				var channel = messageObj["channel"];
+				var position = parseInt(messageObj["position"]);
+				var time = parseInt(messageObj["time"]);
+				var timeType = parseInt(messageObj["timeType"]);
+				setChannelStatus(channel, position, time, timeType);
+				break;
 		}
 	}
 	catch (e) {
@@ -740,7 +754,7 @@ function getServerChannels() {
 			remoteUserSettings.selectedChannelProfile = response.selectedChannelProfile;
 			remoteUserSettings.allChannelProfileNames = response.allChannelProfileNames;
 			setupChannelData();
-			updateChannelsUI();
+			setupScriptStatus()
 		} else {
 			systemError("Error getting channels: "+ xhr.responseText);
 		}

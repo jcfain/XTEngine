@@ -13,9 +13,11 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     qRegisterMetaType<QItemSelection>();
     qRegisterMetaTypeStreamOperators<QList<QString>>("QList<QString>");
     qRegisterMetaTypeStreamOperators<ChannelModel>("ChannelModel");
-    qRegisterMetaType<AxisDimension>("AxisDimension");
-    qRegisterMetaType<AxisType>("AxisType");
-    qRegisterMetaTypeStreamOperators<AxisName>("AxisName");
+    qRegisterMetaType<ChannelDimension>("ChannelDimension");
+    qRegisterMetaType<ChannelType>("ChannelType");
+    qRegisterMetaType<ChannelTimeType>("ChannelTimeType");
+    qRegisterMetaType<FunscriptAction>("FunscriptAction");
+    qRegisterMetaTypeStreamOperators<ChannelName>("ChannelName");
     qRegisterMetaTypeStreamOperators<DecoderModel>("DecoderModel");
     qRegisterMetaTypeStreamOperators<XMediaStatus>("XMediaStatus");
     qRegisterMetaType<LibraryListItem>();
@@ -99,6 +101,8 @@ void XTEngine::init()
         connect(this, &XTEngine::stopAllMedia, _httpHandler, &HttpHandler::stopAllMedia);
         connect(_connectionHandler, &ConnectionHandler::connectionChange, _httpHandler, &HttpHandler::on_DeviceConnection_StateChange);
         connect(_httpHandler, &HttpHandler::settingChange, qOverload<QString, QVariant>(SettingsHandler::changeSetting));
+
+        connect(syncHandler(), &SyncHandler::channelPositionChange, _httpHandler, &HttpHandler::channelPositionChange, Qt::QueuedConnection);
 
         _httpHandler->listen();
     }

@@ -94,7 +94,7 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
             if(!TCodeChannelLookup::ChannelExists(axis))
                 continue;
             ChannelModel33* channel = TCodeChannelLookup::getChannel(axis);
-            if (channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None)
+            if (channel->Type == ChannelType::HalfOscillate || channel->Type == ChannelType::None)
                 continue;
             if (SettingsHandler::getFunscriptLoaded(axis))
                 continue;
@@ -228,7 +228,7 @@ QString TCodeHandler::getRunningHome()
     foreach(auto axis, axisKeys)
     {
         auto channel = TCodeChannelLookup::getChannel(axis);
-        if(channel->Dimension == AxisDimension::Heave || channel->Type != AxisType::Oscillate)
+        if(channel->Dimension == ChannelDimension::Heave || channel->Type != ChannelType::Oscillate)
             continue;
         getChannelHome(channel, tcode);
     }
@@ -242,7 +242,7 @@ QString TCodeHandler::getAllHome()
     foreach(auto axis, axisKeys)
     {
         auto channel = TCodeChannelLookup::getChannel(axis);
-        if(channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None )
+        if(channel->Type == ChannelType::HalfOscillate || channel->Type == ChannelType::None )
             continue;
         getChannelHome(channel, tcode);
     }
@@ -256,7 +256,7 @@ QString TCodeHandler::getSwitchedHome()
     foreach(auto axis, axisKeys)
     {
         auto channel = TCodeChannelLookup::getChannel(axis);
-        if(channel->Type != AxisType::Ramp )
+        if(channel->Type != ChannelType::Ramp )
             continue;
         getChannelHome(channel, tcode);
     }
@@ -273,13 +273,13 @@ QString TCodeHandler::getChannelHome(QString channel)
 
 void TCodeHandler::getChannelHome(ChannelModel33* channel, QString &tcode)
 {
-    if(channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None || channel->Channel == TCodeChannelLookup::Suck() || channel->Channel == TCodeChannelLookup::SuckPosition()) {
+    if(channel->Type == ChannelType::HalfOscillate || channel->Type == ChannelType::None || channel->Channel == TCodeChannelLookup::Suck() || channel->Channel == TCodeChannelLookup::SuckPosition()) {
         return;
     }
     if(!tcode.isEmpty())
         tcode += " ";
     tcode += channel->Channel;
-    int homeValue = channel->Type == AxisType::Ramp ? channel->Min : channel->Mid;
+    int homeValue = channel->Type == ChannelType::Ramp ? channel->Min : channel->Mid;
     tcode += QString::number(homeValue).rightJustified(SettingsHandler::getTCodePadding(), '0');
     tcode += "S1000";
 }

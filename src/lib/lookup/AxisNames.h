@@ -3,7 +3,7 @@
 #include <QString>
 #include <QMap>
 
-enum class AxisName
+enum class ChannelName
 {
     None,
     Stroke,

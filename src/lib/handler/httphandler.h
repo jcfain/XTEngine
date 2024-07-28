@@ -36,6 +36,7 @@ signals:
     void cleanupThumbs();
     void skipToMoneyShot();
     void skipToNextAction();
+    void channelPositionChange(QString channel, int position, int time, ChannelTimeType timeType);
 
 public slots:
     void on_DeviceConnection_StateChange(ConnectionChangedSignal status);

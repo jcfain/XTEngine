@@ -40,7 +40,7 @@ signals:
     //void funscriptVREnded(QString videoPath, QString funscriptPath, qint64 duration);
     void togglePaused(bool paused);
     void sendTCode(QString tcode);
-    void channelPositionChange(QString channel, int position);
+    void channelPositionChange(QString channel, int position, int time, ChannelTimeType timeType);
     void funscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
 
 public slots:

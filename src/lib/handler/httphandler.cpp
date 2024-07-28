@@ -119,6 +119,15 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         sendWebSocketTextMessage("channelProfileChanged", TCodeChannelLookup::getSelectedChannelProfile());
     });
 
+    connect(this, &HttpHandler::channelPositionChange, this, [this](QString channel, int position, int time, ChannelTimeType timeType){
+        QJsonObject obj;
+        obj["channel"] = channel;
+        obj["position"] = position;
+        obj["time"] = time;
+        obj["timeType"] = (uint8_t)timeType;
+        _webSocketHandler->sendCommand("channelPositionChange", obj);
+    });
+
     config.port = SettingsHandler::getHTTPPort();
     config.requestTimeout = 20;
     if(LogHandler::getUserDebug())
@@ -485,7 +494,7 @@ HttpPromise HttpHandler::handleSettingsUpdate(HttpDataPtr data)
         foreach(auto channelName, channels)
         {
             auto channel = TCodeChannelLookup::getChannel(channelName);
-            if(channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None)
+            if(channel->Type == ChannelType::HalfOscillate || channel->Type == ChannelType::None)
                 continue;
             auto value = doc["availableChannels"][channelName].toObject();
             ChannelModel33 channelModel = ChannelModel33::fromJson(value);
@@ -857,7 +866,7 @@ QJsonObject HttpHandler::createSelectedChannels() {
     foreach(auto channelName, channels)
     {
         auto channel = TCodeChannelLookup::getChannel(channelName);
-        if(channel->Type != AxisType::HalfOscillate && channel->Type != AxisType::None)
+        if(channel->Type != ChannelType::HalfOscillate && channel->Type != ChannelType::None)
         {
             availableChannelsJson[channelName] = ChannelModel33::toJson(*channel);
         }

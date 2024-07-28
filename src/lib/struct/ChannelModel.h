@@ -23,8 +23,8 @@ struct ChannelModel
     int UserMin;
     int UserMid;
     int UserMax;
-    AxisDimension Dimension;
-    AxisType Type;
+    ChannelDimension Dimension;
+    ChannelType Type;
     QString TrackName;
     bool MultiplierEnabled;
     float MultiplierValue;

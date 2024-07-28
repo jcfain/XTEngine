@@ -92,3 +92,7 @@ function createCheckBoxDiv(id, name, value, labelText, onCheckedChange) {
 	divNode.appendChild(label);
 	return divNode;
 }
+
+function scale(number, inMin, inMax, outMin, outMax) {
+    return (number - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+}

@@ -1386,7 +1386,7 @@ void MediaLibraryHandler::findAlternateFunscripts(QString path)
                 QString trackname;
                 foreach (auto channel, channels) {
                     auto track = TCodeChannelLookup::getChannel(channel);
-                    if(channel == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfOscillate || track->TrackName.isEmpty())
+                    if(channel == TCodeChannelLookup::Stroke() || track->Type == ChannelType::HalfOscillate || track->TrackName.isEmpty())
                         continue;
                     if(filepath.endsWith("."+track->TrackName+".funscript") && !path.endsWith("."+track->TrackName+".funscript")) {
                         LogHandler::Debug("Is MFS track: " + track->TrackName);

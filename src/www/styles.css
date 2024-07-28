@@ -529,10 +529,16 @@ input:hover:not(.range-input) {
     margin-top: 110px;
     z-index: 10;
 }
-.random-media-button {
+.script-status-button {
     position: fixed;
     left: calc(100vw - 85px);
     margin-top: 157px;
+    z-index: 10;
+} 
+.random-media-button {
+    position: fixed;
+    left: calc(100vw - 85px);
+    margin-top: 204px;
     z-index: 10;
 } 
 .range-slider {
