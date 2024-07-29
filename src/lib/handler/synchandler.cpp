@@ -707,6 +707,7 @@ void SyncHandler::searchForFunscript(InputDevicePacket packet)
             QString funscriptPath = searchForFunscript(videoPath, extensions, libraryPaths);
 
             if(_funscriptSearchFuture.isCanceled()) {
+                LogHandler::Debug("searchForFunscript canceled: "+videoPath);
                 _funscriptSearchNotFound = true;
                 return;
             }
@@ -748,6 +749,7 @@ QString SyncHandler::searchForFunscript(QString videoPath, QStringList extension
     foreach(QString libraryPath, pathsToSearch)
     {
         if(_funscriptSearchFuture.isCanceled()) {
+            LogHandler::Debug("searchForFunscript paths canceled: "+videoPath);
             _funscriptSearchNotFound = true;
             return funscriptPath;
         }
@@ -770,6 +772,7 @@ QString SyncHandler::searchForFunscriptDeep(QString videoPath, QStringList exten
     foreach(QString libraryPath, pathsToSearch)
     {
         if(_funscriptSearchFuture.isCanceled()) {
+            LogHandler::Debug("searchForFunscriptDeep canceled: "+videoPath);
             _funscriptSearchNotFound = true;
             return funscriptPath;
         }
@@ -788,6 +791,11 @@ QString SyncHandler::searchForFunscript(QString videoPath, QStringList extension
     QStringList libraryScriptPaths = XFileUtil::getFunscriptPaths(videoPath, extensions, pathToSearch);
     foreach (QString libraryScriptPath, libraryScriptPaths)
     {
+        if(_funscriptSearchFuture.isCanceled()) {
+            LogHandler::Debug("searchForFunscript path canceled: "+videoPath);
+            _funscriptSearchNotFound = true;
+            return funscriptPath;
+        }
         LogHandler::Debug("searchForFunscript Searching path: "+libraryScriptPath);
         if(QFile::exists(libraryScriptPath))
         {
