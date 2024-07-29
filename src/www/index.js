@@ -754,6 +754,7 @@ function getServerChannels() {
 			remoteUserSettings.selectedChannelProfile = response.selectedChannelProfile;
 			remoteUserSettings.allChannelProfileNames = response.allChannelProfileNames;
 			setupChannelData();
+			updateChannelsUI();
 		} else {
 			systemError("Error getting channels: "+ xhr.responseText);
 		}

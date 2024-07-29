@@ -806,7 +806,7 @@ QString SyncHandler::searchForFunscriptHttp(QString videoPath, QStringList exten
         videoPath.startsWith("media") ||
         videoPath.startsWith("/storage/emulated/0/Interactive/"))
     {
-        LogHandler::Debug("searchForFunscript from http: "+ videoPath);
+        LogHandler::Debug("searchForFunscript from http in: "+ pathToSearch);
         QUrl funscriptUrl = QUrl(videoPath);
         QString path = funscriptUrl.path();
         QString localpath = path;

@@ -52,6 +52,7 @@ void MediaLibraryHandler::stopLibraryLoading()
 
 void MediaLibraryHandler::onPrepareLibraryLoad()
 {
+    LogHandler::Debug("onPrepareLibraryLoad");
     stopAllSubProcesses();
     _mutex.lock();
     _cachedLibraryItems.clear();
@@ -426,6 +427,7 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
         auto cachedLibraryItems = _cachedLibraryItems;
 
         foreach (LibraryListItem27 item, cachedLibraryItems) {
+            LogHandler::Debug("Process: "+item.path);
             if(_metadataFuture.isCanceled()) {
                 LogHandler::Debug("Cancel metadata process");
                 emit metadataProcessEnd();
