@@ -28,6 +28,7 @@ signals:
     void saveSingleThumb(QString itemID, qint64 pos);
     void reloadLibrary();
     void startMetadataProcess();
+    void processMetadata(QString itemID);
 public:
     WebSocketHandler(QObject *parent = nullptr);
     ~WebSocketHandler();
@@ -38,6 +39,10 @@ public:
     void onSettingChange(QString setting, QVariant value);
     void sendCommand(QString command, QString message = nullptr, QWebSocket* client = 0);
     void sendCommand(QString command, QJsonObject message, QWebSocket* client = 0);
+    void sendUserError(QString message);
+    void sendUserWarning(QString message);
+    void sendError(QString message);
+    void sendWarning(QString message);
     void sendDeviceConnectionStatus(ConnectionChangedSignal status, QWebSocket* client = 0);
     void sendUpdateThumb(QString id, QString thumb, QString error = nullptr);
     void sendUpdateItem(QString itemJson, QString rolesList, QString error = nullptr);

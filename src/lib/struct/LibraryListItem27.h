@@ -11,11 +11,9 @@
 #include "LibraryListItemMetaData258.h"
 
 
-struct XTENGINE_EXPORT LibraryThumbNail {
-    QString ERROR_IMAGE = "://images/icons/error.png";
-    QString LOADING_IMAGE = "://images/icons/loading.png";
-    QString LOADING_CURRENT_IMAGE = "://images/icons/loading_current.png";
-};
+#define ERROR_IMAGE "://images/icons/error.png"
+#define LOADING_IMAGE "://images/icons/loading.png"
+#define LOADING_CURRENT_IMAGE "://images/icons/loading_current.png"
 
 enum class LibraryListItemType {
     PlaylistInternal,
@@ -36,32 +34,34 @@ enum class ThumbState {
 struct  XTENGINE_EXPORT LibraryListItem27
 {
 public:
-    LibraryListItem27() {}
-    LibraryListItem27(const LibraryListItem27* item)
-    {
-        type = item->type;
-        path = item->path;
-        name = item->name;
-        nameNoExtension = item->nameNoExtension;
-        script = item->script;
-        pathNoExtension = item->pathNoExtension;
-        mediaExtension = item->mediaExtension;
-        thumbFile = item->thumbFile;
-        zipFile = item->zipFile;
-        modifiedDate = item->modifiedDate;
-        duration = item->duration;
-        ID = item->ID;
-        libraryPath = item->libraryPath;
-        hasScript = item->hasScript;
-        metadata = LibraryListItemMetaData258(item->metadata);
-        thumbState = item->thumbState;
-        thumbFileExists = item->thumbFileExists;
-        managedThumb = item->managedThumb;
-        thumbNails = item->thumbNails;
-        thumbFileLoading = item->thumbFileLoading;
-        thumbFileLoadingCurrent = item->thumbFileLoadingCurrent;
-        thumbFileError = item->thumbFileError;
-    }
+    // LibraryListItem27() {}
+    // LibraryListItem27(const LibraryListItem27* item)
+    // {
+    //     // type = item->type;
+    //     // path = item->path;
+    //     // name = item->name;
+    //     // nameNoExtension = item->nameNoExtension;
+    //     // script = item->script;
+    //     // pathNoExtension = item->pathNoExtension;
+    //     // mediaExtension = item->mediaExtension;
+    //     // thumbFile = item->thumbFile;
+    //     // zipFile = item->zipFile;
+    //     // modifiedDate = item->modifiedDate;
+    //     // duration = item->duration;
+    //     // ID = item->ID;
+    //     // libraryPath = item->libraryPath;
+    //     // hasScript = item->hasScript;
+    //     // metadata = LibraryListItemMetaData258(item->metadata);
+    //     // thumbState = item->thumbState;
+    //     // thumbFileExists = item->thumbFileExists;
+    //     // managedThumb = item->managedThumb;
+    //     // forceProcessMetadata = item->forceProcessMetadata;
+    //     // thumbNails = item->thumbNails;
+    //     // thumbFileLoading = item->thumbFileLoading;
+    //     // thumbFileLoadingCurrent = item->thumbFileLoadingCurrent;
+    //     // thumbFileError = item->thumbFileError;
+    //     copyProperties(item, *this);
+    // }
     LibraryListItemType type;
     QString path;
     QString name;
@@ -83,10 +83,10 @@ public:
     ThumbState thumbState = ThumbState::Waiting;
     bool thumbFileExists = false;
     bool managedThumb = false;
-    LibraryThumbNail thumbNails;
-    QString thumbFileLoading = thumbNails.LOADING_IMAGE;// "://images/icons/loading.png";
-    QString thumbFileLoadingCurrent = thumbNails.LOADING_CURRENT_IMAGE;// "://images/icons/loading_current.png";
-    QString thumbFileError = thumbNails.ERROR_IMAGE;;// "://images/icons/error.png";
+    bool forceProcessMetadata = false;
+    // const QString thumbFileLoading = LibraryThumbNail::LOADING_IMAGE;// "://images/icons/loading.png";
+    // const QString thumbFileLoadingCurrent = LibraryThumbNail::LOADING_CURRENT_IMAGE;// "://images/icons/loading_current.png";
+    // const QString thumbFileError = LibraryThumbNail::ERROR_IMAGE;;// "://images/icons/error.png";
 
     friend QDataStream & operator<<( QDataStream &dataStream, const LibraryListItem27 &object )
     {
@@ -106,9 +106,9 @@ public:
         dataStream << object.libraryPath;
         dataStream << object.thumbFileExists;
         dataStream << (int)object.thumbState;
-        dataStream << object.thumbFileLoading;
-        dataStream << object.thumbFileLoadingCurrent;
-        dataStream << object.thumbFileError;
+        // dataStream << object.thumbFileLoading;
+        // dataStream << object.thumbFileLoadingCurrent;
+        // dataStream << object.thumbFileError;
         return dataStream;
     }
 
@@ -130,9 +130,6 @@ public:
         dataStream >> object.libraryPath;
         dataStream >> object.thumbFileExists;
         dataStream >> object.thumbState;
-        dataStream >> object.thumbFileLoading;
-        dataStream >> object.thumbFileLoadingCurrent;
-        dataStream >> object.thumbFileError;
         return dataStream;
     }
 
@@ -170,6 +167,7 @@ public:
         obj["thumbState"] = (int)item.thumbState;
         obj["thumbFileExists"] = item.thumbFileExists;
         obj["managedThumb"] = item.managedThumb;
+        obj["forceProcessMetadata"] = item.forceProcessMetadata;
         obj["metadata"] = LibraryListItemMetaData258::toJson(item.metadata);
         return obj;
     }
@@ -233,6 +231,7 @@ public:
         to.thumbState = from.thumbState;
         to.thumbFileExists = from.thumbFileExists;
         to.managedThumb = from.managedThumb;
+        to.forceProcessMetadata = from.forceProcessMetadata;
         to.metadata = LibraryListItemMetaData258(from.metadata);
     }
 //    //waiting ? "://images/icons/loading.png" : "://images/icons/loading_current.png"

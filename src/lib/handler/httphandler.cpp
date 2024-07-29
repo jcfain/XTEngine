@@ -60,12 +60,23 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             _mediaLibraryHandler->startMetadataCleanProcess();
         }
     });
+    connect(_webSocketHandler, &WebSocketHandler::processMetadata, this, [this](QString libraryItemID) {
+        if(!_mediaLibraryHandler->metadataProcessing()) {
+            auto item = _mediaLibraryHandler->findItemByID(libraryItemID);
+            if(item)
+                _mediaLibraryHandler->processMetadata(*item);
+            else
+                _webSocketHandler->sendError("Unknown library item");
+        } else {
+            _webSocketHandler->sendUserWarning("Please wait for metadata process to complete!");
+        }
+    });
     connect(_webSocketHandler, &WebSocketHandler::settingChange, this, &HttpHandler::settingChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoadingStatus, this, &HttpHandler::onLibraryLoadingStatusChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoaded, this, &HttpHandler::onSetLibraryLoaded);
 
-    connect(_mediaLibraryHandler, &MediaLibraryHandler::saveThumbError, this, [this](LibraryListItem27 item, bool vrMode, QString error) {_webSocketHandler->sendUpdateThumb(item.ID, item.thumbFileError, error);});
+    connect(_mediaLibraryHandler, &MediaLibraryHandler::saveThumbError, this, [this](LibraryListItem27 item, bool vrMode, QString error) {_webSocketHandler->sendUpdateThumb(item.ID, ERROR_IMAGE, error);});
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumb, this, [this](LibraryListItem27 item, bool vrMode, QString thumbFile) {
         QString relativeThumb;
         if(thumbFile.startsWith(SettingsHandler::getSelectedThumbsDir())) {
@@ -112,7 +123,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         obj["percentage"] = percentage;
         _webSocketHandler->sendCommand("statusOutput", obj);
     });
-    connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, item.thumbFileLoadingCurrent);});
+    connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, LOADING_CURRENT_IMAGE);});
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::thumbProcessBegin, this, [this]() {onLibraryLoadingStatusChange("Loading thumbs...");});
 
     connect(TCodeChannelLookup::instance(), &TCodeChannelLookup::channelProfileChanged, this, [this](QMap<QString, ChannelModel33>* channelProfile) {
@@ -597,7 +608,7 @@ HttpPromise HttpHandler::handleMediaItemMetadataUpdate(HttpDataPtr data)
         if(libraryItem)
         {
             libraryItem->metadata = metaData;
-            SettingsHandler::updateLibraryListItemMetaData(libraryItem);
+            SettingsHandler::updateLibraryListItemMetaData(*libraryItem);
         } else {
             SettingsHandler::setForceMetaDataFullProcess(true);
             data->response->setStatus(HttpStatus::Conflict, createError("Invalid metadata item please process metadata<br> In System tab under settings."));
@@ -781,9 +792,9 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["tooltip"] = item.metadata.toolTip;
     object["hasScript"] = !item.script.isEmpty() || !item.zipFile.isEmpty();
     object["thumbState"] = (int)item.thumbState;
-    object["thumbFileLoading"] = item.thumbFileLoading;
-    object["thumbFileLoadingCurrent"] = item.thumbFileLoadingCurrent;
-    object["thumbFileError"] = item.thumbFileError;
+    object["thumbFileLoading"] = LOADING_IMAGE;
+    object["thumbFileLoadingCurrent"] = LOADING_CURRENT_IMAGE;
+    object["thumbFileError"] = ERROR_IMAGE;
     object["thumbFileExists"] = item.thumbFileExists;
     object["loaded"] = false;
     object["playing"] = false;

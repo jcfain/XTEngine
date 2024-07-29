@@ -85,6 +85,26 @@ void WebSocketHandler::sendCommand(QString command, QJsonObject message, QWebSoc
             pClient->sendTextMessage(fullMessage);
 }
 
+void WebSocketHandler::sendUserError(QString message)
+{
+    sendCommand("userError", message);
+}
+
+void WebSocketHandler::sendUserWarning(QString message)
+{
+    sendCommand("userWarning", message);
+}
+
+void WebSocketHandler::sendError(QString message)
+{
+    sendCommand("systemError", message);
+}
+
+void WebSocketHandler::sendWarning(QString message)
+{
+    sendCommand("systemWarning", message);
+}
+
 void WebSocketHandler::onNewConnection()
 {
     QWebSocket *pSocket = m_pWebSocketServer->nextPendingConnection();
@@ -154,6 +174,9 @@ void WebSocketHandler::processTextMessage(QString message)
         emit reloadLibrary();
     } else if(command == "startMetadataProcess") {
         emit startMetadataProcess();
+    } else if(command == "processMetadata") {
+        QString itemID = json["message"].toString();
+        emit processMetadata(itemID);
     }
 }
 

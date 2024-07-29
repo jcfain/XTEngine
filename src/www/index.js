@@ -427,6 +427,18 @@ function wsCallBackFunction(evt) {
 	try {
 		var data = JSON.parse(evt.data);
 		switch (data["command"]) {
+			case "userError":
+				userError(data["message"]);
+				break;
+			case "userWarning":
+				userWarning(data["message"]);
+				break;
+			case "systemError":
+				systemError(data["message"]);
+				break;
+			case "systemWarning":
+				systemWarning(data["message"]);
+				break;
 			case "stopAllMedia":
 				stopVideo();
 				break;
@@ -1444,6 +1456,12 @@ function loadMedia(mediaList) {
 			contextMenu.classList.add("hidden");
 		}
 	};
+	var updateItemMetadata = function (mediaItem, contextMenu) {
+		return function () {
+			sendWebsocketMessage("processMetadata", mediaItem.id);
+			contextMenu.classList.add("hidden");
+		}
+	}
 
 	var textHeight = 0
 	var width = 0;
@@ -1510,6 +1528,8 @@ function loadMedia(mediaList) {
 		var contextMenuItem = createContextMenuItem("Set moneyshot at current", setMoneyShotCurrentPosClick(obj, contextMenu));
 		contextMenuItem.classList.add("setMoneyShotAtCurrent", "disabled");
 		contextMenu.appendChild(contextMenuItem);
+		var updateMetadataMenuItem = createContextMenuItem("Update metadata", updateItemMetadata(obj, contextMenu));
+		contextMenu.appendChild(updateMetadataMenuItem);
 		var contextMenuItem = createContextMenuItem("Settings", mediaSettingsClick(obj, contextMenu));
 		contextMenu.appendChild(contextMenuItem);
 		var contextCancelMenuItem = createContextMenuItem("Cancel", closeContext(contextMenu));

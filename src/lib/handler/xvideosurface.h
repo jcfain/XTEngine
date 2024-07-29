@@ -22,7 +22,6 @@ public:
     void fnClearPixmap();
 private:
     QImage::Format imageFormat;
-    QImage imageCaptured;
     QRect targetRect;
     QRect sourceRect;
 

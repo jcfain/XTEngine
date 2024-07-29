@@ -82,7 +82,7 @@ void XVideoSurface::stop()
 
 void XVideoSurface::fnClearPixmap()
 {
-    imageCaptured = QImage();
+    //imageCaptured = QImage();
 }
 bool XVideoSurface::present(const QVideoFrame &frame)
 {
@@ -106,9 +106,9 @@ bool XVideoSurface::present(const QVideoFrame &frame)
            stop();
            return false;
         }
-        if(imageCaptured.isNull())
-        {
-            imageCaptured = QImage(
+        // if(imageCaptured.isNull())
+        // {
+        QImage imageCaptured = QImage(
                     currentFrame.bits(),
                     currentFrame.width(),
                     currentFrame.height(),
@@ -116,7 +116,7 @@ bool XVideoSurface::present(const QVideoFrame &frame)
                     imageFormat);
             //qDebug() << "image captured: "+ QString::number(frame.endTime());
             emit frameCapture(imageCaptured);
-        }
+        // }
         currentFrame.unmap();
         return true;
     }

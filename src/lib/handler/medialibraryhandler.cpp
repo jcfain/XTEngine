@@ -505,7 +505,7 @@ void MediaLibraryHandler::startMetadataCleanProcess()
 void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess)
 {
     bool hasExistingMetadata = SettingsHandler::hasLibraryListItemMetaData(item);
-    if(!hasExistingMetadata || fullProcess)// path is ID for metadata
+    if(!hasExistingMetadata || fullProcess || item.forceProcessMetadata)// path is ID for metadata
     {
         item.metadata.libraryItemPath = item.path;
         item.metadata.key = item.nameNoExtension;
@@ -634,6 +634,8 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
                     metadataChanged = true;
                 }
             }
+
+            item.forceProcessMetadata = false;
             // metadata.tags.removeAll(tags.VIEWED);
             // metadata.tags.removeAll(tags.UNVIEWED);
             // metadata.tags.append(tags.UNVIEWED);
@@ -863,7 +865,7 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
     if(!item || item->ID.isEmpty()) {
         LogHandler::Error("onSaveThumb item ID empty.");
     } else {
-        int cachedIndex = _cachedLibraryItems.indexOf(item);
+        int cachedIndex = _cachedLibraryItems.indexOf(*item);
         if(cachedIndex == -1) {
             LibraryListItem27 emptyItem;
             emit saveThumbError(emptyItem, vrMode, "Missing media");
@@ -882,7 +884,7 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
             ImageFactory::removeCache(item->thumbFile);
             setThumbPath(cachedItem);
             setThumbState(ThumbState::Ready, cachedItem);
-            emit saveNewThumb(item, vrMode, item->thumbFile);
+            emit saveNewThumb(*item, vrMode, item->thumbFile);
         }
     }
     _thumbTimeoutTimer.stop();
@@ -1010,6 +1012,7 @@ void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
         libraryListItem.metadata.isMFS = libraryListItem.metadata.tags.contains(SettingsHandler::getXTags().MFS);
     } else {
         LogHandler::Debug("New item found: "+libraryListItem.nameNoExtension);
+        libraryListItem.forceProcessMetadata = true;
     }
 }
 

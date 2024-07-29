@@ -21,6 +21,8 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     qint64 lastLoopEnd;
     int offset;
     qint64 moneyShotMillis;
+    double funscriptModifier;
+    //Live values
     QString toolTip;
     QString subtitle;
     bool isMFS;
@@ -40,6 +42,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream << object.lastLoopEnd;
         dataStream << object.offset;
         dataStream << object.moneyShotMillis;
+        dataStream << object.funscriptModifier;
         dataStream << object.toolTip;
         dataStream << object.subtitle;
         dataStream << object.isMFS;
@@ -65,6 +68,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream >> object.lastLoopEnd;
         dataStream >> object.offset;
         dataStream >> object.moneyShotMillis;
+        dataStream >> object.funscriptModifier;
         dataStream >> object.toolTip;
         dataStream >> object.subtitle;
         dataStream >> object.isMFS;
@@ -126,6 +130,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         obj["offset"] = item.offset;
         obj["moneyShotMillis"] = QString::number(item.moneyShotMillis);
         obj["moneyShotSecs"] = item.moneyShotMillis / 1000;
+        obj["funscriptModifier"] = item.funscriptModifier;
         obj["toolTip"] = item.toolTip;
         obj["subtitle"] = item.subtitle;
         obj["isMFS"] = item.isMFS;
@@ -160,12 +165,13 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         newItem.key = obj["key"].toString();
         newItem.libraryItemPath = obj["libraryItemPath"].toString();
         newItem.watched = obj["watched"].toBool();
-        newItem.lastPlayPosition = obj["lastPlayPosition"].toString().toLongLong();
+        newItem.lastPlayPosition = obj["lastPlayPosition"].toString("-1").toLongLong();
         newItem.lastLoopEnabled = obj["lastLoopEnabled"].toBool();
-        newItem.lastLoopStart = obj["lastLoopStart"].toString().toLongLong();
-        newItem.lastLoopEnd = obj["lastLoopEnd"].toString().toLongLong();
-        newItem.offset = obj["offset"].toInt();
-        newItem.moneyShotMillis = obj["moneyShotMillis"].toString().toLongLong();
+        newItem.lastLoopStart = obj["lastLoopStart"].toString("-1").toLongLong();
+        newItem.lastLoopEnd = obj["lastLoopEnd"].toString("-1").toLongLong();
+        newItem.offset = obj["offset"].toInt(0);
+        newItem.moneyShotMillis = obj["moneyShotMillis"].toString("-1").toLongLong();
+        newItem.funscriptModifier = obj["funscriptModifier"].toDouble(1.0);
         newItem.toolTip = obj["toolTip"].toString();
         newItem.subtitle = obj["subtitle"].toString();
         newItem.isMFS = obj["isMFS"].toBool();
@@ -189,6 +195,31 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
             newItem.MFSScripts.append(script.toString());
         }
         return newItem;
+    }
+
+    static void defaultValues(const QString& key, const QString& libraryMediaPath)
+    {
+        QJsonObject obj;
+        obj["key"] = key;
+        obj["libraryItemPath"] = libraryMediaPath;
+        fromJson(obj);
+        // item.nameNoExtension,
+        // item.path, // libraryItemPath
+        // false,
+        // -1, // lastPlayPosition
+        // false, // lastLoopEnabled
+        // -1, // lastLoopStart
+        // -1, // lastLoopEnd
+        // 0, // offset
+        // -1, // moneyShotMillis
+        // 1.0, //funscriptModifier
+        // "",
+        // "",
+        // false,
+        // bookmarks, // bookmarks
+        // funscripts,
+        // tags,
+        // MFSScripts
     }
 };
 

@@ -283,7 +283,7 @@ void SettingsActionHandler::media_action(QString action)
                    }
                    item->metadata.offset = newOffset;
                    SettingsHandler::setLiveOffset(newOffset);
-                   SettingsHandler::updateLibraryListItemMetaData(item);
+                   SettingsHandler::updateLibraryListItemMetaData(*item);
                    emit actionExecuted(action, verb + " offset to " + QString::number(newOffset));
                }
             }

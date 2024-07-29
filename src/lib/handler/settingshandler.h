@@ -45,8 +45,8 @@ signals:
 public slots:
     static void changeSetting(QString settingName, QVariant value);
     static void changeSetting(QString settingName, QVariant value, bool restart);
-    void setMoneyShot(LibraryListItem27 selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
-    void addBookmark(LibraryListItem27 LibraryListItem27, QString name, qint64 currentPosition);
+    void setMoneyShot(LibraryListItem27& selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
+    void addBookmark(LibraryListItem27& LibraryListItem27, QString name, qint64 currentPosition);
 
 public:
     static SettingsHandler* instance(){
@@ -249,10 +249,10 @@ public:
 
     static QHash<QString, LibraryListItemMetaData258> getLibraryListItemMetaData();
     static void getLibraryListItemMetaData(LibraryListItem27& item);
-    static bool hasLibraryListItemMetaData(const LibraryListItem27 item);
+    static bool hasLibraryListItemMetaData(const LibraryListItem27& item);
     static void removeLibraryListItemMetaData(LibraryListItem27& item);
     static void removeLibraryListItemMetaData(const QString key);
-    static void updateLibraryListItemMetaData(const LibraryListItem27 item, bool sync = true);
+    static void updateLibraryListItemMetaData(const LibraryListItem27& item, bool sync = true);
     static bool getForceMetaDataFullProcess();
     static void setForceMetaDataFullProcess(bool enable);
     static void setForceMetaDataFullProcessComplete();
@@ -293,7 +293,7 @@ public:
     static void setHttpThumbQuality(int value);
 
     static void setFunscriptModifierStep(int value);
-    static int getFunscriptModifierStep();
+    static double getFunscriptModifierStep();
     static void setFunscriptOffsetStep(int value);
     static int getFunscriptOffsetStep();
 
@@ -526,7 +526,7 @@ private:
     static bool _showVRInLibraryView;
 
 
-    static int _funscriptModifierStep;
+    static double _funscriptModifierStep;
     static int _funscriptOffsetStep;
 
     static bool _channelPulseEnabled;

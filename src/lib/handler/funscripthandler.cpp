@@ -337,6 +337,6 @@ void FunscriptHandler::resetModifier()
     _modifier = 1.0;
 }
 
-double FunscriptHandler::_modifier = 1;
+double FunscriptHandler::_modifier = 1.0;
 bool FunscriptHandler::_inverted = false;
 QMutex FunscriptHandler::mutexStat;

@@ -9,8 +9,7 @@
 QPixmap ImageFactory::resize(QString filepath, QSize size)
 {
     if(!QFileInfo::exists(filepath)) {
-        LibraryThumbNail thumbNails;
-        filepath = thumbNails.ERROR_IMAGE;
+        filepath = ERROR_IMAGE;
     }
     QPixmap bgPixmap(filepath);
     if(bgPixmap.width() == size.width())

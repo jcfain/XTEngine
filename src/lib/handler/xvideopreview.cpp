@@ -129,7 +129,7 @@ void XVideoPreview::on_thumbCapture(QImage frame)
 {
     if(_extracting) {
         LogHandler::Debug("on_thumbCapture: "+ _file);
-        _lastImage = frame;
+        _lastImage = frame.copy();
         frame = QImage();
         //tearDownPlayer();
         process();
@@ -178,8 +178,8 @@ void XVideoPreview::process() {
             }
             else if(!_lastImage.isNull()) {
                 m_processed = true;
-                emit frameExtracted(_lastImage);
-                //_lastImage = QImage();
+                emit frameExtracted(_lastImage.copy());
+                _lastImage = QImage();
             }
         }
         else if(_loadingInfo && _lastDuration > 0)

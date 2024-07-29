@@ -31,10 +31,10 @@ bool XMediaStateHandler::isExternal()
 //     m_isInternal = internal;
 // }
 
-void XMediaStateHandler::setPlaying(const LibraryListItem27 playingItem, bool internal)
+void XMediaStateHandler::setPlaying(const LibraryListItem27* playingItem, bool internal)
 {
-    if(!playingItem.ID.isEmpty()) {
-        m_playingItem = LibraryListItem27(playingItem);;
+    if(!playingItem->ID.isEmpty()) {
+        m_playingItem = *playingItem;
         m_isInternal = internal;
         processMetaData();
     } else {

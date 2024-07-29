@@ -68,7 +68,7 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
         if(maxHeatAt > 0) {
             auto item = XMediaStateHandler::getPlaying();
             if(item)
-                SettingsHandler::instance()->setMoneyShot(item, maxHeatAt, false);
+                SettingsHandler::instance()->setMoneyShot(*item, maxHeatAt, false);
         }
     });
 
@@ -220,7 +220,7 @@ void XTEngine::onFunscriptSearchResult(QString mediaPath, QString funscriptPath,
     } else {
         XMediaStateHandler::setPlaying(itemRef);
     }
-    _syncHandler->syncInputDeviceFunscript(itemRef);
+    _syncHandler->syncInputDeviceFunscript(*itemRef);
 }
 
 void XTEngine::skipToNextAction()
