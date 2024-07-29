@@ -427,7 +427,7 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
         auto cachedLibraryItems = _cachedLibraryItems;
 
         foreach (LibraryListItem27 item, cachedLibraryItems) {
-            LogHandler::Debug("Process: "+item.path);
+            LogHandler::Debug("Process metadata for: "+item.path);
             if(_metadataFuture.isCanceled()) {
                 LogHandler::Debug("Cancel metadata process");
                 emit metadataProcessEnd();
