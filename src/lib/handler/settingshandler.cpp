@@ -38,10 +38,132 @@ void SettingsHandler::addBookmark(LibraryListItem27& libraryListItem, QString na
     SettingsHandler::updateLibraryListItemMetaData(libraryListItem);
 }
 
-QVariant SettingsHandler::getSetting(QString settingName)
+QVariant SettingsHandler::getSetting(const QString& settingName)
 {
     const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
     return settings->value(getSettingPath(settingMap), settingMap.defaultValue);
+}
+
+void SettingsHandler::getSetting(const QString& settingName, QJsonObject& json)
+{
+    const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
+    QVariant::Type valueType = settingMap.defaultValue.type();
+    switch(valueType)
+    {
+        case QVariant::Date:
+        {
+            json[settingName] = getSetting(settingName).toDate().toString("yyyy-MM-dd");
+            break;
+        }
+        case QVariant::Time:
+        {
+            json[settingName] = getSetting(settingName).toTime().toString("HH:mm");
+            break;
+        }
+        case QVariant::DateTime:
+        {
+            json[settingName] = getSetting(settingName).toDateTime().toString("yyyy-MM-ddTHH:mm:ssZ");
+            break;
+        }
+        case QVariant::LongLong:
+        case QVariant::ULongLong:
+        {
+            json[settingName] = QString::number(getSetting(settingName).toLongLong());
+            break;
+        }
+        // Follow through on primitives
+        case QVariant::String:
+        {
+            json[settingName] = getSetting(settingName).toString();
+            break;
+        }
+        case QVariant::Bool:
+        {
+            json[settingName] = getSetting(settingName).toBool();
+            break;
+        }
+        case QVariant::Int:
+        case QVariant::UInt:
+        {
+            json[settingName] = getSetting(settingName).toInt();
+            break;
+        }
+        case QVariant::Double:
+        {
+            json[settingName] = getSetting(settingName).toDouble();
+            break;
+        }
+        case QVariant::Map:
+        {
+            // TODO check this
+            json[settingName] = getSetting(settingName).toJsonObject();
+            break;
+        }
+        case QVariant::List:
+        {
+            // TODO check this
+            json[settingName] = getSetting(settingName).toJsonArray();
+            break;
+        }
+        case QVariant::StringList:
+        {
+            // TODO check this
+            json[settingName] = getSetting(settingName).toJsonArray();
+            break;
+        }
+        // XTE doesnt uses the following at this time.
+        case QVariant::Char:
+        case QVariant::ByteArray:
+        case QVariant::BitArray:
+        case QVariant::UserType:
+        case QVariant::Url:
+        case QVariant::Locale:
+        case QVariant::Rect:
+        case QVariant::RectF:
+        case QVariant::Size:
+        case QVariant::SizeF:
+        case QVariant::Line:
+        case QVariant::LineF:
+        case QVariant::Point:
+        case QVariant::PointF:
+        case QVariant::RegExp:
+        case QVariant::RegularExpression:
+        case QVariant::Hash:
+        case QVariant::EasingCurve:
+        case QVariant::Uuid:
+        case QVariant::ModelIndex:
+        case QVariant::PersistentModelIndex:
+        case QVariant::LastCoreType:
+        case QVariant::Font:
+        case QVariant::Pixmap:
+        case QVariant::Brush:
+        case QVariant::Color:
+        case QVariant::Palette:
+        case QVariant::Image:
+        case QVariant::Polygon:
+        case QVariant::Region:
+        case QVariant::Bitmap:
+        case QVariant::Cursor:
+        case QVariant::KeySequence:
+        case QVariant::Pen:
+        case QVariant::TextLength:
+        case QVariant::TextFormat:
+        case QVariant::Matrix:
+        case QVariant::Transform:
+        case QVariant::Matrix4x4:
+        case QVariant::Vector2D:
+        case QVariant::Vector3D:
+        case QVariant::Vector4D:
+        case QVariant::Quaternion:
+        case QVariant::PolygonF:
+        case QVariant::Icon:
+        case QVariant::LastGuiType:
+        case QVariant::SizePolicy:
+        case QVariant::LastType:
+            break;
+        default:
+            break;
+    }
 }
 
 QString SettingsHandler::getSettingPath(const SettingMap &setting)
@@ -989,6 +1111,16 @@ bool SettingsHandler::processMetadataOnStart()
 void SettingsHandler::setProcessMetadataOnStart(bool value)
 {
     changeSetting(SettingKeys::processMetadataOnStart, value);
+}
+
+bool SettingsHandler::scheduleSettingsSync()
+{
+    return getSetting(SettingKeys::scheduleSettingsSync).toBool();
+}
+
+void SettingsHandler::setScheduleSettingsSync(bool value)
+{
+    changeSetting(SettingKeys::scheduleSettingsSync, value);
 }
 
 QTime SettingsHandler::scheduleLibraryLoadTime()

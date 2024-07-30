@@ -564,7 +564,15 @@
 						</div>
 						<div id="tcodeRanges"></div>
 					</div>
-					<div id="tabFunscript" class="tab-content"></div>
+					<div id="tabFunscript" class="tab-content">
+						<div class="tab-content-header">
+							<div class="tab-content-header-main">Motion modifier</div>
+						</div>
+						<div id="tabFunscriptBody" class="tab-content-body-column">
+							<div id="tabFunscriptRandomMotion" class="tab-content-body-column-section--large tab-content-body-column-section"></div>
+							<div id="tabFunscriptInversion" class="tab-content-body-column-section--small tab-content-body-column-section"></div>
+						</div>
+					</div>
 					<div id="systemInfoTab" class="tab-content">
 						<h3>Versions</h3>
 						<div>
@@ -594,9 +602,10 @@
 							</table>
 						</div>
 
+						<h3>Media Library</h3>
 						<div id="systemTags" class="system-tags">
 							<div id="userTags" class="system-tags-section">
-								<h3 id="userTagsHeader">System tags</h3>
+								<h4 id="userTagsHeader">System tags</h4>
 								<div>
 									<select id="systemTagsSelect" class="system-tags-select" multiple="multiple" onChange="systemTagsSelectChange(this)"></select>
 								</div>
@@ -615,7 +624,12 @@
 						<button id="startMetadataProcessButton" style="margin-top:8px" onclick="startMetadataProcess()">Process metadata</button>
 						<button id="startMetadataCleanProcessButton" style="margin-top:8px" onclick="startMetadataCleanProcess()">Clean metadata</button>
 						<button id="cleanupThumbsButton" style="margin-top:8px" onclick="startThumbCleanupProcess()">Clean up thumbs</button>
-						<h3>Library load schedule</h3>
+						<div class="formElement">
+							<label for="processMetadataOnStart">Process all metadata on start</label>
+							<input id="processMetadataOnStart" type="checkbox"
+								onclick="settingChange(this.id, this.checked)" />
+						</div>
+						<h4>Schedule</h4>
 						<div class="formElement">
 							<label for="scheduleLibraryLoadEnabled">Enabled</label>
 							<input id="scheduleLibraryLoadEnabled" type="checkbox"
@@ -632,8 +646,8 @@
 								onclick="settingChange(this.id, this.checked)" />
 						</div>
 						<div class="formElement">
-							<label for="processMetadataOnStart">Process all metadata on start</label>
-							<input id="processMetadataOnStart" type="checkbox"
+							<label for="scheduleSettingsSync">Sync settings</label>
+							<input id="scheduleSettingsSync" type="checkbox"
 								onclick="settingChange(this.id, this.checked)" />
 						</div>
 					</div>

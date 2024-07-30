@@ -61,10 +61,17 @@ bool SyncHandler::isPlayingVR()
 FunscriptHandler* SyncHandler::getFunscriptHandler() {
     if(_funscriptHandlers.isEmpty())
         return 0;
-    auto it = std::find_if(_funscriptHandlers.begin(), _funscriptHandlers.end(), [](const FunscriptHandler* handler) {
-        return handler->channel() == TCodeChannelLookup::Stroke();
+    return getFunscriptHandler(TCodeChannelLookup::Stroke()) ?: _funscriptHandlers.first();
+}
+
+FunscriptHandler *SyncHandler::getFunscriptHandler(QString channel)
+{
+    if(_funscriptHandlers.isEmpty())
+        return 0;
+    auto it = std::find_if(_funscriptHandlers.begin(), _funscriptHandlers.end(), [channel](const FunscriptHandler* handler) {
+        return handler->channel() == channel;
     });
-    return it != _funscriptHandlers.end() ? it.i->t() : _funscriptHandlers.first();
+    return it != _funscriptHandlers.end() ? it.i->t() : 0;
 }
 
 SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem, bool reset)
@@ -82,7 +89,7 @@ SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem, bool reset
         }
     }
     SyncLoadState loadState;
-    loadMFS(libraryItem, loadState);
+    loadFunscripts(libraryItem, loadState);
     return loadState;
 }
 
@@ -123,7 +130,7 @@ void SyncHandler::stopStandAloneFunscript()
 {
     LogHandler::Debug("Stop standalone sync");
     QMutexLocker locker(&_mutex);
-    _currentTime = 0;
+    _standAloneFunscriptCurrentTime = 0;
     _isStandAloneFunscriptPlaying = false;
     locker.unlock();
     if(_funscriptStandAloneFuture.isRunning())
@@ -176,7 +183,7 @@ void SyncHandler::clear()
         _funscriptHandlers.clear();
     }
     QMutexLocker locker(&_mutex);
-    _currentTime = 0;
+    _standAloneFunscriptCurrentTime = 0;
     _standAloneLoop = false;
     _isPaused = false;
 }
@@ -220,7 +227,7 @@ void SyncHandler::playStandAlone(QString funscript) {
     if(!funscript.isEmpty()) //Override standalone funscript. aka: skip to moneyshot
         load(funscript);
     QMutexLocker locker(&_mutex);
-    _currentTime = 0;
+    _standAloneFunscriptCurrentTime = 0;
     _isPaused = false;
     _standAloneLoop = false;
     _isMediaFunscriptPlaying = true;
@@ -257,11 +264,11 @@ void SyncHandler::playStandAlone(QString funscript) {
                 {
                     if(_seekTime > -1)
                     {
-                        _currentTime = _seekTime;
+                        _standAloneFunscriptCurrentTime = _seekTime;
                     }
                     else
                     {
-                        _currentTime++;
+                        _standAloneFunscriptCurrentTime++;
                     }
                     // if(_funscriptHandler->isLoaded())
                     //     actionPosition = _funscriptHandler->getPosition(_currentTime);
@@ -269,7 +276,7 @@ void SyncHandler::playStandAlone(QString funscript) {
                     //     emit channelPositionChange(TCodeChannelLookup::Stroke(), actionPosition->pos);
                     foreach(auto funscriptHandler, _funscriptHandlers)
                     {
-                        auto action = funscriptHandler->getPosition(_currentTime);
+                        auto action = funscriptHandler->getPosition(_standAloneFunscriptCurrentTime);
                         if(action != nullptr)
                         {
                             actions.insert(funscriptHandler->channel(), action);
@@ -292,28 +299,28 @@ void SyncHandler::playStandAlone(QString funscript) {
                 if(secCounter2 - secCounter1 >= 1)
                 {
                     if(_seekTime == -1 && !_isOtherMediaPlaying)
-                        emit funscriptPositionChanged(_currentTime);
+                        emit funscriptPositionChanged(_standAloneFunscriptCurrentTime);
                     secCounter1 = secCounter2;
                 }
                 if(_seekTime > -1)
                     _seekTime = -1;
             }
             timer2 = (round(mSecTimer.nsecsElapsed() / 1000000));
-            if(!_standAloneLoop && _currentTime >= funscriptMax)
+            if(!_standAloneLoop && _standAloneFunscriptCurrentTime >= funscriptMax)
             {
                 _isStandAloneFunscriptPlaying = false;
                 if(!_isOtherMediaPlaying)
                     emit funscriptStatusChanged(XMediaStatus::EndOfMedia);
             }
-            else if(_standAloneLoop && _currentTime >= funscriptMax)
+            else if(_standAloneLoop && _standAloneFunscriptCurrentTime >= funscriptMax)
             {
-                _currentTime = 0;
+                _standAloneFunscriptCurrentTime = 0;
             }
         }
         QMutexLocker locker(&_mutex);
         _isMediaFunscriptPlaying = false;
         _playingStandAloneFunscript = nullptr;
-        _currentTime = 0;
+        _standAloneFunscriptCurrentTime = 0;
         emit funscriptEnded();
         emit funscriptStandaloneDurationChanged(0);
         emit sendTCode("DSTOP");
@@ -325,12 +332,12 @@ void SyncHandler::playStandAlone(QString funscript) {
 void SyncHandler::setFunscriptTime(qint64 msecs)
 {
     QMutexLocker locker(&_mutex);
-    _currentTime = msecs;
+    _standAloneFunscriptCurrentTime = msecs;
 }
 
 qint64 SyncHandler::getFunscriptTime()
 {
-    return _currentTime;
+    return _standAloneFunscriptCurrentTime;
 }
 
 qint64 SyncHandler::getFunscriptMin()
@@ -541,29 +548,29 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
 //     return _funscriptHandler->load(funscript);
 // }
 
-bool SyncHandler::loadMFS(QString channel, QString funscript)
+FunscriptHandler* SyncHandler::createFunscriptHandler(QString channel, QString funscript)
 {
-    FunscriptHandler* otherFunscript = new FunscriptHandler(channel);
-    if(!otherFunscript->load(funscript)) {
-        delete otherFunscript;
-        return false;
+    FunscriptHandler* funscriptHandler = new FunscriptHandler(channel);
+    if(!funscriptHandler->load(funscript)) {
+        delete funscriptHandler;
+        return 0;
     } else
-        _funscriptHandlers.append(otherFunscript);
-    return true;
+        _funscriptHandlers.append(funscriptHandler);
+    return funscriptHandler;
 }
 
-bool SyncHandler::loadMFS(QString channel, QByteArray funscript)
+FunscriptHandler* SyncHandler::createFunscriptHandler(QString channel, QByteArray funscript)
 {
-    FunscriptHandler* otherFunscript = new FunscriptHandler(channel);
-    if(!otherFunscript->load(funscript)) {
-        delete otherFunscript;
-        return false;
+    FunscriptHandler* funscriptHandler = new FunscriptHandler(channel);
+    if(!funscriptHandler->load(funscript)) {
+        delete funscriptHandler;
+        return 0;
     } else
-        _funscriptHandlers.append(otherFunscript);
-    return true;
+        _funscriptHandlers.append(funscriptHandler);
+    return funscriptHandler;
 }
 
-bool SyncHandler::loadMFS(const LibraryListItem27 &libraryItem, SyncLoadState &loadState)
+bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadState &loadState)
 {
     QString path = libraryItem.script.isEmpty() ? libraryItem.path : libraryItem.script;
     QString pathNoExtension = libraryItem.type == LibraryListItemType::External ?
@@ -576,14 +583,13 @@ bool SyncHandler::loadMFS(const LibraryListItem27 &libraryItem, SyncLoadState &l
         zipFile = new QZipReader(path, QIODevice::ReadOnly);
 
     auto availibleAxis = TCodeChannelLookup::getChannels();
-    bool hasScript = false;
     QString mainScript;
     foreach(auto axisName, availibleAxis)
     {
         auto track = TCodeChannelLookup::getChannel(axisName);
         if(track->Type == ChannelType::HalfOscillate)
             continue;
-
+        FunscriptHandler* funscriptHandler = 0;
         // IF we are the stroke channel and media doesnt exist in the XTP library,
         // then loop below will incorrectly think this is the L0 funscript as we
         // dont have the video path here.
@@ -601,12 +607,14 @@ bool SyncHandler::loadMFS(const LibraryListItem27 &libraryItem, SyncLoadState &l
         if(fileInfo.exists())
         {
             LogHandler::Debug("Loading track: "+ fileInfo.absoluteFilePath());
-            if(!loadMFS(axisName, fileInfo.absoluteFilePath()))
+            funscriptHandler = createFunscriptHandler(axisName, fileInfo.absoluteFilePath());
+            if(!funscriptHandler)
                 loadState.invalidScripts.append("Script: " + fileInfo.absoluteFilePath());
             else {
-                hasScript = true;
                 if(axisName == TCodeChannelLookup::Stroke() || mainScript.isEmpty())
+                {
                     mainScript = fileInfo.absoluteFilePath();
+                }
             }
         }
         else if(zipFile && zipFile->isReadable())
@@ -618,24 +626,27 @@ bool SyncHandler::loadMFS(const LibraryListItem27 &libraryItem, SyncLoadState &l
             if (!data.isEmpty())
             {
                LogHandler::Debug("Loading track from zip: "+ trackFileName);
-               if(!loadMFS(axisName, data))
+                   funscriptHandler = createFunscriptHandler(axisName, data);
+               if(!funscriptHandler)
                    loadState.invalidScripts.append("Zip script: " + trackFileName);
                else{
-                   hasScript = true;
                    if(axisName == TCodeChannelLookup::Stroke() || mainScript.isEmpty())
+                   {
                        mainScript = trackFileName;
+                   }
                }
            }
         }
     }
-    loadState.hasScript = hasScript;
-    if(hasScript) {
+    FunscriptHandler::setModifier(libraryItem.metadata.funscriptModifier);
+    loadState.hasScript = !_funscriptHandlers.isEmpty();
+    if(loadState.hasScript) {
         loadState.mainScript = mainScript;
         emit funscriptLoaded(mainScript);
     }
     if(zipFile)
         delete zipFile;
-    return hasScript;
+    return loadState.hasScript;
 }
 
 

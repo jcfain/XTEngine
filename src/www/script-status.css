@@ -41,8 +41,9 @@
     background-color: var(--scrollbar-background);
 }
 
-@media only screen and (-webkit-min-device-pixel-ratio: 2.75) {
+/* @media only screen and (-webkit-min-device-pixel-ratio: 2.75) { */
+@media only screen and (max-width: 400px) {
     .script-status-model {
-        width: 85%;
+        width: 60%;
     }
 }

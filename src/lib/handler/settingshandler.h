@@ -55,7 +55,8 @@ public:
         return m_instance;
     }
     static QSettings* getSettings();
-    static QVariant getSetting(QString settingName);
+    static QVariant getSetting(const QString& settingName);
+    static void getSetting(const QString& settingName, QJsonObject& json);
     static QString getSettingPath(const SettingMap &setting);
     static QString getSettingPath(const QString &settingName);
     static const QString XTEVersion;
@@ -401,6 +402,9 @@ public:
 
     static bool processMetadataOnStart();
     static void setProcessMetadataOnStart(bool value);
+
+    static bool scheduleSettingsSync();
+    static void setScheduleSettingsSync(bool value);
 
 
 private:

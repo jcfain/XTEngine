@@ -726,6 +726,7 @@ function getServerSettings(retry) {
 			document.getElementById("scheduleLibraryLoadTime").value = remoteUserSettings["scheduleLibraryLoadTime"];
 			document.getElementById("scheduleLibraryLoadFullProcess").checked = remoteUserSettings["scheduleLibraryLoadFullProcess"];
 			document.getElementById("processMetadataOnStart").checked = remoteUserSettings["processMetadataOnStart"];
+			document.getElementById("scheduleSettingsSync").checked = remoteUserSettings["scheduleSettingsSync"];
 			
 			
 			setupChannelData();
@@ -2784,22 +2785,23 @@ async function setupSliders() {
 }
 
 async function setupMotionModifiers() {
-	var tab = document.getElementById("tabFunscript");
-	removeAllChildNodes(tab);
+	//var tab = document.getElementById("tabFunscript");
+	var tabFunscriptRandomMotion = document.getElementById("tabFunscriptRandomMotion");
+	removeAllChildNodes(tabFunscriptRandomMotion);
 
 	var formElementNode = document.createElement("div");
 	formElementNode.classList.add("formElement");
 
-	var headerDivNode = document.createElement("div");
-	headerDivNode.classList.add("tab-content-header");
-	var headerNode = document.createElement("div");
-	headerNode.innerText = "Motion modifier"
-	headerNode.classList.add("tab-content-header-main");
+	// var headerDivNode = document.createElement("div");
+	// headerDivNode.classList.add("tab-content-header");
+	// var headerNode = document.createElement("div");
+	// headerNode.innerText = "Motion modifier"
+	// headerNode.classList.add("tab-content-header-main");
 	var subtextNode = document.createElement("div");
 	subtextNode.classList.add("tab-content-header-eyebrow");
 	subtextNode.innerText = "Add random motion to other channels"
-	headerDivNode.appendChild(headerNode);
-	headerDivNode.appendChild(subtextNode);
+	//headerDivNode.appendChild(headerNode);
+	tabFunscriptRandomMotion.appendChild(subtextNode);
 
 	var labelNode = document.createElement("label");
 	labelNode.innerText = "Enabled";
@@ -2840,8 +2842,8 @@ async function setupMotionModifiers() {
 	formElementNode.appendChild(labelNode);
 	formElementNode.appendChild(sectionNode);
 
-	tab.appendChild(headerDivNode);
-	tab.appendChild(formElementNode);
+	// tab.appendChild(headerDivNode);
+	tabFunscriptRandomMotion.appendChild(formElementNode);
 
 	var availableChannels = remoteUserSettings.availableChannelsArray;
 	for (var i = 0; i < availableChannels.length; i++) {
@@ -2972,7 +2974,7 @@ async function setupMotionModifiers() {
 
 		formElementNode.appendChild(sectionNode);
 
-		tab.appendChild(formElementNode);
+		tabFunscriptRandomMotion.appendChild(formElementNode);
 	}
 
 	toggleMotionModifierState(remoteUserSettings.multiplierEnabled);
@@ -2986,19 +2988,21 @@ function toggleMotionModifierState(enabled) {
 }
 async function setUpInversionMotionModifier() {
 
-	var tab = document.getElementById("tabFunscript");
+	//var tab = document.getElementById("tabFunscript");
+	var tabFunscriptInversion = document.getElementById("tabFunscriptInversion");
+	removeAllChildNodes(tabFunscriptInversion);
 
 	var formElementNode = document.createElement("div");
 	formElementNode.classList.add("formElement");
 
-	var headerDivNode = document.createElement("div");
-	headerDivNode.classList.add("tab-content-header");
+	// var headerDivNode = document.createElement("div");
+	// headerDivNode.classList.add("tab-content-header");
 	var subtextNode = document.createElement("div");
 	subtextNode.classList.add("tab-content-header-eyebrow");
 	subtextNode.innerText = "Invert motion of channels"
-	headerDivNode.appendChild(subtextNode);
+	//headerDivNode.appendChild(subtextNode);
 
-	tab.appendChild(headerDivNode);
+	tabFunscriptInversion.appendChild(subtextNode);
 
 
 	var availableChannels = remoteUserSettings.availableChannelsArray;
@@ -3009,6 +3013,8 @@ async function setUpInversionMotionModifier() {
 
 		var formElementNode = document.createElement("div");
 		formElementNode.classList.add("formElement");
+		formElementNode.classList.add("formElement--inverted");
+		
 
 		var labelNode = document.createElement("label");
 		labelNode.innerText = channel.friendlyName;
@@ -3040,7 +3046,7 @@ async function setUpInversionMotionModifier() {
 		sectionNode.appendChild(enabledValueNode);
 		formElementNode.appendChild(sectionNode);
 
-		tab.appendChild(formElementNode);
+		tabFunscriptInversion.appendChild(formElementNode);
 	}
 }
 

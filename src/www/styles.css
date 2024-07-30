@@ -144,6 +144,10 @@ select:disabled {
     text-align: end;
 }
 
+.formElement--inverted {
+    grid-template-columns: 75% 25%;
+}
+
 .formElement--column {
     display: grid;
     grid-template-columns: 100%;
@@ -772,6 +776,25 @@ section .range-values {
     border-top: 2px solid #5E6B7F;
 }
 
+.tab-content-body-column {
+    display: flex;
+    flex-flow: row;
+    flex-wrap: wrap;
+}
+
+.tab-content-body-column-section { 
+    padding: 16px;
+}
+.tab-content-body-column-section--half { 
+    flex-basis: 40%;
+}
+.tab-content-body-column-section--small { 
+    flex-basis: 15%;
+}
+.tab-content-body-column-section--large { 
+    flex-basis: 75%;
+}
+
 .tab-content-header {
     margin-top: 12px;
     margin-bottom: 12px;
@@ -889,7 +912,10 @@ section .range-values {
 
 
 
-@media only screen and (-webkit-min-device-pixel-ratio: 2.75) {
+/* @media only screen and (-webkit-min-device-pixel-ratio: 2.75) { */
+/* @media (min-resolution: 2dppx) { */
+@media only screen and (max-width: 400px) {
+    
     .modal-content {}
 
     .formElement {
@@ -901,6 +927,12 @@ section .range-values {
         right: 25vw;
     }
     .media-tag-filter-input {
+    }
+    .tab-content-body-column-section {
+        flex-basis: 100%;
+    }
+    .formElement--inverted {  
+        grid-template-columns: 40% 60%;
     }
     .auth-container {
         width: 85%;

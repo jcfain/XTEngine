@@ -102,17 +102,17 @@ void FunscriptHandler::setLoaded(bool value)
     SettingsHandler::setFunscriptLoaded(_channel, _loaded);
 }
 
-qint64 FunscriptHandler::getMin()
+qint64 FunscriptHandler::getMin() const
 {
     return _funscriptMin;
 }
 
-qint64 FunscriptHandler::getMax()
+qint64 FunscriptHandler::getMax() const
 {
     return _funscriptMax;
 }
 
-qint64 FunscriptHandler::getNext() {
+qint64 FunscriptHandler::getNext() const {
     if(lastActionIndex == nextActionIndex) {
         int nextAction = lastActionIndex + 1;
         if(nextAction >= atList.length())
@@ -322,12 +322,12 @@ void FunscriptHandler::setInverted(bool value)
     _inverted = value;
 }
 
-void FunscriptHandler::setModifier(int percentage)
+void FunscriptHandler::setModifier(double percentage)
 {
     _modifier = percentage / 100.0;
 }
 
-int FunscriptHandler::getModifier()
+double FunscriptHandler::getModifier()
 {
     return _modifier * 100.0;
 }

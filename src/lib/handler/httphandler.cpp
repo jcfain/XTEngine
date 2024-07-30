@@ -473,10 +473,14 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     }
     root["smartTags"] = smartTagsArray;
 
-    root["scheduleLibraryLoadEnabled"] = SettingsHandler::scheduleLibraryLoadEnabled();
-    root["scheduleLibraryLoadTime"] = SettingsHandler::scheduleLibraryLoadTime().toString("hh:mm");
-    root["scheduleLibraryLoadFullProcess"] = SettingsHandler::scheduleLibraryLoadFullProcess();
-    root["processMetadataOnStart"] = SettingsHandler::processMetadataOnStart();
+    // root["scheduleLibraryLoadEnabled"] = SettingsHandler::scheduleLibraryLoadEnabled();
+    // root["scheduleLibraryLoadTime"] = SettingsHandler::scheduleLibraryLoadTime().toString("hh:mm");
+    // root["scheduleLibraryLoadFullProcess"] = SettingsHandler::scheduleLibraryLoadFullProcess();
+    // root["processMetadataOnStart"] = SettingsHandler::processMetadataOnStart();
+
+    foreach (SettingMap map, XSettingsMap::SettingsMap) {
+        SettingsHandler::getSetting(map.key, root);
+    }
 
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
     data->response->compressBody();

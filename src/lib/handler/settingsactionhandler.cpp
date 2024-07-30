@@ -230,8 +230,8 @@ void SettingsActionHandler::media_action(QString action)
         } else {
             bool increase = action == actions.IncreaseFunscriptModifier;
             QString verb = increase ? "Increase" : "Decrease";
-            int modifier = FunscriptHandler::getModifier();
-            int modedModifier = increase ? modifier + SettingsHandler::getFunscriptModifierStep() : modifier - SettingsHandler::getFunscriptModifierStep();
+            double modifier = FunscriptHandler::getModifier();
+            double modedModifier = increase ? modifier + SettingsHandler::getFunscriptModifierStep() : modifier - SettingsHandler::getFunscriptModifierStep();
 
             if(modedModifier > 0)
             {
@@ -240,6 +240,16 @@ void SettingsActionHandler::media_action(QString action)
             }
             else
                 emit actionExecuted(action, "Funscript modifier at minimum "+ QString::number(modedModifier) + "percent");
+
+        }
+        if (XMediaStateHandler::isPlaying())
+        {
+            LibraryListItem27* item = XMediaStateHandler::getPlaying();
+            if(item)
+            {
+                item->metadata.funscriptModifier = FunscriptHandler::getModifier();
+                SettingsHandler::updateLibraryListItemMetaData(*item);
+            }
         }
     } else if(MediaActions::HasOtherAction(action, ActionType::CHANNEL_PROFILE)) {
         TCodeChannelLookup::setSelectedChannelProfile(action);

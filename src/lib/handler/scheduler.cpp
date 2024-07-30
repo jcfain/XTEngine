@@ -37,5 +37,9 @@ void Scheduler::checkLibraryLoadTime()
             SettingsHandler::setForceMetaDataFullProcess(SettingsHandler::scheduleLibraryLoadFullProcess());
             m_mediaLibraryHandler->loadLibraryAsync();
         }
+        if(SettingsHandler::scheduleSettingsSync())
+        {
+            SettingsHandler::Save();
+        }
     }
 }

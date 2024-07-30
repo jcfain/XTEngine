@@ -25,6 +25,7 @@ struct SettingKeys {
     static inline const QString scheduleLibraryLoadTime = "scheduleLibraryLoadTime";
     static inline const QString scheduleLibraryLoadFullProcess = "scheduleLibraryLoadFullProcess";
     static inline const QString processMetadataOnStart = "processMetadataOnStart";
+    static inline const QString scheduleSettingsSync = "scheduleSettingsSync";
 };
 
 class XSettingsMap {
@@ -35,6 +36,7 @@ public:
             { SettingKeys::scheduleLibraryLoadEnabled, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadEnabled, false} },
             { SettingKeys::scheduleLibraryLoadTime, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadTime, QTime(2,0)} },
             { SettingKeys::scheduleLibraryLoadFullProcess, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadFullProcess, false} },
+            { SettingKeys::scheduleSettingsSync, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleSettingsSync, true} },
             { SettingKeys::processMetadataOnStart, {SettingProfile::System, SettingGroups::metadata, SettingKeys::processMetadataOnStart, false} }
         },
     };
@@ -45,7 +47,8 @@ public:
             {
                 { SettingKeys::scheduleLibraryLoadEnabled, SettingsMap[SettingKeys::scheduleLibraryLoadEnabled] },
                 { SettingKeys::scheduleLibraryLoadTime, SettingsMap[SettingKeys::scheduleLibraryLoadTime] },
-                { SettingKeys::scheduleLibraryLoadFullProcess, SettingsMap[SettingKeys::scheduleLibraryLoadFullProcess] }
+                { SettingKeys::scheduleLibraryLoadFullProcess, SettingsMap[SettingKeys::scheduleLibraryLoadFullProcess] },
+                { SettingKeys::scheduleSettingsSync, SettingsMap[SettingKeys::scheduleSettingsSync] }
             }
         },
         {

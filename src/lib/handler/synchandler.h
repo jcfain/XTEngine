@@ -82,6 +82,7 @@ public:
     QString getPlayingStandAloneScript();
 
     FunscriptHandler* getFunscriptHandler();
+    FunscriptHandler *getFunscriptHandler(QString channel);
 
 private:
     TCodeHandler* _tcodeHandler;
@@ -100,7 +101,7 @@ private:
     bool m_isSwapping = false;
     bool _standAloneLoop;
     bool _isOtherMediaPlaying = false;
-    qint64 _currentTime = 0;
+    qint64 _standAloneFunscriptCurrentTime = 0;
     qint64 _currentPulseTime = 0;
     qint64 _seekTime = -1;
     qint64 _currentLocalVideoTime = 0;
@@ -116,9 +117,9 @@ private:
     SyncLoadState load(const LibraryListItem27 &libraryItem, bool reset);
     SyncLoadState load(QString funscript);
     //bool load(QByteArray funscript);
-    bool loadMFS(const LibraryListItem27 &libraryItem, SyncLoadState &loadState);
-    bool loadMFS(QString channel, QString funscript);
-    bool loadMFS(QString channel, QByteArray funscript);
+    bool loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadState &loadState);
+    FunscriptHandler* createFunscriptHandler(QString channel, QString funscript);
+    FunscriptHandler* createFunscriptHandler(QString channel, QByteArray funscript);
 
     void sendPulse(qint64 currentMsecs, qint64 &nextPulseTime);
 
