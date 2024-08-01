@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include "Bookmark.h"
+#include "ScriptInfo.h"
 #include "XTEngine_global.h"
 
 struct XTENGINE_EXPORT LibraryListItemMetaData258
@@ -26,10 +27,13 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     QString toolTip;
     QString subtitle;
     bool isMFS;
+    bool hasAlternate;
     QList<Bookmark> bookmarks;
     QList<QString> funscripts;
     QList<QString> tags;
     QStringList MFSScripts;
+    QStringList MFSTracks;
+    QList<ScriptInfo> scripts;
 
     friend QDataStream & operator<<(QDataStream &dataStream, const LibraryListItemMetaData258 &object )
     {
@@ -46,6 +50,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream << object.toolTip;
         dataStream << object.subtitle;
         dataStream << object.isMFS;
+        dataStream << object.hasAlternate;
         foreach(auto bookmark, object.bookmarks )
             dataStream << bookmark;
         foreach(auto funscript, object.funscripts )
@@ -54,6 +59,11 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
             dataStream << tag;
         foreach(auto script, object.MFSScripts )
             dataStream << script;
+        foreach(auto track, object.MFSTracks )
+            dataStream << track;
+        foreach(auto script, object.scripts )
+            dataStream << script;
+
         return dataStream;
     }
 
@@ -72,6 +82,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream >> object.toolTip;
         dataStream >> object.subtitle;
         dataStream >> object.isMFS;
+        dataStream >> object.hasAlternate;
         foreach(auto bookmark, object.bookmarks )
             dataStream >> bookmark;
         foreach(auto funscript, object.funscripts )
@@ -79,6 +90,10 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         foreach(auto tag, object.tags )
             dataStream >> tag;
         foreach(auto script, object.MFSScripts )
+            dataStream >> script;
+        foreach(auto track, object.MFSTracks )
+            dataStream >> track;
+        foreach(auto script, object.scripts )
             dataStream >> script;
         return dataStream;
     }
@@ -134,6 +149,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         obj["toolTip"] = item.toolTip;
         obj["subtitle"] = item.subtitle;
         obj["isMFS"] = item.isMFS;
+        obj["hasAlternate"] = item.hasAlternate;
         QJsonArray bookmarks;
         foreach(Bookmark bookmark, item.bookmarks) {
             QJsonObject bookmarkObj;
@@ -157,6 +173,16 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
             mfsScripts.append(script);
         }
         obj["MFSScripts"] = mfsScripts;
+        QJsonArray mfsTracks;
+        foreach (auto script, item.MFSTracks) {
+            mfsScripts.append(script);
+        }
+        obj["MFSTracks"] = mfsTracks;
+        QJsonArray altScripts;
+        foreach (auto script, item.scripts) {
+            altScripts.append(ScriptInfo::toJson(script));
+        }
+        obj["scripts"] = altScripts;
         return obj;
     }
 
@@ -175,6 +201,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         newItem.toolTip = obj["toolTip"].toString();
         newItem.subtitle = obj["subtitle"].toString();
         newItem.isMFS = obj["isMFS"].toBool();
+        newItem.hasAlternate = obj["hasAlternate"].toBool();
         foreach(auto bookmark, obj["bookmarks"].toArray())
         {
             Bookmark bookMark;
@@ -193,6 +220,14 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         foreach(auto script, obj["MFSScripts"].toArray())
         {
             newItem.MFSScripts.append(script.toString());
+        }
+        foreach(auto track, obj["MFSTracks"].toArray())
+        {
+            newItem.MFSTracks.append(track.toString());
+        }
+        foreach(auto track, obj["scripts"].toArray())
+        {
+            newItem.scripts.append(ScriptInfo::fromJson(track.toObject()));
         }
         return newItem;
     }

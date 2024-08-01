@@ -30,7 +30,6 @@ signals:
     void itemAdded(int index, int newSize);
     void itemRemoved(int index, int newSize);
     void itemUpdated(int index, QVector<int> roles);
-    void alternateFunscriptsFound(QList<ScriptInfo> scriptInfos);
     //void playListItem(LibraryListItem27 item);
 
     void backgroundProcessStateChange(QString message, float percentage);
@@ -85,7 +84,7 @@ public:
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
     void cleanGlobalThumbDirectory();
-    void findAlternateFunscripts(QString path);
+    void findAlternateFunscripts(LibraryListItem27& item);
     bool metadataProcessing();
     void processMetadata(LibraryListItem27 &item);
     void startMetadataProcess(bool fullProcess = false);

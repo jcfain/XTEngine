@@ -10,7 +10,6 @@
 #include "XTEngine_global.h"
 #include "LibraryListItemMetaData258.h"
 
-
 #define ERROR_IMAGE "://images/icons/error.png"
 #define LOADING_IMAGE "://images/icons/loading.png"
 #define LOADING_CURRENT_IMAGE "://images/icons/loading_current.png"
@@ -34,34 +33,6 @@ enum class ThumbState {
 struct  XTENGINE_EXPORT LibraryListItem27
 {
 public:
-    // LibraryListItem27() {}
-    // LibraryListItem27(const LibraryListItem27* item)
-    // {
-    //     // type = item->type;
-    //     // path = item->path;
-    //     // name = item->name;
-    //     // nameNoExtension = item->nameNoExtension;
-    //     // script = item->script;
-    //     // pathNoExtension = item->pathNoExtension;
-    //     // mediaExtension = item->mediaExtension;
-    //     // thumbFile = item->thumbFile;
-    //     // zipFile = item->zipFile;
-    //     // modifiedDate = item->modifiedDate;
-    //     // duration = item->duration;
-    //     // ID = item->ID;
-    //     // libraryPath = item->libraryPath;
-    //     // hasScript = item->hasScript;
-    //     // metadata = LibraryListItemMetaData258(item->metadata);
-    //     // thumbState = item->thumbState;
-    //     // thumbFileExists = item->thumbFileExists;
-    //     // managedThumb = item->managedThumb;
-    //     // forceProcessMetadata = item->forceProcessMetadata;
-    //     // thumbNails = item->thumbNails;
-    //     // thumbFileLoading = item->thumbFileLoading;
-    //     // thumbFileLoadingCurrent = item->thumbFileLoadingCurrent;
-    //     // thumbFileError = item->thumbFileError;
-    //     copyProperties(item, *this);
-    // }
     LibraryListItemType type;
     QString path;
     QString name;
@@ -84,9 +55,6 @@ public:
     bool thumbFileExists = false;
     bool managedThumb = false;
     bool forceProcessMetadata = false;
-    // const QString thumbFileLoading = LibraryThumbNail::LOADING_IMAGE;// "://images/icons/loading.png";
-    // const QString thumbFileLoadingCurrent = LibraryThumbNail::LOADING_CURRENT_IMAGE;// "://images/icons/loading_current.png";
-    // const QString thumbFileError = LibraryThumbNail::ERROR_IMAGE;;// "://images/icons/error.png";
 
     friend QDataStream & operator<<( QDataStream &dataStream, const LibraryListItem27 &object )
     {
@@ -106,9 +74,6 @@ public:
         dataStream << object.libraryPath;
         dataStream << object.thumbFileExists;
         dataStream << (int)object.thumbState;
-        // dataStream << object.thumbFileLoading;
-        // dataStream << object.thumbFileLoadingCurrent;
-        // dataStream << object.thumbFileError;
         return dataStream;
     }
 
@@ -183,7 +148,7 @@ public:
         obj["type"] = (int)item.type;
         obj["zipFile"] = item.zipFile;
 
-        //Live
+        //Live: these are not ever saved to disk
         obj["id"] = item.ID;
         obj["libraryPath"] = item.libraryPath;
         obj["hasScript"] = item.hasScript;
@@ -198,7 +163,6 @@ public:
     static QVariant toVariant(const LibraryListItem27 item)
     {
         QJsonObject obj;
-        //obj["id"] = item.ID;
         obj["path"] = item.path;
         obj["duration"] = QString::number(item.duration);
         obj["md5"] = item.md5;
@@ -211,14 +175,11 @@ public:
         obj["thumbFile"] = item.thumbFile;
         obj["type"] = (int)item.type;
         obj["zipFile"] = item.zipFile;
-//        obj["isMFS"] = item.isMFS;
-//        obj["tooltip"] = item.toolTip;
         return QVariant::fromValue(obj);
      }
 
     static LibraryListItem27 fromJson(const QJsonObject obj) {
         LibraryListItem27 newItem;
-        //newItem.ID = obj["id"].toInt();
         newItem.path = obj["path"].toString();
         newItem.duration = obj["path"].toString().toLongLong();
         newItem.md5 = obj["md5"].toString();
@@ -236,29 +197,7 @@ public:
 
     static void copyProperties(const LibraryListItem27 from, LibraryListItem27 &to) {
         to.copyProperties(from);
-        // to.path = from.path;
-        // to.duration = from.duration;
-        // to.md5 = from.md5;
-        // to.mediaExtension = from.mediaExtension;
-        // to.modifiedDate = from.modifiedDate;
-        // to.name = from.name;
-        // to.nameNoExtension = from.nameNoExtension;
-        // to.script = from.script;
-        // to.pathNoExtension = from.pathNoExtension;
-        // to.thumbFile = from.thumbFile;
-        // to.type = from.type;
-        // to.zipFile = from.zipFile;
-        // //Live
-        // to.ID = from.ID;
-        // to.libraryPath = from.libraryPath;
-        // to.hasScript = from.hasScript;
-        // to.thumbState = from.thumbState;
-        // to.thumbFileExists = from.thumbFileExists;
-        // to.managedThumb = from.managedThumb;
-        // to.forceProcessMetadata = from.forceProcessMetadata;
-        // to.metadata = LibraryListItemMetaData258(from.metadata);
     }
-//    //waiting ? "://images/icons/loading.png" : "://images/icons/loading_current.png"
 };
 Q_DECLARE_METATYPE(LibraryListItem27);
 #endif // LIBRARYLISTITEM27_H

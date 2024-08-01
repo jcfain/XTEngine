@@ -17,6 +17,7 @@ public:
     const static inline QString HAS_SCRIPT = "hasScript";
     const static inline QString VIEWED = "viewed";
     const static inline QString UNVIEWED = "unviewed";
+    const static inline QString ALTSCRIPT = "altscript";
     //Smart tags
     const static inline QString PMV = "pmv";
     const static inline QString MUSIC = "music";
@@ -88,7 +89,8 @@ private:
         MISSING_SCRIPT,
         HAS_SCRIPT,
         VIEWED,
-        UNVIEWED
+        UNVIEWED,
+        ALTSCRIPT
     };
     const QStringList m_builtInSmartTags = {
         PMV,

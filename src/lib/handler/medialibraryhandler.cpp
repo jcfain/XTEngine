@@ -427,7 +427,6 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
         auto cachedLibraryItems = _cachedLibraryItems;
 
         foreach (LibraryListItem27 item, cachedLibraryItems) {
-            LogHandler::Debug("Process metadata for: "+item.path);
             if(_metadataFuture.isCanceled()) {
                 LogHandler::Debug("Cancel metadata process");
                 emit metadataProcessEnd();
@@ -507,6 +506,12 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
     bool hasExistingMetadata = SettingsHandler::hasLibraryListItemMetaData(item);
     if(!hasExistingMetadata || fullProcess || item.forceProcessMetadata)// path is ID for metadata
     {
+        LogHandler::Debug("Process metadata for: "+item.path + " Full process: "+ QString::number(fullProcess));
+        if(!fullProcess)
+        {
+            LogHandler::Debug("Force item: "+QString::number(item.forceProcessMetadata));
+            LogHandler::Debug("New item: "+QString::number(!hasExistingMetadata));
+        }
         item.metadata.libraryItemPath = item.path;
         item.metadata.key = item.nameNoExtension;
         metadataChanged = true;
@@ -518,7 +523,8 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
 
         if(item.type != LibraryListItemType::PlaylistInternal)
         {
-            if(!item.metadata.isMFS && discoverMFS(item)) {
+            if(!item.metadata.isMFS && discoverMFS(item))
+            {
                 metadataChanged = true;
                 if(!rolesChanged.contains(Qt::DisplayRole))
                     rolesChanged.append(Qt::DisplayRole);
@@ -530,6 +536,22 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
                     rolesChanged.append(Qt::FontRole);
             }
 
+            if(item.metadata.isMFS && !item.metadata.tags.contains(XTags::MFS)) {
+                item.metadata.tags.append(XTags::MFS);
+                metadataChanged = true;
+            }
+            else if(!item.metadata.isMFS && item.metadata.tags.contains(XTags::MFS)) {
+                item.metadata.tags.removeAll(XTags::MFS);
+                metadataChanged = true;
+            }
+
+            LogHandler::Debug("Find alternate scripts");
+            auto ogScripts = item.metadata.scripts;
+            findAlternateFunscripts(item);
+            if(item.metadata.scripts != ogScripts)
+                metadataChanged = true;
+
+            LogHandler::Debug("Find subtitles");
             foreach(QString type, SettingsHandler::getSubtitleExtensions())
             {
                 QString subtitilePath = item.pathNoExtension + "."+ type;
@@ -542,15 +564,8 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
                     break;
                 }
             }
-            if(item.metadata.isMFS && !item.metadata.tags.contains(XTags::MFS)) {
-                item.metadata.tags.append(XTags::MFS);
-                metadataChanged = true;
-            }
-            else if(!item.metadata.isMFS && item.metadata.tags.contains(XTags::MFS)) {
-                item.metadata.tags.removeAll(XTags::MFS);
-                metadataChanged = true;
-            }
 
+            LogHandler::Debug("Update tags");
             auto userTags = SettingsHandler::getTags();
 
             if(item.type == LibraryListItemType::Video &&
@@ -609,6 +624,16 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
                     metadataChanged = true;
                 } else if(!item.hasScript && item.metadata.tags.contains(XTags::HAS_SCRIPT)) {
                     item.metadata.tags.removeAll(XTags::HAS_SCRIPT);
+                    metadataChanged = true;
+                }
+            }
+            if(userTags.contains(XTags::ALTSCRIPT))
+            {
+                if(item.metadata.hasAlternate && !item.metadata.tags.contains(XTags::ALTSCRIPT)) {
+                    item.metadata.tags.append(XTags::ALTSCRIPT);
+                    metadataChanged = true;
+                } else if(!item.metadata.hasAlternate && item.metadata.tags.contains(XTags::ALTSCRIPT)) {
+                    item.metadata.tags.removeAll(XTags::ALTSCRIPT);
                     metadataChanged = true;
                 }
             }
@@ -1244,6 +1269,7 @@ bool MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
 //     return item.metadata.isMFS;
 // }
 bool MediaLibraryHandler::discoverMFS(LibraryListItem27 &item) {
+    LogHandler::Debug("Discover MFS: "+item.ID);
     QStringList funscripts = TCodeChannelLookup::getValidMFSExtensions();
     foreach(auto scriptExtension, funscripts)
     {
@@ -1253,6 +1279,7 @@ bool MediaLibraryHandler::discoverMFS(LibraryListItem27 &item) {
             item.metadata.toolTip += "\n";
             item.metadata.toolTip += item.pathNoExtension + scriptExtension;
             item.metadata.MFSScripts << item.pathNoExtension + scriptExtension;
+            item.metadata.MFSTracks << scriptExtension.remove("funscript").remove(".");
         }
     }
     return item.metadata.isMFS;
@@ -1358,63 +1385,79 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
     });
 }
 
-void MediaLibraryHandler::findAlternateFunscripts(QString path)
+void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
 {
+    if(item.type == LibraryListItemType::FunscriptType || item.type == LibraryListItemType::PlaylistInternal)
+        return;
+    QList<ScriptInfo> funscriptsWithMedia;
+    QString path = item.path;
     if(!QFileInfo::exists(path)) {
-        LogHandler::Error("No file found when searching for alternate scripts: "+ path);
+        LogHandler::Error("No file found when searching for alternate scripts: "+ item.path);
+        item.metadata.scripts = {};
         return;
     }
-    QtConcurrent::run([this, path]() {
-        QFileInfo fileInfo(path);
-        QString location = fileInfo.path();
-        QDirIterator scripts(location, QStringList() << "*.funscript" << "*.zip", QDir::Files);
+    QFileInfo fileInfo(path);
+    QString location = fileInfo.path();
+    QDirIterator scripts(location, QStringList() << "*.funscript" << "*.zip", QDir::Files);
 
-        QList<ScriptInfo> funscriptsWithMedia;
-        QString fileName = fileInfo.baseName();
-        auto channels = TCodeChannelLookup::getChannels();
-        ScriptContainerType containerType = ScriptContainerType::BASE;
-        LogHandler::Debug("Searching for alternative scripts for: "+ fileName);
-        while (scripts.hasNext())
-        {
-            containerType = ScriptContainerType::BASE;
-            QString filepath = scripts.next();
-            QFileInfo scriptInfo(filepath);
-            if(filepath.endsWith(".zip")) {
-                containerType = ScriptContainerType::ZIP;
-            }
-            //Is alternate script?
-            auto baseName = scriptInfo.baseName();
-            if(baseName.startsWith(fileName)) {
-                LogHandler::Debug("Found possible alt script: " + baseName);
-                // Ignore mfs files
-                LogHandler::Debug("Is MFS?");
-                QString trackname;
-                foreach (auto channel, channels) {
-                    auto track = TCodeChannelLookup::getChannel(channel);
-                    if(channel == TCodeChannelLookup::Stroke() || track->Type == ChannelType::HalfOscillate || track->TrackName.isEmpty())
-                        continue;
-                    if(filepath.endsWith("."+track->TrackName+".funscript") && !path.endsWith("."+track->TrackName+".funscript")) {
-                        LogHandler::Debug("Is MFS track: " + track->TrackName);
-                        trackname = track->TrackName;
-                        containerType = ScriptContainerType::MFS;
-                        break;
-                    }
-                }
-                if(containerType == ScriptContainerType::MFS) {
-                    LogHandler::Debug("MFS script found: " +trackname);
-                    funscriptsWithMedia.append({trackname, scriptInfo.baseName(), filepath, ScriptType::MAIN, containerType });
-                } else if(scriptInfo.baseName() != fileName) {
-                    auto name = scriptInfo.baseName().replace(fileName, "").trimmed();
-                    LogHandler::Debug("Alt script found: " +name);
-                    funscriptsWithMedia.append({name, scriptInfo.baseName(), filepath, ScriptType::ALTERNATE, containerType });
-                } else {
-                    LogHandler::Debug("Is default script");
-                    funscriptsWithMedia.push_front({"Default", scriptInfo.baseName(), filepath, ScriptType::MAIN, containerType });
-                }
-            }
+    QString fileName = fileInfo.baseName();
+    auto channels = TCodeChannelLookup::getChannels();
+    ScriptContainerType containerType = ScriptContainerType::BASE;
+    LogHandler::Debug("Searching for alternative scripts for: "+ fileName);
+    while (scripts.hasNext())
+    {
+        containerType = ScriptContainerType::BASE;
+        QString filepath = scripts.next();
+        QFileInfo scriptInfo(filepath);
+        QString trackname = "";
+        if(filepath.endsWith(".zip")) {
+            containerType = ScriptContainerType::ZIP;
         }
-        emit alternateFunscriptsFound(funscriptsWithMedia);
-    });
+        if(filepath == item.script || filepath == item.zipFile)
+        {
+            LogHandler::Debug("Is default script");
+            funscriptsWithMedia.push_front({"Default", scriptInfo.baseName(), filepath, trackname, ScriptType::MAIN, containerType });
+            continue;
+        }
+        //Is alternate script?
+        auto baseName = scriptInfo.baseName();
+        if(baseName.startsWith(fileName)) {
+            LogHandler::Debug("Found possible alt script: " + baseName);
+            // Ignore mfs files
+            LibraryListItem27* otherMedia = findItemByNameNoExtension(baseName);
+            if(otherMedia && otherMedia->type != LibraryListItemType::FunscriptType)
+            {
+                LogHandler::Debug("Belongs to ther media item");
+                continue;
+            }
+            LogHandler::Debug("Is MFS?");
+            foreach (auto channel, channels) {
+                auto track = TCodeChannelLookup::getChannel(channel);
+                if(channel == TCodeChannelLookup::Stroke() || track->Type == ChannelType::HalfOscillate || track->TrackName.isEmpty())
+                    continue;
+                if(filepath.endsWith("."+track->TrackName+".funscript") && !path.endsWith("."+track->TrackName+".funscript")) {
+                    LogHandler::Debug("Is MFS track: " + track->TrackName);
+                    trackname = track->TrackName;
+                    containerType = ScriptContainerType::MFS;
+                    break;
+                }
+            }
+            if(containerType == ScriptContainerType::MFS) {
+                LogHandler::Debug("MFS script found: " +trackname);
+                funscriptsWithMedia.append({trackname, scriptInfo.baseName(), filepath, trackname, ScriptType::MAIN, containerType });
+            } else if(scriptInfo.baseName() != fileName) {
+                auto name = scriptInfo.baseName().replace(fileName, "").trimmed();
+                LogHandler::Debug("Alt script found: " +name);
+                item.metadata.hasAlternate = true;
+                funscriptsWithMedia.append({name, scriptInfo.baseName(), filepath, trackname, ScriptType::ALTERNATE, containerType });
+            }
+            // else {
+            //     LogHandler::Debug("Is default script");
+            //     funscriptsWithMedia.push_front({"Default", scriptInfo.baseName(), filepath, trackname, ScriptType::MAIN, containerType });
+            // }
+        }
+    }
+    item.metadata.scripts = funscriptsWithMedia;
 }
 
 bool MediaLibraryHandler::metadataProcessing()

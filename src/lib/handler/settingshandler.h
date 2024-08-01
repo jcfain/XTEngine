@@ -549,8 +549,6 @@ private:
     // static bool m_scheduleLibraryLoadFullProcess;
 
     static XTags m_xTags;
-    static inline bool m_forceMetaDataFullProcess = false;
-
 
     static QTimer m_settingsChangedNotificationDebounce;
     static QHash<QString, bool> _funscriptLoaded;

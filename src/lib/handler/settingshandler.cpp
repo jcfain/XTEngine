@@ -1,8 +1,8 @@
 #include "settingshandler.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.463b";
-const float SettingsHandler::XTEVersionNum = 0.463f;
+const QString SettingsHandler::XTEVersion = "0.465b";
+const float SettingsHandler::XTEVersionNum = 0.465f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -635,7 +635,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         }
     }
 
-    m_forceMetaDataFullProcess = settingsToLoadFrom->value("forceMetaDataFullProcess", false).toBool();
 
     m_disableHeartBeat = settingsToLoadFrom->value("disableHeartBeat", false).toBool();
 
@@ -767,8 +766,9 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
-        if(currentVersion < 0.461f) {
+        if(currentVersion < 0.465f) {
             locker.unlock();
+            m_xTags.addTag(XTags::ALTSCRIPT);
             setForceMetaDataFullProcess(true);
             Save();
             Load();
@@ -921,8 +921,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("customTCodeCommands", m_customTCodeCommands);
 
         settingsToSaveTo->setValue("viewedThreshold", m_viewedThreshold);
-
-        settingsToSaveTo->setValue("forceMetaDataFullProcess", m_forceMetaDataFullProcess);
 
         settingsToSaveTo->setValue("disableHeartBeat", m_disableHeartBeat);
 
@@ -3022,17 +3020,17 @@ void SettingsHandler::updateLibraryListItemMetaData(const LibraryListItem27& ite
 
 bool SettingsHandler::getForceMetaDataFullProcess()
 {
-    return m_forceMetaDataFullProcess;
+    return getSetting(SettingKeys::forceMetaDataFullProcess).toBool();
 }
 
 void SettingsHandler::setForceMetaDataFullProcess(bool enable)
 {
-    m_forceMetaDataFullProcess = enable;
+    changeSetting(SettingKeys::forceMetaDataFullProcess, enable);
 }
 
 void SettingsHandler::setForceMetaDataFullProcessComplete()
 {
-    m_forceMetaDataFullProcess = false;
+    changeSetting(SettingKeys::forceMetaDataFullProcess, false);
 }
 
 QSettings* SettingsHandler::settings;

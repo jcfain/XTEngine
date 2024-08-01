@@ -26,6 +26,8 @@ struct SettingKeys {
     static inline const QString scheduleLibraryLoadFullProcess = "scheduleLibraryLoadFullProcess";
     static inline const QString processMetadataOnStart = "processMetadataOnStart";
     static inline const QString scheduleSettingsSync = "scheduleSettingsSync";
+    static inline const QString forceMetaDataFullProcess = "forceMetaDataFullProcess";
+
 };
 
 class XSettingsMap {
@@ -37,7 +39,8 @@ public:
             { SettingKeys::scheduleLibraryLoadTime, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadTime, QTime(2,0)} },
             { SettingKeys::scheduleLibraryLoadFullProcess, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadFullProcess, false} },
             { SettingKeys::scheduleSettingsSync, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleSettingsSync, true} },
-            { SettingKeys::processMetadataOnStart, {SettingProfile::System, SettingGroups::metadata, SettingKeys::processMetadataOnStart, false} }
+            { SettingKeys::processMetadataOnStart, {SettingProfile::System, SettingGroups::metadata, SettingKeys::processMetadataOnStart, false} },
+            { SettingKeys::forceMetaDataFullProcess, {SettingProfile::System, SettingGroups::metadata, SettingKeys::forceMetaDataFullProcess, false} }
         },
     };
     const static inline QHash<QString, QHash<QString, SettingMap>> SettingsGroupMap =
@@ -54,7 +57,8 @@ public:
         {
             SettingGroups::metadata,
             {
-                { SettingKeys::processMetadataOnStart, SettingsMap[SettingKeys::processMetadataOnStart] }
+                { SettingKeys::processMetadataOnStart, SettingsMap[SettingKeys::processMetadataOnStart] },
+                { SettingKeys::forceMetaDataFullProcess, SettingsMap[SettingKeys::forceMetaDataFullProcess] }
             }
         },
     };
