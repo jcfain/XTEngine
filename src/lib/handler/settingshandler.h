@@ -12,6 +12,7 @@
 #include <QTranslator>
 #include <QStandardPaths>
 #include <QDirIterator>
+#include <QtConcurrent/QtConcurrent>
 #include "loghandler.h"
 #include "../lookup/enum.h"
 #include "../lookup/AxisNames.h"
@@ -319,6 +320,7 @@ public:
     static bool getFirstLoad();
     static void Load(QSettings* settingsToLoadFrom = 0);
     static void Save(QSettings* settingsToSaveTo = 0);
+    static void Sync();
     static void SaveLinkedFunscripts(QSettings* settingsToSaveTo = nullptr);
     static void PersistSelectSettings();
     static void Default();
@@ -413,6 +415,7 @@ private:
     static QMap<QString, QVariant> m_changedSettings;
     static QString _applicationDirPath;
     static SettingsHandler* m_instance;
+    static QFuture<void> m_syncFuture;
     static bool _settingsChanged;
     static void settingsChangedEvent(bool dirty);
     static void SetMapDefaults();

@@ -101,15 +101,18 @@ SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem)
 
 SyncLoadState SyncHandler::load(QString funscript) {
     LibraryListItem27 item;
-    item.script = funscript;
+    buildScriptItem(item, funscript);
     return load(item);
 }
 
-SyncLoadState SyncHandler::swap(const LibraryListItem27 &libraryItem)
+SyncLoadState SyncHandler::swap(const LibraryListItem27 &libraryItem, const ScriptInfo &script)
 {
     LogHandler::Debug("Enter syncHandler swap");
     m_isSwapping = true;
-    auto loadState = load(libraryItem, false);
+    LibraryListItem27 swappedScriptItem;
+    swappedScriptItem.copyProperties(libraryItem);
+    buildScriptItem(swappedScriptItem, script.path);
+    auto loadState = load(swappedScriptItem, false);
     m_isSwapping = false;
     return loadState;
 }
@@ -200,10 +203,6 @@ QString SyncHandler::getPlayingStandAloneScript()
     return _playingStandAloneFunscript;
 }
 
-void SyncHandler::swapScript(const LibraryListItem27 &libraryItem) {
-    load(libraryItem);
-}
-
 void SyncHandler::skipToMoneyShot()
 {
     if (SettingsHandler::getSkipToMoneyShotPlaysFunscript()) {
@@ -222,17 +221,16 @@ void SyncHandler::skipToMoneyShot()
     }
 }
 
-void SyncHandler::playStandAlone(QString funscript) {
+void SyncHandler::playStandAlone() {
     LogHandler::Debug("play Funscript stand alone start thread");
-    if(!funscript.isEmpty()) //Override standalone funscript. aka: skip to moneyshot
-        load(funscript);
+    // if(!funscript.isEmpty()) //Override standalone funscript. aka: skip to moneyshot
+    //     load(funscript);
     QMutexLocker locker(&_mutex);
     _standAloneFunscriptCurrentTime = 0;
     _isPaused = false;
     _standAloneLoop = false;
     _isMediaFunscriptPlaying = true;
     _isStandAloneFunscriptPlaying = true;
-    _playingStandAloneFunscript = funscript;
     locker.unlock();
     emit funscriptStarted();
     qint64 funscriptMax = getFunscriptMax();
@@ -579,8 +577,8 @@ bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadS
         libraryItem.pathNoExtension;
     //QFileInfo pathInfo(path);
     QZipReader* zipFile = 0;
-    if(path.endsWith(".zip"))
-        zipFile = new QZipReader(path, QIODevice::ReadOnly);
+    if(!libraryItem.zipFile.isEmpty())
+        zipFile = new QZipReader(libraryItem.zipFile, QIODevice::ReadOnly);
 
     auto availibleAxis = TCodeChannelLookup::getChannels();
     QString mainScript;
@@ -643,6 +641,10 @@ bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadS
     if(loadState.hasScript) {
         loadState.mainScript = mainScript;
         emit funscriptLoaded(mainScript);
+        if(libraryItem.type == LibraryListItemType::FunscriptType)
+        {
+            _playingStandAloneFunscript = loadState.mainScript;
+        }
     }
     if(zipFile)
         delete zipFile;
@@ -866,4 +868,11 @@ QString SyncHandler::searchForFunscriptMFSDeep(QString mediaPath, QStringList pa
     LogHandler::Debug("searchForFunscript mfs deep: "+ mediaPath);
     QStringList extensions = TCodeChannelLookup::getValidMFSExtensions();
     return searchForFunscriptDeep(mediaPath, extensions, pathsToSearch);
+}
+
+void SyncHandler::buildScriptItem(LibraryListItem27 &item, QString altScript)
+{
+    item.script = altScript;
+    item.nameNoExtension = XFileUtil::getNameNoExtension(altScript);
+    item.pathNoExtension = XFileUtil::getPathNoExtension(altScript);
 }

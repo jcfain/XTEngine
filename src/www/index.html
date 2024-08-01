@@ -233,10 +233,17 @@
 				</div>
 				<div class="formElement">
 					<label
+						title="Change the funscript range of the current media item"
+						for="funscriptModifier">Funscript modifier (%)
+					</label>
+					<input id="funscriptModifier" type="number" step="10.0" min="0.0" oninput="metaDataChange()" />
+				</div>
+				<div class="formElement">
+					<label
 						title="Change the moneyshot for the current media item"
 						for="moneyShotMillis">Moneyshot (ms)
 					</label>
-					<input id="moneyShotMillis" type="number" step="1" oninput="metaDataChange()" />
+					<input id="moneyShotMillis" type="number" step="1000" oninput="metaDataChange()" />
 				</div>
 				<div class="formElement">
 					<label>

@@ -251,24 +251,11 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(qint64 millis)
         int pos = funscript->actions.value(executionMillis);
         if(_modifier != 1)
         {
-            if(lastActionPos < pos) // up stroke
-            {
-                int distance = qRound((pos - lastActionPos) / 2.0);
-                if(_modifier > 1)
-                    pos = qRound(pos + (distance * (_modifier - 1)));
-                else
-                    pos = qRound(pos - (distance - (distance * _modifier)));
-            }
-            else if(lastActionPos > pos) // down stroke
-            {
-                int distance = qRound((lastActionPos - pos) / 2.0);
-                if(_modifier > 1)
-                    pos = qRound(pos - (distance * (_modifier - 1)));
-                else
-                    pos = qRound(pos + (distance - (distance * _modifier)));
-
-            }
+            //int ogPos = pos;
+            int distance = qRound((pos - lastActionPos) / 2.0);
+            pos = qRound(pos + (distance * (_modifier-1)));
             pos = XMath::constrain(pos, 0, 100);
+            //LogHandler::Debug("Modified pos: "+QString::number(pos) +" from: "+QString::number(ogPos) +" modifier: "+QString::number(_modifier) +" last pos: "+QString::number(lastActionPos) +" distance: "+QString::number(distance) );
         }
         std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { _channel, executionMillis, pos, interval, lastActionPos, lastActionSpeed });
         //LogHandler::Debug("nextAction.speed: "+ QString::number(nextAction->speed));

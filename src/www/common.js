@@ -132,3 +132,7 @@ function getChannelColor(channel) {
 			return "white"
 	}
 }
+
+function millis(lastTime = 0) {
+	return Date.now() - lastTime;
+}

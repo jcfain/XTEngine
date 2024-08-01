@@ -137,6 +137,29 @@ public:
     {
        return p1.ID == p2.ID;
     }
+    void copyProperties(const LibraryListItem27& from) {
+        path = from.path;
+        duration = from.duration;
+        md5 = from.md5;
+        mediaExtension = from.mediaExtension;
+        modifiedDate = from.modifiedDate;
+        name = from.name;
+        nameNoExtension = from.nameNoExtension;
+        script = from.script;
+        pathNoExtension = from.pathNoExtension;
+        thumbFile = from.thumbFile;
+        type = from.type;
+        zipFile = from.zipFile;
+        //Live
+        ID = from.ID;
+        libraryPath = from.libraryPath;
+        hasScript = from.hasScript;
+        thumbState = from.thumbState;
+        thumbFileExists = from.thumbFileExists;
+        managedThumb = from.managedThumb;
+        forceProcessMetadata = from.forceProcessMetadata;
+        metadata = LibraryListItemMetaData258(from.metadata);
+    }
 
     static LibraryListItem27 fromVariant(QVariant item)
     {
@@ -212,27 +235,28 @@ public:
     }
 
     static void copyProperties(const LibraryListItem27 from, LibraryListItem27 &to) {
-        to.path = from.path;
-        to.duration = from.duration;
-        to.md5 = from.md5;
-        to.mediaExtension = from.mediaExtension;
-        to.modifiedDate = from.modifiedDate;
-        to.name = from.name;
-        to.nameNoExtension = from.nameNoExtension;
-        to.script = from.script;
-        to.pathNoExtension = from.pathNoExtension;
-        to.thumbFile = from.thumbFile;
-        to.type = from.type;
-        to.zipFile = from.zipFile;
-        //Live
-        to.ID = from.ID;
-        to.libraryPath = from.libraryPath;
-        to.hasScript = from.hasScript;
-        to.thumbState = from.thumbState;
-        to.thumbFileExists = from.thumbFileExists;
-        to.managedThumb = from.managedThumb;
-        to.forceProcessMetadata = from.forceProcessMetadata;
-        to.metadata = LibraryListItemMetaData258(from.metadata);
+        to.copyProperties(from);
+        // to.path = from.path;
+        // to.duration = from.duration;
+        // to.md5 = from.md5;
+        // to.mediaExtension = from.mediaExtension;
+        // to.modifiedDate = from.modifiedDate;
+        // to.name = from.name;
+        // to.nameNoExtension = from.nameNoExtension;
+        // to.script = from.script;
+        // to.pathNoExtension = from.pathNoExtension;
+        // to.thumbFile = from.thumbFile;
+        // to.type = from.type;
+        // to.zipFile = from.zipFile;
+        // //Live
+        // to.ID = from.ID;
+        // to.libraryPath = from.libraryPath;
+        // to.hasScript = from.hasScript;
+        // to.thumbState = from.thumbState;
+        // to.thumbFileExists = from.thumbFileExists;
+        // to.managedThumb = from.managedThumb;
+        // to.forceProcessMetadata = from.forceProcessMetadata;
+        // to.metadata = LibraryListItemMetaData258(from.metadata);
     }
 //    //waiting ? "://images/icons/loading.png" : "://images/icons/loading_current.png"
 };

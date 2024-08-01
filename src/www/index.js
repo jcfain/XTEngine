@@ -1,5 +1,5 @@
 const webVersion = "v0.463b";
-var debugMode = false;
+var debugMode = true;
 
 var DeviceType = {
 	Serial: 0,
@@ -1531,7 +1531,7 @@ function loadMedia(mediaList) {
 		contextMenu.appendChild(contextMenuItem);
 		var updateMetadataMenuItem = createContextMenuItem("Update metadata", updateItemMetadata(obj, contextMenu));
 		contextMenu.appendChild(updateMetadataMenuItem);
-		var contextMenuItem = createContextMenuItem("Settings", mediaSettingsClick(obj, contextMenu));
+		var contextMenuItem = createContextMenuItem("Edit metadata", mediaSettingsClick(obj, contextMenu));
 		contextMenu.appendChild(contextMenuItem);
 		var contextCancelMenuItem = createContextMenuItem("Cancel", closeContext(contextMenu));
 		contextMenu.appendChild(contextCancelMenuItem);
@@ -2519,6 +2519,7 @@ function openMetaDataModal(mediaItem) {
 	selectedMediaItemMetaData = mediaItem["metaData"];
 	document.getElementById("mediaOffset").value = selectedMediaItemMetaData["offset"];
 	document.getElementById("moneyShotMillis").value = selectedMediaItemMetaData["moneyShotMillis"];
+	document.getElementById("funscriptModifier").value = selectedMediaItemMetaData["funscriptModifier"];
 	const tagCheckboxes = document.getElementsByName(metadataTagCheckboxesName);
 	tagCheckboxes.forEach(x => {
 		x.checked = selectedMediaItemMetaData.tags.findIndex(y => y == x.value) > -1;
@@ -2534,6 +2535,7 @@ function closeMetaDataModal() {
 function saveMetaData() {
 	selectedMediaItemMetaData["offset"] = parseInt(document.getElementById("mediaOffset").value);
 	selectedMediaItemMetaData["moneyShotMillis"] = parseInt(document.getElementById("moneyShotMillis").value);
+	selectedMediaItemMetaData["funscriptModifier"] = parseInt(document.getElementById("funscriptModifier").value);
 	postMediaItemMetaData(selectedMediaItemMetaData);
 }
 

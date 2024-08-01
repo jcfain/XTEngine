@@ -92,16 +92,17 @@ function startLerp(channelsObj, targetValue, targetTime) {
     // debug("targetTime: "+ targetTime);
     // debug("currentTime: "+ channelsObj.currentTime);
     const interval = 10;
-    //const posScale = Math.abs(startValue - targetValue) / (targetTime / interval);
-
     const posScale = Math.abs(startValue - targetValue) * (interval / targetTime);
     channelsObj["lerpInterval"] = setInterval(function(channelsObj, targetValue, targetTime, startValue, interval, posScale) {
-        // let timeScale = scale(channelsObj.currentTime, 0, targetTime, 0.0, 1.0);
+        // //let timeScale = scale(channelsObj.currentTime, 0, targetTime, 0.0, 1.0);
+        // let timeScale = channelsObj.currentTime / targetTime;
         // debug("timescale: "+ timeScale);
         // debug("currentTime: "+ channelsObj.currentTime);
-        // channelsObj.progress.value = startValue > targetValue ? lerp(targetValue, startValue, timeScale) : lerp(startValue, targetValue, timeScale);
+        // debug("targetTime: "+ targetTime);
+        // channelsObj.progress.value = startValue == targetValue ? startValue : 
+        //     startValue > targetValue ? lerp(targetValue, startValue, timeScale) : lerp(startValue, targetValue, timeScale);
         // debug("value: "+ channelsObj.progress.value);
-        // channelsObj.currentTime = startValue > targetValue ? channelsObj.currentTime -= interval : channelsObj.currentTime += interval;
+        // channelsObj.currentTime = startValue > targetValue ? channelsObj.currentTime - interval : channelsObj.currentTime + interval;
         // debug("new currentTime: "+ channelsObj.currentTime);
         // if(startValue > targetValue ? channelsObj.currentTime <= 0 : channelsObj.currentTime >= targetTime) {
         //     debug("Clear interval target: "+targetValue);

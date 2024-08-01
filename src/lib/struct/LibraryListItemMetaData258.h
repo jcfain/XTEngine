@@ -171,7 +171,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         newItem.lastLoopEnd = obj["lastLoopEnd"].toString("-1").toLongLong();
         newItem.offset = obj["offset"].toInt(0);
         newItem.moneyShotMillis = obj["moneyShotMillis"].toString("-1").toLongLong();
-        newItem.funscriptModifier = obj["funscriptModifier"].toDouble(1.0);
+        newItem.funscriptModifier = obj["funscriptModifier"].toDouble(100.0);
         newItem.toolTip = obj["toolTip"].toString();
         newItem.subtitle = obj["subtitle"].toString();
         newItem.isMFS = obj["isMFS"].toBool();

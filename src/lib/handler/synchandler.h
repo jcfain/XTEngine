@@ -14,6 +14,7 @@
 #include <QElapsedTimer>
 #include "lib/handler/inputdevicehandler.h"
 #include "lib/handler/outputdevicehandler.h"
+#include "lib/struct/ScriptInfo.h"
 #include "XTEngine_global.h"
 
 struct SyncLoadState {
@@ -55,8 +56,7 @@ public:
     void togglePause();
     void setPause(bool paused);
     bool isPaused();
-    void playStandAlone(QString funscript = nullptr);
-    void swapScript(const LibraryListItem27 &libraryItem);
+    void playStandAlone();
     void skipToMoneyShot();
     void setStandAloneLoop(bool enabled);
     void syncInputDeviceFunscript(const LibraryListItem27 &libraryItem);
@@ -73,7 +73,7 @@ public:
     void clear();
     void reset();
     SyncLoadState load(const LibraryListItem27 &libraryItem);
-    SyncLoadState swap(const LibraryListItem27 &libraryItem);
+    SyncLoadState swap(const LibraryListItem27 &libraryItem, const ScriptInfo &script);
     bool isLoaded();
     bool isPlaying();
     bool isPlayingInternal();
@@ -83,6 +83,8 @@ public:
 
     FunscriptHandler* getFunscriptHandler();
     FunscriptHandler *getFunscriptHandler(QString channel);
+
+    void buildScriptItem(LibraryListItem27 &item, QString altScript);
 
 private:
     TCodeHandler* _tcodeHandler;
@@ -129,6 +131,7 @@ private:
     QString searchForFunscriptHttp(QString videoPath, QStringList extensions, QString pathToSearch);
     QString searchForFunscriptMFS(QString mediaPath, QStringList libraryPaths);
     QString searchForFunscriptMFSDeep(QString mediaPath, QStringList libraryPaths);
+
 
     // QStringList getFunscriptPaths(QString videoPath, QStringList extensions, QString path);
     // QString getNameNoExtension(QString file);

@@ -13,6 +13,8 @@ SettingsHandler::~SettingsHandler()
     delete settings;
     if(m_instance)
         delete m_instance;
+    if(m_syncFuture.isRunning())
+        m_syncFuture.waitForFinished();
 }
 
 void SettingsHandler::setSaveOnExit(bool enabled)
@@ -942,12 +944,21 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         }
         settingsToSaveTo->setValue("smartTags", smartTagsList);
 
-        settingsToSaveTo->sync();
+        Sync();
 
         settingsChangedEvent(false);
-        LogHandler::Info("Save complete");
+        LogHandler::Info("Settings Save complete");
     }
 
+}
+
+void SettingsHandler::Sync()
+{
+    m_syncFuture = QtConcurrent::run([]() {
+        QMutexLocker locker(&mutex);
+        settings->sync();
+        LogHandler::Debug("Settings sync complete");
+    });
 }
 
 void SettingsHandler::SaveLinkedFunscripts(QSettings* settingsToSaveTo)
@@ -955,7 +966,7 @@ void SettingsHandler::SaveLinkedFunscripts(QSettings* settingsToSaveTo)
     if(!settingsToSaveTo)
         settingsToSaveTo = settings;
     settingsToSaveTo->setValue("deoDnlaFunscriptLookup", deoDnlaFunscriptLookup);
-    settingsToSaveTo->sync();
+    Sync();
 }
 
 void SettingsHandler::Clear()
@@ -1021,7 +1032,7 @@ void SettingsHandler::PersistSelectSettings()
     if(deoDnlaFunscriptLookup.count() > 0)
         settings->setValue("deoDnlaFunscriptLookup", deoDnlaFunscriptLookup);
 
-    settings->sync();
+    Sync();
 }
 void SettingsHandler::Default()
 {
@@ -3004,7 +3015,7 @@ void SettingsHandler::updateLibraryListItemMetaData(const LibraryListItem27& ite
     if(sync)
     {
         storeMediaMetaDatas();
-        settings->sync();
+        Sync();
         //settingsChangedEvent(true);
     }
 }
@@ -3028,6 +3039,7 @@ QSettings* SettingsHandler::settings;
 QMap<QString, QVariant> SettingsHandler::m_changedSettings;
 QString SettingsHandler::_applicationDirPath;
 SettingsHandler* SettingsHandler::m_instance = 0;
+QFuture<void> SettingsHandler::m_syncFuture;
 bool SettingsHandler::m_firstLoad;
 bool SettingsHandler::_settingsChanged;
 bool SettingsHandler::_hideWelcomeScreen;
