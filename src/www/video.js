@@ -1,7 +1,15 @@
 var volume = JSON.parse(window.localStorage.getItem("volume"));
 
 const videoNode = document.getElementById("videoPlayer");
-const videoSourceNode = document.getElementById("videoSource");
+videoNode.addEventListener("loadeddata", onVideoLoad);
+videoNode.addEventListener("play", onVideoPlay);
+videoNode.addEventListener("playing", onVideoPlaying);
+videoNode.addEventListener("stalled", onVideoStall);
+videoNode.addEventListener("waiting", onVideoStall);
+videoNode.addEventListener("pause", onVideoPause);
+videoNode.addEventListener("volumechange", onVolumeChange);
+videoNode.addEventListener("ended", onVideoEnd);
+videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
 
 var controlsHideDebounce;
 var controlsVisible = false;
@@ -60,6 +68,22 @@ if (videoWorks) {
 }
 
 // Add functions here
+
+function setupVideoSource(url) {
+	removeVideoSource();
+	let videoSourceNode = document.createElement("source");
+	videoSourceNode.id = "videoSourceNode";
+	videoSourceNode.addEventListener('error', onVideoError, true);
+	videoNode.appendChild(videoSourceNode);
+	videoSourceNode.src = url;
+}
+function removeVideoSource() {
+	let videoSourceNode = document.getElementById("videoSourceNode");
+	if(videoSourceNode) {
+		//videoSourceNode.removeAttribute('src');
+		videoNode.removeChild(videoSourceNode);
+	}
+}
 
 // togglePlay toggles the playback state of the video.
 // If the video playback is paused or ended, the video is played
@@ -583,6 +607,96 @@ window.addEventListener('resize', function(e) {
 	setVideoFixedIfLowHeight();
 });
 	
+
+var timer1 = 0;
+var timer2 = Date.now();
+function onVideoTimeUpdate(event) {
+	if (xtpConnected && selectedInputDevice == DeviceType.XTPWeb) {
+		if (timer2 - timer1 >= 1000) {
+			timer1 = timer2;
+			sendMediaState();
+		}
+		timer2 = Date.now();
+	}
+}
+function onVideoError(event) {
+	//systemError("There was an error loading media: "+ event.target.error + " " + event.target.parentNode.error);
+	if(videoSourceNode.src && videoSourceNode.src.length > 0) {
+		systemError("There was an error loading media");
+		videoSourceNode.src = undefined;
+	}
+}
+function onVideoLoading(event) {
+	debug("Data loading");
+	if(videoStallTimeout)
+		clearTimeout(videoStallTimeout);
+	dataLoading();
+	if(playingmediaItem)
+		playingmediaItem.loaded = false;
+	// SOmetimes the stall signal is sent but the loading modal is never removed.
+	videoStallTimeout = setTimeout(() => {
+		//playNextVideo();
+		dataLoaded();
+		videoStallTimeout = undefined;
+	}, 20000);
+}
+function onVideoLoad(event) {
+	debug("Video loaded");
+	debug("Duration: " + videoNode.duration)
+	if(playingmediaItem)
+		playingmediaItem.loaded = true;
+}
+function onVideoPlay(event) {
+	debug("Video play");
+	if(playingmediaItem)
+		playingmediaItem.playing = true;
+	// if(!funscriptSyncWorker && loadedFunscripts && loadedFunscripts.length > 0)
+	// 	startFunscriptSync(loadedFunscripts);
+	sendMediaState();
+}
+function onVideoPause(event) { 
+	debug("Video pause");
+	if(playingmediaItem)
+		playingmediaItem.playing = false;
+	//setTimeout(function() {
+	sendMediaState();// Sometimes a timeupdate is sent after this event fires?
+	//}, 500);
+}
+function onVideoStall(event) {
+	debug("Video stall");
+	dataLoading();
+	if(playingmediaItem)
+		playingmediaItem.playing = false;
+	sendMediaState();
+	if(videoStallTimeout)
+		clearTimeout(videoStallTimeout);
+	// SOmetimes the stall signal is sent but the loading modal is never removed.
+	videoStallTimeout = setTimeout(() => {
+		debug("Video stall timeout");
+		playNextVideo();
+		dataLoaded();
+		videoStallTimeout = undefined;
+	}, 10000);
+}
+function onVideoPlaying(event) {
+	debug("Video playing");
+	if(videoStallTimeout)
+		clearTimeout(videoStallTimeout);
+	if(playingmediaItem)
+		playingmediaItem.playing = true;
+	sendMediaState();
+}
+function onVolumeChange() {
+	window.localStorage.setItem("volume", videoNode.volume);
+}
+function onVideoEnd(event) {
+	debug("Video ended");
+	// if(funscriptSyncWorker) {
+	// 	funscriptSyncWorker.postMessage(JSON.stringify({"command": "terminate"}));
+	// }
+	playNextVideo();
+}
+
 /* var scrollEventLimiter;
 bodyContainer.addEventListener('scroll', (event) => {
 	if(scrollEventLimiter)

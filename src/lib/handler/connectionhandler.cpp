@@ -123,7 +123,7 @@ void ConnectionHandler::inputMessageSend(QByteArray message) {
 }
 void ConnectionHandler::sendTCode(QString tcode)
 {
-    if(!SettingsHandler::getLiveActionPaused() && !tcode.isEmpty() && _outputDevice && _outputDevice->isConnected())
+    if(!tcode.isEmpty() && _outputDevice && _outputDevice->isConnected())
         _outputDevice->sendTCode(tcode);
 }
 

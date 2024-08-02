@@ -28,6 +28,8 @@ class XTENGINE_EXPORT HttpHandler : public HttpRequestHandler
 signals:
     void error(QString error);
     void settingChange(QString settingName, QVariant value);
+    void mediaAction(QString action);
+    void actionExecuted(QString action, QString spokenText, QVariant value);
     void xtpWebPacketRecieve(QByteArray data);
     void tcode(QString tcode);
     void connectOutputDevice(DeviceName deviceName, bool checked);
@@ -58,6 +60,7 @@ public:
     HttpPromise handleSettings(HttpDataPtr data);
     HttpPromise handleChannels(HttpDataPtr data);
     HttpPromise handleAvailableSerialPorts(HttpDataPtr data);
+    HttpPromise handleMediaActions(HttpDataPtr data);
     HttpPromise handleSettingsUpdate(HttpDataPtr data);
     HttpPromise handleMediaItemMetadataUpdate(HttpDataPtr data);
 

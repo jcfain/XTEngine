@@ -2,6 +2,7 @@
 #define SETTINGSACTIONHANDLER_H
 
 #include <QObject>
+#include <QVariant>
 #include "lib/lookup/MediaActions.h"
 
 #include "XTEngine_global.h"
@@ -14,7 +15,7 @@ class XTENGINE_EXPORT SettingsActionHandler : public QObject
     Q_OBJECT
 
 signals:
-    void actionExecuted(QString action, QString actionExecuted);
+    void actionExecuted(QString action, QString actionExecuted, QVariant value);
     void tcode_action(QString tcode);
 
 public slots:

@@ -71,6 +71,8 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             _webSocketHandler->sendUserWarning("Please wait for metadata process to complete!");
         }
     });
+    connect(_webSocketHandler, &WebSocketHandler::mediaAction, this, &HttpHandler::mediaAction);
+
     connect(_webSocketHandler, &WebSocketHandler::settingChange, this, &HttpHandler::settingChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoadingStatus, this, &HttpHandler::onLibraryLoadingStatusChange);
@@ -139,6 +141,36 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _webSocketHandler->sendCommand("channelPositionChange", obj);
     });
 
+
+    connect(this, &HttpHandler::actionExecuted, this, [this](QString action, QString spokenText, QVariant value){
+        QJsonObject obj;
+        obj["mediaAction"] = action;
+        obj["spokenText"] = spokenText;
+        switch(value.type())
+        {
+            case QVariant::Type::Bool:
+                obj["value"] = value.toBool();
+                break;
+            case QVariant::Type::String:
+                obj["value"] = value.toString();
+                break;
+            case QVariant::Type::Double:
+                obj["value"] = value.toDouble();
+                break;
+            case QVariant::Type::LongLong:
+            case QVariant::Type::ULongLong:
+                obj["value"] = value.toString();
+                break;
+            case QVariant::Type::Int:
+            case QVariant::Type::UInt:
+                obj["value"] = value.toInt();
+                break;
+        }
+
+        _webSocketHandler->sendCommand("mediaAction", obj);
+    });
+
+
     config.port = SettingsHandler::getHTTPPort();
     config.requestTimeout = 20;
     if(LogHandler::getUserDebug())
@@ -162,7 +194,8 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     router.addRoute("GET", "^/deotest$", this, &HttpHandler::handleDeo);
     router.addRoute("GET", "^/settings$", this, &HttpHandler::handleSettings);
     router.addRoute("GET", "^/channels$", this, &HttpHandler::handleChannels);
-    router.addRoute("GET", "^/settings/availableSerialPorts$", this, &HttpHandler::handleAvailableSerialPorts);
+    router.addRoute("GET", "^/availableSerialPorts$", this, &HttpHandler::handleAvailableSerialPorts);
+    router.addRoute("GET", "^/mediaActions$", this, &HttpHandler::handleMediaActions);
     router.addRoute("GET", "^/logout$", this, &HttpHandler::handleLogout);
     router.addRoute("GET", "^/activeSessions$", this, &HttpHandler::handleActiveSessions);
     router.addRoute("POST", "^/settings$", this, &HttpHandler::handleSettingsUpdate);
@@ -413,6 +446,24 @@ HttpPromise HttpHandler::handleAvailableSerialPorts(HttpDataPtr data) {
     data->response->compressBody();
     return HttpPromise::resolve(data);
 }
+
+HttpPromise HttpHandler::handleMediaActions(HttpDataPtr data)
+{
+    if(!isAuthenticated(data)) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+    MediaActions actions;
+    QJsonObject root;
+    foreach(QString action, actions.Values.keys())
+    {
+        root[action] = action;
+    }
+    data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
+    data->response->compressBody();
+    return HttpPromise::resolve(data);
+}
+
 HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     if(!isAuthenticated(data)) {
         data->response->setStatus(HttpStatus::Unauthorized);

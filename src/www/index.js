@@ -1,5 +1,5 @@
 const webVersion = "v0.463b";
-var debugMode = true;
+var debugMode = false;
 
 var DeviceType = {
 	Serial: 0,
@@ -63,6 +63,8 @@ var Roles = {
 	BackgroundRole: 8,
 	ForegroundRole: 9
 };
+
+var MediaActions = {};
 
 var mediaLoading = false;
 var debounceTracker = {};// Use to create timeout handles on the fly.
@@ -188,28 +190,11 @@ skipToMoneyShotButton.addEventListener("click", sendSkipToMoneyShot);
 skipToMoneyShotButton.addEventListener("click", onSkipToMoneyShotClick);
 skipToNextActionButton.addEventListener("click", sendSkipToNextActionClick);
 exitVideoButton.addEventListener("click", stopVideoClick);
-videoNode.addEventListener("loadeddata", onVideoLoad);
-videoNode.addEventListener("play", onVideoPlay);
-videoNode.addEventListener("playing", onVideoPlaying);
-videoNode.addEventListener("stalled", onVideoStall);
-videoNode.addEventListener("waiting", onVideoStall);
-videoNode.addEventListener("pause", onVideoPause);
-videoNode.addEventListener("volumechange", onVolumeChange);
-videoNode.addEventListener("ended", onVideoEnd);
-videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
 
 const playNextButton = document.getElementById('play-next');
 playNextButton.addEventListener('click', playNextVideoClick);
 const playPreviousButton = document.getElementById('play-previous');
 playPreviousButton.addEventListener('click', playPreviousVideoClick);
-
-// Fires on load?
-// videoSourceNode.addEventListener('error', function(event) { 
-// 	userError("There was an issue loading media.");
-// }, true);
-// videoNode.addEventListener('error', function(event) { 
-// 	userError("There was an issue loading media.");
-// }, true);
 
 const xtpWebVersionNode = document.getElementById("webVersion");
 xtpWebVersionNode.innerText = webVersion;
@@ -220,6 +205,8 @@ var mediaReloadRequiredNode = document.getElementById("mediaReloadRequired");
 var metaDataSaveStateNode = document.getElementById("metaDataSaveState");
 var deviceConnectionStatusRetryButtonNodes = document.getElementsByName("deviceStatusRetryButton");
 var deviceConnectionStatusRetryButtonImageNodes = document.getElementsByName("connectionStatusIconImage");
+var devicePauseStatusIconButtonNodes = document.getElementsByName("devicePauseStatusButton");
+var devicePauseStatusIconButtonImageNodes = document.getElementsByName("devicePauseStatusIconImage");
 
 var progressNode = document.getElementById("statusOutput");
 var progressLabelNode = document.getElementById("statusOutputLabel");
@@ -237,6 +224,7 @@ var progressLabelNode = document.getElementById("statusOutputLabel");
 
 setupTextToSpeech();
 getServerSettings();
+getMediaActions();
 
 function debug(message) {
 	if (debugMode)
@@ -304,6 +292,9 @@ function sendTCode(tcode) {
 function sendTCodeRange(channelName, min, max) {
 	sendWebsocketMessage("setChannelRange", { channelName: channelName, min: min, max: max });
 }
+function sendMediaAction(action) {
+	sendWebsocketMessage("mediaAction", action);
+}
 
 function sendInputDeviceConnectionChange(device, checked) {
 	sendWebsocketMessage("connectInputDevice", { deviceName: device, enabled: checked });
@@ -332,6 +323,12 @@ function sendUpdateThumbAtPos(item) {
 function sendUpdateMoneyShotAtPos(item) {
 	var pos = videoNode.currentTime;
 	sendWebsocketMessage("setMoneyShot", { itemID: item.id, pos: pos });
+}
+function sendDeviceHome() {
+	sendMediaAction(MediaActions.TCodeHomeAll);
+}
+function togglePauseAllDeviceActions() {
+	sendMediaAction(MediaActions.TogglePauseAllDeviceActions);
 }
 function settingChange(key, value) {
 	if(settingChangeDebounce)
@@ -535,6 +532,14 @@ function wsCallBackFunction(evt) {
 				var time = parseInt(messageObj["time"]);
 				var timeType = parseInt(messageObj["timeType"]);
 				setChannelStatus(channel, position, time, timeType);
+				break;
+			case "mediaAction":
+				var mediaAction = data["message"];
+				switch(mediaAction["mediaAction"]) {
+					case MediaActions.TogglePauseAllDeviceActions:
+						setDevicePauseStatus(mediaAction["value"]);
+						break;
+				}
 				break;
 		}
 	}
@@ -751,6 +756,24 @@ function getServerSettings(retry) {
 			systemError("Error getting settings: "+ xhr.responseText);
 		else */
 		startServerConnectionRetry();
+	};
+	xhr.send();
+}
+
+function getMediaActions() {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', "/mediaActions", true);
+	xhr.responseType = 'json';
+	xhr.onload = function (evnt) {
+		var status = xhr.status;
+		if (status === 200) {
+			MediaActions = xhr.response;
+		} else {
+			systemError("Error getting media actions: "+ xhr.responseText);
+		}
+	}.bind(this);
+	xhr.onerror = function(evnt) {
+		systemError("Error getting  media action: "+ xhr.responseText);
 	};
 	xhr.send();
 }
@@ -1133,6 +1156,26 @@ function setInputConnectionStatus(deviceName, status, message) {
 
 	}
 }
+function setDevicePauseStatus(isPaused)
+{
+	for (var i = 0; i < devicePauseStatusIconButtonNodes.length; i++) {
+		var devicePauseStatusIconButtonNode = devicePauseStatusIconButtonNodes[i];
+		var devicePauseStatusIconButtonImageNode = devicePauseStatusIconButtonImageNodes[i];
+		
+		devicePauseStatusIconButtonNode.title = "Device status: " + isPaused ? "paused" : "not paused";
+		if(isPaused)
+		{
+			devicePauseStatusIconButtonNode.classList.add("icon-button-down");
+			devicePauseStatusIconButtonImageNode.setAttribute("src", "://images/icons/play.svg");
+		}
+		else
+		{
+			devicePauseStatusIconButtonNode.classList.remove("icon-button-down");
+			devicePauseStatusIconButtonImageNode.setAttribute("src", "://images/icons/pause.svg");
+		}
+	}
+}
+
 function setOutputConnectionStatus(deviceName, status, message) {
 	for (var i = 0; i < deviceConnectionStatusRetryButtonNodes.length; i++) {
 		var deviceConnectionStatusRetryButtonNode = deviceConnectionStatusRetryButtonNodes[i];
@@ -2220,7 +2263,7 @@ function playVideo(obj) {
 	if(!isVideoShown())
 		showVideo();
 	dataLoading();
-	videoSourceNode.setAttribute("src", "/media" + obj.relativePath);
+	setupVideoSource("/media" + obj.relativePath);
 	videoNode.setAttribute("title", obj.name);
 	videoMediaName.innerText = obj.name;
 	videoNode.setAttribute("poster", "/thumb/" + obj.relativeThumb);
@@ -2240,7 +2283,7 @@ function stopVideoClick() {
 function stopVideo() {
 	hideVideo();
 	videoNode.pause();
-	videoSourceNode.setAttribute("src", "");
+	removeVideoSource();
 	videoNode.removeAttribute("title");
 	videoNode.removeAttribute("poster");
 	videoMediaName.innerText = "";
@@ -2297,86 +2340,6 @@ function clearPlayingMediaItem() {
 	playingmediaItemNode.classList.remove("media-item-playing");
 	playingmediaItem = null;
 	playingmediaItemNode = null;
-}
-
-var timer1 = 0;
-var timer2 = Date.now();
-function onVideoTimeUpdate(event) {
-	if (xtpConnected && selectedInputDevice == DeviceType.XTPWeb) {
-		if (timer2 - timer1 >= 1000) {
-			timer1 = timer2;
-			sendMediaState();
-		}
-		timer2 = Date.now();
-	}
-}
-function onVideoLoading(event) {
-	debug("Data loading");
-	if(videoStallTimeout)
-		clearTimeout(videoStallTimeout);
-	dataLoading();
-	if(playingmediaItem)
-		playingmediaItem.loaded = false;
-	// SOmetimes the stall signal is sent but the loading modal is never removed.
-	videoStallTimeout = setTimeout(() => {
-		//playNextVideo();
-		dataLoaded();
-		videoStallTimeout = undefined;
-	}, 20000);
-}
-function onVideoLoad(event) {
-	debug("Data loaded");
-	debug("Duration: " + videoNode.duration)
-	if(playingmediaItem)
-		playingmediaItem.loaded = true;
-}
-function onVideoPlay(event) {
-	debug("Video play");
-	if(playingmediaItem)
-		playingmediaItem.playing = true;
-	// if(!funscriptSyncWorker && loadedFunscripts && loadedFunscripts.length > 0)
-	// 	startFunscriptSync(loadedFunscripts);
-	sendMediaState();
-}
-function onVideoPause(event) { 
-	debug("Video pause");
-	if(playingmediaItem)
-		playingmediaItem.playing = false;
-	//setTimeout(function() {
-	sendMediaState();// Sometimes a timeupdate is sent after this event fires?
-	//}, 500);
-}
-function onVideoStall(event) {
-	debug("Video stall");
-	dataLoading();
-	if(playingmediaItem)
-		playingmediaItem.playing = false;
-	sendMediaState();
-	if(videoStallTimeout)
-		clearTimeout(videoStallTimeout);
-	// SOmetimes the stall signal is sent but the loading modal is never removed.
-	videoStallTimeout = setTimeout(() => {
-		//playNextVideo();
-		dataLoaded();
-		videoStallTimeout = undefined;
-	}, 20000);
-}
-function onVideoPlaying(event) {
-	debug("Video playing");
-	if(videoStallTimeout)
-		clearTimeout(videoStallTimeout);
-	if(playingmediaItem)
-		playingmediaItem.playing = true;
-	sendMediaState();
-}
-function onVolumeChange() {
-	window.localStorage.setItem("volume", videoNode.volume);
-}
-function onVideoEnd(event) {
-	// if(funscriptSyncWorker) {
-	// 	funscriptSyncWorker.postMessage(JSON.stringify({"command": "terminate"}));
-	// }
-	playNextVideo();
 }
 
 function playNextVideoClick() {

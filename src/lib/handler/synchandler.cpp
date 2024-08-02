@@ -258,7 +258,7 @@ void SyncHandler::playStandAlone() {
                     if(currentVRPacket.duration > 0)
                         setPause(!currentVRPacket.playing);
                 }
-                if(!isPaused() && !SettingsHandler::getLiveActionPaused())
+                if(!isPaused())
                 {
                     if(_seekTime > -1)
                     {
@@ -397,7 +397,7 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
             if (timer2 - timer1 >= 1)
             {
                 timer1 = timer2;
-                if(!isPaused() && !SettingsHandler::getLiveActionPaused())
+                if(!isPaused())
                 {
                     qint64 currentTime = getMediaPosition();//_videoHandler->position();
                     // actionPosition = _funscriptHandler->getPosition(currentTime);
@@ -471,7 +471,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                     emit sendTCode("DSTOP");
                 lastStatePlaying = currentVRPacket.playing;
                 //timer.start();
-                if(!isPaused() && !SettingsHandler::getLiveActionPaused() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
+                if(!isPaused() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
                 {
                     if(videoPath.isEmpty())
                         videoPath = currentVRPacket.path;

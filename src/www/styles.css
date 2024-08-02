@@ -262,6 +262,9 @@ input:hover:not(.range-input) {
     transition: background-color 0.25s 0s cubic-bezier(0, 1, 1, 1);
     cursor: pointer;
 }
+.icon-button--group {
+    margin-right: 4px;
+}
 .icon-button-down {
     background-color: rgba(128, 140, 255, 0.596) !important;
     color: white;
@@ -910,112 +913,3 @@ section .range-values {
 }
 
 
-
-
-/* @media only screen and (-webkit-min-device-pixel-ratio: 2.75) { */
-/* @media (min-resolution: 2dppx) { */
-@media only screen and (max-width: 400px) {
-    
-    .modal-content {}
-
-    .formElement {
-        grid-template-columns: 40% 60%;
-    }
-    
-    .media-filter-input {
-        width: 50vw;
-        right: 25vw;
-    }
-    .media-tag-filter-input {
-    }
-    .tab-content-body-column-section {
-        flex-basis: 100%;
-    }
-    .formElement--inverted {  
-        grid-template-columns: 40% 60%;
-    }
-    .auth-container {
-        width: 85%;
-        margin: 0;
-    }
-    
-    .auth-body {
-
-    }
-}
-
-
-/* @media only screen and (-webkit-min-device-pixel-ratio: 2.75)
-or (min-device-width: 375px) 
-and (max-device-width: 812px)
-and (-webkit-min-device-pixel-ratio: 3)   {
-    .body {
-        font-size: xx-large;
-    }
-    .header {
-        display: flex;
-        flex-wrap: nowrap;
-        justify-content: space-between;
-        margin-top: 1rem;
-        margin-bottom: 1rem;
-        height: 164px;
-    }
-    .icon-button {
-        height: 128px;
-        width: 128px;
-    }
-    .icon-button > img {
-        width: 64px;
-        height: 64px;
-        margin-top: 3px;
-    }
-    .formElement {
-        margin-top: 16px;
-        height: 96px;
-    }
-    .formElement select, 
-    .formElement button, 
-    .formElement input:not([type='checkbox']) {
-        border-radius: 15px;
-        height: 64px;
-        font-size: xx-large;
-    }
-    
-    input[type='checkbox'] {
-        width: 60px;
-        height: 60px;
-        margin: 12px 0px;
-        border-radius: 12px;
-    }
-    input[type='checkbox']:checked {
-        font-size: 32px;
-    }
-    
-    .formElement label  {
-        height: 64px;
-        padding-top: 16px;
-        margin-right: 8px;
-        font-size: xx-large;
-    }
-    
-    .modal-content {
-        padding: 20px;
-        width: 75%;
-    }
-    
-    .modal-body {
-        margin-top: 64px;
-        margin-bottom: 64px;
-    }
-    .modal-title {
-        font-size: 64px;
-    }
-    .refresh-media-button {
-        left: calc(100vw - 164px);
-        top: calc(100vh - 304px);
-    }
-    .default-settings-button {
-        height: 64px;
-        font-size: xx-large;
-    }
-} */
