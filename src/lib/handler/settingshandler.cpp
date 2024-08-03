@@ -1001,7 +1001,7 @@ void SettingsHandler::Restart()
     emit instance()->messageSend("Restarting: "+appPath, XLogLevel::Information);
     QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
-    QProcess::startDetached(appImagePath, arguments);
+    QProcess::startDetached(appPath, arguments);
 #endif
 }
 
