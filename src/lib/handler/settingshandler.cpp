@@ -985,9 +985,24 @@ void SettingsHandler::Quit(bool restart)
 
 void SettingsHandler::Restart()
 {
+
+#if defined(Q_OS_WIN) || defined(Q_OS_MAC)
+    emit instance()->messageSend("Restarting: "+QCoreApplication::applicationFilePath(), XLogLevel::Information);
     QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
     QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments);
+#elif defined(Q_OS_LINUX)
+    QString appPath = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
+    if(appPath.isEmpty())
+    {
+        emit instance()->messageSend("AppPath is empty: "+appPath, XLogLevel::Information);
+        appPath = qApp->arguments().first();
+    }
+    emit instance()->messageSend("Restarting: "+appPath, XLogLevel::Information);
+    QStringList arguments = qApp->arguments().mid(1);
+    QCoreApplication::quit();
+    QProcess::startDetached(appImagePath, arguments);
+#endif
 }
 
 bool SettingsHandler::Import(QString file)
