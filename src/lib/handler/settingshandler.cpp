@@ -991,8 +991,10 @@ void SettingsHandler::Restart()
     QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
     QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments);
+    QString(qgetenv("APPIMAGE"));
 #elif defined(Q_OS_LINUX)
-    QString appPath = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
+    //QString appPath = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
+    QString appPath = QString(qgetenv("APPIMAGE"));
     if(appPath.isEmpty())
     {
         emit instance()->messageSend("AppPath is empty: "+appPath, XLogLevel::Information);

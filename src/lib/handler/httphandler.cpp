@@ -533,6 +533,13 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
         SettingsHandler::getSetting(map.key, root);
     }
 
+    root["APPIMAGE1"] = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
+    root["APPIMAGE2"] = QString(qgetenv("APPIMAGE"));
+    QJsonArray args;
+    foreach (auto arg, qApp->arguments()) {
+        args.append(arg);
+    }
+    root["args"] = args;
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
     data->response->compressBody();
     return HttpPromise::resolve(data);
