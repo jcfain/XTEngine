@@ -1,5 +1,5 @@
-const webVersion = "v0.463b";
-var debugMode = true;
+const webVersion = "v0.465b";
+var debugMode = false;
 
 var DeviceType = {
 	Serial: 0,
