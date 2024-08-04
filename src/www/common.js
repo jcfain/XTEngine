@@ -133,6 +133,16 @@ function getChannelColor(channel) {
 	}
 }
 
+function lerp(startValue, targetValue, timeScale) {
+	//return startValue*timeScale + targetValue*(1-timeScale);
+	return startValue + (targetValue - startValue) * timeScale;
+}
+
 function millis(lastTime = 0) {
 	return Date.now() - lastTime;
+}
+
+function round(value, precision) {
+    var multiplier = Math.pow(10, precision || 0);
+    return Math.round(value * multiplier) / multiplier;
 }

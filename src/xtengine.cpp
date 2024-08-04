@@ -102,6 +102,7 @@ void XTEngine::init()
         connect(_connectionHandler, &ConnectionHandler::connectionChange, _httpHandler, &HttpHandler::on_DeviceConnection_StateChange);
         connect(_httpHandler, &HttpHandler::settingChange, qOverload<QString, QVariant>(SettingsHandler::changeSetting));
         connect(syncHandler(), &SyncHandler::channelPositionChange, _httpHandler, &HttpHandler::channelPositionChange, Qt::QueuedConnection);
+        connect(syncHandler(), &SyncHandler::togglePaused, _httpHandler, &HttpHandler::scriptTogglePaused, Qt::QueuedConnection);
         connect(_httpHandler, &HttpHandler::mediaAction, settingsActionHandler(), &SettingsActionHandler::media_action, Qt::QueuedConnection);
         connect(settingsActionHandler(), &SettingsActionHandler::actionExecuted, httpHandler(), &HttpHandler::actionExecuted, Qt::QueuedConnection);
 

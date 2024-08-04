@@ -17,23 +17,20 @@ SyncHandler::~SyncHandler()
 
 void SyncHandler::togglePause()
 {
-    if((isLoaded() && _isMediaFunscriptPlaying) || (isLoaded() && _isStandAloneFunscriptPlaying))
+    if((isLoaded()))
     {
-        QMutexLocker locker(&_mutex);
         _isPaused = !_isPaused;
         emit togglePaused(isPaused());
     }
 }
 void SyncHandler::setPause(bool paused)
 {
-    QMutexLocker locker(&_mutex);
     _isPaused = paused;
     emit togglePaused(isPaused());
 }
 
 void SyncHandler::setStandAloneLoop(bool enabled)
 {
-    QMutexLocker locker(&_mutex);
     _standAloneLoop = enabled;
 }
 
@@ -187,8 +184,8 @@ void SyncHandler::clear()
     }
     QMutexLocker locker(&_mutex);
     _standAloneFunscriptCurrentTime = 0;
-    _standAloneLoop = false;
-    _isPaused = false;
+    setStandAloneLoop(false);
+    setPause(false);
 }
 
 void SyncHandler::reset()
@@ -227,8 +224,8 @@ void SyncHandler::playStandAlone() {
     //     load(funscript);
     QMutexLocker locker(&_mutex);
     _standAloneFunscriptCurrentTime = 0;
-    _isPaused = false;
-    _standAloneLoop = false;
+    setPause(false);
+    setStandAloneLoop(false);
     _isMediaFunscriptPlaying = true;
     _isStandAloneFunscriptPlaying = true;
     locker.unlock();
@@ -456,7 +453,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
         qint64 timer2 = 0;
         mSecTimer.start();
         QString videoPath;
-        qint64 duration;
+        qint64 duration = 0;
         qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
         bool lastStatePlaying = false;
         emit syncStart();
@@ -467,11 +464,16 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
             {
                 timer1 = timer2;
                 currentVRPacket = _inputDeviceHandler->getCurrentPacket();
-                if(lastStatePlaying && !currentVRPacket.playing)
+                if(lastStatePlaying && !currentVRPacket.playing) {
                     emit sendTCode("DSTOP");
+                }
+                if(lastStatePlaying != currentVRPacket.playing)
+                {
+                    setPause(!currentVRPacket.playing);
+                }
                 lastStatePlaying = currentVRPacket.playing;
                 //timer.start();
-                if(!isPaused() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0 && currentVRPacket.playing)
+                if(!isPaused() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0)
                 {
                     if(videoPath.isEmpty())
                         videoPath = currentVRPacket.path;

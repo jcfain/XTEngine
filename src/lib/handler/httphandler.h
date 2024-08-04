@@ -39,6 +39,7 @@ signals:
     void skipToMoneyShot();
     void skipToNextAction();
     void channelPositionChange(QString channel, int position, int time, ChannelTimeType timeType);
+    void scriptTogglePaused(bool paused);
 
 public slots:
     void on_DeviceConnection_StateChange(ConnectionChangedSignal status);

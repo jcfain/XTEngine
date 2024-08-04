@@ -1,5 +1,5 @@
 const webVersion = "v0.463b";
-var debugMode = false;
+var debugMode = true;
 
 var DeviceType = {
 	Serial: 0,
@@ -540,6 +540,11 @@ function wsCallBackFunction(evt) {
 						setDevicePauseStatus(mediaAction["value"]);
 						break;
 				}
+				break;
+			case "scriptTogglePaused":
+				var messageObj = data["message"];
+				var isPaused = messageObj["isPaused"];
+				setPauseScriptStatus(isPaused);
 				break;
 		}
 	}

@@ -141,6 +141,13 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _webSocketHandler->sendCommand("channelPositionChange", obj);
     });
 
+    connect(this, &HttpHandler::scriptTogglePaused, this, [this](bool paused){
+        QJsonObject obj;
+        obj["isPaused"] = paused;
+        _webSocketHandler->sendCommand("scriptTogglePaused", obj);
+    });
+
+
 
     connect(this, &HttpHandler::actionExecuted, this, [this](QString action, QString spokenText, QVariant value){
         QJsonObject obj;
