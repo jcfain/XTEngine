@@ -540,8 +540,8 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
         SettingsHandler::getSetting(map.key, root);
     }
 
-    root["APPIMAGE1"] = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
-    root["APPIMAGE2"] = QString(qgetenv("APPIMAGE"));
+    // root["APPIMAGE1"] = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
+    // root["APPIMAGE2"] = QString(qgetenv("APPIMAGE"));
     QJsonArray args;
     foreach (auto arg, qApp->arguments()) {
         args.append(arg);
