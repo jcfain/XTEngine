@@ -19,9 +19,21 @@ enum class ScriptContainerType {
 };
 
 struct ScriptInfo {
+    ///
+    /// \brief name User friendly name
+    ///
     QString name;
+    ///
+    /// \brief filename Base file name without the path no extension
+    ///
     QString filename;
+    ///
+    /// \brief path Full path to file
+    ///
     QString path;
+    ///
+    /// \brief track Mfs track is exists. Empty otherwise
+    ///
     QString track;
     ScriptType type;
     ScriptContainerType containerType;

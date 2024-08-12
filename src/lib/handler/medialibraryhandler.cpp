@@ -156,6 +156,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
         }
     }
 
+    QStringList funscriptsWithMedia;
     foreach (QString path, paths) {
         auto itr = std::find_if(paths.begin(), paths.end(), [path](const QString& item) {
             return path.startsWith(item) && path.length() > item.length();
@@ -167,7 +168,6 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 
         QDirIterator library(path, mediaTypes, QDir::Files, QDirIterator::Subdirectories);
 
-        QStringList funscriptsWithMedia;
 
         while (library.hasNext())
         {
@@ -249,13 +249,16 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             onLibraryItemFound(item);
             //emit libraryItemFound(item);
         }
+    }
 
-        if(!vrMode)
+    if(!vrMode)
+    {
+        foreach (QString path, paths)
         {
             emit libraryLoadingStatus("Searching for lone funscripts...");
             QStringList funscriptTypes = QStringList()
-                    << "*.funscript"
-                    << "*.zip";
+                                         << "*.funscript"
+                                         << "*.zip";
             QDirIterator funscripts(path, funscriptTypes, QDir::Files, QDirIterator::Subdirectories);
             while (funscripts.hasNext())
             {
@@ -268,29 +271,53 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 QFileInfo fileinfo(funscripts.next());
                 QString fileName = fileinfo.fileName();
                 QString fileNameTemp = fileinfo.fileName();
+                int fileNameExtIndex = fileName.lastIndexOf('.');
+                QString fileNameMfsExtension = fileinfo.completeBaseName();
+                QString fileNameNoExtension = XFileUtil::getNameNoExtension(fileName);// fileNameExtIndex > -1 ? fileNameTemp.remove(fileNameExtIndex, fileNameTemp.length() -  1) : fileNameTemp;
+                QString mediaExtension = "*." + (fileNameExtIndex > -1 ? fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameExtIndex)) : "");
+
                 QString scriptPath = fileinfo.filePath();
-                QString scriptPathTemp = fileinfo.filePath();
-                int scriptPathExtIndex = scriptPathTemp.lastIndexOf('.');
-                QString scriptNoExtension = scriptPathExtIndex > -1 ? scriptPathTemp.remove(scriptPathExtIndex, scriptPathTemp.length() - 1) : scriptPathTemp;
-                QString scriptNoExtensionTemp = QString(scriptNoExtension);
+                if(fileName == "I'M DISGUSTING! - belle delphine (ft. my dad) hard.funscript") {
+                    LogHandler::Debug("");
+                }
+                //QString scriptPathTemp = fileinfo.filePath();
+                //int scriptPathExtIndex = scriptPathTemp.lastIndexOf('.');
+                QString pathNoExtension = fileinfo.absolutePath() + XFileUtil::getSeperator(scriptPath) + fileNameNoExtension;//scriptPathExtIndex > -1 ? scriptPathTemp.remove(scriptPathExtIndex, scriptPathTemp.length() - 1) : scriptPathTemp;
+                //QString filenameNoMfsExtension = QString(fileNameNoExtension);
                 if(funscriptsWithMedia.contains(scriptPath, Qt::CaseSensitivity::CaseInsensitive))
                     continue;
-                int scriptNoExtensionIndex = scriptNoExtensionTemp.lastIndexOf('.');
+                int scriptNoExtensionIndex = fileNameMfsExtension.lastIndexOf('.');
+                bool isMfs = false;
                 if(scriptNoExtensionIndex > -1)
                 {
-                    QString scriptMFSExt = scriptNoExtensionTemp.remove(0, scriptNoExtensionTemp.length() - (scriptNoExtensionTemp.length() - scriptNoExtensionIndex));
-                    bool isMfs = false;
+                    //pathNoExtension.remove(scriptNoExtensionIndex, pathNoExtension.length() - 1);
+                    //QString scriptMFSExt = pathNoExtension.remove(0, pathNoExtension.length() - (pathNoExtension.length() - scriptNoExtensionIndex));
                     foreach(auto axisName, TCodeChannelLookup::getChannels())
                     {
                         auto track = TCodeChannelLookup::getChannel(axisName);
-                        if("."+track->TrackName == scriptMFSExt)
+                        if(track->Dimension != ChannelDimension::Heave &&
+                            track->Type != ChannelType::HalfOscillate &&
+                            track->Type != ChannelType::None &&
+                            fileNameNoExtension.endsWith(track->TrackName, Qt::CaseInsensitive))
                         {
                             isMfs = true;
                             break;
                         }
                     }
                     if(isMfs)
-                        continue;
+                        fileNameNoExtension = XFileUtil::getNameNoExtension(fileNameNoExtension);
+                }
+                LibraryListItem27* otherMedia = findItemByNameNoExtension(fileNameNoExtension);
+                if(otherMedia)
+                {
+                    LogHandler::Debug("Script belongs to other media item: "+fileNameNoExtension);
+                    continue;
+                }
+                otherMedia = findItemByAltScript(fileNameNoExtension);
+                if(otherMedia)
+                {
+                    LogHandler::Debug("Script belongs to other media item alt script: "+fileName);
+                    continue;
                 }
 
                 QString fileDir = fileinfo.dir().path();
@@ -307,11 +334,6 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 {
                     zipFile = scriptPath;
                 }
-                fileNameTemp = fileinfo.fileName();
-                int fileNameExtIndex = fileNameTemp.lastIndexOf('.');
-                QString fileNameNoExtension = fileNameExtIndex > -1 ? fileNameTemp.remove(fileNameExtIndex, fileNameTemp.length() -  1) : fileNameTemp;
-                fileNameTemp = fileinfo.fileName();
-                QString mediaExtension = "*" + (fileNameExtIndex > -1 ? fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameExtIndex)) : "");
 
 
                 LibraryListItem27 item;
@@ -320,7 +342,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 item.name = fileName; // name
                 item.nameNoExtension = fileNameNoExtension; //nameNoExtension
                 item.script = scriptPath; // script
-                item.pathNoExtension = scriptNoExtension;
+                item.pathNoExtension = pathNoExtension;
                 item.hasScript = true;
                 item.mediaExtension = mediaExtension;
                 item.zipFile = zipFile;
@@ -328,7 +350,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 item.duration = 0;
                 item.thumbState = ThumbState::Waiting;
                 item.libraryPath = path;
-                item.metadata.isMFS = false;
+                item.metadata.isMFS = isMfs;
                 setLiveProperties(item);
                 onLibraryItemFound(item);
                 //emit libraryItemFound(item);
@@ -1400,7 +1422,7 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
     QString location = fileInfo.path();
     QDirIterator scripts(location, QStringList() << "*.funscript" << "*.zip", QDir::Files);
 
-    QString fileName = fileInfo.baseName();
+    QString fileName = XFileUtil::getNameNoExtension(path);
     auto channels = TCodeChannelLookup::getChannels();
     ScriptContainerType containerType = ScriptContainerType::BASE;
     LogHandler::Debug("Searching for alternative scripts for: "+ fileName);
@@ -1410,18 +1432,18 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
         QString filepath = scripts.next();
         QFileInfo scriptInfo(filepath);
         QString trackname = "";
+        auto baseName = XFileUtil::getNameNoExtension(filepath);
         if(filepath.endsWith(".zip")) {
             containerType = ScriptContainerType::ZIP;
         }
         if(filepath == item.script || filepath == item.zipFile)
         {
             LogHandler::Debug("Is default script");
-            funscriptsWithMedia.push_front({"Default", scriptInfo.baseName(), filepath, trackname, ScriptType::MAIN, containerType });
+            funscriptsWithMedia.push_front({"Default", baseName, filepath, trackname, ScriptType::MAIN, containerType });
             continue;
         }
         //Is alternate script?
-        auto baseName = scriptInfo.baseName();
-        if(baseName.startsWith(fileName)) {
+        if(baseName.startsWith(fileName, Qt::CaseInsensitive)) {
             LogHandler::Debug("Found possible alt script: " + baseName);
             // Ignore mfs files
             LibraryListItem27* otherMedia = findItemByNameNoExtension(baseName);
@@ -1442,18 +1464,23 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
                     break;
                 }
             }
-            if(containerType == ScriptContainerType::MFS) {
+            if(containerType == ScriptContainerType::MFS)
+                baseName = XFileUtil::getNameNoExtension(baseName);
+            if(containerType == ScriptContainerType::MFS && !baseName.compare(fileName, Qt::CaseInsensitive)) {
+                // bool hasTrack = std::find_if(funscriptsWithMedia.begin(), funscriptsWithMedia.end(), [trackname](const ScriptInfo& value) {
+                //     return value.track == trackname;
+                // }) != funscriptsWithMedia.end();
                 LogHandler::Debug("MFS script found: " +trackname);
-                funscriptsWithMedia.append({trackname, scriptInfo.baseName(), filepath, trackname, ScriptType::MAIN, containerType });
-            } else if(scriptInfo.baseName() != fileName) {
-                auto name = scriptInfo.baseName().replace(fileName, "").trimmed();
+                funscriptsWithMedia.append({fileName, baseName, filepath, trackname, ScriptType::MAIN, containerType });
+            } else if(baseName.compare(fileName, Qt::CaseInsensitive)) {
+                auto name = QString(baseName).replace(fileName, "").trimmed();
                 LogHandler::Debug("Alt script found: " +name);
                 item.metadata.hasAlternate = true;
-                funscriptsWithMedia.append({name, scriptInfo.baseName(), filepath, trackname, ScriptType::ALTERNATE, containerType });
+                funscriptsWithMedia.append({name, baseName, filepath, trackname, ScriptType::ALTERNATE, containerType });
             }
             // else {
             //     LogHandler::Debug("Is default script");
-            //     funscriptsWithMedia.push_front({"Default", scriptInfo.baseName(), filepath, trackname, ScriptType::MAIN, containerType });
+            //     funscriptsWithMedia.push_front({"Default", baseName, filepath, trackname, ScriptType::MAIN, containerType });
             // }
         }
     }
@@ -1589,7 +1616,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByNameNoExtension(QString nameNo
 
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [nameNoExtension](const LibraryListItem27& item) {
-        return item.nameNoExtension == nameNoExtension;
+        return !item.nameNoExtension.compare(nameNoExtension, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1602,7 +1629,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByName(QString name) {
 //    }
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [name](const LibraryListItem27& item) {
-        return item.name == name;
+        return !item.name.compare(name, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1615,7 +1642,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByMediaPath(QString mediaPath) {
 //    }
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [mediaPath](const LibraryListItem27& item) {
-        return item.path == mediaPath;
+        return !item.path.compare(mediaPath, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1631,7 +1658,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByPartialMediaPath(QString parti
 //    }
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [partialMediaPath](const LibraryListItem27& item) {
-        return item.path.startsWith(partialMediaPath) || item.path.endsWith(partialMediaPath);
+        return item.path.startsWith(partialMediaPath, Qt::CaseInsensitive) || item.path.endsWith(partialMediaPath, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1642,7 +1669,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByThumbPath(QString thumbPath) {
 
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [thumbPath](const LibraryListItem27& item) {
-        return item.thumbFile == thumbPath;
+        return !item.thumbFile.compare(thumbPath, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1655,7 +1682,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByPartialThumbPath(QString parti
 //    }
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [partialThumbPath](const LibraryListItem27& item) {
-        return item.thumbFile.startsWith(partialThumbPath) || item.thumbFile.endsWith(partialThumbPath);
+        return item.thumbFile.startsWith(partialThumbPath, Qt::CaseInsensitive) || item.thumbFile.endsWith(partialThumbPath, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1667,7 +1694,7 @@ LibraryListItem27 *MediaLibraryHandler::findItemBySubtitle(QString subtitle)
 {
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [subtitle](const LibraryListItem27& item) {
-        return item.metadata.subtitle == subtitle;
+        return !item.metadata.subtitle.compare(subtitle, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1678,7 +1705,35 @@ LibraryListItem27 *MediaLibraryHandler::findItemByPartialSubtitle(QString partia
 {
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [partialSubtitle](const LibraryListItem27& item) {
-        return item.metadata.subtitle.startsWith(partialSubtitle) || item.metadata.subtitle.endsWith(partialSubtitle);
+        return item.metadata.subtitle.startsWith(partialSubtitle, Qt::CaseInsensitive) || item.metadata.subtitle.endsWith(partialSubtitle, Qt::CaseInsensitive);
+    });
+    if(itr != _cachedLibraryItems.end())
+        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
+    return 0;
+}
+
+LibraryListItem27 *MediaLibraryHandler::findItemByAltScript(QString value)
+{
+    const QMutexLocker locker(&_mutex);
+    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [value](const LibraryListItem27& item) {
+            auto itr2 = std::find_if(item.metadata.scripts.begin(), item.metadata.scripts.end(), [value](const ScriptInfo& script) {
+                return script.type == ScriptType::ALTERNATE && !script.filename.compare(value, Qt::CaseInsensitive);
+            });
+        return itr2 != item.metadata.scripts.end();
+    });
+    if(itr != _cachedLibraryItems.end())
+        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
+    return 0;
+}
+
+LibraryListItem27 *MediaLibraryHandler::findItemByPartialAltScript(QString value)
+{
+    const QMutexLocker locker(&_mutex);
+    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [value](const LibraryListItem27& item) {
+        auto itr2 = std::find_if(item.metadata.scripts.begin(), item.metadata.scripts.end(), [value](const ScriptInfo& item) {
+            return item.type == ScriptType::ALTERNATE && (item.filename.startsWith(value, Qt::CaseInsensitive) || item.filename.endsWith(value, Qt::CaseInsensitive));
+        });
+        return itr2 != item.metadata.scripts.end();
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];

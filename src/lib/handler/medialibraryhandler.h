@@ -81,6 +81,8 @@ public:
     LibraryListItem27* findItemByPartialThumbPath(QString partialThumbPath);
     LibraryListItem27* findItemBySubtitle(QString subtitle);
     LibraryListItem27* findItemByPartialSubtitle(QString partialSubtitle);
+    LibraryListItem27 *findItemByAltScript(QString value);
+    LibraryListItem27 *findItemByPartialAltScript(QString value);
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
     void cleanGlobalThumbDirectory();
