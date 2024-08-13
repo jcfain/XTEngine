@@ -45,7 +45,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::cleanupThumbs, this, &HttpHandler::cleanupThumbs);
     connect(_webSocketHandler, &WebSocketHandler::reloadLibrary, _mediaLibraryHandler, &MediaLibraryHandler::loadLibraryAsync);
     connect(_webSocketHandler, &WebSocketHandler::startMetadataProcess, this, [this]() {
-        if(!_mediaLibraryHandler->isLibraryLoading() &&
+        if(!_mediaLibraryHandler->isLibraryProcessing() &&
             !_mediaLibraryHandler->metadataProcessing() &&
             !_mediaLibraryHandler->thumbProcessRunning())
         {
@@ -53,7 +53,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         }
     });
     connect(_webSocketHandler, &WebSocketHandler::cleanupMetadata, this, [this]() {
-        if(!_mediaLibraryHandler->isLibraryLoading() &&
+        if(!_mediaLibraryHandler->isLibraryProcessing() &&
             !_mediaLibraryHandler->metadataProcessing() &&
             !_mediaLibraryHandler->thumbProcessRunning())
         {
@@ -97,7 +97,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemUpdated, this, [this](int index, QVector<int> roles) {
-        if(_mediaLibraryHandler->isLibraryLoading())
+        if(_mediaLibraryHandler->isLibraryProcessing())
             return;
         auto item = _mediaLibraryHandler->getLibraryCache().value(index);
 
@@ -112,7 +112,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _webSocketHandler->sendUpdateItem(itemJson, roleslist);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemAdded, this, [this](int index, int newSize) {
-        if(_mediaLibraryHandler->isLibraryLoading())
+        if(_mediaLibraryHandler->isLibraryProcessing())
             return;
         auto item = _mediaLibraryHandler->getLibraryCache().value(index);
         QJsonDocument doc(createMediaObject(item, m_hostAddress));

@@ -100,7 +100,6 @@ private:
     bool _isVRFunscriptPlaying = false;
     bool _isStandAloneFunscriptPlaying = false;
     bool _isPaused = false;
-    bool m_isSwapping = false;
     bool _standAloneLoop;
     bool _isOtherMediaPlaying = false;
     qint64 _standAloneFunscriptCurrentTime = 0;
@@ -117,7 +116,7 @@ private:
     QString _lastSearchedMediaPath;
 
     SyncLoadState load(const LibraryListItem27 &libraryItem, bool reset);
-    SyncLoadState load(QString funscript);
+    SyncLoadState load(const QString& funscript);
     //bool load(QByteArray funscript);
     bool loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadState &loadState);
     FunscriptHandler* createFunscriptHandler(QString channel, QString funscript);

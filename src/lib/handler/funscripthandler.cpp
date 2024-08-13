@@ -249,19 +249,29 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(qint64 millis)
         if(!funscript)
             return nullptr;
         int pos = funscript->actions.value(executionMillis);
-        if(_modifier != 1)
+        if(lastActionIndex > -1 && _modifier != 1)
         {
             //int ogPos = pos;
-            int distance = qRound((pos - lastActionPos) / 2.0);
-            pos = qRound(pos + (distance * (_modifier-1)));
+            double distance = pos - lastActionPos;
+            double amplitude = distance / 2.0;
+            if(_modifier > 1)
+                pos = qRound(pos + (amplitude * _modifier) - amplitude);
+            else if(_modifier > 0)
+                pos = qRound(pos - (amplitude * _modifier) - amplitude);
+            else
+                pos = abs(amplitude);
             pos = XMath::constrain(pos, 0, 100);
-            //LogHandler::Debug("Modified pos: "+QString::number(pos) +" from: "+QString::number(ogPos) +" modifier: "+QString::number(_modifier) +" last pos: "+QString::number(lastActionPos) +" distance: "+QString::number(distance) );
+            // LogHandler::Debug("Modified pos: "+QString::number(pos));
+            // LogHandler::Debug("from: "+QString::number(ogPos));
+            // LogHandler::Debug("modifier: "+QString::number(_modifier));
+            // LogHandler::Debug("last pos: "+QString::number(lastActionPos));
+            // LogHandler::Debug("distance: "+QString::number(distance));
         }
-        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { _channel, executionMillis, pos, interval, lastActionPos, lastActionSpeed });
+        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { _channel, executionMillis, pos, interval, lastActionPos, lastActionInterval });
         //LogHandler::Debug("nextAction.speed: "+ QString::number(nextAction->speed));
         lastActionIndex = nextActionIndex;
         lastActionPos = funscript->actions.value(executionMillis);
-        lastActionSpeed = interval;
+        lastActionInterval = interval;
         return nextAction;
     }
     return nullptr;

@@ -53,8 +53,11 @@ public:
     void startThumbProcess(bool vrMode = false);
     void stopThumbProcess();
     void loadLibraryAsync();
+    bool isLibraryProcessing();
     bool isLoadingMediaPaths();
-    bool isLibraryLoading();
+    bool isThumbProcessRunning();
+    bool isMetadataProcessing();
+    bool isThumbCleanupRunning();
     void stopLibraryLoading();
     LibraryListItem27 setupPlaylistItem(QString name);
     LibraryListItem27 setupTempExternalItem(QString mediapath, QString scriptPath = nullptr, quint64 duration = 0);

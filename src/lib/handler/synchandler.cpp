@@ -17,16 +17,16 @@ SyncHandler::~SyncHandler()
 
 void SyncHandler::togglePause()
 {
-    if((isLoaded()))
-    {
-        _isPaused = !_isPaused;
-        emit togglePaused(isPaused());
-    }
+    setPause(!_isPaused);
 }
 void SyncHandler::setPause(bool paused)
 {
     _isPaused = paused;
     emit togglePaused(isPaused());
+}
+bool SyncHandler::isPaused()
+{
+    return _isPaused;
 }
 
 void SyncHandler::setStandAloneLoop(bool enabled)
@@ -34,10 +34,6 @@ void SyncHandler::setStandAloneLoop(bool enabled)
     _standAloneLoop = enabled;
 }
 
-bool SyncHandler::isPaused()
-{
-    return _isPaused || m_isSwapping;
-}
 bool SyncHandler::isPlaying()
 {
     return _isVRFunscriptPlaying || _isMediaFunscriptPlaying || _isStandAloneFunscriptPlaying;
@@ -71,6 +67,12 @@ FunscriptHandler *SyncHandler::getFunscriptHandler(QString channel)
     return it != _funscriptHandlers.end() ? it.i->t() : 0;
 }
 
+SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem)
+{
+    LogHandler::Debug("Enter syncHandler load");
+    return load(libraryItem, true);
+}
+
 SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem, bool reset)
 {
     if(reset)
@@ -90,13 +92,7 @@ SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem, bool reset
     return loadState;
 }
 
-SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem)
-{
-    LogHandler::Debug("Enter syncHandler load");
-    return load(libraryItem, true);
-}
-
-SyncLoadState SyncHandler::load(QString funscript) {
+SyncLoadState SyncHandler::load(const QString& funscript) {
     LibraryListItem27 item;
     buildScriptItem(item, funscript);
     return load(item);
@@ -105,12 +101,12 @@ SyncLoadState SyncHandler::load(QString funscript) {
 SyncLoadState SyncHandler::swap(const LibraryListItem27 &libraryItem, const ScriptInfo &script)
 {
     LogHandler::Debug("Enter syncHandler swap");
-    m_isSwapping = true;
+    setPause(true);
     LibraryListItem27 swappedScriptItem;
     swappedScriptItem.copyProperties(libraryItem);
     buildScriptItem(swappedScriptItem, script.path);
     auto loadState = load(swappedScriptItem, false);
-    m_isSwapping = false;
+    setPause(false);
     return loadState;
 }
 
@@ -250,11 +246,11 @@ void SyncHandler::playStandAlone() {
             if (timer2 - timer1 >= 1)
             {
                 timer1 = timer2;
-                if (_inputDeviceHandler && _inputDeviceHandler->isConnected()) {
-                    auto currentVRPacket = _inputDeviceHandler->getCurrentPacket();
-                    if(currentVRPacket.duration > 0)
-                        setPause(!currentVRPacket.playing);
-                }
+                // if (_inputDeviceHandler && _inputDeviceHandler->isConnected()) {
+                //     auto currentVRPacket = _inputDeviceHandler->getCurrentPacket();
+                //     if(currentVRPacket.duration > 0)
+                //         setPause(!currentVRPacket.playing);
+                // }
                 if(!isPaused())
                 {
                     if(_seekTime > -1)

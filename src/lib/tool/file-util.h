@@ -10,7 +10,7 @@
 class XFileUtil
 {
 public:
-    static QStringList getFunscriptPaths(QString videoPath, QStringList extensions, QString path)
+    static QStringList getFunscriptPaths(const QString &videoPath, const QStringList &extensions, const QString& path)
     {
         QStringList funscripts;
         QString tempName = getNameNoExtension(videoPath);
@@ -27,7 +27,7 @@ public:
         return funscriptPaths;
     }
 
-    static QString getNameNoExtension(QString file)
+    static QString getNameNoExtension(const QString& file)
     {
         QFileInfo fileInfo(file);
         QString tempName = fileInfo.fileName();
@@ -35,13 +35,13 @@ public:
         return indexOfSuffix > 0 ? tempName.remove(indexOfSuffix, tempName.length()) : tempName;
     }
 
-    static QString getPathNoExtension(QString file)
+    static QString getPathNoExtension(const QString& file)
     {
         int indexOfSuffix = file.lastIndexOf(".");
-        return indexOfSuffix > 0 ? file.remove(indexOfSuffix, file.length()) : file;
+        return indexOfSuffix > 0 ? QString(file).remove(indexOfSuffix, file.length()) : file;
     }
 
-    static QString searchForFileRecursive(QString videoPath, QStringList extensions, QString pathToSearch, const bool &cancel)
+    static QString searchForFileRecursive(const QString& videoPath, const QStringList &extensions, const QString& pathToSearch, const bool &cancel)
     {
         QString funscriptPath;
         LogHandler::Debug("searchForFileRecursive: Search ALL sub directories of: "+pathToSearch);
@@ -69,7 +69,7 @@ public:
         }
         return funscriptPath;
     }
-    static QString getSeperator(QString ref)
+    static QString getSeperator(const QString& ref)
     {
         return ref.contains("/") ? "/" : "\\";
     }

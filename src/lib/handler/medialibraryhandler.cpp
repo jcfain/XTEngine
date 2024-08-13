@@ -22,18 +22,32 @@ MediaLibraryHandler::~MediaLibraryHandler()
     stopAllSubProcesses();
 }
 
+bool MediaLibraryHandler::isLibraryProcessing()
+{
+    return isLoadingMediaPaths() ||
+           isThumbProcessRunning() ||
+           isMetadataProcessing() ||
+           isThumbCleanupRunning();
+}
 
 bool MediaLibraryHandler::isLoadingMediaPaths()
 {
     return _loadingLibraryFuture.isRunning();
 }
 
-bool MediaLibraryHandler::isLibraryLoading()
+bool MediaLibraryHandler::isThumbProcessRunning()
 {
-    return _loadingLibraryFuture.isRunning() ||
-           _thumbProcessIsRunning ||
-           _metadataFuture.isRunning() ||
-           m_thumbCleanupFuture.isRunning();
+    return _thumbProcessIsRunning;
+}
+
+bool MediaLibraryHandler::isMetadataProcessing()
+{
+    return _metadataFuture.isRunning();
+}
+
+bool MediaLibraryHandler::isThumbCleanupRunning()
+{
+    return m_thumbCleanupFuture.isRunning();
 }
 
 bool MediaLibraryHandler::isLibraryItemVideo(LibraryListItem27 item) {
@@ -63,7 +77,7 @@ void MediaLibraryHandler::onPrepareLibraryLoad()
 
 void MediaLibraryHandler::loadLibraryAsync()
 {
-    if(isLibraryLoading()) {
+    if(isLibraryProcessing()) {
         LogHandler::Warn("loadLibraryAsync called when process already running");
         return;
     }
@@ -253,9 +267,9 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 
     if(!vrMode)
     {
+        emit libraryLoadingStatus("Searching for lone funscripts...");
         foreach (QString path, paths)
         {
-            emit libraryLoadingStatus("Searching for lone funscripts...");
             QStringList funscriptTypes = QStringList()
                                          << "*.funscript"
                                          << "*.zip";
@@ -1035,7 +1049,7 @@ void MediaLibraryHandler::addItemFront(LibraryListItem27 item) {
     _cachedLibraryItems.push_front(item);
     _mutex.unlock();
     auto index = 0;
-    if(!isLibraryLoading()) {
+    if(!isLibraryProcessing()) {
         emit itemAdded(index, _cachedLibraryItems.count());
         //emit libraryChange();
     }
@@ -1045,7 +1059,7 @@ void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
     _cachedLibraryItems.push_back(item);
     auto index = _cachedLibraryItems.count() - 1;
     _mutex.unlock();
-    if(!isLibraryLoading()) {
+    if(!isLibraryProcessing()) {
         emit itemAdded(index, _cachedLibraryItems.count());
         //emit libraryChange();
     }
@@ -1308,9 +1322,12 @@ bool MediaLibraryHandler::discoverMFS(LibraryListItem27 &item) {
 }
 
 void MediaLibraryHandler::cleanGlobalThumbDirectory() {
-
+    if(isThumbCleanupRunning())
+        return;
     m_thumbCleanupFuture = QtConcurrent::run([this]() {
-        if(thumbProcessRunning() || isLibraryLoading())
+        if(isLoadingMediaPaths() ||
+            isThumbProcessRunning() ||
+            isMetadataProcessing())
         {
             emit cleanUpThumbsFailed();
             return;
@@ -1433,7 +1450,7 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
         QFileInfo scriptInfo(filepath);
         QString trackname = "";
         auto baseName = XFileUtil::getNameNoExtension(filepath);
-        if(filepath.endsWith(".zip")) {
+        if(filepath.endsWith(".zip", Qt::CaseInsensitive)) {
             containerType = ScriptContainerType::ZIP;
         }
         if(filepath == item.script || filepath == item.zipFile)
