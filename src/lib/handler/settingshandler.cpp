@@ -1,5 +1,7 @@
 #include "settingshandler.h"
 
+#include "../tool/file-util.h"
+
 
 const QString SettingsHandler::XTEVersion = "0.465b";
 const float SettingsHandler::XTEVersionNum = 0.465f;
@@ -1701,23 +1703,40 @@ QStringList SettingsHandler::getSelectedLibrary()
     return selectedLibrary;
 }
 
-QString  SettingsHandler::getLastSelectedLibrary() {
-    QString path;
-    if(!selectedLibrary.isEmpty())
-        path = selectedLibrary.last();
-    if(path.isEmpty()) {
-        selectedLibrary.removeAll("");
-        path = QCoreApplication::applicationDirPath();
-    }
-    return path;
+bool SettingsHandler::hasAnyLibrary(const QString &value, QStringList& messages)
+{
+    isLibraryParentChildOrEqual(value, messages);
+    isVRLibraryParentChildOrEqual(value, messages);
+    isLibraryExclusionChildOrEqual(value, messages);
+    return !messages.isEmpty();
 }
-void SettingsHandler::addSelectedLibrary(QString value)
+
+bool SettingsHandler::isLibraryParentChildOrEqual(const QString& value, QStringList& messages)
+{
+    return XFileUtil::isDirParentChildOrEqual(selectedLibrary, value, "main media library", messages);
+}
+
+bool SettingsHandler::isLibraryChildOrEqual(const QString &value, QStringList &messages)
+{
+    return XFileUtil::isDirChildOrEqual(selectedLibrary, value, "main media library", messages);
+}
+
+QString  SettingsHandler::getLastSelectedLibrary() {
+    selectedLibrary.removeAll("");
+    if(!selectedLibrary.isEmpty())
+        return selectedLibrary.last();
+    return QCoreApplication::applicationDirPath();
+}
+bool SettingsHandler::addSelectedLibrary(QString value, QStringList &messages)
 {
     QMutexLocker locker(&mutex);
+    if(hasAnyLibrary(value, messages))
+        return false;
     if(!value.isEmpty() && !selectedLibrary.contains(value))
         selectedLibrary << value;
     selectedLibrary.removeDuplicates();
     settingsChangedEvent(true);
+    return true;
 }
 void SettingsHandler::removeSelectedLibrary(QString value)
 {
@@ -1730,27 +1749,87 @@ QStringList SettingsHandler::getVRLibrary()
 {
     return _vrLibrary;
 }
-QString SettingsHandler::getLastSelectedVRLibrary() {
-    QString path;
-    if(!_vrLibrary.isEmpty())
-        path = _vrLibrary.last();
-    if(path.isEmpty()) {
-        _vrLibrary.removeAll("");
-    }
-    return path;
+
+bool SettingsHandler::isVRLibraryParentChildOrEqual(const QString& value, QStringList& messages)
+{
+    return XFileUtil::isDirParentChildOrEqual(_vrLibrary, value, "vr library", messages);
 }
-void SettingsHandler::addSelectedVRLibrary(QString value)
+
+bool SettingsHandler::isVRLibraryChildOrEqual(const QString &value, QStringList &messages)
+{
+    return XFileUtil::isDirChildOrEqual(_vrLibrary, value, "vr library", messages);
+}
+QString SettingsHandler::getLastSelectedVRLibrary() {
+    _vrLibrary.removeAll("");
+    if(!selectedLibrary.isEmpty())
+        return selectedLibrary.last();
+    return QCoreApplication::applicationDirPath();
+}
+bool SettingsHandler::addSelectedVRLibrary(QString value, QStringList &messages)
 {
     QMutexLocker locker(&mutex);
+    if(hasAnyLibrary(value, messages))
+        return false;
     _vrLibrary.clear();
     if(!value.isEmpty())
         _vrLibrary << value;
     settingsChangedEvent(true);
+    return true;
 }
 void SettingsHandler::removeSelectedVRLibrary(QString value)
 {
     QMutexLocker locker(&mutex);
-    _vrLibrary.removeOne(value);
+    _vrLibrary.clear();
+    //_vrLibrary.removeOne(value);
+    settingsChangedEvent(true);
+}
+
+QStringList SettingsHandler::getLibraryExclusions()
+{
+    return _libraryExclusions;
+}
+
+bool SettingsHandler::isLibraryExclusionChildOrEqual(const QString &value, QStringList &messages)
+{
+    return XFileUtil::isDirChildOrEqual(_libraryExclusions, value, "library exclusions", messages);
+}
+bool SettingsHandler::addToLibraryExclusions(QString value, QStringList& errors)
+{
+    bool hasDuplicate = false;
+    bool isChild = false;
+    if(XFileUtil::isDirParentChildOrEqual(_libraryExclusions, value, "library exclusions", errors))
+        hasDuplicate = true;
+    foreach (auto originalPath, getSelectedLibrary()) {
+        if(originalPath==value) {
+            errors << "Directory '"+value+"' is already in the main library list!";
+            hasDuplicate = true;
+        } else if(value.startsWith(originalPath)) {
+            isChild = true;
+        }
+    }
+    foreach (auto originalPath, getVRLibrary()) {
+        if(originalPath==value) {
+            errors << "Directory '"+value+"' is in the vr library list!";
+            hasDuplicate = true;
+        } else if(value.startsWith(originalPath)) {
+            isChild = true;
+        }
+    }
+    if(!isChild) {
+        errors << "Directory '"+value+"' is NOT a child of any of the select libraries!";
+        return false;
+    }
+    if(hasDuplicate) {
+        return false;
+    }
+    _libraryExclusions.append(value);
+    settingsChangedEvent(true);
+    return true;
+}
+void SettingsHandler::removeFromLibraryExclusions(QList<int> indexes)
+{
+    foreach(auto index, indexes)
+        _libraryExclusions.removeAt(index);
     settingsChangedEvent(true);
 }
 
@@ -2635,22 +2714,6 @@ void SettingsHandler::setSelectedVideoRenderer(XVideoRenderer value)
 XVideoRenderer SettingsHandler::getSelectedVideoRenderer()
 {
     return _selectedVideoRenderer;
-}
-
-void SettingsHandler::addToLibraryExclusions(QString values)
-{
-    _libraryExclusions.append(values);
-    settingsChangedEvent(true);
-}
-void SettingsHandler::removeFromLibraryExclusions(QList<int> indexes)
-{
-    foreach(auto index, indexes)
-        _libraryExclusions.removeAt(index);
-    settingsChangedEvent(true);
-}
-QStringList SettingsHandler::getLibraryExclusions()
-{
-    return _libraryExclusions;
 }
 
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::getPlaylists()

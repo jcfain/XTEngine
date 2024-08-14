@@ -73,13 +73,22 @@ public:
     static QString getDeoDnlaFunscript(QString key);
     static QHash<QString, QVariant> getDeoDnlaFunscripts();
     static QStringList getSelectedLibrary();
+    static bool hasAnyLibrary(const QString& value, QStringList& messages);
+    static bool isLibraryParentChildOrEqual(const QString& value, QStringList& messages);
+    static bool isLibraryChildOrEqual(const QString& value, QStringList& messages);
     static QString getLastSelectedLibrary();
-    static void addSelectedLibrary(QString value);
+    static bool addSelectedLibrary(QString value, QStringList &messages);
     static void removeSelectedLibrary(QString value);
     static QStringList getVRLibrary();
+    static bool isVRLibraryParentChildOrEqual(const QString& value, QStringList& messages);
+    static bool isVRLibraryChildOrEqual(const QString& value, QStringList& messages);
     static QString getLastSelectedVRLibrary();
-    static void addSelectedVRLibrary(QString value);
+    static bool addSelectedVRLibrary(QString value, QStringList &messages);
     static void removeSelectedVRLibrary(QString value);
+    static QStringList getLibraryExclusions();
+    static bool isLibraryExclusionChildOrEqual(const QString& value, QStringList& messages);
+    static bool addToLibraryExclusions(QString values, QStringList& errors);
+    static void removeFromLibraryExclusions(QList<int> indexes);
     static QString getSelectedThumbsDir();
     static void setSelectedThumbsDir(QString thumbDir);
     static void setSelectedThumbsDirDefault();
@@ -234,10 +243,6 @@ public:
     static QList<DecoderModel> getDecoderPriority();
     static void setSelectedVideoRenderer(XVideoRenderer value);
     static XVideoRenderer getSelectedVideoRenderer();
-
-    static void addToLibraryExclusions(QString values);
-    static void removeFromLibraryExclusions(QList<int> indexes);
-    static QStringList getLibraryExclusions();
 
     static QMap<QString, QList<LibraryListItem27>> getPlaylists();
     static void setPlaylists(QMap<QString, QList<LibraryListItem27>> value);

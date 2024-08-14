@@ -73,6 +73,38 @@ public:
     {
         return ref.contains("/") ? "/" : "\\";
     }
+    static bool isDirParentChildOrEqual(const QStringList &originalValues, const QString &newValue, const QString &name, QStringList &messages) {
+        foreach (auto originalPath, originalValues) {
+            if(originalPath==newValue) {
+                messages << "Directory '"+newValue+"' is already in the "+name+" list!";
+            } else if(originalPath.startsWith(newValue)) {
+                messages << "Directory '"+newValue+"'\nis a parent of\n'"+originalPath+"' in "+name;
+            } else if(newValue.startsWith(originalPath)) {
+                messages << "Directory '"+newValue+"'\nis a child of\n'"+originalPath+"' in "+name;
+            }
+        }
+        return !messages.isEmpty();
+    }
+    static bool isDirParentOrEqual(const QStringList &originalValues, const QString &newValue, const QString &name, QStringList &messages) {
+        foreach (auto originalPath, originalValues) {
+            if(originalPath==newValue) {
+                messages << "Directory '"+newValue+"' is already in the "+name+" list!";
+            } else if(originalPath.startsWith(newValue)) {
+                messages << "Directory '"+newValue+"'\nis a parent of\n'"+originalPath+"' in "+name;
+            }
+        }
+        return !messages.isEmpty();
+    }
+    static bool isDirChildOrEqual(const QStringList &originalValues, const QString &newValue, const QString &name, QStringList &messages) {
+        foreach (auto originalPath, originalValues) {
+            if(originalPath==newValue) {
+                messages << "Directory '"+newValue+"' is already in the "+name+" list!";
+            } else if(newValue.startsWith(originalPath)) {
+                messages << "Directory '"+newValue+"'\nis a child of\n'"+originalPath+"' in "+name;
+            }
+        }
+        return !messages.isEmpty();
+    }
 };
 
 #endif // FILEUTIL_H
