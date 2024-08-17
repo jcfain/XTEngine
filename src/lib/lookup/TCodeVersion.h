@@ -4,7 +4,8 @@
 #include <QDataStream>
 enum TCodeVersion {
     v2,
-    v3
+    v3,
+    v4
 };
 
 // QString operator+(const TCodeVersion& v) {

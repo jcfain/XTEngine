@@ -155,7 +155,7 @@ void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
     }
     else if (outputDevice == DeviceName::Network)
     {
-        if(SettingsHandler::getSelectedNetworkDevice() == NetworkDeviceType::WEBSOCKET) {
+        if(SettingsHandler::getSelectedNetworkDevice() == NetworkProtocol::WEBSOCKET) {
            _networkDevice = _webSocketHandler;
         } else {
            _networkDevice = _udpHandler;

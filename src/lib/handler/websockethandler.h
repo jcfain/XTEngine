@@ -48,6 +48,7 @@ public:
     void sendUpdateThumb(QString id, QString thumb, QString error = nullptr);
     void sendUpdateItem(QString itemJson, QString rolesList, QString error = nullptr);
     void sendAddItem(QString itemJson, QString error = nullptr);
+    void sendScriptPaused(bool isPaused);
 
 
 private:
@@ -56,6 +57,7 @@ private:
     ConnectionChangedSignal _outputDeviceStatus = {DeviceType::Output, DeviceName::Serial, ConnectionStatus::Disconnected, "Disconnected"};
     ConnectionChangedSignal _inputDeviceStatus = {DeviceType::Input, DeviceName::None, ConnectionStatus::Disconnected, "Disconnected"};
     ConnectionChangedSignal _gamepadStatus = {DeviceType::Input, DeviceName::Gamepad, ConnectionStatus::Disconnected, "Disconnected"};
+    bool scriptPaused = false;
 
     void closed();
     void onNewConnection();

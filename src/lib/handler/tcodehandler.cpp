@@ -17,7 +17,7 @@ TCodeHandler::~TCodeHandler() {
 
 QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAction>> actions)
 {
-    if(actions.isEmpty() || SettingsHandler::getLiveActionPaused())
+    if(actions.isEmpty())
         return nullptr;
     QMutexLocker locker(&mutex);
     auto axisKeys = TCodeChannelLookup::getChannels();

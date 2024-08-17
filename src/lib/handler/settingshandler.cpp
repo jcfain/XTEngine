@@ -3,8 +3,8 @@
 #include "../tool/file-util.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.465b";
-const float SettingsHandler::XTEVersionNum = 0.465f;
+const QString SettingsHandler::XTEVersion = "0.467b";
+const float SettingsHandler::XTEVersionNum = 0.467f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -448,7 +448,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _useMediaDirForThumbs = settingsToLoadFrom->value("useMediaDirForThumbs").toBool();
     _hideWelcomeScreen = settingsToLoadFrom->value("hideWelcomeScreen").toBool();
     _selectedOutputDevice = settingsToLoadFrom->value("selectedDevice").toInt();
-    _selectedNetworkDeviceType = (NetworkDeviceType)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
+    _selectedNetworkDeviceType = (NetworkProtocol)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
     playerVolume = settingsToLoadFrom->value("playerVolume").toInt();
     offSet = settingsToLoadFrom->value("offSet").toInt();
     _disableTCodeValidation = settingsToLoadFrom->value("disableSerialTCodeValidation").toBool();
@@ -1894,10 +1894,10 @@ void SettingsHandler::setSelectedInputDevice(DeviceName deviceName)
     _xtpWebSyncEnabled = deviceName == DeviceName::XTPWeb;
 }
 
-void SettingsHandler::setSelectedNetworkDevice(NetworkDeviceType value) {
+void SettingsHandler::setSelectedNetworkDevice(NetworkProtocol value) {
     _selectedNetworkDeviceType = value;
 }
-NetworkDeviceType SettingsHandler::getSelectedNetworkDevice() {
+NetworkProtocol SettingsHandler::getSelectedNetworkDevice() {
     return _selectedNetworkDeviceType;
 }
 
@@ -2229,14 +2229,6 @@ void SettingsHandler::setLiveGamepadConnected(bool value)
 bool SettingsHandler::getLiveGamepadConnected()
 {
     return _liveGamepadConnected;
-}
-void SettingsHandler::setLiveActionPaused(bool value)
-{
-    _liveActionPaused = value;
-}
-bool SettingsHandler::getLiveActionPaused()
-{
-    return _liveActionPaused;
 }
 void SettingsHandler::setXRangeStep(int value)
 {
@@ -3132,7 +3124,7 @@ QStringList SettingsHandler::selectedLibrary;
 QString SettingsHandler::_selectedThumbsDir;
 bool SettingsHandler::_useMediaDirForThumbs;
 int SettingsHandler::_selectedOutputDevice;
-NetworkDeviceType SettingsHandler::_selectedNetworkDeviceType;
+NetworkProtocol SettingsHandler::_selectedNetworkDeviceType;
 int SettingsHandler::_librarySortMode;
 int SettingsHandler::playerVolume;
 int SettingsHandler::offSet;
@@ -3158,7 +3150,6 @@ int SettingsHandler::_gamepadSpeed;
 int SettingsHandler::_gamepadSpeedStep;
 int SettingsHandler::_liveGamepadSpeed;
 bool SettingsHandler::_liveGamepadConnected;
-bool SettingsHandler::_liveActionPaused;
 int SettingsHandler::_liveOffset;
 bool SettingsHandler::m_smartOffsetEnabled = false;
 int SettingsHandler::m_smartOffset = 0;

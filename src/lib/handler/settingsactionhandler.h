@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QVariant>
 #include "lib/lookup/MediaActions.h"
+#include "synchandler.h"
 
 #include "XTEngine_global.h"
 /**
@@ -22,9 +23,10 @@ public slots:
     void media_action(QString action);
 
 public:
-    explicit SettingsActionHandler(QObject *parent = nullptr);
+    explicit SettingsActionHandler(SyncHandler* syncHandler, QObject *parent = nullptr);
 
 private:
+    SyncHandler* m_syncHandler;
     MediaActions actions;
 
 };

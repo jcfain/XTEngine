@@ -4,10 +4,10 @@
 #include "settingshandler.h"
 #include "funscripthandler.h"
 
-SettingsActionHandler::SettingsActionHandler(QObject *parent)
+SettingsActionHandler::SettingsActionHandler(SyncHandler* syncHandler, QObject *parent)
     : QObject{parent}
 {
-
+    m_syncHandler = syncHandler;
 }
 
 void SettingsActionHandler::media_action(QString action)
@@ -211,10 +211,9 @@ void SettingsActionHandler::media_action(QString action)
     }
     else if(action == actions.TogglePauseAllDeviceActions)
     {
-        bool paused = SettingsHandler::getLiveActionPaused();
+        bool paused = m_syncHandler->isPaused();
         emit actionExecuted(action, paused ? "Resume action" : "Pause action", !paused);
-        SettingsHandler::setLiveActionPaused(!paused);
-        emit tcode_action("DSTOP");// TODO: figure out a better way to do this.
+        m_syncHandler->setPause(!paused);
     }
     else if(action == actions.ToggleSkipToMoneyShotPlaysFunscript) {
         auto enabled = !SettingsHandler::getSkipToMoneyShotPlaysFunscript();

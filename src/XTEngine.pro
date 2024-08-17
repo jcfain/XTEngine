@@ -102,6 +102,7 @@ HEADERS += \
     lib/struct/LibraryListItemMetaData.h \
     lib/struct/LibraryListItemMetaData258.h \
     lib/struct/NetworkAddress.h \
+    lib/struct/NetworkDeviceInfo.h \
     lib/struct/OutputDevicePacket.h \
     lib/struct/ScriptInfo.h \
     lib/struct/SerialComboboxItem.h \

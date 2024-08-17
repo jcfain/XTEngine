@@ -115,6 +115,7 @@ void WebSocketHandler::onNewConnection()
 
     m_clients << pSocket;
     initNewClient(pSocket);
+
     emit newWebSocketConnected(pSocket);
 }
 
@@ -123,6 +124,7 @@ void WebSocketHandler::initNewClient(QWebSocket* client)
     sendDeviceConnectionStatus(_inputDeviceStatus);
     sendDeviceConnectionStatus(_gamepadStatus);
     sendDeviceConnectionStatus(_outputDeviceStatus);
+    sendScriptPaused(scriptPaused);
 }
 
 void WebSocketHandler::processTextMessage(QString message)
@@ -256,4 +258,12 @@ void WebSocketHandler::sendAddItem(QString itemJson, QString error)
     else
         messageJson = "{ \"item\": "+itemJson+", \"errorMessage\": \""+error+"\"}";
     sendCommand("addItem", messageJson);
+}
+
+void WebSocketHandler::sendScriptPaused(bool isPaused)
+{
+    QJsonObject obj;
+    obj["isPaused"] = isPaused;
+    scriptPaused = isPaused;
+    sendCommand("scriptTogglePaused", obj);
 }

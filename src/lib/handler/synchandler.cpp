@@ -22,7 +22,10 @@ void SyncHandler::togglePause()
 void SyncHandler::setPause(bool paused)
 {
     _isPaused = paused;
-    emit togglePaused(isPaused());
+    if(paused) {
+        emit sendTCode("DSTOP");
+    }
+    emit togglePaused(_isPaused);
 }
 bool SyncHandler::isPaused()
 {

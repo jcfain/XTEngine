@@ -41,7 +41,8 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     SettingsHandler::Load();
     _tcodeFactory = new TCodeFactory(0.0, 1.0, this);
     _tcodeHandler = new TCodeHandler(this);
-    _settingsActionHandler = new SettingsActionHandler(this);
+    _syncHandler = new SyncHandler(this);
+    _settingsActionHandler = new SettingsActionHandler(_syncHandler, this);
     connect(_settingsActionHandler, &SettingsActionHandler::actionExecuted, this, [this](QString action, QString actionExecuted) {
         if (action == actions.SkipToMoneyShot)
         {
@@ -62,7 +63,6 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     //     emit stopAllMedia();
     // });
     _connectionHandler = new ConnectionHandler(this);
-    _syncHandler = new SyncHandler(this);
     m_heatmap = new HeatMap(this);
     connect(m_heatmap, &HeatMap::maxHeat, this, [](qint64 maxHeatAt) {
         if(maxHeatAt > 0) {

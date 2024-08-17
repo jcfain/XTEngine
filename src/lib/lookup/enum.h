@@ -17,7 +17,7 @@ enum DeviceName
     None
 };
 
-enum class NetworkDeviceType {
+enum class NetworkProtocol {
     UDP,
     WEBSOCKET
 };

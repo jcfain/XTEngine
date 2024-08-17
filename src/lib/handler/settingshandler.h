@@ -31,6 +31,7 @@
 #include "../struct/LibraryListItemMetaData258.h"
 #include "lib/lookup/TCodeCommand.h"
 #include "../lookup/xtags.h"
+#include "../struct/NetworkDeviceInfo.h"
 
 class XTENGINE_EXPORT SettingsHandler: public QObject
 {
@@ -99,8 +100,8 @@ public:
     static void setSelectedOutputDevice(DeviceName deviceName);
     static DeviceName getSelectedInputDevice();
     static void setSelectedInputDevice(DeviceName deviceName);
-    static void setSelectedNetworkDevice(NetworkDeviceType value);
-    static NetworkDeviceType getSelectedNetworkDevice();
+    static void setSelectedNetworkDevice(NetworkProtocol value);
+    static NetworkProtocol getSelectedNetworkDevice();
     static QStringList getCustomTCodeCommands();
     static void addCustomTCodeCommand(QString command);
     static void removeCustomTCodeCommand(QString command);
@@ -231,8 +232,6 @@ public:
     static void setLiveMultiplierEnabled(bool value);
     static bool getLiveGamepadConnected();
     static void setLiveGamepadConnected(bool value);
-    static bool getLiveActionPaused();
-    static void setLiveActionPaused(bool value);
     static int getLiveOffSet();
     static void setLiveOffset(int value);
     static bool isSmartOffSet();
@@ -463,7 +462,7 @@ private:
     static bool _useMediaDirForThumbs;
     static QString selectedFile;
     static int _selectedOutputDevice;
-    static NetworkDeviceType _selectedNetworkDeviceType;
+    static NetworkProtocol _selectedNetworkDeviceType;
     static QString serialPort;
     static QString serverAddress;
     static QString serverPort;
@@ -494,7 +493,6 @@ private:
     static int _gamepadSpeedStep;
     static int _liveGamepadSpeed;
     static bool _liveGamepadConnected;
-    static bool _liveActionPaused;
     static int _liveOffset;
     static bool m_smartOffsetEnabled;
     static int m_smartOffset;

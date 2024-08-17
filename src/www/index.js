@@ -1,4 +1,4 @@
-const webVersion = "v0.465b";
+const webVersion = "v0.466b";
 var debugMode = false;
 
 var DeviceType = {
@@ -535,16 +535,17 @@ function wsCallBackFunction(evt) {
 				break;
 			case "mediaAction":
 				var mediaAction = data["message"];
-				switch(mediaAction["mediaAction"]) {
-					case MediaActions.TogglePauseAllDeviceActions:
-						setDevicePauseStatus(mediaAction["value"]);
-						break;
-				}
+				// switch(mediaAction["mediaAction"]) {
+				// 	case MediaActions.TogglePauseAllDeviceActions: // For not pause device update is handled through the syncHandler in the case "scriptTogglePaused"
+				// 		setPauseScriptStatus(mediaAction["value"]);
+				// 		setDevicePauseStatus(mediaAction["value"]);
+				// 		break;
+				// }
 				break;
 			case "scriptTogglePaused":
 				var messageObj = data["message"];
-				var isPaused = messageObj["isPaused"];
-				setPauseScriptStatus(isPaused);
+				setPauseScriptStatus(messageObj.isPaused);
+				setDevicePauseStatus(messageObj.isPaused);
 				break;
 		}
 	}

@@ -3,7 +3,8 @@
 
 const QMap<TCodeVersion, QString> TCodeChannelLookup::SupportedTCodeVersions = {
     {TCodeVersion::v2, "TCode v0.2"},
-    {TCodeVersion::v3, "TCode v0.3"}
+    {TCodeVersion::v3, "TCode v0.3"},
+    {TCodeVersion::v4, "TCode v0.4"}
 };
 
 TCodeChannelLookup::~TCodeChannelLookup() {
