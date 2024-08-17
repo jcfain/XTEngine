@@ -46,7 +46,7 @@ void UdpHandler::init(NetworkAddress address, int waitTimeout)
         }
         LogHandler::Debug("IP resolved: "+m_hostAddress.toString());
     }
-    //m_udpSocket->connectToHost(m_hostAddress, address.port);
+
     tryConnectDevice(waitTimeout);
 
 }
@@ -68,13 +68,9 @@ void UdpHandler::onReadyRead()
     while (m_udpSocket->waitForReadyRead(100))
     {
         QNetworkDatagram datagram = m_udpSocket->receiveDatagram();
-        auto senderAddress = datagram.senderAddress();
-        auto it = std::find_if(m_connectedHosts.begin(), m_connectedHosts.end(),
-                                [senderAddress](const QHostAddress &address) {
-                                   return senderAddress.toIPv4Address() == address.toIPv4Address();
-                                });
-        if(it == m_connectedHosts.end())
-            m_connectedHosts.append(senderAddress);
+        // auto senderAddress = datagram.senderAddress();
+        // if(!hasAddress(senderAddress))
+        //     m_connectedHosts.append(senderAddress);
         if(datagram.isValid()) {
             recieved += QString::fromUtf8(datagram.data());
         } else {
@@ -87,6 +83,8 @@ void UdpHandler::onReadyRead()
 
 void UdpHandler::onConnected()
 {
+    if(!hasAddress(m_hostAddress))
+        m_connectedHosts.append(m_hostAddress);
     if(!SettingsHandler::getDisableHeartBeat())
     {
         sendHeartbeat();
@@ -98,31 +96,42 @@ void UdpHandler::sendHeartbeat()
 {
     if(!SettingsHandler::getDisableHeartBeat())
     {
-        LogHandler::Debug("UDP heart beat check");
-        int replyTimeInMS = 0;
-        QList<QHostAddress> hostsToremove;
-        foreach (QHostAddress address, m_connectedHosts) {
-            if (XNetwork::ping(address, replyTimeInMS)) {
-                LogHandler::Debug("UDP address detected!");
-                int roundTrip = replyTimeInMS * 2;
-                if(SettingsHandler::isSmartOffSet())
-                    LogHandler::Debug("Adjusting live offset by: "+QString::number(roundTrip) + "ms");
-                SettingsHandler::setSmartOffset(roundTrip);
-            } else {
-                LogHandler::Debug("UDP heart beat check failed!");
-                hostsToremove.append(address);
+        QtConcurrent::run([this]() {
+            LogHandler::Debug("UDP heart beat check");
+            int replyTimeInMS = 0;
+            QList<QHostAddress> hostsToremove;
+            foreach (QHostAddress address, m_connectedHosts) {
+                if (XNetwork::ping(address, replyTimeInMS)) {
+                    LogHandler::Debug("UDP address detected!");
+                    int roundTrip = replyTimeInMS * 2;
+                    if(SettingsHandler::isSmartOffSet())
+                        LogHandler::Debug("Adjusting live offset by: "+QString::number(roundTrip) + "ms");
+                    SettingsHandler::setSmartOffset(roundTrip);
+                } else {
+                    LogHandler::Debug("UDP heart beat check failed!");
+                    hostsToremove.append(address);
+                }
             }
-        }
-        foreach (QHostAddress address, hostsToremove) {
-            m_connectedHosts.removeAll(address);
-        }
-        if(m_connectedHosts.empty())
-        {
-            dispose();
-            emit connectionChange({DeviceType::Output, m_deviceName, ConnectionStatus::Disconnected, "Disconnected"});
-            return;
-        }
+            foreach (QHostAddress address, hostsToremove) {
+                m_connectedHosts.removeAll(address);
+            }
+            if(m_connectedHosts.empty())
+            {
+                dispose();
+                emit connectionChange({DeviceType::Output, m_deviceName, ConnectionStatus::Disconnected, "Disconnected"});
+                return;
+            }
+        });
     }
+}
+
+bool UdpHandler::hasAddress(const QHostAddress &addressIn)
+{
+    auto it = std::find_if(m_connectedHosts.begin(), m_connectedHosts.end(),
+                           [addressIn](const QHostAddress &address) {
+                               return addressIn == address;
+                           });
+    return it != m_connectedHosts.end();
 }
 
 void UdpHandler::dispose()

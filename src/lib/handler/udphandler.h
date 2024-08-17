@@ -30,6 +30,7 @@ private:
     void readData();
     void onSocketStateChange (QAbstractSocket::SocketState state);
     void sendHeartbeat();
+    bool hasAddress(const QHostAddress &address);
 
     QUdpSocket* m_udpSocket = 0;
     NetworkAddress _address;
