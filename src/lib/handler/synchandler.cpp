@@ -466,13 +466,9 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                 if(lastStatePlaying && !currentVRPacket.playing) {
                     emit sendTCode("DSTOP");
                 }
-                if(lastStatePlaying != currentVRPacket.playing)
-                {
-                    setPause(!currentVRPacket.playing);
-                }
                 lastStatePlaying = currentVRPacket.playing;
                 //timer.start();
-                if(!isPaused() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0)
+                if(currentVRPacket.playing && !isPaused() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0)
                 {
                     if(videoPath.isEmpty())
                         videoPath = currentVRPacket.path;

@@ -1171,12 +1171,12 @@ function setDevicePauseStatus(isPaused)
 		devicePauseStatusIconButtonNode.title = "Device status: " + isPaused ? "paused" : "not paused";
 		if(isPaused)
 		{
-			devicePauseStatusIconButtonNode.classList.add("icon-button-down");
+			devicePauseStatusIconButtonNode.classList.add("video-control--device-state-paused");
 			devicePauseStatusIconButtonImageNode.setAttribute("src", "://images/icons/play.svg");
 		}
 		else
 		{
-			devicePauseStatusIconButtonNode.classList.remove("icon-button-down");
+			devicePauseStatusIconButtonNode.classList.remove("video-control--device-state-paused");
 			devicePauseStatusIconButtonImageNode.setAttribute("src", "://images/icons/pause.svg");
 		}
 	}

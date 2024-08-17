@@ -28,12 +28,12 @@
 					onclick="tcodeDeviceConnectRetry()">
 					<img name="connectionStatusIconImage" class="buttonImage" src="://images/icons/reload.svg" />
 				</button>
-				<button  title="TCode device pause toggle" name="devicePauseStatusButton" class="icon-button icon-button--group" onclick="togglePauseAllDeviceActions()">
+				<!-- <button  title="TCode device pause toggle" name="devicePauseStatusButton" class="icon-button icon-button--group" onclick="togglePauseAllDeviceActions()">
 					<img name="devicePauseStatusIconImage" class="buttonImage" src="://images/icons/pause.svg" />
 				</button>
 				<button  title="Send TCode home" name="deviceHomeButton" class="icon-button icon-button--group" onclick="sendDeviceHome()">
 					<img name="deviceHomeButtonImage" class="buttonImage" src="://images/icons/home.svg" />
-				</button>
+				</button> -->
 				
 			</div>
 		</div>
@@ -111,20 +111,23 @@
 						<button data-title="Skip to moneyshot (c)" class="video-control video-control--money-shot" id="money-shot">
 							<img class="player-button-png" src="://images/icons/skipToMoneyShot.svg"></img>
 						</button>
+						<button  data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control--device-state" onclick="togglePauseAllDeviceActions()">
+							<img class="player-button-png" name="devicePauseStatusIconImage" src="://images/icons/pause.svg" />
+						</button>
 					</div>
 					<div class="middle-controls">
-						<button data-title="Previous video (arrow left)" class="video-control" id="play-previous">
+						<button data-title="Previous video (arrow left)" class="video-control video-control-main" id="play-previous">
 							<svg class="player-button-png" >
 								<use href="#play-previous-icon"></use>
 							</svg>
 						</button>
-						<button data-title="Play (k)" class="video-control" id="play">
+						<button data-title="Play (k)" class="video-control video-control-main" id="play">
 							<svg class="playback-icons player-button-png">
 								<use id="playIcon" href="#play-icon"></use>
 								<use id="pauseIcon" class="hidden" href="#pause"></use>
 							</svg>
 						</button>
-						<button data-title="Next video (arrow right)" class="video-control" id="play-next">
+						<button data-title="Next video (arrow right)" class="video-control video-control-main" id="play-next">
 							<svg class="player-button-png">
 								<use href="#play-next-icon"></use>
 							</svg>
@@ -133,7 +136,7 @@
 					<div class="right-controls">
 						<div class="volume-controls">
 							<input data-title="Up (+) - Down (-)" class="volume" id="volume" value="1" data-mute="0.5" type="range" max="1" min="0" step="0.01" />
-							<button data-title="Mute (m)" class="volume-button video-control" id="volume-button">
+							<button data-title="Mute (m)" class="volume-button video-control video-control-main" id="volume-button">
 								<svg class="player-button-png">
 									<use class="hidden" href="#volume-mute"></use>
 									<use class="hidden" href="#volume-low"></use>
@@ -146,7 +149,7 @@
 								<use href="#pip"></use>
 							</svg>
 						</button> -->
-						<button data-title="Full screen (f)" class="fullscreen-button video-control"
+						<button data-title="Full screen (f)" class="fullscreen-button video-control video-control-main"
 							id="fullscreen-button">
 							<svg class="player-button-png">
 								<use href="#fullscreen"></use>

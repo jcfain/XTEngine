@@ -221,7 +221,6 @@ progress::-webkit-progress-value {
     padding: 2px;
     border: none;
     outline: none;
-    background-color: transparent;
 }
 
 .video-container button * {
@@ -273,6 +272,9 @@ button.video-control {
     height: 100%;
     width: 100%;
 }
+button.video-control-main {
+    background-color: transparent;
+}
 
 .player-button-png {
     min-height: 8px;
@@ -300,7 +302,14 @@ button.video-control {
 }
 
 .video-control--money-shot {
-    background-color: deeppink !important;
+    background-color: white !important;
+}
+
+.video-control--device-state {
+    background-color: red;
+}
+.video-control--device-state-paused {
+    background-color: green;
 }
 
 
