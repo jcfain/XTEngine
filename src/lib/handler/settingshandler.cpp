@@ -1969,7 +1969,7 @@ void SettingsHandler::setLiveOffset(int value)
 {
     QMutexLocker locker(&mutex);
     _liveOffset = value;
-    settingsChangedEvent(true);
+    //settingsChangedEvent(true);
 }
 
 bool SettingsHandler::isSmartOffSet()
