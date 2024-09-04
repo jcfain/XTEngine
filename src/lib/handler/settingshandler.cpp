@@ -3,8 +3,8 @@
 #include "../tool/file-util.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.467b";
-const float SettingsHandler::XTEVersionNum = 0.467f;
+const QString SettingsHandler::XTEVersion = "0.468b";
+const float SettingsHandler::XTEVersionNum = 0.468f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
