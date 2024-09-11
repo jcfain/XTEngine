@@ -548,8 +548,9 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
             LogHandler::Debug("Force item: "+QString::number(item.forceProcessMetadata));
             LogHandler::Debug("New item: "+QString::number(!hasExistingMetadata));
         }
-        item.metadata.libraryItemPath = item.path;
-        item.metadata.key = item.nameNoExtension;
+        // item.metadata.libraryItemPath = item.path;
+        // item.metadata.key = item.nameNoExtension;
+        item.metadata.defaultValues(item.nameNoExtension, item.path);
         metadataChanged = true;
         if(updateToolTip(item)) {
             metadataChanged = true;

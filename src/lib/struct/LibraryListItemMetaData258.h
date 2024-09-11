@@ -232,29 +232,57 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         return newItem;
     }
 
-    static void defaultValues(const QString& key, const QString& libraryMediaPath)
+    void defaultValues(const QString& keyIn, const QString& libraryMediaPathIn)
     {
         QJsonObject obj;
-        obj["key"] = key;
-        obj["libraryItemPath"] = libraryMediaPath;
-        fromJson(obj);
-        // item.nameNoExtension,
-        // item.path, // libraryItemPath
-        // false,
-        // -1, // lastPlayPosition
-        // false, // lastLoopEnabled
-        // -1, // lastLoopStart
-        // -1, // lastLoopEnd
-        // 0, // offset
-        // -1, // moneyShotMillis
-        // 1.0, //funscriptModifier
-        // "",
-        // "",
-        // false,
-        // bookmarks, // bookmarks
-        // funscripts,
-        // tags,
-        // MFSScripts
+        LibraryListItemMetaData258 newItem = fromJson(obj);
+        key = keyIn;
+        libraryItemPath = libraryMediaPathIn;
+        watched = newItem.watched;
+        lastPlayPosition = newItem.lastPlayPosition;
+        lastLoopEnabled = newItem.lastLoopEnabled;
+        lastLoopStart = newItem.lastLoopStart;
+        lastLoopEnd = newItem.lastLoopEnd;
+        offset = newItem.offset;
+        moneyShotMillis = newItem.moneyShotMillis;
+        funscriptModifier = newItem.funscriptModifier;
+        toolTip = newItem.toolTip;
+        subtitle = newItem.subtitle;
+        isMFS = newItem.isMFS;
+        hasAlternate = newItem.hasAlternate;
+        bookmarks.clear();
+        foreach(auto bookmark, newItem.bookmarks)
+        {
+            Bookmark bookMark;
+            bookMark.Name = bookMark.Name;
+            bookMark.Time = bookmark.Time;
+            bookmarks.append(bookMark);
+        }
+        funscripts.clear();
+        foreach(auto funscript, newItem.funscripts)
+        {
+            funscripts.append(funscript);
+        }
+        tags.clear();
+        foreach(auto tag, newItem.tags)
+        {
+            tags.append(tag);
+        }
+        MFSScripts.clear();
+        foreach(auto script, newItem.MFSScripts)
+        {
+            MFSScripts.append(script);
+        }
+        MFSTracks.clear();
+        foreach(auto track, newItem.MFSTracks)
+        {
+            MFSTracks.append(track);
+        }
+        scripts.clear();
+        foreach(auto track, newItem.scripts)
+        {
+            scripts.append(track);
+        }
     }
 };
 

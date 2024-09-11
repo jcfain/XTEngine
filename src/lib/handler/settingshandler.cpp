@@ -427,6 +427,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     {
         locker.unlock();
         SetMapDefaults();
+        SetSystemTagDefaults();
     }
 
     locker.relock();
