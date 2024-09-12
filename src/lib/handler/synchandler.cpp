@@ -104,12 +104,15 @@ SyncLoadState SyncHandler::load(const QString& funscript) {
 SyncLoadState SyncHandler::swap(const LibraryListItem27 &libraryItem, const ScriptInfo &script)
 {
     LogHandler::Debug("Enter syncHandler swap");
-    setPause(true);
+    bool paused = isPaused();
+    if(!paused)
+        setPause(true);
     LibraryListItem27 swappedScriptItem;
     swappedScriptItem.copyProperties(libraryItem);
     buildScriptItem(swappedScriptItem, script.path);
     auto loadState = load(swappedScriptItem, false);
-    setPause(false);
+    if(!paused)
+        setPause(false);
     return loadState;
 }
 
@@ -184,7 +187,6 @@ void SyncHandler::clear()
     QMutexLocker locker(&_mutex);
     _standAloneFunscriptCurrentTime = 0;
     setStandAloneLoop(false);
-    setPause(false);
 }
 
 void SyncHandler::reset()
@@ -223,7 +225,6 @@ void SyncHandler::playStandAlone() {
     //     load(funscript);
     QMutexLocker locker(&_mutex);
     _standAloneFunscriptCurrentTime = 0;
-    setPause(false);
     setStandAloneLoop(false);
     _isMediaFunscriptPlaying = true;
     _isStandAloneFunscriptPlaying = true;
