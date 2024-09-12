@@ -14,9 +14,13 @@ UdpHandler::UdpHandler(QObject *parent) :
     connect(this, &UdpHandler::connectionChange, this, [this](ConnectionChangedSignal signal) {
         if(signal.status == ConnectionStatus::Connected) {
             onConnected();
+        } else if(signal.status == ConnectionStatus::Disconnected) {
+            // Do NOT call dispose! it is called from OutputDeviceHandler::dispose();
+            // Infinitloop danger
         }
     });
     connect(&m_heartBeatTimer, &QTimer::timeout, this, &UdpHandler::sendHeartbeat, Qt::QueuedConnection);
+    connect(this, &UdpHandler::disposeMe, this, &UdpHandler::dispose);
 }
 UdpHandler::~UdpHandler() {}
 
@@ -117,8 +121,7 @@ void UdpHandler::sendHeartbeat()
             }
             if(m_connectedHosts.empty())
             {
-                dispose();
-                emit connectionChange({DeviceType::Output, m_deviceName, ConnectionStatus::Disconnected, "Disconnected"});
+                emit disposeMe();
                 return;
             }
         });

@@ -14,7 +14,9 @@
 class XTENGINE_EXPORT  UdpHandler : public NetworkDevice
 {
     Q_OBJECT
-
+signals:
+    // Made this signal so the hearbeat thread can dispose this object.
+    void disposeMe();
 public:
     explicit UdpHandler(QObject *parent = nullptr);
     ~UdpHandler();
