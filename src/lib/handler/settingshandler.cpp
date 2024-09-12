@@ -3,8 +3,8 @@
 #include "../tool/file-util.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.468b";
-const float SettingsHandler::XTEVersionNum = 0.468f;
+const QString SettingsHandler::XTEVersion = "0.469b";
+const float SettingsHandler::XTEVersionNum = 0.469f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -452,7 +452,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _selectedNetworkDeviceType = (NetworkProtocol)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
     playerVolume = settingsToLoadFrom->value("playerVolume").toInt();
     offSet = settingsToLoadFrom->value("offSet").toInt();
-    _disableTCodeValidation = settingsToLoadFrom->value("disableSerialTCodeValidation").toBool();
     selectedFunscriptLibrary = settingsToLoadFrom->value("selectedFunscriptLibrary").toString();
     serialPort = settingsToLoadFrom->value("serialPort").toString();
     serverAddress = settingsToLoadFrom->value("serverAddress").toString();
@@ -638,9 +637,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         }
     }
 
-
-    m_disableHeartBeat = settingsToLoadFrom->value("disableHeartBeat", false).toBool();
-
     if(!m_firstLoad)
     {
         if(currentVersion < 0.2f)
@@ -776,6 +772,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
+        if(currentVersion < 0.469f) {
+            locker.unlock();
+            bool disableHeartBeat = settingsToLoadFrom->value("disableHeartBeat", false).toBool();
+            setDisableHeartBeat(disableHeartBeat);
+            bool disableTCodeValidation = settingsToLoadFrom->value("disableSerialTCodeValidation").toBool();
+            setDisableTCodeValidation(disableTCodeValidation);
+            Save();// No need to load as these are under the new settings system.
+        }
     }
     settingsChangedEvent(false);
 }
@@ -807,7 +811,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("selectedDevice", _selectedOutputDevice);
         settingsToSaveTo->setValue("selectedNetworkDeviceType", (int)_selectedNetworkDeviceType);
         settingsToSaveTo->setValue("offSet", offSet);
-        settingsToSaveTo->setValue("disableSerialTCodeValidation", _disableTCodeValidation);
         settingsToSaveTo->setValue("selectedFunscriptLibrary", selectedFunscriptLibrary);
         settingsToSaveTo->setValue("serialPort", serialPort);
         settingsToSaveTo->setValue("serverAddress", serverAddress);
@@ -924,8 +927,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("customTCodeCommands", m_customTCodeCommands);
 
         settingsToSaveTo->setValue("viewedThreshold", m_viewedThreshold);
-
-        settingsToSaveTo->setValue("disableHeartBeat", m_disableHeartBeat);
 
         // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadEnabled, m_scheduleLibraryLoadEnabled);
         // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadTime, m_scheduleLibraryLoadTime);
@@ -1330,15 +1331,13 @@ void SettingsHandler::SetSystemTagDefaults()
 
 void SettingsHandler::setDisableHeartBeat(bool value)
 {
-    m_disableHeartBeat = value;
-    settingsChangedEvent(true);
+    changeSetting(SettingKeys::disableUDPHeartBeat, value);
 }
 
 bool SettingsHandler::getDisableHeartBeat()
 {
-    return m_disableHeartBeat;
+    return getSetting(SettingKeys::disableUDPHeartBeat).toBool();
 }
-
 
 void SettingsHandler::MigrateTo23()
 {
@@ -1990,12 +1989,11 @@ void SettingsHandler::setSmartOffset(int value)
 
 bool SettingsHandler::getDisableTCodeValidation()
 {
-    return _disableTCodeValidation;
+    return getSetting(SettingKeys::disableTCodeValidation).toBool();
 }
 void SettingsHandler::setDisableTCodeValidation(bool value)
 {
-    _disableTCodeValidation = value;
-    settingsChangedEvent(true);
+    changeSetting(SettingKeys::disableTCodeValidation, value);
 }
 
 void SettingsHandler::setAxis(QString axis, ChannelModel33 channel)
@@ -3129,7 +3127,6 @@ NetworkProtocol SettingsHandler::_selectedNetworkDeviceType;
 int SettingsHandler::_librarySortMode;
 int SettingsHandler::playerVolume;
 int SettingsHandler::offSet;
-bool SettingsHandler::_disableTCodeValidation;
 QStringList SettingsHandler::m_customTCodeCommands;
 
 int SettingsHandler::libraryView = LibraryView::Thumb;
@@ -3207,7 +3204,6 @@ QList<DecoderModel> SettingsHandler::decoderPriority;
 XVideoRenderer SettingsHandler::_selectedVideoRenderer;
 
 float SettingsHandler::m_viewedThreshold;
-bool SettingsHandler::m_disableHeartBeat;
 
 // bool SettingsHandler::m_scheduleLibraryLoadEnabled;
 // QTime SettingsHandler::m_scheduleLibraryLoadTime;

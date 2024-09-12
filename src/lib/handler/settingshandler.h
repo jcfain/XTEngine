@@ -476,7 +476,6 @@ private:
     static bool _xtpWebSyncEnabled;
     static int playerVolume;
     static int offSet;
-    static bool _disableTCodeValidation;
     static QStringList m_customTCodeCommands;
 
     static bool _gamePadEnabled;
@@ -545,7 +544,6 @@ private:
     static int _channelPulseAmount;
 
     static float m_viewedThreshold;
-    static bool m_disableHeartBeat;
 
     // static bool m_scheduleLibraryLoadEnabled;
     // static QTime m_scheduleLibraryLoadTime;

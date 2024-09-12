@@ -19,6 +19,7 @@ struct SettingMap {
 struct SettingGroups {
     static inline const QString schedule = "schedule";
     static inline const QString metadata = "metadata";
+    static inline const QString tcode = "tcode";
 };
 struct SettingKeys {
     static inline const QString scheduleLibraryLoadEnabled = "scheduleLibraryLoadEnabled";
@@ -27,6 +28,8 @@ struct SettingKeys {
     static inline const QString processMetadataOnStart = "processMetadataOnStart";
     static inline const QString scheduleSettingsSync = "scheduleSettingsSync";
     static inline const QString forceMetaDataFullProcess = "forceMetaDataFullProcess";
+    static inline const QString disableUDPHeartBeat = "disableUDPHeartBeat";
+    static inline const QString disableTCodeValidation = "disableTCodeValidation";
 
 };
 
@@ -40,27 +43,41 @@ public:
             { SettingKeys::scheduleLibraryLoadFullProcess, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadFullProcess, false} },
             { SettingKeys::scheduleSettingsSync, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleSettingsSync, true} },
             { SettingKeys::processMetadataOnStart, {SettingProfile::System, SettingGroups::metadata, SettingKeys::processMetadataOnStart, false} },
-            { SettingKeys::forceMetaDataFullProcess, {SettingProfile::System, SettingGroups::metadata, SettingKeys::forceMetaDataFullProcess, false} }
+            { SettingKeys::forceMetaDataFullProcess, {SettingProfile::System, SettingGroups::metadata, SettingKeys::forceMetaDataFullProcess, false} },
+            { SettingKeys::disableUDPHeartBeat, {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableUDPHeartBeat, false} },
+            { SettingKeys::disableTCodeValidation, {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableTCodeValidation, false} }
         },
     };
-    const static inline QHash<QString, QHash<QString, SettingMap>> SettingsGroupMap =
+    const static inline QMap<SettingProfile, QMap<QString, QMap<QString, SettingMap>>> SettingsGroupMap =
     {
         {
-            SettingGroups::schedule,
+            SettingProfile::System,
             {
-                { SettingKeys::scheduleLibraryLoadEnabled, SettingsMap[SettingKeys::scheduleLibraryLoadEnabled] },
-                { SettingKeys::scheduleLibraryLoadTime, SettingsMap[SettingKeys::scheduleLibraryLoadTime] },
-                { SettingKeys::scheduleLibraryLoadFullProcess, SettingsMap[SettingKeys::scheduleLibraryLoadFullProcess] },
-                { SettingKeys::scheduleSettingsSync, SettingsMap[SettingKeys::scheduleSettingsSync] }
+                {
+                    SettingGroups::schedule,
+                    {
+                        { SettingKeys::scheduleLibraryLoadEnabled, SettingsMap[SettingKeys::scheduleLibraryLoadEnabled] },
+                        { SettingKeys::scheduleLibraryLoadTime, SettingsMap[SettingKeys::scheduleLibraryLoadTime] },
+                        { SettingKeys::scheduleLibraryLoadFullProcess, SettingsMap[SettingKeys::scheduleLibraryLoadFullProcess] },
+                        { SettingKeys::scheduleSettingsSync, SettingsMap[SettingKeys::scheduleSettingsSync] }
+                    }
+                },
+                {
+                    SettingGroups::metadata,
+                    {
+                        { SettingKeys::processMetadataOnStart, SettingsMap[SettingKeys::processMetadataOnStart] },
+                        { SettingKeys::forceMetaDataFullProcess, SettingsMap[SettingKeys::forceMetaDataFullProcess] }
+                    }
+                },
+                {
+                    SettingGroups::tcode,
+                    {
+                        { SettingKeys::disableUDPHeartBeat, SettingsMap[SettingKeys::disableUDPHeartBeat] },
+                        { SettingKeys::disableTCodeValidation, SettingsMap[SettingKeys::disableTCodeValidation] }
+                    }
+                }
             }
-        },
-        {
-            SettingGroups::metadata,
-            {
-                { SettingKeys::processMetadataOnStart, SettingsMap[SettingKeys::processMetadataOnStart] },
-                { SettingKeys::forceMetaDataFullProcess, SettingsMap[SettingKeys::forceMetaDataFullProcess] }
-            }
-        },
+        }
     };
 };
 
