@@ -30,6 +30,7 @@ signals:
     void startMetadataProcess();
     void processMetadata(QString itemID);
     void mediaAction(QString action);
+    void clean1024();
 public:
     WebSocketHandler(QObject *parent = nullptr);
     ~WebSocketHandler();

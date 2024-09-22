@@ -94,6 +94,7 @@ public:
     void processMetadata(LibraryListItem27 &item);
     void startMetadataProcess(bool fullProcess = false);
     void startMetadataCleanProcess();
+    void startMetadata1024Cleanup();
 
 private:
     int _libraryItemIDTracker = 1;

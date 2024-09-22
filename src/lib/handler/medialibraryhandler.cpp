@@ -519,21 +519,59 @@ void MediaLibraryHandler::startMetadataCleanProcess()
                 SettingsHandler::removeLibraryListItemMetaData(key);
                 saveSettings = true;
             } else {
-                foreach (auto tag, allMetadata[key].tags) {
+                bool tagUpdated = false;
+                foreach (auto tag, item->metadata.tags) {
                     if(!allTags.contains(tag)) {
-                        allMetadata[key].tags.removeAll(tag);
+                        item->metadata.tags.removeAll(tag);
+                        tagUpdated = true;
+                        saveSettings = true;
                     }
                 }
+                if(tagUpdated)
+                    SettingsHandler::updateLibraryListItemMetaData(*item, false);
             }
             float percentage = round(((float)allMetadatakeys.indexOf(key)/allMetadatakeys.length()) * 100);
             emit backgroundProcessStateChange("Cleaning metadata", percentage);
         }
-        emit metadataProcessEnd();
-        emit backgroundProcessStateChange(nullptr, -1);
-        LogHandler::Debug("End metadata clean process");
-
         if(saveSettings)
             SettingsHandler::Save();
+        emit metadataProcessEnd();
+        emit backgroundProcessStateChange(nullptr, -1);
+
+        LogHandler::Debug("End metadata clean process");
+    });
+}
+
+void MediaLibraryHandler::startMetadata1024Cleanup()
+{
+    if(_metadataFuture.isRunning())
+        return;
+    _metadataFuture = QtConcurrent::run([this](){
+    emit backgroundProcessStateChange("Cleaning metadata 1024...", -1);
+        auto cachedLibraryItems = _cachedLibraryItems;
+        bool saveSettings = false;
+        foreach (LibraryListItem27 item, cachedLibraryItems) {
+            if(_metadataFuture.isCanceled()) {
+                LogHandler::Debug("Cancel metadata clean 1024 process");
+                emit metadataProcessEnd();
+                emit backgroundProcessStateChange(nullptr, -1);
+                return;
+            }
+            if(item.metadata.offset == 1024) {
+                saveSettings = true;
+                item.metadata.offset = 0;
+                SettingsHandler::updateLibraryListItemMetaData(item, false);
+                LogHandler::Info("Change offset 1024 for media: "+item.name);
+            }
+
+            float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
+            emit backgroundProcessStateChange("Cleaning metadata 1024", percentage);
+        }
+        if(saveSettings)
+            SettingsHandler::Save();
+        emit metadataProcessEnd();
+        emit backgroundProcessStateChange(nullptr, -1);
+        LogHandler::Debug("End metadata clean 1024 process");
     });
 }
 

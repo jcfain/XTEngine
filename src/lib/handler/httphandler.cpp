@@ -25,6 +25,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _webSocketHandler->sendCommand("tagsUpdate", obj);
     });
 
+    connect(_webSocketHandler, &WebSocketHandler::clean1024, this, &HttpHandler::clean1024);
     connect(_webSocketHandler, &WebSocketHandler::connectOutputDevice, this, &HttpHandler::connectOutputDevice);
     connect(_webSocketHandler, &WebSocketHandler::connectInputDevice, this, &HttpHandler::connectInputDevice);
     connect(_webSocketHandler, &WebSocketHandler::tcode, this, &HttpHandler::tcode);

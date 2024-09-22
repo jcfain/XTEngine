@@ -13,6 +13,7 @@ videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
 
 var controlsHideDebounce;
 var controlsVisible = false;
+var forceControlsVisible = false;
 var mouseOverVideo = false;
 var isFullScreen = false;
 var isLandScape = false;
@@ -386,8 +387,12 @@ async function togglePip() {
 	} */
 }
 
+function disableForceControlsVisible() {
+	forceControlsVisible = false;
+}
+
 function hideControlsEvent() {
-	if (videoNode.paused || 
+	if (forceControlsVisible || videoNode.paused || 
 		(isMouseOverControls && isUsingMouse) || 
 		(isTouchingControls && isUsingTouch) || 
 		(isMouseOverControls && !isMobile) || 
@@ -397,13 +402,16 @@ function hideControlsEvent() {
 	hideControls();
 }
 function hideControls() {
+	if(forceControlsVisible)
+		return;
 	for (let item of videoControls) 
 		item.classList.add('hide');
 	controlsVisible = false;
 }
 
-
-function showControls() {
+function showControls(force = false) {
+	if(typeof force == "boolean" && !forceControlsVisible)
+		forceControlsVisible = force;
     setTimeout(function () {
 		controlsVisible = true;
     }, 500);
@@ -412,7 +420,8 @@ function showControls() {
     if(controlsHideDebounce) {
         clearTimeout(controlsHideDebounce);
     }
-	hideControlsAfterTimeout();
+	if(!forceControlsVisible)
+		hideControlsAfterTimeout();
 }
 function hideControlsAfterTimeout() {
     controlsHideDebounce = setTimeout(function () {
@@ -443,7 +452,7 @@ function hideVideo() {
 	if(isFullScreen)
 		showEmbedded();
 	dataLoaded();
-	hideControls();
+	hideControls(true);
 	videoContainer.classList.remove('video-container-fixed');
 	videoNode.classList.remove("video-shown", "video-shown-embeded");
 }

@@ -270,6 +270,9 @@ function startMetadataCleanProcess() {
 function startThumbCleanupProcess() {
 	showAlertWindow("Clean thumbs", "This will go through the thumbs and remove any thumbs where the media<br>do not exist or they not have an image in the media directory.",sendCleanupThumbsProcess);
 }
+function startClean1024Process() {
+	showAlertWindow("Reset 1024", "This will go through all media items and<br>set offsets that are equal to 1024 to 0.<br><br>Continue?",sendClean1024Process);
+}
 function sendMetadataProcess() {
 	sendWebsocketMessage("startMetadataProcess");
 	closeAlertWindow();
@@ -280,6 +283,10 @@ function sendMetadataCleanProcess() {
 }
 function sendCleanupThumbsProcess() {
 	sendWebsocketMessage("cleanupThumbs");
+	closeAlertWindow();
+}
+function sendClean1024Process() {
+	sendWebsocketMessage("clean1024");
 	closeAlertWindow();
 }
 function tcodeDeviceConnectRetry() {

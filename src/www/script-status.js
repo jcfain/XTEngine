@@ -1,18 +1,40 @@
-const scriptStatusElement = document.getElementById("scriptStatus");
-const scriptStatusContainerElement = document.getElementById("scriptStatusContainer");
-const scriptStatusButton = document.getElementById("scriptStatusButton");
-const noScriptInputEmlement = document.getElementById("noScriptInput");
+const scriptStatusElement = document.getElementById("scriptStatusModal");
+const scriptStatusContainerElements = document.getElementsByName("scriptStatusContainer");
+const scriptStatusModalButton = document.getElementById("scriptStatusModalButton");
+const noScriptInputEmlements = document.getElementsByName("noScriptInput");
+
+const scriptStatusPlayerContainer = document.getElementById("scriptStatusPlayerContainer");
+const scriptStatusPlayerButton = document.getElementById("scriptStatusPlayerButton");
 
 let currentChannels = {};
 let isShown = false;
+let isModalShown = false;
+let isPlayerShown = false;
 let lerpInterval = undefined;
 let isScriptStatusPaused = false;
 
 
+function toggleScriptStatusPlayer() {
+    scriptStatusPlayerContainer.classList.toggle("hidden");
+	scriptStatusPlayerButton.classList.toggle('icon-button-down');
+    updateShown();
+    isPlayerShown = !scriptStatusPlayerContainer.classList.contains("hidden");
+    if(isPlayerShown) {
+        showControls(true);
+    } else {
+        disableForceControlsVisible();
+        hideControlsAfterTimeout();
+    }
+}
 function toggleScriptStatusModal() {
     scriptStatusElement.classList.toggle("hidden");
-	scriptStatusButton.classList.toggle('icon-button-down');
-    isShown = !scriptStatusElement.classList.contains("hidden");
+	scriptStatusModalButton.classList.toggle('icon-button-down');
+    updateShown();
+    isModalShown = !scriptStatusElement.classList.contains("hidden");
+}
+
+function updateShown() {
+    isShown = !scriptStatusElement.classList.contains("hidden") || !scriptStatusPlayerContainer.classList.contains("hidden");
 }
 
 function setPauseScriptStatus(isPaused) {
@@ -21,16 +43,27 @@ function setPauseScriptStatus(isPaused) {
 
 function setupchannel(channel) {
     if(currentChannels[channel]) {
-        currentChannels[channel].show();
+        currentChannels[channel].animations.forEach(element => {
+            element.show();
+        });;
         return;
     }
 // progress::-moz-progress-bar { background: blue; }
 // progress::-webkit-progress-value { background: blue; }
 // progress { color: blue; }
     let userChannel = remoteUserSettings.availableChannelsArray.find(x => x.channel == channel);
-    let channelAnimation = new ChannelAnimation()
-    scriptStatusContainerElement.appendChild(channelAnimation.create(userChannel));
-    currentChannels[channel] = channelAnimation;
+    currentChannels[channel] = {};
+    currentChannels[channel].animations = [];
+    for (let i = 0; i < scriptStatusContainerElements.length; i++) {
+        const element = scriptStatusContainerElements[i];
+        let channelAnimation = new ChannelAnimation()
+        element.appendChild(channelAnimation.create(userChannel));
+        currentChannels[channel].animations.push(channelAnimation);
+        
+    }
+    // let channelAnimation = new ChannelAnimation()
+    // scriptStatusContainerElement.appendChild(channelAnimation.create(userChannel));
+    // currentChannels[channel] = channelAnimation;
 }
 
 function setChannelStatus(channel, value, time, timeType) {
@@ -38,21 +71,32 @@ function setChannelStatus(channel, value, time, timeType) {
     //ChannelTimeType.Speed;
     if(!isShown)
         return;
-    if(!noScriptInputEmlement.classList.contains("hidden"))
-        noScriptInputEmlement.classList.add("hidden");
+    for (let index = 0; index < noScriptInputEmlements.length; index++) {
+        const noScriptInputEmlement = noScriptInputEmlements[index];
+        if(!noScriptInputEmlement.classList.contains("hidden"))
+            noScriptInputEmlement.classList.add("hidden");
+    }
     setupchannel(channel);
     debug(`${channel} enter setChannelStatus value: ${value} time: ${time} timeType: ${timeType}`);
-    let channelsAnimation = currentChannels[channel];
-    if(channelsAnimation.timeout)
-        clearTimeout(channelsAnimation.timeout);
 
-    channelsAnimation.setChannelStatus(value, time, timeType);
+    for (let i = 0; i < currentChannels[channel].animations.length; i++) {
+        let channelsAnimation = currentChannels[channel].animations[i];
+        if(channelsAnimation.timeout)
+            clearTimeout(channelsAnimation.timeout);
 
-    channelsAnimation.timeout = setTimeout(function() {
-        channelsAnimation.hide();
-        if(Object.keys(currentChannels).every(x => currentChannels[x].hidden))
-            noScriptInputEmlement.classList.remove("hidden");
-    }, 10000);
+        channelsAnimation.setChannelStatus(value, time, timeType);
+
+        channelsAnimation.timeout = setTimeout(function() {
+            for (let i = 0; i < currentChannels[channel].animations.length; i++) {
+                channelsAnimation.hide();
+                if(Object.keys(currentChannels).every(x => currentChannels[x].animations.every(y => y.hidden)))
+                for (let index = 0; index < noScriptInputEmlements.length; index++) {
+                    const noScriptInputEmlement = noScriptInputEmlements[index];
+                    noScriptInputEmlement.classList.remove("hidden");
+                }
+            }
+        }, 10000);
+    }
 }
 
 
@@ -133,6 +177,8 @@ class ChannelAnimation {
             this.elapsedMillis = timeStamp - this.startTime;
             let downStroke = this.startValue > this.targetValue;
             let timeScale = downStroke ? scale(this.elapsedMillis, this.targetTime, 0, 0.0, 1.0) : scale(this.elapsedMillis, 0, this.targetTime, 0.0, 1.0);
+            if(isNaN(timeScale))
+                return;
             this.progress.value = downStroke ? lerp(this.targetValue, this.startValue, timeScale) : lerp(this.startValue, this.targetValue, timeScale);
             debug(`${this.channel.channel} ${downStroke ? "DownStroke" : "UpStroke"} targetValue: ${round(this.targetValue, 2)} targetTime: ${round(this.targetTime, 2)} elapsedMillis: ${round(this.elapsedMillis, 2)} timescale: ${round(timeScale,2 )} progressValue: ${round(this.progress.value, 2)}`);
             if(this.progress.value == this.targetValue) {

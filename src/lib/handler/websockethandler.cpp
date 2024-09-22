@@ -182,6 +182,8 @@ void WebSocketHandler::processTextMessage(QString message)
     } else if(command == "mediaAction") {
         QString action = json["message"].toString();
         emit mediaAction(action);
+    } else if(command == "clean1024") {
+        emit clean1024();
     }
 
 }
