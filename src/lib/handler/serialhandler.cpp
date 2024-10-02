@@ -5,7 +5,6 @@ SerialHandler::SerialHandler(QObject *parent) :
     m_serial(new QSerialPort(parent))
 {
     qRegisterMetaType<ConnectionChangedSignal>();
-    connect(this, &SerialHandler::sendHandShake, this, &SerialHandler::onSendHandShake);
     connect(m_serial, &QSerialPort::readyRead, this, &SerialHandler::onReadyRead, Qt::QueuedConnection);
 }
 
@@ -53,13 +52,14 @@ void SerialHandler::init(const QString &portNameOrFriendlyName, int waitTimeout)
 
     LogHandler::Debug("Setting port params: ");
     m_serial->setPortName(_portName);
-    // LogHandler::Debug("NoParity");
+    // m_serial->setDataBits(QSerialPort::Data8);
+    // // LogHandler::Debug("NoParity");
     // m_serial->setParity(QSerialPort::NoParity);
-    // LogHandler::Debug("OneStop");
+    // // LogHandler::Debug("OneStop");
     // m_serial->setStopBits(QSerialPort::OneStop);
-    // LogHandler::Debug("NoFlowControl");
+    // // LogHandler::Debug("NoFlowControl");
     // m_serial->setFlowControl(QSerialPort::NoFlowControl);
-    LogHandler::Debug("Opening port");
+    // LogHandler::Debug("Opening port");
     if (!m_serial->open(QIODevice::ReadWrite))
     {
         LogHandler::Error("Error opening: "+ _portName + ", Error: "+m_serial->errorString());
@@ -74,10 +74,13 @@ void SerialHandler::init(const QString &portNameOrFriendlyName, int waitTimeout)
         return;
     }
 
-    // LogHandler::Debug("setRequestToSend");
-    // m_serial->setRequestToSend(true);
-    // LogHandler::Debug("DataTerminalReady");
-    // m_serial->setDataTerminalReady(true);
+    if(SettingsHandler::getUseDTRAndRTS())
+    {
+        LogHandler::Debug("setRequestToSend");
+         m_serial->setRequestToSend(true);
+        LogHandler::Debug("setDataTerminalReady");
+        m_serial->setDataTerminalReady(true);
+    }
 
     tryConnectDevice(waitTimeout);
 }
@@ -88,7 +91,8 @@ void SerialHandler::sendTCode(const QString &tcode)
     LogHandler::Debug("Sending TCode serial: "+ tcode);
     if(m_serial->isOpen())
     {
-        m_serial->write(tcode.toUtf8() + "\n");
+        QString tcodeOut = tcode + "\n";
+        m_serial->write(tcodeOut.toUtf8());
         m_serial->flush();
     }
 }

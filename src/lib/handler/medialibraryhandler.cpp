@@ -11,9 +11,11 @@ MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
 {
     _thumbTimeoutTimer.setSingleShot(true);
     connect(this, &MediaLibraryHandler::prepareLibraryLoad, this, &MediaLibraryHandler::onPrepareLibraryLoad);
-    connect(this, &MediaLibraryHandler::libraryLoaded, this, &MediaLibraryHandler::onLibraryLoaded);
-    connect(this, &MediaLibraryHandler::thumbProcessEnd, this, [this]() {
+    connect(this, &MediaLibraryHandler::libraryLoaded, this, [this]() {
         MediaLibraryHandler::startMetadataProcess(SettingsHandler::getForceMetaDataFullProcess() || SettingsHandler::processMetadataOnStart());
+    });
+    connect(this, &MediaLibraryHandler::metadataProcessEnd, this, [this]() {
+        MediaLibraryHandler::startThumbProcess();
     });
 }
 
@@ -247,7 +249,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             item.mediaExtension = mediaExtension;
             item.thumbFile = nullptr;
             item.zipFile = zipFile;
-            item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime().date() : fileinfo.created().date();
+            item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
             item.duration = 0;
             item.thumbState = ThumbState::Waiting;
             item.metadata.isMFS = false;
@@ -360,7 +362,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 item.hasScript = true;
                 item.mediaExtension = mediaExtension;
                 item.zipFile = zipFile;
-                item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime().date() : fileinfo.created().date();
+                item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
                 item.duration = 0;
                 item.thumbState = ThumbState::Waiting;
                 item.libraryPath = path;
@@ -422,7 +424,7 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     item.pathNoExtension = fileNameNoExtension;
     item.mediaExtension = mediaExtension;
     item.zipFile = zipFile;
-    item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime().date() : fileinfo.created().date();
+    item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
     item.duration = 0;
     item.thumbState = ThumbState::Waiting;
     setLiveProperties(item);
@@ -588,12 +590,17 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
         }
         // item.metadata.libraryItemPath = item.path;
         // item.metadata.key = item.nameNoExtension;
-        item.metadata.defaultValues(item.nameNoExtension, item.path);
-        metadataChanged = true;
+        if(!hasExistingMetadata) {
+            item.metadata.defaultValues(item.nameNoExtension, item.path);
+            metadataChanged = true;
+        }
         if(updateToolTip(item)) {
             metadataChanged = true;
             if(!rolesChanged.contains(Qt::ToolTipRole))
                 rolesChanged.append(Qt::ToolTipRole);
+        }
+        if(!item.metadata.dateAdded.isValid()) {
+            item.metadata.dateAdded = item.modifiedDate;
         }
 
         if(item.type != LibraryListItemType::PlaylistInternal)
@@ -757,12 +764,6 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
         bool zipScripExists = QFileInfo::exists(item.zipFile);
         item.hasScript = scriptExists || zipScripExists;
     }
-}
-
-void MediaLibraryHandler::onLibraryLoaded()
-{
-    startThumbProcess();
-
 }
 
 void MediaLibraryHandler::startThumbProcess(bool vrMode)
@@ -1027,7 +1028,7 @@ LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
     LibraryListItem27 item;
     item.type = LibraryListItemType::PlaylistInternal;
     item.nameNoExtension = playlistName; //nameNoExtension
-    item.modifiedDate = QDateTime::currentDateTime().date();
+    item.modifiedDate = QDateTime::currentDateTime();
     item.duration = 0;
     item.metadata.isMFS = false;
     setThumbState(ThumbState::Ready, item);
@@ -1047,7 +1048,7 @@ LibraryListItem27 MediaLibraryHandler::setupTempExternalItem(QString mediapath, 
     item.script = scriptPath;
     item.hasScript = !scriptPath.isEmpty();
     item.nameNoExtension = XFileUtil::getNameNoExtension(fileInfo.fileName()); //nameNoExtension
-    item.modifiedDate = QDateTime::currentDateTime().date();
+    item.modifiedDate = QDateTime::currentDateTime();
     item.duration = duration;
     setLiveProperties(item);
     processMetadata(item);
@@ -1112,6 +1113,7 @@ void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
         libraryListItem.metadata.isMFS = libraryListItem.metadata.tags.contains(SettingsHandler::getXTags().MFS);
     } else {
         LogHandler::Debug("New item found: "+libraryListItem.nameNoExtension);
+        libraryListItem.metadata.dateAdded = QDateTime::currentDateTime();
         libraryListItem.forceProcessMetadata = true;
     }
 }

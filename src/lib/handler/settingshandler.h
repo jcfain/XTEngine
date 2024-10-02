@@ -319,6 +319,8 @@ public:
     static void SetSystemTagDefaults();
     static void setDisableHeartBeat(bool value);
     static bool getDisableHeartBeat();
+    static void setUseDTRAndRTS(bool value);
+    static bool getUseDTRAndRTS();
 
     static void setSaveOnExit(bool enabled);
     static bool getFirstLoad();

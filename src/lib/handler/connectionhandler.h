@@ -13,6 +13,7 @@
 #include "udphandler.h"
 #include "websocketdevicehandler.h"
 #include "serialhandler.h"
+#include "blehandler.h"
 #include "gamepadhandler.h"
 #include "lib/struct/ConnectionChangedSignal.h"
 #include "lib/struct/InputDevicePacket.h"
@@ -69,6 +70,7 @@ private:
     SerialHandler* _serialHandler;
     NetworkDevice* _networkDevice;
     UdpHandler* _udpHandler;
+    BLEHandler* m_bleHandler;
     WebsocketDeviceHandler* _webSocketHandler;
     HereSphereHandler* m_hereSphereHandler;
     WhirligigHandler* _whirligigHandler;

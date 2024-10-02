@@ -28,6 +28,8 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     QString subtitle;
     bool isMFS;
     bool hasAlternate;
+    QDateTime dateAdded;
+
     QList<Bookmark> bookmarks;
     QList<QString> funscripts;
     QList<QString> tags;
@@ -51,6 +53,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream << object.subtitle;
         dataStream << object.isMFS;
         dataStream << object.hasAlternate;
+        dataStream << object.dateAdded;
         foreach(auto bookmark, object.bookmarks )
             dataStream << bookmark;
         foreach(auto funscript, object.funscripts )
@@ -83,6 +86,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream >> object.subtitle;
         dataStream >> object.isMFS;
         dataStream >> object.hasAlternate;
+        dataStream >> object.dateAdded;
         foreach(auto bookmark, object.bookmarks )
             dataStream >> bookmark;
         foreach(auto funscript, object.funscripts )
@@ -150,6 +154,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         obj["subtitle"] = item.subtitle;
         obj["isMFS"] = item.isMFS;
         obj["hasAlternate"] = item.hasAlternate;
+        obj["dateAdded"] = item.dateAdded.toString(Qt::DateFormat::ISODateWithMs);
         QJsonArray bookmarks;
         foreach(Bookmark bookmark, item.bookmarks) {
             QJsonObject bookmarkObj;
@@ -202,6 +207,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         newItem.subtitle = obj["subtitle"].toString();
         newItem.isMFS = obj["isMFS"].toBool();
         newItem.hasAlternate = obj["hasAlternate"].toBool();
+        newItem.dateAdded = QDateTime::fromString(obj["dateAdded"].toString(), Qt::DateFormat::ISODateWithMs);
         foreach(auto bookmark, obj["bookmarks"].toArray())
         {
             Bookmark bookMark;

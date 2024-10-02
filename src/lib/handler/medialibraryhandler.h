@@ -110,7 +110,6 @@ private:
     //XVideoPreview* _extractor = 0;
 
     void on_load_library(QStringList paths, bool vrMode);
-    void onLibraryLoaded();
     //void saveThumbs(QList<LibraryListItem27> items, qint64 position = 0, bool vrMode = false);
     void onPrepareLibraryLoad();
     void onLibraryItemFound(LibraryListItem27 item);

@@ -473,8 +473,17 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
-
+// Use enum?
     QJsonObject root;
+#if defined(Q_OS_WIN)
+    root["OS"] = "WIN32";
+#elif defined(Q_OS_MAC)
+    root["OS"] = "MAC";
+#elif defined(Q_OS_ANDROID)
+    root["OS"] = "ANDROID";
+#elif defined(Q_OS_LINUX)
+    root["OS"] = "LINUX";
+#endif
     root["xteVersion"] = SettingsHandler::XTEVersion;
     root["webSocketServerPort"] = _webSocketHandler->getServerPort();
 

@@ -99,6 +99,9 @@ protected:
         m_readBuffer += buffer;
         if(m_readBuffer.isEmpty())// Must end with newline char
             return;
+        if(!m_readBuffer.endsWith('\n'))// Must end with newline char
+            return;
+        LogHandler::Debug(tr("processDeviceInput: ")+buffer);
         bool isCommand = m_readBuffer.startsWith('#') || m_readBuffer.startsWith('@');
         if(isConnected() && isCommand)
         {
@@ -115,25 +118,23 @@ protected:
             {
                 if(!m_readBuffer.endsWith('\n'))// Must end with newline char
                     return;
-                QString version = "V?";
+                QString version = "Unknown v?";
 
                 bool validated = false;
-                if(m_readBuffer.contains(TCodeChannelLookup::SupportedTCodeVersions.value(TCodeVersion::v2)))
-                {
-                    version = "V2";
-                    validated = true;
-                }
-                else if (m_readBuffer.contains(TCodeChannelLookup::SupportedTCodeVersions.value(TCodeVersion::v3)))
-                {
-                    version = "V3";
-                    validated = true;
+                for (auto supportedversion : TCodeChannelLookup::SupportedTCodeVersions.keys()) {
+                    auto tcodeVersion = TCodeChannelLookup::SupportedTCodeVersions.value(supportedversion);
+                    if(m_readBuffer.contains(tcodeVersion))
+                    {
+                        version = tcodeVersion;
+                        validated = true;
+                    }
                 }
                 if (validated)
                 {
+                    LogHandler::Debug(tr("Recieved device validation: ")+m_readBuffer);
                     setConnected(true);
-                    emit connectionChange({DeviceType::Output, m_deviceName, ConnectionStatus::Connected, "Connected: "+version});
+                    emit connectionChange({DeviceType::Output, m_deviceName, ConnectionStatus::Connected, version});
                 }
-                LogHandler::Debug(tr("Recieved device validation: ")+m_readBuffer);
                 m_readBuffer.clear();
             }
             else

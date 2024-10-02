@@ -14,6 +14,7 @@ enum DeviceName
     Whirligig,
     Gamepad,
     XTPWeb,
+    BLE,
     None
 };
 
@@ -44,6 +45,8 @@ enum LibrarySortMode {
     CREATED_DESC,
     TYPE_ASC,
     TYPE_DESC,
+    ADDED_ASC,
+    ADDED_DESC,
     NONE
 };
 

@@ -42,7 +42,7 @@ public:
     QString mediaExtension;
     QString thumbFile;
     QString zipFile;
-    QDate modifiedDate;
+    QDateTime modifiedDate;
     quint64 duration;
     QString md5;
 
@@ -139,7 +139,7 @@ public:
         obj["duration"] = QString::number(item.duration);
         obj["md5"] = item.md5;
         obj["mediaExtension"] = item.mediaExtension;;
-        obj["modifiedDate"] = item.modifiedDate.toString();
+        obj["modifiedDate"] = item.modifiedDate.toString(Qt::DateFormat::ISODateWithMs);
         obj["name"] = item.name;
         obj["nameNoExtension"] = item.nameNoExtension;
         obj["script"] = item.script;
@@ -184,7 +184,7 @@ public:
         newItem.duration = obj["path"].toString().toLongLong();
         newItem.md5 = obj["md5"].toString();
         newItem.mediaExtension = obj["mediaExtension"].toString();
-        newItem.modifiedDate = QDate::fromString(obj["modifiedDate"].toString());
+        newItem.modifiedDate = QDateTime::fromString(obj["modifiedDate"].toString(), Qt::DateFormat::ISODateWithMs);
         newItem.name = obj["name"].toString();
         newItem.nameNoExtension = obj["nameNoExtension"].toString();
         newItem.script = obj["script"].toString();

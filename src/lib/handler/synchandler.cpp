@@ -377,7 +377,6 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
     stopAll();
     QMutexLocker locker(&_mutex);
     _isMediaFunscriptPlaying = true;
-    //emit funscriptStatusChanged(QtAV::MediaStatus::LoadedMedia);
     LogHandler::Debug("syncFunscript start thread");
     _funscriptMediaFuture = QtConcurrent::run([this, getMediaPosition]()
     {

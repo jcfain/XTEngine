@@ -1,5 +1,5 @@
 QT -= gui
-QT += core serialport network gamepad texttospeech compress websockets multimedia
+QT += core serialport network gamepad texttospeech compress websockets multimedia bluetooth
 
 TARGET = xtengine
 TEMPLATE = lib
@@ -18,6 +18,7 @@ CONFIG += c++17
 #INCLUDEPATH += lib/struct
 
 SOURCES += \
+    lib/handler/blehandler.cpp \
     lib/handler/connectionhandler.cpp \
     lib/handler/crypthandler.cpp \
     lib/handler/deohandler.cpp \
@@ -52,6 +53,7 @@ SOURCES += \
 
 HEADERS += \
     XTEngine_global.h \
+    lib/handler/blehandler.h \
     lib/handler/connectionhandler.h \
     lib/handler/crypthandler.h \
     lib/handler/deohandler.h \

@@ -20,6 +20,7 @@ struct SettingGroups {
     static inline const QString schedule = "schedule";
     static inline const QString metadata = "metadata";
     static inline const QString tcode = "tcode";
+    static inline const QString serial = "serial";
 };
 struct SettingKeys {
     static inline const QString scheduleLibraryLoadEnabled = "scheduleLibraryLoadEnabled";
@@ -30,6 +31,7 @@ struct SettingKeys {
     static inline const QString forceMetaDataFullProcess = "forceMetaDataFullProcess";
     static inline const QString disableUDPHeartBeat = "disableUDPHeartBeat";
     static inline const QString disableTCodeValidation = "disableTCodeValidation";
+    static inline const QString useDTRAndRTS = "useDTRAndRTS";
 
 };
 
@@ -45,7 +47,8 @@ public:
             { SettingKeys::processMetadataOnStart, {SettingProfile::System, SettingGroups::metadata, SettingKeys::processMetadataOnStart, false} },
             { SettingKeys::forceMetaDataFullProcess, {SettingProfile::System, SettingGroups::metadata, SettingKeys::forceMetaDataFullProcess, false} },
             { SettingKeys::disableUDPHeartBeat, {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableUDPHeartBeat, false} },
-            { SettingKeys::disableTCodeValidation, {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableTCodeValidation, false} }
+            { SettingKeys::disableTCodeValidation, {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableTCodeValidation, false} },
+            { SettingKeys::useDTRAndRTS, {SettingProfile::System, SettingGroups::serial, SettingKeys::useDTRAndRTS, false} }
         },
     };
     const static inline QMap<SettingProfile, QMap<QString, QMap<QString, SettingMap>>> SettingsGroupMap =
@@ -74,6 +77,12 @@ public:
                     {
                         { SettingKeys::disableUDPHeartBeat, SettingsMap[SettingKeys::disableUDPHeartBeat] },
                         { SettingKeys::disableTCodeValidation, SettingsMap[SettingKeys::disableTCodeValidation] }
+                    }
+                },
+                {
+                    SettingGroups::serial,
+                    {
+                      { SettingKeys::useDTRAndRTS, SettingsMap[SettingKeys::useDTRAndRTS] }
                     }
                 }
             }

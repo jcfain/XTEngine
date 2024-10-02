@@ -1339,6 +1339,16 @@ bool SettingsHandler::getDisableHeartBeat()
     return getSetting(SettingKeys::disableUDPHeartBeat).toBool();
 }
 
+void SettingsHandler::setUseDTRAndRTS(bool value)
+{
+    changeSetting(SettingKeys::useDTRAndRTS, value);
+}
+
+bool SettingsHandler::getUseDTRAndRTS()
+{
+    return getSetting(SettingKeys::useDTRAndRTS).toBool();
+}
+
 void SettingsHandler::MigrateTo23()
 {
     settings->setValue("version", 0.23f);
