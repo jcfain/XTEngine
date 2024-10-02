@@ -3,8 +3,8 @@
 #include "../tool/file-util.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.469b";
-const float SettingsHandler::XTEVersionNum = 0.469f;
+const QString SettingsHandler::XTEVersion = "0.47b";
+const float SettingsHandler::XTEVersionNum = 0.47f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -779,6 +779,11 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             bool disableTCodeValidation = settingsToLoadFrom->value("disableSerialTCodeValidation").toBool();
             setDisableTCodeValidation(disableTCodeValidation);
             Save();// No need to load as these are under the new settings system.
+        }
+        if(currentVersion < 0.47f) {
+            locker.unlock();
+            setForceMetaDataFullProcess(true);
+            Save();
         }
     }
     settingsChangedEvent(false);
