@@ -1835,6 +1835,16 @@ function sort(value, userClick) {
 				return new Date(a.modifiedDate) - new Date(b.modifiedDate);
 			});
 			break;
+		case "addedDesc":
+			mediaListGlobal.sort(function (a, b) {
+				return new Date(b.metaData.dateAdded) - new Date(a.metaData.dateAdded);
+			});
+			break;
+		case "addedAsc":
+			mediaListGlobal.sort(function (a, b) {
+				return new Date(a.metaData.dateAdded) - new Date(b.metaData.dateAdded);
+			});
+			break;
 		case "nameAsc":
 			mediaListGlobal.sort(function (a, b) {
 				var nameA = a.displayName.toUpperCase(); // ignore upper and lowercase
@@ -2519,11 +2529,18 @@ function metaDataChange() {
 	document.getElementById("saveMediaItemMetaDataButton").disabled = false;
 }
 
-function addToSelectedMetaData(amount) {
-	var mediaOffsetNode = document.getElementById("mediaOffset");
-	var value = parseInt(mediaOffsetNode.value);
+function addToSelectedMetaDataOffset(amount) {
+	var node = document.getElementById("mediaOffset");
+	var value = parseInt(node.value);
 	value += amount;
-	mediaOffsetNode.value = value;
+	node.value = value;
+	metaDataChange();
+}
+function addToSelectedMetaDataModifier(amount) {
+	var node = document.getElementById("funscriptModifier");
+	var value = parseInt(node.value);
+	value += amount;
+	node.value = value;
 	metaDataChange();
 }
 

@@ -199,9 +199,9 @@ select:disabled {
     display: flex;
     flex-wrap: wrap;
 }
-.form-buttons button {
+/* .form-buttons button {
     font-size: max(0.5em, 0.1em + 1cqi);
-}
+} */
 .form-buttons button:not(:last-child) {
     margin-right: 8px;
 }

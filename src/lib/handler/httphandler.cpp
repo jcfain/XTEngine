@@ -665,6 +665,11 @@ HttpPromise HttpHandler::handleMediaItemMetadataUpdate(HttpDataPtr data)
         data->response->setStatus(HttpStatus::Unauthorized);
         return HttpPromise::resolve(data);
     }
+    if(_mediaLibraryHandler->metadataProcessing()) {
+        data->response->setStatus(HttpStatus::Processing);
+        _webSocketHandler->sendUserWarning("Please wait for metadata process to complete!");
+        return HttpPromise::resolve(data);
+    }
 
     auto body = data->request->body();
     QJsonParseError error;

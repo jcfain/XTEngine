@@ -235,28 +235,28 @@
 					<label>
 					</label>
 					<div class="form-buttons">
-						<button onclick="addToSelectedMetaData(10)">
+						<button onclick="addToSelectedMetaDataOffset(10)">
 							+10
 						</button>
-						<button onclick="addToSelectedMetaData(50)">
+						<button onclick="addToSelectedMetaDataOffset(50)">
 							+50
 						</button>
-						<button onclick="addToSelectedMetaData(100)">
+						<button onclick="addToSelectedMetaDataOffset(100)">
 							+100
 						</button>
-						<button onclick="addToSelectedMetaData(500)">
+						<button onclick="addToSelectedMetaDataOffset(500)">
 							+500
 						</button>
-						<button onclick="addToSelectedMetaData(-10)">
+						<button onclick="addToSelectedMetaDataOffset(-10)">
 							-10
 						</button>
-						<button onclick="addToSelectedMetaData(-50)">
+						<button onclick="addToSelectedMetaDataOffset(-50)">
 							-50
 						</button>
-						<button onclick="addToSelectedMetaData(-100)">
+						<button onclick="addToSelectedMetaDataOffset(-100)">
 							-100
 						</button>
-						<button onclick="addToSelectedMetaData(-500)">
+						<button onclick="addToSelectedMetaDataOffset(-500)">
 							-500
 						</button>
 					</div>
@@ -267,6 +267,36 @@
 						for="funscriptModifier">Funscript modifier (%)
 					</label>
 					<input id="funscriptModifier" type="number" step="10.0" min="0.0" oninput="metaDataChange()" />
+				</div>
+				<div class="formElement">
+					<label>
+					</label>
+					<div class="form-buttons">
+						<button onclick="addToSelectedMetaDataModifier(5)">
+							+5
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(10)">
+							+10
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(30)">
+							+30
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(50)">
+							+50
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(-5)">
+							-5
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(-10)">
+							-10
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(-30)">
+							-30
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(-50)">
+							-50
+						</button>
+					</div>
 				</div>
 				<div class="formElement">
 					<label
@@ -379,6 +409,10 @@
 									onclick="sortChange(this.value)" /><label for="dateAsc">Date (asc)</label>
 								<input type="radio" id="dateDesc" name="sort" value="dateDesc"
 									onclick="sortChange(this.value)" /><label for="dateDesc">Date (desc)</label>
+								<input type="radio" id="addedAsc" name="sort" value="dateAsc"
+									onclick="sortChange(this.value)" /><label for="addedAsc">Added (asc)</label>
+								<input type="radio" id="addedDesc" name="sort" value="addedDesc"
+									onclick="sortChange(this.value)" /><label for="dateDesc">Added (desc)</label>
 								<input type="radio" id="random" name="sort" value="random"
 									onclick="sortChange(this.value)" /><label for="random">Random</label>
 							</div>
