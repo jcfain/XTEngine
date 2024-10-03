@@ -86,6 +86,7 @@ public:
     static QString getLastSelectedVRLibrary();
     static bool addSelectedVRLibrary(QString value, QStringList &messages);
     static void removeSelectedVRLibrary(QString value);
+    static void removeAllVRLibraries();
     static QStringList getLibraryExclusions();
     static bool isLibraryExclusionChildOrEqual(const QString& value, QStringList& messages);
     static bool addToLibraryExclusions(QString values, QStringList& errors);
@@ -289,6 +290,7 @@ public:
     static void setEnableHttpServer(bool enable);
     static QString getHttpServerRoot();
     static void setHttpServerRoot(QString value);
+    static void setHttpServerRootDefault();
     static qint64 getHTTPChunkSize();
     static void setHTTPChunkSize(qint64 value);
     static int getHTTPPort();

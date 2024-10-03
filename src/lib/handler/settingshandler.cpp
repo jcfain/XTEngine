@@ -537,13 +537,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _httpServerRoot = settingsToLoadFrom->value("httpServerRoot").toString();
     if(_httpServerRoot.isEmpty() || !QDir(_httpServerRoot).exists())
     {
-#if defined(Q_OS_WIN)
-        _httpServerRoot = "www";
-#elif defined(Q_OS_MAC)
-        _httpServerRoot = _applicationDirPath + "/www";
-#elif defined(Q_OS_LINUX)
-        _httpServerRoot = _applicationDirPath + "/www";
-#endif
+        setHttpServerRootDefault();
     }
     _vrLibrary = settingsToLoadFrom->value("vrLibrary").toStringList();
     _httpChunkSize = settingsToLoadFrom->value("httpChunkSize").toLongLong();
@@ -1776,9 +1770,13 @@ bool SettingsHandler::isVRLibraryChildOrEqual(const QString &value, QStringList 
 }
 QString SettingsHandler::getLastSelectedVRLibrary() {
     _vrLibrary.removeAll("");
-    if(!selectedLibrary.isEmpty())
-        return selectedLibrary.last();
-    return QCoreApplication::applicationDirPath();
+    if(!_vrLibrary.isEmpty())
+        return _vrLibrary.last();
+    //return QCoreApplication::applicationDirPath();
+    return "";
+    // Used for selecting new main libraries but not used with
+    // VR libraries as only one is possible at this time.
+    // If this changes need to add a new method or something for default VR library
 }
 bool SettingsHandler::addSelectedVRLibrary(QString value, QStringList &messages)
 {
@@ -1795,7 +1793,14 @@ void SettingsHandler::removeSelectedVRLibrary(QString value)
 {
     QMutexLocker locker(&mutex);
     _vrLibrary.clear();
-    //_vrLibrary.removeOne(value);
+    _vrLibrary.removeOne(value);
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::removeAllVRLibraries()
+{
+    QMutexLocker locker(&mutex);
+    _vrLibrary.clear();
     settingsChangedEvent(true);
 }
 
@@ -2958,6 +2963,18 @@ void SettingsHandler::setHttpServerRoot(QString value)
 {
     QMutexLocker locker(&mutex);
     _httpServerRoot = value;
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::setHttpServerRootDefault()
+{
+#if defined(Q_OS_WIN)
+    _httpServerRoot = "www";
+#elif defined(Q_OS_MAC)
+    _httpServerRoot = _applicationDirPath + "/www";
+#elif defined(Q_OS_LINUX)
+    _httpServerRoot = _applicationDirPath + "/www";
+#endif
     settingsChangedEvent(true);
 }
 
