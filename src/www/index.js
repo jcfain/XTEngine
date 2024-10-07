@@ -1,4 +1,4 @@
-const webVersion = "v0.469b";
+const webVersion = "v0.47b";
 var debugMode = false;
 
 var DeviceType = {
