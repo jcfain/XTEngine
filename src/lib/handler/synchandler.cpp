@@ -604,8 +604,11 @@ bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadS
             LogHandler::Debug("Loading track: "+ fileInfo.absoluteFilePath());
             funscriptHandler = createFunscriptHandler(axisName, fileInfo.absoluteFilePath());
             if(!funscriptHandler)
+            {
                 loadState.invalidScripts.append("Script: " + fileInfo.absoluteFilePath());
-            else {
+            }
+            else
+            {
                 if(axisName == TCodeChannelLookup::Stroke() || mainScript.isEmpty())
                 {
                     mainScript = fileInfo.absoluteFilePath();
