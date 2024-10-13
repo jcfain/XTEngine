@@ -33,6 +33,9 @@
 #include "../lookup/xtags.h"
 #include "../struct/NetworkDeviceInfo.h"
 
+#define ORGANIZATION_NAME "cUrbSide prOd"
+#define APPLICATION_NAME "XTEngine"
+
 class XTENGINE_EXPORT SettingsHandler: public QObject
 {
     Q_OBJECT
@@ -420,6 +423,7 @@ public:
 private:
     SettingsHandler();
     ~SettingsHandler();
+    static bool m_isPortable;
     static QMap<QString, QVariant> m_changedSettings;
     static QString _applicationDirPath;
     static SettingsHandler* m_instance;

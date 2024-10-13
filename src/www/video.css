@@ -318,10 +318,10 @@ button.video-control-other:not(:last-child) {
 }
 
 .video-control--device-state {
-    background-color: red;
+    background-color: yellow !important;
 }
 .video-control--device-state-paused {
-    background-color: green;
+    background-color: green !important;
 }
 
 

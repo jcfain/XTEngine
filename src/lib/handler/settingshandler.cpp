@@ -396,13 +396,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     if(!settingsToLoadFrom)
     {
         QFile settingsini(_applicationDirPath + "/settings.ini");
-        if(settingsini.exists())
+        m_isPortable = settingsini.exists();
+        if(m_isPortable)
         {
-            settings = new QSettings("settings.ini", QSettings::Format::IniFormat);
+            settings = new QSettings(_applicationDirPath + "/settings.ini", QSettings::Format::IniFormat);
         }
         else
         {
-            settings = new QSettings("cUrbSide prOd", "XTEngine");
+            settings = new QSettings(ORGANIZATION_NAME, APPLICATION_NAME);
         }
         settingsToLoadFrom = settings;
     }
@@ -975,6 +976,14 @@ void SettingsHandler::Clear()
     QMutexLocker locker(&mutex);
     _saveOnExit = false;
     settings->clear();
+    settings->sync();
+    if(!m_isPortable) {
+#if defined(Q_OS_WIN)
+        QSettings("HKEY_CURRENT_USER\\SOFTWARE\\" ORGANIZATION_NAME, QSettings::NativeFormat).remove("");
+#elif defined(Q_OS_LINUX) || defined(Q_OS_MAC)
+        QFile::remove(settings->fileName());
+#endif
+    }
     settingsChangedEvent(true);
 }
 
@@ -983,7 +992,7 @@ void SettingsHandler::Quit(bool restart)
     QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
     if(restart)
-        QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments);
+        Restart();
 }
 
 void SettingsHandler::Restart()
@@ -994,16 +1003,15 @@ void SettingsHandler::Restart()
     QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
     QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments);
-    QString(qgetenv("APPIMAGE"));
 #elif defined(Q_OS_LINUX)
     //QString appPath = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
     QString appPath = QString(qgetenv("APPIMAGE"));
     if(appPath.isEmpty())
     {
-        emit instance()->messageSend("AppPath is empty: "+appPath, XLogLevel::Information);
+        //emit instance()->messageSend("AppPath is empty: "+appPath, XLogLevel::Information);
         appPath = qApp->arguments().first();
     }
-    emit instance()->messageSend("Restarting: "+appPath, XLogLevel::Information);
+    //emit instance()->messageSend("Restarting: "+appPath, XLogLevel::Information);
     QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
     QProcess::startDetached(appPath, arguments);
@@ -3137,6 +3145,7 @@ void SettingsHandler::setForceMetaDataFullProcessComplete()
 }
 
 QSettings* SettingsHandler::settings;
+bool SettingsHandler::m_isPortable = false;
 QMap<QString, QVariant> SettingsHandler::m_changedSettings;
 QString SettingsHandler::_applicationDirPath;
 SettingsHandler* SettingsHandler::m_instance = 0;

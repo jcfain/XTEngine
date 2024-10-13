@@ -1271,7 +1271,7 @@ bool MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
     if (localData.type != LibraryListItemType::PlaylistInternal && !scriptExists && !zipScripExists)
     {
         localData.metadata.toolTip = localData.nameNoExtension + "\nMedia:";
-        localData.metadata.toolTip = localData.path + "\nNo script file of the same name found.\nRight click and Play with chosen funscript.";
+        localData.metadata.toolTip = localData.path + "\nNo script file of the same name found.";
         itemChanged = true;
     }
     else if (localData.type != LibraryListItemType::PlaylistInternal)
@@ -1581,12 +1581,14 @@ void MediaLibraryHandler::stopAllSubProcesses()
     stopThumbCleanupProcess();
 }
 
-QString MediaLibraryHandler::getScreenType(QString mediaPath)
+QString MediaLibraryHandler::getStereoMode(QString mediaPath)
 {
     if(mediaPath.contains("360", Qt::CaseSensitivity::CaseInsensitive))
         return "360";
     if(mediaPath.contains("180", Qt::CaseSensitivity::CaseInsensitive))
         return "180";
+    if(mediaPath.contains("fisheye190", Qt::CaseSensitivity::CaseInsensitive))
+        return "fisheye190";
     if(mediaPath.contains("fisheye", Qt::CaseSensitivity::CaseInsensitive))
         return "fisheye";
     if(mediaPath.contains("mkx200", Qt::CaseSensitivity::CaseInsensitive))
@@ -1596,7 +1598,7 @@ QString MediaLibraryHandler::getScreenType(QString mediaPath)
     return "flat";
 }
 
-QString MediaLibraryHandler::getStereoMode(QString mediaPath)
+QString MediaLibraryHandler::getScreenType(QString mediaPath)
 {
     if(mediaPath.contains(" tb", Qt::CaseSensitivity::CaseInsensitive) ||
         mediaPath.contains("_tb", Qt::CaseSensitivity::CaseInsensitive) ||
@@ -1632,7 +1634,7 @@ QString MediaLibraryHandler::getStereoMode(QString mediaPath)
 }
 
 bool MediaLibraryHandler::isStereo(QString mediaPath) {
-    return getStereoMode(mediaPath) != "off";
+    return getScreenType(mediaPath) != "off" || getStereoMode(mediaPath) != "flat";
 }
 /***
  * Searches library for the ID

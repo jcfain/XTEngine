@@ -457,10 +457,7 @@ function wsCallBackFunction(evt) {
 				setInputConnectionStatus(deviceName, status["status"], status["message"]);
 				break;
 			case "mediaLoaded":
-				var mediaLoadingElement = document.getElementById("mediaLoading");
-				mediaLoadingElement.style.display = "none"
-				mediaLoading = false;
-				getServerLibrary();
+				onMediaLoaded();
 				break;
 			case "mediaLoading":
 				setMediaLoading();
@@ -584,12 +581,56 @@ function setMediaLoading() {
 	var mediaLoadingElement = document.getElementById("mediaLoading");
 	mediaLoadingElement.style.display = "flex"
 	var noMediaElement = document.getElementById("noMedia");
+	var mediaLoadingElements = document.getElementsByName("mediaLoadingIcon");
+	for (let index = 0; index < mediaLoadingElements.length; index++) {
+		const element = mediaLoadingElements[index];
+		element.classList.remove("hidden");
+	}
 	noMediaElement.hidden = true;
+	var refreshMediaLibraryButtons = document.getElementsByName("refreshXTPLibraryButton");
+	for (let index = 0; index < refreshMediaLibraryButtons.length; index++) {
+		const element = refreshMediaLibraryButtons[index];
+		element.disabled = true;
+	}
+	var mediaLoadingStatusElementa = document.getElementsByName("mediaLoadingStatus");
+	for (let index = 0; index < mediaLoadingStatusElementa.length; index++) {
+		const element = mediaLoadingStatusElementa[index];
+		element.innerText = "";
+		element.classList.remove("hidden");
+	}
+}
+
+function onMediaLoaded() {
+	var mediaLoadingElement = document.getElementById("mediaLoading");
+	mediaLoadingElement.style.display = "none"
+	mediaLoading = false;
+	var mediaLoadingElements = document.getElementsByName("mediaLoadingIcon");
+	for (let index = 0; index < mediaLoadingElements.length; index++) {
+		const element = mediaLoadingElements[index];
+		element.classList.add("hidden");
+	}
+	var refreshMediaLibraryButtons = document.getElementsByName("refreshXTPLibraryButton");
+	for (let index = 0; index < refreshMediaLibraryButtons.length; index++) {
+		const element = refreshMediaLibraryButtons[index];
+		element.disabled = false;
+	}
+	var mediaLoadingStatusElementa = document.getElementsByName("mediaLoadingStatus");
+	for (let index = 0; index < mediaLoadingStatusElementa.length; index++) {
+		const element = mediaLoadingStatusElementa[index];
+		element.innerText = "";
+		element.classList.add("hidden");
+	}
+	getServerLibrary();
 }
 
 function setMediaLoadingStatus(status) {
 	var mediaLoadingElement = document.getElementById("loadingStatus");
 	mediaLoadingElement.innerText = status;
+	var mediaLoadingStatusElementa = document.getElementsByName("mediaLoadingStatus");
+	for (let index = 0; index < mediaLoadingStatusElementa.length; index++) {
+		const element = mediaLoadingStatusElementa[index];
+		element.innerText = status;
+	}
 }
 
 function onResizeVideo() {
@@ -1174,15 +1215,17 @@ function setDevicePauseStatus(isPaused)
 	for (var i = 0; i < devicePauseStatusIconButtonNodes.length; i++) {
 		var devicePauseStatusIconButtonNode = devicePauseStatusIconButtonNodes[i];
 		var devicePauseStatusIconButtonImageNode = devicePauseStatusIconButtonImageNodes[i];
+		devicePauseStatusIconButtonNode.title = "TCode device pause toggle.\nDevice status: ";
 		
-		devicePauseStatusIconButtonNode.title = "Device status: " + isPaused ? "paused" : "not paused";
 		if(isPaused)
 		{
+			devicePauseStatusIconButtonNode.title += "paused";
 			devicePauseStatusIconButtonNode.classList.add("video-control--device-state-paused");
 			devicePauseStatusIconButtonImageNode.setAttribute("src", "://images/icons/play.svg");
 		}
 		else
 		{
+			devicePauseStatusIconButtonNode.title += "not paused";
 			devicePauseStatusIconButtonNode.classList.remove("video-control--device-state-paused");
 			devicePauseStatusIconButtonImageNode.setAttribute("src", "://images/icons/pause.svg");
 		}
