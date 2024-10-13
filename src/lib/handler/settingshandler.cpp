@@ -989,17 +989,19 @@ void SettingsHandler::Clear()
 
 void SettingsHandler::Quit(bool restart)
 {
+    if(restart) {
+        Restart();
+        return;
+    }
     QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
-    if(restart)
-        Restart();
 }
 
 void SettingsHandler::Restart()
 {
 
 #if defined(Q_OS_WIN) || defined(Q_OS_MAC)
-    emit instance()->messageSend("Restarting: "+QCoreApplication::applicationFilePath(), XLogLevel::Information);
+    // emit instance()->messageSend("Restarting: "+QCoreApplication::applicationFilePath(), XLogLevel::Information);
     QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
     QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments);
