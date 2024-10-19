@@ -21,6 +21,7 @@ struct SettingGroups {
     static inline const QString metadata = "metadata";
     static inline const QString tcode = "tcode";
     static inline const QString serial = "serial";
+    static inline const QString web = "web";
 };
 struct SettingKeys {
     static inline const QString scheduleLibraryLoadEnabled = "scheduleLibraryLoadEnabled";
@@ -32,6 +33,7 @@ struct SettingKeys {
     static inline const QString disableUDPHeartBeat = "disableUDPHeartBeat";
     static inline const QString disableTCodeValidation = "disableTCodeValidation";
     static inline const QString useDTRAndRTS = "useDTRAndRTS";
+    static inline const QString httpChunkSizeMB = "httpChunkSizeMB";
 
 };
 
@@ -48,7 +50,8 @@ public:
             { SettingKeys::forceMetaDataFullProcess, {SettingProfile::System, SettingGroups::metadata, SettingKeys::forceMetaDataFullProcess, false} },
             { SettingKeys::disableUDPHeartBeat, {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableUDPHeartBeat, false} },
             { SettingKeys::disableTCodeValidation, {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableTCodeValidation, false} },
-            { SettingKeys::useDTRAndRTS, {SettingProfile::System, SettingGroups::serial, SettingKeys::useDTRAndRTS, false} }
+            { SettingKeys::useDTRAndRTS, {SettingProfile::System, SettingGroups::serial, SettingKeys::useDTRAndRTS, false} },
+            { SettingKeys::httpChunkSizeMB, {SettingProfile::System, SettingGroups::web, SettingKeys::httpChunkSizeMB, 26.214400} }
         },
     };
     const static inline QMap<SettingProfile, QMap<QString, QMap<QString, SettingMap>>> SettingsGroupMap =
@@ -83,6 +86,12 @@ public:
                     SettingGroups::serial,
                     {
                       { SettingKeys::useDTRAndRTS, SettingsMap[SettingKeys::useDTRAndRTS] }
+                    }
+                },
+                {
+                    SettingGroups::web,
+                    {
+                      { SettingKeys::httpChunkSizeMB, SettingsMap[SettingKeys::httpChunkSizeMB] }
                     }
                 }
             }

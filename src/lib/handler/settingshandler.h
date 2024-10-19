@@ -293,9 +293,11 @@ public:
     static void setEnableHttpServer(bool enable);
     static QString getHttpServerRoot();
     static void setHttpServerRoot(QString value);
-    static void setHttpServerRootDefault();
+    static QString setHttpServerRootDefault();
     static qint64 getHTTPChunkSize();
     static void setHTTPChunkSize(qint64 value);
+    static double getHTTPChunkSizeMB();
+    static void setHTTPChunkSizeMB(double value);
     static int getHTTPPort();
     static void setHTTPPort(int value);
     static int getWebSocketPort();
@@ -536,7 +538,7 @@ private:
     static bool _skipPlayingSTandAloneFunscriptsInLibrary;
     static bool _enableHttpServer;
     static QString _httpServerRoot;
-    static qint64 _httpChunkSize;
+    //static qint64 _httpChunkSize;
     static int _httpPort;
     static int _httpThumbQuality;
     static int _webSocketPort;
@@ -550,6 +552,8 @@ private:
     static QString _channelPulseChannel;
     static qint64 _channelPulseFrequency;
     static int _channelPulseAmount;
+
+    static qint64 m_httpChunkSizeCache;
 
     static float m_viewedThreshold;
 

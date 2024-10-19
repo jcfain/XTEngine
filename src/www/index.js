@@ -780,12 +780,22 @@ function getServerSettings(retry) {
 		if (status === 200) {
 			remoteUserSettings = xhr.response;
 
-			document.getElementById("xteVersion").innerText = remoteUserSettings["xteVersion"];
-			document.getElementById("scheduleLibraryLoadEnabled").checked = remoteUserSettings["scheduleLibraryLoadEnabled"];
-			document.getElementById("scheduleLibraryLoadTime").value = remoteUserSettings["scheduleLibraryLoadTime"];
-			document.getElementById("scheduleLibraryLoadFullProcess").checked = remoteUserSettings["scheduleLibraryLoadFullProcess"];
-			document.getElementById("processMetadataOnStart").checked = remoteUserSettings["processMetadataOnStart"];
-			document.getElementById("scheduleSettingsSync").checked = remoteUserSettings["scheduleSettingsSync"];
+			document.getElementById("xteVersion").innerText = remoteUserSettings["settings"]["xteVersion"];
+
+			// document.getElementById("scheduleLibraryLoadEnabled").checked = remoteUserSettings["settings"]["scheduleLibraryLoadEnabled"];
+			// document.getElementById("scheduleLibraryLoadTime").value = remoteUserSettings["settings"]["scheduleLibraryLoadTime"];
+			// document.getElementById("scheduleLibraryLoadFullProcess").checked = remoteUserSettings["settings"]["scheduleLibraryLoadFullProcess"];
+			// document.getElementById("processMetadataOnStart").checked = remoteUserSettings["settings"]["processMetadataOnStart"];
+			// document.getElementById("scheduleSettingsSync").checked = remoteUserSettings["settings"]["scheduleSettingsSync"];
+			// document.getElementById("disableUDPHeartBeat").checked = remoteUserSettings["settings"]["disableUDPHeartBeat"];
+			// document.getElementById("httpChunkSizeMB").value = remoteUserSettings["settings"]["httpChunkSizeMB"];
+			Object.keys(remoteUserSettings["settings"]).forEach(key => {
+				const element = document.getElementById(key);
+				if(!element)
+					return;
+				const value = remoteUserSettings["settings"][key];
+				typeof value === "boolean" ? element.checked = value : element.value = value;
+			})
 			
 			
 			setupChannelData();

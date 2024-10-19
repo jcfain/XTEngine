@@ -541,10 +541,11 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     // root["scheduleLibraryLoadTime"] = SettingsHandler::scheduleLibraryLoadTime().toString("hh:mm");
     // root["scheduleLibraryLoadFullProcess"] = SettingsHandler::scheduleLibraryLoadFullProcess();
     // root["processMetadataOnStart"] = SettingsHandler::processMetadataOnStart();
-
+    QJsonObject settingsObj;
     foreach (SettingMap map, XSettingsMap::SettingsMap) {
-        SettingsHandler::getSetting(map.key, root);
+        SettingsHandler::getSetting(map.key, settingsObj);
     }
+    root["settings"] = settingsObj;
 
     // root["APPIMAGE1"] = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
     // root["APPIMAGE2"] = QString(qgetenv("APPIMAGE"));
@@ -1234,10 +1235,10 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
                     LogHandler::Debug("startByte: "+ QString::number(startByte));
                     LogHandler::Debug("endByte: "+ QString::number(endByte));
                     qint64 chunkSize = SettingsHandler::getHTTPChunkSize();
-                       if((startByte == 0 && endByte == 1) || (endByte && (startByte + endByte) <= chunkSize))
-                           chunkSize = startByte + endByte;
-                       else
-                           endByte = startByte + chunkSize;
+                   if((startByte == 0 && endByte == 1) || (endByte && (startByte + endByte) <= chunkSize))
+                       chunkSize = startByte + endByte;
+                   else
+                       endByte = startByte + chunkSize;
 
                     if (startByte >= bytesAvailable){
                         LogHandler::Debug("RequestRangeNotSatisfiable: startByte: "+ QString::number(startByte));

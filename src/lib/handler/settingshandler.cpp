@@ -3,8 +3,8 @@
 #include "../tool/file-util.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.47b";
-const float SettingsHandler::XTEVersionNum = 0.47f;
+const QString SettingsHandler::XTEVersion = "0.471b";
+const float SettingsHandler::XTEVersionNum = 0.471f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -514,13 +514,9 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     //     m_tcodeCommands.insert(command.id, command);
     // }
 
-    _gamepadSpeed = settingsToLoadFrom->value("gamepadSpeed").toInt();
-    _gamepadSpeed = _gamepadSpeed == 0 ? 1000 : _gamepadSpeed;
-    _gamepadSpeedStep = settingsToLoadFrom->value("gamepadSpeedStep").toInt();
-    _gamepadSpeedStep = _gamepadSpeedStep == 0 ? 500 : _gamepadSpeedStep;
-    _liveGamepadSpeed = _gamepadSpeed;
-    _xRangeStep = settingsToLoadFrom->value("xRangeStep").toInt();
-    _xRangeStep = _xRangeStep == 0 ? 50 : _xRangeStep;
+    _gamepadSpeed = settingsToLoadFrom->value("gamepadSpeed", 1000).toInt();
+    _gamepadSpeedStep = settingsToLoadFrom->value("gamepadSpeedStep", 500).toInt();
+    _xRangeStep = settingsToLoadFrom->value("xRangeStep", 50).toInt();
     disableSpeechToText = settingsToLoadFrom->value("disableSpeechToText").toBool();
     _disableVRScriptSelect = settingsToLoadFrom->value("disableVRScriptSelect").toBool();
     _disableNoScriptFound = settingsToLoadFrom->value("disableNoScriptFound").toBool();
@@ -541,23 +537,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         setHttpServerRootDefault();
     }
     _vrLibrary = settingsToLoadFrom->value("vrLibrary").toStringList();
-    _httpChunkSize = settingsToLoadFrom->value("httpChunkSize").toLongLong();
-    if(!_httpChunkSize)
-        _httpChunkSize = 26214400;
-    _httpPort = settingsToLoadFrom->value("httpPort").toInt();
-    if(!_httpPort)
-        _httpPort = 80;
+    _httpPort = settingsToLoadFrom->value("httpPort", 80).toInt();
     _webSocketPort = settingsToLoadFrom->value("webSocketPort").toInt();
-    _httpThumbQuality = settingsToLoadFrom->value("httpThumbQuality").toInt();
-    if(m_firstLoad)
-        _httpThumbQuality = -1;
+    _httpThumbQuality = settingsToLoadFrom->value("httpThumbQuality", -1).toInt();
 
-    _funscriptOffsetStep = settingsToLoadFrom->value("funscriptOffsetStep").toInt();
-    if(!_funscriptOffsetStep)
-        _funscriptOffsetStep = 100;
-    _funscriptModifierStep = settingsToLoadFrom->value("funscriptModifierStep").toInt();
-    if(!_funscriptModifierStep)
-        _funscriptModifierStep = 5;
+    _funscriptOffsetStep = settingsToLoadFrom->value("funscriptOffsetStep", 100).toInt();
+    _funscriptModifierStep = settingsToLoadFrom->value("funscriptModifierStep", 5).toInt();
 
     _channelPulseAmount = settingsToLoadFrom->value("channelPulseAmount").toInt();
     _channelPulseEnabled = settingsToLoadFrom->value("channelPulseEnabled").toBool();
@@ -780,6 +765,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setForceMetaDataFullProcess(true);
             Save();
         }
+        if(currentVersion < 0.471f) {
+            locker.unlock();
+            qint64 httpChunkSize = settingsToLoadFrom->value("httpChunkSize", 26214400).toLongLong();
+            setHTTPChunkSize(httpChunkSize);
+            settingsToLoadFrom->remove("httpChunkSize");
+            Save();
+        }
     }
     settingsChangedEvent(false);
 }
@@ -910,15 +902,12 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("enableHttpServer", _enableHttpServer);
         settingsToSaveTo->setValue("httpServerRoot", _httpServerRoot);
         settingsToSaveTo->setValue("vrLibrary", _vrLibrary);
-        settingsToSaveTo->setValue("httpChunkSize", _httpChunkSize);
         settingsToSaveTo->setValue("httpPort", _httpPort);
         settingsToSaveTo->setValue("webSocketPort", _webSocketPort);
         settingsToSaveTo->setValue("httpThumbQuality", _httpThumbQuality);
 
-
         settingsToSaveTo->setValue("funscriptModifierStep", _funscriptModifierStep);
         settingsToSaveTo->setValue("funscriptOffsetStep", _funscriptOffsetStep);
-
 
         settingsToSaveTo->setValue("channelPulseAmount", _channelPulseAmount);
         settingsToSaveTo->setValue("channelPulseEnabled", _channelPulseEnabled);
@@ -2976,7 +2965,7 @@ void SettingsHandler::setHttpServerRoot(QString value)
     settingsChangedEvent(true);
 }
 
-void SettingsHandler::setHttpServerRootDefault()
+QString SettingsHandler::setHttpServerRootDefault()
 {
 #if defined(Q_OS_WIN)
     _httpServerRoot = "www";
@@ -2986,17 +2975,37 @@ void SettingsHandler::setHttpServerRootDefault()
     _httpServerRoot = _applicationDirPath + "/www";
 #endif
     settingsChangedEvent(true);
+    return _httpServerRoot;
 }
 
 qint64 SettingsHandler::getHTTPChunkSize()
 {
-    return _httpChunkSize;
+    if(!m_httpChunkSizeCache) {
+        m_httpChunkSizeCache = getHTTPChunkSizeMB() * 1048576;
+    }
+    return m_httpChunkSizeCache;
 }
+
 void SettingsHandler::setHTTPChunkSize(qint64 value)
 {
-    QMutexLocker locker(&mutex);
-    _httpChunkSize = value;
-    settingsChangedEvent(true);
+    if(m_httpChunkSizeCache != value) {
+        m_httpChunkSizeCache = value;
+    }
+    if(value) {
+        setHTTPChunkSizeMB(value / 1048576);
+    } else {
+        setHTTPChunkSizeMB(0);
+    }
+}
+
+double SettingsHandler::getHTTPChunkSizeMB()
+{
+    return getSetting(SettingKeys::httpChunkSizeMB).toDouble();
+}
+
+void SettingsHandler::setHTTPChunkSizeMB(double value)
+{
+    changeSetting(SettingKeys::httpChunkSizeMB, value);
 }
 
 int SettingsHandler::getHTTPPort()
@@ -3226,7 +3235,6 @@ bool SettingsHandler::_skipPlayingSTandAloneFunscriptsInLibrary;
 
 bool SettingsHandler::_enableHttpServer;
 QString SettingsHandler::_httpServerRoot;
-qint64 SettingsHandler::_httpChunkSize;
 int SettingsHandler::_httpPort;
 int SettingsHandler::_webSocketPort;
 int SettingsHandler::_httpThumbQuality;
@@ -3246,6 +3254,7 @@ QString SettingsHandler::_hashedWebPass;
 QList<DecoderModel> SettingsHandler::decoderPriority;
 XVideoRenderer SettingsHandler::_selectedVideoRenderer;
 
+qint64 SettingsHandler::m_httpChunkSizeCache = 0;
 float SettingsHandler::m_viewedThreshold;
 
 // bool SettingsHandler::m_scheduleLibraryLoadEnabled;

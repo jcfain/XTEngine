@@ -744,6 +744,12 @@
 							<input id="disableUDPHeartBeat" type="checkbox"
 								onclick="settingChange(this.id, this.checked)" />
 						</div>
+						<h4>Web</h4>
+						<div class="formElement">
+							<label for="httpChunkSizeMB">Media streaming chunk size</label>
+							<input id="httpChunkSizeMB" type="number" min="0.000001" step="1.0"
+								onchange="settingChange(this.id, this.value)" />
+						</div>
 					</div>
 					
 				</section>
