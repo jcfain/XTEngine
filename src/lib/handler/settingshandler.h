@@ -553,8 +553,6 @@ private:
     static qint64 _channelPulseFrequency;
     static int _channelPulseAmount;
 
-    static qint64 m_httpChunkSizeCache;
-
     static float m_viewedThreshold;
 
     // static bool m_scheduleLibraryLoadEnabled;

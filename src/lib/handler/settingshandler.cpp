@@ -2980,17 +2980,11 @@ QString SettingsHandler::setHttpServerRootDefault()
 
 qint64 SettingsHandler::getHTTPChunkSize()
 {
-    if(!m_httpChunkSizeCache) {
-        m_httpChunkSizeCache = getHTTPChunkSizeMB() * 1048576;
-    }
-    return m_httpChunkSizeCache;
+    return getHTTPChunkSizeMB() * 1048576;
 }
 
 void SettingsHandler::setHTTPChunkSize(qint64 value)
 {
-    if(m_httpChunkSizeCache != value) {
-        m_httpChunkSizeCache = value;
-    }
     if(value) {
         setHTTPChunkSizeMB(value / 1048576);
     } else {
@@ -3000,11 +2994,13 @@ void SettingsHandler::setHTTPChunkSize(qint64 value)
 
 double SettingsHandler::getHTTPChunkSizeMB()
 {
+    QMutexLocker locker(&mutex);
     return getSetting(SettingKeys::httpChunkSizeMB).toDouble();
 }
 
 void SettingsHandler::setHTTPChunkSizeMB(double value)
 {
+    QMutexLocker locker(&mutex);
     changeSetting(SettingKeys::httpChunkSizeMB, value);
 }
 
@@ -3254,7 +3250,6 @@ QString SettingsHandler::_hashedWebPass;
 QList<DecoderModel> SettingsHandler::decoderPriority;
 XVideoRenderer SettingsHandler::_selectedVideoRenderer;
 
-qint64 SettingsHandler::m_httpChunkSizeCache = 0;
 float SettingsHandler::m_viewedThreshold;
 
 // bool SettingsHandler::m_scheduleLibraryLoadEnabled;

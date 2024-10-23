@@ -4,13 +4,16 @@ body {
     font-family: 'sans-serif', "serif", "Lucida Sans Regular", 'Times New Roman', "Times", "DejaVu Serif", "Verdana";
     margin: 0;
     overflow: hidden;
+    display: flex;
+    flex-flow: column;
+    flex-wrap: nowrap;
 }
 
 .body-container {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    height: calc(100vh - 100px);
+    height: calc(100svh - 124px);
 }
 
 .hidden {
@@ -32,7 +35,7 @@ body {
     flex-wrap: nowrap;
     justify-content: space-between;
     margin-top: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
 }
 
 .headerSection {
@@ -59,6 +62,17 @@ body {
 .header-logout-button {
     align-self: flex-end;
 }
+
+.footer {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+}
+
+.footerSection {
+    flex-basis: 33%;
+}
+
 
 .auth-container {
     margin: 0 auto;
@@ -87,7 +101,7 @@ body {
 .toolBar {
     display: flex;
     flex-flow: column;
-    margin: 16px 8px 16px 8px;
+    margin: 8px 16px;
 }
 
 .toolBarGroup {

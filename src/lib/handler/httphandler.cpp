@@ -434,7 +434,7 @@ HttpPromise HttpHandler::handleWebTimeUpdate(HttpDataPtr data)
         return HttpPromise::resolve(data);
     }
     auto body = data->request->body();
-    LogHandler::Debug("HTTP time sync update: "+QString(body));
+    //LogHandler::Debug("HTTP time sync update: "+QString(body));
     emit xtpWebPacketRecieve(body);
     data->response->setStatus(HttpStatus::Ok);
     return HttpPromise::resolve(data);
@@ -1235,9 +1235,10 @@ HttpPromise HttpHandler::handleVideoStream(HttpDataPtr data)
                     LogHandler::Debug("startByte: "+ QString::number(startByte));
                     LogHandler::Debug("endByte: "+ QString::number(endByte));
                     qint64 chunkSize = SettingsHandler::getHTTPChunkSize();
-                   if((startByte == 0 && endByte == 1) || (endByte && (startByte + endByte) <= chunkSize))
+                    //if((startByte == 0 && endByte == 1) || (endByte && (startByte + endByte) <= chunkSize))
+                    if(endByte)
                        chunkSize = startByte + endByte;
-                   else
+                    else
                        endByte = startByte + chunkSize;
 
                     if (startByte >= bytesAvailable){

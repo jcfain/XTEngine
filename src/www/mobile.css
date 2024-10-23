@@ -36,6 +36,9 @@
     .script-status-model {
         width: 60%;
     }
+    
+    .body-container {
+    }
 }
 
 /* @media (min-width:320px)  { smartphones, iPhone, portrait 480x320 phones }

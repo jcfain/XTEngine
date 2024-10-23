@@ -19,12 +19,12 @@
 	<div class="header">
 		<div id="logoutSectionSpacing" class="headerSection toolBar" style="margin-left:32px">
 			<!-- <div id="statusOutput"></div> -->
-			<label id="statusOutputLabel" for="statusOutput" style="font-size: 0.7rem;" class="hidden-visibility"></label>
-			<progress id="statusOutput" class="pregress-status hidden-visibility" value="0" max="100"></progress>
+			<!-- <label id="statusOutputLabel" for="statusOutput" style="font-size: 0.7rem;" class="hidden-visibility"></label>
+			<progress id="statusOutput" class="pregress-status hidden-visibility" value="0" max="100"></progress> -->
 		</div>
 		<div class="headerSection headerActionSection toolBar">
 			<div class="toolBarGroup toolBarGroupEnd">
-				<button title="TCode device status\n(Click to connect)" name="deviceStatusRetryButton" class="icon-button icon-button--group device-status-retry-button"
+				<!-- <button title="TCode device status\n(Click to connect)" name="deviceStatusRetryButton" class="icon-button icon-button--group device-status-retry-button"
 					onclick="tcodeDeviceConnectRetry()">
 					<img name="connectionStatusIconImage" class="buttonImage" src="://images/icons/reload.svg" />
 				</button>
@@ -33,8 +33,11 @@
 				</button>
 				<button  title="Send TCode home" name="deviceHomeButton" class="icon-button icon-button--group" onclick="sendDeviceHome()">
 					<img name="deviceHomeButtonImage" class="buttonImage" src="://images/icons/home.svg" />
-				</button>
+				</button> -->
 				
+				<button id="scriptStatusModalButton" title="Script status" class="script-status-button icon-button icon-button--group" onclick="toggleScriptStatusModal()">
+					<img class="buttonImage" src="://images/icons/equalizer.svg" />
+				</button> 
 			</div>
 		</div>
 		<div class="headerSection headerLogoSection">
@@ -42,12 +45,12 @@
 		</div>
 		<div class="headerSection headerActionSection toolBar">
 			<div class="toolBarGroup toolBarGroupStart">
-				<button id="scriptStatusModalButton" title="Script status" class="script-status-button icon-button icon-button--group" onclick="toggleScriptStatusModal()">
+				<!-- <button id="scriptStatusModalButton" title="Script status" class="script-status-button icon-button icon-button--group" onclick="toggleScriptStatusModal()">
 					<img class="buttonImage" src="://images/icons/equalizer.svg" />
-				</button> 
-				<button name="refreshXTPLibraryButton" title="This will start the library loading process" class="script-status-button icon-button icon-button--group" onclick="refreshXTPLibrary()">
+				</button>  -->
+				<!-- <button name="refreshXTPLibraryButton" title="This will start the library loading process" class="script-status-button icon-button icon-button--group" onclick="refreshXTPLibrary()">
 					<img class="buttonImage" src="://images/icons/reload.svg" />
-				</button>
+				</button> -->
 				<button title="Settings" id="settingsButton" class="icon-button icon-button--group" onclick="openSettings()">
 					<image class="buttonImage" src="://images/icons/settings-black.png" />
 				</button>
@@ -868,6 +871,29 @@
 						cancel
 					</button>
 				</div>
+			</div>
+		</div>
+	</div>
+	<div class="footer">
+		<div class="footerSection headerActionSection toolBar">
+			<div class="toolBarGroup toolBarGroupStart">
+				<button title="TCode device status\n(Click to connect)" name="deviceStatusRetryButton" class="icon-button icon-button--group device-status-retry-button"
+					onclick="tcodeDeviceConnectRetry()">
+					<img name="connectionStatusIconImage" class="buttonImage" src="://images/icons/reload.svg" />
+				</button>
+				<button title="TCode device pause toggle" name="devicePauseStatusButton" class="icon-button icon-button--group video-control--device-state" onclick="togglePauseAllDeviceActions()">
+					<img name="devicePauseStatusIconImage" class="buttonImage" src="://images/icons/pause.svg" />
+				</button>
+				<button  title="Send TCode home" name="deviceHomeButton" class="icon-button icon-button--group" onclick="sendDeviceHome()">
+					<img name="deviceHomeButtonImage" class="buttonImage" src="://images/icons/home.svg" />
+				</button>
+			</div>
+		</div>
+		<div id="progressSection" class="footerSection toolBar">
+			<div class="toolBarGroup toolBarGroupEnd">
+				<!-- <div id="statusOutput"></div> -->
+				<label id="statusOutputLabel" for="statusOutput" style="font-size: 0.7rem;" class="hidden-visibility"></label>
+				<progress id="statusOutput" class="pregress-status hidden-visibility" value="0" max="100"></progress>
 			</div>
 		</div>
 	</div>
