@@ -588,10 +588,19 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
             LogHandler::Debug("Force item: "+QString::number(item.forceProcessMetadata));
             LogHandler::Debug("New item: "+QString::number(!hasExistingMetadata));
         }
+        // Did this cause an issue? Need to test data integrety after full process?
         // item.metadata.libraryItemPath = item.path;
         // item.metadata.key = item.nameNoExtension;
         if(!hasExistingMetadata) {
             item.metadata.defaultValues(item.nameNoExtension, item.path);
+            metadataChanged = true;
+        }
+        if(item.path != item.metadata.libraryItemPath) {
+            item.metadata.libraryItemPath = item.path;
+            metadataChanged = true;
+        }
+        if(item.nameNoExtension != item.metadata.key) {
+            item.metadata.key = item.nameNoExtension;
             metadataChanged = true;
         }
         if(updateToolTip(item)) {
