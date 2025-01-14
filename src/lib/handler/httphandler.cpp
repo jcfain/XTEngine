@@ -685,7 +685,7 @@ HttpPromise HttpHandler::handleMediaItemMetadataUpdate(HttpDataPtr data)
     {
         auto metaData = LibraryListItemMetaData258::fromJson(doc.object());
         SettingsHandler::setLiveOffset(metaData.offset);
-        auto libraryItem = _mediaLibraryHandler->findItemByID(metaData.key);
+        auto libraryItem = _mediaLibraryHandler->findItemByNameNoExtension(metaData.key);
         if(libraryItem)
         {
             libraryItem->metadata = metaData;
