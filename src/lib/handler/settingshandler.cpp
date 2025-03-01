@@ -3000,7 +3000,6 @@ double SettingsHandler::getHTTPChunkSizeMB()
 
 void SettingsHandler::setHTTPChunkSizeMB(double value)
 {
-    QMutexLocker locker(&mutex);
     changeSetting(SettingKeys::httpChunkSizeMB, value);
 }
 

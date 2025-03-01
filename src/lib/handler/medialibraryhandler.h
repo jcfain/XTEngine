@@ -68,6 +68,7 @@ public:
     void addItemBack(LibraryListItem27 item);
     QList<LibraryListItem27> getLibraryCache();
     QList<LibraryListItem27> getPlaylist(QString name);
+    void fixPlaylist(QString name);
     //QList<LibraryListItem27> getVRLibraryCache();
     void setLiveProperties(LibraryListItem27 &item);
     void lockThumb(LibraryListItem27 &item);
@@ -84,8 +85,9 @@ public:
     LibraryListItem27* findItemByPartialThumbPath(QString partialThumbPath);
     LibraryListItem27* findItemBySubtitle(QString subtitle);
     LibraryListItem27* findItemByPartialSubtitle(QString partialSubtitle);
-    LibraryListItem27 *findItemByAltScript(QString value);
-    LibraryListItem27 *findItemByPartialAltScript(QString value);
+    LibraryListItem27* findItemByAltScript(QString value);
+    LibraryListItem27* findItemByPartialAltScript(QString value);
+    LibraryListItem27* findItemByReference(const LibraryListItem27* playListItem);
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);
     void cleanGlobalThumbDirectory();

@@ -55,6 +55,7 @@ public:
     bool thumbFileExists = false;
     bool managedThumb = false;
     bool forceProcessMetadata = false;
+    bool error = false;
 
     friend QDataStream & operator<<( QDataStream &dataStream, const LibraryListItem27 &object )
     {

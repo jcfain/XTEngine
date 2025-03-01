@@ -1594,10 +1594,11 @@ function loadMedia(mediaList) {
 		}
 		var divnode = document.createElement("div");
 		divnode.id = obj.id
-		divnode.className += "media-item"
+		divnode.classList.add("media-item");
 		divnode.style.width = width;
 		divnode.style.height = height;
 		divnode.title = obj.tooltip;
+		divnode.setAttribute("data-display-name", obj.displayName);
 
 		var info = document.createElement("button");
 		info.id = obj.id + "InfoButton";
@@ -1975,8 +1976,8 @@ function filter(criteria) {
 	var mediaItems = document.getElementsByClassName("media-item");
 	for (var item of mediaItems) {
 		const libraryItem = mediaListDisplayed.find(x => x.id === item.id);
-
-		item.hidden = isFiltered(userFilterCriteria, item.textContent) || isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags);
+		const displayName = item.getAttribute("data-display-name");
+		item.hidden = isFiltered(userFilterCriteria, displayName) || isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags);
 	};
 	filterInput.enabled = true;
 }

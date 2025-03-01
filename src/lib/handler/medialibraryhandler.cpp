@@ -1021,17 +1021,48 @@ QList<LibraryListItem27> MediaLibraryHandler::getPlaylist(QString name) {
         int index = playlist.indexOf(item);
         float percentage = round(((float)playlist.indexOf(item)/playlist.length()) * 100);
         emit backgroundProcessStateChange("Loading playlist", percentage);
-        LibraryListItem27& itemRef = playlist[index];
-        setLiveProperties(itemRef);
-        bool metaDataChanged = false;
-        QVector<int> rolesChanged;
-        processMetadata(itemRef, metaDataChanged, rolesChanged);
-        setThumbState(itemRef.thumbFileExists ? ThumbState::Ready : ThumbState::Error, itemRef);
+        LibraryListItem27* itemRef = findItemByReference(&item);
+        if(itemRef)
+        {
+            playlist[index] = *itemRef;
+        }
+        else
+        {
+            if(!QFile::exists(item.path)) {
+                playlist[index].error = true;
+                playlist[index].metadata.toolTip += "\nMedia path not found!";
+                continue;
+            }
+            itemRef = &playlist[index];
+            setLiveProperties(*itemRef);
+            bool metaDataChanged = false;
+            QVector<int> rolesChanged;
+            processMetadata(*itemRef, metaDataChanged, rolesChanged);
+            setThumbState(itemRef->thumbFileExists ? ThumbState::Ready : ThumbState::Error, *itemRef);
+        }
     }
 
     emit backgroundProcessStateChange(nullptr, -1);
     return playlist;
 }
+
+void MediaLibraryHandler::fixPlaylist(QString name)
+{
+    // auto playlists = SettingsHandler::getPlaylists();
+    // auto playlist = playlists.value(name);
+    // foreach (auto item, playlist) {
+    //     int index = playlist.indexOf(item);
+    //     float percentage = round(((float)playlist.indexOf(item)/playlist.length()) * 100);
+    //     emit backgroundProcessStateChange("Fixing playlist", percentage);
+    //     LibraryListItem27& itemRef = playlist[index];
+    //     setLiveProperties(itemRef);
+    //     bool metaDataChanged = false;
+    //     QVector<int> rolesChanged;
+    //     processMetadata(itemRef, metaDataChanged, rolesChanged);
+    //     setThumbState(itemRef.thumbFileExists ? ThumbState::Ready : ThumbState::Error, itemRef);
+    // }
+}
+
 LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
 {
     LibraryListItem27 item;
@@ -1807,4 +1838,16 @@ LibraryListItem27 *MediaLibraryHandler::findItemByPartialAltScript(QString value
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
     return 0;
+}
+
+LibraryListItem27 *MediaLibraryHandler::findItemByReference(const LibraryListItem27 *playListItem)
+{
+    auto item = findItemByID(playListItem->ID);
+    if(!item) {
+        item = findItemByNameNoExtension(playListItem->nameNoExtension);
+    }
+    if(!item) {
+        item = findItemByMediaPath(playListItem->path);
+    }
+    return item;
 }
