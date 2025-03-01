@@ -8,10 +8,12 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include "Bookmark.h"
+#include "ScriptInfo.h"
 #include "XTEngine_global.h"
 
 struct XTENGINE_EXPORT LibraryListItemMetaData258
 {
+    QString key;
     QString libraryItemPath;
     bool watched;
     qint64 lastPlayPosition;
@@ -20,12 +22,24 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     qint64 lastLoopEnd;
     int offset;
     qint64 moneyShotMillis;
+    double funscriptModifier;
+    //Live values
+    QString toolTip;
+    QString subtitle;
+    bool isMFS;
+    bool hasAlternate;
+    QDateTime dateAdded;
+
     QList<Bookmark> bookmarks;
     QList<QString> funscripts;
     QList<QString> tags;
+    QStringList MFSScripts;
+    QStringList MFSTracks;
+    QList<ScriptInfo> scripts;
 
     friend QDataStream & operator<<(QDataStream &dataStream, const LibraryListItemMetaData258 &object )
     {
+        dataStream << object.key;
         dataStream << object.libraryItemPath;
         dataStream << object.watched;
         dataStream << object.lastPlayPosition;
@@ -34,17 +48,31 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream << object.lastLoopEnd;
         dataStream << object.offset;
         dataStream << object.moneyShotMillis;
+        dataStream << object.funscriptModifier;
+        dataStream << object.toolTip;
+        dataStream << object.subtitle;
+        dataStream << object.isMFS;
+        dataStream << object.hasAlternate;
+        dataStream << object.dateAdded;
         foreach(auto bookmark, object.bookmarks )
             dataStream << bookmark;
         foreach(auto funscript, object.funscripts )
             dataStream << funscript;
         foreach(auto tag, object.tags )
             dataStream << tag;
+        foreach(auto script, object.MFSScripts )
+            dataStream << script;
+        foreach(auto track, object.MFSTracks )
+            dataStream << track;
+        foreach(auto script, object.scripts )
+            dataStream << script;
+
         return dataStream;
     }
 
     friend QDataStream & operator>>(QDataStream &dataStream, LibraryListItemMetaData258 &object)
     {
+        dataStream >> object.key;
         dataStream >> object.libraryItemPath;
         dataStream >> object.watched;
         dataStream >> object.lastPlayPosition;
@@ -53,12 +81,24 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream >> object.lastLoopEnd;
         dataStream >> object.offset;
         dataStream >> object.moneyShotMillis;
+        dataStream >> object.funscriptModifier;
+        dataStream >> object.toolTip;
+        dataStream >> object.subtitle;
+        dataStream >> object.isMFS;
+        dataStream >> object.hasAlternate;
+        dataStream >> object.dateAdded;
         foreach(auto bookmark, object.bookmarks )
             dataStream >> bookmark;
         foreach(auto funscript, object.funscripts )
             dataStream >> funscript;
         foreach(auto tag, object.tags )
             dataStream >> tag;
+        foreach(auto script, object.MFSScripts )
+            dataStream >> script;
+        foreach(auto track, object.MFSTracks )
+            dataStream >> track;
+        foreach(auto script, object.scripts )
+            dataStream >> script;
         return dataStream;
     }
     friend bool operator==(const LibraryListItemMetaData258 &p1, const LibraryListItemMetaData258 &p2)
@@ -99,6 +139,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     static QJsonObject toJson(LibraryListItemMetaData258 item)
     {
         QJsonObject obj;
+        obj["key"] = item.key;
         obj["libraryItemPath"] = item.libraryItemPath;
         obj["watched"] = item.watched;
         obj["lastPlayPosition"] = QString::number(item.lastPlayPosition);
@@ -108,6 +149,12 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         obj["offset"] = item.offset;
         obj["moneyShotMillis"] = QString::number(item.moneyShotMillis);
         obj["moneyShotSecs"] = item.moneyShotMillis / 1000;
+        obj["funscriptModifier"] = item.funscriptModifier;
+        obj["toolTip"] = item.toolTip;
+        obj["subtitle"] = item.subtitle;
+        obj["isMFS"] = item.isMFS;
+        obj["hasAlternate"] = item.hasAlternate;
+        obj["dateAdded"] = item.dateAdded.toString(Qt::DateFormat::ISODateWithMs);
         QJsonArray bookmarks;
         foreach(Bookmark bookmark, item.bookmarks) {
             QJsonObject bookmarkObj;
@@ -126,19 +173,41 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
             tags.append(tag);
         }
         obj["tags"] = tags;
+        QJsonArray mfsScripts;
+        foreach (auto script, item.MFSScripts) {
+            mfsScripts.append(script);
+        }
+        obj["MFSScripts"] = mfsScripts;
+        QJsonArray mfsTracks;
+        foreach (auto script, item.MFSTracks) {
+            mfsScripts.append(script);
+        }
+        obj["MFSTracks"] = mfsTracks;
+        QJsonArray altScripts;
+        foreach (auto script, item.scripts) {
+            altScripts.append(ScriptInfo::toJson(script));
+        }
+        obj["scripts"] = altScripts;
         return obj;
     }
 
     static LibraryListItemMetaData258 fromJson(QJsonObject obj) {
         LibraryListItemMetaData258 newItem;
+        newItem.key = obj["key"].toString();
         newItem.libraryItemPath = obj["libraryItemPath"].toString();
         newItem.watched = obj["watched"].toBool();
-        newItem.lastPlayPosition = obj["lastPlayPosition"].toString().toLongLong();
+        newItem.lastPlayPosition = obj["lastPlayPosition"].toString("-1").toLongLong();
         newItem.lastLoopEnabled = obj["lastLoopEnabled"].toBool();
-        newItem.lastLoopStart = obj["lastLoopStart"].toString().toLongLong();
-        newItem.lastLoopEnd = obj["lastLoopEnd"].toString().toLongLong();
-        newItem.offset = obj["offset"].toInt();
-        newItem.moneyShotMillis = obj["moneyShotMillis"].toString().toLongLong();
+        newItem.lastLoopStart = obj["lastLoopStart"].toString("-1").toLongLong();
+        newItem.lastLoopEnd = obj["lastLoopEnd"].toString("-1").toLongLong();
+        newItem.offset = obj["offset"].toInt(0);
+        newItem.moneyShotMillis = obj["moneyShotMillis"].toString("-1").toLongLong();
+        newItem.funscriptModifier = obj["funscriptModifier"].toDouble(100.0);
+        newItem.toolTip = obj["toolTip"].toString();
+        newItem.subtitle = obj["subtitle"].toString();
+        newItem.isMFS = obj["isMFS"].toBool();
+        newItem.hasAlternate = obj["hasAlternate"].toBool();
+        newItem.dateAdded = QDateTime::fromString(obj["dateAdded"].toString(), Qt::DateFormat::ISODateWithMs);
         foreach(auto bookmark, obj["bookmarks"].toArray())
         {
             Bookmark bookMark;
@@ -154,7 +223,72 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         {
             newItem.tags.append(tag.toString());
         }
+        foreach(auto script, obj["MFSScripts"].toArray())
+        {
+            newItem.MFSScripts.append(script.toString());
+        }
+        foreach(auto track, obj["MFSTracks"].toArray())
+        {
+            newItem.MFSTracks.append(track.toString());
+        }
+        foreach(auto track, obj["scripts"].toArray())
+        {
+            newItem.scripts.append(ScriptInfo::fromJson(track.toObject()));
+        }
         return newItem;
+    }
+
+    void defaultValues(const QString& keyIn, const QString& libraryMediaPathIn)
+    {
+        QJsonObject obj;
+        LibraryListItemMetaData258 newItem = fromJson(obj);
+        key = keyIn;
+        libraryItemPath = libraryMediaPathIn;
+        watched = newItem.watched;
+        lastPlayPosition = newItem.lastPlayPosition;
+        lastLoopEnabled = newItem.lastLoopEnabled;
+        lastLoopStart = newItem.lastLoopStart;
+        lastLoopEnd = newItem.lastLoopEnd;
+        offset = newItem.offset;
+        moneyShotMillis = newItem.moneyShotMillis;
+        funscriptModifier = newItem.funscriptModifier;
+        toolTip = newItem.toolTip;
+        subtitle = newItem.subtitle;
+        isMFS = newItem.isMFS;
+        hasAlternate = newItem.hasAlternate;
+        bookmarks.clear();
+        foreach(auto bookmark, newItem.bookmarks)
+        {
+            Bookmark bookMark;
+            bookMark.Name = bookMark.Name;
+            bookMark.Time = bookmark.Time;
+            bookmarks.append(bookMark);
+        }
+        funscripts.clear();
+        foreach(auto funscript, newItem.funscripts)
+        {
+            funscripts.append(funscript);
+        }
+        tags.clear();
+        foreach(auto tag, newItem.tags)
+        {
+            tags.append(tag);
+        }
+        MFSScripts.clear();
+        foreach(auto script, newItem.MFSScripts)
+        {
+            MFSScripts.append(script);
+        }
+        MFSTracks.clear();
+        foreach(auto track, newItem.MFSTracks)
+        {
+            MFSTracks.append(track);
+        }
+        scripts.clear();
+        foreach(auto track, newItem.scripts)
+        {
+            scripts.append(track);
+        }
     }
 };
 

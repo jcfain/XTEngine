@@ -14,7 +14,7 @@ class XTENGINE_EXPORT TCodeHandler : QObject
 public:
     TCodeHandler(QObject* parent = nullptr);
     ~TCodeHandler();
-    QString funscriptToTCode(std::shared_ptr<FunscriptAction> action, QMap<QString, std::shared_ptr<FunscriptAction>> otherActions);
+    QString funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAction>> actions);
 
     int calculateRange(const char* channel, int rawValue);
     QString getRunningHome();

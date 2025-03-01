@@ -2,6 +2,7 @@
 
 #include "lib/handler/xmediastatehandler.h"
 #include "lib/struct/ScriptInfo.h"
+#include "lib/lookup/SettingMap.h"
 
 XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
 {
@@ -12,9 +13,11 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     qRegisterMetaType<QItemSelection>();
     qRegisterMetaTypeStreamOperators<QList<QString>>("QList<QString>");
     qRegisterMetaTypeStreamOperators<ChannelModel>("ChannelModel");
-    qRegisterMetaType<AxisDimension>("AxisDimension");
-    qRegisterMetaType<AxisType>("AxisType");
-    qRegisterMetaTypeStreamOperators<AxisName>("AxisName");
+    qRegisterMetaType<ChannelDimension>("ChannelDimension");
+    qRegisterMetaType<ChannelType>("ChannelType");
+    qRegisterMetaType<ChannelTimeType>("ChannelTimeType");
+    qRegisterMetaType<FunscriptAction>("FunscriptAction");
+    qRegisterMetaTypeStreamOperators<ChannelName>("ChannelName");
     qRegisterMetaTypeStreamOperators<DecoderModel>("DecoderModel");
     qRegisterMetaTypeStreamOperators<XMediaStatus>("XMediaStatus");
     qRegisterMetaType<LibraryListItem>();
@@ -38,7 +41,8 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     SettingsHandler::Load();
     _tcodeFactory = new TCodeFactory(0.0, 1.0, this);
     _tcodeHandler = new TCodeHandler(this);
-    _settingsActionHandler = new SettingsActionHandler(this);
+    _syncHandler = new SyncHandler(this);
+    _settingsActionHandler = new SettingsActionHandler(_syncHandler, this);
     connect(_settingsActionHandler, &SettingsActionHandler::actionExecuted, this, [this](QString action, QString actionExecuted) {
         if (action == actions.SkipToMoneyShot)
         {
@@ -50,12 +54,22 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
         }
     });
     _mediaLibraryHandler = new MediaLibraryHandler(this);
+    XMediaStateHandler::setMediaLibraryHandler(_mediaLibraryHandler);
+
+    m_scheduler = new Scheduler(_mediaLibraryHandler, this);
+    if(SettingsHandler::scheduleLibraryLoadEnabled())
+        m_scheduler->startLibraryLoadSchedule();
+    // connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, [this](){
+    //     emit stopAllMedia();
+    // });
     _connectionHandler = new ConnectionHandler(this);
-    _syncHandler = new SyncHandler(this);
     m_heatmap = new HeatMap(this);
     connect(m_heatmap, &HeatMap::maxHeat, this, [](qint64 maxHeatAt) {
-        if(maxHeatAt > 0)
-            SettingsHandler::instance()->setMoneyShot(XMediaStateHandler::getPlaying(), maxHeatAt, false);
+        if(maxHeatAt > 0) {
+            auto item = XMediaStateHandler::getPlaying();
+            if(item)
+                SettingsHandler::instance()->setMoneyShot(*item, maxHeatAt, false);
+        }
     });
 
     connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, [this]() {
@@ -81,14 +95,42 @@ void XTEngine::init()
         connect(_httpHandler, &HttpHandler::restartService, SettingsHandler::instance(), &SettingsHandler::Restart);
         connect(_httpHandler, &HttpHandler::skipToMoneyShot, this, &XTEngine::skipToMoneyShot);
         connect(_httpHandler, &HttpHandler::skipToNextAction, this, &XTEngine::skipToNextAction);
+        connect(_httpHandler, &HttpHandler::cleanupThumbs, _mediaLibraryHandler, &MediaLibraryHandler::cleanGlobalThumbDirectory);
         connect(_httpHandler, &HttpHandler::connectInputDevice, _connectionHandler, &ConnectionHandler::initInputDevice);
         connect(_httpHandler, &HttpHandler::connectOutputDevice, _connectionHandler, &ConnectionHandler::initOutputDevice);
+        connect(this, &XTEngine::stopAllMedia, _httpHandler, &HttpHandler::stopAllMedia);
         connect(_connectionHandler, &ConnectionHandler::connectionChange, _httpHandler, &HttpHandler::on_DeviceConnection_StateChange);
+        connect(_httpHandler, &HttpHandler::settingChange, qOverload<QString, QVariant>(SettingsHandler::changeSetting));
+        connect(syncHandler(), &SyncHandler::channelPositionChange, _httpHandler, &HttpHandler::channelPositionChange, Qt::QueuedConnection);
+        connect(syncHandler(), &SyncHandler::togglePaused, _httpHandler, &HttpHandler::scriptTogglePaused, Qt::QueuedConnection);
+        connect(_httpHandler, &HttpHandler::mediaAction, settingsActionHandler(), &SettingsActionHandler::media_action, Qt::QueuedConnection);
+        connect(settingsActionHandler(), &SettingsActionHandler::actionExecuted, httpHandler(), &HttpHandler::actionExecuted, Qt::QueuedConnection);
 
+        connect(_httpHandler, &HttpHandler::clean1024, this, [this]() {
+            _mediaLibraryHandler->startMetadata1024Cleanup();
+        });
         _httpHandler->listen();
     }
+
+    connect(SettingsHandler::instance(), &SettingsHandler::settingChange, this, [this](QString key, QVariant value) {
+        if(key == SettingKeys::scheduleLibraryLoadTime)
+        {
+            QTime newTime = QTime::fromString(value.toString());
+            if(newTime.isValid())
+                m_scheduler->runTimeChange(newTime);
+        }
+        else if(key == SettingKeys::scheduleLibraryLoadEnabled)
+        {
+            scheduleLibraryLoadEnableChange(value.toBool());
+        }
+    });
     
-    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, &SyncHandler::searchForFunscript);
+    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, [this](InputDevicePacket packet) {
+        if(!_mediaLibraryHandler->isLoadingMediaPaths())
+            _syncHandler->searchForFunscript(packet);
+        else
+            LogHandler::Warn("Waiting for media paths to load to search for funscripts....");
+    });
     connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, this, [](InputDevicePacket packet) {
         XMediaStateHandler::updateDuration(packet.currentTime, packet.duration);
     });
@@ -119,13 +161,17 @@ void XTEngine::init()
     connect(_syncHandler, &SyncHandler::sendTCode, _connectionHandler, &ConnectionHandler::sendTCode, Qt::QueuedConnection);
     connect(_syncHandler, &SyncHandler::funscriptLoaded, this, [this](QString funscriptPath) {
         // Generate first load moneyshot based off heatmap if not already set.
-        auto funscript = _syncHandler->getFunscriptHandler()->currentFunscript();
-        auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(XMediaStateHandler::getPlaying());
-        if(libraryListItemMetaData.moneyShotMillis > 0)
-            return;
+        auto funscriptHandler = _syncHandler->getFunscriptHandler();
+        if(funscriptHandler)
+        {
+            auto funscript = funscriptHandler->currentFunscript();
+            auto playingItem = XMediaStateHandler::getPlaying();
+            if(playingItem && playingItem->metadata.moneyShotMillis > 0)
+                return;
 
-        if(funscript) {
-            m_heatmap->getMaxHeatAsync(funscript->actions);
+            if(funscript) {
+                m_heatmap->getMaxHeatAsync(funscript->actions);
+            }
         }
     });
     connect(_syncHandler, &SyncHandler::funscriptSearchResult, this, &XTEngine::onFunscriptSearchResult);
@@ -141,28 +187,50 @@ void XTEngine::init()
     _mediaLibraryHandler->loadLibraryAsync();
 }
 
+void XTEngine::scheduleLibraryLoadEnableChange(bool enabled)
+{
+    enabled ?
+        m_scheduler->startLibraryLoadSchedule() :
+        m_scheduler->stopLibraryLoadSchedule();
+}
+
 void XTEngine::onFunscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration)
 {
-    if (_connectionHandler->isOutputDeviceConnected())
+    bool error = false;
+    if(funscriptPath.isEmpty())
     {
-        if(!funscriptPath.isEmpty())
-        {
-            LogHandler::Debug("Starting sync: "+funscriptPath);
-            auto fileName = QUrl(mediaPath).fileName();
-            auto itemRef = _mediaLibraryHandler->findItemByName(QUrl(mediaPath).fileName());
-            if(!itemRef) {
-                LogHandler::Error("NO vr item found in media library");
-            } else {
-                XMediaStateHandler::setPlaying(itemRef);
-            }
-            _syncHandler->syncInputDeviceFunscript(funscriptPath);
-        }
+        LogHandler::Warn("Funscript path was empty when starting sync");
+        error = true;
     }
+    if(mediaPath.isEmpty())
+    {
+        LogHandler::Warn("Media path was empty when starting sync");
+        error = true;
+    }
+    if(_mediaLibraryHandler->isLoadingMediaPaths())
+    {
+        LogHandler::Warn("Please wait for library paths has been loaded before starting sync...");
+        error = true;
+    }
+    if(error)
+        return;
+    LogHandler::Debug("Starting sync: "+funscriptPath);
+    auto fileName = QUrl(mediaPath).fileName();
+    auto itemRef = _mediaLibraryHandler->findItemByName(fileName);
+    if(!itemRef) {
+        LogHandler::Error("No external item found in media library. Setting up temporary item for: "+mediaPath);
+        _mediaLibraryHandler->setupTempExternalItem(mediaPath, funscriptPath, mediaDuration);
+        itemRef = _mediaLibraryHandler->findItemByName(fileName);
+        XMediaStateHandler::setPlaying(itemRef);
+    } else {
+        XMediaStateHandler::setPlaying(itemRef);
+    }
+    _syncHandler->syncInputDeviceFunscript(*itemRef);
 }
 
 void XTEngine::skipToNextAction()
 {
-    if(SettingsHandler::getEnableHttpServer() && _syncHandler->isLoaded())
+    if(SettingsHandler::getEnableHttpServer() && _syncHandler->isPlayingVR())
     {
         qint64 nextActionMillis = _syncHandler->getFunscriptNext();
         if(nextActionMillis > 1500)

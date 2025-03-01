@@ -30,18 +30,18 @@ public:
     Funscript* currentFunscript();
     static bool getInverted();
     static void setInverted(bool value);
-    qint64 getMin();
-    qint64 getMax();
-    qint64 getNext();
+    qint64 getMin() const;
+    qint64 getMax() const;
+    qint64 getNext() const;
     std::shared_ptr<FunscriptAction> getPosition(qint64 at);
-    QString channel();
+    QString channel() const;
 
     void play(QString funscript);
     void stop();
 
-    static void setModifier(int percentage);
+    static void setModifier(double percentage);
     static void resetModifier();
-    static int getModifier();
+    static double getModifier();
 
 
 private:
@@ -56,7 +56,7 @@ private:
     qint64 lastActionIndex;
     qint64 nextActionIndex;
     int lastActionPos;
-    int lastActionSpeed;
+    int lastActionInterval;
     QList<qint64> atList;
     Funscript* funscript = 0;
     int n;

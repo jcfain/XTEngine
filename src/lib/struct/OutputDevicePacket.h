@@ -5,7 +5,7 @@
 
 #include "XTEngine_global.h"
 
-enum class XTENGINE_EXPORT OutputDeviceCommandType {
+enum class OutputDeviceCommandType {
     BUTTON
 };
 

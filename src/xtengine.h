@@ -13,6 +13,7 @@
 #include "lib/handler/synchandler.h"
 #include "lib/handler/medialibraryhandler.h"
 #include "lib/handler/connectionhandler.h"
+#include "lib/handler/scheduler.h"
 #include "lib/tool/tcodefactory.h"
 #include "lib/handler/tcodehandler.h"
 #include "lib/tool/heatmap.h"
@@ -21,6 +22,7 @@ class XTENGINE_EXPORT XTEngine: public QObject
 {
     Q_OBJECT
 signals:
+    void stopAllMedia();
 
 private slots:
     void onFunscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
@@ -54,6 +56,10 @@ public:
     TCodeFactory* tcodeFactory() {
         return _tcodeFactory;
     }
+    Scheduler* scheduler() {
+        return m_scheduler;
+    }
+    void scheduleLibraryLoadEnableChange(bool enabled);
 //    XMediaStateHandler* xMediaStateHandler() {
 //        return m_xMediaStateHandler;
 //    }
@@ -68,6 +74,8 @@ private:
     SettingsActionHandler* _settingsActionHandler = 0;
     TCodeFactory *_tcodeFactory = 0;
     HeatMap* m_heatmap;
+    Scheduler* m_scheduler;
+
 //    XMediaStateHandler* m_xMediaStateHandler;
 
 

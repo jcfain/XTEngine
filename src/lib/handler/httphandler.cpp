@@ -25,11 +25,10 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         }
         obj["userTags"] = userTags;
         obj["smartTags"] = smartTags;
-        QJsonDocument doc(obj);
-        QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
-        _webSocketHandler->sendCommand("tagsUpdate", itemJson);
+        _webSocketHandler->sendCommand("tagsUpdate", obj);
     });
 
+    connect(_webSocketHandler, &WebSocketHandler::clean1024, this, &HttpHandler::clean1024);
     connect(_webSocketHandler, &WebSocketHandler::connectOutputDevice, this, &HttpHandler::connectOutputDevice);
     connect(_webSocketHandler, &WebSocketHandler::connectInputDevice, this, &HttpHandler::connectInputDevice);
     connect(_webSocketHandler, &WebSocketHandler::tcode, this, &HttpHandler::tcode);
@@ -47,13 +46,43 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::saveSingleThumb, this, [this](QString itemID, qint64 pos) {
         _mediaLibraryHandler->saveSingleThumb(itemID, pos);
     });
+    connect(_webSocketHandler, &WebSocketHandler::cleanupThumbs, this, &HttpHandler::cleanupThumbs);
     connect(_webSocketHandler, &WebSocketHandler::reloadLibrary, _mediaLibraryHandler, &MediaLibraryHandler::loadLibraryAsync);
+    connect(_webSocketHandler, &WebSocketHandler::startMetadataProcess, this, [this]() {
+        if(!_mediaLibraryHandler->isLibraryProcessing() &&
+            !_mediaLibraryHandler->metadataProcessing() &&
+            !_mediaLibraryHandler->thumbProcessRunning())
+        {
+            _mediaLibraryHandler->startMetadataProcess(true);
+        }
+    });
+    connect(_webSocketHandler, &WebSocketHandler::cleanupMetadata, this, [this]() {
+        if(!_mediaLibraryHandler->isLibraryProcessing() &&
+            !_mediaLibraryHandler->metadataProcessing() &&
+            !_mediaLibraryHandler->thumbProcessRunning())
+        {
+            _mediaLibraryHandler->startMetadataCleanProcess();
+        }
+    });
+    connect(_webSocketHandler, &WebSocketHandler::processMetadata, this, [this](QString libraryItemID) {
+        if(!_mediaLibraryHandler->metadataProcessing()) {
+            auto item = _mediaLibraryHandler->findItemByID(libraryItemID);
+            if(item)
+                _mediaLibraryHandler->processMetadata(*item);
+            else
+                _webSocketHandler->sendError("Unknown library item");
+        } else {
+            _webSocketHandler->sendUserWarning("Please wait for metadata process to complete!");
+        }
+    });
+    connect(_webSocketHandler, &WebSocketHandler::mediaAction, this, &HttpHandler::mediaAction);
 
+    connect(_webSocketHandler, &WebSocketHandler::settingChange, this, &HttpHandler::settingChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoadingStatus, this, &HttpHandler::onLibraryLoadingStatusChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoaded, this, &HttpHandler::onSetLibraryLoaded);
 
-    connect(_mediaLibraryHandler, &MediaLibraryHandler::saveThumbError, this, [this](LibraryListItem27 item, bool vrMode, QString error) {_webSocketHandler->sendUpdateThumb(item.ID, item.thumbFileError, error);});
+    connect(_mediaLibraryHandler, &MediaLibraryHandler::saveThumbError, this, [this](LibraryListItem27 item, bool vrMode, QString error) {_webSocketHandler->sendUpdateThumb(item.ID, ERROR_IMAGE, error);});
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumb, this, [this](LibraryListItem27 item, bool vrMode, QString thumbFile) {
         QString relativeThumb;
         if(thumbFile.startsWith(SettingsHandler::getSelectedThumbsDir())) {
@@ -72,7 +101,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemUpdated, this, [this](int index, QVector<int> roles) {
-        if(_mediaLibraryHandler->isLibraryLoading())
+        if(_mediaLibraryHandler->isLibraryProcessing())
             return;
         auto item = _mediaLibraryHandler->getLibraryCache().value(index);
 
@@ -86,14 +115,21 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
         _webSocketHandler->sendUpdateItem(itemJson, roleslist);
     });
+    connect(_mediaLibraryHandler, &MediaLibraryHandler::itemAdded, this, [this](int index, int newSize) {
+        if(_mediaLibraryHandler->isLibraryProcessing())
+            return;
+        auto item = _mediaLibraryHandler->getLibraryCache().value(index);
+        QJsonDocument doc(createMediaObject(item, m_hostAddress));
+        QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
+        _webSocketHandler->sendAddItem(itemJson);
+    });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::backgroundProcessStateChange, this, [this](QString message, float percentage) {
         QJsonObject obj;
         obj["message"] = message;
         obj["percentage"] = percentage;
-        QJsonDocument doc(obj);
-        _webSocketHandler->sendCommand("statusOutput", QString(doc.toJson(QJsonDocument::Compact)));
+        _webSocketHandler->sendCommand("statusOutput", obj);
     });
-    connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, item.thumbFileLoadingCurrent);});
+    connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, LOADING_CURRENT_IMAGE);});
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::thumbProcessBegin, this, [this]() {onLibraryLoadingStatusChange("Loading thumbs...");});
 
     connect(TCodeChannelLookup::instance(), &TCodeChannelLookup::channelProfileChanged, this, [this](QMap<QString, ChannelModel33>* channelProfile) {
@@ -106,6 +142,57 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     //     config.verbosity = HttpServerConfig::Verbose::All;
     // config.maxMultipartSize = 512 * 1024 * 1024;
     _server = new QHttpServer(this);
+    connect(this, &HttpHandler::channelPositionChange, this, [this](QString channel, int position, int time, ChannelTimeType timeType){
+        QJsonObject obj;
+        obj["channel"] = channel;
+        obj["position"] = position;
+        obj["time"] = time;
+        obj["timeType"] = (uint8_t)timeType;
+        _webSocketHandler->sendCommand("channelPositionChange", obj);
+    });
+
+    connect(this, &HttpHandler::scriptTogglePaused, this, [this](bool paused){
+        _webSocketHandler->sendScriptPaused(paused);
+    });
+
+    connect(this, &HttpHandler::actionExecuted, this, [this](QString action, QString spokenText, QVariant value){
+        QJsonObject obj;
+        obj["mediaAction"] = action;
+        obj["spokenText"] = spokenText;
+        switch(value.type())
+        {
+            case QVariant::Type::Bool:
+                obj["value"] = value.toBool();
+                break;
+            case QVariant::Type::String:
+                obj["value"] = value.toString();
+                break;
+            case QVariant::Type::Double:
+                obj["value"] = value.toDouble();
+                break;
+            case QVariant::Type::LongLong:
+            case QVariant::Type::ULongLong:
+                obj["value"] = value.toString();
+                break;
+            case QVariant::Type::Int:
+            case QVariant::Type::UInt:
+                obj["value"] = value.toInt();
+                break;
+        }
+
+        _webSocketHandler->sendCommand("mediaAction", obj);
+    });
+
+
+    config.port = SettingsHandler::getHTTPPort();
+    config.requestTimeout = 20;
+    if(LogHandler::getUserDebug())
+        config.verbosity = HttpServerConfig::Verbose::All;
+    config.maxMultipartSize = 512 * 1024 * 1024;
+//    config.errorDocumentMap[HttpStatus::NotFound] = "data/404_2.html";
+//    config.errorDocumentMap[HttpStatus::InternalServerError] = "data/404_2.html";
+//    config.errorDocumentMap[HttpStatus::BadGateway] = "data/404_2.html";
+    _server = new HttpServer(config, this);
 
     QString extensions;
     extensions += SettingsHandler::getVideoExtensions().join("|");
@@ -120,7 +207,8 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     _server->route("^/deotest$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleDeo);
     _server->route("^/settings$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleSettings);
     _server->route("^/channels$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleChannels);
-    _server->route("^/settings/availableSerialPorts$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleAvailableSerialPorts);
+    _server->route("^/availableSerialPorts$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleAvailableSerialPorts);
+    _server->route("^/mediaActions$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleMediaActions);
     _server->route("^/logout$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleLogout);
     _server->route("^/activeSessions$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleActiveSessions);
     _server->route("POST", "^/settings$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleSettingsUpdate);
@@ -432,7 +520,7 @@ QFuture<QHttpServerResponse> HttpHandler::handleWebTimeUpdate(const QHttpServerR
         return HttpPromise::resolve(data);
     }
     auto body = request.request->body();
-    LogHandler::Debug("HTTP time sync update: "+QString(body));
+    //LogHandler::Debug("HTTP time sync update: "+QString(body));
     emit xtpWebPacketRecieve(body);
     request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
     return HttpPromise::resolve(data);
@@ -448,13 +536,40 @@ QFuture<QHttpServerResponse> HttpHandler::handleAvailableSerialPorts(const QHttp
     request.response->compressBody();
     return HttpPromise::resolve(data);
 }
+
+HttpPromise HttpHandler::handleMediaActions(HttpDataPtr data)
+{
+    if(!isAuthenticated(data)) {
+        data->response->setStatus(HttpStatus::Unauthorized);
+        return HttpPromise::resolve(data);
+    }
+    MediaActions actions;
+    QJsonObject root;
+    foreach(QString action, actions.Values.keys())
+    {
+        root[action] = action;
+    }
+    data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
+    data->response->compressBody();
+    return HttpPromise::resolve(data);
+}
+
 QFuture<QHttpServerResponse> HttpHandler::handleSettings(const QHttpServerRequest& request) {
     if(!isAuthenticated(request)) {
         request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
-
+// Use enum?
     QJsonObject root;
+#if defined(Q_OS_WIN)
+    root["OS"] = "WIN32";
+#elif defined(Q_OS_MAC)
+    root["OS"] = "MAC";
+#elif defined(Q_OS_ANDROID)
+    root["OS"] = "ANDROID";
+#elif defined(Q_OS_LINUX)
+    root["OS"] = "LINUX";
+#endif
     root["xteVersion"] = SettingsHandler::XTEVersion;
     root["webSocketServerPort"] = _webSocketHandler->getServerPort();
 
@@ -508,6 +623,23 @@ QFuture<QHttpServerResponse> HttpHandler::handleSettings(const QHttpServerReques
     }
     root["smartTags"] = smartTagsArray;
 
+    // root["scheduleLibraryLoadEnabled"] = SettingsHandler::scheduleLibraryLoadEnabled();
+    // root["scheduleLibraryLoadTime"] = SettingsHandler::scheduleLibraryLoadTime().toString("hh:mm");
+    // root["scheduleLibraryLoadFullProcess"] = SettingsHandler::scheduleLibraryLoadFullProcess();
+    // root["processMetadataOnStart"] = SettingsHandler::processMetadataOnStart();
+    QJsonObject settingsObj;
+    foreach (SettingMap map, XSettingsMap::SettingsMap) {
+        SettingsHandler::getSetting(map.key, settingsObj);
+    }
+    root["settings"] = settingsObj;
+
+    // root["APPIMAGE1"] = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
+    // root["APPIMAGE2"] = QString(qgetenv("APPIMAGE"));
+    QJsonArray args;
+    foreach (auto arg, qApp->arguments()) {
+        args.append(arg);
+    }
+    root["args"] = args;
     data->response->setStatus(HttpStatus::Ok, QJsonDocument(root));
     data->response->compressBody();
     
@@ -538,7 +670,7 @@ QFuture<QHttpServerResponse> HttpHandler::handleSettingsUpdate(const QHttpServer
         foreach(auto channelName, channels)
         {
             auto channel = TCodeChannelLookup::getChannel(channelName);
-            if(channel->Type == AxisType::HalfOscillate || channel->Type == AxisType::None)
+            if(channel->Type == ChannelType::HalfOscillate || channel->Type == ChannelType::None)
                 continue;
             auto value = doc["availableChannels"][channelName].toObject();
             ChannelModel33 channelModel = ChannelModel33::fromJson(value);
@@ -623,6 +755,11 @@ QFuture<QHttpServerResponse> HttpHandler::handleMediaItemMetadataUpdate(const QH
         request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
     }
+    if(_mediaLibraryHandler->metadataProcessing()) {
+        data->response->setStatus(HttpStatus::Processing);
+        _webSocketHandler->sendUserWarning("Please wait for metadata process to complete!");
+        return HttpPromise::resolve(data);
+    }
 
     auto body = request.request->body();
     QJsonParseError error;
@@ -636,14 +773,24 @@ QFuture<QHttpServerResponse> HttpHandler::handleMediaItemMetadataUpdate(const QH
     else
     {
         auto metaData = LibraryListItemMetaData258::fromJson(doc.object());
-        SettingsHandler::updateLibraryListItemMetaData(metaData);
         SettingsHandler::setLiveOffset(metaData.offset);
+        auto libraryItem = _mediaLibraryHandler->findItemByNameNoExtension(metaData.key);
+        if(libraryItem)
+        {
+            libraryItem->metadata = metaData;
+            SettingsHandler::updateLibraryListItemMetaData(*libraryItem);
+        } else {
+            SettingsHandler::setForceMetaDataFullProcess(true);
+            data->response->setStatus(HttpStatus::Conflict, createError("Invalid metadata item please process metadata<br> In System tab under settings."));
+            return HttpPromise::resolve(data);
+        }
     }
     request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
     return HttpPromise::resolve(data);
 }
 
-QFuture<QHttpServerResponse> HttpHandler::handleChannels(const QHttpServerRequest& request) {
+QFuture<QHttpServerResponse> HttpHandler::handleChannels(const QHttpServerRequest& request) 
+{
     if(!isAuthenticated(request)) {
         request.response->setStatus(QHttpServerResponse::StatusCode::Unauthorized);
         return HttpPromise::resolve(data);
@@ -787,7 +934,7 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["id"] = item.ID;
     object["type"] = (int)item.type;
     object["name"] = item.nameNoExtension;
-    if(item.isMFS)
+    if(item.metadata.isMFS)
         object["displayName"] = "(MFS) " + item.nameNoExtension;
     else
         object["displayName"] = item.nameNoExtension;
@@ -795,9 +942,9 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     relativePath = relativePath.replace(item.libraryPath +"/", "");
     object["path"] = hostAddress + "media/" + QString(QUrl::toPercentEncoding(relativePath));
     object["relativePath"] = "/" + QString(QUrl::toPercentEncoding(relativePath));
-    if(!item.subtitle.isEmpty())
+    if(!item.metadata.subtitle.isEmpty())
     {
-        QString relativeSubtitlePath = item.subtitle;
+        QString relativeSubtitlePath = item.metadata.subtitle;
         relativeSubtitlePath = relativeSubtitlePath.replace(item.libraryPath +"/", "");
         object["subtitle"] = hostAddress + "media/" + QString(QUrl::toPercentEncoding(relativeSubtitlePath));
         object["subtitleRelative"] = "/" + QString(QUrl::toPercentEncoding(relativeSubtitlePath));
@@ -814,21 +961,20 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["thumbSize"] = SettingsHandler::getThumbSize();
     object["duration"] = QJsonValue::fromVariant(item.duration);
     object["modifiedDate"] = item.modifiedDate.toString(Qt::DateFormat::ISODate);
-    object["isMFS"] = item.isMFS;
-    object["tooltip"] = item.toolTip;
+    object["isMFS"] = item.metadata.isMFS;
+    object["tooltip"] = item.metadata.toolTip;
     object["hasScript"] = !item.script.isEmpty() || !item.zipFile.isEmpty();
     object["thumbState"] = (int)item.thumbState;
-    object["thumbFileLoading"] = item.thumbFileLoading;
-    object["thumbFileLoadingCurrent"] = item.thumbFileLoadingCurrent;
-    object["thumbFileError"] = item.thumbFileError;
+    object["thumbFileLoading"] = LOADING_IMAGE;
+    object["thumbFileLoadingCurrent"] = LOADING_CURRENT_IMAGE;
+    object["thumbFileError"] = ERROR_IMAGE;
     object["thumbFileExists"] = item.thumbFileExists;
     object["loaded"] = false;
     object["playing"] = false;
     object["managedThumb"] = item.managedThumb;
 
-    auto metaData = SettingsHandler::getLibraryListItemMetaData(item);
-    object["metaData"] = LibraryListItemMetaData258::toJson(metaData);
-    if(item.isMFS)
+    object["metaData"] = LibraryListItemMetaData258::toJson(item.metadata);
+    if(item.metadata.isMFS)
         object["displayName"] = "(MFS) " + item.nameNoExtension;
 
     return object;
@@ -898,19 +1044,30 @@ QJsonObject HttpHandler::createHeresphereObject(LibraryListItem27 item, QString 
 //    root["skipIntro"] = 0;
     return root;
 }
-QJsonObject HttpHandler::createSelectedChannels() {
+QJsonObject HttpHandler::createSelectedChannels() 
+{
     QJsonObject availableChannelsJson;
     auto channels = TCodeChannelLookup::getChannels();
     foreach(auto channelName, channels)
     {
         auto channel = TCodeChannelLookup::getChannel(channelName);
-        if(channel->Type != AxisType::HalfOscillate && channel->Type != AxisType::None)
+        if(channel->Type != ChannelType::HalfOscillate && channel->Type != ChannelType::None)
         {
             availableChannelsJson[channelName] = ChannelModel33::toJson(*channel);
         }
     }
     return availableChannelsJson;
 }
+
+QJsonDocument HttpHandler::createError(QString message)
+{
+    QJsonDocument doc;
+    QJsonObject error;
+    error["message"] = message;
+    doc.setObject(error);
+    return doc;
+}
+
 QFuture<QHttpServerResponse> HttpHandler::handleDeo(const QHttpServerRequest& request)
 {
     if(!isAuthenticated(request)) {
@@ -1077,16 +1234,16 @@ HttpPromise HttpHandler::handleSubtitle(HttpDataPtr data)
     QString apiStr("/media/");
     QString subtitleFileName = parameter.replace(parameter.indexOf(apiStr), apiStr.size(), "");
     LibraryListItem27* libraryItem = _mediaLibraryHandler->findItemByPartialSubtitle(subtitleFileName);
-    if(!libraryItem || libraryItem->subtitle.isEmpty() || !QFileInfo::exists(libraryItem->subtitle))
+    if(!libraryItem || libraryItem->metadata.subtitle.isEmpty() || !QFileInfo::exists(libraryItem->metadata.subtitle))
     {
         data->response->setStatus(HttpStatus::NotFound);
         return HttpPromise::resolve(data);
     }
-    QFileInfo fileInfo(libraryItem->subtitle);
+    QFileInfo fileInfo(libraryItem->metadata.subtitle);
     data->response->setHeader("Content-Disposition", "attachment");
     data->response->setHeader("filename", fileInfo.fileName());
-    QString mimeType = mimeDatabase.mimeTypeForFile(libraryItem->subtitle, QMimeDatabase::MatchExtension).name();
-    data->response->sendFile(libraryItem->subtitle, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
+    QString mimeType = mimeDatabase.mimeTypeForFile(libraryItem->metadata.subtitle, QMimeDatabase::MatchExtension).name();
+    data->response->sendFile(libraryItem->metadata.subtitle, mimeType, "", -1, Z_DEFAULT_COMPRESSION);
     data->response->setStatus(HttpStatus::Ok);
     //buffer->deleteLater();
     return HttpPromise::resolve(data);
@@ -1171,10 +1328,11 @@ QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerReq
                     LogHandler::Debug("startByte: "+ QString::number(startByte));
                     LogHandler::Debug("endByte: "+ QString::number(endByte));
                     qint64 chunkSize = SettingsHandler::getHTTPChunkSize();
-                       if((startByte == 0 && endByte == 1) || (endByte && (startByte + endByte) <= chunkSize))
-                           chunkSize = startByte + endByte;
-                       else
-                           endByte = startByte + chunkSize;
+                    //if((startByte == 0 && endByte == 1) || (endByte && (startByte + endByte) <= chunkSize))
+                    if(endByte)
+                       chunkSize = startByte + endByte;
+                    else
+                       endByte = startByte + chunkSize;
 
                     if (startByte >= bytesAvailable){
                         LogHandler::Debug("RequestRangeNotSatisfiable: startByte: "+ QString::number(startByte));
@@ -1239,6 +1397,11 @@ void HttpHandler::sendWebSocketTextMessage(QString command, QString message)
 {
     if(_webSocketHandler)
         _webSocketHandler->sendCommand(command, message);
+}
+
+void HttpHandler::stopAllMedia()
+{
+    sendWebSocketTextMessage("stopAllMedia");
 }
 
 void HttpHandler::onSetLibraryLoaded()

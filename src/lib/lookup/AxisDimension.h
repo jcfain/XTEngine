@@ -4,7 +4,7 @@
 #include <QMap>
 #include <QVariant>
 
-enum class AxisDimension
+enum class ChannelDimension
 {
     None, // 0
     Heave, // 1
@@ -15,16 +15,16 @@ enum class AxisDimension
     Yaw // 6
 };
 
-const QMap<QString, AxisDimension> AxisDimensions =
+const QMap<QString, ChannelDimension> ChannelDimensions =
 {
-    {"None", AxisDimension::None},
-    {"Heave", AxisDimension::Heave},
-    {"Surge", AxisDimension::Surge},
-    {"Sway", AxisDimension::Sway},
-    {"Pitch", AxisDimension::Pitch},
-    {"Roll", AxisDimension::Roll},
-    {"Yaw", AxisDimension::Yaw}
+    {"None", ChannelDimension::None},
+    {"Heave", ChannelDimension::Heave},
+    {"Surge", ChannelDimension::Surge},
+    {"Sway", ChannelDimension::Sway},
+    {"Pitch", ChannelDimension::Pitch},
+    {"Roll", ChannelDimension::Roll},
+    {"Yaw", ChannelDimension::Yaw}
 };
 
-Q_DECLARE_METATYPE(AxisDimension);
+Q_DECLARE_METATYPE(ChannelDimension);
 #endif // AXISDIMENSION_H

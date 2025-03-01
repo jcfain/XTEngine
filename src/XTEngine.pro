@@ -1,11 +1,11 @@
 QT -= gui
-QT += core serialport network texttospeech websockets multimedia httpserver gamepadlegacy
+QT += core serialport network texttospeech websockets multimedia httpserver gamepadlegacy bluetooth
 
 TARGET = xtengine
 TEMPLATE = lib
 DEFINES += XTENGINE_LIBRARY
 
-CONFIG += c++14
+CONFIG += c++17
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -18,6 +18,7 @@ CONFIG += c++14
 #INCLUDEPATH += lib/struct
 
 SOURCES += \
+    lib/handler/blehandler.cpp \
     lib/handler/connectionhandler.cpp \
     lib/handler/crypthandler.cpp \
     lib/handler/deohandler.cpp \
@@ -26,6 +27,7 @@ SOURCES += \
     lib/handler/httphandler.cpp \
     lib/handler/loghandler.cpp \
     lib/handler/medialibraryhandler.cpp \
+    lib/handler/scheduler.cpp \
     lib/handler/serialhandler.cpp \
     lib/handler/settingsactionhandler.cpp \
     lib/handler/settingshandler.cpp \
@@ -51,6 +53,7 @@ SOURCES += \
 
 HEADERS += \
     XTEngine_global.h \
+    lib/handler/blehandler.h \
     lib/handler/connectionhandler.h \
     lib/handler/crypthandler.h \
     lib/handler/deohandler.h \
@@ -61,6 +64,7 @@ HEADERS += \
     lib/handler/loghandler.h \
     lib/handler/medialibraryhandler.h \
     lib/handler/outputdevicehandler.h \
+    lib/handler/scheduler.h \
     lib/handler/serialhandler.h \
     lib/handler/settingsactionhandler.h \
     lib/handler/settingshandler.h \
@@ -80,6 +84,7 @@ HEADERS += \
     lib/lookup/AxisType.h \
     lib/lookup/GamepadAxisNames.h \
     lib/lookup/MediaActions.h \
+    lib/lookup/SettingMap.h \
     lib/lookup/TCodeCommand.h \
     lib/lookup/TCodeVersion.h \
     lib/lookup/XMedia.h \
@@ -99,12 +104,14 @@ HEADERS += \
     lib/struct/LibraryListItemMetaData.h \
     lib/struct/LibraryListItemMetaData258.h \
     lib/struct/NetworkAddress.h \
+    lib/struct/NetworkDeviceInfo.h \
     lib/struct/OutputDevicePacket.h \
     lib/struct/ScriptInfo.h \
     lib/struct/SerialComboboxItem.h \
     lib/struct/InputDevicePacket.h \
     lib/tool/array-util.h \
     lib/tool/boolinq.h \
+    lib/tool/file-util.h \
     lib/tool/heatmap.h \
     lib/tool/imagefactory.h \
     lib/tool/simplecrypt.h \

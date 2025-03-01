@@ -111,7 +111,11 @@ void HereSphereHandler::readData()
 {
     QByteArray datagram = tcpSocket.readAll();
     datagram.remove(0, 4);
-
+    int blockOpenIndex = datagram.indexOf('{');
+    int blockCloseIndex = datagram.indexOf('}') +1;
+    if(blockOpenIndex > -1 && blockCloseIndex > -1)
+        datagram = datagram.mid(blockOpenIndex, blockCloseIndex <= datagram.length() ? blockCloseIndex : datagram.length());
+    //datagram = datagram.remove(QRegularExpression("{(.*)}"));
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(datagram, &error);
     if (doc.isNull())

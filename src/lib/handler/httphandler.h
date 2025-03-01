@@ -21,13 +21,20 @@ class XTENGINE_EXPORT HttpHandler : QObject
     Q_OBJECT
 signals:
     void error(QString error);
+    void settingChange(QString settingName, QVariant value);
+    void mediaAction(QString action);
+    void actionExecuted(QString action, QString spokenText, QVariant value);
     void xtpWebPacketRecieve(QByteArray data);
     void tcode(QString tcode);
     void connectOutputDevice(DeviceName deviceName, bool checked);
     void connectInputDevice(DeviceName deviceName, bool checked);
     void restartService();
+    void cleanupThumbs();
     void skipToMoneyShot();
     void skipToNextAction();
+    void channelPositionChange(QString channel, int position, int time, ChannelTimeType timeType);
+    void scriptTogglePaused(bool paused);
+    void clean1024();
 
 public slots:
     void on_DeviceConnection_StateChange(ConnectionChangedSignal status);
@@ -36,20 +43,21 @@ public:
     HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent = nullptr);
     ~HttpHandler();
     bool listen();
-    // QHttpServerResponse handle(const QHttpServerRequest& request);
-    // QHttpServerResponse handleAuth(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleActiveSessions(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleExpireSession(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleLogout(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleVideoStream(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleVideoList(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleThumbFile(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleFunscriptFile(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleSettings(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleChannels(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleAvailableSerialPorts(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleSettingsUpdate(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleMediaItemMetadataUpdate(const QHttpServerRequest& request);
+    QHttpServerResponse handle(const QHttpServerRequest& request);
+    QHttpServerResponse handleAuth(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleActiveSessions(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleExpireSession(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleLogout(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleVideoStream(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleVideoList(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleThumbFile(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleFunscriptFile(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleSettings(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleChannels(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleAvailableSerialPorts(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleMediaActions(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleSettingsUpdate(const QHttpServerRequest& request);
+    QFuture<QHttpServerResponse> handleMediaItemMetadataUpdate(const QHttpServerRequest& request);
     
     //HttpPromise handleSubtitle(HttpDataPtr data);
 
@@ -63,6 +71,7 @@ public:
 
 
     void sendWebSocketTextMessage(QString command, QString message = nullptr);
+    void stopAllMedia();
 
 private:
     QHttpServer* _server = 0;
@@ -83,6 +92,7 @@ private:
     QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createHeresphereObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createSelectedChannels();
+    QJsonDocument createError(QString message);
     void on_webSocketClient_Connected(QWebSocket* client);
     void onSetLibraryLoaded();
     void onSetLibraryLoading();

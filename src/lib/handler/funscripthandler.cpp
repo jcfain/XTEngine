@@ -13,7 +13,7 @@ FunscriptHandler::~FunscriptHandler()
     SettingsHandler::setFunscriptLoaded(_channel, _loaded);
 }
 
-QString FunscriptHandler::channel()
+QString FunscriptHandler::channel() const
 {
     return _channel;
 }
@@ -102,17 +102,17 @@ void FunscriptHandler::setLoaded(bool value)
     SettingsHandler::setFunscriptLoaded(_channel, _loaded);
 }
 
-qint64 FunscriptHandler::getMin()
+qint64 FunscriptHandler::getMin() const
 {
     return _funscriptMin;
 }
 
-qint64 FunscriptHandler::getMax()
+qint64 FunscriptHandler::getMax() const
 {
     return _funscriptMax;
 }
 
-qint64 FunscriptHandler::getNext() {
+qint64 FunscriptHandler::getNext() const {
     if(lastActionIndex == nextActionIndex) {
         int nextAction = lastActionIndex + 1;
         if(nextAction >= atList.length())
@@ -124,7 +124,7 @@ qint64 FunscriptHandler::getNext() {
     }
     return getMin();
 }
-#include <QTime>
+
 void FunscriptHandler::JSonToFunscript(QJsonObject json)
 {
     if(!funscript)
@@ -246,33 +246,32 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(qint64 millis)
 //        LogHandler::Debug("nextActionIndex: "+ QString::number(nextActionIndex));
         //LogHandler::Debug("nextActionPos: "+ QString::number(funscript->actions.value(nextMillis)));
         qint64 executionMillis = lastActionIndex == -1 ? closestMillis : nextMillis;
+        if(!funscript)
+            return nullptr;
         int pos = funscript->actions.value(executionMillis);
-        if(_modifier != 1)
+        if(lastActionIndex > -1 && _modifier != 1)
         {
-            if(lastActionPos < pos) // up stroke
-            {
-                int distance = qRound((pos - lastActionPos) / 2.0);
-                if(_modifier > 1)
-                    pos = qRound(pos + (distance * (_modifier - 1)));
-                else
-                    pos = qRound(pos - (distance - (distance * _modifier)));
-            }
-            else if(lastActionPos > pos) // down stroke
-            {
-                int distance = qRound((lastActionPos - pos) / 2.0);
-                if(_modifier > 1)
-                    pos = qRound(pos - (distance * (_modifier - 1)));
-                else
-                    pos = qRound(pos + (distance - (distance * _modifier)));
-
-            }
+            //int ogPos = pos;
+            double distance = pos - lastActionPos;
+            double amplitude = distance / 2.0;
+            if(_modifier > 1)
+                pos = qRound(pos + (amplitude * _modifier) - amplitude);
+            else if(_modifier > 0)
+                pos = qRound(pos - (amplitude * _modifier) - amplitude);
+            else
+                pos = abs(amplitude);
             pos = XMath::constrain(pos, 0, 100);
+            // LogHandler::Debug("Modified pos: "+QString::number(pos));
+            // LogHandler::Debug("from: "+QString::number(ogPos));
+            // LogHandler::Debug("modifier: "+QString::number(_modifier));
+            // LogHandler::Debug("last pos: "+QString::number(lastActionPos));
+            // LogHandler::Debug("distance: "+QString::number(distance));
         }
-        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { _channel, executionMillis, pos, interval, lastActionPos, lastActionSpeed });
+        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { _channel, executionMillis, pos, interval, lastActionPos, lastActionInterval });
         //LogHandler::Debug("nextAction.speed: "+ QString::number(nextAction->speed));
         lastActionIndex = nextActionIndex;
         lastActionPos = funscript->actions.value(executionMillis);
-        lastActionSpeed = interval;
+        lastActionInterval = interval;
         return nextAction;
     }
     return nullptr;
@@ -320,12 +319,12 @@ void FunscriptHandler::setInverted(bool value)
     _inverted = value;
 }
 
-void FunscriptHandler::setModifier(int percentage)
+void FunscriptHandler::setModifier(double percentage)
 {
     _modifier = percentage / 100.0;
 }
 
-int FunscriptHandler::getModifier()
+double FunscriptHandler::getModifier()
 {
     return _modifier * 100.0;
 }
@@ -335,6 +334,6 @@ void FunscriptHandler::resetModifier()
     _modifier = 1.0;
 }
 
-double FunscriptHandler::_modifier = 1;
+double FunscriptHandler::_modifier = 1.0;
 bool FunscriptHandler::_inverted = false;
 QMutex FunscriptHandler::mutexStat;

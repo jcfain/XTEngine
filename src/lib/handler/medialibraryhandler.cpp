@@ -3,6 +3,7 @@
 #include "settingshandler.h"
 #include "../tool/imagefactory.h"
 #include "../lookup/xtags.h"
+#include "../tool/file-util.h"
 
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     : QObject(parent),
@@ -10,19 +11,45 @@ MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
 {
     _thumbTimeoutTimer.setSingleShot(true);
     connect(this, &MediaLibraryHandler::prepareLibraryLoad, this, &MediaLibraryHandler::onPrepareLibraryLoad);
-    connect(this, &MediaLibraryHandler::libraryLoaded, this, &MediaLibraryHandler::onLibraryLoaded);
-    connect(this, &MediaLibraryHandler::thumbProcessEnd, this, &MediaLibraryHandler::startMetadataProcess);
+    connect(this, &MediaLibraryHandler::libraryLoaded, this, [this]() {
+        MediaLibraryHandler::startMetadataProcess(SettingsHandler::getForceMetaDataFullProcess() || SettingsHandler::processMetadataOnStart());
+    });
+    connect(this, &MediaLibraryHandler::metadataProcessEnd, this, [this]() {
+        MediaLibraryHandler::startThumbProcess();
+    });
 }
 
 MediaLibraryHandler::~MediaLibraryHandler()
 {
-    stopLibraryLoading();
-    stopThumbProcess();
-    stopMetadataProcess();
+    stopAllSubProcesses();
 }
-bool MediaLibraryHandler::isLibraryLoading()
+
+bool MediaLibraryHandler::isLibraryProcessing()
+{
+    return isLoadingMediaPaths() ||
+           isThumbProcessRunning() ||
+           isMetadataProcessing() ||
+           isThumbCleanupRunning();
+}
+
+bool MediaLibraryHandler::isLoadingMediaPaths()
 {
     return _loadingLibraryFuture.isRunning();
+}
+
+bool MediaLibraryHandler::isThumbProcessRunning()
+{
+    return _thumbProcessIsRunning;
+}
+
+bool MediaLibraryHandler::isMetadataProcessing()
+{
+    return _metadataFuture.isRunning();
+}
+
+bool MediaLibraryHandler::isThumbCleanupRunning()
+{
+    return m_thumbCleanupFuture.isRunning();
 }
 
 bool MediaLibraryHandler::isLibraryItemVideo(LibraryListItem27 item) {
@@ -33,32 +60,31 @@ void MediaLibraryHandler::stopLibraryLoading()
 {
     if(_loadingLibraryFuture.isRunning())
     {
-        _loadingLibraryStop = true;
         _loadingLibraryFuture.cancel();
         _loadingLibraryFuture.waitForFinished();
-        _loadingLibraryStop = false;
         emit libraryLoadingStatus("Loading media stopped");
     }
 }
 
 void MediaLibraryHandler::onPrepareLibraryLoad()
 {
-    stopThumbProcess();
-    stopMetadataProcess();
+    LogHandler::Debug("onPrepareLibraryLoad");
+    stopAllSubProcesses();
     _mutex.lock();
     _cachedLibraryItems.clear();
     _mutex.unlock();
-    emit libraryLoaded();
+    //emit libraryLoaded();
     _libraryItemIDTracker = 1;
 }
 
 void MediaLibraryHandler::loadLibraryAsync()
 {
-    if(isLibraryLoading())
+    if(isLibraryProcessing()) {
+        LogHandler::Warn("loadLibraryAsync called when process already running");
         return;
+    }
     LogHandler::Debug("loadLibraryAsync");
     onPrepareLibraryLoad();
-    stopLibraryLoading();
     LogHandler::Debug("loadLibraryAsync after stop");
     QStringList library = SettingsHandler::getSelectedLibrary();
     QStringList vrLibrary = SettingsHandler::getVRLibrary();
@@ -69,12 +95,9 @@ void MediaLibraryHandler::loadLibraryAsync()
         emit libraryStopped();
         return;
     }
-    if(!isLibraryLoading())
-    {
-        _loadingLibraryFuture = QtConcurrent::run([this, library, vrLibrary]() {
-            on_load_library(library.isEmpty() ? vrLibrary : library, library.isEmpty());
-        });
-    }
+    _loadingLibraryFuture = QtConcurrent::run([this, library, vrLibrary]() {
+        on_load_library(library.isEmpty() ? vrLibrary : library, library.isEmpty());
+    });
 }
 
 void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
@@ -149,6 +172,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
         }
     }
 
+    QStringList funscriptsWithMedia;
     foreach (QString path, paths) {
         auto itr = std::find_if(paths.begin(), paths.end(), [path](const QString& item) {
             return path.startsWith(item) && path.length() > item.length();
@@ -160,11 +184,10 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 
         QDirIterator library(path, mediaTypes, QDir::Files, QDirIterator::Subdirectories);
 
-        QStringList funscriptsWithMedia;
 
         while (library.hasNext())
         {
-            if(_loadingLibraryStop)
+            if(_loadingLibraryFuture.isCanceled())
             {
                 LogHandler::Debug("libraryStopped 1");
                 emit libraryStopped();
@@ -184,12 +207,14 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             QString videoPathTemp = fileinfo.filePath();
             QString fileName = fileinfo.fileName();
             QString fileNameTemp = fileinfo.fileName();
-            QString fileNameNoExtension = fileNameTemp.remove(fileNameTemp.lastIndexOf('.'), fileNameTemp.length() -  1);
+            int fileNameExtIndex = fileNameTemp.lastIndexOf('.');
+            QString fileNameNoExtension = fileNameExtIndex > -1 ? fileNameTemp.remove(fileNameExtIndex, fileNameTemp.length() -  1) : fileNameTemp;
             QString scriptFile = fileNameNoExtension + ".funscript";
             QString scriptPath;
-            QString pathNoExtension = videoPathTemp.remove(videoPathTemp.lastIndexOf('.'), videoPathTemp.length() - 1);
+            int videoPathExtIndex = videoPathTemp.lastIndexOf('.');
+            QString pathNoExtension = videoPathExtIndex > -1 ? videoPathTemp.remove(videoPathExtIndex, videoPathTemp.length() - 1) : videoPathTemp;
             fileNameTemp = fileinfo.fileName();
-            QString mediaExtension = "*" + fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameTemp.lastIndexOf('.')));
+            QString mediaExtension = "*" + (fileNameExtIndex > -1 ? fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameExtIndex)) : "");
 
             // if (SettingsHandler::getSelectedFunscriptLibrary() == Q_NULLPTR)
             // {
@@ -224,15 +249,13 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             item.mediaExtension = mediaExtension;
             item.thumbFile = nullptr;
             item.zipFile = zipFile;
-            item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime().date() : fileinfo.created().date();
+            item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
             item.duration = 0;
             item.thumbState = ThumbState::Waiting;
-            item.isMFS = false;
+            item.metadata.isMFS = false;
             item.libraryPath = path;
             setLiveProperties(item);
 
-            auto metadata = SettingsHandler::getLibraryListItemMetaData(item);
-            item.isMFS = metadata.tags.contains(SettingsHandler::getXTags().MFS);
 
             if(!vrMode && !scriptPath.isEmpty())
                 funscriptsWithMedia.append(scriptPath);
@@ -242,17 +265,20 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             onLibraryItemFound(item);
             //emit libraryItemFound(item);
         }
+    }
 
-        if(!vrMode)
+    if(!vrMode)
+    {
+        emit libraryLoadingStatus("Searching for lone funscripts...");
+        foreach (QString path, paths)
         {
-            emit libraryLoadingStatus("Searching for lone funscripts...");
             QStringList funscriptTypes = QStringList()
-                    << "*.funscript"
-                    << "*.zip";
+                                         << "*.funscript"
+                                         << "*.zip";
             QDirIterator funscripts(path, funscriptTypes, QDir::Files, QDirIterator::Subdirectories);
             while (funscripts.hasNext())
             {
-                if(_loadingLibraryStop)
+                if(_loadingLibraryFuture.isCanceled())
                 {
                     LogHandler::Debug("libraryStopped 2");
                     emit libraryStopped();
@@ -261,26 +287,54 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 QFileInfo fileinfo(funscripts.next());
                 QString fileName = fileinfo.fileName();
                 QString fileNameTemp = fileinfo.fileName();
+                int fileNameExtIndex = fileName.lastIndexOf('.');
+                QString fileNameMfsExtension = fileinfo.completeBaseName();
+                QString fileNameNoExtension = XFileUtil::getNameNoExtension(fileName);// fileNameExtIndex > -1 ? fileNameTemp.remove(fileNameExtIndex, fileNameTemp.length() -  1) : fileNameTemp;
+                QString mediaExtension = "*." + (fileNameExtIndex > -1 ? fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameExtIndex)) : "");
+
                 QString scriptPath = fileinfo.filePath();
-                QString scriptPathTemp = fileinfo.filePath();
-                QString scriptNoExtension = scriptPathTemp.remove(scriptPathTemp.lastIndexOf('.'), scriptPathTemp.length() - 1);
-                QString scriptNoExtensionTemp = QString(scriptNoExtension);
+                if(fileName == "I'M DISGUSTING! - belle delphine (ft. my dad) hard.funscript") {
+                    LogHandler::Debug("");
+                }
+                //QString scriptPathTemp = fileinfo.filePath();
+                //int scriptPathExtIndex = scriptPathTemp.lastIndexOf('.');
+                QString pathNoExtension = fileinfo.absolutePath() + XFileUtil::getSeperator(scriptPath) + fileNameNoExtension;//scriptPathExtIndex > -1 ? scriptPathTemp.remove(scriptPathExtIndex, scriptPathTemp.length() - 1) : scriptPathTemp;
+                //QString filenameNoMfsExtension = QString(fileNameNoExtension);
                 if(funscriptsWithMedia.contains(scriptPath, Qt::CaseSensitivity::CaseInsensitive))
                     continue;
-
-                QString scriptMFSExt = scriptNoExtensionTemp.remove(0, scriptNoExtensionTemp.length() - (scriptNoExtensionTemp.length() - scriptNoExtensionTemp.lastIndexOf('.')));
+                int scriptNoExtensionIndex = fileNameMfsExtension.lastIndexOf('.');
                 bool isMfs = false;
-                foreach(auto axisName, TCodeChannelLookup::getChannels())
+                if(scriptNoExtensionIndex > -1)
                 {
-                    auto track = TCodeChannelLookup::getChannel(axisName);
-                    if("."+track->TrackName == scriptMFSExt)
+                    //pathNoExtension.remove(scriptNoExtensionIndex, pathNoExtension.length() - 1);
+                    //QString scriptMFSExt = pathNoExtension.remove(0, pathNoExtension.length() - (pathNoExtension.length() - scriptNoExtensionIndex));
+                    foreach(auto axisName, TCodeChannelLookup::getChannels())
                     {
-                        isMfs = true;
-                        break;
+                        auto track = TCodeChannelLookup::getChannel(axisName);
+                        if(track->Dimension != ChannelDimension::Heave &&
+                            track->Type != ChannelType::HalfOscillate &&
+                            track->Type != ChannelType::None &&
+                            fileNameNoExtension.endsWith(track->TrackName, Qt::CaseInsensitive))
+                        {
+                            isMfs = true;
+                            break;
+                        }
                     }
+                    if(isMfs)
+                        fileNameNoExtension = XFileUtil::getNameNoExtension(fileNameNoExtension);
                 }
-                if(isMfs)
+                LibraryListItem27* otherMedia = findItemByNameNoExtension(fileNameNoExtension);
+                if(otherMedia)
+                {
+                    LogHandler::Debug("Script belongs to other media item: "+fileNameNoExtension);
                     continue;
+                }
+                otherMedia = findItemByAltScript(fileNameNoExtension);
+                if(otherMedia)
+                {
+                    LogHandler::Debug("Script belongs to other media item alt script: "+fileName);
+                    continue;
+                }
 
                 QString fileDir = fileinfo.dir().path();
                 bool isExcluded = false;
@@ -296,10 +350,6 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 {
                     zipFile = scriptPath;
                 }
-                fileNameTemp = fileinfo.fileName();
-                QString fileNameNoExtension = fileNameTemp.remove(fileNameTemp.lastIndexOf('.'), fileNameTemp.length() -  1);
-                fileNameTemp = fileinfo.fileName();
-                QString mediaExtension = "*" + fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameTemp.lastIndexOf('.')));
 
 
                 LibraryListItem27 item;
@@ -308,15 +358,15 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 item.name = fileName; // name
                 item.nameNoExtension = fileNameNoExtension; //nameNoExtension
                 item.script = scriptPath; // script
-                item.pathNoExtension = scriptNoExtension;
+                item.pathNoExtension = pathNoExtension;
                 item.hasScript = true;
                 item.mediaExtension = mediaExtension;
                 item.zipFile = zipFile;
-                item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime().date() : fileinfo.created().date();
+                item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
                 item.duration = 0;
                 item.thumbState = ThumbState::Waiting;
                 item.libraryPath = path;
-                item.isMFS = false;
+                item.metadata.isMFS = isMfs;
                 setLiveProperties(item);
                 onLibraryItemFound(item);
                 //emit libraryItemFound(item);
@@ -350,7 +400,8 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     QString fileNameTemp = fileinfo.fileName();
     QString scriptPath = fileinfo.filePath();
     QString scriptPathTemp = fileinfo.filePath();
-    QString scriptNoExtension = scriptPathTemp.remove(scriptPathTemp.lastIndexOf('.'), scriptPathTemp.length() - 1);
+    int scriptPathExtIndex = scriptPathTemp.lastIndexOf('.');
+    QString scriptNoExtension = scriptPathExtIndex > -1 ? scriptPathTemp.remove(scriptPathExtIndex, scriptPathTemp.length() - 1) : scriptPathTemp;
     QString scriptNoExtensionTemp = QString(scriptNoExtension);
     QString fileDir = fileinfo.dir().path();
     QString zipFile = nullptr;
@@ -360,9 +411,10 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
         scriptPath = nullptr;
     }
     fileNameTemp = fileinfo.fileName();
-    QString fileNameNoExtension = fileNameTemp.remove(fileNameTemp.lastIndexOf('.'), fileNameTemp.length() -  1);
+    int fileNameExtIndex = fileNameTemp.lastIndexOf('.');
+    QString fileNameNoExtension = fileNameExtIndex > -1 ? fileNameTemp.remove(fileNameExtIndex, fileNameTemp.length() -  1) : fileNameTemp;
     fileNameTemp = fileinfo.fileName();
-    QString mediaExtension = "*" + fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameTemp.lastIndexOf('.')));
+    QString mediaExtension = "*" + (fileNameExtIndex > -1 ? fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameExtIndex)) : "");
     LibraryListItem27 item;
     item.type = LibraryListItemType::FunscriptType;
     item.path = scriptPath; // path
@@ -372,7 +424,7 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     item.pathNoExtension = fileNameNoExtension;
     item.mediaExtension = mediaExtension;
     item.zipFile = zipFile;
-    item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime().date() : fileinfo.created().date();
+    item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
     item.duration = 0;
     item.thumbState = ThumbState::Waiting;
     setLiveProperties(item);
@@ -381,63 +433,190 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     return item;
 }
 
+void MediaLibraryHandler::stopThumbCleanupProcess()
+{
+    if(m_thumbCleanupFuture.isRunning())
+    {
+        m_thumbCleanupFuture.cancel();
+        m_thumbCleanupFuture.waitForFinished();
+    }
+}
+
 
 void MediaLibraryHandler::stopMetadataProcess()
 {
-    if(_metadataFuture.isRunning()) {
+    if(_metadataFuture.isRunning())
+    {
         _metadataFuture.cancel();
         _metadataFuture.waitForFinished();
     }
 }
 
-void MediaLibraryHandler::startMetadataProcess()
+void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
 {
-    if(!_cachedLibraryItems.count())
+    if(!_cachedLibraryItems.count() || _metadataFuture.isRunning())
         return;
-    LogHandler::Debug("Start metadata process");
-    emit metadataProcessBegin();
-    emit backgroundProcessStateChange("Processing metadata...", -1);
-    _metadataFuture = QtConcurrent::run([this](){
-        XTags tags = SettingsHandler::getXTags();
+    _metadataFuture = QtConcurrent::run([this, fullProcess](){
+        LogHandler::Debug("Start metadata process");
+        emit metadataProcessBegin();
+        emit backgroundProcessStateChange("Processing metadata...", -1);
+        //XTags tags = SettingsHandler::getXTags();
         bool saveSettings = false;
         auto cachedLibraryItems = _cachedLibraryItems;
+
+        foreach (LibraryListItem27 item, cachedLibraryItems) {
+            if(_metadataFuture.isCanceled()) {
+                LogHandler::Debug("Cancel metadata process");
+                emit metadataProcessEnd();
+                emit backgroundProcessStateChange(nullptr, -1);
+                return;
+            }
+            bool metadataChanged = false;
+
+            QVector<int> rolesChanged;
+            processMetadata(item, metadataChanged, rolesChanged, fullProcess);
+            if(rolesChanged.count()) {
+                updateItem(item, rolesChanged);
+            }
+
+            if(metadataChanged) {
+                saveSettings = true;
+                SettingsHandler::updateLibraryListItemMetaData(item, false);
+            }
+
+            float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
+            emit backgroundProcessStateChange("Processing metadata", percentage);
+        }
+        if(SettingsHandler::getForceMetaDataFullProcess() && cachedLibraryItems.length()) {
+            SettingsHandler::setForceMetaDataFullProcessComplete();
+            saveSettings = true;
+        }
+        if(saveSettings)
+            SettingsHandler::Save();
+        LogHandler::Debug("End metadata process");
+        emit metadataProcessEnd();
+        emit backgroundProcessStateChange(nullptr, -1);
+    });
+}
+
+void MediaLibraryHandler::startMetadataCleanProcess()
+{
+    if(_metadataFuture.isRunning())
+        return;
+    _metadataFuture = QtConcurrent::run([this](){
+        bool saveSettings = false;
         auto allMetadata = SettingsHandler::getLibraryListItemMetaData();
         emit backgroundProcessStateChange("Cleaning metadata...", -1);
-        auto keys = allMetadata.keys();
+        auto allMetadatakeys = allMetadata.keys();
         auto allTags = SettingsHandler::getTags();
-        bool metadataChanged = false;
-        foreach (auto key, keys) {
+        foreach (auto key, allMetadatakeys) {
             if(_metadataFuture.isCanceled()) {
-                LogHandler::Debug("Cancel metadata process");
+                LogHandler::Debug("Cancel metadata clean process");
                 emit metadataProcessEnd();
                 emit backgroundProcessStateChange(nullptr, -1);
                 return;
             }
-            if(!QFileInfo::exists(key)) {
+            auto item = findItemByNameNoExtension(key);
+            if(!item) {
                 SettingsHandler::removeLibraryListItemMetaData(key);
                 saveSettings = true;
-            }
-            foreach (auto tag, allMetadata[key].tags) {
-                if(!allTags.contains(tag)) {
-                    allMetadata[key].tags.removeAll(tag);
-                    metadataChanged = true;
+            } else {
+                bool tagUpdated = false;
+                foreach (auto tag, item->metadata.tags) {
+                    if(!allTags.contains(tag)) {
+                        item->metadata.tags.removeAll(tag);
+                        tagUpdated = true;
+                        saveSettings = true;
+                    }
                 }
+                if(tagUpdated)
+                    SettingsHandler::updateLibraryListItemMetaData(*item, false);
             }
-            float percentage = round(((float)keys.indexOf(key)/keys.length()) * 100);
+            float percentage = round(((float)allMetadatakeys.indexOf(key)/allMetadatakeys.length()) * 100);
             emit backgroundProcessStateChange("Cleaning metadata", percentage);
         }
+        if(saveSettings)
+            SettingsHandler::Save();
+        emit metadataProcessEnd();
+        emit backgroundProcessStateChange(nullptr, -1);
 
-        foreach (auto item, cachedLibraryItems) {
+        LogHandler::Debug("End metadata clean process");
+    });
+}
+
+void MediaLibraryHandler::startMetadata1024Cleanup()
+{
+    if(_metadataFuture.isRunning())
+        return;
+    _metadataFuture = QtConcurrent::run([this](){
+    emit backgroundProcessStateChange("Cleaning metadata 1024...", -1);
+        auto cachedLibraryItems = _cachedLibraryItems;
+        bool saveSettings = false;
+        foreach (LibraryListItem27 item, cachedLibraryItems) {
             if(_metadataFuture.isCanceled()) {
-                LogHandler::Debug("Cancel metadata process");
+                LogHandler::Debug("Cancel metadata clean 1024 process");
                 emit metadataProcessEnd();
                 emit backgroundProcessStateChange(nullptr, -1);
                 return;
             }
-            QVector<int> rolesChanged;
-            //int index = cachedLibraryItems.indexOf(item);
-            //auto realItem = &_cachedLibraryItems[index];
-            if(!item.isMFS && discoverMFS2(item)) {
+            if(item.metadata.offset == 1024) {
+                saveSettings = true;
+                item.metadata.offset = 0;
+                SettingsHandler::updateLibraryListItemMetaData(item, false);
+                LogHandler::Info("Change offset 1024 for media: "+item.name);
+            }
+
+            float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
+            emit backgroundProcessStateChange("Cleaning metadata 1024", percentage);
+        }
+        if(saveSettings)
+            SettingsHandler::Save();
+        emit metadataProcessEnd();
+        emit backgroundProcessStateChange(nullptr, -1);
+        LogHandler::Debug("End metadata clean 1024 process");
+    });
+}
+
+void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess)
+{
+    bool hasExistingMetadata = SettingsHandler::hasLibraryListItemMetaData(item);
+    if(!hasExistingMetadata || fullProcess || item.forceProcessMetadata)// path is ID for metadata
+    {
+        LogHandler::Debug("Process metadata for: "+item.path + " Full process: "+ QString::number(fullProcess));
+        if(!fullProcess)
+        {
+            LogHandler::Debug("Force item: "+QString::number(item.forceProcessMetadata));
+            LogHandler::Debug("New item: "+QString::number(!hasExistingMetadata));
+        }
+        // Did this cause an issue? Need to test data integrety after full process?
+        // item.metadata.libraryItemPath = item.path;
+        // item.metadata.key = item.nameNoExtension;
+        if(!hasExistingMetadata) {
+            item.metadata.defaultValues(item.nameNoExtension, item.path);
+            metadataChanged = true;
+        }
+        if(item.path != item.metadata.libraryItemPath) {
+            item.metadata.libraryItemPath = item.path;
+            metadataChanged = true;
+        }
+        if(item.nameNoExtension != item.metadata.key) {
+            item.metadata.key = item.nameNoExtension;
+            metadataChanged = true;
+        }
+        if(updateToolTip(item)) {
+            metadataChanged = true;
+            if(!rolesChanged.contains(Qt::ToolTipRole))
+                rolesChanged.append(Qt::ToolTipRole);
+        }
+        if(!item.metadata.dateAdded.isValid()) {
+            item.metadata.dateAdded = item.modifiedDate;
+        }
+
+        if(item.type != LibraryListItemType::PlaylistInternal)
+        {
+            if(!item.metadata.isMFS && discoverMFS(item))
+            {
+                metadataChanged = true;
                 if(!rolesChanged.contains(Qt::DisplayRole))
                     rolesChanged.append(Qt::DisplayRole);
                 if(!rolesChanged.contains(Qt::ToolTipRole))
@@ -448,100 +627,135 @@ void MediaLibraryHandler::startMetadataProcess()
                     rolesChanged.append(Qt::FontRole);
             }
 
+            if(item.metadata.isMFS && !item.metadata.tags.contains(XTags::MFS)) {
+                item.metadata.tags.append(XTags::MFS);
+                metadataChanged = true;
+            }
+            else if(!item.metadata.isMFS && item.metadata.tags.contains(XTags::MFS)) {
+                item.metadata.tags.removeAll(XTags::MFS);
+                metadataChanged = true;
+            }
+
+            LogHandler::Debug("Find alternate scripts");
+            auto ogScripts = item.metadata.scripts;
+            findAlternateFunscripts(item);
+            if(item.metadata.scripts != ogScripts)
+                metadataChanged = true;
+
+            LogHandler::Debug("Find subtitles");
             foreach(QString type, SettingsHandler::getSubtitleExtensions())
             {
                 QString subtitilePath = item.pathNoExtension + "."+ type;
                 if(QFileInfo::exists(subtitilePath))
                 {
-                    item.subtitle = subtitilePath;
+                    metadataChanged = true;
+                    item.metadata.subtitle = subtitilePath;
                     if(!rolesChanged.contains(Qt::DecorationRole))
                         rolesChanged.append(Qt::DecorationRole);
                     break;
                 }
             }
 
-            if(!item.path.isEmpty())// path is ID for metadata
+            LogHandler::Debug("Update tags");
+            auto userTags = SettingsHandler::getTags();
+
+            if(item.type == LibraryListItemType::Video &&
+                userTags.contains(XTags::VIDEO_2D) &&
+                !item.metadata.tags.contains(XTags::VIDEO_2D)) {
+                item.metadata.tags.append(XTags::VIDEO_2D);
+                metadataChanged = true;
+            } else if(item.type == LibraryListItemType::VR &&
+                       userTags.contains(XTags::VR) &&
+                       !item.metadata.tags.contains(XTags::VR)) {
+                item.metadata.tags.append(XTags::VR);
+                metadataChanged = true;
+            } else if(item.type == LibraryListItemType::Audio &&
+                       userTags.contains(XTags::AUDIO) &&
+                       !item.metadata.tags.contains(XTags::AUDIO)) {
+                item.metadata.tags.append(XTags::AUDIO);
+                metadataChanged = true;
+            } else if(item.type == LibraryListItemType::FunscriptType &&
+                       userTags.contains(XTags::FUNSCRIPT) &&
+                       !item.metadata.tags.contains(XTags::FUNSCRIPT)) {
+                item.metadata.tags.append(XTags::FUNSCRIPT);
+                metadataChanged = true;
+            }
+            // Playlists do not have a way to link to metadata atm.
+            // else if(item.type == LibraryListItemType::PlaylistInternal && !metadata.tags.contains(tags.PLAYLIST_INTERNAL)) {
+            //     metadata.tags.append(tags.PLAYLIST_INTERNAL);
+            //     metadataChanged = true;
+            // }
+
+
+            if(userTags.contains(XTags::SUBTITLE))
             {
-                auto metadata = SettingsHandler::getLibraryListItemMetaData(item);
-                if(item.isMFS && !metadata.tags.contains(tags.MFS)) {
-                    metadata.tags.append(tags.MFS);
+                if(!item.metadata.subtitle.isEmpty() &&
+                    !item.metadata.tags.contains(XTags::SUBTITLE)) {
+                    item.metadata.tags.append(XTags::SUBTITLE);
                     metadataChanged = true;
-                }
-                else if(!item.isMFS && metadata.tags.contains(tags.MFS)) {
-                    metadata.tags.removeAll(tags.MFS);
+                } else if(item.metadata.subtitle.isEmpty() && item.metadata.tags.contains(XTags::SUBTITLE)) {
+                    item.metadata.tags.removeAll(XTags::SUBTITLE);
                     metadataChanged = true;
-                }
-
-                if(item.type == LibraryListItemType::Video && !metadata.tags.contains(tags.VIDEO_2D)) {
-                    metadata.tags.append(tags.VIDEO_2D);
-                    metadataChanged = true;
-                } else if(item.type == LibraryListItemType::VR && !metadata.tags.contains(tags.VR)) {
-                    metadata.tags.append(tags.VR);
-                    metadataChanged = true;
-                } else if(item.type == LibraryListItemType::Audio && !metadata.tags.contains(tags.AUDIO)) {
-                    metadata.tags.append(tags.AUDIO);
-                    metadataChanged = true;
-                } else if(item.type == LibraryListItemType::FunscriptType && !metadata.tags.contains(tags.FUNSCRIPT)) {
-                    metadata.tags.append(tags.FUNSCRIPT);
-                    metadataChanged = true;
-                } else if(item.type == LibraryListItemType::PlaylistInternal && !metadata.tags.contains(tags.PLAYLIST_INTERNAL)) {
-                    metadata.tags.append(tags.PLAYLIST_INTERNAL);
-                    metadataChanged = true;
-                }
-                // else if(item.type == LibraryListItemType::PlaylistInternal && !metadata.tags.contains(tags.PLAYLIST_INTERNAL)) {
-                //     metadata.tags.append(tags.PLAYLIST_INTERNAL);
-                //     metadataChanged = true;
-                // }
-
-                if(item.type != LibraryListItemType::PlaylistInternal)
-                {
-
-                    if(!item.subtitle.isEmpty() && !metadata.tags.contains(tags.SUBTITLE)) {
-                        metadata.tags.append(tags.SUBTITLE);
-                        metadataChanged = true;
-                    } else if(item.subtitle.isEmpty() && metadata.tags.contains(tags.SUBTITLE)) {
-                        metadata.tags.removeAll(tags.SUBTITLE);
-                        metadataChanged = true;
-                    }
-                    if(!item.hasScript && !metadata.tags.contains(tags.MISSING_SCRIPT)) {
-                        metadata.tags.append(tags.MISSING_SCRIPT);
-                        metadataChanged = true;
-                    } else if(item.hasScript && metadata.tags.contains(tags.MISSING_SCRIPT)) {
-                        metadata.tags.removeAll(tags.MISSING_SCRIPT);
-                        metadataChanged = true;
-                    }
-                    if(item.hasScript && !metadata.tags.contains(tags.HAS_SCRIPT)) {
-                        metadata.tags.append(tags.HAS_SCRIPT);
-                        metadataChanged = true;
-                    } else if(!item.hasScript && metadata.tags.contains(tags.HAS_SCRIPT)) {
-                        metadata.tags.removeAll(tags.HAS_SCRIPT);
-                        metadataChanged = true;
-                    }
-                    if(!metadata.tags.contains(tags.VIEWED) && !metadata.tags.contains(tags.UNVIEWED)) {
-                        metadata.tags.append(tags.UNVIEWED);
-                        metadataChanged = true;
-                    } else if(metadata.tags.contains(tags.VIEWED) && metadata.tags.contains(tags.UNVIEWED)) {
-                        metadata.tags.removeAll(tags.UNVIEWED);
-                        metadataChanged = true;
-                    }
-                }
-
-                foreach (QString tag, tags.getUserSmartags()) {
-                    if(!metadata.tags.contains(tag) && item.path.contains(tag, Qt::CaseInsensitive)) {
-                        metadata.tags.append(tag);
-                        metadataChanged = true;
-                    }
-                }
-                // metadata.tags.removeAll(tags.VIEWED);
-                // metadata.tags.removeAll(tags.UNVIEWED);
-                // metadata.tags.append(tags.UNVIEWED);
-                // metadataChanged = true;
-
-                if(metadataChanged) {
-                    saveSettings = true;
-                    SettingsHandler::updateLibraryListItemMetaData(metadata, false);
                 }
             }
+            if(userTags.contains(XTags::MISSING_SCRIPT))
+            {
+                if(!item.hasScript && !item.metadata.isMFS && !item.metadata.tags.contains(XTags::MISSING_SCRIPT)) {
+                    item.metadata.tags.append(XTags::MISSING_SCRIPT);
+                    metadataChanged = true;
+                } else if((item.hasScript  || item.metadata.isMFS) && item.metadata.tags.contains(XTags::MISSING_SCRIPT)) {
+                    item.metadata.tags.removeAll(XTags::MISSING_SCRIPT);
+                    metadataChanged = true;
+                }
+            }
+            if(userTags.contains(XTags::HAS_SCRIPT))
+            {
+                if(item.hasScript && !item.metadata.tags.contains(XTags::HAS_SCRIPT)) {
+                    item.metadata.tags.append(XTags::HAS_SCRIPT);
+                    metadataChanged = true;
+                } else if(!item.hasScript && item.metadata.tags.contains(XTags::HAS_SCRIPT)) {
+                    item.metadata.tags.removeAll(XTags::HAS_SCRIPT);
+                    metadataChanged = true;
+                }
+            }
+            if(userTags.contains(XTags::ALTSCRIPT))
+            {
+                if(item.metadata.hasAlternate && !item.metadata.tags.contains(XTags::ALTSCRIPT)) {
+                    item.metadata.tags.append(XTags::ALTSCRIPT);
+                    metadataChanged = true;
+                } else if(!item.metadata.hasAlternate && item.metadata.tags.contains(XTags::ALTSCRIPT)) {
+                    item.metadata.tags.removeAll(XTags::ALTSCRIPT);
+                    metadataChanged = true;
+                }
+            }
+
+            if(!item.metadata.tags.contains(XTags::VIEWED) && !item.metadata.tags.contains(XTags::UNVIEWED)) {
+                item.metadata.tags.append(XTags::UNVIEWED);
+                metadataChanged = true;
+            } else if(item.metadata.tags.contains(XTags::VIEWED) && item.metadata.tags.contains(XTags::UNVIEWED)) {
+                item.metadata.tags.removeAll(XTags::UNVIEWED);
+                metadataChanged = true;
+            }
+
+            foreach (QString tag, SettingsHandler::getUserSmartTags()) {
+                bool isMatch = false;
+                foreach (auto script, item.metadata.MFSScripts) {
+                    if(script.contains(tag, Qt::CaseInsensitive)) {
+                        isMatch = true;
+                        break;
+                    }
+                }
+                if(!item.metadata.tags.contains(tag) && (isMatch || item.path.contains(tag, Qt::CaseInsensitive) || item.script.contains(tag, Qt::CaseInsensitive))) {
+                    item.metadata.tags.append(tag);
+                    metadataChanged = true;
+                }
+            }
+
+            item.forceProcessMetadata = false;
+            // metadata.tags.removeAll(tags.VIEWED);
+            // metadata.tags.removeAll(tags.UNVIEWED);
+            // metadata.tags.append(tags.UNVIEWED);
+            // metadataChanged = true;
 
             // Waaaay too slow.
             // if(item.md5.isEmpty()) {
@@ -549,25 +763,16 @@ void MediaLibraryHandler::startMetadataProcess()
             //     itemChanged = true;
             // }
 
-            if(rolesChanged.count()) {
-                updateItem(item, rolesChanged);
-            }
-
-            float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
-            emit backgroundProcessStateChange("Processing metadata", percentage);
         }
-        if(saveSettings)
-            SettingsHandler::Save();
-        LogHandler::Debug("End metadata process");
-        emit metadataProcessEnd();
-        emit backgroundProcessStateChange(nullptr, -1);
-    });
-}
-
-void MediaLibraryHandler::onLibraryLoaded()
-{
-    startThumbProcess();
-
+    } else {
+        // if(!rolesChanged.contains(Qt::ToolTipRole))
+        //     rolesChanged.append(Qt::ToolTipRole);
+        // if(!rolesChanged.contains(Qt::ForegroundRole))
+        //     rolesChanged.append(Qt::ForegroundRole);
+        bool scriptExists = QFileInfo::exists(item.script);
+        bool zipScripExists = QFileInfo::exists(item.zipFile);
+        item.hasScript = scriptExists || zipScripExists;
+    }
 }
 
 void MediaLibraryHandler::startThumbProcess(bool vrMode)
@@ -770,7 +975,7 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
     if(!item || item->ID.isEmpty()) {
         LogHandler::Error("onSaveThumb item ID empty.");
     } else {
-        int cachedIndex = _cachedLibraryItems.indexOf(item);
+        int cachedIndex = _cachedLibraryItems.indexOf(*item);
         if(cachedIndex == -1) {
             LibraryListItem27 emptyItem;
             emit saveThumbError(emptyItem, vrMode, "Missing media");
@@ -789,7 +994,7 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
             ImageFactory::removeCache(item->thumbFile);
             setThumbPath(cachedItem);
             setThumbState(ThumbState::Ready, cachedItem);
-            emit saveNewThumb(item, vrMode, item->thumbFile);
+            emit saveNewThumb(*item, vrMode, item->thumbFile);
         }
     }
     _thumbTimeoutTimer.stop();
@@ -813,24 +1018,81 @@ QList<LibraryListItem27> MediaLibraryHandler::getPlaylist(QString name) {
     auto playlists = SettingsHandler::getPlaylists();
     auto playlist = playlists.value(name);
     foreach (auto item, playlist) {
-        LibraryListItem27& itemRef = playlist[playlist.indexOf(item)];
-        setLiveProperties(itemRef);
-        setThumbState(itemRef.thumbFileExists ? ThumbState::Ready : ThumbState::Error, itemRef);
+        int index = playlist.indexOf(item);
+        float percentage = round(((float)playlist.indexOf(item)/playlist.length()) * 100);
+        emit backgroundProcessStateChange("Loading playlist", percentage);
+        LibraryListItem27* itemRef = findItemByReference(&item);
+        if(itemRef)
+        {
+            playlist[index] = *itemRef;
+        }
+        else
+        {
+            if(!QFile::exists(item.path)) {
+                playlist[index].error = true;
+                playlist[index].metadata.toolTip += "\nMedia path not found!";
+                continue;
+            }
+            itemRef = &playlist[index];
+            setLiveProperties(*itemRef);
+            bool metaDataChanged = false;
+            QVector<int> rolesChanged;
+            processMetadata(*itemRef, metaDataChanged, rolesChanged);
+            setThumbState(itemRef->thumbFileExists ? ThumbState::Ready : ThumbState::Error, *itemRef);
+        }
     }
+
+    emit backgroundProcessStateChange(nullptr, -1);
     return playlist;
 }
+
+void MediaLibraryHandler::fixPlaylist(QString name)
+{
+    // auto playlists = SettingsHandler::getPlaylists();
+    // auto playlist = playlists.value(name);
+    // foreach (auto item, playlist) {
+    //     int index = playlist.indexOf(item);
+    //     float percentage = round(((float)playlist.indexOf(item)/playlist.length()) * 100);
+    //     emit backgroundProcessStateChange("Fixing playlist", percentage);
+    //     LibraryListItem27& itemRef = playlist[index];
+    //     setLiveProperties(itemRef);
+    //     bool metaDataChanged = false;
+    //     QVector<int> rolesChanged;
+    //     processMetadata(itemRef, metaDataChanged, rolesChanged);
+    //     setThumbState(itemRef.thumbFileExists ? ThumbState::Ready : ThumbState::Error, itemRef);
+    // }
+}
+
 LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
 {
     LibraryListItem27 item;
     item.type = LibraryListItemType::PlaylistInternal;
     item.nameNoExtension = playlistName; //nameNoExtension
-    item.modifiedDate = QDateTime::currentDateTime().date();
+    item.modifiedDate = QDateTime::currentDateTime();
     item.duration = 0;
-    item.isMFS = false;
+    item.metadata.isMFS = false;
     setThumbState(ThumbState::Ready, item);
     setLiveProperties(item);
     addItemFront(item);
     //emit playListItem(item);
+    return item;
+}
+
+LibraryListItem27 MediaLibraryHandler::setupTempExternalItem(QString mediapath, QString scriptPath, quint64 duration)
+{
+    LibraryListItem27 item;
+    QFileInfo fileInfo(mediapath);
+    item.type = LibraryListItemType::External;
+    item.name = fileInfo.fileName();
+    item.path = mediapath;
+    item.script = scriptPath;
+    item.hasScript = !scriptPath.isEmpty();
+    item.nameNoExtension = XFileUtil::getNameNoExtension(fileInfo.fileName()); //nameNoExtension
+    item.modifiedDate = QDateTime::currentDateTime();
+    item.duration = duration;
+    setLiveProperties(item);
+    processMetadata(item);
+    addItemBack(item);
     return item;
 }
 void MediaLibraryHandler::updateItem(LibraryListItem27 item, QVector<int> roles, bool notify) {
@@ -867,7 +1129,7 @@ void MediaLibraryHandler::addItemFront(LibraryListItem27 item) {
     _cachedLibraryItems.push_front(item);
     _mutex.unlock();
     auto index = 0;
-    if(!isLibraryLoading()) {
+    if(!isLibraryProcessing()) {
         emit itemAdded(index, _cachedLibraryItems.count());
         //emit libraryChange();
     }
@@ -877,7 +1139,7 @@ void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
     _cachedLibraryItems.push_back(item);
     auto index = _cachedLibraryItems.count() - 1;
     _mutex.unlock();
-    if(!isLibraryLoading()) {
+    if(!isLibraryProcessing()) {
         emit itemAdded(index, _cachedLibraryItems.count());
         //emit libraryChange();
     }
@@ -886,7 +1148,14 @@ void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
 {
     assignID(libraryListItem);
     setThumbPath(libraryListItem);
-    updateToolTip(libraryListItem);
+    if(SettingsHandler::hasLibraryListItemMetaData(libraryListItem)) {
+        SettingsHandler::getLibraryListItemMetaData(libraryListItem);
+        libraryListItem.metadata.isMFS = libraryListItem.metadata.tags.contains(SettingsHandler::getXTags().MFS);
+    } else {
+        LogHandler::Debug("New item found: "+libraryListItem.nameNoExtension);
+        libraryListItem.metadata.dateAdded = QDateTime::currentDateTime();
+        libraryListItem.forceProcessMetadata = true;
+    }
 }
 
 void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)
@@ -904,8 +1173,9 @@ void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)
         QString localpath = path;
         QString thumbTemp = localpath;
         int indexOfSuffix = localpath.lastIndexOf(".");
-        QString extension = thumbTemp.remove(0, thumbTemp.length() - (thumbTemp.length() - thumbTemp.lastIndexOf('.')));
-        QString newName = localpath.replace(indexOfSuffix, localpath.length() - indexOfSuffix, ".lock"+extension);
+        int thumbExtIndex = thumbTemp.lastIndexOf('.');
+        QString extension = thumbExtIndex > -1 ? thumbTemp.remove(0, thumbTemp.length() - (thumbTemp.length() - thumbExtIndex)) : "";
+        QString newName = indexOfSuffix > -1 ? localpath.replace(indexOfSuffix, localpath.length() - indexOfSuffix, ".lock"+extension) : localpath + ".lock";
         bool success = file.rename(newName);
         if(success) {
             LogHandler::Debug("File renamed: "+ newName);
@@ -1031,33 +1301,36 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &libraryListItem)
 
 }
 
-void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDiscovery)
+bool MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
 {
-    localData.isMFS = false;
+    localData.metadata.isMFS = false;
+    bool itemChanged = false;
     bool scriptExists = QFileInfo::exists(localData.script);
     bool zipScripExists = QFileInfo::exists(localData.zipFile);
     localData.hasScript = scriptExists || zipScripExists;
     if (localData.type != LibraryListItemType::PlaylistInternal && !scriptExists && !zipScripExists)
     {
-        localData.toolTip = localData.nameNoExtension + "\nMedia:";
-        localData.toolTip = localData.path + "\nNo script file of the same name found.\nRight click and Play with chosen funscript.";
+        localData.metadata.toolTip = localData.nameNoExtension + "\nMedia:";
+        localData.metadata.toolTip = localData.path + "\nNo script file of the same name found.";
+        itemChanged = true;
     }
     else if (localData.type != LibraryListItemType::PlaylistInternal)
     {
-        localData.toolTip = localData.nameNoExtension + "\nMedia:";
-        localData.toolTip += "\n";
-        localData.toolTip += localData.path;
-        localData.toolTip += "\n";
-        localData.toolTip += "Scripts:\n";
+        localData.metadata.toolTip = localData.nameNoExtension + "\nMedia:";
+        localData.metadata.toolTip += "\n";
+        localData.metadata.toolTip += localData.path;
+        localData.metadata.toolTip += "\n";
+        localData.metadata.toolTip += "Scripts:\n";
         if(zipScripExists)
         {
-            localData.toolTip += localData.zipFile;
-            localData.isMFS = true;
+            localData.metadata.toolTip += localData.zipFile;
+            localData.metadata.isMFS = true;
         }
         else
         {
-            localData.toolTip += localData.script;
+            localData.metadata.toolTip += localData.script;
         }
+        itemChanged = true;
 //         if(!SettingsHandler::getMFSDiscoveryDisabled() || MFSDiscovery) {
 // //            LogHandler::Debug("before discoverMFS1: "+QString::number(mSecTimer.elapsed() - lastTime));
 // //            lastTime = mSecTimer.elapsed();
@@ -1075,205 +1348,260 @@ void MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData, bool MFSDi
     }
     else if (localData.type == LibraryListItemType::PlaylistInternal)
     {
-        localData.toolTip = localData.nameNoExtension + "\nMedia:";
+        localData.metadata.toolTip = localData.nameNoExtension + "\nMedia:";
         auto playlists = SettingsHandler::getPlaylists();
         auto playlist = playlists.value(localData.nameNoExtension);
         for(auto i = 0; i < playlist.length(); i++)
         {
-            localData.toolTip += "\n";
-            localData.toolTip += QString::number(i + 1);
-            localData.toolTip += ": ";
-            localData.toolTip += playlist[i].nameNoExtension;
+            localData.metadata.toolTip += "\n";
+            localData.metadata.toolTip += QString::number(i + 1);
+            localData.metadata.toolTip += ": ";
+            localData.metadata.toolTip += playlist[i].nameNoExtension;
         }
+        itemChanged = true;
     }
+    return itemChanged;
 }
 
-bool MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
-    auto channels = TCodeChannelLookup::getChannels();
-    QString script;
-    script.reserve(item.pathNoExtension.length() + 1 + 5 + 10);
-    foreach(auto axisName, channels)
-    {
-        auto track = TCodeChannelLookup::getChannel(axisName);
-        if(axisName == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfOscillate || track->TrackName.isEmpty())
-            continue;
+// bool MediaLibraryHandler::discoverMFS1(LibraryListItem27 &item) {
+//     auto channels = TCodeChannelLookup::getChannels();
+//     QString script;
+//     script.reserve(item.pathNoExtension.length() + 1 + 5 + 10);
+//     foreach(auto axisName, channels)
+//     {
+//         auto track = TCodeChannelLookup::getChannel(axisName);
+//         if(axisName == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfOscillate || track->TrackName.isEmpty())
+//             continue;
 
-        script = item.pathNoExtension + "." + track->TrackName + ".funscript";
-        if (QFileInfo::exists(script))
-        {
-            item.hasScript = true;
-            item.isMFS = true;
-            item.toolTip += "\n";
-            item.toolTip += script;
-            item.MFSScripts << script;
-        }
-    }
-    return item.isMFS;
-}
-bool MediaLibraryHandler::discoverMFS2(LibraryListItem27 &item) {
+//         script = item.pathNoExtension + "." + track->TrackName + ".funscript";
+//         if (QFileInfo::exists(script))
+//         {
+//             item.hasScript = true;
+//             item.metadata.isMFS = true;
+//             item.metadata.toolTip += "\n";
+//             item.metadata.toolTip += script;
+//             item.metadata.MFSScripts << script;
+//         }
+//     }
+//     return item.metadata.isMFS;
+// }
+bool MediaLibraryHandler::discoverMFS(LibraryListItem27 &item) {
+    LogHandler::Debug("Discover MFS: "+item.ID);
     QStringList funscripts = TCodeChannelLookup::getValidMFSExtensions();
     foreach(auto scriptExtension, funscripts)
     {
         if (QFileInfo::exists(item.pathNoExtension + scriptExtension))
         {
-            item.hasScript = true;
-            item.isMFS = true;
-            item.toolTip += "\n";
-            item.toolTip += item.pathNoExtension + scriptExtension;
-            item.MFSScripts << item.pathNoExtension + scriptExtension;
+            item.metadata.isMFS = true;
+            item.metadata.toolTip += "\n";
+            item.metadata.toolTip += item.pathNoExtension + scriptExtension;
+            item.metadata.MFSScripts << item.pathNoExtension + scriptExtension;
+            item.metadata.MFSTracks << scriptExtension.remove("funscript").remove(".");
         }
     }
-    return item.isMFS;
+    return item.metadata.isMFS;
 }
 
 void MediaLibraryHandler::cleanGlobalThumbDirectory() {
-
-    if(thumbProcessRunning() || isLibraryLoading())
+    if(isThumbCleanupRunning())
         return;
-    auto cachedLibraryItems = _cachedLibraryItems;
-    emit backgroundProcessStateChange("Cleaning thumbs...", -1);
-    foreach(auto libraryListItem, cachedLibraryItems) {
-        if(_loadingLibraryStop) {
-            LogHandler::Debug("thumb cleanup stopped 1");
-            emit backgroundProcessStateChange(nullptr, -1);
-            emit libraryStopped();
+    m_thumbCleanupFuture = QtConcurrent::run([this]() {
+        if(isLoadingMediaPaths() ||
+            isThumbProcessRunning() ||
+            isMetadataProcessing())
+        {
+            emit cleanUpThumbsFailed();
             return;
         }
-        emit backgroundProcessStateChange("Cleaning duplicate thumbs:", round((cachedLibraryItems.indexOf(libraryListItem)/(float)cachedLibraryItems.length())*100));
-        if(libraryListItem.type != LibraryListItemType::VR && libraryListItem.type != LibraryListItemType::Video)
-            continue;
-        QString hasGlobal;
-        QString hasGlobalLocked;
-        QString hasLocal;
-        QString hasLocalLocked;
-        QFileInfo mediaInfo(libraryListItem.path);
-        QString globalPath = SettingsHandler::getSelectedThumbsDir() + libraryListItem.name;
-
-        QString filepathGlobal = globalPath + "." + SettingsHandler::getThumbFormatExtension();
-        if(QFileInfo::exists(filepathGlobal))
-        {
-            hasGlobal = filepathGlobal;
-        }
-        QString filepathGlobalLocked = globalPath + ".lock." + SettingsHandler::getThumbFormatExtension();
-        if(QFileInfo::exists(filepathGlobalLocked))
-        {
-            hasGlobalLocked = filepathGlobalLocked;
-        }
-
-        QString absolutePath = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension;
-        QStringList imageExtensions = SettingsHandler::getImageExtensions();
-        foreach(QString ext, imageExtensions) {
-            if(_loadingLibraryStop) {
-                LogHandler::Debug("thumb cleanup stopped 2");
+        auto cachedLibraryItems = _cachedLibraryItems;
+        emit backgroundProcessStateChange("Cleaning thumbs...", -1);
+        foreach(auto libraryListItem, cachedLibraryItems) {
+            if(m_thumbCleanupFuture.isCanceled()) {
+                LogHandler::Debug("thumb cleanup stopped 1");
                 emit backgroundProcessStateChange(nullptr, -1);
-                emit libraryStopped();
+                emit cleanUpThumbsFailed();
                 return;
             }
-            QString filepathLocked = absolutePath + ".lock." + ext;
-            if(QFileInfo::exists(filepathLocked))
-            {
-                hasLocalLocked = filepathLocked;
-            }
-            QString filepath = absolutePath + "." + ext;
-            if(QFileInfo::exists(filepath))
-            {
-                hasLocal = filepath;
-            }
-        }
-        if((!hasLocal.isEmpty() || !hasLocalLocked.isEmpty()) && (!hasGlobal.isEmpty() || !hasGlobalLocked.isEmpty())) {
-            if(!hasGlobal.isEmpty())
-                QFile::remove(hasGlobal);
-            if(!hasGlobalLocked.isEmpty())
-                QFile::remove(hasGlobalLocked);
-            if(!hasLocal.isEmpty()) {
-                libraryListItem.thumbFile = hasLocal;
-            } else if(!hasLocalLocked.isEmpty()) {
-                libraryListItem.thumbFile = hasLocalLocked;
-            }
-            updateItem(cachedLibraryItems.indexOf(libraryListItem), {Qt::DecorationRole});
-        }
-    }
+            emit backgroundProcessStateChange("Cleaning duplicate thumbs:", round((cachedLibraryItems.indexOf(libraryListItem)/(float)cachedLibraryItems.length())*100));
+            if(libraryListItem.type != LibraryListItemType::VR && libraryListItem.type != LibraryListItemType::Video)
+                continue;
+            QString hasGlobal;
+            QString hasGlobalLocked;
+            QString hasLocal;
+            QString hasLocalLocked;
+            QFileInfo mediaInfo(libraryListItem.path);
+            QString globalPath = SettingsHandler::getSelectedThumbsDir() + libraryListItem.name;
 
-    QDir dir(SettingsHandler::getSelectedThumbsDir(),"*." + SettingsHandler::getThumbFormatExtension(), QDir::NoSort, QDir::Filter::Files);
-    int fileCount = dir.count();
-    QDirIterator thumbs(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*." + SettingsHandler::getThumbFormatExtension(), QDir::Files, QDirIterator::Subdirectories);
+            QString filepathGlobal = globalPath + "." + SettingsHandler::getThumbFormatExtension();
+            if(QFileInfo::exists(filepathGlobal))
+            {
+                hasGlobal = filepathGlobal;
+            }
+            QString filepathGlobalLocked = globalPath + ".lock." + SettingsHandler::getThumbFormatExtension();
+            if(QFileInfo::exists(filepathGlobalLocked))
+            {
+                hasGlobalLocked = filepathGlobalLocked;
+            }
 
-    qint64 currentFileCount = 0;
-    while (thumbs.hasNext())
-    {
-        if(_loadingLibraryStop) {
-            LogHandler::Debug("thumb cleanup stopped 3");
-            emit backgroundProcessStateChange(nullptr, -1);
-            emit libraryStopped();
-            return;
+            QString absolutePath = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension;
+            QStringList imageExtensions = SettingsHandler::getImageExtensions();
+            foreach(QString ext, imageExtensions) {
+                if(m_thumbCleanupFuture.isCanceled())
+                {
+                    LogHandler::Debug("thumb cleanup stopped 2");
+                    emit backgroundProcessStateChange(nullptr, -1);
+                    emit cleanUpThumbsFailed();
+                    return;
+                }
+                QString filepathLocked = absolutePath + ".lock." + ext;
+                if(QFileInfo::exists(filepathLocked))
+                {
+                    hasLocalLocked = filepathLocked;
+                }
+                QString filepath = absolutePath + "." + ext;
+                if(QFileInfo::exists(filepath))
+                {
+                    hasLocal = filepath;
+                }
+            }
+            if((!hasLocal.isEmpty() || !hasLocalLocked.isEmpty()) && (!hasGlobal.isEmpty() || !hasGlobalLocked.isEmpty())) {
+                if(!hasGlobal.isEmpty())
+                    QFile::remove(hasGlobal);
+                if(!hasGlobalLocked.isEmpty())
+                    QFile::remove(hasGlobalLocked);
+                if(!hasLocal.isEmpty()) {
+                    libraryListItem.thumbFile = hasLocal;
+                } else if(!hasLocalLocked.isEmpty()) {
+                    libraryListItem.thumbFile = hasLocalLocked;
+                }
+                updateItem(cachedLibraryItems.indexOf(libraryListItem), {Qt::DecorationRole});
+            }
         }
-        emit backgroundProcessStateChange("Cleaning stale thumbs", round((currentFileCount/(float)fileCount)*100));
-        QString filepath = thumbs.next();
-//        QFileInfo fileinfo(filepath);
-//        QString fileName = fileinfo.fileName();
-        if(!findItemByThumbPath(filepath))
-            QFile::remove(filepath);
-        currentFileCount++;
-    }
-    emit backgroundProcessStateChange(nullptr, -1);
+
+        QDir dir(SettingsHandler::getSelectedThumbsDir(),"*." + SettingsHandler::getThumbFormatExtension(), QDir::NoSort, QDir::Filter::Files);
+        int fileCount = dir.count();
+        QDirIterator thumbs(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*." + SettingsHandler::getThumbFormatExtension(), QDir::Files, QDirIterator::Subdirectories);
+
+        qint64 currentFileCount = 0;
+        while (thumbs.hasNext())
+        {
+            if(m_thumbCleanupFuture.isCanceled())
+            {
+                LogHandler::Debug("thumb cleanup stopped 2");
+                emit backgroundProcessStateChange(nullptr, -1);
+                emit cleanUpThumbsFailed();
+                return;
+            }
+            emit backgroundProcessStateChange("Cleaning stale thumbs", round((currentFileCount/(float)fileCount)*100));
+            QString filepath = thumbs.next();
+    //        QFileInfo fileinfo(filepath);
+    //        QString fileName = fileinfo.fileName();
+            if(!findItemByThumbPath(filepath))
+                QFile::remove(filepath);
+            currentFileCount++;
+        }
+        emit backgroundProcessStateChange(nullptr, -1);
+        emit cleanUpThumbsFinished();
+    });
 }
 
-void MediaLibraryHandler::findAlternateFunscripts(QString path)
+void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
 {
+    if(item.type == LibraryListItemType::FunscriptType || item.type == LibraryListItemType::PlaylistInternal)
+        return;
+    QList<ScriptInfo> funscriptsWithMedia;
+    QString path = item.path;
     if(!QFileInfo::exists(path)) {
-        LogHandler::Error("No file found when searching for alternate scripts: "+ path);
+        LogHandler::Error("No file found when searching for alternate scripts: "+ item.path);
+        item.metadata.scripts = {};
         return;
     }
-    QtConcurrent::run([this, path]() {
-        QFileInfo fileInfo(path);
-        QString location = fileInfo.path();
-        QDirIterator scripts(location, QStringList() << "*.funscript" << "*.zip", QDir::Files);
+    QFileInfo fileInfo(path);
+    QString location = fileInfo.path();
+    QDirIterator scripts(location, QStringList() << "*.funscript" << "*.zip", QDir::Files);
 
-        QList<ScriptInfo> funscriptsWithMedia;
-        QString fileName = fileInfo.baseName();
-        auto channels = TCodeChannelLookup::getChannels();
-        ScriptContainerType containerType = ScriptContainerType::BASE;
-        LogHandler::Debug("Searching for alternative scripts for: "+ fileName);
-        while (scripts.hasNext())
-        {
-            containerType = ScriptContainerType::BASE;
-            QString filepath = scripts.next();
-            QFileInfo scriptInfo(filepath);
-            if(filepath.endsWith(".zip")) {
-                containerType = ScriptContainerType::ZIP;
-            }
-            //Is alternate script?
-            if(scriptInfo.baseName().startsWith(fileName)) {
-                LogHandler::Debug("Found possible alt script: " + scriptInfo.baseName());
-                // Ignore mfs files
-                LogHandler::Debug("Is MFS?");
-                QString trackname;
-                foreach (auto channel, channels) {
-                    auto track = TCodeChannelLookup::getChannel(channel);
-                    if(channel == TCodeChannelLookup::Stroke() || track->Type == AxisType::HalfOscillate || track->TrackName.isEmpty())
-                        continue;
-                    if(filepath.endsWith("."+track->TrackName+".funscript")) {
-                        LogHandler::Debug("Is MFS track: " + track->TrackName);
-                        trackname = track->TrackName;
-                        containerType = ScriptContainerType::MFS;
-                        break;
-                    }
-                }
-                if(containerType == ScriptContainerType::MFS) {
-                    LogHandler::Debug("MFS script found: " +trackname);
-                    funscriptsWithMedia.append({trackname, scriptInfo.baseName(), filepath, ScriptType::MAIN, containerType });
-                } else if(scriptInfo.baseName() != fileName) {
-                    auto name = scriptInfo.baseName().replace(fileName, "").trimmed();
-                    LogHandler::Debug("Alt script found: " +name);
-                    funscriptsWithMedia.append({name, scriptInfo.baseName(), filepath, ScriptType::ALTERNATE, containerType });
-                } else {
-                    LogHandler::Debug("Is default script");
-                    funscriptsWithMedia.push_front({"Default", scriptInfo.baseName(), filepath, ScriptType::MAIN, containerType });
-                }
-            }
+    QString fileName = XFileUtil::getNameNoExtension(path);
+    auto channels = TCodeChannelLookup::getChannels();
+    ScriptContainerType containerType = ScriptContainerType::BASE;
+    LogHandler::Debug("Searching for alternative scripts for: "+ fileName);
+    while (scripts.hasNext())
+    {
+        containerType = ScriptContainerType::BASE;
+        QString filepath = scripts.next();
+        QFileInfo scriptInfo(filepath);
+        QString trackname = "";
+        auto baseName = XFileUtil::getNameNoExtension(filepath);
+        if(filepath.endsWith(".zip", Qt::CaseInsensitive)) {
+            containerType = ScriptContainerType::ZIP;
         }
-        emit alternateFunscriptsFound(funscriptsWithMedia);
-    });
+        if(filepath == item.script || filepath == item.zipFile)
+        {
+            LogHandler::Debug("Is default script");
+            funscriptsWithMedia.push_front({"Default", baseName, filepath, trackname, ScriptType::MAIN, containerType });
+            continue;
+        }
+        //Is alternate script?
+        if(baseName.startsWith(fileName, Qt::CaseInsensitive)) {
+            LogHandler::Debug("Found possible alt script: " + baseName);
+            // Ignore mfs files
+            LibraryListItem27* otherMedia = findItemByNameNoExtension(baseName);
+            if(otherMedia && otherMedia->type != LibraryListItemType::FunscriptType)
+            {
+                LogHandler::Debug("Belongs to ther media item");
+                continue;
+            }
+            LogHandler::Debug("Is MFS?");
+            foreach (auto channel, channels) {
+                auto track = TCodeChannelLookup::getChannel(channel);
+                if(channel == TCodeChannelLookup::Stroke() || track->Type == ChannelType::HalfOscillate || track->TrackName.isEmpty())
+                    continue;
+                if(filepath.endsWith("."+track->TrackName+".funscript") && !path.endsWith("."+track->TrackName+".funscript")) {
+                    LogHandler::Debug("Is MFS track: " + track->TrackName);
+                    trackname = track->TrackName;
+                    containerType = ScriptContainerType::MFS;
+                    break;
+                }
+            }
+            if(containerType == ScriptContainerType::MFS)
+                baseName = XFileUtil::getNameNoExtension(baseName);
+            if(containerType == ScriptContainerType::MFS && !baseName.compare(fileName, Qt::CaseInsensitive)) {
+                // bool hasTrack = std::find_if(funscriptsWithMedia.begin(), funscriptsWithMedia.end(), [trackname](const ScriptInfo& value) {
+                //     return value.track == trackname;
+                // }) != funscriptsWithMedia.end();
+                LogHandler::Debug("MFS script found: " +trackname);
+                funscriptsWithMedia.append({fileName, baseName, filepath, trackname, ScriptType::MAIN, containerType });
+            } else if(baseName.compare(fileName, Qt::CaseInsensitive)) {
+                auto name = QString(baseName).replace(fileName, "").trimmed();
+                LogHandler::Debug("Alt script found: " +name);
+                item.metadata.hasAlternate = true;
+                funscriptsWithMedia.append({name, baseName, filepath, trackname, ScriptType::ALTERNATE, containerType });
+            }
+            // else {
+            //     LogHandler::Debug("Is default script");
+            //     funscriptsWithMedia.push_front({"Default", baseName, filepath, trackname, ScriptType::MAIN, containerType });
+            // }
+        }
+    }
+    item.metadata.scripts = funscriptsWithMedia;
+}
+
+bool MediaLibraryHandler::metadataProcessing()
+{
+    return _metadataFuture.isRunning();
+}
+
+void MediaLibraryHandler::processMetadata(LibraryListItem27 &item)
+{
+    bool metadataChanged = false;
+    QVector<int> roleChanged;
+    processMetadata(item, metadataChanged, roleChanged, true);
+    if(roleChanged.count()) {
+        updateItem(item, roleChanged);
+    }
+
+    if(metadataChanged) {
+        SettingsHandler::updateLibraryListItemMetaData(item, true);
+    }
 }
 
 void MediaLibraryHandler::assignID(LibraryListItem27 &item)
@@ -1285,12 +1613,22 @@ void MediaLibraryHandler::assignID(LibraryListItem27 &item)
     _libraryItemIDTracker++;
 }
 
-QString MediaLibraryHandler::getScreenType(QString mediaPath)
+void MediaLibraryHandler::stopAllSubProcesses()
+{
+    stopLibraryLoading();
+    stopThumbProcess();
+    stopMetadataProcess();
+    stopThumbCleanupProcess();
+}
+
+QString MediaLibraryHandler::getStereoMode(QString mediaPath)
 {
     if(mediaPath.contains("360", Qt::CaseSensitivity::CaseInsensitive))
         return "360";
     if(mediaPath.contains("180", Qt::CaseSensitivity::CaseInsensitive))
         return "180";
+    if(mediaPath.contains("fisheye190", Qt::CaseSensitivity::CaseInsensitive))
+        return "fisheye190";
     if(mediaPath.contains("fisheye", Qt::CaseSensitivity::CaseInsensitive))
         return "fisheye";
     if(mediaPath.contains("mkx200", Qt::CaseSensitivity::CaseInsensitive))
@@ -1300,7 +1638,7 @@ QString MediaLibraryHandler::getScreenType(QString mediaPath)
     return "flat";
 }
 
-QString MediaLibraryHandler::getStereoMode(QString mediaPath)
+QString MediaLibraryHandler::getScreenType(QString mediaPath)
 {
     if(mediaPath.contains(" tb", Qt::CaseSensitivity::CaseInsensitive) ||
         mediaPath.contains("_tb", Qt::CaseSensitivity::CaseInsensitive) ||
@@ -1336,7 +1674,7 @@ QString MediaLibraryHandler::getStereoMode(QString mediaPath)
 }
 
 bool MediaLibraryHandler::isStereo(QString mediaPath) {
-    return getStereoMode(mediaPath) != "off";
+    return getScreenType(mediaPath) != "off" || getStereoMode(mediaPath) != "flat";
 }
 /***
  * Searches library for the ID
@@ -1378,7 +1716,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByNameNoExtension(QString nameNo
 
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [nameNoExtension](const LibraryListItem27& item) {
-        return item.nameNoExtension == nameNoExtension;
+        return !item.nameNoExtension.compare(nameNoExtension, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1391,7 +1729,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByName(QString name) {
 //    }
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [name](const LibraryListItem27& item) {
-        return item.name == name;
+        return !item.name.compare(name, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1404,7 +1742,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByMediaPath(QString mediaPath) {
 //    }
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [mediaPath](const LibraryListItem27& item) {
-        return item.path == mediaPath;
+        return !item.path.compare(mediaPath, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1420,7 +1758,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByPartialMediaPath(QString parti
 //    }
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [partialMediaPath](const LibraryListItem27& item) {
-        return item.path.startsWith(partialMediaPath) || item.path.endsWith(partialMediaPath);
+        return item.path.startsWith(partialMediaPath, Qt::CaseInsensitive) || item.path.endsWith(partialMediaPath, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1431,7 +1769,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByThumbPath(QString thumbPath) {
 
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [thumbPath](const LibraryListItem27& item) {
-        return item.thumbFile == thumbPath;
+        return !item.thumbFile.compare(thumbPath, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1444,7 +1782,7 @@ LibraryListItem27* MediaLibraryHandler::findItemByPartialThumbPath(QString parti
 //    }
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [partialThumbPath](const LibraryListItem27& item) {
-        return item.thumbFile.startsWith(partialThumbPath) || item.thumbFile.endsWith(partialThumbPath);
+        return item.thumbFile.startsWith(partialThumbPath, Qt::CaseInsensitive) || item.thumbFile.endsWith(partialThumbPath, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1456,7 +1794,7 @@ LibraryListItem27 *MediaLibraryHandler::findItemBySubtitle(QString subtitle)
 {
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [subtitle](const LibraryListItem27& item) {
-        return item.subtitle == subtitle;
+        return !item.metadata.subtitle.compare(subtitle, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
@@ -1467,9 +1805,49 @@ LibraryListItem27 *MediaLibraryHandler::findItemByPartialSubtitle(QString partia
 {
     const QMutexLocker locker(&_mutex);
     auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [partialSubtitle](const LibraryListItem27& item) {
-        return item.subtitle.startsWith(partialSubtitle) || item.subtitle.endsWith(partialSubtitle);
+        return item.metadata.subtitle.startsWith(partialSubtitle, Qt::CaseInsensitive) || item.metadata.subtitle.endsWith(partialSubtitle, Qt::CaseInsensitive);
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
     return 0;
+}
+
+LibraryListItem27 *MediaLibraryHandler::findItemByAltScript(QString value)
+{
+    const QMutexLocker locker(&_mutex);
+    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [value](const LibraryListItem27& item) {
+            auto itr2 = std::find_if(item.metadata.scripts.begin(), item.metadata.scripts.end(), [value](const ScriptInfo& script) {
+                return script.type == ScriptType::ALTERNATE && !script.filename.compare(value, Qt::CaseInsensitive);
+            });
+        return itr2 != item.metadata.scripts.end();
+    });
+    if(itr != _cachedLibraryItems.end())
+        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
+    return 0;
+}
+
+LibraryListItem27 *MediaLibraryHandler::findItemByPartialAltScript(QString value)
+{
+    const QMutexLocker locker(&_mutex);
+    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [value](const LibraryListItem27& item) {
+        auto itr2 = std::find_if(item.metadata.scripts.begin(), item.metadata.scripts.end(), [value](const ScriptInfo& item) {
+            return item.type == ScriptType::ALTERNATE && (item.filename.startsWith(value, Qt::CaseInsensitive) || item.filename.endsWith(value, Qt::CaseInsensitive));
+        });
+        return itr2 != item.metadata.scripts.end();
+    });
+    if(itr != _cachedLibraryItems.end())
+        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
+    return 0;
+}
+
+LibraryListItem27 *MediaLibraryHandler::findItemByReference(const LibraryListItem27 *playListItem)
+{
+    auto item = findItemByID(playListItem->ID);
+    if(!item) {
+        item = findItemByNameNoExtension(playListItem->nameNoExtension);
+    }
+    if(!item) {
+        item = findItemByMediaPath(playListItem->path);
+    }
+    return item;
 }

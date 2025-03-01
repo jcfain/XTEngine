@@ -1,7 +1,10 @@
 #include "settingshandler.h"
 
-const QString SettingsHandler::XTEVersion = "0.454b";
-const float SettingsHandler::XTEVersionNum = 0.454f;
+#include "../tool/file-util.h"
+
+
+const QString SettingsHandler::XTEVersion = "0.471b";
+const float SettingsHandler::XTEVersionNum = 0.471f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -12,6 +15,8 @@ SettingsHandler::~SettingsHandler()
     delete settings;
     if(m_instance)
         delete m_instance;
+    if(m_syncFuture.isRunning())
+        m_syncFuture.waitForFinished();
 }
 
 void SettingsHandler::setSaveOnExit(bool enabled)
@@ -24,24 +29,360 @@ bool SettingsHandler::getFirstLoad()
     return m_firstLoad;
 }
 
-void SettingsHandler::setMoneyShot(LibraryListItem27 libraryListItem, qint64 currentPosition, bool userSet)
+void SettingsHandler::setMoneyShot(LibraryListItem27& libraryListItem, qint64 currentPosition, bool userSet)
 {
-    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem);
-    if(!userSet && libraryListItemMetaData.moneyShotMillis > 0)
+    if(!userSet && libraryListItem.metadata.moneyShotMillis > 0)
         return;
-    libraryListItemMetaData.moneyShotMillis = currentPosition;
-    SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
+    libraryListItem.metadata.moneyShotMillis = currentPosition;
+    SettingsHandler::updateLibraryListItemMetaData(libraryListItem);
 }
-void SettingsHandler::addBookmark(LibraryListItem27 libraryListItem, QString name, qint64 currentPosition)
+void SettingsHandler::addBookmark(LibraryListItem27& libraryListItem, QString name, qint64 currentPosition)
 {
-    auto libraryListItemMetaData = SettingsHandler::getLibraryListItemMetaData(libraryListItem);
-    libraryListItemMetaData.bookmarks.append({name, currentPosition});
-    SettingsHandler::updateLibraryListItemMetaData(libraryListItemMetaData);
+    libraryListItem.metadata.bookmarks.append({name, currentPosition});
+    SettingsHandler::updateLibraryListItemMetaData(libraryListItem);
+}
+
+QVariant SettingsHandler::getSetting(const QString& settingName)
+{
+    const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
+    return settings->value(getSettingPath(settingMap), settingMap.defaultValue);
+}
+
+void SettingsHandler::getSetting(const QString& settingName, QJsonObject& json)
+{
+    const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
+    QVariant::Type valueType = settingMap.defaultValue.type();
+    switch(valueType)
+    {
+        case QVariant::Date:
+        {
+            json[settingName] = getSetting(settingName).toDate().toString("yyyy-MM-dd");
+            break;
+        }
+        case QVariant::Time:
+        {
+            json[settingName] = getSetting(settingName).toTime().toString("HH:mm");
+            break;
+        }
+        case QVariant::DateTime:
+        {
+            json[settingName] = getSetting(settingName).toDateTime().toString("yyyy-MM-ddTHH:mm:ssZ");
+            break;
+        }
+        case QVariant::LongLong:
+        case QVariant::ULongLong:
+        {
+            json[settingName] = QString::number(getSetting(settingName).toLongLong());
+            break;
+        }
+        // Follow through on primitives
+        case QVariant::String:
+        {
+            json[settingName] = getSetting(settingName).toString();
+            break;
+        }
+        case QVariant::Bool:
+        {
+            json[settingName] = getSetting(settingName).toBool();
+            break;
+        }
+        case QVariant::Int:
+        case QVariant::UInt:
+        {
+            json[settingName] = getSetting(settingName).toInt();
+            break;
+        }
+        case QVariant::Double:
+        {
+            json[settingName] = getSetting(settingName).toDouble();
+            break;
+        }
+        case QVariant::Map:
+        {
+            // TODO check this
+            json[settingName] = getSetting(settingName).toJsonObject();
+            break;
+        }
+        case QVariant::List:
+        {
+            // TODO check this
+            json[settingName] = getSetting(settingName).toJsonArray();
+            break;
+        }
+        case QVariant::StringList:
+        {
+            // TODO check this
+            json[settingName] = getSetting(settingName).toJsonArray();
+            break;
+        }
+        // XTE doesnt uses the following at this time.
+        case QVariant::Char:
+        case QVariant::ByteArray:
+        case QVariant::BitArray:
+        case QVariant::UserType:
+        case QVariant::Url:
+        case QVariant::Locale:
+        case QVariant::Rect:
+        case QVariant::RectF:
+        case QVariant::Size:
+        case QVariant::SizeF:
+        case QVariant::Line:
+        case QVariant::LineF:
+        case QVariant::Point:
+        case QVariant::PointF:
+        case QVariant::RegExp:
+        case QVariant::RegularExpression:
+        case QVariant::Hash:
+        case QVariant::EasingCurve:
+        case QVariant::Uuid:
+        case QVariant::ModelIndex:
+        case QVariant::PersistentModelIndex:
+        case QVariant::LastCoreType:
+        case QVariant::Font:
+        case QVariant::Pixmap:
+        case QVariant::Brush:
+        case QVariant::Color:
+        case QVariant::Palette:
+        case QVariant::Image:
+        case QVariant::Polygon:
+        case QVariant::Region:
+        case QVariant::Bitmap:
+        case QVariant::Cursor:
+        case QVariant::KeySequence:
+        case QVariant::Pen:
+        case QVariant::TextLength:
+        case QVariant::TextFormat:
+        case QVariant::Matrix:
+        case QVariant::Transform:
+        case QVariant::Matrix4x4:
+        case QVariant::Vector2D:
+        case QVariant::Vector3D:
+        case QVariant::Vector4D:
+        case QVariant::Quaternion:
+        case QVariant::PolygonF:
+        case QVariant::Icon:
+        case QVariant::LastGuiType:
+        case QVariant::SizePolicy:
+        case QVariant::LastType:
+            break;
+        default:
+            break;
+    }
+}
+
+QString SettingsHandler::getSettingPath(const SettingMap &setting)
+{
+    return setting.group + "/" + setting.key;
+}
+
+QString SettingsHandler::getSettingPath(const QString &settingName)
+{
+    const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
+    return getSettingPath(settingMap);
+}
+
+void SettingsHandler::changeSetting(QString settingName, QVariant value)
+{
+    changeSetting(settingName, value, false);
+}
+
+void SettingsHandler::changeSetting(QString settingName, QVariant value, bool restart)
+{
+    QMutexLocker locker(&mutex);
+    QVariant currentValue = settings->value(getSettingPath(settingName));
+    if(currentValue == value)
+        return;
+
+    LogHandler::Debug("Enter changeSetting debounce");
+    m_changedSettings.insert(settingName, value);
+    QTimer::singleShot(100, instance(), [restart] () {
+        QMutexLocker locker(&mutex);
+        auto keys = m_changedSettings.keys();
+        foreach(auto key, keys) {
+            bool hasChanged = false;
+            QString settingName = key;
+            QVariant value = m_changedSettings.value(key);
+            const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
+            QVariant::Type valueType = settingMap.defaultValue.type();
+            QString settingPath = getSettingPath(settingMap);
+            switch(valueType)
+            {
+                case QVariant::Date:
+                {
+                    QDate realValue;
+                    if(value.type() == QVariant::String)
+                        realValue = QDate::fromString(value.toString());
+                    else
+                        realValue = value.toDate();
+                    if(realValue.isValid()) {
+                        settings->setValue(settingPath, realValue);
+                        hasChanged = true;
+                    }
+                    break;
+                }
+                case QVariant::Time:
+                {
+                    QTime realValue;
+                    if(value.type() == QVariant::String)
+                        realValue = QTime::fromString(value.toString());
+                    else
+                        realValue = value.toTime();
+                    if(realValue.isValid()) {
+                        settings->setValue(settingPath, realValue);
+                        hasChanged = true;
+                    }
+                    break;
+                }
+                case QVariant::DateTime:
+                {
+                    QDateTime realValue;
+                    if(value.type() == QVariant::String)
+                        realValue = QDateTime::fromString(value.toString());
+                    else
+                        realValue = value.toDateTime();
+                    if(realValue.isValid()) {
+                        settings->setValue(settingPath, realValue);
+                        hasChanged = true;
+                    }
+                    break;
+                }
+                case QVariant::LongLong:
+                case QVariant::ULongLong:
+                {
+                    qint64 realValue = 0;
+                    if(value.type() == QVariant::String)
+                        realValue = value.toString().toLongLong();
+                    else
+                        realValue = value.toLongLong();
+                    settings->setValue(settingPath, realValue);
+                    hasChanged = true;
+                    break;
+                }
+                // Follow through on primitives
+                case QVariant::String:
+                // {
+                //     settings->setValue(settingPath, value.toString());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::Bool:
+                // {
+                //     settings->setValue(settingPath, value.toBool());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::Int:
+                // {
+                //     settings->setValue(settingPath, value.toInt());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::UInt:
+                // {
+                //     settings->setValue(settingPath, value.toUInt());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::Double:
+                // {
+                //     settings->setValue(settingPath, value.toDouble());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::Map:
+                // {
+                //     settings->setValue(settingPath, value.toMap());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::List:
+                // {
+                //     settings->setValue(settingPath, value.toList());
+                //     hasChanged = true;
+                //     break;
+                // }
+                case QVariant::StringList:
+                // {
+                //     settings->setValue(settingPath, value.toStringList());
+                //     hasChanged = true;
+                //     break;
+                // }
+                {
+                    settings->setValue(settingPath, value);
+                    hasChanged = true;
+                    break;
+                }
+                // XTE doesnt uses the following at this time.
+                case QVariant::Char:
+                case QVariant::ByteArray:
+                case QVariant::BitArray:
+                case QVariant::UserType:
+                case QVariant::Url:
+                case QVariant::Locale:
+                case QVariant::Rect:
+                case QVariant::RectF:
+                case QVariant::Size:
+                case QVariant::SizeF:
+                case QVariant::Line:
+                case QVariant::LineF:
+                case QVariant::Point:
+                case QVariant::PointF:
+                case QVariant::RegExp:
+                case QVariant::RegularExpression:
+                case QVariant::Hash:
+                case QVariant::EasingCurve:
+                case QVariant::Uuid:
+                case QVariant::ModelIndex:
+                case QVariant::PersistentModelIndex:
+                case QVariant::LastCoreType:
+                case QVariant::Font:
+                case QVariant::Pixmap:
+                case QVariant::Brush:
+                case QVariant::Color:
+                case QVariant::Palette:
+                case QVariant::Image:
+                case QVariant::Polygon:
+                case QVariant::Region:
+                case QVariant::Bitmap:
+                case QVariant::Cursor:
+                case QVariant::KeySequence:
+                case QVariant::Pen:
+                case QVariant::TextLength:
+                case QVariant::TextFormat:
+                case QVariant::Matrix:
+                case QVariant::Transform:
+                case QVariant::Matrix4x4:
+                case QVariant::Vector2D:
+                case QVariant::Vector3D:
+                case QVariant::Vector4D:
+                case QVariant::Quaternion:
+                case QVariant::PolygonF:
+                case QVariant::Icon:
+                case QVariant::LastGuiType:
+                case QVariant::SizePolicy:
+                case QVariant::LastType:
+                    break;
+                default:
+                    break;
+            }
+
+            if(hasChanged)
+            {
+                LogHandler::Debug("Setting changed: "+key);
+                emit instance()->settingChange(key, m_changedSettings[key]);
+                settingsChangedEvent(true);
+                if(restart)
+                    emit instance()->restartRequired(true);
+            }
+        }
+        m_changedSettings.clear();
+   });
 }
 
 QSettings* SettingsHandler::getSettings() {
     return settings;
 }
+
 void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 {
     QMutexLocker locker(&mutex);
@@ -55,13 +396,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     if(!settingsToLoadFrom)
     {
         QFile settingsini(_applicationDirPath + "/settings.ini");
-        if(settingsini.exists())
+        m_isPortable = settingsini.exists();
+        if(m_isPortable)
         {
-            settings = new QSettings("settings.ini", QSettings::Format::IniFormat);
+            settings = new QSettings(_applicationDirPath + "/settings.ini", QSettings::Format::IniFormat);
         }
         else
         {
-            settings = new QSettings("cUrbSide prOd", "XTEngine");
+            settings = new QSettings(ORGANIZATION_NAME, APPLICATION_NAME);
         }
         settingsToLoadFrom = settings;
     }
@@ -69,12 +411,24 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     float currentVersion = settingsToLoadFrom->value("version").toFloat();
     m_firstLoad = currentVersion == 0;
 
+    // if(XTEVersionNum > currentVersion)
+    // {
+    //     emit instance()->messageSendWait(
+    //         "This appears to be an older version of XTP. If you continue you may overwrite settings of the newer version of XTP. Coninue?",
+    //         XLogLevel::Warning,
+    //         [currentVersion]() {
+
+    //         });
+    //     return; // TODO: how to get a response?
+    // }
+
     TCodeChannelLookup::load(settingsToLoadFrom, m_firstLoad);
 
     if (m_firstLoad)
     {
         locker.unlock();
         SetMapDefaults();
+        SetSystemTagDefaults();
     }
 
     locker.relock();
@@ -96,10 +450,9 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _useMediaDirForThumbs = settingsToLoadFrom->value("useMediaDirForThumbs").toBool();
     _hideWelcomeScreen = settingsToLoadFrom->value("hideWelcomeScreen").toBool();
     _selectedOutputDevice = settingsToLoadFrom->value("selectedDevice").toInt();
-    _selectedNetworkDeviceType = (NetworkDeviceType)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
+    _selectedNetworkDeviceType = (NetworkProtocol)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
     playerVolume = settingsToLoadFrom->value("playerVolume").toInt();
     offSet = settingsToLoadFrom->value("offSet").toInt();
-    _disableTCodeValidation = settingsToLoadFrom->value("disableSerialTCodeValidation").toBool();
     selectedFunscriptLibrary = settingsToLoadFrom->value("selectedFunscriptLibrary").toString();
     serialPort = settingsToLoadFrom->value("serialPort").toString();
     serverAddress = settingsToLoadFrom->value("serverAddress").toString();
@@ -161,13 +514,9 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     //     m_tcodeCommands.insert(command.id, command);
     // }
 
-    _gamepadSpeed = settingsToLoadFrom->value("gamepadSpeed").toInt();
-    _gamepadSpeed = _gamepadSpeed == 0 ? 1000 : _gamepadSpeed;
-    _gamepadSpeedStep = settingsToLoadFrom->value("gamepadSpeedStep").toInt();
-    _gamepadSpeedStep = _gamepadSpeedStep == 0 ? 500 : _gamepadSpeedStep;
-    _liveGamepadSpeed = _gamepadSpeed;
-    _xRangeStep = settingsToLoadFrom->value("xRangeStep").toInt();
-    _xRangeStep = _xRangeStep == 0 ? 50 : _xRangeStep;
+    _gamepadSpeed = settingsToLoadFrom->value("gamepadSpeed", 1000).toInt();
+    _gamepadSpeedStep = settingsToLoadFrom->value("gamepadSpeedStep", 500).toInt();
+    _xRangeStep = settingsToLoadFrom->value("xRangeStep", 50).toInt();
     disableSpeechToText = settingsToLoadFrom->value("disableSpeechToText").toBool();
     _disableVRScriptSelect = settingsToLoadFrom->value("disableVRScriptSelect").toBool();
     _disableNoScriptFound = settingsToLoadFrom->value("disableNoScriptFound").toBool();
@@ -185,32 +534,15 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _httpServerRoot = settingsToLoadFrom->value("httpServerRoot").toString();
     if(_httpServerRoot.isEmpty() || !QDir(_httpServerRoot).exists())
     {
-#if defined(Q_OS_WIN)
-        _httpServerRoot = "www";
-#elif defined(Q_OS_MAC)
-        _httpServerRoot = _applicationDirPath + "/www";
-#elif defined(Q_OS_LINUX)
-        _httpServerRoot = _applicationDirPath + "/www";
-#endif
+        setHttpServerRootDefault();
     }
     _vrLibrary = settingsToLoadFrom->value("vrLibrary").toStringList();
-    _httpChunkSize = settingsToLoadFrom->value("httpChunkSize").toLongLong();
-    if(!_httpChunkSize)
-        _httpChunkSize = 26214400;
-    _httpPort = settingsToLoadFrom->value("httpPort").toInt();
-    if(!_httpPort)
-        _httpPort = 80;
+    _httpPort = settingsToLoadFrom->value("httpPort", 80).toInt();
     _webSocketPort = settingsToLoadFrom->value("webSocketPort").toInt();
-    _httpThumbQuality = settingsToLoadFrom->value("httpThumbQuality").toInt();
-    if(m_firstLoad)
-        _httpThumbQuality = -1;
+    _httpThumbQuality = settingsToLoadFrom->value("httpThumbQuality", -1).toInt();
 
-    _funscriptOffsetStep = settingsToLoadFrom->value("funscriptOffsetStep").toInt();
-    if(!_funscriptOffsetStep)
-        _funscriptOffsetStep = 100;
-    _funscriptModifierStep = settingsToLoadFrom->value("funscriptModifierStep").toInt();
-    if(!_funscriptModifierStep)
-        _funscriptModifierStep = 5;
+    _funscriptOffsetStep = settingsToLoadFrom->value("funscriptOffsetStep", 100).toInt();
+    _funscriptModifierStep = settingsToLoadFrom->value("funscriptModifierStep", 5).toInt();
 
     _channelPulseAmount = settingsToLoadFrom->value("channelPulseAmount").toInt();
     _channelPulseEnabled = settingsToLoadFrom->value("channelPulseEnabled").toBool();
@@ -264,12 +596,11 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         m_xTags.addSmartTag(tag);
     }
 
+    m_viewedThreshold = settingsToLoadFrom->value("viewedThreshold", 0.9f).toFloat();
 
-    m_viewedThreshold = settingsToLoadFrom->value("viewedThreshold").toFloat();
-    if(!m_viewedThreshold) {
-        m_viewedThreshold = 0.9f;
-    }
-
+    // m_scheduleLibraryLoadEnabled = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadEnabled, false).toBool();
+    // m_scheduleLibraryLoadTime = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadTime, QTime(2,0)).toTime();
+    // m_scheduleLibraryLoadFullProcess = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadFullProcess, true).toBool();
 
     if(!m_firstLoad && currentVersion < 0.258f)
     {
@@ -407,7 +738,40 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             Load();
         }
-
+        if(currentVersion < 0.459f) {
+            locker.unlock();
+            MigrateTo46(settingsToLoadFrom);
+            setForceMetaDataFullProcess(true);
+            Save();
+            Load();
+        }
+        if(currentVersion < 0.465f) {
+            locker.unlock();
+            m_xTags.addTag(XTags::ALTSCRIPT);
+            setForceMetaDataFullProcess(true);
+            Save();
+            Load();
+        }
+        if(currentVersion < 0.469f) {
+            locker.unlock();
+            bool disableHeartBeat = settingsToLoadFrom->value("disableHeartBeat", false).toBool();
+            setDisableHeartBeat(disableHeartBeat);
+            bool disableTCodeValidation = settingsToLoadFrom->value("disableSerialTCodeValidation").toBool();
+            setDisableTCodeValidation(disableTCodeValidation);
+            Save();// No need to load as these are under the new settings system.
+        }
+        if(currentVersion < 0.47f) {
+            locker.unlock();
+            setForceMetaDataFullProcess(true);
+            Save();
+        }
+        if(currentVersion < 0.471f) {
+            locker.unlock();
+            qint64 httpChunkSize = settingsToLoadFrom->value("httpChunkSize", 26214400).toLongLong();
+            setHTTPChunkSize(httpChunkSize);
+            settingsToLoadFrom->remove("httpChunkSize");
+            Save();
+        }
     }
     settingsChangedEvent(false);
 }
@@ -439,7 +803,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("selectedDevice", _selectedOutputDevice);
         settingsToSaveTo->setValue("selectedNetworkDeviceType", (int)_selectedNetworkDeviceType);
         settingsToSaveTo->setValue("offSet", offSet);
-        settingsToSaveTo->setValue("disableSerialTCodeValidation", _disableTCodeValidation);
         settingsToSaveTo->setValue("selectedFunscriptLibrary", selectedFunscriptLibrary);
         settingsToSaveTo->setValue("serialPort", serialPort);
         settingsToSaveTo->setValue("serverAddress", serverAddress);
@@ -539,15 +902,12 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("enableHttpServer", _enableHttpServer);
         settingsToSaveTo->setValue("httpServerRoot", _httpServerRoot);
         settingsToSaveTo->setValue("vrLibrary", _vrLibrary);
-        settingsToSaveTo->setValue("httpChunkSize", _httpChunkSize);
         settingsToSaveTo->setValue("httpPort", _httpPort);
         settingsToSaveTo->setValue("webSocketPort", _webSocketPort);
         settingsToSaveTo->setValue("httpThumbQuality", _httpThumbQuality);
 
-
         settingsToSaveTo->setValue("funscriptModifierStep", _funscriptModifierStep);
         settingsToSaveTo->setValue("funscriptOffsetStep", _funscriptOffsetStep);
-
 
         settingsToSaveTo->setValue("channelPulseAmount", _channelPulseAmount);
         settingsToSaveTo->setValue("channelPulseEnabled", _channelPulseEnabled);
@@ -557,6 +917,9 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         settingsToSaveTo->setValue("viewedThreshold", m_viewedThreshold);
 
+        // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadEnabled, m_scheduleLibraryLoadEnabled);
+        // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadTime, m_scheduleLibraryLoadTime);
+        // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadFullProcess, m_scheduleLibraryLoadFullProcess);
 
         QVariantList tagsList;
         foreach(auto tag, m_xTags.getUserTags())
@@ -572,12 +935,21 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         }
         settingsToSaveTo->setValue("smartTags", smartTagsList);
 
-        settingsToSaveTo->sync();
+        Sync();
 
         settingsChangedEvent(false);
-        LogHandler::Info("Save complete");
+        LogHandler::Info("Settings Save complete");
     }
 
+}
+
+void SettingsHandler::Sync()
+{
+    m_syncFuture = QtConcurrent::run([]() {
+        QMutexLocker locker(&mutex);
+        settings->sync();
+        LogHandler::Debug("Settings sync complete");
+    });
 }
 
 void SettingsHandler::SaveLinkedFunscripts(QSettings* settingsToSaveTo)
@@ -585,7 +957,7 @@ void SettingsHandler::SaveLinkedFunscripts(QSettings* settingsToSaveTo)
     if(!settingsToSaveTo)
         settingsToSaveTo = settings;
     settingsToSaveTo->setValue("deoDnlaFunscriptLookup", deoDnlaFunscriptLookup);
-    settingsToSaveTo->sync();
+    Sync();
 }
 
 void SettingsHandler::Clear()
@@ -593,22 +965,48 @@ void SettingsHandler::Clear()
     QMutexLocker locker(&mutex);
     _saveOnExit = false;
     settings->clear();
+    settings->sync();
+    if(!m_isPortable) {
+#if defined(Q_OS_WIN)
+        QSettings("HKEY_CURRENT_USER\\SOFTWARE\\" ORGANIZATION_NAME, QSettings::NativeFormat).remove("");
+#elif defined(Q_OS_LINUX) || defined(Q_OS_MAC)
+        QFile::remove(settings->fileName());
+#endif
+    }
     settingsChangedEvent(true);
 }
 
 void SettingsHandler::Quit(bool restart)
 {
+    if(restart) {
+        Restart();
+        return;
+    }
     QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
-    if(restart)
-        QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments);
 }
 
 void SettingsHandler::Restart()
 {
+
+#if defined(Q_OS_WIN) || defined(Q_OS_MAC)
+    // emit instance()->messageSend("Restarting: "+QCoreApplication::applicationFilePath(), XLogLevel::Information);
     QStringList arguments = qApp->arguments().mid(1);
     QCoreApplication::quit();
     QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments);
+#elif defined(Q_OS_LINUX)
+    //QString appPath = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
+    QString appPath = QString(qgetenv("APPIMAGE"));
+    if(appPath.isEmpty())
+    {
+        //emit instance()->messageSend("AppPath is empty: "+appPath, XLogLevel::Information);
+        appPath = qApp->arguments().first();
+    }
+    //emit instance()->messageSend("Restarting: "+appPath, XLogLevel::Information);
+    QStringList arguments = qApp->arguments().mid(1);
+    QCoreApplication::quit();
+    QProcess::startDetached(appPath, arguments);
+#endif
 }
 
 bool SettingsHandler::Import(QString file)
@@ -651,7 +1049,7 @@ void SettingsHandler::PersistSelectSettings()
     if(deoDnlaFunscriptLookup.count() > 0)
         settings->setValue("deoDnlaFunscriptLookup", deoDnlaFunscriptLookup);
 
-    settings->sync();
+    Sync();
 }
 void SettingsHandler::Default()
 {
@@ -723,7 +1121,57 @@ void SettingsHandler::storeMediaMetaDatas(QSettings* settingsToSaveTo)
     settingsToSaveTo->setValue("libraryListItemMetaDatas", libraryListItemMetaDatas);
 }
 
-float SettingsHandler::viewedThreshold()
+bool SettingsHandler::scheduleLibraryLoadFullProcess()
+{
+    return getSetting(SettingKeys::scheduleLibraryLoadFullProcess).toBool();
+}
+
+void SettingsHandler::setScheduleLibraryLoadFullProcess(bool value)
+{
+    changeSetting(SettingKeys::scheduleLibraryLoadFullProcess, value);
+}
+
+bool SettingsHandler::processMetadataOnStart()
+{
+    return getSetting(SettingKeys::processMetadataOnStart).toBool();
+}
+
+void SettingsHandler::setProcessMetadataOnStart(bool value)
+{
+    changeSetting(SettingKeys::processMetadataOnStart, value);
+}
+
+bool SettingsHandler::scheduleSettingsSync()
+{
+    return getSetting(SettingKeys::scheduleSettingsSync).toBool();
+}
+
+void SettingsHandler::setScheduleSettingsSync(bool value)
+{
+    changeSetting(SettingKeys::scheduleSettingsSync, value);
+}
+
+QTime SettingsHandler::scheduleLibraryLoadTime()
+{
+    return getSetting(SettingKeys::scheduleLibraryLoadTime).toTime();
+}
+
+void SettingsHandler::setScheduleLibraryLoadTime(QTime value)
+{
+    changeSetting(SettingKeys::scheduleLibraryLoadTime, value);
+}
+
+bool SettingsHandler::scheduleLibraryLoadEnabled()
+{
+    return getSetting(SettingKeys::scheduleLibraryLoadEnabled).toBool();
+}
+
+void SettingsHandler::setScheduleLibraryLoadEnabled(bool value)
+{
+    changeSetting(SettingKeys::scheduleLibraryLoadEnabled, value);
+}
+
+float SettingsHandler::getViewedThreshold()
 {
     return m_viewedThreshold;
 }
@@ -879,6 +1327,25 @@ void SettingsHandler::SetSystemTagDefaults()
     SetUserTagDefaults();
 }
 
+void SettingsHandler::setDisableHeartBeat(bool value)
+{
+    changeSetting(SettingKeys::disableUDPHeartBeat, value);
+}
+
+bool SettingsHandler::getDisableHeartBeat()
+{
+    return getSetting(SettingKeys::disableUDPHeartBeat).toBool();
+}
+
+void SettingsHandler::setUseDTRAndRTS(bool value)
+{
+    changeSetting(SettingKeys::useDTRAndRTS, value);
+}
+
+bool SettingsHandler::getUseDTRAndRTS()
+{
+    return getSetting(SettingKeys::useDTRAndRTS).toBool();
+}
 
 void SettingsHandler::MigrateTo23()
 {
@@ -910,27 +1377,20 @@ void SettingsHandler::MigrateLibraryMetaDataTo258()
     QVariantHash libraryListItemMetaDatas = settings->value("libraryListItemMetaDatas").toHash();
     foreach(auto key, libraryListItemMetaDatas.keys())
     {
-        auto libraryListItemMetaData = libraryListItemMetaDatas[key].value<LibraryListItemMetaData258>();
+        LibraryListItemMetaData libraryListItemMetaData = libraryListItemMetaDatas[key].value<LibraryListItemMetaData>();
         QFile file(libraryListItemMetaData.libraryItemPath);
         if(file.exists())
         {
-            _libraryListItemMetaDatas.insert(key, {
-                                                     libraryListItemMetaData.libraryItemPath, // libraryItemPath
-                                                    libraryListItemMetaData.watched, // libraryItemPath
-                                                     libraryListItemMetaData.lastPlayPosition, // lastPlayPosition
-                                                     libraryListItemMetaData.lastLoopEnabled, // lastLoopEnabled
-                                                     libraryListItemMetaData.lastLoopStart, // lastLoopStart
-                                                     libraryListItemMetaData.lastLoopEnd, // lastLoopEnd
-                                                     0, // offset
-                                                     libraryListItemMetaData.moneyShotMillis, // moneyShotMillis
-                                                     libraryListItemMetaData.bookmarks, // bookmarks
-                                                     libraryListItemMetaData.funscripts,
-                                                     libraryListItemMetaData.tags
-                                              });
-            foreach(auto bookmark, libraryListItemMetaDatas[key].value<LibraryListItemMetaData258>().bookmarks)
-                _libraryListItemMetaDatas[key].bookmarks.append(bookmark);
-            foreach(auto funscript, libraryListItemMetaDatas[key].value<LibraryListItemMetaData258>().funscripts)
-                _libraryListItemMetaDatas[key].funscripts.append(funscript);
+            LibraryListItemMetaData258 newMetadata;
+            newMetadata.defaultValues(key, libraryListItemMetaData.libraryItemPath);
+            newMetadata.lastPlayPosition = libraryListItemMetaData.lastPlayPosition;
+            newMetadata.lastLoopEnabled = libraryListItemMetaData.lastLoopEnabled;
+            newMetadata.lastLoopStart = libraryListItemMetaData.lastLoopStart;
+            newMetadata.lastLoopEnd = libraryListItemMetaData.lastLoopEnd;
+            newMetadata.moneyShotMillis = libraryListItemMetaData.moneyShotMillis;
+            newMetadata.bookmarks = libraryListItemMetaData.bookmarks;
+            newMetadata.funscripts = libraryListItemMetaData.funscripts;
+            _libraryListItemMetaDatas.insert(key, newMetadata);
         }
     }
     Save();
@@ -1074,6 +1534,24 @@ void  SettingsHandler::MigrateTo42(QSettings* settingsToLoadFrom) {
     foreach(auto axis, availableChannelJson.keys())
     {
         TCodeChannelLookup::addChannel(axis, ChannelModel33::fromVariant(availableChannelJson.value(axis)), "Default");
+    }
+}
+
+void SettingsHandler::MigrateTo46(QSettings *settingsToLoadFrom)
+{
+    auto metaDatas = _libraryListItemMetaDatas;
+    auto metadataKeys = metaDatas.keys();
+    _libraryListItemMetaDatas.clear();
+    foreach (auto path, metadataKeys) {
+        QFileInfo fileInfo(path);
+        if(fileInfo.exists())
+        {
+            auto fileName = fileInfo.fileName();
+            int index = fileName.lastIndexOf(".");
+            if(index > -1)
+                fileName.remove(index, fileName.length());
+            _libraryListItemMetaDatas.insert(fileName, metaDatas.value(path));
+        }
     }
 }
 
@@ -1233,23 +1711,40 @@ QStringList SettingsHandler::getSelectedLibrary()
     return selectedLibrary;
 }
 
-QString  SettingsHandler::getLastSelectedLibrary() {
-    QString path;
-    if(!selectedLibrary.isEmpty())
-        path = selectedLibrary.last();
-    if(path.isEmpty()) {
-        selectedLibrary.removeAll("");
-        path = QCoreApplication::applicationDirPath();
-    }
-    return path;
+bool SettingsHandler::hasAnyLibrary(const QString &value, QStringList& messages)
+{
+    isLibraryParentChildOrEqual(value, messages);
+    isVRLibraryParentChildOrEqual(value, messages);
+    isLibraryExclusionChildOrEqual(value, messages);
+    return !messages.isEmpty();
 }
-void SettingsHandler::addSelectedLibrary(QString value)
+
+bool SettingsHandler::isLibraryParentChildOrEqual(const QString& value, QStringList& messages)
+{
+    return XFileUtil::isDirParentChildOrEqual(selectedLibrary, value, "main media library", messages);
+}
+
+bool SettingsHandler::isLibraryChildOrEqual(const QString &value, QStringList &messages)
+{
+    return XFileUtil::isDirChildOrEqual(selectedLibrary, value, "main media library", messages);
+}
+
+QString  SettingsHandler::getLastSelectedLibrary() {
+    selectedLibrary.removeAll("");
+    if(!selectedLibrary.isEmpty())
+        return selectedLibrary.last();
+    return QCoreApplication::applicationDirPath();
+}
+bool SettingsHandler::addSelectedLibrary(QString value, QStringList &messages)
 {
     QMutexLocker locker(&mutex);
+    if(hasAnyLibrary(value, messages))
+        return false;
     if(!value.isEmpty() && !selectedLibrary.contains(value))
         selectedLibrary << value;
     selectedLibrary.removeDuplicates();
     settingsChangedEvent(true);
+    return true;
 }
 void SettingsHandler::removeSelectedLibrary(QString value)
 {
@@ -1262,27 +1757,98 @@ QStringList SettingsHandler::getVRLibrary()
 {
     return _vrLibrary;
 }
-QString SettingsHandler::getLastSelectedVRLibrary() {
-    QString path;
-    if(!_vrLibrary.isEmpty())
-        path = _vrLibrary.last();
-    if(path.isEmpty()) {
-        _vrLibrary.removeAll("");
-    }
-    return path;
+
+bool SettingsHandler::isVRLibraryParentChildOrEqual(const QString& value, QStringList& messages)
+{
+    return XFileUtil::isDirParentChildOrEqual(_vrLibrary, value, "vr library", messages);
 }
-void SettingsHandler::addSelectedVRLibrary(QString value)
+
+bool SettingsHandler::isVRLibraryChildOrEqual(const QString &value, QStringList &messages)
+{
+    return XFileUtil::isDirChildOrEqual(_vrLibrary, value, "vr library", messages);
+}
+QString SettingsHandler::getLastSelectedVRLibrary() {
+    _vrLibrary.removeAll("");
+    if(!_vrLibrary.isEmpty())
+        return _vrLibrary.last();
+    //return QCoreApplication::applicationDirPath();
+    return "";
+    // Used for selecting new main libraries but not used with
+    // VR libraries as only one is possible at this time.
+    // If this changes need to add a new method or something for default VR library
+}
+bool SettingsHandler::addSelectedVRLibrary(QString value, QStringList &messages)
 {
     QMutexLocker locker(&mutex);
+    if(hasAnyLibrary(value, messages))
+        return false;
     _vrLibrary.clear();
     if(!value.isEmpty())
         _vrLibrary << value;
     settingsChangedEvent(true);
+    return true;
 }
 void SettingsHandler::removeSelectedVRLibrary(QString value)
 {
     QMutexLocker locker(&mutex);
+    _vrLibrary.clear();
     _vrLibrary.removeOne(value);
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::removeAllVRLibraries()
+{
+    QMutexLocker locker(&mutex);
+    _vrLibrary.clear();
+    settingsChangedEvent(true);
+}
+
+QStringList SettingsHandler::getLibraryExclusions()
+{
+    return _libraryExclusions;
+}
+
+bool SettingsHandler::isLibraryExclusionChildOrEqual(const QString &value, QStringList &messages)
+{
+    return XFileUtil::isDirChildOrEqual(_libraryExclusions, value, "library exclusions", messages);
+}
+bool SettingsHandler::addToLibraryExclusions(QString value, QStringList& errors)
+{
+    bool hasDuplicate = false;
+    bool isChild = false;
+    if(XFileUtil::isDirParentChildOrEqual(_libraryExclusions, value, "library exclusions", errors))
+        hasDuplicate = true;
+    foreach (auto originalPath, getSelectedLibrary()) {
+        if(originalPath==value) {
+            errors << "Directory '"+value+"' is already in the main library list!";
+            hasDuplicate = true;
+        } else if(value.startsWith(originalPath)) {
+            isChild = true;
+        }
+    }
+    foreach (auto originalPath, getVRLibrary()) {
+        if(originalPath==value) {
+            errors << "Directory '"+value+"' is in the vr library list!";
+            hasDuplicate = true;
+        } else if(value.startsWith(originalPath)) {
+            isChild = true;
+        }
+    }
+    if(!isChild) {
+        errors << "Directory '"+value+"' is NOT a child of any of the select libraries!";
+        return false;
+    }
+    if(hasDuplicate) {
+        return false;
+    }
+    _libraryExclusions.append(value);
+    settingsChangedEvent(true);
+    return true;
+}
+void SettingsHandler::removeFromLibraryExclusions(QList<int> indexes)
+{
+    foreach(auto index, indexes)
+        _libraryExclusions.removeAt(index);
     settingsChangedEvent(true);
 }
 
@@ -1347,10 +1913,10 @@ void SettingsHandler::setSelectedInputDevice(DeviceName deviceName)
     _xtpWebSyncEnabled = deviceName == DeviceName::XTPWeb;
 }
 
-void SettingsHandler::setSelectedNetworkDevice(NetworkDeviceType value) {
+void SettingsHandler::setSelectedNetworkDevice(NetworkProtocol value) {
     _selectedNetworkDeviceType = value;
 }
-NetworkDeviceType SettingsHandler::getSelectedNetworkDevice() {
+NetworkProtocol SettingsHandler::getSelectedNetworkDevice() {
     return _selectedNetworkDeviceType;
 }
 
@@ -1422,7 +1988,7 @@ void SettingsHandler::setLiveOffset(int value)
 {
     QMutexLocker locker(&mutex);
     _liveOffset = value;
-    settingsChangedEvent(true);
+    //settingsChangedEvent(true);
 }
 
 bool SettingsHandler::isSmartOffSet()
@@ -1442,12 +2008,11 @@ void SettingsHandler::setSmartOffset(int value)
 
 bool SettingsHandler::getDisableTCodeValidation()
 {
-    return _disableTCodeValidation;
+    return getSetting(SettingKeys::disableTCodeValidation).toBool();
 }
 void SettingsHandler::setDisableTCodeValidation(bool value)
 {
-    _disableTCodeValidation = value;
-    settingsChangedEvent(true);
+    changeSetting(SettingKeys::disableTCodeValidation, value);
 }
 
 void SettingsHandler::setAxis(QString axis, ChannelModel33 channel)
@@ -1682,14 +2247,6 @@ void SettingsHandler::setLiveGamepadConnected(bool value)
 bool SettingsHandler::getLiveGamepadConnected()
 {
     return _liveGamepadConnected;
-}
-void SettingsHandler::setLiveActionPaused(bool value)
-{
-    _liveActionPaused = value;
-}
-bool SettingsHandler::getLiveActionPaused()
-{
-    return _liveActionPaused;
 }
 void SettingsHandler::setXRangeStep(int value)
 {
@@ -2169,22 +2726,6 @@ XVideoRenderer SettingsHandler::getSelectedVideoRenderer()
     return _selectedVideoRenderer;
 }
 
-void SettingsHandler::addToLibraryExclusions(QString values)
-{
-    _libraryExclusions.append(values);
-    settingsChangedEvent(true);
-}
-void SettingsHandler::removeFromLibraryExclusions(QList<int> indexes)
-{
-    foreach(auto index, indexes)
-        _libraryExclusions.removeAt(index);
-    settingsChangedEvent(true);
-}
-QStringList SettingsHandler::getLibraryExclusions()
-{
-    return _libraryExclusions;
-}
-
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::getPlaylists()
 {
     return _playlists;
@@ -2339,7 +2880,7 @@ void SettingsHandler::setFunscriptLoaded(QString key, bool loaded)
 bool SettingsHandler::getFunscriptLoaded(QString key)
 {
     if (_funscriptLoaded.contains(key))
-        return _funscriptLoaded[key];
+        return _funscriptLoaded.value(key);
     return false;
 }
 
@@ -2424,15 +2965,42 @@ void SettingsHandler::setHttpServerRoot(QString value)
     settingsChangedEvent(true);
 }
 
+QString SettingsHandler::setHttpServerRootDefault()
+{
+#if defined(Q_OS_WIN)
+    _httpServerRoot = "www";
+#elif defined(Q_OS_MAC)
+    _httpServerRoot = _applicationDirPath + "/www";
+#elif defined(Q_OS_LINUX)
+    _httpServerRoot = _applicationDirPath + "/www";
+#endif
+    settingsChangedEvent(true);
+    return _httpServerRoot;
+}
+
 qint64 SettingsHandler::getHTTPChunkSize()
 {
-    return _httpChunkSize;
+    return getHTTPChunkSizeMB() * 1048576;
 }
+
 void SettingsHandler::setHTTPChunkSize(qint64 value)
 {
+    if(value) {
+        setHTTPChunkSizeMB(value / 1048576);
+    } else {
+        setHTTPChunkSizeMB(0);
+    }
+}
+
+double SettingsHandler::getHTTPChunkSizeMB()
+{
     QMutexLocker locker(&mutex);
-    _httpChunkSize = value;
-    settingsChangedEvent(true);
+    return getSetting(SettingKeys::httpChunkSizeMB).toDouble();
+}
+
+void SettingsHandler::setHTTPChunkSizeMB(double value)
+{
+    changeSetting(SettingKeys::httpChunkSizeMB, value);
 }
 
 int SettingsHandler::getHTTPPort()
@@ -2471,7 +3039,7 @@ void  SettingsHandler::setFunscriptModifierStep(int value)
     QMutexLocker locker(&mutex);
     _funscriptModifierStep = value;
 }
-int  SettingsHandler::getFunscriptModifierStep()
+double  SettingsHandler::getFunscriptModifierStep()
 {
     QMutexLocker locker(&mutex);
     return _funscriptModifierStep;
@@ -2525,31 +3093,29 @@ QHash<QString, LibraryListItemMetaData258> SettingsHandler::getLibraryListItemMe
     return _libraryListItemMetaDatas;
 }
 
-LibraryListItemMetaData258 SettingsHandler::getLibraryListItemMetaData(const LibraryListItem27 item)
+void SettingsHandler::getLibraryListItemMetaData(LibraryListItem27& item)
 {
     QMutexLocker locker(&mutex);
-    if(_libraryListItemMetaDatas.contains(item.path))
+    if(_libraryListItemMetaDatas.contains(item.nameNoExtension))
     {
-        return _libraryListItemMetaDatas.value(item.path);
+        item.metadata = _libraryListItemMetaDatas.value(item.nameNoExtension);
+        return;// _libraryListItemMetaDatas.value(item.path);
     }
-    //Default meta data
-    QList<QString> funscripts;
-    QList<Bookmark> bookmarks;
-    QList<QString> tags;
-    _libraryListItemMetaDatas.insert(item.path, {
-                                         item.path, // libraryItemPath
-                                         false,
-                                         -1, // lastPlayPosition
-                                         false, // lastLoopEnabled
-                                         -1, // lastLoopStart
-                                         -1, // lastLoopEnd
-                                         0, // offset
-                                         -1, // moneyShotMillis
-                                         bookmarks, // bookmarks
-                                         funscripts,
-                                         tags
-                                     });
-    return _libraryListItemMetaDatas.value(item.path);
+    LibraryListItemMetaData258 newMetadata;
+    newMetadata.defaultValues(item.nameNoExtension, item.path);
+    _libraryListItemMetaDatas.insert(item.nameNoExtension, newMetadata);
+    item.metadata = _libraryListItemMetaDatas.value(item.nameNoExtension);
+}
+
+bool SettingsHandler::hasLibraryListItemMetaData(const LibraryListItem27& item)
+{
+    return !item.nameNoExtension.isEmpty() && _libraryListItemMetaDatas.contains(item.nameNoExtension);
+}
+
+void SettingsHandler::removeLibraryListItemMetaData(LibraryListItem27& item)
+{
+    _libraryListItemMetaDatas.remove(item.nameNoExtension);
+    getLibraryListItemMetaData(item);
 }
 
 void SettingsHandler::removeLibraryListItemMetaData(const QString key)
@@ -2557,21 +3123,39 @@ void SettingsHandler::removeLibraryListItemMetaData(const QString key)
     _libraryListItemMetaDatas.remove(key);
 }
 
-void SettingsHandler::updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData, bool sync)
+void SettingsHandler::updateLibraryListItemMetaData(const LibraryListItem27& item, bool sync)
 {
     QMutexLocker locker(&mutex);
-    _libraryListItemMetaDatas.insert(libraryListItemMetaData.libraryItemPath, libraryListItemMetaData);
+    _libraryListItemMetaDatas.insert(item.nameNoExtension, item.metadata);
     if(sync)
     {
         storeMediaMetaDatas();
-        settings->sync();
+        Sync();
         //settingsChangedEvent(true);
     }
 }
 
+bool SettingsHandler::getForceMetaDataFullProcess()
+{
+    return getSetting(SettingKeys::forceMetaDataFullProcess).toBool();
+}
+
+void SettingsHandler::setForceMetaDataFullProcess(bool enable)
+{
+    changeSetting(SettingKeys::forceMetaDataFullProcess, enable);
+}
+
+void SettingsHandler::setForceMetaDataFullProcessComplete()
+{
+    changeSetting(SettingKeys::forceMetaDataFullProcess, false);
+}
+
 QSettings* SettingsHandler::settings;
+bool SettingsHandler::m_isPortable = false;
+QMap<QString, QVariant> SettingsHandler::m_changedSettings;
 QString SettingsHandler::_applicationDirPath;
 SettingsHandler* SettingsHandler::m_instance = 0;
+QFuture<void> SettingsHandler::m_syncFuture;
 bool SettingsHandler::m_firstLoad;
 bool SettingsHandler::_settingsChanged;
 bool SettingsHandler::_hideWelcomeScreen;
@@ -2586,11 +3170,10 @@ QStringList SettingsHandler::selectedLibrary;
 QString SettingsHandler::_selectedThumbsDir;
 bool SettingsHandler::_useMediaDirForThumbs;
 int SettingsHandler::_selectedOutputDevice;
-NetworkDeviceType SettingsHandler::_selectedNetworkDeviceType;
+NetworkProtocol SettingsHandler::_selectedNetworkDeviceType;
 int SettingsHandler::_librarySortMode;
 int SettingsHandler::playerVolume;
 int SettingsHandler::offSet;
-bool SettingsHandler::_disableTCodeValidation;
 QStringList SettingsHandler::m_customTCodeCommands;
 
 int SettingsHandler::libraryView = LibraryView::Thumb;
@@ -2612,7 +3195,6 @@ int SettingsHandler::_gamepadSpeed;
 int SettingsHandler::_gamepadSpeedStep;
 int SettingsHandler::_liveGamepadSpeed;
 bool SettingsHandler::_liveGamepadConnected;
-bool SettingsHandler::_liveActionPaused;
 int SettingsHandler::_liveOffset;
 bool SettingsHandler::m_smartOffsetEnabled = false;
 int SettingsHandler::m_smartOffset = 0;
@@ -2648,14 +3230,13 @@ bool SettingsHandler::_skipPlayingSTandAloneFunscriptsInLibrary;
 
 bool SettingsHandler::_enableHttpServer;
 QString SettingsHandler::_httpServerRoot;
-qint64 SettingsHandler::_httpChunkSize;
 int SettingsHandler::_httpPort;
 int SettingsHandler::_webSocketPort;
 int SettingsHandler::_httpThumbQuality;
 QStringList SettingsHandler::_vrLibrary;
 bool SettingsHandler::_showVRInLibraryView;
 
-int SettingsHandler::_funscriptModifierStep;
+double SettingsHandler::_funscriptModifierStep;
 int SettingsHandler::_funscriptOffsetStep;
 
 bool SettingsHandler::_channelPulseEnabled;
@@ -2669,6 +3250,10 @@ QList<DecoderModel> SettingsHandler::decoderPriority;
 XVideoRenderer SettingsHandler::_selectedVideoRenderer;
 
 float SettingsHandler::m_viewedThreshold;
+
+// bool SettingsHandler::m_scheduleLibraryLoadEnabled;
+// QTime SettingsHandler::m_scheduleLibraryLoadTime;
+// bool SettingsHandler::m_scheduleLibraryLoadFullProcess;
 
 QStringList SettingsHandler::_libraryExclusions;
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::_playlists;

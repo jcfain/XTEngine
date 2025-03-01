@@ -3,10 +3,13 @@
 
 <head>
 	<title>XTP Web</title>
-	<link rel="stylesheet" type="text/css" href="video-min.css" />
-	<link rel="stylesheet" type="text/css" href="styles-min.css" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta name="robots" content="noindex">
+	<link rel="stylesheet" type="text/css" href="video-min.css" />
+	<link rel="stylesheet" type="text/css" href="styles-min.css" />
+	<link rel="stylesheet" type="text/css" href="script-status-min.css" />
+	<!-- Load overrides last -->
+	<link rel="stylesheet" type="text/css" href="mobile-min.css" />
 
 	<!--     <link rel="stylesheet" type="text/css" href="https://s3.deovr.com/version/1/css/styles.css"/>
     <script src="https://s3.deovr.com/version/1/js/bundle.js" async></script> -->
@@ -16,15 +19,25 @@
 	<div class="header">
 		<div id="logoutSectionSpacing" class="headerSection toolBar" style="margin-left:32px">
 			<!-- <div id="statusOutput"></div> -->
-			<label id="statusOutputLabel" for="statusOutput" style="font-size: 0.7rem;" class="hidden-visibility"></label>
-			<progress id="statusOutput" class="pregress-status hidden-visibility" value="0" max="100"></progress>
+			<!-- <label id="statusOutputLabel" for="statusOutput" style="font-size: 0.7rem;" class="hidden-visibility"></label>
+			<progress id="statusOutput" class="pregress-status hidden-visibility" value="0" max="100"></progress> -->
 		</div>
 		<div class="headerSection headerActionSection toolBar">
 			<div class="toolBarGroup toolBarGroupEnd">
-				<button title="TCode device status\n(Click to connect)" name="deviceStatusRetryButton" class="icon-button device-status-retry-button"
+				<!-- <button title="TCode device status\n(Click to connect)" name="deviceStatusRetryButton" class="icon-button icon-button--group device-status-retry-button"
 					onclick="tcodeDeviceConnectRetry()">
 					<img name="connectionStatusIconImage" class="buttonImage" src="://images/icons/reload.svg" />
 				</button>
+				<button title="TCode device pause toggle" name="devicePauseStatusButton" class="icon-button icon-button--group video-control--device-state" onclick="togglePauseAllDeviceActions()">
+					<img name="devicePauseStatusIconImage" class="buttonImage" src="://images/icons/pause.svg" />
+				</button>
+				<button  title="Send TCode home" name="deviceHomeButton" class="icon-button icon-button--group" onclick="sendDeviceHome()">
+					<img name="deviceHomeButtonImage" class="buttonImage" src="://images/icons/home.svg" />
+				</button> -->
+				
+				<button id="scriptStatusModalButton" title="Script status" class="script-status-button icon-button icon-button--group" onclick="toggleScriptStatusModal()">
+					<img class="buttonImage" src="://images/icons/equalizer.svg" />
+				</button> 
 			</div>
 		</div>
 		<div class="headerSection headerLogoSection">
@@ -32,7 +45,13 @@
 		</div>
 		<div class="headerSection headerActionSection toolBar">
 			<div class="toolBarGroup toolBarGroupStart">
-				<button title="Settings" id="settingsButton" class="icon-button" onclick="openSettings()">
+				<!-- <button id="scriptStatusModalButton" title="Script status" class="script-status-button icon-button icon-button--group" onclick="toggleScriptStatusModal()">
+					<img class="buttonImage" src="://images/icons/equalizer.svg" />
+				</button>  -->
+				<!-- <button name="refreshXTPLibraryButton" title="This will start the library loading process" class="script-status-button icon-button icon-button--group" onclick="refreshXTPLibrary()">
+					<img class="buttonImage" src="://images/icons/reload.svg" />
+				</button> -->
+				<button title="Settings" id="settingsButton" class="icon-button icon-button--group" onclick="openSettings()">
 					<image class="buttonImage" src="://images/icons/settings-black.png" />
 				</button>
 			</div>
@@ -63,7 +82,6 @@
 				</svg>
 			</div>
 			<video playsinline autoplay controls id="videoPlayer" class="video">
-				<source id="videoSource" />
 				Your browser doesn't support HTML5 video tag.
 			</video>
 			<div id="top-controls" class="video-controls top-controls hidden">
@@ -73,8 +91,8 @@
 				<div class="middle-controls middle-controls--top">
 				</div>
 				<div class="right-controls right-controls--top">
-					<button data-title="Exit (x)" class="video-control video-control--action-end" id="exit-action">
-						<svg style="color: white" xmlns="http://www.w3.org/2000/svg" class="player-button-png" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16"> <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" fill="white"></path> </svg>
+					<button data-title="Exit (x)" class="video-control video-control--action-end video-control-main" id="exit-action">
+						<svg style="color: white" xmlns="http://www.w3.org/2000/svg" class="player-button-icon" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16"> <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" fill="white"></path> </svg>
 					</button>
 			<!-- 		Need to put the menu in the video container for this to work in full screen.
 				<button id="settingsOverlayButton" class="video-control video-control--action-end" onclick="openSettings()">
@@ -83,6 +101,25 @@
 				</div>
 			</div>
 			<div id="bottom-controls" class="video-controls hidden" id="video-controls">
+				<div id="bottom-top-controls" class="bottom-top-controls">
+					<div id="scriptStatusPlayerContainer" name="scriptStatusContainer"  class="script-status-container hidden">
+						<div name="noScriptInput" style="align-self: center; flex-basis: 100%;">No script input</div>
+					</div>
+					<div class="bottom-top-controls-buttons">
+						<button id="scriptStatusPlayerButton" class="video-control video-control-other" onclick="toggleScriptStatusPlayer()">
+							<img class="player-button-icon" src="://images/icons/equalizer.svg"/ >
+						</button>
+						<button data-title="Skip to next action (a)" class="video-control  video-control-other video-control--action-begin" id="next-action">
+							<img class="player-button-icon" src="://images/icons/skipToAction.png"></img>
+						</button>
+						<button data-title="Skip to moneyshot (c)" class="video-control  video-control-other video-control--money-shot" id="money-shot">
+							<img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg"></img>
+						</button>
+						<button data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control-other video-control--device-state" onclick="togglePauseAllDeviceActions()">
+							<img class="player-button-icon" name="devicePauseStatusIconImage" src="://images/icons/pause.svg" />
+						</button>
+					</div>
+				</div>
 				<div class="time">
 					<time id="time-elapsed">00:00</time>
 					<span> / </span>
@@ -94,52 +131,55 @@
 					<div class="seek-tooltip" id="seek-tooltip">00:00:00</div>
 				</div>
 
-				<div id="top-controls" class="bottom-controls">
+				<div id="bottom-bottom-controls" class="bottom-controls">
 					<div class="left-controls">
-						<button data-title="Skip to next action (a)" class="video-control video-control--action-begin" id="next-action">
-							<img class="player-button-png" src="://images/icons/skipToAction.png"></img>
+						<!-- <button data-title="Skip to next action (a)" class="video-control video-control--action-begin" id="next-action">
+							<img class="player-button-icon" src="://images/icons/skipToAction.png"></img>
 						</button>
 						<button data-title="Skip to moneyshot (c)" class="video-control video-control--money-shot" id="money-shot">
-							<img class="player-button-png" src="://images/icons/skipToMoneyShot.svg"></img>
+							<img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg"></img>
 						</button>
-					</div>
-					<div class="middle-controls">
-						<button data-title="Previous video (arrow left)" class="video-control" id="play-previous">
-							<svg class="player-button-png" >
-								<use href="#play-previous-icon"></use>
-							</svg>
-						</button>
-						<button data-title="Play (k)" class="video-control" id="play">
-							<svg class="playback-icons player-button-png">
-								<use id="playIcon" href="#play-icon"></use>
-								<use id="pauseIcon" class="hidden" href="#pause"></use>
-							</svg>
-						</button>
-						<button data-title="Next video (arrow right)" class="video-control" id="play-next">
-							<svg class="player-button-png">
-								<use href="#play-next-icon"></use>
-							</svg>
-						</button>
-					</div>
-					<div class="right-controls">
+						<button  data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control--device-state" onclick="togglePauseAllDeviceActions()">
+							<img class="player-button-icon" name="devicePauseStatusIconImage" src="://images/icons/pause.svg" />
+						</button> -->
 						<div class="volume-controls">
 							<input data-title="Up (+) - Down (-)" class="volume" id="volume" value="1" data-mute="0.5" type="range" max="1" min="0" step="0.01" />
-							<button data-title="Mute (m)" class="volume-button video-control" id="volume-button">
-								<svg class="player-button-png">
+							<button data-title="Mute (m)" class="volume-button video-control video-control-main" id="volume-button">
+								<svg class="player-button-icon">
 									<use class="hidden" href="#volume-mute"></use>
 									<use class="hidden" href="#volume-low"></use>
 									<use href="#volume-high"></use>
 								</svg>
 							</button>
 						</div>
+					</div>
+					<div class="middle-controls">
+						<button data-title="Previous video (arrow left)" class="video-control video-control-main" id="play-previous">
+							<svg class="player-button-icon" >
+								<use href="#play-previous-icon"></use>
+							</svg>
+						</button>
+						<button data-title="Play (k)" class="video-control video-control-main" id="play">
+							<svg class="playback-icons player-button-icon">
+								<use id="playIcon" href="#play-icon"></use>
+								<use id="pauseIcon" class="hidden" href="#pause"></use>
+							</svg>
+						</button>
+						<button data-title="Next video (arrow right)" class="video-control video-control-main" id="play-next">
+							<svg class="player-button-icon">
+								<use href="#play-next-icon"></use>
+							</svg>
+						</button>
+					</div>
+					<div class="right-controls">
 					<!-- 	<button data-title="PIP (p)" class="pip-button video-control" id="pip-button">
-							<svg class="player-button-png">
+							<svg class="player-button-icon">
 								<use href="#pip"></use>
 							</svg>
 						</button> -->
-						<button data-title="Full screen (f)" class="fullscreen-button video-control"
+						<button data-title="Full screen (f)" class="fullscreen-button video-control video-control-main"
 							id="fullscreen-button">
-							<svg class="player-button-png">
+							<svg class="player-button-icon">
 								<use href="#fullscreen"></use>
 								<use href="#fullscreen-exit" class="hidden"></use>
 							</svg>
@@ -159,14 +199,18 @@
 			<img class="buttonImage" src="://images/icons/tag.svg"/>
 		</button> 
 		<button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button" onclick="toggleShufflePlay()">
-			<img class="buttonImage" src="://images/icons/shuffle.svg"/ >
+			<img class="buttonImage" src="://images/icons/shuffle.svg" />
 		</button> 
 		<button id="randomizeButton" title="Randomize media playlist" class="hidden random-media-button icon-button" onclick="sortChange('random')">
-			<img class="buttonImage" src="://images/icons/reload.svg"/ >
+			<img class="buttonImage" src="://images/icons/reload.svg" />
 		</button> 
 		<input id="filterInput" class="media-filter-input hidden" placeholder="Filter" oninput="debounceFilter(this.value)" />
 		<!-- <select id="tagFilterSelect" class="media-tag-filter-input hidden" multiple oninput="filterByTag(this.value)"></select>  -->
 		<div id="tagFilterOptions" class="media-tag-filter-input hidden"></div>
+		<div id="scriptStatusModal" class="script-status-model hidden">
+			<div name="noScriptInput" style="align-self: center;">No script input</div>
+			<div name="scriptStatusContainer"  class="script-status-container"></div>
+		</div>
 
 			<div id="noMedia" style="text-align: center;" hidden>No media found</div>
 			<div id="mediaLoading" class="no-media">
@@ -193,43 +237,93 @@
 					</label>
 					<input id="mediaOffset" type="number" step="1" oninput="metaDataChange()" />
 				</div>
-				<div class="form-buttons">
-					<button onclick="addToSelectedMetaData(10)">
-						+10
-					</button>
-					<button onclick="addToSelectedMetaData(50)">
-						+50
-					</button>
-					<button onclick="addToSelectedMetaData(100)">
-						+100
-					</button>
-					<button onclick="addToSelectedMetaData(500)">
-						+500
-					</button>
-					<button onclick="addToSelectedMetaData(-10)">
-						-10
-					</button>
-					<button onclick="addToSelectedMetaData(-50)">
-						-50
-					</button>
-					<button onclick="addToSelectedMetaData(-100)">
-						-100
-					</button>
-					<button onclick="addToSelectedMetaData(-500)">
-						-500
-					</button>
+				<div class="formElement">
+					<label>
+					</label>
+					<div class="form-buttons">
+						<button onclick="addToSelectedMetaDataOffset(10)">
+							+10
+						</button>
+						<button onclick="addToSelectedMetaDataOffset(50)">
+							+50
+						</button>
+						<button onclick="addToSelectedMetaDataOffset(100)">
+							+100
+						</button>
+						<button onclick="addToSelectedMetaDataOffset(500)">
+							+500
+						</button>
+						<button onclick="addToSelectedMetaDataOffset(-10)">
+							-10
+						</button>
+						<button onclick="addToSelectedMetaDataOffset(-50)">
+							-50
+						</button>
+						<button onclick="addToSelectedMetaDataOffset(-100)">
+							-100
+						</button>
+						<button onclick="addToSelectedMetaDataOffset(-500)">
+							-500
+						</button>
+					</div>
+				</div>
+				<div class="formElement">
+					<label
+						title="Change the funscript range of the current media item"
+						for="funscriptModifier">Funscript modifier (%)
+					</label>
+					<input id="funscriptModifier" type="number" step="10.0" min="0.0" oninput="metaDataChange()" />
+				</div>
+				<div class="formElement">
+					<label>
+					</label>
+					<div class="form-buttons">
+						<button onclick="addToSelectedMetaDataModifier(5)">
+							+5
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(10)">
+							+10
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(30)">
+							+30
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(50)">
+							+50
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(-5)">
+							-5
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(-10)">
+							-10
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(-30)">
+							-30
+						</button>
+						<button onclick="addToSelectedMetaDataModifier(-50)">
+							-50
+						</button>
+					</div>
 				</div>
 				<div class="formElement">
 					<label
 						title="Change the moneyshot for the current media item"
 						for="moneyShotMillis">Moneyshot (ms)
 					</label>
-					<input id="moneyShotMillis" type="number" step="1" oninput="metaDataChange()" />
+					<input id="moneyShotMillis" type="number" step="1000" oninput="metaDataChange()" />
 				</div>
-				<div class="form-buttons">
-					<button onclick="resetMoneyShot()">
-						Reset money shot
-					</button>
+				<div class="formElement">
+					<label>
+					</label>
+					<div class="form-buttons">
+						<button onclick="resetMoneyShot()">
+							Reset money shot
+						</button>
+					</div>
+				</div>
+				<div class="formElement">
+					<label>Tags
+					</label>
+					<div id="metaDataTags" class="media-tag-metadata-container"></div>
 				</div>
 			</div>
 			<div class="modal-footer">
@@ -321,6 +415,10 @@
 									onclick="sortChange(this.value)" /><label for="dateAsc">Date (asc)</label>
 								<input type="radio" id="dateDesc" name="sort" value="dateDesc"
 									onclick="sortChange(this.value)" /><label for="dateDesc">Date (desc)</label>
+								<input type="radio" id="addedAsc" name="sort" value="dateAsc"
+									onclick="sortChange(this.value)" /><label for="addedAsc">Added (asc)</label>
+								<input type="radio" id="addedDesc" name="sort" value="addedDesc"
+									onclick="sortChange(this.value)" /><label for="dateDesc">Added (desc)</label>
 								<input type="radio" id="random" name="sort" value="random"
 									onclick="sortChange(this.value)" /><label for="random">Random</label>
 							</div>
@@ -542,8 +640,24 @@
 							<div id="profileNamesDiv" class="radio-group"></div>
 						</div>
 						<div id="tcodeRanges"></div>
+						<div class="formElement">
+							<label for="homeAllRangesButton"></label>
+							<div class="form-buttons">
+								<button id="homeAllRangesButton" onclick="sendDeviceHome()">
+									Home device
+								</button>
+							</div>
+						</div>
 					</div>
-					<div id="tabFunscript" class="tab-content"></div>
+					<div id="tabFunscript" class="tab-content">
+						<div class="tab-content-header">
+							<div class="tab-content-header-main">Motion modifier</div>
+						</div>
+						<div id="tabFunscriptBody" class="tab-content-body-column">
+							<div id="tabFunscriptRandomMotion" class="tab-content-body-column-section--large tab-content-body-column-section"></div>
+							<div id="tabFunscriptInversion" class="tab-content-body-column-section--small tab-content-body-column-section"></div>
+						</div>
+					</div>
 					<div id="systemInfoTab" class="tab-content">
 						<h3>Versions</h3>
 						<div>
@@ -551,7 +665,8 @@
 							<span id="xteVersion"></span>
 						</div>
 						<div>
-							<span>XTP Web: v0.454b</span>
+							<span>XTP Web: </span>
+							<span id="webVersion"></span>
 						</div>
 						<h3>Current browser information</h3>
 						<div id="browserInfo"></div>
@@ -572,9 +687,10 @@
 							</table>
 						</div>
 
+						<h3>Media Library</h3>
 						<div id="systemTags" class="system-tags">
 							<div id="userTags" class="system-tags-section">
-								<h3 id="userTagsHeader">System tags</h3>
+								<h4 id="userTagsHeader">System tags</h4>
 								<div>
 									<select id="systemTagsSelect" class="system-tags-select" multiple="multiple" onChange="systemTagsSelectChange(this)"></select>
 								</div>
@@ -590,7 +706,55 @@
 								<button id="removeSmartTagButton" disabled="true" class="system-tags-section-button" onclick="removeSystemTags(true)">Remove</button>
 							</div>
 						</div>
+						<button id="startMetadataProcessButton" style="margin-top:8px" onclick="startMetadataProcess()">Process metadata</button>
+						<button id="startMetadataCleanProcessButton" style="margin-top:8px" onclick="startMetadataCleanProcess()">Clean metadata</button>
+						<button id="cleanupThumbsButton" style="margin-top:8px" onclick="startThumbCleanupProcess()">Clean up thumbs</button>
+						<button id="clean1024" style="margin-top:8px" onclick="startClean1024Process()">Reset metadata offset 1024</button>
+						<div class="formElement">
+							<label for="processMetadataOnStart">Process all metadata on start</label>
+							<input id="processMetadataOnStart" type="checkbox"
+								onclick="settingChange(this.id, this.checked)" />
+						</div>
+						<h4>Schedule</h4>
+						<div class="formElement">
+							<label for="scheduleLibraryLoadEnabled">Enabled</label>
+							<input id="scheduleLibraryLoadEnabled" type="checkbox"
+								onclick="settingChange(this.id, this.checked)" />
+						</div>
+						<div class="formElement">
+							<label for="scheduleLibraryLoadTime">At time</label>
+							<input id="scheduleLibraryLoadTime" type="time" name="scheduleLibraryLoad" min="00:00" max="23:59"
+								onchange="settingChange(this.id, this.value)" />
+						</div>
+						<div class="formElement">
+							<label for="scheduleLibraryLoadFullProcess">Full metadata process</label>
+							<input id="scheduleLibraryLoadFullProcess" type="checkbox"
+								onclick="settingChange(this.id, this.checked)" />
+						</div>
+						<div class="formElement">
+							<label for="scheduleSettingsSync">Sync settings</label>
+							<input id="scheduleSettingsSync" type="checkbox"
+								onclick="settingChange(this.id, this.checked)" />
+						</div>
+						<h4>TCode</h4>
+						<div class="formElement">
+							<label for="disableTCodeValidation">Disable TCode validation</label>
+							<input id="disableTCodeValidation" type="checkbox"
+								onclick="settingChange(this.id, this.checked)" />
+						</div>
+						<div class="formElement">
+							<label for="disableUDPHeartBeat">Disable UDP heartbeat</label>
+							<input id="disableUDPHeartBeat" type="checkbox"
+								onclick="settingChange(this.id, this.checked)" />
+						</div>
+						<h4>Web</h4>
+						<div class="formElement">
+							<label for="httpChunkSizeMB">Media streaming chunk size</label>
+							<input id="httpChunkSizeMB" type="number" min="0.000001" step="1.0"
+								onchange="settingChange(this.id, this.value)" />
+						</div>
 					</div>
+					
 				</section>
 				<!-- 				<div class="formElement">
 					<label for="thumbSize">
@@ -617,14 +781,22 @@
 			</div>
 			<div class="modal-footer">
 				<div class="modal-footer-content">
-					<button name="deviceStatusRetryButton" class="icon-button device-status-retry-button"
+					<button name="deviceStatusRetryButton" class="icon-button icon-button--group device-status-retry-button"
 						onclick="tcodeDeviceConnectRetry()">
 						<img name="connectionStatusIconImage" class="buttonImage" src="://images/icons/reload.svg" />
 					</button>
+					<button title="TCode device pause\n(Click to toggle device actions)" name="devicePauseStatusButton" class="icon-button icon-button--group video-control--device-state" onclick="togglePauseAllDeviceActions()">
+						<img name="devicePauseStatusIconImage" class="buttonImage" src="://images/icons/pause.svg" />
+					</button>
+					<button  title="Send TCode home" name="deviceHomeButton" class="icon-button icon-button--group" onclick="sendDeviceHome()">
+						<img name="deviceHomeButtonImage" class="buttonImage" src="://images/icons/home.svg" />
+					</button>
 					<a id="tcodeDeviceSettingsLink" hidden="true" target="_blank">TCode device settings</a>
+					<span name="mediaLoadingIcon" class="loading-spinner loading-spinner--button-icon hidden"></span>
+					<span name="mediaLoadingStatus" class="loading-spinner--button-icon-label hidden">Loading...</span>
 				</div>
 				<div class="modal-footer-content">
-					<span id="mediaReloadRequired" class="hidden">Media reload required after save</span>
+					<span id="mediaReloadRequired" class="hidden">Full metadata process required AFTER save</span>
 					<span id="saveState" class="save-status"></span>
 					<button id="defaultSettingsButton"
 						title="This will only reset the local browser settings to default. Your settings stored on the XTP machine will remain."
@@ -634,7 +806,7 @@
 					<button id="restartXTPButton" title="This will restart XTP" onclick="restartXTP()">
 						Restart XTP
 					</button>
-					<button id="restartXTPButton" title="This will start the library loading process" onclick="refreshXTPLibrary()">
+					<button name="refreshXTPLibraryButton" title="This will start the library loading process" onclick="refreshXTPLibrary()">
 						Refresh library
 					</button>
 					<button id="saveToXTPButton" disabled="true"
@@ -671,6 +843,57 @@
 						No
 					</button>
 				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="textModal" class="modal modal--text">
+		<div class="modal-content modal-content--text">
+			<div class="modal-header">
+				<span id="text-modal-title" class="modal-title"></span>
+				<button class="close-modal icon-button" onclick="closeTextWindow()">
+					<image class="buttonImage" src="://images/icons/x.svg" />
+				</button>
+			</div>
+			<div id="textModalBody" class="modal-body modal-body--alert">
+				<div class="formElement">
+					<label id="textModalLabel" for="textModalInput">Enter value</label>
+					<input id="textModalInput" type="text"/>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<div class="modal-footer-content"> </div>
+				<div class="modal-footer-content">
+					<button id="textConfirmButton">
+						Ok
+					</button>
+					<button id="textCancelButton" onclick="closeTextWindow()">
+						cancel
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="footer">
+		<div class="footerSection headerActionSection toolBar">
+			<div class="toolBarGroup toolBarGroupStart">
+				<button title="TCode device status\n(Click to connect)" name="deviceStatusRetryButton" class="icon-button icon-button--group device-status-retry-button"
+					onclick="tcodeDeviceConnectRetry()">
+					<img name="connectionStatusIconImage" class="buttonImage" src="://images/icons/reload.svg" />
+				</button>
+				<button title="TCode device pause toggle" name="devicePauseStatusButton" class="icon-button icon-button--group video-control--device-state" onclick="togglePauseAllDeviceActions()">
+					<img name="devicePauseStatusIconImage" class="buttonImage" src="://images/icons/pause.svg" />
+				</button>
+				<button  title="Send TCode home" name="deviceHomeButton" class="icon-button icon-button--group" onclick="sendDeviceHome()">
+					<img name="deviceHomeButtonImage" class="buttonImage" src="://images/icons/home.svg" />
+				</button>
+			</div>
+		</div>
+		<div id="progressSection" class="footerSection toolBar">
+			<div class="toolBarGroup toolBarGroupEnd">
+				<!-- <div id="statusOutput"></div> -->
+				<label id="statusOutputLabel" for="statusOutput" style="font-size: 0.7rem;" class="hidden-visibility"></label>
+				<progress id="statusOutput" class="pregress-status hidden-visibility" value="0" max="100"></progress>
 			</div>
 		</div>
 	</div>
@@ -747,6 +970,7 @@
 	</svg>
 	<script type="text/javascript" src="common-min.js"></script>
 	<script type="text/javascript" src="video-min.js"></script>
+	<script type="text/javascript" src="script-status-min.js"></script>
 	<script type="text/javascript" src="index-min.js"></script>
 	
 </body>

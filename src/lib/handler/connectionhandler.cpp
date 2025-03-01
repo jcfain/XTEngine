@@ -11,6 +11,7 @@ ConnectionHandler::ConnectionHandler(QObject *parent)
     _xtpWebHandler = new XTPWebHandler(this);
     _whirligigHandler = new WhirligigHandler(this);
     _gamepadHandler = new GamepadHandler(this);
+    m_bleHandler = new BLEHandler(this);
 }
 
 void ConnectionHandler::init()
@@ -37,6 +38,7 @@ void ConnectionHandler::dispose()
     disposeInputDevice(DeviceName::Gamepad);
     disposeOutputDevice(DeviceName::Serial);
     disposeOutputDevice(DeviceName::Network);
+    disposeOutputDevice(DeviceName::BLE);
     if(_initFuture.isRunning())
     {
         _initFuture.cancel();
@@ -123,7 +125,7 @@ void ConnectionHandler::inputMessageSend(QByteArray message) {
 }
 void ConnectionHandler::sendTCode(QString tcode)
 {
-    if(!SettingsHandler::getLiveActionPaused() && !tcode.isEmpty() && _outputDevice && _outputDevice->isConnected())
+    if(!tcode.isEmpty() && _outputDevice && _outputDevice->isConnected())
         _outputDevice->sendTCode(tcode);
 }
 
@@ -155,7 +157,7 @@ void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
     }
     else if (outputDevice == DeviceName::Network)
     {
-        if(SettingsHandler::getSelectedNetworkDevice() == NetworkDeviceType::WEBSOCKET) {
+        if(SettingsHandler::getSelectedNetworkDevice() == NetworkProtocol::WEBSOCKET) {
            _networkDevice = _webSocketHandler;
         } else {
            _networkDevice = _udpHandler;
@@ -172,6 +174,11 @@ void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
 //            });
         }
     }
+    else if(outputDevice == DeviceName::BLE)
+    {
+        setOutputDevice(m_bleHandler);
+        m_bleHandler->init();
+    }
 }
 
 void ConnectionHandler::disposeOutputDevice(DeviceName outputDevice)
@@ -183,6 +190,10 @@ void ConnectionHandler::disposeOutputDevice(DeviceName outputDevice)
     else if (outputDevice == DeviceName::Network)
     {
         _udpHandler->dispose();
+    }
+    else if (outputDevice == DeviceName::BLE)
+    {
+        m_bleHandler->dispose();
     }
 }
 

@@ -8,20 +8,19 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include "XTEngine_global.h"
+#include "LibraryListItemMetaData258.h"
 
-
-struct XTENGINE_EXPORT LibraryThumbNail {
-    QString ERROR_IMAGE = "://images/icons/error.png";
-    QString LOADING_IMAGE = "://images/icons/loading.png";
-    QString LOADING_CURRENT_IMAGE = "://images/icons/loading_current.png";
-};
+#define ERROR_IMAGE "://images/icons/error.png"
+#define LOADING_IMAGE "://images/icons/loading.png"
+#define LOADING_CURRENT_IMAGE "://images/icons/loading_current.png"
 
 enum class LibraryListItemType {
     PlaylistInternal,
     Video,
     Audio,
     FunscriptType,
-    VR
+    VR,
+    External
 };
 
 enum class ThumbState {
@@ -34,35 +33,6 @@ enum class ThumbState {
 struct  XTENGINE_EXPORT LibraryListItem27
 {
 public:
-    LibraryListItem27() {}
-    LibraryListItem27(const LibraryListItem27* item)
-    {
-        type = item->type;
-        path = item->path;
-        name = item->name;
-        nameNoExtension = item->nameNoExtension;
-        script = item->script;
-        pathNoExtension = item->pathNoExtension;
-        mediaExtension = item->mediaExtension;
-        thumbFile = item->thumbFile;
-        zipFile = item->zipFile;
-        modifiedDate = item->modifiedDate;
-        duration = item->duration;
-        ID = item->ID;
-        libraryPath = item->libraryPath;
-        hasScript = item->hasScript;
-        MFSScripts = item->MFSScripts;
-        subtitle = item->subtitle;
-        isMFS = item->isMFS;
-        toolTip = item->toolTip;
-        thumbState = item->thumbState;
-        thumbFileExists = item->thumbFileExists;
-        managedThumb = item->managedThumb;
-        thumbNails = item->thumbNails;
-        thumbFileLoading = item->thumbFileLoading;
-        thumbFileLoadingCurrent = item->thumbFileLoadingCurrent;
-        thumbFileError = item->thumbFileError;
-    }
     LibraryListItemType type;
     QString path;
     QString name;
@@ -72,7 +42,7 @@ public:
     QString mediaExtension;
     QString thumbFile;
     QString zipFile;
-    QDate modifiedDate;
+    QDateTime modifiedDate;
     quint64 duration;
     QString md5;
 
@@ -80,17 +50,12 @@ public:
     QString ID;
     QString libraryPath;
     bool hasScript;
-    QString subtitle;
-    QStringList MFSScripts;
-    bool isMFS;
-    QString toolTip;
+    LibraryListItemMetaData258 metadata;
     ThumbState thumbState = ThumbState::Waiting;
     bool thumbFileExists = false;
     bool managedThumb = false;
-    LibraryThumbNail thumbNails;
-    QString thumbFileLoading = thumbNails.LOADING_IMAGE;// "://images/icons/loading.png";
-    QString thumbFileLoadingCurrent = thumbNails.LOADING_CURRENT_IMAGE;// "://images/icons/loading_current.png";
-    QString thumbFileError = thumbNails.ERROR_IMAGE;;// "://images/icons/error.png";
+    bool forceProcessMetadata = false;
+    bool error = false;
 
     friend QDataStream & operator<<( QDataStream &dataStream, const LibraryListItem27 &object )
     {
@@ -101,21 +66,15 @@ public:
         dataStream << object.nameNoExtension;
         dataStream << object.script;
         dataStream << object.pathNoExtension;
-        dataStream << object.subtitle;
         dataStream << object.mediaExtension;
         dataStream << object.thumbFile;
         dataStream << object.zipFile;
         dataStream << object.modifiedDate;
         dataStream << object.duration;
         dataStream << object.md5;
-        dataStream << object.isMFS;
         dataStream << object.libraryPath;
-        dataStream << object.toolTip;
         dataStream << object.thumbFileExists;
         dataStream << (int)object.thumbState;
-        dataStream << object.thumbFileLoading;
-        dataStream << object.thumbFileLoadingCurrent;
-        dataStream << object.thumbFileError;
         return dataStream;
     }
 
@@ -128,27 +87,44 @@ public:
         dataStream >> object.nameNoExtension;
         dataStream >> object.script;
         dataStream >> object.pathNoExtension;
-        dataStream >> object.subtitle;
         dataStream >> object.mediaExtension;
         dataStream >> object.thumbFile;
         dataStream >> object.zipFile;
         dataStream >> object.modifiedDate;
         dataStream >> object.duration;
         dataStream >> object.md5;
-        dataStream >> object.isMFS;
         dataStream >> object.libraryPath;
-        dataStream >> object.toolTip;
         dataStream >> object.thumbFileExists;
         dataStream >> object.thumbState;
-        dataStream >> object.thumbFileLoading;
-        dataStream >> object.thumbFileLoadingCurrent;
-        dataStream >> object.thumbFileError;
         return dataStream;
     }
 
     friend bool operator==(const LibraryListItem27 &p1, const LibraryListItem27 &p2)
     {
        return p1.ID == p2.ID;
+    }
+    void copyProperties(const LibraryListItem27& from) {
+        path = from.path;
+        duration = from.duration;
+        md5 = from.md5;
+        mediaExtension = from.mediaExtension;
+        modifiedDate = from.modifiedDate;
+        name = from.name;
+        nameNoExtension = from.nameNoExtension;
+        script = from.script;
+        pathNoExtension = from.pathNoExtension;
+        thumbFile = from.thumbFile;
+        type = from.type;
+        zipFile = from.zipFile;
+        //Live
+        ID = from.ID;
+        libraryPath = from.libraryPath;
+        hasScript = from.hasScript;
+        thumbState = from.thumbState;
+        thumbFileExists = from.thumbFileExists;
+        managedThumb = from.managedThumb;
+        forceProcessMetadata = from.forceProcessMetadata;
+        metadata = LibraryListItemMetaData258(from.metadata);
     }
 
     static LibraryListItem27 fromVariant(QVariant item)
@@ -164,7 +140,7 @@ public:
         obj["duration"] = QString::number(item.duration);
         obj["md5"] = item.md5;
         obj["mediaExtension"] = item.mediaExtension;;
-        obj["modifiedDate"] = item.modifiedDate.toString();
+        obj["modifiedDate"] = item.modifiedDate.toString(Qt::DateFormat::ISODateWithMs);
         obj["name"] = item.name;
         obj["nameNoExtension"] = item.nameNoExtension;
         obj["script"] = item.script;
@@ -173,28 +149,21 @@ public:
         obj["type"] = (int)item.type;
         obj["zipFile"] = item.zipFile;
 
-        //Live
+        //Live: these are not ever saved to disk
         obj["id"] = item.ID;
         obj["libraryPath"] = item.libraryPath;
         obj["hasScript"] = item.hasScript;
-        QJsonArray mfsScripts;
-        foreach (auto script, item.MFSScripts) {
-            mfsScripts.append(script);
-        }
-        obj["MFSScripts"] = mfsScripts;
-        obj["isMFS"] = item.isMFS;
-        obj["tooltip"] = item.toolTip;
         obj["thumbState"] = (int)item.thumbState;
         obj["thumbFileExists"] = item.thumbFileExists;
         obj["managedThumb"] = item.managedThumb;
-        obj["subtitle"] = item.subtitle;
+        obj["forceProcessMetadata"] = item.forceProcessMetadata;
+        obj["metadata"] = LibraryListItemMetaData258::toJson(item.metadata);
         return obj;
     }
 
     static QVariant toVariant(const LibraryListItem27 item)
     {
         QJsonObject obj;
-        //obj["id"] = item.ID;
         obj["path"] = item.path;
         obj["duration"] = QString::number(item.duration);
         obj["md5"] = item.md5;
@@ -207,19 +176,16 @@ public:
         obj["thumbFile"] = item.thumbFile;
         obj["type"] = (int)item.type;
         obj["zipFile"] = item.zipFile;
-//        obj["isMFS"] = item.isMFS;
-//        obj["tooltip"] = item.toolTip;
         return QVariant::fromValue(obj);
      }
 
     static LibraryListItem27 fromJson(const QJsonObject obj) {
         LibraryListItem27 newItem;
-        //newItem.ID = obj["id"].toInt();
         newItem.path = obj["path"].toString();
         newItem.duration = obj["path"].toString().toLongLong();
         newItem.md5 = obj["md5"].toString();
         newItem.mediaExtension = obj["mediaExtension"].toString();
-        newItem.modifiedDate = QDate::fromString(obj["modifiedDate"].toString());
+        newItem.modifiedDate = QDateTime::fromString(obj["modifiedDate"].toString(), Qt::DateFormat::ISODateWithMs);
         newItem.name = obj["name"].toString();
         newItem.nameNoExtension = obj["nameNoExtension"].toString();
         newItem.script = obj["script"].toString();
@@ -231,31 +197,8 @@ public:
     }
 
     static void copyProperties(const LibraryListItem27 from, LibraryListItem27 &to) {
-        to.path = from.path;
-        to.duration = from.duration;
-        to.md5 = from.md5;
-        to.mediaExtension = from.mediaExtension;
-        to.modifiedDate = from.modifiedDate;
-        to.name = from.name;
-        to.nameNoExtension = from.nameNoExtension;
-        to.script = from.script;
-        to.pathNoExtension = from.pathNoExtension;
-        to.thumbFile = from.thumbFile;
-        to.type = from.type;
-        to.zipFile = from.zipFile;
-        //Live
-        to.ID = from.ID;
-        to.libraryPath = from.libraryPath;
-        to.hasScript = from.hasScript;
-        to.MFSScripts = from.MFSScripts;
-        to.isMFS = from.isMFS;
-        to.toolTip = from.toolTip;
-        to.thumbState = from.thumbState;
-        to.thumbFileExists = from.thumbFileExists;
-        to.managedThumb = from.managedThumb;
-        to.subtitle = from.subtitle;
+        to.copyProperties(from);
     }
-//    //waiting ? "://images/icons/loading.png" : "://images/icons/loading_current.png"
 };
 Q_DECLARE_METATYPE(LibraryListItem27);
 #endif // LIBRARYLISTITEM27_H

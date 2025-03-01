@@ -1,4 +1,6 @@
 #include "websocketdevicehandler.h"
+#include "loghandler.h"
+#include "settingshandler.h"
 
 WebsocketDeviceHandler::WebsocketDeviceHandler(QObject *parent)
     : NetworkDevice{parent}
@@ -44,9 +46,32 @@ void WebsocketDeviceHandler::onClosed() {
     setConnected(false);
 }
 
+// void WebsocketDeviceHandler::onReadyRead()
+// {
+//     QString recieved;
+//     while (m_udpSocket->waitForReadyRead(100))
+//     {
+//         QNetworkDatagram datagram = m_udpSocket->receiveDatagram();
+//         auto senderAddress = datagram.senderAddress();
+//         auto it = std::find_if(m_connectedHosts.begin(), m_connectedHosts.end(),
+//                                [senderAddress](const QHostAddress &address) {
+//                                    return senderAddress.toIPv4Address() == address.toIPv4Address();
+//                                });
+//         if(it == m_connectedHosts.end())
+//             m_connectedHosts.append(senderAddress);
+//         if(datagram.isValid()) {
+//             recieved += QString::fromUtf8(datagram.data());
+//         } else {
+//             LogHandler::Warn("Bad datagram");
+//         }
+//     }
+//     LogHandler::Debug("Recieved UDP: "+recieved);
+//     processDeviceInput(recieved);
+// }
 void WebsocketDeviceHandler::onTextMessageReceived(QString response)
 {
-    processDeviceInput(response);
+    QJsonDocument doc = QJsonDocument::fromJson(response.toUtf8());
+    processDeviceInput(doc["command"].toString());
     // QString version = "V?";
     // bool validated = false;
     // if(response.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v2)))
@@ -77,6 +102,9 @@ void WebsocketDeviceHandler::sendTCode(const QString &tcode)
     QString tcodeFormatted = tcode + "\n";
     LogHandler::Debug("Sending TCode websocket: "+tcode);
     m_webSocket.sendTextMessage(tcodeFormatted);
+    if(!m_webSocket.flush())
+        LogHandler::Debug("Flush didnt send any data");
+
 }
 
 void WebsocketDeviceHandler::dispose()

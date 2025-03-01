@@ -6,6 +6,7 @@
 #include <QCryptographicHash>
 #include <QFile>
 #include <QFileInfo>
+#include <QRandomGenerator64>
 
 //#include "../handler/loghandler.h"
 
@@ -37,11 +38,31 @@ int  XMath::constrain(int value, int min, int max)
 }
 qint64 XMath::random(qint64 min, qint64 max)
 {
-    // unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
-    // std::mt19937_64 mt(seed1);
-    // std::uniform_int_distribution<qint64> dist(min, max);
-    // return dist(mt);
-    return rand() % max + min;
+    //std::random_device random_dev;
+    //unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
+    std::mt19937_64 generator(std::chrono::steady_clock::now().time_since_epoch().count());
+    //std::mt19937_64 generator(random_dev());
+    std::uniform_int_distribution<long long> distr(min, max);
+    return distr(generator);
+    // return rand() % (max + min);
+    // // https://stackoverflow.com/questions/2509679/how-to-generate-a-random-integer-number-from-within-a-range
+    // qint64 rangeValue = max-min;
+    // unsigned long
+    //     // max <= RAND_MAX < ULONG_MAX, so this is okay.
+    //     num_bins = (unsigned long) rangeValue + 1,
+    //     num_rand = (unsigned long) RAND_MAX + 1,
+    //     bin_size = num_rand / num_bins,
+    //     defect   = num_rand % num_bins;
+
+    // long x;
+    // do {
+    //     x = rand();
+    // }
+    // // This is carefully written not to overflow
+    // while (num_rand - defect <= (unsigned long)x);
+
+    // // Truncated division is intentional
+    // return min + (x/bin_size);
 }
 
 int XMath::random(int min, int max)
@@ -50,7 +71,9 @@ int XMath::random(int min, int max)
     // std::mt19937 mt(seed1);
     // std::uniform_int_distribution<int> dist(min, max);
     // return dist(mt);
-    return rand() % max + min;
+    //return rand() % (max + min);// Assumes 0 <= max <= RAND_MAX
+    // Returns in the closed interval [0, max]
+    return random((qint64)min, (qint64)max);
 }
 
 double XMath::random(double min, double max)

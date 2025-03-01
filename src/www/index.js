@@ -1,3 +1,5 @@
+const webVersion = "v0.47b";
+var debugMode = false;
 
 var DeviceType = {
 	Serial: 0,
@@ -23,7 +25,13 @@ var ChannelType = {
 	HalfRange: 3
 };
 
-var AxisDimension = {
+const ChannelTimeType = {
+	None: 0,
+	Interval: 1,
+	Speed: 2
+}
+
+const ChannelDimension = {
 	None: 0,
 	Heave: 1,
 	Surge: 2,
@@ -38,7 +46,8 @@ var MediaType = {
     Video: 1,
     Audio: 2,
     FunscriptType: 3,
-    VR: 4
+    VR: 4,
+	ExternalType: 5
 };
 
 var Roles = {
@@ -55,8 +64,11 @@ var Roles = {
 	ForegroundRole: 9
 };
 
+var MediaActions = {};
+
 var mediaLoading = false;
 var debounceTracker = {};// Use to create timeout handles on the fly.
+var settingChangeDebounce;
 var wsUri;
 var websocket = null;
 var xtpConnected = false;
@@ -94,6 +106,9 @@ var rangeChangeAmount = 100;
 
 var shufflePlayMode = false;
 var shufflePlayModePlayedIndexed = {};
+
+const tagCheckboxesName = "TagCheckbox";
+const metadataTagCheckboxesName = "MetadataTagCheckbox";
 //var funscriptSyncWorker;
 //var useDeoWeb;
 //var deoVideoNode;
@@ -175,28 +190,14 @@ skipToMoneyShotButton.addEventListener("click", sendSkipToMoneyShot);
 skipToMoneyShotButton.addEventListener("click", onSkipToMoneyShotClick);
 skipToNextActionButton.addEventListener("click", sendSkipToNextActionClick);
 exitVideoButton.addEventListener("click", stopVideoClick);
-videoNode.addEventListener("loadeddata", onVideoLoad);
-videoNode.addEventListener("play", onVideoPlay);
-videoNode.addEventListener("playing", onVideoPlaying);
-videoNode.addEventListener("stalled", onVideoStall);
-videoNode.addEventListener("waiting", onVideoStall);
-videoNode.addEventListener("pause", onVideoPause);
-videoNode.addEventListener("volumechange", onVolumeChange);
-videoNode.addEventListener("ended", onVideoEnd);
-videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
 
 const playNextButton = document.getElementById('play-next');
 playNextButton.addEventListener('click', playNextVideoClick);
 const playPreviousButton = document.getElementById('play-previous');
 playPreviousButton.addEventListener('click', playPreviousVideoClick);
 
-// Fires on load?
-// videoSourceNode.addEventListener('error', function(event) { 
-// 	userError("There was an issue loading media.");
-// }, true);
-// videoNode.addEventListener('error', function(event) { 
-// 	userError("There was an issue loading media.");
-// }, true);
+const xtpWebVersionNode = document.getElementById("webVersion");
+xtpWebVersionNode.innerText = webVersion;
 
 var saveStateNode = document.getElementById("saveState");
 var mediaReloadRequiredNode = document.getElementById("mediaReloadRequired");
@@ -204,6 +205,8 @@ var mediaReloadRequiredNode = document.getElementById("mediaReloadRequired");
 var metaDataSaveStateNode = document.getElementById("metaDataSaveState");
 var deviceConnectionStatusRetryButtonNodes = document.getElementsByName("deviceStatusRetryButton");
 var deviceConnectionStatusRetryButtonImageNodes = document.getElementsByName("connectionStatusIconImage");
+var devicePauseStatusIconButtonNodes = document.getElementsByName("devicePauseStatusButton");
+var devicePauseStatusIconButtonImageNodes = document.getElementsByName("devicePauseStatusIconImage");
 
 var progressNode = document.getElementById("statusOutput");
 var progressLabelNode = document.getElementById("statusOutputLabel");
@@ -221,8 +224,8 @@ var progressLabelNode = document.getElementById("statusOutputLabel");
 
 setupTextToSpeech();
 getServerSettings();
+getMediaActions();
 
-debugMode = true;
 function debug(message) {
 	if (debugMode)
 		console.log(message);
@@ -257,6 +260,35 @@ function onOutputDeviceConnectionChange(input, device) {
 	sendMediaState();
 }
 
+function startMetadataProcess() {
+	showAlertWindow("Process metadata", "This will set metadata using the algrorith on first scan.<br>Adding smart tags and mfs tags based on the scan.<br>It will not change any user tags set by you.",sendMetadataProcess);
+}
+function startMetadataCleanProcess() {
+	showAlertWindow("Clean metadata", "This will compare the metadata with the currently loaded libraries<br>and delete any that do not exist any more.<br><u><b>DO NOT RUN</b></u> unless you have all your media currently loaded!",sendMetadataCleanProcess);
+}
+
+function startThumbCleanupProcess() {
+	showAlertWindow("Clean thumbs", "This will go through the thumbs and remove any thumbs where the media<br>do not exist or they not have an image in the media directory.",sendCleanupThumbsProcess);
+}
+function startClean1024Process() {
+	showAlertWindow("Reset 1024", "This will go through all media items and<br>set offsets that are equal to 1024 to 0.<br><br>Continue?",sendClean1024Process);
+}
+function sendMetadataProcess() {
+	sendWebsocketMessage("startMetadataProcess");
+	closeAlertWindow();
+}
+function sendMetadataCleanProcess() {
+	sendWebsocketMessage("cleanupMetadata");
+	closeAlertWindow();
+}
+function sendCleanupThumbsProcess() {
+	sendWebsocketMessage("cleanupThumbs");
+	closeAlertWindow();
+}
+function sendClean1024Process() {
+	sendWebsocketMessage("clean1024");
+	closeAlertWindow();
+}
 function tcodeDeviceConnectRetry() {
 	sendWebsocketMessage("connectOutputDevice", { deviceName: remoteUserSettings.connection.output.selectedDevice });
 }
@@ -266,6 +298,9 @@ function sendTCode(tcode) {
 }
 function sendTCodeRange(channelName, min, max) {
 	sendWebsocketMessage("setChannelRange", { channelName: channelName, min: min, max: max });
+}
+function sendMediaAction(action) {
+	sendWebsocketMessage("mediaAction", action);
 }
 
 function sendInputDeviceConnectionChange(device, checked) {
@@ -295,6 +330,20 @@ function sendUpdateThumbAtPos(item) {
 function sendUpdateMoneyShotAtPos(item) {
 	var pos = videoNode.currentTime;
 	sendWebsocketMessage("setMoneyShot", { itemID: item.id, pos: pos });
+}
+function sendDeviceHome() {
+	sendMediaAction(MediaActions.TCodeHomeAll);
+}
+function togglePauseAllDeviceActions() {
+	sendMediaAction(MediaActions.TogglePauseAllDeviceActions);
+}
+function settingChange(key, value) {
+	if(settingChangeDebounce)
+		clearTimeout(settingChangeDebounce);
+	settingChangeDebounce = setTimeout(function() {
+		sendWebsocketMessage("settingChange", { key: key, value: value });
+		markXTPFormDirty();
+	}, 500);
 }
 
 function setSaveState(node, saving, error) {
@@ -382,6 +431,21 @@ function wsCallBackFunction(evt) {
 	try {
 		var data = JSON.parse(evt.data);
 		switch (data["command"]) {
+			case "userError":
+				userError(data["message"]);
+				break;
+			case "userWarning":
+				userWarning(data["message"]);
+				break;
+			case "systemError":
+				systemError(data["message"]);
+				break;
+			case "systemWarning":
+				systemWarning(data["message"]);
+				break;
+			case "stopAllMedia":
+				stopVideo();
+				break;
 			case "outputDeviceStatus":
 				var status = data["message"];
 				var deviceName = status["deviceName"];
@@ -393,10 +457,7 @@ function wsCallBackFunction(evt) {
 				setInputConnectionStatus(deviceName, status["status"], status["message"]);
 				break;
 			case "mediaLoaded":
-				var mediaLoadingElement = document.getElementById("mediaLoading");
-				mediaLoadingElement.style.display = "none"
-				mediaLoading = false;
-				getServerLibrary();
+				onMediaLoaded();
 				break;
 			case "mediaLoading":
 				setMediaLoading();
@@ -426,6 +487,12 @@ function wsCallBackFunction(evt) {
 				var libraryItem = message["item"];
 				var roles = message["roles"];
 				updateItem(libraryItem, roles);
+				break;
+			case "addItem":
+				var message = data["message"];
+				var libraryItem = message["item"];
+				var roles = message["roles"];
+				addItem(libraryItem);
 				break;
 			case "textToSpeech":
 				var message = data["message"];
@@ -462,6 +529,28 @@ function wsCallBackFunction(evt) {
 				remoteUserSettings["smartTags"].push(...smartTags);
 				setupSystemTags();
 				break;
+			case "channelPositionChange":
+				var messageObj = data["message"];
+				var channel = messageObj["channel"];
+				var position = parseInt(messageObj["position"]);
+				var time = parseInt(messageObj["time"]);
+				var timeType = parseInt(messageObj["timeType"]);
+				setChannelStatus(channel, position, time, timeType);
+				break;
+			case "mediaAction":
+				var mediaAction = data["message"];
+				// switch(mediaAction["mediaAction"]) {
+				// 	case MediaActions.TogglePauseAllDeviceActions: // For not pause device update is handled through the syncHandler in the case "scriptTogglePaused"
+				// 		setPauseScriptStatus(mediaAction["value"]);
+				// 		setDevicePauseStatus(mediaAction["value"]);
+				// 		break;
+				// }
+				break;
+			case "scriptTogglePaused":
+				var messageObj = data["message"];
+				setPauseScriptStatus(messageObj.isPaused);
+				setDevicePauseStatus(messageObj.isPaused);
+				break;
 		}
 	}
 	catch (e) {
@@ -487,16 +576,61 @@ function setStatusOutput(message, percentage) {
 }
 function setMediaLoading() {
 	mediaLoading = true;
+	stopVideo();
 	clearMediaList();
 	var mediaLoadingElement = document.getElementById("mediaLoading");
 	mediaLoadingElement.style.display = "flex"
 	var noMediaElement = document.getElementById("noMedia");
+	var mediaLoadingElements = document.getElementsByName("mediaLoadingIcon");
+	for (let index = 0; index < mediaLoadingElements.length; index++) {
+		const element = mediaLoadingElements[index];
+		element.classList.remove("hidden");
+	}
 	noMediaElement.hidden = true;
+	var refreshMediaLibraryButtons = document.getElementsByName("refreshXTPLibraryButton");
+	for (let index = 0; index < refreshMediaLibraryButtons.length; index++) {
+		const element = refreshMediaLibraryButtons[index];
+		element.disabled = true;
+	}
+	var mediaLoadingStatusElementa = document.getElementsByName("mediaLoadingStatus");
+	for (let index = 0; index < mediaLoadingStatusElementa.length; index++) {
+		const element = mediaLoadingStatusElementa[index];
+		element.innerText = "";
+		element.classList.remove("hidden");
+	}
+}
+
+function onMediaLoaded() {
+	var mediaLoadingElement = document.getElementById("mediaLoading");
+	mediaLoadingElement.style.display = "none"
+	mediaLoading = false;
+	var mediaLoadingElements = document.getElementsByName("mediaLoadingIcon");
+	for (let index = 0; index < mediaLoadingElements.length; index++) {
+		const element = mediaLoadingElements[index];
+		element.classList.add("hidden");
+	}
+	var refreshMediaLibraryButtons = document.getElementsByName("refreshXTPLibraryButton");
+	for (let index = 0; index < refreshMediaLibraryButtons.length; index++) {
+		const element = refreshMediaLibraryButtons[index];
+		element.disabled = false;
+	}
+	var mediaLoadingStatusElementa = document.getElementsByName("mediaLoadingStatus");
+	for (let index = 0; index < mediaLoadingStatusElementa.length; index++) {
+		const element = mediaLoadingStatusElementa[index];
+		element.innerText = "";
+		element.classList.add("hidden");
+	}
+	getServerLibrary();
 }
 
 function setMediaLoadingStatus(status) {
 	var mediaLoadingElement = document.getElementById("loadingStatus");
 	mediaLoadingElement.innerText = status;
+	var mediaLoadingStatusElementa = document.getElementsByName("mediaLoadingStatus");
+	for (let index = 0; index < mediaLoadingStatusElementa.length; index++) {
+		const element = mediaLoadingStatusElementa[index];
+		element.innerText = status;
+	}
 }
 
 function onResizeVideo() {
@@ -629,7 +763,7 @@ function checkPass() {
         }
     }
     xhr.onerror = function () {
-        onSaveFail(xhr.statusText);
+        onSaveFail(xhr);
     };
     if(storedHash) {
         xhr.send("{\"hashedPass\":\""+storedHash+"\", \"remember\":\""+!!storedHash+"\"}");
@@ -646,7 +780,23 @@ function getServerSettings(retry) {
 		if (status === 200) {
 			remoteUserSettings = xhr.response;
 
-			document.getElementById("xteVersion").innerText = remoteUserSettings["xteVersion"];
+			document.getElementById("xteVersion").innerText = remoteUserSettings["settings"]["xteVersion"];
+
+			// document.getElementById("scheduleLibraryLoadEnabled").checked = remoteUserSettings["settings"]["scheduleLibraryLoadEnabled"];
+			// document.getElementById("scheduleLibraryLoadTime").value = remoteUserSettings["settings"]["scheduleLibraryLoadTime"];
+			// document.getElementById("scheduleLibraryLoadFullProcess").checked = remoteUserSettings["settings"]["scheduleLibraryLoadFullProcess"];
+			// document.getElementById("processMetadataOnStart").checked = remoteUserSettings["settings"]["processMetadataOnStart"];
+			// document.getElementById("scheduleSettingsSync").checked = remoteUserSettings["settings"]["scheduleSettingsSync"];
+			// document.getElementById("disableUDPHeartBeat").checked = remoteUserSettings["settings"]["disableUDPHeartBeat"];
+			// document.getElementById("httpChunkSizeMB").value = remoteUserSettings["settings"]["httpChunkSizeMB"];
+			Object.keys(remoteUserSettings["settings"]).forEach(key => {
+				const element = document.getElementById(key);
+				if(!element)
+					return;
+				const value = remoteUserSettings["settings"][key];
+				typeof value === "boolean" ? element.checked = value : element.value = value;
+			})
+			
 			
 			setupChannelData();
 
@@ -670,6 +820,24 @@ function getServerSettings(retry) {
 			systemError("Error getting settings: "+ xhr.responseText);
 		else */
 		startServerConnectionRetry();
+	};
+	xhr.send();
+}
+
+function getMediaActions() {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', "/mediaActions", true);
+	xhr.responseType = 'json';
+	xhr.onload = function (evnt) {
+		var status = xhr.status;
+		if (status === 200) {
+			MediaActions = xhr.response;
+		} else {
+			systemError("Error getting media actions: "+ xhr.responseText);
+		}
+	}.bind(this);
+	xhr.onerror = function(evnt) {
+		systemError("Error getting  media action: "+ xhr.responseText);
 	};
 	xhr.send();
 }
@@ -713,23 +881,16 @@ function setupChannelData() {
 function setupSystemTags() {
 	const tags = remoteUserSettings["allTags"];
 	const tagsFIlterNode = document.getElementById("tagFilterOptions");
+	const metaDataTagsNode = document.getElementById("metaDataTags");
 	removeAllChildNodes(tagsFIlterNode);
+	removeAllChildNodes(metaDataTagsNode);
+	const containter = document.createElement("div");
+	containter.classList.add("media-tag-filter-container")
+	tagsFIlterNode.appendChild(containter);
 	tags.forEach((x, i) => {
-		const divNode = document.createElement("div");
-		const label = document.createElement("label");
-		label.innerText = x;
-		label.setAttribute("for", x+"TagCheckbox" + i);
-		const checkbox = document.createElement("input");
-		checkbox.type = "checkbox";
-		checkbox.value = x;
-		//checkbox.classList.add("styled-checkbox");
-		checkbox.id = x+"TagCheckbox" + i;
-		checkbox.name = "TagCheckbox";
-		checkbox.onclick = onFilterByTagClicked(checkbox);
-		divNode.appendChild(checkbox);
-		divNode.appendChild(label);
-		tagsFIlterNode.appendChild(divNode);
+		containter.appendChild(createCheckBoxDiv(x+tagCheckboxesName+i, tagCheckboxesName, x, x, onFilterByTagClicked));
 
+		metaDataTagsNode.appendChild(createCheckBoxDiv(x+metadataTagCheckboxesName+i, metadataTagCheckboxesName, x, x, onMetadataTagCheckboxClicked));
 	});
 
 	const userTagsSelect = document.getElementById("systemTagsSelect");
@@ -765,17 +926,25 @@ function smartagsSelectChange(selectElement) {
 }
 
 function addSystemTag(smartMode) {
-	let tags = remoteUserSettings[smartMode ? "smartTags" : "userTags"];
-	const otherTagName = !smartMode ? "smartTags" : "userTags";
-	let other = remoteUserSettings[otherTagName];
-	var name = prompt(smartMode ? 'Smart tag name' : 'Tag name');
+	var callback = function(value) {
+		systemTagAdded(value, smartMode);
+	}
+	//var name = prompt(smartMode ? 'Smart tag name' : 'Tag name');
+	showGetTextWindow(smartMode ? 'Add smart tag' : 'Add tag', "Name", callback);
+}
+
+function systemTagAdded(name, smartMode) {
 	if(!name || !name.trim().length) {
+		showAlertWindow("Empty", `Tag cant be empty!`);
 		return;
 	}
+	let tags = remoteUserSettings[smartMode ? "smartTags" : "userTags"];
 	if(tags.findIndex(x => x == name) > -1) {
 		showAlertWindow("Tag exists", `Tag '${name}' already exists!`);
 		return;
 	}
+	const otherTagName = !smartMode ? "smartTags" : "userTags";
+	let other = remoteUserSettings[otherTagName];
 	if(other.findIndex(x => x == name) > -1) {
 		showAlertWindow("Tag exists", `Tag '${name}' already exists in ${otherTagName}!`);
 		return;
@@ -791,6 +960,7 @@ function addSystemTag(smartMode) {
 	systemTagsSelect.options.add(option);
 	if(smartMode)
 		mediaReloadRequiredNode.classList.remove('hidden');
+	closeTextWindow();
 
 	//tags.push(name);
 
@@ -855,7 +1025,7 @@ function getServerSessions() {
 			}
 		}.bind(this);
 		xhr.onerror = function(evnt, retry) {
-			onSaveFail(xhr.status.statusText);
+			onSaveFail(xhr);
 		};
 		xhr.send();
 	}
@@ -888,7 +1058,7 @@ function deleteSession (sessionID) {
 		}
 	}
 	xhr.onerror = function () {
-		onSaveFail(xhr.statusText);
+		onSaveFail(xhr);
 	};
 	xhr.send();
 }
@@ -1050,6 +1220,28 @@ function setInputConnectionStatus(deviceName, status, message) {
 
 	}
 }
+function setDevicePauseStatus(isPaused)
+{
+	for (var i = 0; i < devicePauseStatusIconButtonNodes.length; i++) {
+		var devicePauseStatusIconButtonNode = devicePauseStatusIconButtonNodes[i];
+		var devicePauseStatusIconButtonImageNode = devicePauseStatusIconButtonImageNodes[i];
+		devicePauseStatusIconButtonNode.title = "TCode device pause toggle.\nDevice status: ";
+		
+		if(isPaused)
+		{
+			devicePauseStatusIconButtonNode.title += "paused";
+			devicePauseStatusIconButtonNode.classList.add("video-control--device-state-paused");
+			devicePauseStatusIconButtonImageNode.setAttribute("src", "://images/icons/play.svg");
+		}
+		else
+		{
+			devicePauseStatusIconButtonNode.title += "not paused";
+			devicePauseStatusIconButtonNode.classList.remove("video-control--device-state-paused");
+			devicePauseStatusIconButtonImageNode.setAttribute("src", "://images/icons/pause.svg");
+		}
+	}
+}
+
 function setOutputConnectionStatus(deviceName, status, message) {
 	for (var i = 0; i < deviceConnectionStatusRetryButtonNodes.length; i++) {
 		var deviceConnectionStatusRetryButtonNode = deviceConnectionStatusRetryButtonNodes[i];
@@ -1226,7 +1418,7 @@ function postServerSettings() {
 		if (xhr.readyState === 4) {
 			var status = xhr.status;
 			if (status !== 200)
-				onSaveFail(xhr.statusText);
+				onSaveFail(xhr);
 			else {
 				onSaveSuccess();
 				markXTPFormClean();
@@ -1234,7 +1426,7 @@ function postServerSettings() {
 		}
 	}
 	xhr.onerror = function () {
-		onSaveFail(xhr.statusText);
+		onSaveFail(xhr);
 	};
 	xhr.send(JSON.stringify(remoteUserSettings));
 }
@@ -1247,7 +1439,7 @@ function postMediaItemMetaData(metaData) {
 		if (xhr.readyState === 4) {
 			var status = xhr.status;
 			if (status !== 200)
-				onSaveFail(xhr.statusText, metaDataSaveStateNode);
+				onSaveFail(xhr, metaDataSaveStateNode);
 			else {
 				onSaveSuccess(metaDataSaveStateNode);
 				document.getElementById("saveMediaItemMetaDataButton").disabled = true;
@@ -1255,7 +1447,7 @@ function postMediaItemMetaData(metaData) {
 		}
 	}
 	xhr.onerror = function () {
-		onSaveFail(xhr.statusText, metaDataSaveStateNode);
+		onSaveFail(xhr, metaDataSaveStateNode);
 	};
 	xhr.send(JSON.stringify(metaData));
 }
@@ -1278,8 +1470,16 @@ function postMediaState(mediaState) {
 function onSaveSuccess(node) {
 	setSaveState(node, false);
 }
-function onSaveFail(error, node) {
-	setSaveState(node, false, error);
+function onSaveFail(xhr, node) {
+	const statusTest = xhr.statusText ? xhr.statusText : xhr.status.statusText;
+	if(xhr.response)
+	{
+		try {
+			const obj = JSON.parse(xhr.response);
+			showAlertWindow(statusTest, obj.message);
+		} catch(e){ }
+	}
+	setSaveState(node, false, statusTest);
 }
 
 function clearMediaList() {
@@ -1366,6 +1566,12 @@ function loadMedia(mediaList) {
 			contextMenu.classList.add("hidden");
 		}
 	};
+	var updateItemMetadata = function (mediaItem, contextMenu) {
+		return function () {
+			sendWebsocketMessage("processMetadata", mediaItem.id);
+			contextMenu.classList.add("hidden");
+		}
+	}
 
 	var textHeight = 0
 	var width = 0;
@@ -1374,6 +1580,7 @@ function loadMedia(mediaList) {
 	var fontSize = 0;
 	for (var i = 0; i < mediaList.length; i++) {
 		var obj = mediaList[i];
+
 		if (!thumbSizeGlobal) {
 			setThumbSize(obj.thumbSize, true);
 			setThumbSize(obj.thumbSize, false);
@@ -1387,10 +1594,11 @@ function loadMedia(mediaList) {
 		}
 		var divnode = document.createElement("div");
 		divnode.id = obj.id
-		divnode.className += "media-item"
+		divnode.classList.add("media-item");
 		divnode.style.width = width;
 		divnode.style.height = height;
-		divnode.title = obj.name;
+		divnode.title = obj.tooltip;
+		divnode.setAttribute("data-display-name", obj.displayName);
 
 		var info = document.createElement("button");
 		info.id = obj.id + "InfoButton";
@@ -1431,7 +1639,9 @@ function loadMedia(mediaList) {
 		var contextMenuItem = createContextMenuItem("Set moneyshot at current", setMoneyShotCurrentPosClick(obj, contextMenu));
 		contextMenuItem.classList.add("setMoneyShotAtCurrent", "disabled");
 		contextMenu.appendChild(contextMenuItem);
-		var contextMenuItem = createContextMenuItem("Settings", mediaSettingsClick(obj, contextMenu));
+		var updateMetadataMenuItem = createContextMenuItem("Update metadata", updateItemMetadata(obj, contextMenu));
+		contextMenu.appendChild(updateMetadataMenuItem);
+		var contextMenuItem = createContextMenuItem("Edit metadata", mediaSettingsClick(obj, contextMenu));
 		contextMenu.appendChild(contextMenuItem);
 		var contextCancelMenuItem = createContextMenuItem("Cancel", closeContext(contextMenu));
 		contextMenu.appendChild(contextCancelMenuItem);
@@ -1560,6 +1770,11 @@ function updateItem(libraryItem, roles)
 		mediaNode = updateSubTitle(libraryItem, mediaNode);
 	}
 }
+function addItem(libraryItem)
+{
+	mediaListGlobal.push(libraryItem);
+	showChange(showGlobal);
+}
 
 function updateSubTitle(libraryItem, mediaNode, contextMenu) {
 	if(!mediaNode)
@@ -1621,8 +1836,11 @@ function updateScriptStatus(libraryItem, mediaNode, displayNameNode) {
 	if(!displayNameNode)
 		return undefined;
 	displayNameNode.innerText = libraryItem.displayName;
-	if (libraryItem.isMFS) {
+	if (libraryItem.isMFS && libraryItem.hasScript) {
 		mediaNode.classList.add("media-item-mfs");
+	} else if(libraryItem.isMFS && !libraryItem.hasScript) {
+		mediaNode.classList.remove("media-item-mfs");
+		mediaNode.classList.add("media-item-mfs-noscript");
 	} else {
 		mediaNode.classList.remove("media-item-mfs");
 	}
@@ -1669,6 +1887,16 @@ function sort(value, userClick) {
 		case "dateAsc":
 			mediaListGlobal.sort(function (a, b) {
 				return new Date(a.modifiedDate) - new Date(b.modifiedDate);
+			});
+			break;
+		case "addedDesc":
+			mediaListGlobal.sort(function (a, b) {
+				return new Date(b.metaData.dateAdded) - new Date(a.metaData.dateAdded);
+			});
+			break;
+		case "addedAsc":
+			mediaListGlobal.sort(function (a, b) {
+				return new Date(a.metaData.dateAdded) - new Date(b.metaData.dateAdded);
 			});
 			break;
 		case "nameAsc":
@@ -1726,10 +1954,10 @@ function getDisplayedMediaList(showValue, userClick) {
 			filteredMediaScoped = JSON.parse(JSON.stringify(mediaListGlobal));
 			break;
 		case "3DOnly":
-			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.VR);
+			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.VR || x.metaData.tags.includes("vr"));
 			break;
 		case "2DAndAudioOnly":
-			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video);
+			filteredMediaScoped = mediaListGlobal.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video || x.metaData.tags.includes("2d") || x.metaData.tags.includes("audio"));
 			break;
 	}
 	
@@ -1748,8 +1976,8 @@ function filter(criteria) {
 	var mediaItems = document.getElementsByClassName("media-item");
 	for (var item of mediaItems) {
 		const libraryItem = mediaListDisplayed.find(x => x.id === item.id);
-
-		item.hidden = isFiltered(userFilterCriteria, item.textContent) || isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags);
+		const displayName = item.getAttribute("data-display-name");
+		item.hidden = isFiltered(userFilterCriteria, displayName) || isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags);
 	};
 	filterInput.enabled = true;
 }
@@ -1787,7 +2015,7 @@ var onFilterByTagClicked = function (tagCheckbox) {
 
 function filterByTag(filterCriteria) {
 	userTagFilterCriteria = filterCriteria;
-	var tagsFilterOptions = document.getElementsByName("TagCheckbox");
+	var tagsFilterOptions = document.getElementsByName(tagCheckboxesName);
 	tagsFilterOptions.forEach(x => x.enabled = false);
 	var mediaItems = document.getElementsByClassName("media-item");
 	for (var item of mediaItems) {
@@ -2066,7 +2294,17 @@ function playVideo(obj) {
 			return;
 		clearPlayingMediaItem();
 	}
-	setPlayingMediaItem(mediaListGlobal[mediaListGlobal.findIndex(x => x.id==obj.id)]);
+	const index = mediaListGlobal.findIndex(x => x.id==obj.id);
+	if(index == -1) {
+		showAlertWindow("Error", "Unknown media Item. If this is an item outside the slected media libraries, try refreshing the page. If that doesnt work. Im sorry.");
+		return;
+	}
+	const selectedMediaItem = mediaListGlobal[index];
+	if(selectedMediaItem.type == MediaType.ExternalType) {
+		showAlertWindow("Error", "Cannot play external media items from this interface.<br>You can only modify media metadata.<br>Start the media item from the original location.");
+		return;
+	}
+	setPlayingMediaItem(selectedMediaItem);
 	sendMediaState();
 	if(obj["subtitle"]) {
 		if(!externalStreaming) {
@@ -2099,9 +2337,10 @@ function playVideo(obj) {
 		window.open(file_path);
 		return;
 	}
-	showVideo();
+	if(!isVideoShown())
+		showVideo();
 	dataLoading();
-	videoSourceNode.setAttribute("src", "/media" + obj.relativePath);
+	setupVideoSource("/media" + obj.relativePath);
 	videoNode.setAttribute("title", obj.name);
 	videoMediaName.innerText = obj.name;
 	videoNode.setAttribute("poster", "/thumb/" + obj.relativeThumb);
@@ -2121,7 +2360,7 @@ function stopVideoClick() {
 function stopVideo() {
 	hideVideo();
 	videoNode.pause();
-	videoSourceNode.setAttribute("src", "");
+	removeVideoSource();
 	videoNode.removeAttribute("title");
 	videoNode.removeAttribute("poster");
 	videoMediaName.innerText = "";
@@ -2178,86 +2417,6 @@ function clearPlayingMediaItem() {
 	playingmediaItemNode.classList.remove("media-item-playing");
 	playingmediaItem = null;
 	playingmediaItemNode = null;
-}
-
-var timer1 = 0;
-var timer2 = Date.now();
-function onVideoTimeUpdate(event) {
-	if (xtpConnected && selectedInputDevice == DeviceType.XTPWeb) {
-		if (timer2 - timer1 >= 1000) {
-			timer1 = timer2;
-			sendMediaState();
-		}
-		timer2 = Date.now();
-	}
-}
-function onVideoLoading(event) {
-	debug("Data loading");
-	if(videoStallTimeout)
-		clearTimeout(videoStallTimeout);
-	dataLoading();
-	if(playingmediaItem)
-		playingmediaItem.loaded = false;
-	// SOmetimes the stall signal is sent but the loading modal is never removed.
-	videoStallTimeout = setTimeout(() => {
-		//playNextVideo();
-		dataLoaded();
-		videoStallTimeout = undefined;
-	}, 20000);
-}
-function onVideoLoad(event) {
-	debug("Data loaded");
-	debug("Duration: " + videoNode.duration)
-	if(playingmediaItem)
-		playingmediaItem.loaded = true;
-}
-function onVideoPlay(event) {
-	debug("Video play");
-	if(playingmediaItem)
-		playingmediaItem.playing = true;
-	// if(!funscriptSyncWorker && loadedFunscripts && loadedFunscripts.length > 0)
-	// 	startFunscriptSync(loadedFunscripts);
-	sendMediaState();
-}
-function onVideoPause(event) { 
-	debug("Video pause");
-	if(playingmediaItem)
-		playingmediaItem.playing = false;
-	//setTimeout(function() {
-	sendMediaState();// Sometimes a timeupdate is sent after this event fires?
-	//}, 500);
-}
-function onVideoStall(event) {
-	debug("Video stall");
-	dataLoading();
-	if(playingmediaItem)
-		playingmediaItem.playing = false;
-	sendMediaState();
-	if(videoStallTimeout)
-		clearTimeout(videoStallTimeout);
-	// SOmetimes the stall signal is sent but the loading modal is never removed.
-	videoStallTimeout = setTimeout(() => {
-		//playNextVideo();
-		dataLoaded();
-		videoStallTimeout = undefined;
-	}, 20000);
-}
-function onVideoPlaying(event) {
-	debug("Video playing");
-	if(videoStallTimeout)
-		clearTimeout(videoStallTimeout);
-	if(playingmediaItem)
-		playingmediaItem.playing = true;
-	sendMediaState();
-}
-function onVolumeChange() {
-	window.localStorage.setItem("volume", videoNode.volume);
-}
-function onVideoEnd(event) {
-	// if(funscriptSyncWorker) {
-	// 	funscriptSyncWorker.postMessage(JSON.stringify({"command": "terminate"}));
-	// }
-	playNextVideo();
 }
 
 function playNextVideoClick() {
@@ -2400,6 +2559,11 @@ function openMetaDataModal(mediaItem) {
 	selectedMediaItemMetaData = mediaItem["metaData"];
 	document.getElementById("mediaOffset").value = selectedMediaItemMetaData["offset"];
 	document.getElementById("moneyShotMillis").value = selectedMediaItemMetaData["moneyShotMillis"];
+	document.getElementById("funscriptModifier").value = selectedMediaItemMetaData["funscriptModifier"];
+	const tagCheckboxes = document.getElementsByName(metadataTagCheckboxesName);
+	tagCheckboxes.forEach(x => {
+		x.checked = selectedMediaItemMetaData.tags.findIndex(y => y == x.value) > -1;
+	})
 	mediaItemSettingsModalNode.style.visibility = "visible";
 	mediaItemSettingsModalNode.style.opacity = 1;
 }
@@ -2411,6 +2575,7 @@ function closeMetaDataModal() {
 function saveMetaData() {
 	selectedMediaItemMetaData["offset"] = parseInt(document.getElementById("mediaOffset").value);
 	selectedMediaItemMetaData["moneyShotMillis"] = parseInt(document.getElementById("moneyShotMillis").value);
+	selectedMediaItemMetaData["funscriptModifier"] = parseInt(document.getElementById("funscriptModifier").value);
 	postMediaItemMetaData(selectedMediaItemMetaData);
 }
 
@@ -2418,11 +2583,18 @@ function metaDataChange() {
 	document.getElementById("saveMediaItemMetaDataButton").disabled = false;
 }
 
-function addToSelectedMetaData(amount) {
-	var mediaOffsetNode = document.getElementById("mediaOffset");
-	var value = parseInt(mediaOffsetNode.value);
+function addToSelectedMetaDataOffset(amount) {
+	var node = document.getElementById("mediaOffset");
+	var value = parseInt(node.value);
 	value += amount;
-	mediaOffsetNode.value = value;
+	node.value = value;
+	metaDataChange();
+}
+function addToSelectedMetaDataModifier(amount) {
+	var node = document.getElementById("funscriptModifier");
+	var value = parseInt(node.value);
+	value += amount;
+	node.value = value;
 	metaDataChange();
 }
 
@@ -2431,9 +2603,23 @@ function resetMoneyShot() {
 	metaDataChange();
 }
 
-function setMoneyShotFromCurrent() {
-	
-}
+var onMetadataTagCheckboxClicked = function (tagCheckbox) {
+	return function () {
+		let tagsChanged = false;
+		if(tagCheckbox && selectedMediaItemMetaData) {
+			const index = selectedMediaItemMetaData.tags.findIndex(x => x == tagCheckbox.value);
+			if(tagCheckbox.checked && index == -1) {
+				selectedMediaItemMetaData.tags.push(tagCheckbox.value);
+				tagsChanged = true;
+			} else if(!tagCheckbox.checked && index > -1) {
+				selectedMediaItemMetaData.tags.splice(index, 1);
+				tagsChanged = true;
+			}
+		}
+		if(tagsChanged)
+			metaDataChange();
+	}
+};
 
 function tabClick(tab, tabNumber) {
 	var allTabs = document.getElementsByClassName("tab-section-tab")
@@ -2476,7 +2662,7 @@ function showChange(value) {
 
 function sortChange(value) {
 	sort(value, true);
-	mediaListDisplayed = getDisplayedMediaList(value, false);
+	mediaListDisplayed = getDisplayedMediaList(showGlobal, false);
 	loadMedia(mediaListDisplayed);
 	filter();
 }
@@ -2648,22 +2834,23 @@ async function setupSliders() {
 }
 
 async function setupMotionModifiers() {
-	var tab = document.getElementById("tabFunscript");
-	removeAllChildNodes(tab);
+	//var tab = document.getElementById("tabFunscript");
+	var tabFunscriptRandomMotion = document.getElementById("tabFunscriptRandomMotion");
+	removeAllChildNodes(tabFunscriptRandomMotion);
 
 	var formElementNode = document.createElement("div");
 	formElementNode.classList.add("formElement");
 
-	var headerDivNode = document.createElement("div");
-	headerDivNode.classList.add("tab-content-header");
-	var headerNode = document.createElement("div");
-	headerNode.innerText = "Motion modifier"
-	headerNode.classList.add("tab-content-header-main");
+	// var headerDivNode = document.createElement("div");
+	// headerDivNode.classList.add("tab-content-header");
+	// var headerNode = document.createElement("div");
+	// headerNode.innerText = "Motion modifier"
+	// headerNode.classList.add("tab-content-header-main");
 	var subtextNode = document.createElement("div");
 	subtextNode.classList.add("tab-content-header-eyebrow");
 	subtextNode.innerText = "Add random motion to other channels"
-	headerDivNode.appendChild(headerNode);
-	headerDivNode.appendChild(subtextNode);
+	//headerDivNode.appendChild(headerNode);
+	tabFunscriptRandomMotion.appendChild(subtextNode);
 
 	var labelNode = document.createElement("label");
 	labelNode.innerText = "Enabled";
@@ -2688,7 +2875,7 @@ async function setupMotionModifiers() {
 
 	var headers = [
 		//"Modifier", 
-		"Link to MFS", 
+		"Link to script", 
 		"Speed"]
 	headers.forEach(element => {
 		var gridHeaderNode = document.createElement("div");
@@ -2704,17 +2891,14 @@ async function setupMotionModifiers() {
 	formElementNode.appendChild(labelNode);
 	formElementNode.appendChild(sectionNode);
 
-	tab.appendChild(headerDivNode);
-	tab.appendChild(formElementNode);
+	// tab.appendChild(headerDivNode);
+	tabFunscriptRandomMotion.appendChild(formElementNode);
 
 	var availableChannels = remoteUserSettings.availableChannelsArray;
 	for (var i = 0; i < availableChannels.length; i++) {
 
 		var channel = availableChannels[i];
 		var channelName = channel.channel;
-
-		if (channel.dimension === AxisDimension.Heave)
-			continue;
 
 		var formElementNode = document.createElement("div");
 		formElementNode.classList.add("formElement");
@@ -2839,7 +3023,7 @@ async function setupMotionModifiers() {
 
 		formElementNode.appendChild(sectionNode);
 
-		tab.appendChild(formElementNode);
+		tabFunscriptRandomMotion.appendChild(formElementNode);
 	}
 
 	toggleMotionModifierState(remoteUserSettings.multiplierEnabled);
@@ -2853,19 +3037,21 @@ function toggleMotionModifierState(enabled) {
 }
 async function setUpInversionMotionModifier() {
 
-	var tab = document.getElementById("tabFunscript");
+	//var tab = document.getElementById("tabFunscript");
+	var tabFunscriptInversion = document.getElementById("tabFunscriptInversion");
+	removeAllChildNodes(tabFunscriptInversion);
 
 	var formElementNode = document.createElement("div");
 	formElementNode.classList.add("formElement");
 
-	var headerDivNode = document.createElement("div");
-	headerDivNode.classList.add("tab-content-header");
+	// var headerDivNode = document.createElement("div");
+	// headerDivNode.classList.add("tab-content-header");
 	var subtextNode = document.createElement("div");
 	subtextNode.classList.add("tab-content-header-eyebrow");
 	subtextNode.innerText = "Invert motion of channels"
-	headerDivNode.appendChild(subtextNode);
+	//headerDivNode.appendChild(subtextNode);
 
-	tab.appendChild(headerDivNode);
+	tabFunscriptInversion.appendChild(subtextNode);
 
 
 	var availableChannels = remoteUserSettings.availableChannelsArray;
@@ -2876,6 +3062,8 @@ async function setUpInversionMotionModifier() {
 
 		var formElementNode = document.createElement("div");
 		formElementNode.classList.add("formElement");
+		formElementNode.classList.add("formElement--inverted");
+		
 
 		var labelNode = document.createElement("label");
 		labelNode.innerText = channel.friendlyName;
@@ -2896,10 +3084,10 @@ async function setUpInversionMotionModifier() {
 		var invertedEnabledNode = document.createElement("input");
 		invertedEnabledNode.setAttribute("name", "motionModifierInputInverted");
 		invertedEnabledNode.type = "checkbox";
-		invertedEnabledNode.checked = channel.inverted;
+		invertedEnabledNode.checked = channel.funscriptInverted;
 
 		invertedEnabledNode.oninput = function (channelName, event) {
-			remoteUserSettings.availableChannels[channelName].inverted = event.target.checked;
+			remoteUserSettings.availableChannels[channelName].funscriptInverted = event.target.checked;
 			markXTPFormDirty();
 		}.bind(invertedEnabledNode, channelName);
 
@@ -2907,7 +3095,7 @@ async function setUpInversionMotionModifier() {
 		sectionNode.appendChild(enabledValueNode);
 		formElementNode.appendChild(sectionNode);
 
-		tab.appendChild(formElementNode);
+		tabFunscriptInversion.appendChild(formElementNode);
 	}
 }
 

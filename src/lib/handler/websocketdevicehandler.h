@@ -9,9 +9,6 @@
 #include <QMutex>
 #include <QWaitCondition>
 #include "lib/interface/networkdevice.h"
-#include <math.h>
-#include "loghandler.h"
-#include "settingshandler.h"
 #include "../struct/NetworkAddress.h"
 
 class WebsocketDeviceHandler : public NetworkDevice
@@ -27,6 +24,7 @@ public:
 private slots:
     void onConnected();
     void onClosed();
+    // void onReadyRead();
 
 private:
     QWebSocket m_webSocket;

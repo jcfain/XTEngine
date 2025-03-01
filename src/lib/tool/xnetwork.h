@@ -17,7 +17,7 @@ public:
 #endif
         QElapsedTimer timer;
         timer.start();
-        int exitCode = QProcess::execute("ping", QStringList() << parameter << "1" << address.toString());
+        int exitCode = QProcess::execute("ping", QStringList() << parameter << "1" << address.toString().remove("::ffff:"));
         ms = (round(timer.nsecsElapsed() / 1000000));
         return exitCode == 0;
     }

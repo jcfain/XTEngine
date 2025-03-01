@@ -48,6 +48,13 @@ int WebSocketHandler::getServerPort()
     return m_pWebSocketServer->serverPort();
 }
 
+void WebSocketHandler::onSettingChange(QString setting, QVariant value)
+{
+    QJsonObject obj;
+    obj[setting] = QJsonValue::fromVariant(value);
+    sendCommand("settingChange", obj);
+}
+
 void WebSocketHandler::sendCommand(QString command, QString message, QWebSocket* client)
 {
     QString commandJson;
@@ -64,6 +71,41 @@ void WebSocketHandler::sendCommand(QString command, QString message, QWebSocket*
         pClient->sendTextMessage(commandJson);
 }
 
+void WebSocketHandler::sendCommand(QString command, QJsonObject message, QWebSocket* client)
+{
+    QJsonDocument doc;
+    QJsonObject obj;
+    obj["command"] = command;
+    obj["message"] = message;
+    doc.setObject(obj);
+    QString fullMessage = QString(doc.toJson(QJsonDocument::Compact));
+    if(client)
+        client->sendTextMessage(fullMessage);
+    else
+        for (QWebSocket *pClient : qAsConst(m_clients))
+            pClient->sendTextMessage(fullMessage);
+}
+
+void WebSocketHandler::sendUserError(QString message)
+{
+    sendCommand("userError", message);
+}
+
+void WebSocketHandler::sendUserWarning(QString message)
+{
+    sendCommand("userWarning", message);
+}
+
+void WebSocketHandler::sendError(QString message)
+{
+    sendCommand("systemError", message);
+}
+
+void WebSocketHandler::sendWarning(QString message)
+{
+    sendCommand("systemWarning", message);
+}
+
 void WebSocketHandler::onNewConnection()
 {
     QWebSocket *pSocket = m_pWebSocketServer->nextPendingConnection();
@@ -74,6 +116,7 @@ void WebSocketHandler::onNewConnection()
 
     m_clients << pSocket;
     initNewClient(pSocket);
+
     emit newWebSocketConnected(pSocket);
 }
 
@@ -82,6 +125,7 @@ void WebSocketHandler::initNewClient(QWebSocket* client)
     sendDeviceConnectionStatus(_inputDeviceStatus);
     sendDeviceConnectionStatus(_gamepadStatus);
     sendDeviceConnectionStatus(_outputDeviceStatus);
+    sendScriptPaused(scriptPaused);
 }
 
 void WebSocketHandler::processTextMessage(QString message)
@@ -100,6 +144,9 @@ void WebSocketHandler::processTextMessage(QString message)
     if (command == "tcode") {
         QString commandMessage = json["message"].toString();
         emit tcode(commandMessage);
+    } else if (command == "settingChange") {
+        QJsonObject obj = json["message"].toObject();
+        emit settingChange(obj["key"].toString(), obj["value"].toVariant());
     } else if (command == "setChannelRange") {
         QJsonObject obj = json["message"].toObject();
         emit setChannelRange(obj["channelName"].toString(), obj["min"].toInt(), obj["max"].toInt());
@@ -113,6 +160,10 @@ void WebSocketHandler::processTextMessage(QString message)
         emit connectInputDevice((DeviceName)obj["deviceName"].toInt(), obj["enabled"].toBool());
     } else if (command == "restartService") {
         emit restartService();
+    } else if (command == "cleanupThumbs") {
+        emit cleanupThumbs();
+    } else if (command == "cleanupMetadata") {
+        emit cleanupMetadata();
     } else if (command == "skipToMoneyShot") {
         emit skipToMoneyShot();
     } else if (command == "skipToNextAction") {
@@ -124,7 +175,18 @@ void WebSocketHandler::processTextMessage(QString message)
         emit saveSingleThumb(itemID, pos);
     } else if (command == "reloadLibrary") {
         emit reloadLibrary();
+    } else if(command == "startMetadataProcess") {
+        emit startMetadataProcess();
+    } else if(command == "processMetadata") {
+        QString itemID = json["message"].toString();
+        emit processMetadata(itemID);
+    } else if(command == "mediaAction") {
+        QString action = json["message"].toString();
+        emit mediaAction(action);
+    } else if(command == "clean1024") {
+        emit clean1024();
     }
+
 }
 
 void WebSocketHandler::processBinaryMessage(QByteArray message)
@@ -189,4 +251,22 @@ void WebSocketHandler::sendUpdateItem(QString itemJson, QString roleslist, QStri
     else
         messageJson = "{ \"item\": "+itemJson+", \"roles\": \""+roleslist+"\", \"errorMessage\": \""+error+"\"}";
     sendCommand("updateItem", messageJson);
+}
+
+void WebSocketHandler::sendAddItem(QString itemJson, QString error)
+{
+    QString messageJson;
+    if(error.isEmpty())
+        messageJson = "{ \"item\": "+itemJson+"}";
+    else
+        messageJson = "{ \"item\": "+itemJson+", \"errorMessage\": \""+error+"\"}";
+    sendCommand("addItem", messageJson);
+}
+
+void WebSocketHandler::sendScriptPaused(bool isPaused)
+{
+    QJsonObject obj;
+    obj["isPaused"] = isPaused;
+    scriptPaused = isPaused;
+    sendCommand("scriptTogglePaused", obj);
 }

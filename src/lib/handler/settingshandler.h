@@ -12,6 +12,7 @@
 #include <QTranslator>
 #include <QStandardPaths>
 #include <QDirIterator>
+#include <QtConcurrent/QtConcurrent>
 #include "loghandler.h"
 #include "../lookup/enum.h"
 #include "../lookup/AxisNames.h"
@@ -19,6 +20,7 @@
 #include "../lookup/GamepadAxisNames.h"
 #include "../lookup/MediaActions.h"
 #include "../lookup/xvideorenderer.h"
+#include "../lookup/SettingMap.h"
 #include "../tool/xmath.h"
 #include "../struct/ChannelModel.h"
 #include "../struct/ChannelModel33.h"
@@ -29,18 +31,27 @@
 #include "../struct/LibraryListItemMetaData258.h"
 #include "lib/lookup/TCodeCommand.h"
 #include "../lookup/xtags.h"
+#include "../struct/NetworkDeviceInfo.h"
+
+#define ORGANIZATION_NAME "cUrbSide prOd"
+#define APPLICATION_NAME "XTEngine"
 
 class XTENGINE_EXPORT SettingsHandler: public QObject
 {
     Q_OBJECT
 signals:
+    void settingChange(QString settingName, QVariant value);
     void settingsChanged(bool dirty);
     void messageSend(QString message, XLogLevel loglevel);
+    void messageSendWait(QString message, XLogLevel loglevel, QFunctionPointer callback);
+    void restartRequired(bool enabled);
     void tagsChanged();
 
 public slots:
-    void setMoneyShot(LibraryListItem27 selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
-    void addBookmark(LibraryListItem27 LibraryListItem27, QString name, qint64 currentPosition);
+    static void changeSetting(QString settingName, QVariant value);
+    static void changeSetting(QString settingName, QVariant value, bool restart);
+    void setMoneyShot(LibraryListItem27& selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
+    void addBookmark(LibraryListItem27& LibraryListItem27, QString name, qint64 currentPosition);
 
 public:
     static SettingsHandler* instance(){
@@ -49,6 +60,10 @@ public:
         return m_instance;
     }
     static QSettings* getSettings();
+    static QVariant getSetting(const QString& settingName);
+    static void getSetting(const QString& settingName, QJsonObject& json);
+    static QString getSettingPath(const SettingMap &setting);
+    static QString getSettingPath(const QString &settingName);
     static const QString XTEVersion;
     static const QString XTEVersionTimeStamp;
     static const float XTEVersionNum;
@@ -62,13 +77,23 @@ public:
     static QString getDeoDnlaFunscript(QString key);
     static QHash<QString, QVariant> getDeoDnlaFunscripts();
     static QStringList getSelectedLibrary();
+    static bool hasAnyLibrary(const QString& value, QStringList& messages);
+    static bool isLibraryParentChildOrEqual(const QString& value, QStringList& messages);
+    static bool isLibraryChildOrEqual(const QString& value, QStringList& messages);
     static QString getLastSelectedLibrary();
-    static void addSelectedLibrary(QString value);
+    static bool addSelectedLibrary(QString value, QStringList &messages);
     static void removeSelectedLibrary(QString value);
     static QStringList getVRLibrary();
+    static bool isVRLibraryParentChildOrEqual(const QString& value, QStringList& messages);
+    static bool isVRLibraryChildOrEqual(const QString& value, QStringList& messages);
     static QString getLastSelectedVRLibrary();
-    static void addSelectedVRLibrary(QString value);
+    static bool addSelectedVRLibrary(QString value, QStringList &messages);
     static void removeSelectedVRLibrary(QString value);
+    static void removeAllVRLibraries();
+    static QStringList getLibraryExclusions();
+    static bool isLibraryExclusionChildOrEqual(const QString& value, QStringList& messages);
+    static bool addToLibraryExclusions(QString values, QStringList& errors);
+    static void removeFromLibraryExclusions(QList<int> indexes);
     static QString getSelectedThumbsDir();
     static void setSelectedThumbsDir(QString thumbDir);
     static void setSelectedThumbsDirDefault();
@@ -79,8 +104,8 @@ public:
     static void setSelectedOutputDevice(DeviceName deviceName);
     static DeviceName getSelectedInputDevice();
     static void setSelectedInputDevice(DeviceName deviceName);
-    static void setSelectedNetworkDevice(NetworkDeviceType value);
-    static NetworkDeviceType getSelectedNetworkDevice();
+    static void setSelectedNetworkDevice(NetworkProtocol value);
+    static NetworkProtocol getSelectedNetworkDevice();
     static QStringList getCustomTCodeCommands();
     static void addCustomTCodeCommand(QString command);
     static void removeCustomTCodeCommand(QString command);
@@ -211,8 +236,6 @@ public:
     static void setLiveMultiplierEnabled(bool value);
     static bool getLiveGamepadConnected();
     static void setLiveGamepadConnected(bool value);
-    static bool getLiveActionPaused();
-    static void setLiveActionPaused(bool value);
     static int getLiveOffSet();
     static void setLiveOffset(int value);
     static bool isSmartOffSet();
@@ -223,10 +246,6 @@ public:
     static QList<DecoderModel> getDecoderPriority();
     static void setSelectedVideoRenderer(XVideoRenderer value);
     static XVideoRenderer getSelectedVideoRenderer();
-
-    static void addToLibraryExclusions(QString values);
-    static void removeFromLibraryExclusions(QList<int> indexes);
-    static QStringList getLibraryExclusions();
 
     static QMap<QString, QList<LibraryListItem27>> getPlaylists();
     static void setPlaylists(QMap<QString, QList<LibraryListItem27>> value);
@@ -239,9 +258,14 @@ public:
     static bool getFunscriptLoaded(QString key);
 
     static QHash<QString, LibraryListItemMetaData258> getLibraryListItemMetaData();
-    static LibraryListItemMetaData258 getLibraryListItemMetaData(const LibraryListItem27 item);
+    static void getLibraryListItemMetaData(LibraryListItem27& item);
+    static bool hasLibraryListItemMetaData(const LibraryListItem27& item);
+    static void removeLibraryListItemMetaData(LibraryListItem27& item);
     static void removeLibraryListItemMetaData(const QString key);
-    static void updateLibraryListItemMetaData(LibraryListItemMetaData258 libraryListItemMetaData, bool sync = true);
+    static void updateLibraryListItemMetaData(const LibraryListItem27& item, bool sync = true);
+    static bool getForceMetaDataFullProcess();
+    static void setForceMetaDataFullProcess(bool enable);
+    static void setForceMetaDataFullProcessComplete();
 
     static XTags getAvailableTags();
 
@@ -269,8 +293,11 @@ public:
     static void setEnableHttpServer(bool enable);
     static QString getHttpServerRoot();
     static void setHttpServerRoot(QString value);
+    static QString setHttpServerRootDefault();
     static qint64 getHTTPChunkSize();
     static void setHTTPChunkSize(qint64 value);
+    static double getHTTPChunkSizeMB();
+    static void setHTTPChunkSizeMB(double value);
     static int getHTTPPort();
     static void setHTTPPort(int value);
     static int getWebSocketPort();
@@ -279,7 +306,7 @@ public:
     static void setHttpThumbQuality(int value);
 
     static void setFunscriptModifierStep(int value);
-    static int getFunscriptModifierStep();
+    static double getFunscriptModifierStep();
     static void setFunscriptOffsetStep(int value);
     static int getFunscriptOffsetStep();
 
@@ -297,10 +324,16 @@ public:
     static void SetSmartTagDefaults();
     static void SetUserTagDefaults();
     static void SetSystemTagDefaults();
+    static void setDisableHeartBeat(bool value);
+    static bool getDisableHeartBeat();
+    static void setUseDTRAndRTS(bool value);
+    static bool getUseDTRAndRTS();
+
     static void setSaveOnExit(bool enabled);
     static bool getFirstLoad();
     static void Load(QSettings* settingsToLoadFrom = 0);
     static void Save(QSettings* settingsToSaveTo = 0);
+    static void Sync();
     static void SaveLinkedFunscripts(QSettings* settingsToSaveTo = nullptr);
     static void PersistSelectSettings();
     static void Default();
@@ -370,14 +403,33 @@ public:
     static void addUserSmartTag(QString tag);
     static bool hasSmartTag(QString tag);
 
-    static float viewedThreshold();
-    static void setViewedThreshold(float newViewedThreshold);
+    static float getViewedThreshold();
+    static void setViewedThreshold(float value);
+
+    static bool scheduleLibraryLoadEnabled();
+    static void setScheduleLibraryLoadEnabled(bool value);
+
+    static QTime scheduleLibraryLoadTime();
+    static void setScheduleLibraryLoadTime(QTime value);
+
+    static bool scheduleLibraryLoadFullProcess();
+    static void setScheduleLibraryLoadFullProcess(bool value);
+
+    static bool processMetadataOnStart();
+    static void setProcessMetadataOnStart(bool value);
+
+    static bool scheduleSettingsSync();
+    static void setScheduleSettingsSync(bool value);
+
 
 private:
     SettingsHandler();
     ~SettingsHandler();
+    static bool m_isPortable;
+    static QMap<QString, QVariant> m_changedSettings;
     static QString _applicationDirPath;
     static SettingsHandler* m_instance;
+    static QFuture<void> m_syncFuture;
     static bool _settingsChanged;
     static void settingsChangedEvent(bool dirty);
     static void SetMapDefaults();
@@ -398,6 +450,7 @@ private:
     static void DeMigrateLibraryMetaDataTo258();
     static void MigrateTo32a(QSettings* settingsToLoadFrom);
     static void MigrateTo42(QSettings* settingsToLoadFrom);
+    static void MigrateTo46(QSettings* settingsToLoadFrom);
 
     static void SaveChannelMap(QSettings* settingsToSaveTo = 0);
     static void SaveTCodeCommandMap(QSettings* settingsToSaveTo = 0);
@@ -419,7 +472,7 @@ private:
     static bool _useMediaDirForThumbs;
     static QString selectedFile;
     static int _selectedOutputDevice;
-    static NetworkDeviceType _selectedNetworkDeviceType;
+    static NetworkProtocol _selectedNetworkDeviceType;
     static QString serialPort;
     static QString serverAddress;
     static QString serverPort;
@@ -433,7 +486,6 @@ private:
     static bool _xtpWebSyncEnabled;
     static int playerVolume;
     static int offSet;
-    static bool _disableTCodeValidation;
     static QStringList m_customTCodeCommands;
 
     static bool _gamePadEnabled;
@@ -450,7 +502,6 @@ private:
     static int _gamepadSpeedStep;
     static int _liveGamepadSpeed;
     static bool _liveGamepadConnected;
-    static bool _liveActionPaused;
     static int _liveOffset;
     static bool m_smartOffsetEnabled;
     static int m_smartOffset;
@@ -487,14 +538,14 @@ private:
     static bool _skipPlayingSTandAloneFunscriptsInLibrary;
     static bool _enableHttpServer;
     static QString _httpServerRoot;
-    static qint64 _httpChunkSize;
+    //static qint64 _httpChunkSize;
     static int _httpPort;
     static int _httpThumbQuality;
     static int _webSocketPort;
     static bool _showVRInLibraryView;
 
 
-    static int _funscriptModifierStep;
+    static double _funscriptModifierStep;
     static int _funscriptOffsetStep;
 
     static bool _channelPulseEnabled;
@@ -503,6 +554,10 @@ private:
     static int _channelPulseAmount;
 
     static float m_viewedThreshold;
+
+    // static bool m_scheduleLibraryLoadEnabled;
+    // static QTime m_scheduleLibraryLoadTime;
+    // static bool m_scheduleLibraryLoadFullProcess;
 
     static XTags m_xTags;
 

@@ -2,7 +2,9 @@
 #define SETTINGSACTIONHANDLER_H
 
 #include <QObject>
+#include <QVariant>
 #include "lib/lookup/MediaActions.h"
+#include "synchandler.h"
 
 #include "XTEngine_global.h"
 /**
@@ -14,16 +16,17 @@ class XTENGINE_EXPORT SettingsActionHandler : public QObject
     Q_OBJECT
 
 signals:
-    void actionExecuted(QString action, QString actionExecuted);
+    void actionExecuted(QString action, QString actionExecuted, QVariant value);
     void tcode_action(QString tcode);
 
 public slots:
     void media_action(QString action);
 
 public:
-    explicit SettingsActionHandler(QObject *parent = nullptr);
+    explicit SettingsActionHandler(SyncHandler* syncHandler, QObject *parent = nullptr);
 
 private:
+    SyncHandler* m_syncHandler;
     MediaActions actions;
 
 };

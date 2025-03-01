@@ -14,7 +14,14 @@
 #include <QElapsedTimer>
 #include "lib/handler/inputdevicehandler.h"
 #include "lib/handler/outputdevicehandler.h"
+#include "lib/struct/ScriptInfo.h"
 #include "XTEngine_global.h"
+
+struct SyncLoadState {
+    bool hasScript;
+    QString mainScript;
+    QStringList invalidScripts;
+};
 
 class XTENGINE_EXPORT SyncHandler: public QObject
 {
@@ -23,14 +30,18 @@ signals:
     void funscriptPositionChanged(qint64 msecs);
     void funscriptStandaloneDurationChanged(qint64 duration);
     void funscriptStatusChanged(XMediaStatus status);
+    void syncEnd();
+    void syncStart();
+    void syncStopping();
+    /// For standalone funscripts
     void funscriptStopped();
     void funscriptStarted();
     void funscriptEnded();
     void funscriptLoaded(QString funscriptPath);
-    void funscriptVREnded(QString videoPath, QString funscriptPath, qint64 duration);
+    //void funscriptVREnded(QString videoPath, QString funscriptPath, qint64 duration);
     void togglePaused(bool paused);
     void sendTCode(QString tcode);
-    void channelPositionChange(QString channel, int position);
+    void channelPositionChange(QString channel, int position, int time, ChannelTimeType timeType);
     void funscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
 
 public slots:
@@ -45,11 +56,10 @@ public:
     void togglePause();
     void setPause(bool paused);
     bool isPaused();
-    void playStandAlone(QString funscript = nullptr);
-    void swapScript(QString funscript);
+    void playStandAlone();
     void skipToMoneyShot();
     void setStandAloneLoop(bool enabled);
-    void syncInputDeviceFunscript(QString funscript);
+    void syncInputDeviceFunscript(const LibraryListItem27 &libraryItem);
     void syncOtherMediaFunscript(std::function<qint64()> getMediaPosition);
     void setFunscriptTime(qint64 secs);
     qint64 getFunscriptTime();
@@ -62,22 +72,26 @@ public:
     void stopAll();
     void clear();
     void reset();
-    QList<QString> load(QString funscript);
-    QList<QString> swap(QString funscript);
+    SyncLoadState load(const LibraryListItem27 &libraryItem);
+    SyncLoadState swap(const LibraryListItem27 &libraryItem, const ScriptInfo &script);
     bool isLoaded();
     bool isPlaying();
+    bool isPlayingInternal();
     bool isPlayingStandAlone();
     bool isPlayingVR();
     QString getPlayingStandAloneScript();
 
     FunscriptHandler* getFunscriptHandler();
+    FunscriptHandler *getFunscriptHandler(QString channel);
+
+    void buildScriptItem(LibraryListItem27 &item, QString altScript);
 
 private:
     TCodeHandler* _tcodeHandler;
-    FunscriptHandler* _funscriptHandler = 0;
+    //FunscriptHandler* _funscriptHandler = 0;
     QList<FunscriptHandler*> _funscriptHandlers;
     InputDeviceHandler* _inputDeviceHandler = 0;
-    OutputDeviceHandler* _outputDeviceHandler = 0;
+    //OutputDeviceHandler* _outputDeviceHandler = 0;
 
 
     QMutex _mutex;
@@ -86,10 +100,9 @@ private:
     bool _isVRFunscriptPlaying = false;
     bool _isStandAloneFunscriptPlaying = false;
     bool _isPaused = false;
-    bool m_isSwapping = false;
     bool _standAloneLoop;
     bool _isOtherMediaPlaying = false;
-    qint64 _currentTime = 0;
+    qint64 _standAloneFunscriptCurrentTime = 0;
     qint64 _currentPulseTime = 0;
     qint64 _seekTime = -1;
     qint64 _currentLocalVideoTime = 0;
@@ -97,18 +110,30 @@ private:
     QFuture<void> _funscriptVRFuture;
     QFuture<void> _funscriptStandAloneFuture;
     QFuture<void> _funscriptSearchFuture;
-    QList<QString> _invalidScripts;
 
     bool _funscriptSearchNotFound = false;
+    bool m_stopFunscript = false;
     QString _lastSearchedMediaPath;
 
-    QList<QString> load(QString funscript, bool reset);
-    bool load(QByteArray funscript);
-    void loadMFS(QString funscript);
-    bool loadMFS(QString channel, QString funscript);
-    bool loadMFS(QString channel, QByteArray funscript);
+    SyncLoadState load(const LibraryListItem27 &libraryItem, bool reset);
+    SyncLoadState load(const QString& funscript);
+    //bool load(QByteArray funscript);
+    bool loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadState &loadState);
+    FunscriptHandler* createFunscriptHandler(QString channel, QString funscript);
+    FunscriptHandler* createFunscriptHandler(QString channel, QByteArray funscript);
 
     void sendPulse(qint64 currentMsecs, qint64 &nextPulseTime);
+
+    QString searchForFunscript(QString videoPath, QStringList extensions, QStringList libraryPaths);
+    QString searchForFunscriptDeep(QString videoPath, QStringList extensions, QStringList libraryPaths);
+    QString searchForFunscript(QString videoPath, QStringList extensions, QString pathToSearch);
+    QString searchForFunscriptHttp(QString videoPath, QStringList extensions, QString pathToSearch);
+    QString searchForFunscriptMFS(QString mediaPath, QStringList libraryPaths);
+    QString searchForFunscriptMFSDeep(QString mediaPath, QStringList libraryPaths);
+
+
+    // QStringList getFunscriptPaths(QString videoPath, QStringList extensions, QString path);
+    // QString getNameNoExtension(QString file);
 };
 
 #endif // SYNCHANDLER_H

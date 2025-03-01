@@ -139,8 +139,19 @@ progress::-webkit-progress-value {
 }
 
 .bottom-controls {
-    display: flex;
+    display: flex;  
     align-items: center;
+}
+.bottom-top-controls {
+    display: flex;  
+    flex-wrap: wrap;
+}
+.bottom-top-controls-buttons {
+    display: flex;  
+    align-items: center;  
+    justify-content: center;
+    flex-basis: 100%;
+    margin-bottom: 8px;
 }
 
 .left-controls {
@@ -197,21 +208,16 @@ progress::-webkit-progress-value {
 .volume-controls {
     display: flex;
     align-items: center;
+    flex-basis: 100%;
 }
 
 .volume-controls input {
     min-width: 34px;
-    max-width: 100px;
     width: 100%;
-    opacity: 1;
-    transition: all 0.4s ease;
 }
 
-.volume-controls:hover input,
-.volume-controls input:focus {
-    min-width: 34px;
-    max-width: 100px;
-    opacity: 1;
+.video-control--action-script-state {
+
 }
 
 .video-container button {
@@ -221,7 +227,6 @@ progress::-webkit-progress-value {
     padding: 2px;
     border: none;
     outline: none;
-    background-color: transparent;
 }
 
 .video-container button * {
@@ -273,8 +278,17 @@ button.video-control {
     height: 100%;
     width: 100%;
 }
+button.video-control-main {
+    background-color: transparent;
+}
+button.video-control-other {
+    max-width: none;
+}
+button.video-control-other:not(:last-child) {
+    margin-right: 4px;
+}
 
-.player-button-png {
+.player-button-icon {
     min-height: 8px;
     min-width: 8px;
     max-width: 16px;
@@ -300,7 +314,14 @@ button.video-control {
 }
 
 .video-control--money-shot {
-    background-color: deeppink !important;
+    background-color: white !important;
+}
+
+.video-control--device-state {
+    background-color: yellow !important;
+}
+.video-control--device-state-paused {
+    background-color: green !important;
 }
 
 

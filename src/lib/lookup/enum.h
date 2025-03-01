@@ -14,10 +14,11 @@ enum DeviceName
     Whirligig,
     Gamepad,
     XTPWeb,
+    BLE,
     None
 };
 
-enum class NetworkDeviceType {
+enum class NetworkProtocol {
     UDP,
     WEBSOCKET
 };
@@ -44,6 +45,8 @@ enum LibrarySortMode {
     CREATED_DESC,
     TYPE_ASC,
     TYPE_DESC,
+    ADDED_ASC,
+    ADDED_DESC,
     NONE
 };
 

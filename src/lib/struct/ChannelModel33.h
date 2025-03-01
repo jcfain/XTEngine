@@ -34,8 +34,8 @@ struct ChannelModel33
     int UserMin;
     int UserMid;
     int UserMax;
-    AxisDimension Dimension;
-    AxisType Type;
+    ChannelDimension Dimension;
+    ChannelType Type;
     QString TrackName;
     bool MultiplierEnabled;
     bool DamperEnabled;
@@ -113,8 +113,8 @@ struct ChannelModel33
         newItem.UserMin = obj["userMin"].toInt();
         newItem.UserMid = obj["userMid"].toInt();
         newItem.UserMax = obj["userMax"].toInt();
-        newItem.Dimension = (AxisDimension)obj["dimension"].toInt();
-        newItem.Type = (AxisType)obj["type"].toInt();
+        newItem.Dimension = (ChannelDimension)obj["dimension"].toInt();
+        newItem.Type = (ChannelType)obj["type"].toInt();
         newItem.TrackName = obj["trackName"].toString();
         newItem.MultiplierEnabled = obj["multiplierEnabled"].toBool();
         newItem.DamperEnabled = obj["damperEnabled"].toBool();

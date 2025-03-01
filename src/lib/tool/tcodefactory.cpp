@@ -69,7 +69,7 @@ int TCodeFactory::calculateTcodeRange(double value, ChannelModel33* channel)
         output_end = TCodeChannelLookup::getLiveXRangeMax();
         min = TCodeChannelLookup::getLiveXRangeMin();
     }
-    int output_start = channel->Type != AxisType::Ramp ? qRound((output_end + min) / 2.0) : min;
+    int output_start = channel->Type != ChannelType::Ramp ? qRound((output_end + min) / 2.0) : min;
     double slope = (output_end - output_start) / (_input_end - _input_start);
     return qRound(output_start + slope * (value - _input_start));
 }

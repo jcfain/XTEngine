@@ -4,7 +4,7 @@
 #include <QMap>
 #include <QVariant>
 
-enum class AxisType
+enum class ChannelType
 {
     None, // 0
     Oscillate, // 1
@@ -12,13 +12,19 @@ enum class AxisType
     HalfOscillate // 3
 };
 
-const QMap<QString, AxisType> AxisTypes =
+const QMap<QString, ChannelType> ChannelTypes =
 {
-    {"None", AxisType::None},
-    {"Oscillate", AxisType::Oscillate},
-    {"Ramp", AxisType::Ramp},
-    {"Half oscillate", AxisType::HalfOscillate}
+    {"None", ChannelType::None},
+    {"Oscillate", ChannelType::Oscillate},
+    {"Ramp", ChannelType::Ramp},
+    {"Half oscillate", ChannelType::HalfOscillate}
 };
 
-Q_DECLARE_METATYPE(AxisType);
+enum class ChannelTimeType {
+    None,
+    Interval,
+    Speed
+};
+
+Q_DECLARE_METATYPE(ChannelType);
 #endif // AXISTYPE_H
