@@ -187,15 +187,15 @@ CONFIG += shared
 win32{
     build_pass: CONFIG(debug, debug|release) {
         DESTDIR = $$shell_path($$OUT_PWD/debug)
-        LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug -lhttpServer
-        INCLUDEPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/src/debug
-        LIBS += -L$$PWD/../../build-zlib-1.3.1-Desktop_Qt_5_15_2_MinGW_64_bit-Release -lzlib
+        LIBS += -L$$PWD/../../HttpServer/build/debug -lhttpServer
+        INCLUDEPATH += $$PWD/../../HttpServer/build/debug
+        LIBS += -L$$PWD/../../zlib-1.3.1/build/Desktop_Qt_5_15_2_MinGW_64_bit-Debug -lzlib
     }
     else:win32:CONFIG(release, debug|release): {
         DESTDIR = $$shell_path($$OUT_PWD/release)
-        LIBS += -L$$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release -lhttpServer
-        INCLUDEPATH += $$PWD/../../build-HttpServer-Desktop_Qt_5_15_2_MinGW_64_bit-Release/src/release
-        LIBS += -L$$PWD/../../build-zlib-1.3.1-Desktop_Qt_5_15_2_MinGW_64_bit-Release -lzlib
+        LIBS += -L$$PWD/../../HttpServer/build/release -lhttpServer
+        INCLUDEPATH += $$PWD/../../HttpServer/build/release
+        LIBS += -L$$PWD/../../zlib-1.3.1/build/Desktop_Qt_5_15_2_MinGW_64_bit-Release -lzlib
     }
     INCLUDEPATH += $$PWD/../../HttpServer/src
     DEPENDPATH += $$PWD/../../HttpServer/src
