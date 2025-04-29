@@ -177,6 +177,11 @@
 								<use href="#pip"></use>
 							</svg>
 						</button> -->
+						<button data-title="Media settings" class="video-control video-control-main" id="playing-media-settings-button" onclick="openMetaDataModal()">
+							<svg class="player-button-icon">
+								<use href="#media-settings"></use>
+							</svg>
+						</button>
 						<button data-title="Full screen (f)" class="fullscreen-button video-control video-control-main"
 							id="fullscreen-button">
 							<svg class="player-button-icon">
@@ -231,8 +236,7 @@
 			</div>
 			<div id="modalBody" class="modal-body">
 				<div class="formElement">
-					<label
-						title="Change the sync offset for the current media item"
+					<label title="Change the sync offset for the current media item"
 						for="mediaOffset">Offset (ms)
 					</label>
 					<input id="mediaOffset" type="number" step="1" oninput="metaDataChange()" />
@@ -268,8 +272,7 @@
 					</div>
 				</div>
 				<div class="formElement">
-					<label
-						title="Change the funscript range of the current media item"
+					<label title="Change the funscript range of the current media item"
 						for="funscriptModifier">Funscript modifier (%)
 					</label>
 					<input id="funscriptModifier" type="number" step="10.0" min="0.0" oninput="metaDataChange()" />
@@ -305,8 +308,7 @@
 					</div>
 				</div>
 				<div class="formElement">
-					<label
-						title="Change the moneyshot for the current media item"
+					<label title="Change the moneyshot for the current media item"
 						for="moneyShotMillis">Moneyshot (ms)
 					</label>
 					<input id="moneyShotMillis" type="number" step="1000" oninput="metaDataChange()" />
@@ -530,8 +532,7 @@
 							<label for="speechVolume">
 								<span class="formLabel">Voice volume</span>
 							</label>
-							<input id="speechVolume" type="range" min="0" max="1" value="0.5" step="0.1"
-								onchange="onSpeechVolumeChange(this.value)">
+							<input id="speechVolume" type="range" min="0" max="1" value="0.5" step="0.1" onchange="onSpeechVolumeChange(this.value)">
 						</div>
 					</div>
 					<div id="tabConnections" class="tab-content">
@@ -546,11 +547,8 @@
 						<div class="formElement">
 							<label for="connectionSerial">Serial</label>
 							<section class="form-group-section form-group-section-connection">
-								<input id="connectionSerial" type="radio" class="styled-radio" name="outputConnection"
-									onclick="onOutputDeviceConnectionChange(this, 0)" />
-									<img id="serialStatus" alt="Disconnected" class="sync-device-status icon-small"
-										title="Disconnected" src="://images/icons/x.svg"
-										style="background-color: crimson;" />
+								<input id="connectionSerial" type="radio" class="styled-radio" name="outputConnection" onclick="onOutputDeviceConnectionChange(this, 0)" />
+									<img id="serialStatus" alt="Disconnected" class="sync-device-status icon-small" title="Disconnected" src="://images/icons/x.svg" style="background-color: crimson;" />
 									
 								<select hidden name="serialPort" id="serialPort" onchange="onSerialPortChange(this.value)">
 								</select>
@@ -559,19 +557,15 @@
 						<div class="formElement">
 							<label for="connectionNetwork">Network</label>
 							<section class="form-group-section form-group-section-connection">
-								<input id="connectionNetwork" type="radio" class="styled-radio" name="outputConnection"
-									onclick="onOutputDeviceConnectionChange(this, 1)" />
-								<img id="networkStatus" alt="Disconnected" class="sync-device-status icon-small"
-									title="Disconnected" src="://images/icons/x.svg"
-									style="background-color: crimson;" />
+								<input id="connectionNetwork" type="radio" class="styled-radio" name="outputConnection" onclick="onOutputDeviceConnectionChange(this, 1)" />
+								<img id="networkStatus" alt="Disconnected" class="sync-device-status icon-small" title="Disconnected" src="://images/icons/x.svg" style="background-color: crimson;" />
 								<div class="form-group-control">
-									<span class="sync-device-input-label">Address</span><input
-										class="sync-device-address" id="networkAddress"
-										onchange="onNetworkAddressChange(this)"></input>
+									<span class="sync-device-input-label">Address</span>
+									<input class="sync-device-address" id="networkAddress" onchange="onNetworkAddressChange(this)"></input>
 								</div>
 								<div class="form-group-control">
-									<span class="sync-device-input-label">Port</span> <input class="sync-device-port"
-										id="networkPort" onchange="onNetworkPortChange(this)"></input>
+									<span class="sync-device-input-label">Port</span> 
+									<input class="sync-device-port" id="networkPort" onchange="onNetworkPortChange(this)"></input>
 								</div>
 							</section>
 						</div>
@@ -579,57 +573,43 @@
 						<div class="formElement">
 							<label for="connectionInputNone">None</label>
 							<section class="form-group-section form-group-section-connection">
-								<input id="connectionInputNone" type="radio" class="styled-radio" name="inputConnection"
-									onclick="onInputDeviceConnectionChange(this, 6)" />
+								<input id="connectionInputNone" type="radio" class="styled-radio" name="inputConnection" onclick="onInputDeviceConnectionChange(this, 6)" />
 							</section>
 						</div>
 						<div class="formElement">
 							<label for="connectionDeoVR">DeoVR/HereSphere</label>
 							<section class="form-group-section form-group-section-connection">
-								<input id="connectionDeoVR" type="radio" class="styled-radio" name="inputConnection"
-									onclick="onInputDeviceConnectionChange(this, 2)" />
-								<img id="deoVRStatus" alt="Disconnected" class="sync-device-status icon-small"
-									title="Disconnected" src="://images/icons/x.svg"
-									style="background-color: crimson;" />
+								<input id="connectionDeoVR" type="radio" class="styled-radio" name="inputConnection" onclick="onInputDeviceConnectionChange(this, 2)" />
+								<img id="deoVRStatus" alt="Disconnected" class="sync-device-status icon-small" title="Disconnected" src="://images/icons/x.svg" style="background-color: crimson;" />
 								<div class="form-group-control">
-									<span class="sync-device-input-label">Address</span><input
-										class="sync-device-address" id="deoVRAddress"
-										onchange="onDeoVRAddressChange(this)"></input>
+									<span class="sync-device-input-label">Address</span>
+									<input class="sync-device-address" id="deoVRAddress" onchange="onDeoVRAddressChange(this)"></input>
 								</div>
 								<div class="form-group-control">
-									<span class="sync-device-input-label">Port</span> <input class="sync-device-port"
-										id="deoVRPort" onchange="onDeoVRPortChange(this)"></input>
+									<span class="sync-device-input-label">Port</span> 
+									<input class="sync-device-port" id="deoVRPort" onchange="onDeoVRPortChange(this)"></input>
 								</div>
 							</section>
 						</div>
 						<div class="formElement">
 							<label for="connectionWhirligig">Whirligig</label>
 							<section class="form-group-section form-group-section-connection">
-								<input id="connectionWhirligig" type="radio" class="styled-radio" name="inputConnection"
-									onclick="onInputDeviceConnectionChange(this, 3)" />
-								<img id="whirligigStatus" alt="Disconnected" class="sync-device-status icon-small"
-									title="Disconnected" src="://images/icons/x.svg"
-									style="background-color: crimson;" />
+								<input id="connectionWhirligig" type="radio" class="styled-radio" name="inputConnection" onclick="onInputDeviceConnectionChange(this, 3)" />
+								<img id="whirligigStatus" alt="Disconnected" class="sync-device-status icon-small" title="Disconnected" src="://images/icons/x.svg" style="background-color: crimson;" />
 							</section>
 						</div>
 						<div class="formElement">
 							<label for="connectionXTPWeb">XTP Web</label>
 							<section class="form-group-section form-group-section-connection">
-								<input id="connectionXTPWeb" type="radio" class="styled-radio" name="inputConnection"
-									onclick="onInputDeviceConnectionChange(this, 5)" />
-								<img id="xtpWebStatus" alt="Disconnected" class="sync-device-status icon-small"
-									title="Disconnected" src="://images/icons/x.svg"
-									style="background-color: crimson;" />
+								<input id="connectionXTPWeb" type="radio" class="styled-radio" name="inputConnection" onclick="onInputDeviceConnectionChange(this, 5)" />
+								<img id="xtpWebStatus" alt="Disconnected" class="sync-device-status icon-small" title="Disconnected" src="://images/icons/x.svg" style="background-color: crimson;" />
 							</section>
 						</div>
 						<div class="formElement">
 							<label for="connectionGamepad">Gamepad</label>
 							<section class="form-group-section form-group-section-connection">
-								<input id="connectionGamepad" type="checkbox"
-									onclick="onInputDeviceConnectionChange(this, 4)" />
-								<img id="gamepadStatus" alt="Disconnected" class="sync-device-status icon-small"
-									title="Disconnected" src="://images/icons/x.svg"
-									style="background-color: crimson;" />
+								<input id="connectionGamepad" type="checkbox" onclick="onInputDeviceConnectionChange(this, 4)" />
+								<img id="gamepadStatus" alt="Disconnected" class="sync-device-status icon-small" title="Disconnected" src="://images/icons/x.svg" style="background-color: crimson;" />
 							</section>
 						</div>
 					</div>
@@ -898,75 +878,72 @@
 		</div>
 	</div>
 
-	<svg style="display: none">
+	<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 		<defs>
-			<symbol id="pause" viewBox="0 0 24 24">
-				<path d="M14.016 5.016h3.984v13.969h-3.984v-13.969zM6 18.984v-13.969h3.984v13.969h-3.984z"></path>
-			</symbol>
-
-			<symbol id="play-icon" viewBox="0 0 24 24">
-				<path d="M8.016 5.016l10.969 6.984-10.969 6.984v-13.969z"></path>
-			</symbol>
-
-			<symbol id="play-next-icon" viewBox="0 0 24 24">
-				<path
-					d="M11.611,10.049l-4.76-4.873c-0.303-0.31-0.297-0.804,0.012-1.105c0.309-0.304,0.803-0.293,1.105,0.012l5.306,5.433c0.304,0.31,0.296,0.805-0.012,1.105L7.83,15.928c-0.152,0.148-0.35,0.223-0.547,0.223c-0.203,0-0.406-0.08-0.559-0.236c-0.303-0.309-0.295-0.803,0.012-1.104L11.611,10.049z">
-				</path>
-			</symbol>
-
-			<symbol id="play-previous-icon" viewBox="0 0 24 24">
-				<path
-					d="M8.388,10.049l4.76-4.873c0.303-0.31,0.297-0.804-0.012-1.105c-0.309-0.304-0.803-0.293-1.105,0.012L6.726,9.516c-0.303,0.31-0.296,0.805,0.012,1.105l5.433,5.307c0.152,0.148,0.35,0.223,0.547,0.223c0.203,0,0.406-0.08,0.559-0.236c0.303-0.309,0.295-0.803-0.012-1.104L8.388,10.049z">
-				</path>
-			</symbol>
-
-			<symbol id="volume-high" viewBox="0 0 24 24">
-				<path
-					d="M14.016 3.234q3.047 0.656 5.016 3.117t1.969 5.648-1.969 5.648-5.016 3.117v-2.063q2.203-0.656 3.586-2.484t1.383-4.219-1.383-4.219-3.586-2.484v-2.063zM16.5 12q0 2.813-2.484 4.031v-8.063q1.031 0.516 1.758 1.688t0.727 2.344zM3 9h3.984l5.016-5.016v16.031l-5.016-5.016h-3.984v-6z">
-				</path>
-			</symbol>
-
-			<symbol id="volume-low" viewBox="0 0 24 24">
-				<path
-					d="M5.016 9h3.984l5.016-5.016v16.031l-5.016-5.016h-3.984v-6zM18.516 12q0 2.766-2.531 4.031v-8.063q1.031 0.516 1.781 1.711t0.75 2.32z">
-				</path>
-			</symbol>
-
-			<symbol id="volume-mute" viewBox="0 0 24 24">
-				<path
-					d="M12 3.984v4.219l-2.109-2.109zM4.266 3l16.734 16.734-1.266 1.266-2.063-2.063q-1.547 1.313-3.656 1.828v-2.063q1.172-0.328 2.25-1.172l-4.266-4.266v6.75l-5.016-5.016h-3.984v-6h4.734l-4.734-4.734zM18.984 12q0-2.391-1.383-4.219t-3.586-2.484v-2.063q3.047 0.656 5.016 3.117t1.969 5.648q0 2.203-1.031 4.172l-1.5-1.547q0.516-1.266 0.516-2.625zM16.5 12q0 0.422-0.047 0.609l-2.438-2.438v-2.203q1.031 0.516 1.758 1.688t0.727 2.344z">
-				</path>
-			</symbol>
-
-			<symbol id="fullscreen" viewBox="0 0 24 24">
-				<path
-					d="M14.016 5.016h4.969v4.969h-1.969v-3h-3v-1.969zM17.016 17.016v-3h1.969v4.969h-4.969v-1.969h3zM5.016 9.984v-4.969h4.969v1.969h-3v3h-1.969zM6.984 14.016v3h3v1.969h-4.969v-4.969h1.969z">
-				</path>
-			</symbol>
-
-			<symbol id="fullscreen-exit" viewBox="0 0 24 24">
-				<path
-					d="M15.984 8.016h3v1.969h-4.969v-4.969h1.969v3zM14.016 18.984v-4.969h4.969v1.969h-3v3h-1.969zM8.016 8.016v-3h1.969v4.969h-4.969v-1.969h3zM5.016 15.984v-1.969h4.969v4.969h-1.969v-3h-3z">
-				</path>
-			</symbol>
-
-			<symbol id="pip" viewBox="0 0 24 24">
-				<path
-					d="M21 19.031v-14.063h-18v14.063h18zM23.016 18.984q0 0.797-0.609 1.406t-1.406 0.609h-18q-0.797 0-1.406-0.609t-0.609-1.406v-14.016q0-0.797 0.609-1.383t1.406-0.586h18q0.797 0 1.406 0.586t0.609 1.383v14.016zM18.984 11.016v6h-7.969v-6h7.969z">
-				</path>
-			</symbol>
-			<symbol id="context-menu" viewBox="0 0 24 24">
-				<rect x="124.81" y="229.85" style="fill:#2ECC71;" width="47.38" height="47.38"/>
-				<rect x="124.81" y="124.81" style="fill:#1ABC9C;" width="47.38" height="47.38"/>
-				<rect x="124.81" y="19.77" style="fill:#16A085;" width="47.38" height="47.38"/>
-				<path d="M191.96,228.98v49.12c0,10.42-8.47,18.9-18.89,18.9h-49.13c-10.42,0-18.9-8.48-18.9-18.9v-49.12
-					c0-10.42,8.48-18.9,18.9-18.9h49.13C183.49,210.08,191.96,218.56,191.96,228.98z M172.19,277.23v-47.38h-47.38v47.38H172.19z"/>
-				<path d="M191.96,123.94v49.12c0,10.42-8.47,18.9-18.89,18.9h-49.13c-10.42,0-18.9-8.48-18.9-18.9v-49.12
-					c0-10.42,8.48-18.9,18.9-18.9h49.13C183.49,105.04,191.96,113.52,191.96,123.94z M172.19,172.19v-47.38h-47.38v47.38H172.19z"/>
-				<path d="M191.96,18.9v49.12c0,10.42-8.47,18.9-18.89,18.9h-49.13c-10.42,0-18.9-8.48-18.9-18.9V18.9c0-10.42,8.48-18.9,18.9-18.9
-					h49.13C183.49,0,191.96,8.48,191.96,18.9z M172.19,67.15V19.77h-47.38v47.38H172.19z"/>
-			</symbol>
 		</defs>
+		<symbol id="pause" viewBox="0 0 24 24">
+			<path d="M14.016 5.016h3.984v13.969h-3.984v-13.969zM6 18.984v-13.969h3.984v13.969h-3.984z"></path>
+		</symbol>
+
+		<symbol id="play-icon" viewBox="0 0 24 24">
+			<path d="M8.016 5.016l10.969 6.984-10.969 6.984v-13.969z"></path>
+		</symbol>
+
+		<symbol id="play-next-icon" viewBox="0 0 24 24">
+			<path d="M11.611,10.049l-4.76-4.873c-0.303-0.31-0.297-0.804,0.012-1.105c0.309-0.304,0.803-0.293,1.105,0.012l5.306,5.433c0.304,0.31,0.296,0.805-0.012,1.105L7.83,15.928c-0.152,0.148-0.35,0.223-0.547,0.223c-0.203,0-0.406-0.08-0.559-0.236c-0.303-0.309-0.295-0.803,0.012-1.104L11.611,10.049z">
+			</path>
+		</symbol>
+
+		<symbol id="play-previous-icon" viewBox="0 0 24 24">
+			<path d="M8.388,10.049l4.76-4.873c0.303-0.31,0.297-0.804-0.012-1.105c-0.309-0.304-0.803-0.293-1.105,0.012L6.726,9.516c-0.303,0.31-0.296,0.805,0.012,1.105l5.433,5.307c0.152,0.148,0.35,0.223,0.547,0.223c0.203,0,0.406-0.08,0.559-0.236c0.303-0.309,0.295-0.803-0.012-1.104L8.388,10.049z">
+			</path>
+		</symbol>
+
+		<symbol id="volume-high" viewBox="0 0 24 24">
+			<path d="M14.016 3.234q3.047 0.656 5.016 3.117t1.969 5.648-1.969 5.648-5.016 3.117v-2.063q2.203-0.656 3.586-2.484t1.383-4.219-1.383-4.219-3.586-2.484v-2.063zM16.5 12q0 2.813-2.484 4.031v-8.063q1.031 0.516 1.758 1.688t0.727 2.344zM3 9h3.984l5.016-5.016v16.031l-5.016-5.016h-3.984v-6z">
+			</path>
+		</symbol>
+
+		<symbol id="volume-low" viewBox="0 0 24 24">
+			<path d="M5.016 9h3.984l5.016-5.016v16.031l-5.016-5.016h-3.984v-6zM18.516 12q0 2.766-2.531 4.031v-8.063q1.031 0.516 1.781 1.711t0.75 2.32z">
+			</path>
+		</symbol>
+
+		<symbol id="volume-mute" viewBox="0 0 24 24">
+			<path d="M12 3.984v4.219l-2.109-2.109zM4.266 3l16.734 16.734-1.266 1.266-2.063-2.063q-1.547 1.313-3.656 1.828v-2.063q1.172-0.328 2.25-1.172l-4.266-4.266v6.75l-5.016-5.016h-3.984v-6h4.734l-4.734-4.734zM18.984 12q0-2.391-1.383-4.219t-3.586-2.484v-2.063q3.047 0.656 5.016 3.117t1.969 5.648q0 2.203-1.031 4.172l-1.5-1.547q0.516-1.266 0.516-2.625zM16.5 12q0 0.422-0.047 0.609l-2.438-2.438v-2.203q1.031 0.516 1.758 1.688t0.727 2.344z">
+			</path>
+		</symbol>
+
+		<symbol id="fullscreen" viewBox="0 0 24 24">
+			<path d="M14.016 5.016h4.969v4.969h-1.969v-3h-3v-1.969zM17.016 17.016v-3h1.969v4.969h-4.969v-1.969h3zM5.016 9.984v-4.969h4.969v1.969h-3v3h-1.969zM6.984 14.016v3h3v1.969h-4.969v-4.969h1.969z">
+			</path>
+		</symbol>
+
+		<symbol id="fullscreen-exit" viewBox="0 0 24 24">
+			<path d="M15.984 8.016h3v1.969h-4.969v-4.969h1.969v3zM14.016 18.984v-4.969h4.969v1.969h-3v3h-1.969zM8.016 8.016v-3h1.969v4.969h-4.969v-1.969h3zM5.016 15.984v-1.969h4.969v4.969h-1.969v-3h-3z">
+			</path>
+		</symbol>
+
+		<symbol id="media-settings" viewBox="0 0 24 24">
+			<!-- <path d="M12 7.82001H22" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M2 7.82001H4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M20 16.82H22" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M2 16.82H12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M8 11.82C10.2091 11.82 12 10.0291 12 7.82001C12 5.61087 10.2091 3.82001 8 3.82001C5.79086 3.82001 4 5.61087 4 7.82001C4 10.0291 5.79086 11.82 8 11.82Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M16 20.82C18.2091 20.82 20 19.0291 20 16.82C20 14.6109 18.2091 12.82 16 12.82C13.7909 12.82 12 14.6109 12 16.82C12 19.0291 13.7909 20.82 16 20.82Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> -->
+			<g stroke-width="0"></g><g stroke-linecap="round" stroke-linejoin="round"></g><g > <path d="M9 13.829A3.004 3.004 0 0 0 11 11a3.003 3.003 0 0 0-2-2.829V0H7v8.171A3.004 3.004 0 0 0 5 11c0 1.306.836 2.417 2 2.829V16h2v-2.171zm-5-6A3.004 3.004 0 0 0 6 5a3.003 3.003 0 0 0-2-2.829V0H2v2.171A3.004 3.004 0 0 0 0 5c0 1.306.836 2.417 2 2.829V16h2V7.829zm10 0A3.004 3.004 0 0 0 16 5a3.003 3.003 0 0 0-2-2.829V0h-2v2.171A3.004 3.004 0 0 0 10 5c0 1.306.836 2.417 2 2.829V16h2V7.829zM12 6V4h2v2h-2zM2 6V4h2v2H2zm5 6v-2h2v2H7z" fill-rule="evenodd"></path>
+		</symbol>
+
+		<symbol id="pip" viewBox="0 0 24 24">
+			<path d="M21 19.031v-14.063h-18v14.063h18zM23.016 18.984q0 0.797-0.609 1.406t-1.406 0.609h-18q-0.797 0-1.406-0.609t-0.609-1.406v-14.016q0-0.797 0.609-1.383t1.406-0.586h18q0.797 0 1.406 0.586t0.609 1.383v14.016zM18.984 11.016v6h-7.969v-6h7.969z">
+			</path>
+		</symbol>
+		<symbol id="context-menu" viewBox="0 0 24 24">
+			<rect x="124.81" y="229.85" style="fill:#2ECC71;" width="47.38" height="47.38"/>
+			<rect x="124.81" y="124.81" style="fill:#1ABC9C;" width="47.38" height="47.38"/>
+			<rect x="124.81" y="19.77" style="fill:#16A085;" width="47.38" height="47.38"/>
+			<path d="M191.96,228.98v49.12c0,10.42-8.47,18.9-18.89,18.9h-49.13c-10.42,0-18.9-8.48-18.9-18.9v-49.12
+				c0-10.42,8.48-18.9,18.9-18.9h49.13C183.49,210.08,191.96,218.56,191.96,228.98z M172.19,277.23v-47.38h-47.38v47.38H172.19z"/>
+			<path d="M191.96,123.94v49.12c0,10.42-8.47,18.9-18.89,18.9h-49.13c-10.42,0-18.9-8.48-18.9-18.9v-49.12
+				c0-10.42,8.48-18.9,18.9-18.9h49.13C183.49,105.04,191.96,113.52,191.96,123.94z M172.19,172.19v-47.38h-47.38v47.38H172.19z"/>
+			<path d="M191.96,18.9v49.12c0,10.42-8.47,18.9-18.89,18.9h-49.13c-10.42,0-18.9-8.48-18.9-18.9V18.9c0-10.42,8.48-18.9,18.9-18.9
+				h49.13C183.49,0,191.96,8.48,191.96,18.9z M172.19,67.15V19.77h-47.38v47.38H172.19z"/>
+		</symbol>
 	</svg>
 	<script type="text/javascript" src="common-min.js"></script>
 	<script type="text/javascript" src="video-min.js"></script>

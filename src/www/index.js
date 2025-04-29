@@ -2556,6 +2556,11 @@ function closeSettings() {
 }
 
 function openMetaDataModal(mediaItem) {
+	if(!mediaItem) {
+		if(!playingmediaItem)
+			return;
+		mediaItem = playingmediaItem;
+	}
 	selectedMediaItemMetaData = mediaItem["metaData"];
 	document.getElementById("mediaOffset").value = selectedMediaItemMetaData["offset"];
 	document.getElementById("moneyShotMillis").value = selectedMediaItemMetaData["moneyShotMillis"];
