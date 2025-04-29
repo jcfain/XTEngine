@@ -3056,6 +3056,17 @@ int  SettingsHandler::getFunscriptOffsetStep()
     return _funscriptOffsetStep;
 }
 
+void SettingsHandler::setPlaybackRateStep(double value)
+{
+    changeSetting(SettingKeys::playbackRateStep, value);
+}
+
+double SettingsHandler::getPlaybackRateStep()
+{
+    QMutexLocker locker(&mutex);
+    return getSetting(SettingKeys::playbackRateStep).toDouble();
+}
+
 void SettingsHandler::setLubePulseAmount(int value)
 {
     QMutexLocker locker(&mutex);

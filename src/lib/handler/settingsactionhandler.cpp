@@ -286,20 +286,22 @@ void SettingsActionHandler::media_action(QString action)
                LibraryListItem27* item = XMediaStateHandler::getPlaying();
                if(item)
                {
-                   //SettingsHandler::getLibraryListItemMetaData(item);
-                   if(!reset) {
-                       newOffset = increase ? item->metadata.offset + SettingsHandler::getFunscriptOffsetStep() : item->metadata.offset - SettingsHandler::getFunscriptOffsetStep();
-                   }
-                   item->metadata.offset = newOffset;
-                   SettingsHandler::setLiveOffset(newOffset);
-                   SettingsHandler::updateLibraryListItemMetaData(*item);
-                   emit actionExecuted(action, verb + " offset to " + QString::number(newOffset), newOffset);
+                    newOffset = increase ? item->metadata.offset + SettingsHandler::getFunscriptOffsetStep() : item->metadata.offset - SettingsHandler::getFunscriptOffsetStep();
+                    item->metadata.offset = newOffset;
+                    SettingsHandler::setLiveOffset(newOffset);
+                    SettingsHandler::updateLibraryListItemMetaData(*item);
+                    emit actionExecuted(action, verb + " offset to " + QString::number(newOffset), newOffset);
                }
             }
             else
             {
                 newOffset = increase ? SettingsHandler::getLiveOffSet() + SettingsHandler::getFunscriptOffsetStep() : SettingsHandler::getLiveOffSet() - SettingsHandler::getFunscriptOffsetStep();
             }
+        }
+        else
+        {
+            newOffset = 0;
+            emit actionExecuted(action, verb + " offset to " + QString::number(newOffset), newOffset);
         }
         SettingsHandler::setLiveOffset(newOffset);
     }
@@ -310,6 +312,37 @@ void SettingsActionHandler::media_action(QString action)
     else if (action == actions.SkipToAction)
     {
         emit actionExecuted(action, nullptr, QVariant());
+    }
+    else if (action == actions.IncreasePlaybackRate || action == actions.DecreasePlaybackRate || action == actions.ResetPlaybackRate)
+    {
+        bool increase = action == actions.IncreasePlaybackRate;
+        QString verb = increase ? "Increase" : "Decrease";
+        bool reset = false;
+        if(action == actions.ResetPlaybackRate) {
+            reset = true;
+            verb = "reset";
+        }
+        double newRate = 0;
+        if(!reset)
+        {
+            if (XMediaStateHandler::isPlaying())
+            {
+                double currentRate = XMediaStateHandler::getPlaybackSpeed();
+                newRate = increase ? currentRate + SettingsHandler::getPlaybackRateStep() : currentRate - SettingsHandler::getPlaybackRateStep();
+
+                emit actionExecuted(action, verb + " playback rate to " + QString::number(newRate), newRate);
+            }
+            else
+            {
+                XMediaStateHandler::setPlaybackSpeed(1);
+            }
+        }
+        else
+        {
+            newRate = 1;
+            XMediaStateHandler::setPlaybackSpeed(newRate);
+            emit actionExecuted(action, verb + " playback rate to " + QString::number(newRate), newRate);
+        }
     }
     else
     {

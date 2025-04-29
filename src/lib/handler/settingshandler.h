@@ -309,6 +309,8 @@ public:
     static double getFunscriptModifierStep();
     static void setFunscriptOffsetStep(int value);
     static int getFunscriptOffsetStep();
+    static void setPlaybackRateStep(double value);
+    static double getPlaybackRateStep();
 
     static void setLubePulseAmount(int value);
     static int getLubePulseAmount();

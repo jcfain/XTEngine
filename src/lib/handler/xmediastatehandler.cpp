@@ -57,6 +57,7 @@ QString XMediaStateHandler::getPlayingID()
 void XMediaStateHandler::stop()
 {
     m_playingItem.ID = "";
+    m_playbackSpeed = 1.0;
 }
 
 void XMediaStateHandler::updateDuration(qint64 currentPos, qint64 duration)
@@ -77,6 +78,16 @@ void XMediaStateHandler::updateDuration(qint64 currentPos, qint64 duration)
     }
 }
 
+void XMediaStateHandler::setPlaybackSpeed(qreal speed)
+{
+    m_playbackSpeed = speed;
+}
+
+qreal XMediaStateHandler::getPlaybackSpeed()
+{
+    return m_playbackSpeed;
+}
+
 void XMediaStateHandler::processMetaData()
 {
     auto mediaItem = getPlaying();
@@ -88,3 +99,4 @@ void XMediaStateHandler::processMetaData()
 LibraryListItem27 XMediaStateHandler::m_playingItem;
 MediaLibraryHandler* XMediaStateHandler::m_libraryHandler = 0;
 bool XMediaStateHandler::m_isInternal;
+qreal XMediaStateHandler::m_playbackSpeed = 1;
