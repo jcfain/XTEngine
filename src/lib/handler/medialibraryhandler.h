@@ -92,6 +92,7 @@ public:
     bool isLibraryItemVideo(LibraryListItem27 item);
     void cleanGlobalThumbDirectory();
     void findAlternateFunscripts(LibraryListItem27& item);
+    QList<ScriptInfo> filterAlternateFunscriptsForMediaItem(QList<ScriptInfo> scriptInfos);
     bool metadataProcessing();
     void processMetadata(LibraryListItem27 &item);
     void startMetadataProcess(bool fullProcess = false);

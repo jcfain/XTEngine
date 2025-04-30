@@ -1,6 +1,7 @@
 #include "synchandler.h"
 
 #include "../tool/file-util.h"
+#include "xmediastatehandler.h"
 
 SyncHandler::SyncHandler(QObject* parent):
     QObject(parent)
@@ -114,6 +115,16 @@ SyncLoadState SyncHandler::swap(const LibraryListItem27 &libraryItem, const Scri
     if(!paused)
         setPause(false);
     return loadState;
+}
+
+SyncLoadState SyncHandler::swap(const ScriptInfo &script)
+{
+    auto playingItem = XMediaStateHandler::getPlaying();
+    if(playingItem)
+    {
+        return swap(*playingItem, script);
+    }
+    return SyncLoadState();
 }
 
 bool SyncHandler::isLoaded()

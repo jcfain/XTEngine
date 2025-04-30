@@ -74,6 +74,7 @@ public:
     void reset();
     SyncLoadState load(const LibraryListItem27 &libraryItem);
     SyncLoadState swap(const LibraryListItem27 &libraryItem, const ScriptInfo &script);
+    SyncLoadState swap(const ScriptInfo &script);
     bool isLoaded();
     bool isPlaying();
     bool isPlayingInternal();

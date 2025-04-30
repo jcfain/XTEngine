@@ -4,6 +4,7 @@
 #include "../tool/imagefactory.h"
 #include "../lookup/xtags.h"
 #include "../tool/file-util.h"
+#include "../struct/ScriptInfo.h"
 
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     : QObject(parent),
@@ -1583,6 +1584,22 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
         }
     }
     item.metadata.scripts = funscriptsWithMedia;
+}
+
+QList<ScriptInfo> MediaLibraryHandler::filterAlternateFunscriptsForMediaItem(QList<ScriptInfo> scriptInfos)
+{
+    QList<ScriptInfo> scriptInfosRet;
+    foreach(auto scriptInfo, scriptInfos)
+    {
+        if(!QFileInfo::exists(scriptInfo.path))
+            continue;
+        if((scriptInfo.containerType == ScriptContainerType::MFS || scriptInfo.containerType == ScriptContainerType::ZIP) && scriptInfo.type == ScriptType::MAIN)
+        {
+            continue;
+        }
+        scriptInfosRet.append(scriptInfo);
+    }
+    return scriptInfosRet;
 }
 
 bool MediaLibraryHandler::metadataProcessing()

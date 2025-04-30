@@ -37,6 +37,7 @@ struct ScriptInfo {
     QString track;
     ScriptType type;
     ScriptContainerType containerType;
+    QString containerTypeName;
 
     friend bool operator==(const ScriptInfo &object1 , const ScriptInfo &object2 )
     {
@@ -63,6 +64,7 @@ struct ScriptInfo {
         dataStream << object.track;
         dataStream << (qint8&)object.type;
         dataStream << (qint8&)object.containerType;
+        dataStream << object.containerTypeName;
         return dataStream;
     }
 
@@ -74,6 +76,7 @@ struct ScriptInfo {
         dataStream >> object.track;
         dataStream >> (qint8&)object.type;
         dataStream >> (qint8&)object.containerType;
+        dataStream >> object.containerTypeName;
         return dataStream;
     }
 
@@ -97,7 +100,18 @@ struct ScriptInfo {
         newItem.path = obj["path"].toString();
         newItem.track = obj["track"].toString();
         newItem.type = (ScriptType)obj["type"].toInt();
+
         newItem.containerType = (ScriptContainerType)obj["containerType"].toInt();
+        QString typeName = "";
+        if(newItem.containerType == ScriptContainerType::MFS)
+        {
+            typeName = "("+newItem.track+")";
+        }
+        else if(newItem.containerType == ScriptContainerType::ZIP)
+        {
+            typeName = "(ZIP)";
+        }
+        newItem.containerTypeName = typeName;
         return newItem;
     }
 };
