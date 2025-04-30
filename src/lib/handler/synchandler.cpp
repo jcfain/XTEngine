@@ -466,6 +466,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
         qint64 duration = 0;
         qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
         bool lastStatePlaying = false;
+        double lastPlaybackSpeed = 1.0;
         emit syncStart();
         while (_isVRFunscriptPlaying && _inputDeviceHandler && _inputDeviceHandler->isConnected() && !_isOtherMediaPlaying)
         {
@@ -478,6 +479,10 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                     emit sendTCode("DSTOP");
                 }
                 lastStatePlaying = currentVRPacket.playing;
+                if(lastPlaybackSpeed != currentVRPacket.playbackSpeed) {
+                    XMediaStateHandler::setPlaybackSpeed(currentVRPacket.playbackSpeed);
+                    lastPlaybackSpeed = currentVRPacket.playbackSpeed;
+                }
                 //timer.start();
                 if(currentVRPacket.playing && !isPaused() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0)
                 {

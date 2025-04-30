@@ -1529,7 +1529,7 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
     {
         containerType = ScriptContainerType::BASE;
         QString filepath = scripts.next();
-        QFileInfo scriptInfo(filepath);
+        // QFileInfo scriptInfo(filepath);
         QString trackname = "";
         auto baseName = XFileUtil::getNameNoExtension(filepath);
         if(filepath.endsWith(".zip", Qt::CaseInsensitive)) {
@@ -1538,7 +1538,7 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
         if(filepath == item.script || filepath == item.zipFile)
         {
             LogHandler::Debug("Is default script");
-            funscriptsWithMedia.push_front({"Default", baseName, filepath, trackname, ScriptType::MAIN, containerType });
+            funscriptsWithMedia.push_front({"Default", baseName, filepath, trackname, ScriptType::MAIN, containerType, "" });
             continue;
         }
         //Is alternate script?
@@ -1570,12 +1570,12 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
                 //     return value.track == trackname;
                 // }) != funscriptsWithMedia.end();
                 LogHandler::Debug("MFS script found: " +trackname);
-                funscriptsWithMedia.append({fileName, baseName, filepath, trackname, ScriptType::MAIN, containerType });
+                funscriptsWithMedia.append({fileName, baseName, filepath, trackname, ScriptType::MAIN, containerType, "" });
             } else if(baseName.compare(fileName, Qt::CaseInsensitive)) {
                 auto name = QString(baseName).replace(fileName, "").trimmed();
                 LogHandler::Debug("Alt script found: " +name);
                 item.metadata.hasAlternate = true;
-                funscriptsWithMedia.append({name, baseName, filepath, trackname, ScriptType::ALTERNATE, containerType });
+                funscriptsWithMedia.append({name, baseName, filepath, trackname, ScriptType::ALTERNATE, containerType, "" });
             }
             // else {
             //     LogHandler::Debug("Is default script");
@@ -1591,8 +1591,10 @@ QList<ScriptInfo> MediaLibraryHandler::filterAlternateFunscriptsForMediaItem(QLi
     QList<ScriptInfo> scriptInfosRet;
     foreach(auto scriptInfo, scriptInfos)
     {
-        if(!QFileInfo::exists(scriptInfo.path))
+        if(!QFileInfo::exists(scriptInfo.path)) {
+            LogHandler::Error("Missing script file when grabbing alternate scripts, Try updating the metadata for the media item with path: "+ scriptInfo.path);
             continue;
+        }
         if((scriptInfo.containerType == ScriptContainerType::MFS || scriptInfo.containerType == ScriptContainerType::ZIP) && scriptInfo.type == ScriptType::MAIN)
         {
             continue;

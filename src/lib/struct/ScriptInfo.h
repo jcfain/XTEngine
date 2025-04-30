@@ -89,6 +89,7 @@ struct ScriptInfo {
         obj["track"] = item.track;
         obj["type"] = (qint8)item.type;
         obj["containerType"] = (qint8)item.containerType;
+        obj["containerTypeName"] = item.containerTypeName;
         return obj;
     }
 

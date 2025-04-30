@@ -230,7 +230,14 @@ function volumeDown() {
 		updateVolumeIcon();
 	}
 }
-
+function setPlayRate(value) {
+	videoNode.playbackRate = value;
+	sendWebsocketMessage("setPlaybackRate", value);
+}
+function resetPlayRate() {
+	videoNode.playbackRate = 1;
+	document.getElementById("playbackRateInput").value = 1.0;
+}
 // updateVolumeIcon updates the volume icon so that it correctly reflects
 // the volume of the video
 function updateVolumeIcon() {

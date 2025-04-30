@@ -40,6 +40,7 @@ signals:
     void skipToNextAction();
     void channelPositionChange(QString channel, int position, int time, ChannelTimeType timeType);
     void scriptTogglePaused(bool paused);
+    void swapScript(ScriptInfo script);
     void clean1024();
 
 public slots:

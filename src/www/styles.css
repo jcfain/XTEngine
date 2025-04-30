@@ -402,7 +402,7 @@ input:hover:not(.range-input) {
     box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px cornflowerblue;
     left:5%;
     top:5%;
-    height: 50%;
+    height: 90%;
     width:90%;
 }
 .media-context-menu-heresphere {

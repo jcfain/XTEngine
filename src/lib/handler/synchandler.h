@@ -49,6 +49,7 @@ public slots:
     void on_input_device_change(InputDeviceHandler* inputDeviceHandler);
     void on_other_media_state_change(XMediaState state);
     void searchForFunscript(InputDevicePacket packet);
+    SyncLoadState swap(const ScriptInfo &script);
 
 public:
     SyncHandler(QObject *parent = nullptr);
@@ -74,7 +75,6 @@ public:
     void reset();
     SyncLoadState load(const LibraryListItem27 &libraryItem);
     SyncLoadState swap(const LibraryListItem27 &libraryItem, const ScriptInfo &script);
-    SyncLoadState swap(const ScriptInfo &script);
     bool isLoaded();
     bool isPlaying();
     bool isPlayingInternal();

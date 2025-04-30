@@ -50,6 +50,17 @@ var MediaType = {
 	ExternalType: 5
 };
 
+var ScriptType = {
+    MAIN: 0,
+    ALTERNATE: 1
+};
+
+var ScriptContainerType = {
+    BASE: 0,
+    MFS: 1,
+    ZIP: 2
+};
+
 var Roles = {
 	DisplayRole: 0,
 	DecorationRole: 1,
@@ -78,6 +89,8 @@ var remoteUserSettings;
 var mediaListGlobal = [];
 var mediaListDisplayed = [];
 var selectedMediaItemMetaData = null;
+var selectedMediaItemAltScript = null;
+var selectedMediaItemAltScriptCount = 0;
 var playingmediaItem;
 var playingmediaItemNode;
 var webSocket;
@@ -338,6 +351,9 @@ function sendDeviceHome() {
 function togglePauseAllDeviceActions() {
 	sendMediaAction(MediaActions.TogglePauseAllDeviceActions);
 }
+function sendSwapScript(scriptInfo) {
+	sendWebsocketMessage("swapScript", scriptInfo);
+}
 function settingChange(key, value) {
 	if(settingChangeDebounce)
 		clearTimeout(settingChangeDebounce);
@@ -552,6 +568,10 @@ function wsCallBackFunction(evt) {
 				setPauseScriptStatus(messageObj.isPaused);
 				setDevicePauseStatus(messageObj.isPaused);
 				break;
+			case "changePlayrate":
+				var messageObj = data["message"];
+				break;
+
 		}
 	}
 	catch (e) {
@@ -1512,7 +1532,8 @@ function loadMedia(mediaList) {
 			contextMenu.classList.toggle("hidden");
 			var thumbAtPosMenuItem = contextMenu.getElementsByClassName("setThumbAtCurrent")[0];
 			var setMoneyShotAtCurrentMenuItem = contextMenu.getElementsByClassName("setMoneyShotAtCurrent")[0];
-			if(isVideoShown() && playingmediaItem && playingmediaItem.id === mediaItem.id) {
+			var isSelectPlayingCurrently = playingmediaItem && playingmediaItem.id === mediaItem.id;
+			if(isVideoShown() && isSelectPlayingCurrently) {
 				thumbAtPosMenuItem.classList.remove("disabled");
 				setMoneyShotAtCurrentMenuItem.classList.remove("disabled");
 				setMoneyShotAtCurrentMenuItem.title = "Set moneyshot at current"
@@ -1523,6 +1544,24 @@ function loadMedia(mediaList) {
 				setMoneyShotAtCurrentMenuItem.classList.add("disabled");
 				setMoneyShotAtCurrentMenuItem.title = "This is not the current playing video so it cannot be set at the current position."
 			}
+
+			var showAlternateScripts = contextMenu.getElementsByClassName("showAlternateScripts")[0];
+			if(isSelectPlayingCurrently) {
+				if(selectedMediaItemAltScriptCount > 0) {
+					showAlternateScripts.style.color = "green";
+					showAlternateScripts.classList.remove("disabled");
+					showAlternateScripts.title = "Select alternate scripts if there are any."
+				} else {
+					showAlternateScripts.style.color = "grey";
+					showAlternateScripts.classList.add("disabled");
+					showAlternateScripts.title = "No alternate scripts for current media."
+				}
+			} else {
+				showAlternateScripts.style.color = "grey";
+				showAlternateScripts.classList.add("disabled");
+				showAlternateScripts.title = "This is not the current playing video."
+			}
+
 			var regenerateThumbMenuItem = contextMenu.getElementsByClassName("regenerateThumb")[0];
 			if(mediaItem.managedThumb && !mediaItem.thumb.includes(".lock."))
 				regenerateThumbMenuItem.classList.remove("disabled");
@@ -1570,6 +1609,11 @@ function loadMedia(mediaList) {
 		return function () {
 			sendWebsocketMessage("processMetadata", mediaItem.id);
 			contextMenu.classList.add("hidden");
+		}
+	}
+	var showAlternateScripts = function (mediaItem, contextMenu) {
+		return function () {
+			openAlternateScriptsModal(mediaItem);
 		}
 	}
 
@@ -1642,6 +1686,9 @@ function loadMedia(mediaList) {
 		var updateMetadataMenuItem = createContextMenuItem("Update metadata", updateItemMetadata(obj, contextMenu));
 		contextMenu.appendChild(updateMetadataMenuItem);
 		var contextMenuItem = createContextMenuItem("Edit metadata", mediaSettingsClick(obj, contextMenu));
+		contextMenu.appendChild(contextMenuItem);
+		var contextMenuItem = createContextMenuItem("Alternate scripts", showAlternateScripts(obj, contextMenu));
+		contextMenuItem.classList.add("showAlternateScripts", "disabled");
 		contextMenu.appendChild(contextMenuItem);
 		var contextCancelMenuItem = createContextMenuItem("Cancel", closeContext(contextMenu));
 		contextMenu.appendChild(contextCancelMenuItem);
@@ -1769,6 +1816,12 @@ function updateItem(libraryItem, roles)
 	if(roles.findIndex(x => x == Roles.DecorationRole) > -1) {
 		mediaNode = updateSubTitle(libraryItem, mediaNode);
 	}
+	var index = mediaListGlobal.findIndex(x => x.id == libraryItem.id);
+	if(index > -1)
+	{
+		mediaListGlobal[index] = JSON.parse(JSON.stringify(libraryItem));
+	}
+	showChange(showGlobal);
 }
 function addItem(libraryItem)
 {
@@ -2340,6 +2393,7 @@ function playVideo(obj) {
 	if(!isVideoShown())
 		showVideo();
 	dataLoading();
+	resetPlayRate();
 	setupVideoSource("/media" + obj.relativePath);
 	videoNode.setAttribute("title", obj.name);
 	videoMediaName.innerText = obj.name;
@@ -2407,8 +2461,59 @@ function onToggleTagInput(tagButton) {
 	tagButton.classList.toggle('icon-button-down');
 }
 
+function setupAlternateScripts(mediaItem) {
+	var altScripts = mediaItem["metaData"]["scripts"];
+	if(!altScripts || !altScripts.length) {
+		userError("No scripts found in metadata. Try updating the metadata for the media item.")
+		return;
+	}
+	var altScriptsButton = document.getElementById("alternate-scripts-button");
+	altScriptsButton.disabled = true;
+	var altScriptsGroup = document.getElementById("altScriptsGroup");
+	removeAllChildNodes(altScriptsGroup);
+	selectedMediaItemAltScriptCount = 0;
+	altScripts.forEach(x => {
+		if((x.containerType == ScriptContainerType.MFS || x.containerType == ScriptContainerType.ZIP) && x.type == ScriptType.MAIN)
+		{
+			return;
+		}
+        if(x.type != ScriptType.MAIN) // Dont count the "Default" main script
+		selectedMediaItemAltScriptCount++;
+		var div = document.createElement("div");
+		var label = document.createElement("label");
+		var radio = document.createElement("input");
+		radio.type = "radio";
+		radio.name = "altScriptsGroup";
+		radio.value = x;
+		label.textContent = getScriptInfoName(x);
+		radio.id = getScriptInfoID(x);
+		label.setAttribute("for", radio.id);
+		if(!selectedMediaItemAltScript && x.name == "Default" || selectedMediaItemAltScript && selectedMediaItemAltScript.name == x.name) {
+			radio.checked = true;
+		}
+		radio.onclick = function (x) {
+			sendSwapScript(x);
+			selectedMediaItemAltScript = x.name == "Default" ? null : x;
+		}.bind(this, x);
+		div.appendChild(radio);
+		div.appendChild(label);
+		altScriptsGroup.appendChild(div);
+	});
+	altScriptsButton.disabled = selectedMediaItemAltScriptCount <= 0;
+	altScriptsButton.innerText = selectedMediaItemAltScriptCount;
+	altScriptsButton.style.color = selectedMediaItemAltScriptCount <= 0 ? "grey" : "green";
+}
+
+function getScriptInfoName(scriptInfo) {
+	return scriptInfo.name + (scriptInfo.containerTypeName.length ? " " + scriptInfo.containerTypeName : "");
+}
+function getScriptInfoID(scriptInfo) {
+	return getScriptInfoName(scriptInfo).replace(/^[0-9]+[\w\-\:\.]*$/, "");
+}
+
 function setPlayingMediaItem(obj) {
 	playingmediaItem = obj;
+	setupAlternateScripts(playingmediaItem);
 	playingmediaItemNode = document.getElementById(obj.id);
 	playingmediaItemNode.classList.add("media-item-playing");
 }
@@ -2576,6 +2681,21 @@ function closeMetaDataModal() {
 	mediaItemSettingsModalNode.style.visibility = "hidden";
 	mediaItemSettingsModalNode.style.opacity = 0;
 	document.getElementById("saveMediaItemMetaDataButton").disabled = true;
+}
+function openAlternateScriptsModal(mediaItem) {
+	if(!mediaItem) {
+		if(!playingmediaItem)
+			return;
+		mediaItem = playingmediaItem;
+	}
+	var alternateScriptsModal = document.getElementById("alternateScriptsModal");
+	alternateScriptsModal.style.visibility = "visible";
+	alternateScriptsModal.style.opacity = 1;
+}
+function closeAlternateScriptsModal() {
+	var alternateScriptsModal = document.getElementById("alternateScriptsModal");
+	alternateScriptsModal.style.visibility = "hidden";
+	alternateScriptsModal.style.opacity = 0;
 }
 function saveMetaData() {
 	selectedMediaItemMetaData["offset"] = parseInt(document.getElementById("mediaOffset").value);

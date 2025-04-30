@@ -105,6 +105,7 @@ void XTEngine::init()
         connect(syncHandler(), &SyncHandler::togglePaused, _httpHandler, &HttpHandler::scriptTogglePaused, Qt::QueuedConnection);
         connect(_httpHandler, &HttpHandler::mediaAction, settingsActionHandler(), &SettingsActionHandler::media_action, Qt::QueuedConnection);
         connect(settingsActionHandler(), &SettingsActionHandler::actionExecuted, httpHandler(), &HttpHandler::actionExecuted, Qt::QueuedConnection);
+        connect(_httpHandler, &HttpHandler::swapScript, _syncHandler, QOverload<const ScriptInfo&>::of(&SyncHandler::swap));
 
         connect(_httpHandler, &HttpHandler::clean1024, this, [this]() {
             _mediaLibraryHandler->startMetadata1024Cleanup();

@@ -177,6 +177,12 @@
 								<use href="#pip"></use>
 							</svg>
 						</button> -->
+						<input id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0" step="0.01" value="1.0" onchange="setPlayRate(this.value)" />
+						<button data-title="Alternate scripts" class="video-control video-control-main" id="alternate-scripts-button" onclick="openAlternateScriptsModal()">
+							<svg class="player-button-icon">
+								<use href="#funscript"></use>
+							</svg>
+						</button>
 						<button data-title="Media settings" class="video-control video-control-main" id="playing-media-settings-button" onclick="openMetaDataModal()">
 							<svg class="player-button-icon media-settings-button">
 								<use href="#media-settings"></use>
@@ -188,6 +194,25 @@
 								<use href="#fullscreen-exit" class="hidden"></use>
 							</svg>
 						</button>
+					</div>
+				</div>
+			</div>
+			<div id="alternateScriptsModal" class="modal">
+				<div class="modal-content modal-content--other">
+					<div class="modal-header">
+						<span class="modal-title">Alternate scripts</span>
+						<button class="close-modal icon-button" onclick="closeAlternateScriptsModal()">
+							<image class="buttonImage" src="://images/icons/x.svg" />
+						</button>
+					</div>
+					<div id="modalBody" class="modal-body">
+						<div id="altScriptsGroup"></div>
+					</div>
+					<div class="modal-footer">
+						<div class="modal-footer-content">
+						</div>
+						<div class="modal-footer-content">
+						</div>
 					</div>
 				</div>
 			</div>

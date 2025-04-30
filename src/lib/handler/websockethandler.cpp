@@ -1,5 +1,7 @@
 #include "websockethandler.h"
 
+#include "xmediastatehandler.h"
+
 WebSocketHandler::WebSocketHandler(QObject *parent):
     QObject(parent),
     m_pWebSocketServer(new QWebSocketServer(QStringLiteral("XTP Websocket"),
@@ -182,6 +184,13 @@ void WebSocketHandler::processTextMessage(QString message)
     } else if(command == "mediaAction") {
         QString action = json["message"].toString();
         emit mediaAction(action);
+    } else if (command == "swapScript") {
+        QJsonObject obj = json["message"].toObject();
+        ScriptInfo scriptInfo = ScriptInfo::fromJson(obj);
+        emit swapScript(scriptInfo);
+    } else if (command == "setPlaybackRate") {
+        auto value = json["message"].toString().toDouble();
+        XMediaStateHandler::setPlaybackSpeed(value);
     } else if(command == "clean1024") {
         emit clean1024();
     }

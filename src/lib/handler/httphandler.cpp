@@ -64,15 +64,18 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::processMetadata, this, [this](QString libraryItemID) {
         if(!_mediaLibraryHandler->metadataProcessing()) {
             auto item = _mediaLibraryHandler->findItemByID(libraryItemID);
-            if(item)
+            if(item) {
                 _mediaLibraryHandler->processMetadata(*item);
-            else
+            } else
                 _webSocketHandler->sendError("Unknown library item");
         } else {
             _webSocketHandler->sendUserWarning("Please wait for metadata process to complete!");
         }
     });
     connect(_webSocketHandler, &WebSocketHandler::mediaAction, this, &HttpHandler::mediaAction);
+    connect(_webSocketHandler, &WebSocketHandler::swapScript, this, &HttpHandler::swapScript);
+
+
 
     connect(_webSocketHandler, &WebSocketHandler::settingChange, this, &HttpHandler::settingChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);
@@ -881,9 +884,18 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["playing"] = false;
     object["managedThumb"] = item.managedThumb;
 
-    object["metaData"] = LibraryListItemMetaData258::toJson(item.metadata);
     if(item.metadata.isMFS)
         object["displayName"] = "(MFS) " + item.nameNoExtension;
+    // Metadata
+
+    QJsonObject metadata = LibraryListItemMetaData258::toJson(item.metadata);
+    // auto altScripts = _mediaLibraryHandler->filterAlternateFunscriptsForMediaItem(item.metadata.scripts);
+    // QJsonArray altScriptsArray;
+    // foreach (ScriptInfo info, altScripts) {
+    //     altScriptsArray.append(ScriptInfo::toJson(info));
+    // }
+    // metadata["altScripts"] = altScriptsArray;
+    object["metaData"] = metadata;
 
     return object;
 }
