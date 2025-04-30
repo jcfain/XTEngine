@@ -84,7 +84,7 @@
 			<video playsinline autoplay controls id="videoPlayer" class="video">
 				Your browser doesn't support HTML5 video tag.
 			</video>
-			<div id="top-controls" class="video-controls top-controls hidden">
+			<div id="top-controls" class="video-controls top-controls hidden" name="video-controls">
 				<div class="left-controls left-controls--top">
 					<div id="videoMediaName" class="video-media-name"></div>
 				</div>
@@ -100,7 +100,7 @@
 					</button> -->
 				</div>
 			</div>
-			<div id="bottom-controls" class="video-controls hidden" id="video-controls">
+			<div id="bottom-controls" class="video-controls hidden" name="video-controls">
 				<div id="bottom-top-controls" class="bottom-top-controls">
 					<div id="scriptStatusPlayerContainer" name="scriptStatusContainer"  class="script-status-container hidden">
 						<div name="noScriptInput" style="align-self: center; flex-basis: 100%;">No script input</div>
@@ -178,17 +178,132 @@
 							</svg>
 						</button> -->
 						<button data-title="Media settings" class="video-control video-control-main" id="playing-media-settings-button" onclick="openMetaDataModal()">
-							<svg class="player-button-icon">
+							<svg class="player-button-icon media-settings-button">
 								<use href="#media-settings"></use>
 							</svg>
 						</button>
-						<button data-title="Full screen (f)" class="fullscreen-button video-control video-control-main"
-							id="fullscreen-button">
+						<button data-title="Full screen (f)" class="fullscreen-button video-control video-control-main" id="fullscreen-button">
 							<svg class="player-button-icon">
 								<use href="#fullscreen"></use>
 								<use href="#fullscreen-exit" class="hidden"></use>
 							</svg>
 						</button>
+					</div>
+				</div>
+			</div>
+
+			<div id="mediaItemSettingsModal" class="modal">
+				<div class="modal-content modal-content--other">
+					<div class="modal-header">
+						<span class="modal-title">Media settings</span>
+						<button class="close-modal icon-button" onclick="closeMetaDataModal()">
+							<image class="buttonImage" src="://images/icons/x.svg" />
+						</button>
+					</div>
+					<div id="modalBody" class="modal-body">
+						<div class="formElement">
+							<label title="Change the sync offset for the current media item"
+								for="mediaOffset">Offset (ms)
+							</label>
+							<input id="mediaOffset" type="number" step="1" oninput="metaDataChange()" />
+						</div>
+						<div class="formElement">
+							<label>
+							</label>
+							<div class="form-buttons">
+								<button onclick="addToSelectedMetaDataOffset(10)">
+									+10
+								</button>
+								<button onclick="addToSelectedMetaDataOffset(50)">
+									+50
+								</button>
+								<button onclick="addToSelectedMetaDataOffset(100)">
+									+100
+								</button>
+								<button onclick="addToSelectedMetaDataOffset(500)">
+									+500
+								</button>
+								<button onclick="addToSelectedMetaDataOffset(-10)">
+									-10
+								</button>
+								<button onclick="addToSelectedMetaDataOffset(-50)">
+									-50
+								</button>
+								<button onclick="addToSelectedMetaDataOffset(-100)">
+									-100
+								</button>
+								<button onclick="addToSelectedMetaDataOffset(-500)">
+									-500
+								</button>
+							</div>
+						</div>
+						<div class="formElement">
+							<label title="Change the funscript range of the current media item"
+								for="funscriptModifier">Funscript modifier (%)
+							</label>
+							<input id="funscriptModifier" type="number" step="10.0" min="0.0" oninput="metaDataChange()" />
+						</div>
+						<div class="formElement">
+							<label>
+							</label>
+							<div class="form-buttons">
+								<button onclick="addToSelectedMetaDataModifier(5)">
+									+5
+								</button>
+								<button onclick="addToSelectedMetaDataModifier(10)">
+									+10
+								</button>
+								<button onclick="addToSelectedMetaDataModifier(30)">
+									+30
+								</button>
+								<button onclick="addToSelectedMetaDataModifier(50)">
+									+50
+								</button>
+								<button onclick="addToSelectedMetaDataModifier(-5)">
+									-5
+								</button>
+								<button onclick="addToSelectedMetaDataModifier(-10)">
+									-10
+								</button>
+								<button onclick="addToSelectedMetaDataModifier(-30)">
+									-30
+								</button>
+								<button onclick="addToSelectedMetaDataModifier(-50)">
+									-50
+								</button>
+							</div>
+						</div>
+						<div class="formElement">
+							<label title="Change the moneyshot for the current media item"
+								for="moneyShotMillis">Moneyshot (ms)
+							</label>
+							<input id="moneyShotMillis" type="number" step="1000" oninput="metaDataChange()" />
+						</div>
+						<div class="formElement">
+							<label>
+							</label>
+							<div class="form-buttons">
+								<button onclick="resetMoneyShot()">
+									Reset money shot
+								</button>
+							</div>
+						</div>
+						<div class="formElement">
+							<label>Tags
+							</label>
+							<div id="metaDataTags" class="media-tag-metadata-container"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<div class="modal-footer-content">
+						</div>
+						<div class="modal-footer-content">
+							<span id="metaDataSaveState" class="save-status"></span>
+							<button id="saveMediaItemMetaDataButton" disabled="true"
+								onclick="saveMetaData()">
+								Save
+							</button>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -226,122 +341,8 @@
 		</div>
 	</div>
 
-	<div id="mediaItemSettingsModal" class="modal">
-		<div class="modal-content modal-content--other">
-			<div class="modal-header">
-				<span class="modal-title">Media settings</span>
-				<button class="close-modal icon-button" onclick="closeMetaDataModal()">
-					<image class="buttonImage" src="://images/icons/x.svg" />
-				</button>
-			</div>
-			<div id="modalBody" class="modal-body">
-				<div class="formElement">
-					<label title="Change the sync offset for the current media item"
-						for="mediaOffset">Offset (ms)
-					</label>
-					<input id="mediaOffset" type="number" step="1" oninput="metaDataChange()" />
-				</div>
-				<div class="formElement">
-					<label>
-					</label>
-					<div class="form-buttons">
-						<button onclick="addToSelectedMetaDataOffset(10)">
-							+10
-						</button>
-						<button onclick="addToSelectedMetaDataOffset(50)">
-							+50
-						</button>
-						<button onclick="addToSelectedMetaDataOffset(100)">
-							+100
-						</button>
-						<button onclick="addToSelectedMetaDataOffset(500)">
-							+500
-						</button>
-						<button onclick="addToSelectedMetaDataOffset(-10)">
-							-10
-						</button>
-						<button onclick="addToSelectedMetaDataOffset(-50)">
-							-50
-						</button>
-						<button onclick="addToSelectedMetaDataOffset(-100)">
-							-100
-						</button>
-						<button onclick="addToSelectedMetaDataOffset(-500)">
-							-500
-						</button>
-					</div>
-				</div>
-				<div class="formElement">
-					<label title="Change the funscript range of the current media item"
-						for="funscriptModifier">Funscript modifier (%)
-					</label>
-					<input id="funscriptModifier" type="number" step="10.0" min="0.0" oninput="metaDataChange()" />
-				</div>
-				<div class="formElement">
-					<label>
-					</label>
-					<div class="form-buttons">
-						<button onclick="addToSelectedMetaDataModifier(5)">
-							+5
-						</button>
-						<button onclick="addToSelectedMetaDataModifier(10)">
-							+10
-						</button>
-						<button onclick="addToSelectedMetaDataModifier(30)">
-							+30
-						</button>
-						<button onclick="addToSelectedMetaDataModifier(50)">
-							+50
-						</button>
-						<button onclick="addToSelectedMetaDataModifier(-5)">
-							-5
-						</button>
-						<button onclick="addToSelectedMetaDataModifier(-10)">
-							-10
-						</button>
-						<button onclick="addToSelectedMetaDataModifier(-30)">
-							-30
-						</button>
-						<button onclick="addToSelectedMetaDataModifier(-50)">
-							-50
-						</button>
-					</div>
-				</div>
-				<div class="formElement">
-					<label title="Change the moneyshot for the current media item"
-						for="moneyShotMillis">Moneyshot (ms)
-					</label>
-					<input id="moneyShotMillis" type="number" step="1000" oninput="metaDataChange()" />
-				</div>
-				<div class="formElement">
-					<label>
-					</label>
-					<div class="form-buttons">
-						<button onclick="resetMoneyShot()">
-							Reset money shot
-						</button>
-					</div>
-				</div>
-				<div class="formElement">
-					<label>Tags
-					</label>
-					<div id="metaDataTags" class="media-tag-metadata-container"></div>
-				</div>
-			</div>
-			<div class="modal-footer">
-				<div class="modal-footer-content">
-				</div>
-				<div class="modal-footer-content">
-					<span id="metaDataSaveState" class="save-status"></span>
-					<button id="saveMediaItemMetaDataButton" disabled="true"
-						onclick="saveMetaData()">
-						Save
-					</button>
-				</div>
-			</div>
-		</div>
-
-	</div>
+	<template id="mediaItemSettingsModalTemplate">
+	</template>
 
 	<div id="settingsModal" class="modal">
 		<div class="modal-content">
@@ -926,7 +927,8 @@
 
 		<symbol id="media-settings" viewBox="0 0 24 24">
 			<!-- <path d="M12 7.82001H22" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M2 7.82001H4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M20 16.82H22" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M2 16.82H12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M8 11.82C10.2091 11.82 12 10.0291 12 7.82001C12 5.61087 10.2091 3.82001 8 3.82001C5.79086 3.82001 4 5.61087 4 7.82001C4 10.0291 5.79086 11.82 8 11.82Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M16 20.82C18.2091 20.82 20 19.0291 20 16.82C20 14.6109 18.2091 12.82 16 12.82C13.7909 12.82 12 14.6109 12 16.82C12 19.0291 13.7909 20.82 16 20.82Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> -->
-			<g stroke-width="0"></g><g stroke-linecap="round" stroke-linejoin="round"></g><g > <path d="M9 13.829A3.004 3.004 0 0 0 11 11a3.003 3.003 0 0 0-2-2.829V0H7v8.171A3.004 3.004 0 0 0 5 11c0 1.306.836 2.417 2 2.829V16h2v-2.171zm-5-6A3.004 3.004 0 0 0 6 5a3.003 3.003 0 0 0-2-2.829V0H2v2.171A3.004 3.004 0 0 0 0 5c0 1.306.836 2.417 2 2.829V16h2V7.829zm10 0A3.004 3.004 0 0 0 16 5a3.003 3.003 0 0 0-2-2.829V0h-2v2.171A3.004 3.004 0 0 0 10 5c0 1.306.836 2.417 2 2.829V16h2V7.829zM12 6V4h2v2h-2zM2 6V4h2v2H2zm5 6v-2h2v2H7z" fill-rule="evenodd"></path>
+			<!-- <g stroke-width="0"></g><g stroke-linecap="round" stroke-linejoin="round"></g><g>  -->
+			<path d="M9 13.829A3.004 3.004 0 0 0 11 11a3.003 3.003 0 0 0-2-2.829V0H7v8.171A3.004 3.004 0 0 0 5 11c0 1.306.836 2.417 2 2.829V16h2v-2.171zm-5-6A3.004 3.004 0 0 0 6 5a3.003 3.003 0 0 0-2-2.829V0H2v2.171A3.004 3.004 0 0 0 0 5c0 1.306.836 2.417 2 2.829V16h2V7.829zm10 0A3.004 3.004 0 0 0 16 5a3.003 3.003 0 0 0-2-2.829V0h-2v2.171A3.004 3.004 0 0 0 10 5c0 1.306.836 2.417 2 2.829V16h2V7.829zM12 6V4h2v2h-2zM2 6V4h2v2H2zm5 6v-2h2v2H7z" fill-rule="evenodd"></path>
 		</symbol>
 
 		<symbol id="pip" viewBox="0 0 24 24">

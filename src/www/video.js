@@ -23,6 +23,7 @@ var isTouchingControls = false;
 var isUsingTouch = false;
 var isUsingMouse = false;
 var isUsingPen = false;
+var isVideoHidden = true;
 /* if(screen.orientation)
 	isLandScape = screen.orientation.type  === 'landscape-primary'; */
 
@@ -33,7 +34,7 @@ var isUsingPen = false;
 */
 
 // Select elements here
-const videoControls = document.getElementsByClassName('video-controls');
+const videoControls = document.getElementsByName('video-controls');
 
 const topControls = document.getElementById('top-controls');
 const bottomControls = document.getElementById('bottom-controls');
@@ -312,23 +313,26 @@ function toggleFullScreen() {
 function showEmbedded() {
 	if (document.fullscreenElement) {
 		//console.log("exitFullscreen");
-		document.exitFullscreen();
-		videoNode.classList.add("video", "video-shown-embeded");
-		setVideoFixedIfLowHeight();
+		if(isFullScreen) 
+			document.exitFullscreen();
+		// videoNode.classList.add("video", "video-shown-embeded");
+		// setVideoFixedIfLowHeight();
 		return true;
 	} else if (document.webkitFullscreenElement) {
 		// Need this to support Safari
 		//console.log("webkitExitFullscreen");
-		document.webkitExitFullscreen();
-		videoNode.classList.add("video", "video-shown-embeded");
-		setVideoFixedIfLowHeight();
+		if(isFullScreen) 
+			document.webkitExitFullscreen();
+		// videoNode.classList.add("video", "video-shown-embeded");
+		// setVideoFixedIfLowHeight();
 		return true;
 	} else if (document.mozFullscreenElement) {
 		// Need this to support Safari
-		document.mozExitFullscreen();
+		if(isFullScreen) 
+			document.mozExitFullscreen();
 		//console.log("mozExitFullscreen");
-		videoNode.classList.add("video", "video-shown-embeded");
-		setVideoFixedIfLowHeight();
+		// videoNode.classList.add("video", "video-shown-embeded");
+		// setVideoFixedIfLowHeight();
 		return true;
 	} 
 	console.log("NO ExitFullscreen!");
@@ -340,18 +344,21 @@ function showFullScreen() {
 	}
 	if (videoContainer.requestFullscreen) {
 		//console.log("requestFullscreen");
-		videoNode.classList.remove("video", "video-shown-embeded");
-		videoContainer.requestFullscreen();
+		// videoNode.classList.remove("video", "video-shown-embeded");
+		if(!isFullScreen) 
+			videoContainer.requestFullscreen();
 	} else if (videoContainer.webkitRequestFullscreen) {
 		// Need this to support Safari
 		//console.log("webkitRequestFullscreen");
-		videoNode.classList.remove("video", "video-shown-embeded");
-		videoContainer.webkitRequestFullscreen();
+		// videoNode.classList.remove("video", "video-shown-embeded");
+		if(!isFullScreen) 
+			videoContainer.webkitRequestFullscreen();
 	} else if (videoContainer.mozRequestFullScreen) {
         // This is how to go into fullscren mode in Firefox
         // Note the "moz" prefix, which is short for Mozilla.
-		videoNode.classList.remove("video", "video-shown-embeded");
-        videoContainer.mozRequestFullScreen();
+		// videoNode.classList.remove("video", "video-shown-embeded");
+		if(!isFullScreen) 
+        	videoContainer.mozRequestFullScreen();
     } 
 }
 
@@ -363,9 +370,13 @@ function fullscreenChange() {
 
 	if (document.fullscreenElement) {
 		fullscreenButton.setAttribute('data-title', 'Exit full screen (f)');
+		videoNode.classList.remove("video", "video-shown-embeded");
 		isFullScreen = true;
 	} else {
 		fullscreenButton.setAttribute('data-title', 'Full screen (f)');
+		if(!isVideoHidden)
+			videoNode.classList.add("video-shown-embeded");
+		videoNode.classList.add("video");
 		isFullScreen = false;
 	}
 	setVideoFixedIfLowHeight();
@@ -401,8 +412,8 @@ function hideControlsEvent() {
 	}
 	hideControls();
 }
-function hideControls() {
-	if(forceControlsVisible)
+function hideControls(force) {
+	if(forceControlsVisible && !force)
 		return;
 	for (let item of videoControls) 
 		item.classList.add('hide');
@@ -446,14 +457,16 @@ function mouseLeaveVideo() {
 function showVideo() {
 	videoNode.classList.add("video-shown", "video-shown-embeded");
 	setVideoFixedIfLowHeight();
+	isVideoHidden = false;
 }
 
 function hideVideo() {
-	if(isFullScreen)
-		showEmbedded();
+	isVideoHidden = true;
 	dataLoaded();
 	hideControls(true);
-	videoContainer.classList.remove('video-container-fixed');
+	// videoContainer.classList.remove('video-container-fixed');
+	if(isFullScreen)
+		showEmbedded();
 	videoNode.classList.remove("video-shown", "video-shown-embeded");
 }
 

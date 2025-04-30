@@ -155,7 +155,8 @@ var userAgentIsHereSphere = userAgent.indexOf("HereSphere") != -1;
 var userAgentIsMobile = userAgent.indexOf("Mobile") != -1;
 setDeoStyles(userAgentIsDeo);
 var settingsNode = document.getElementById("settingsModal");
-var mediaItemSettingsModalNode = document.getElementById("mediaItemSettingsModal");
+const mediaItemSettingsModalNode = document.getElementById("mediaItemSettingsModal");
+const metaDataTagsNode = document.getElementById("metaDataTags");// child of mediaItemSettingsModalNode
 var thumbsContainerNode = document.getElementById("thumbsContainer");
 var videoMediaName = document.getElementById("videoMediaName");
 
@@ -881,7 +882,6 @@ function setupChannelData() {
 function setupSystemTags() {
 	const tags = remoteUserSettings["allTags"];
 	const tagsFIlterNode = document.getElementById("tagFilterOptions");
-	const metaDataTagsNode = document.getElementById("metaDataTags");
 	removeAllChildNodes(tagsFIlterNode);
 	removeAllChildNodes(metaDataTagsNode);
 	const containter = document.createElement("div");
