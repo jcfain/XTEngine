@@ -77,22 +77,26 @@ struct SettingKeys {
 
 class XSettingsMap {
 public:
-    const static inline QHash<QString, SettingMap> SettingsMap =
+    static void init() {
+        foreach (auto setting, SettingsList) {
+            SettingsMap.insert(setting.key, setting);
+        }
+    }
+    const static inline QList<SettingMap> SettingsList =
     {
-        {
-            { SettingKeys::scheduleLibraryLoadEnabled, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadEnabled, FormControlTypes::Checkbox, false, "Enabled", "This will refresh the libraries at the specified time.", false} },
-            { SettingKeys::scheduleLibraryLoadTime, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadTime, FormControlTypes::Time, QTime(2,0), "At time", "What time to load the libraries.", false} },
-            { SettingKeys::scheduleLibraryLoadFullProcess, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadFullProcess, FormControlTypes::Checkbox, false, "Full metadata process", "Run a full metadata process after the library has been loaded per the schedule", false} },
-            { SettingKeys::scheduleSettingsSync, {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleSettingsSync, FormControlTypes::Checkbox, true, "Sync settings", "Flush the settings to disk.", false} },
-            { SettingKeys::processMetadataOnStart, {SettingProfile::System, SettingGroups::metadata, SettingKeys::processMetadataOnStart, FormControlTypes::Checkbox, false, "Process metadata on start", "Process the metadata when the application starts up.", false} },
-            { SettingKeys::forceMetaDataFullProcess, {SettingProfile::System, SettingGroups::metadata, SettingKeys::forceMetaDataFullProcess, FormControlTypes::Checkbox, false, "Force metadata process after next restart", "Force the metadata process on next start.", true} },
-            { SettingKeys::disableUDPHeartBeat, {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableUDPHeartBeat, FormControlTypes::Checkbox, false, "Disable UDP heartbeat", "Disable periodic UDP ping.", false} },
-            { SettingKeys::disableTCodeValidation, {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableTCodeValidation, FormControlTypes::Checkbox, false, "Disable TCode validation", "Disable the D1 validation when connecting to a tcode device.", false} },
-            { SettingKeys::useDTRAndRTS, {SettingProfile::System, SettingGroups::serial, SettingKeys::useDTRAndRTS, FormControlTypes::Checkbox, false, "Disable serial RTS/DTS", "Disable serial RTS/DTS when connecting via serial.", false} },
-            { SettingKeys::httpChunkSizeMB, {SettingProfile::System, SettingGroups::web, SettingKeys::httpChunkSizeMB, FormControlTypes::Double, 26.214400, "Media streaming chunk size", "The chunk sise the web browser should ask for when steaming media.", true} },
-            { SettingKeys::playbackRateStep, {SettingProfile::System, SettingGroups::media, SettingKeys::playbackRateStep, FormControlTypes::Double, 0.01, "Playback rate step", "The amount to change the playback rate by when using gamepad or input scroller.", false} }
-        },
+        {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadEnabled, FormControlTypes::Checkbox, false, "Enabled", "This will refresh the libraries at the specified time.", false},
+        {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadTime, FormControlTypes::Time, QTime(2,0), "At time", "What time to load the libraries.", false},
+        {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleLibraryLoadFullProcess, FormControlTypes::Checkbox, false, "Full metadata process", "Run a full metadata process after the library has been loaded per the schedule", false},
+        {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleSettingsSync, FormControlTypes::Checkbox, true, "Sync settings", "Flush the settings to disk.", false},
+        {SettingProfile::System, SettingGroups::metadata, SettingKeys::processMetadataOnStart, FormControlTypes::Checkbox, false, "Process metadata on start", "Process the metadata when the application starts up.", false},
+        {SettingProfile::System, SettingGroups::metadata, SettingKeys::forceMetaDataFullProcess, FormControlTypes::Checkbox, false, "Force metadata process after next restart", "Force the metadata process on next start.", true},
+        {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableUDPHeartBeat, FormControlTypes::Checkbox, false, "Disable UDP heartbeat", "Disable periodic UDP ping.", false},
+        {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableTCodeValidation, FormControlTypes::Checkbox, false, "Disable TCode validation", "Disable the D1 validation when connecting to a tcode device.", false},
+        {SettingProfile::System, SettingGroups::serial, SettingKeys::useDTRAndRTS, FormControlTypes::Checkbox, false, "Disable serial RTS/DTS", "Disable serial RTS/DTS when connecting via serial.", false},
+        {SettingProfile::System, SettingGroups::web, SettingKeys::httpChunkSizeMB, FormControlTypes::Double, 26.214400, "Media streaming chunk size", "The chunk sise the web browser should ask for when steaming media.", true},
+        {SettingProfile::System, SettingGroups::media, SettingKeys::playbackRateStep, FormControlTypes::Double, 0.01, "Playback rate step", "The amount to change the playback rate by when using gamepad or input scroller.", false}
     };
+    inline static QHash<QString, SettingMap> SettingsMap;
     const static inline QMap<SettingProfile, QMap<QString, QMap<QString, SettingMap>>> SettingsGroupMap =
     {
         {

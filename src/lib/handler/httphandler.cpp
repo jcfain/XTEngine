@@ -546,10 +546,8 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     // root["processMetadataOnStart"] = SettingsHandler::processMetadataOnStart();
     QJsonObject settingsObj;
     QJsonArray settingsArray;
-    foreach (SettingMap map, XSettingsMap::SettingsMap) {
+    foreach (SettingMap map, XSettingsMap::SettingsList) {
         QJsonObject settingsObj = map.tojson();
-        QJsonObject value;
-        SettingsHandler::getSetting(map.key);
         settingsObj["value"] = SettingsHandler::getSetting(map.key).toJsonValue();
         settingsArray.append(settingsObj);
     }
