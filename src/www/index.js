@@ -105,7 +105,7 @@ var deviceConnectionStatusInterval;
 var serverRetryTimeout;
 var serverRetryTimeoutTries = 0;
 var videoStallTimeout;
-var userFilterCriteria;
+var userFilterCriteria = "";
 var userTagFilterCriteria = [];
 var filterDebounce;
 var enableTextToSpeech = true;
@@ -224,6 +224,9 @@ var devicePauseStatusIconButtonImageNodes = document.getElementsByName("devicePa
 
 var progressNode = document.getElementById("statusOutput");
 var progressLabelNode = document.getElementById("statusOutputLabel");
+
+var filterInput = document.getElementById('filterInput');
+filterInput.value = userFilterCriteria;
 
 /* 	
 	deoVideoNode = document.getElementById("deoVideoPlayer");
@@ -2022,7 +2025,6 @@ function getDisplayedMediaList(showValue, userClick) {
 
 function filter(criteria) {
 	userFilterCriteria = criteria;
-	var filterInput = document.getElementById("filterInput");
 	filterInput.enabled = false;
 	var mediaItems = document.getElementsByClassName("media-item");
 	for (var item of mediaItems) {
@@ -2039,7 +2041,7 @@ function debounceFilter(criteria) {
 	filterDebounce = setTimeout(function () {
 		filter(criteria);
 		filterDebounce = undefined;
-	}, 1000);
+	}, 500);
 }
 
 function isFiltered(criteria, textToSearch) {
@@ -2444,14 +2446,13 @@ function onSkipToMoneyShot() {
 }
 
 function onToggleFilterInput(searchButton) {
-	var filterInput = document.getElementById('filterInput');
 	filterInput.classList.toggle('hidden');
 	searchButton.classList.toggle('icon-button-down');
 }
 
 function onToggleTagInput(tagButton) {
-	var filterInput = document.getElementById('tagFilterOptions');
-	filterInput.classList.toggle('hidden');
+	var tagFilterOptions = document.getElementById('tagFilterOptions');
+	tagFilterOptions.classList.toggle('hidden');
 	tagButton.classList.toggle('icon-button-down');
 }
 

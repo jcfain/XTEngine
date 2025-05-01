@@ -81,7 +81,8 @@ SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem, bool reset
 {
     if(reset)
         this->reset();
-    else {
+    else
+    {
         if(_funscriptHandlers.length() > 0)
         {
             foreach (auto handler, _funscriptHandlers) {
@@ -549,6 +550,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
         emit sendTCode("DSTOP");
         //emit funscriptVREnded(videoPath, funscript, duration);
         LogHandler::Debug("exit syncInputDeviceFunscript");
+        XMediaStateHandler::setPlaybackSpeed(1.0);
         emit syncEnd();
     });
 }
