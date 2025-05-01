@@ -80,6 +80,11 @@ public:
     static void init() {
         foreach (auto setting, SettingsList) {
             SettingsMap.insert(setting.key, setting);
+            // QMap<QString, SettingMap> settingKey;
+            // settingKey.insert(setting.key, setting);
+            // QMap<QString, QMap<QString, SettingMap>> settingGroup;
+            // settingGroup.insert(setting.group, settingKey);
+            // SettingsGroupMap.insert(setting.profile, settingGroup);
         }
     }
     const static inline QList<SettingMap> SettingsList =
@@ -96,57 +101,8 @@ public:
         {SettingProfile::System, SettingGroups::web, SettingKeys::httpChunkSizeMB, FormControlTypes::Double, 26.214400, "Media streaming chunk size", "The chunk sise the web browser should ask for when steaming media.", true},
         {SettingProfile::System, SettingGroups::media, SettingKeys::playbackRateStep, FormControlTypes::Double, 0.01, "Playback rate step", "The amount to change the playback rate by when using gamepad or input scroller.", false}
     };
-    inline static QHash<QString, SettingMap> SettingsMap;
-    const static inline QMap<SettingProfile, QMap<QString, QMap<QString, SettingMap>>> SettingsGroupMap =
-    {
-        {
-            SettingProfile::System,
-            {
-                {
-                    SettingGroups::schedule,
-                    {
-                        { SettingKeys::scheduleLibraryLoadEnabled, SettingsMap[SettingKeys::scheduleLibraryLoadEnabled] },
-                        { SettingKeys::scheduleLibraryLoadTime, SettingsMap[SettingKeys::scheduleLibraryLoadTime] },
-                        { SettingKeys::scheduleLibraryLoadFullProcess, SettingsMap[SettingKeys::scheduleLibraryLoadFullProcess] },
-                        { SettingKeys::scheduleSettingsSync, SettingsMap[SettingKeys::scheduleSettingsSync] }
-                    }
-                },
-                {
-                    SettingGroups::metadata,
-                    {
-                        { SettingKeys::processMetadataOnStart, SettingsMap[SettingKeys::processMetadataOnStart] },
-                        { SettingKeys::forceMetaDataFullProcess, SettingsMap[SettingKeys::forceMetaDataFullProcess] }
-                    }
-                },
-                {
-                    SettingGroups::tcode,
-                    {
-                        { SettingKeys::disableUDPHeartBeat, SettingsMap[SettingKeys::disableUDPHeartBeat] },
-                        { SettingKeys::disableTCodeValidation, SettingsMap[SettingKeys::disableTCodeValidation] }
-                    }
-                },
-                {
-                    SettingGroups::serial,
-                    {
-                      { SettingKeys::useDTRAndRTS, SettingsMap[SettingKeys::useDTRAndRTS] }
-                    }
-                },
-                {
-                    SettingGroups::web,
-                    {
-                      { SettingKeys::httpChunkSizeMB, SettingsMap[SettingKeys::httpChunkSizeMB] }
-                    }
-                },
-                {
-                    SettingGroups::media,
-                    {
-                        { SettingKeys::playbackRateStep, SettingsMap[SettingKeys::playbackRateStep] }
-                    }
-                }
-
-            }
-        }
-    };
+    static inline QHash<QString, SettingMap> SettingsMap;
+    // static inline QMap<SettingProfile, QMap<QString, QMap<QString, SettingMap>>> SettingsGroupMap;
 };
 
 #endif // SETTINGMAP_H
