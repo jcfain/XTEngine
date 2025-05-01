@@ -13,6 +13,7 @@ videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
 
 var controlsHideDebounce;
 var controlsVisible = false;
+var controlsEnableDebounce
 var forceControlsVisible = false;
 var mouseOverVideo = false;
 var isFullScreen = false;
@@ -91,8 +92,6 @@ function removeVideoSource() {
 // If the video playback is paused or ended, the video is played
 // otherwise, the video is paused
 function togglePlay() {
-	if(!controlsVisible)
-		return;
 	if (videoNode.paused || videoNode.ended) {
 		videoNode.play();
 	} else {
@@ -187,8 +186,6 @@ function updateSeekTooltip(event) {
 // skipAhead jumps to a different point in the video when the progress bar
 // is clicked
 function skipAhead(event) {
-	if(!controlsVisible)
-		return;
 	const skipTo = event.target.dataset.seek
 		? event.target.dataset.seek
 		: event.target.value;
@@ -207,8 +204,6 @@ function updateVolume() {
 	videoNode.volume = volumeSlider.value;
 }
 function updateVolumeClick() {
-	if(!controlsVisible)
-		return;
 	updateVolume();
 }
 
@@ -271,8 +266,6 @@ function toggleMute() {
 	}
 }
 function toggleMuteClick() {
-	if(!controlsVisible)
-		return;
 	toggleMute();
 }
 
@@ -296,14 +289,10 @@ function animatePlayback() {
 	);
 }
 function animatePlaybackVideoNodeClick() {
-	if(!controlsVisible)
-		return;
 	animatePlayback();
 }
 
 function toggleFullScreenClick() {
-	if(!controlsVisible)
-		return;
 	toggleFullScreen();
 }
 // toggleFullScreen toggles the full screen state of the video
@@ -425,16 +414,21 @@ function hideControls(force) {
 	if(forceControlsVisible)
 		return;
 	for (let item of videoControls) 
-		item.classList.add('hide');
+		item.classList.add('hide', 'disable');
 	controlsVisible = false;
 }
 
 function showControls(force = false) {
 	if(typeof force == "boolean" && !forceControlsVisible)
 		forceControlsVisible = force;
-    setTimeout(function () {
-		controlsVisible = true;
-    }, 500);
+	if(!controlsEnableDebounce) {
+		controlsEnableDebounce = setTimeout(function () {
+			for (let item of videoControls) 
+				item.classList.remove('disable');
+			controlsEnableDebounce = undefined;
+			controlsVisible = true;
+		}, 100);
+	}
 	for (let item of videoControls) 
 		item.classList.remove('hide');
     if(controlsHideDebounce) {

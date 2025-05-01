@@ -68,6 +68,8 @@ video {
 .video-controls.hide {
     opacity: 0;
     display: none;
+}
+.video-controls.disable {
     pointer-events: none;
 }
 

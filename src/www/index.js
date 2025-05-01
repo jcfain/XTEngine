@@ -324,8 +324,6 @@ function sendOutputDeviceConnectionChange(device, checked) {
 	sendWebsocketMessage("connectOutputDevice", { deviceName: device, enabled: checked });
 }
 function sendSkipToNextActionClick() {
-	if(!controlsVisible)
-		return;
 	sendSkipToNextAction();
 }
 function sendSkipToNextAction() {
@@ -2407,8 +2405,6 @@ function playVideo(obj) {
 }
 
 function stopVideoClick() {
-	if(!controlsVisible)
-		return;
 	stopVideo();
 }
 function stopVideo() {
@@ -2434,8 +2430,6 @@ function skipVideoTo(timeInMSecs) {
 }
 
 function onSkipToMoneyShotClick() {
-	if(!controlsVisible)
-		return;
 	onSkipToMoneyShot();
 }
 
@@ -2525,8 +2519,6 @@ function clearPlayingMediaItem() {
 }
 
 function playNextVideoClick() {
-	if(!controlsVisible)
-		return;
 	playNextVideo();
 }
 
@@ -2553,8 +2545,6 @@ function playNextVideo() {
 	}
 }
 function playPreviousVideoClick() {
-	if(!controlsVisible)
-		return;
 	playPreviousVideo();
 }
 function playPreviousVideo() {
