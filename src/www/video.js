@@ -420,7 +420,9 @@ function hideControlsEvent() {
 	hideControls();
 }
 function hideControls(force) {
-	if(forceControlsVisible && !force)
+	if(typeof force == "boolean" && !force)
+		forceControlsVisible = force;
+	if(forceControlsVisible)
 		return;
 	for (let item of videoControls) 
 		item.classList.add('hide');
