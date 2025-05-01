@@ -714,7 +714,7 @@
 						<button id="startMetadataCleanProcessButton" style="margin-top:8px" onclick="startMetadataCleanProcess()">Clean metadata</button>
 						<button id="cleanupThumbsButton" style="margin-top:8px" onclick="startThumbCleanupProcess()">Clean up thumbs</button>
 						<button id="clean1024" style="margin-top:8px" onclick="startClean1024Process()">Reset metadata offset 1024</button>
-						<div class="formElement">
+						<!-- <div class="formElement">
 							<label for="processMetadataOnStart">Process all metadata on start</label>
 							<input id="processMetadataOnStart" type="checkbox"
 								onclick="settingChange(this.id, this.checked)" />
@@ -757,6 +757,12 @@
 							<input id="httpChunkSizeMB" type="number" min="0.000001" step="1.0"
 								onchange="settingChange(this.id, this.value)" />
 						</div>
+						<h4>Media</h4>
+						<div class="formElement">
+							<label for="playbackRateStep">Playback rate step</label>
+							<input id="playbackRateStep" type="number" min="0.000001" step="0.01"
+								onchange="settingChange(this.id, this.value)" />
+						</div> -->
 					</div>
 					
 				</section>
@@ -813,7 +819,7 @@
 					<button name="refreshXTPLibraryButton" title="This will start the library loading process" onclick="refreshXTPLibrary()">
 						Refresh library
 					</button>
-					<button id="saveToXTPButton" disabled="true"
+					<button id="saveToXTPButton" disabled=""
 						title="This will save all XTP settings to your XTP machines data storage."
 						onclick="onSaveToXTPClick()">
 						Save to XTP
@@ -971,6 +977,7 @@
 		</symbol>
 	</svg>
 	<script type="text/javascript" src="common-min.js"></script>
+	<script type="text/javascript" src="settings-min.js"></script>
 	<script type="text/javascript" src="video-min.js"></script>
 	<script type="text/javascript" src="script-status-min.js"></script>
 	<script type="text/javascript" src="index-min.js"></script>

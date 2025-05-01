@@ -1,4 +1,4 @@
-const webVersion = "v0.47b";
+const webVersion = "v0.472b";
 var debugMode = false;
 
 var DeviceType = {
@@ -360,7 +360,7 @@ function settingChange(key, value) {
 		clearTimeout(settingChangeDebounce);
 	settingChangeDebounce = setTimeout(function() {
 		sendWebsocketMessage("settingChange", { key: key, value: value });
-		markXTPFormDirty();
+		// markXTPFormDirty();
 	}, 500);
 }
 
@@ -461,6 +461,8 @@ function wsCallBackFunction(evt) {
 			case "systemWarning":
 				systemWarning(data["message"]);
 				break;
+			case "settingChange":
+				onSaveSuccess();
 			case "stopAllMedia":
 				stopVideo();
 				break;
@@ -802,7 +804,7 @@ function getServerSettings(retry) {
 		if (status === 200) {
 			remoteUserSettings = xhr.response;
 
-			document.getElementById("xteVersion").innerText = remoteUserSettings["settings"]["xteVersion"];
+			document.getElementById("xteVersion").innerText = remoteUserSettings["xteVersion"];
 
 			// document.getElementById("scheduleLibraryLoadEnabled").checked = remoteUserSettings["settings"]["scheduleLibraryLoadEnabled"];
 			// document.getElementById("scheduleLibraryLoadTime").value = remoteUserSettings["settings"]["scheduleLibraryLoadTime"];
@@ -811,15 +813,9 @@ function getServerSettings(retry) {
 			// document.getElementById("scheduleSettingsSync").checked = remoteUserSettings["settings"]["scheduleSettingsSync"];
 			// document.getElementById("disableUDPHeartBeat").checked = remoteUserSettings["settings"]["disableUDPHeartBeat"];
 			// document.getElementById("httpChunkSizeMB").value = remoteUserSettings["settings"]["httpChunkSizeMB"];
-			Object.keys(remoteUserSettings["settings"]).forEach(key => {
-				const element = document.getElementById(key);
-				if(!element)
-					return;
-				const value = remoteUserSettings["settings"][key];
-				typeof value === "boolean" ? element.checked = value : element.value = value;
-			})
-			
-			
+
+			Settings.load(remoteUserSettings);
+
 			setupChannelData();
 
 			setupSystemTags();
@@ -1290,7 +1286,7 @@ function setOutputConnectionStatus(deviceName, status, message) {
 				deviceConnectionStatusRetryButtonNode.style.backgroundColor = "chartreuse";
 				deviceConnectionStatusRetryButtonImageNode.src = "://images/icons/check-mark-black.png";
 				if (remoteUserSettings.connection.output.selectedDevice == DeviceType.Network) {
-					tcodeDeviceSettingsLink.href = "http://" + remoteUserSettings.connection.networkAddress;
+					tcodeDeviceSettingsLink.href = "http://" + remoteUserSettings.connection.output.networkAddress;
 					tcodeDeviceSettingsLink.hidden = false;
 				}
 				break;

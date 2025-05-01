@@ -45,6 +45,7 @@ signals:
 
 public slots:
     void on_DeviceConnection_StateChange(ConnectionChangedSignal status);
+    void onSettingChange(QString settingName, QVariant value);
 
 public:
     HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent = nullptr);

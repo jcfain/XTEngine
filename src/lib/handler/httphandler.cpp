@@ -545,10 +545,15 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     // root["scheduleLibraryLoadFullProcess"] = SettingsHandler::scheduleLibraryLoadFullProcess();
     // root["processMetadataOnStart"] = SettingsHandler::processMetadataOnStart();
     QJsonObject settingsObj;
+    QJsonArray settingsArray;
     foreach (SettingMap map, XSettingsMap::SettingsMap) {
-        SettingsHandler::getSetting(map.key, settingsObj);
+        QJsonObject settingsObj = map.tojson();
+        QJsonObject value;
+        SettingsHandler::getSetting(map.key);
+        settingsObj["value"] = SettingsHandler::getSetting(map.key).toJsonValue();
+        settingsArray.append(settingsObj);
     }
-    root["settings"] = settingsObj;
+    root["settings"] = settingsArray;
 
     // root["APPIMAGE1"] = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
     // root["APPIMAGE2"] = QString(qgetenv("APPIMAGE"));
@@ -1374,4 +1379,9 @@ void HttpHandler::on_DeviceConnection_StateChange(ConnectionChangedSignal status
 {
     if(_webSocketHandler)
         _webSocketHandler->sendDeviceConnectionStatus(status);
+}
+
+void HttpHandler::onSettingChange(QString settingName, QVariant value)
+{
+    _webSocketHandler->onSettingChange(settingName, value);
 }
