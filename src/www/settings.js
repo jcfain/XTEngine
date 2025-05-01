@@ -1,6 +1,7 @@
 const systemInfoTab = document.getElementById("systemInfoTab");
 
 Settings = {
+    loaded: false,
     SettingProfile: {
         System: 0
     },
@@ -202,19 +203,18 @@ Settings = {
         return element;
     },
     load(allSettings) {
+        if(this.loaded)
+            return;
         allSettings["settings"].forEach(x => {
             if(x.internal)
                 return;
-            // const key = x["key"]
-            // const element = document.getElementById(key);
-            // if(!element)
-            //     return;
             this.loadSetting(x);
-            // const value = x.value;
-            // typeof value === "boolean" ? element.checked = value : element.value = value;
         });
+        this.loaded = true;
     },
     loadSetting(setting) {
+        if(this.loaded)
+            return;
         let groupElement = document.getElementById(setting.group);
         let appendNewForm = false;
         if(!groupElement) {
