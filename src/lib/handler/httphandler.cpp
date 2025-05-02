@@ -548,7 +548,9 @@ HttpPromise HttpHandler::handleSettings(HttpDataPtr data) {
     QJsonArray settingsArray;
     foreach (SettingMap map, XSettingsMap::SettingsList) {
         QJsonObject settingsObj = map.tojson();
-        settingsObj["value"] = SettingsHandler::getSetting(map.key).toJsonValue();
+        QJsonObject value;
+        SettingsHandler::getSetting(map.key, value);
+        settingsObj["value"] = value[map.key];
         settingsArray.append(settingsObj);
     }
     root["settings"] = settingsArray;

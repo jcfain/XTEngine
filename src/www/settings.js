@@ -135,7 +135,6 @@ Settings = {
     createTimeInput(id, value) {
         const element = this.createTextInput(id, value);
         element.type = "time";
-        element.value = new Date(value);
         return element;
     },
     createRadioInput(id, group, checked) {
