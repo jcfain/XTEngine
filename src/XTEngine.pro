@@ -114,6 +114,7 @@ HEADERS += \
     lib/tool/file-util.h \
     lib/tool/heatmap.h \
     lib/tool/imagefactory.h \
+    lib/tool/qsettings_json.hpp \
     lib/tool/simplecrypt.h \
     lib/tool/string-util.h \
     lib/tool/tcodefactory.h \
