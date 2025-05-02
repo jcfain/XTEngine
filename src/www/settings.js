@@ -53,12 +53,12 @@ Settings = {
             case this.FormControlTypes.Checkbox:
                 control = this.createCheckboxInput(id, value);
             break;
-            // case this.FormControlTypes.DateTime:
-            //     // control = this.createComboInput(id, value);
-            // break;
-            // case this.FormControlTypes.Date:
-            //     // control = this.createComboInput(id, value);
-            // break;
+            case this.FormControlTypes.DateTime:
+                control = this.createDateTimeInput(id, value);
+            break;
+            case this.FormControlTypes.Date:
+                control = this.createDateInput(id, value);
+            break;
             case this.FormControlTypes.Time:
                 control = this.createTimeInput(id, value);
             break;
@@ -135,6 +135,16 @@ Settings = {
     createTimeInput(id, value) {
         const element = this.createTextInput(id, value);
         element.type = "time";
+        return element;
+    },
+    createDateInput(id, value) {
+        const element = this.createTextInput(id, value);
+        element.type = "date";
+        return element;
+    },
+    createDateTimeInput(id, value) {
+        const element = this.createTextInput(id, value);
+        element.type = "datetime-local";
         return element;
     },
     createRadioInput(id, group, checked) {

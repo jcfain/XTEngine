@@ -50,6 +50,10 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             !_mediaLibraryHandler->metadataProcessing() &&
             !_mediaLibraryHandler->thumbProcessRunning())
         {
+            connect(_mediaLibraryHandler, &MediaLibraryHandler::metadataProcessEnd, this, [this]() {
+                disconnect(_mediaLibraryHandler, &MediaLibraryHandler::metadataProcessEnd, this, nullptr);
+                _webSocketHandler->sendCommand("metadataProcessingFinished");
+            });
             _mediaLibraryHandler->startMetadataProcess(true);
         }
     });
@@ -61,9 +65,9 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             _mediaLibraryHandler->startMetadataCleanProcess();
         }
     });
-    connect(_webSocketHandler, &WebSocketHandler::processMetadata, this, [this](QString libraryItemID) {
+    connect(_webSocketHandler, &WebSocketHandler::processMetadata, this, [this](QString metadataKey) {
         if(!_mediaLibraryHandler->metadataProcessing()) {
-            auto item = _mediaLibraryHandler->findItemByID(libraryItemID);
+            auto item = _mediaLibraryHandler->findItemByMetadataKey(metadataKey);
             if(item) {
                 _mediaLibraryHandler->processMetadata(*item);
             } else
@@ -130,6 +134,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _webSocketHandler->sendCommand("statusOutput", obj);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, LOADING_CURRENT_IMAGE);});
+
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::thumbProcessBegin, this, [this]() {onLibraryLoadingStatusChange("Loading thumbs...");});
 
     connect(TCodeChannelLookup::instance(), &TCodeChannelLookup::channelProfileChanged, this, [this](QMap<QString, ChannelModel33>* channelProfile) {
@@ -179,6 +184,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
 
 
     config.port = SettingsHandler::getHTTPPort();
+    // config.maxRequestSize =
     config.requestTimeout = 20;
     if(LogHandler::getUserDebug())
         config.verbosity = HttpServerConfig::Verbose::All;

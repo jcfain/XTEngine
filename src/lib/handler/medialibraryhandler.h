@@ -87,6 +87,7 @@ public:
     LibraryListItem27* findItemByPartialSubtitle(QString partialSubtitle);
     LibraryListItem27* findItemByAltScript(QString value);
     LibraryListItem27* findItemByPartialAltScript(QString value);
+    LibraryListItem27* findItemByMetadataKey(QString value);
     LibraryListItem27* findItemByReference(const LibraryListItem27* playListItem);
     int findItemIndexByID(QString id);
     bool isLibraryItemVideo(LibraryListItem27 item);

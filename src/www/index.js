@@ -346,6 +346,9 @@ function sendUpdateMoneyShotAtPos(item) {
 	var pos = videoNode.currentTime;
 	sendWebsocketMessage("setMoneyShot", { itemID: item.id, pos: pos });
 }
+function sendUpdateMetadata(metadataKey) {
+	sendWebsocketMessage("processMetadata", metadataKey);
+}
 function sendDeviceHome() {
 	sendMediaAction(MediaActions.TCodeHomeAll);
 }
@@ -573,6 +576,9 @@ function wsCallBackFunction(evt) {
 				break;
 			case "changePlayrate":
 				var messageObj = data["message"];
+				break;
+			case "metadataProcessingFinished":
+				getServerLibrary();
 				break;
 
 		}
@@ -1448,7 +1454,22 @@ function postServerSettings() {
 	xhr.send(JSON.stringify(remoteUserSettings));
 }
 
+function validateMetadata(metaData) {
+	if(metaData.MFSScripts && metaData.MFSScripts.length > 100)
+	{
+		showAlertWindow("System error", `There is a possible issue with this items metadata.<br>
+			Doing a metadata process by clicking one of the buttons below or<br>
+			from 'Settings \> System \> Process metadata' should fix this issue<br>
+			You can also click 'Update metadata' from this media items context menu.<br>
+			Note: you may need to resave after the item has been updated.<br><br>
+			<button style='margin-top:8px' onclick='closeAlertWindow();sendUpdateMetadata(\"${metaData.key}\");'>Process ONLY THIS items metadata</button>
+			<button onclick='closeAlertWindow();startMetadataProcess();'>Start processing ALL metadata now</button>`
+		);
+	}
+}
+
 function postMediaItemMetaData(metaData) {
+	validateMetadata(metaData);
 	var xhr = new XMLHttpRequest();
 	xhr.open('POST', "/mediaItemMetadata", true);
 	xhr.setRequestHeader('Content-Type', 'application/json');
@@ -1604,7 +1625,7 @@ function loadMedia(mediaList) {
 	};
 	var updateItemMetadata = function (mediaItem, contextMenu) {
 		return function () {
-			sendWebsocketMessage("processMetadata", mediaItem.id);
+			sendUpdateMetadata(mediaItem.metaData.key);
 			contextMenu.classList.add("hidden");
 		}
 	}
@@ -1818,7 +1839,11 @@ function updateItem(libraryItem, roles)
 	{
 		mediaListGlobal[index] = JSON.parse(JSON.stringify(libraryItem));
 	}
+	if(selectedMediaItemMetaData && selectedMediaItemMetaData.key == libraryItem.metaData.key) {
+		selectedMediaItemMetaData = libraryItem.metaData;
+	}
 	showChange(showGlobal);
+	systemSuccess(`Item updated!`);
 }
 function addItem(libraryItem)
 {
@@ -2019,8 +2044,9 @@ function getDisplayedMediaList(showValue, userClick) {
 	return filteredMediaScoped
 }
 
-function filter(criteria) {
-	userFilterCriteria = criteria;
+function filter() {
+	const currentCriteria = document.getElementById("filterInput").value;
+	userFilterCriteria = currentCriteria;
 	filterInput.enabled = false;
 	var mediaItems = document.getElementsByClassName("media-item");
 	for (var item of mediaItems) {
@@ -2031,11 +2057,11 @@ function filter(criteria) {
 	filterInput.enabled = true;
 }
 
-function debounceFilter(criteria) {
+function debounceFilter() {
 	if (filterDebounce) 
 		clearTimeout(filterDebounce);
 	filterDebounce = setTimeout(function () {
-		filter(criteria);
+		filter();
 		filterDebounce = undefined;
 	}, 500);
 }

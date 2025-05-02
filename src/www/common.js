@@ -3,21 +3,21 @@ var alertModelNode = document.getElementById("alertModal");
 var textModelNode = document.getElementById("textModal");
 
 function userError(message) {
-	//alert(message);
 	showAlertWindow("Error", message);
 }
 function systemError(message) {
-	//alert(message);
 	showAlertWindow("System error", message);
 }
 function userWarning(message) {
-	//alert(message);
 	showAlertWindow("Warning", message);
 }
 function systemWarning(message) {
-	//alert(message);
 	showAlertWindow("System warning", message);
 }
+function systemSuccess(message) {
+	showAlertWindow("Success!", message);
+}
+
 
 function showAlertWindow(header, message, yesCallback) {
 	if(alertModelNode.style.visibility != "visible") {
@@ -48,10 +48,12 @@ function closeAlertWindow() {
 	alertModelNode.style.visibility = "hidden";
 	alertModelNode.style.opacity = 0;
 	setTimeout(function() {
-		var confirmButton = document.getElementById("alertConfirmButton");
-		confirmButton.onclick = undefined;
-		var alertModalBody = document.getElementById("alertModalBody");
-		alertModalBody.innerText = undefined;
+		if(alertModelNode.style.visibility != "visible") {// Already been replaced. Avoids race condition when closing one alert to open another after.
+			var confirmButton = document.getElementById("alertConfirmButton");
+			confirmButton.onclick = undefined;
+			var alertModalBody = document.getElementById("alertModalBody");
+			alertModalBody.innerText = undefined;
+		}
 	}, 275)
 }
 

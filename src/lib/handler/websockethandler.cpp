@@ -179,8 +179,8 @@ void WebSocketHandler::processTextMessage(QString message)
     } else if(command == "startMetadataProcess") {
         emit startMetadataProcess();
     } else if(command == "processMetadata") {
-        QString itemID = json["message"].toString();
-        emit processMetadata(itemID);
+        QString metadataKey = json["message"].toString();
+        emit processMetadata(metadataKey);
     } else if(command == "mediaAction") {
         QString action = json["message"].toString();
         emit mediaAction(action);

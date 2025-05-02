@@ -1389,6 +1389,10 @@ bool MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
 bool MediaLibraryHandler::discoverMFS(LibraryListItem27 &item) {
     LogHandler::Debug("Discover MFS: "+item.ID);
     QStringList funscripts = TCodeChannelLookup::getValidMFSExtensions();
+    item.metadata.isMFS = false;
+    item.metadata.toolTip.clear();
+    item.metadata.MFSScripts.clear();
+    item.metadata.MFSTracks.clear();
     foreach(auto scriptExtension, funscripts)
     {
         if (QFileInfo::exists(item.pathNoExtension + scriptExtension))
@@ -1853,6 +1857,17 @@ LibraryListItem27 *MediaLibraryHandler::findItemByPartialAltScript(QString value
             return item.type == ScriptType::ALTERNATE && (item.filename.startsWith(value, Qt::CaseInsensitive) || item.filename.endsWith(value, Qt::CaseInsensitive));
         });
         return itr2 != item.metadata.scripts.end();
+    });
+    if(itr != _cachedLibraryItems.end())
+        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
+    return 0;
+}
+
+LibraryListItem27 *MediaLibraryHandler::findItemByMetadataKey(QString value)
+{
+    const QMutexLocker locker(&_mutex);
+    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [value](const LibraryListItem27& item) {
+        return item.metadata.key == value;
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];

@@ -703,7 +703,7 @@ section .range-values {
     padding: 20px;
     border: 1px solid #888;
     border-radius: 25px;
-    width: 85%;
+    width: 80%;
     height: 90%;
     opacity: inherit;
     visibility: inherit;
@@ -719,7 +719,7 @@ section .range-values {
     height: fit-content;
 }
 .modal-content--other {
-    height: fit-content;
+    height: 50%;
 }
 .modal-header {
     display: flex;
