@@ -398,7 +398,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     QString appPath = QString(qgetenv("APPIMAGE"));
     if(!appPath.isEmpty())
     {
-        _applicationDirPath = appPath;
+        _applicationDirPath = QFileInfo(appPath).absolutePath();;
     }
     else
     {
