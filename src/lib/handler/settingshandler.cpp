@@ -1,6 +1,7 @@
 #include "settingshandler.h"
 
 #include "../tool/file-util.h"
+#include "../tool/qsettings_json.h"
 
 
 const QString SettingsHandler::XTEVersion = "0.472b";
@@ -383,10 +384,26 @@ QSettings* SettingsHandler::getSettings() {
     return settings;
 }
 
+void SettingsHandler::copy(const QSettings* from, QSettings* into)
+{
+    auto keys = from->allKeys();
+    foreach (auto key, keys) {
+        into->setValue(key, settings->value(key));
+    }
+}
+
 void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 {
     QMutexLocker locker(&mutex);
-    _applicationDirPath = QCoreApplication::applicationDirPath();
+    QString appPath = QString(qgetenv("APPIMAGE"));
+    if(!appPath.isEmpty())
+    {
+        _applicationDirPath = appPath;
+    }
+    else
+    {
+        _applicationDirPath = QCoreApplication::applicationDirPath();
+    }
     _appdataLocation = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
     if(_appdataLocation.isEmpty())
         _appdataLocation = _applicationDirPath;
@@ -395,14 +412,21 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         dir.mkpath(_appdataLocation);
     if(!settingsToLoadFrom)
     {
-        QFile settingsini(_applicationDirPath + "/settings.ini");
-        m_isPortable = settingsini.exists();
-        if(m_isPortable)
+        if(QFile::exists(_applicationDirPath + "/settings.json"))
         {
+            m_isPortable = true;
+            LogHandler::Debug("Found local json. Loading settings from it: "+_applicationDirPath + "/settings.json");
+            settings = new QSettings(_applicationDirPath + "/settings.json", JSONSettingsFormatter::JsonFormat);
+        }
+        else if(QFile::exists(_applicationDirPath + "/settings.ini"))
+        {
+            m_isPortable = true;
+            LogHandler::Debug("Found local ini. Loading settings from it: "+_applicationDirPath + "/settings.ini");
             settings = new QSettings(_applicationDirPath + "/settings.ini", QSettings::Format::IniFormat);
         }
         else
         {
+            LogHandler::Debug("Local file not found. Loading settings native location");
             settings = new QSettings(ORGANIZATION_NAME, APPLICATION_NAME);
         }
         settingsToLoadFrom = settings;
@@ -1009,7 +1033,7 @@ void SettingsHandler::Restart()
 #endif
 }
 
-bool SettingsHandler::Import(QString file)
+bool SettingsHandler::Import(QString file, QSettings::Format format)
 {
     if(file.isEmpty()) {
         LogHandler::Error("Invalid file: empty file");
@@ -1019,11 +1043,26 @@ bool SettingsHandler::Import(QString file)
         LogHandler::Error("Invalid file: does not exist.");
         return false;
     }
-    QSettings* settingsImport = new QSettings(file, QSettings::Format::IniFormat);
-    Load(settingsImport);
+    QSettings settingsImport(file, format);
+    copy(settings, &settingsImport);
+    settings->sync();
+    return true;
+}
+
+bool SettingsHandler::Export(QString file, QSettings::Format format)
+{
+    if(file.isEmpty()) {
+        LogHandler::Error("Invalid file: empty file");
+        return false;
+    }
+    if(!QFileInfo::exists(file)) {
+        LogHandler::Error("Invalid file: does not exist.");
+        return false;
+    }
+    QSettings settingsImport(file, format);
     Save();
-    setSaveOnExit(false);
-    delete settingsImport;
+    copy(settings, &settingsImport);
+    settingsImport.sync();
     return true;
 }
 
