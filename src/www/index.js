@@ -1833,17 +1833,20 @@ function updateItem(libraryItem, roles)
 	}
 	if(roles.findIndex(x => x == Roles.DecorationRole) > -1) {
 		mediaNode = updateSubTitle(libraryItem, mediaNode);
+	} else {
+		showChange(showGlobal);
+		systemSuccess(`Item updated!`);
 	}
 	var index = mediaListGlobal.findIndex(x => x.id == libraryItem.id);
-	if(index > -1)
-	{
+	if(index > -1) {
 		mediaListGlobal[index] = JSON.parse(JSON.stringify(libraryItem));
+	}
+	if(selectedMediaItem.id == libraryItem.id) {
+		selectedMediaItem = mediaListGlobal[index];
 	}
 	if(selectedMediaItemMetaData && selectedMediaItemMetaData.key == libraryItem.metaData.key) {
 		selectedMediaItemMetaData = libraryItem.metaData;
 	}
-	showChange(showGlobal);
-	systemSuccess(`Item updated!`);
 }
 function addItem(libraryItem)
 {
