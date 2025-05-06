@@ -220,11 +220,30 @@ include($$PWD/../../HttpServer/3rdparty/qtpromise/qtpromise.pri)
 #mypackagerule.command = exec my_package_script.sh
 #QMAKE_EXTRA_TARGETS += mypackagerule
 
-copydata.commands = $(COPY_DIR) $$shell_path($$PWD/www) $$shell_path($$DESTDIR/www)
+# https://dragly.org/2013/11/05/copying-data-files-to-the-build-directory-when-working-with-qmake/
+copydata.commands = $(COPY_DIR) $$shell_quote($$PWD/www) $$shell_quote($$DESTDIR)
 first.depends = $(first) copydata
 export(first.depends)
 export(copydata.commands)
 QMAKE_EXTRA_TARGETS += first copydata
+
+# defineTest(copyToDestDir) {
+#     files = $$1
+#     dir = $$2
+#     # replace slashes in destination path for Windows
+#     win32:dir ~= s,/,\\,g
+
+#     for(file, files) {
+#         # replace slashes in source path for Windows
+#         win32:file ~= s,/,\\,g
+
+#         QMAKE_POST_LINK += $$QMAKE_COPY_DIR $$shell_quote($$file) $$shell_quote($$dir) $$escape_expand(\\n\\t)
+#     }
+
+#     export(QMAKE_POST_LINK)
+# }
+
+# copyToDestDir($$PWD/www, $$DESTDIR/www)
 
 
 # Default rules for deployment.
