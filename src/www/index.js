@@ -758,6 +758,42 @@ function onResizeDeo() {
 	}
 } 
 */
+function parseHttpError(preText, xhr) {
+// } else if(status == 401) {
+// 	if(storedHash) {
+// 		checkPass();
+// 	} else {
+// 		window.location.replace(window.location.origin);
+// 	}
+// } else {
+	// startServerConnectionRetry();
+	const status = xhr.status;
+	let errorText = preText+ ": ";
+	if (status === 401) { 
+		if(storedHash) {
+			checkPass();
+		} else {
+			window.location.replace(window.location.origin);
+		}
+		// userError("System authorization has expired. Refresh the page to continue.");
+	} else if(xhr.statusText && xhr.statusText.length > 0) {
+		systemError(errorText + xhr.statusText);
+	} else if(typeof status === "object" || typeof xhr.response === "object" ) {
+		if(typeof xhr.response === "object") {
+			const obj = JSON.parse(xhr.response);
+			if(obj.message && obj.message.length > 0) {
+				systemError(errorText + obj.message);
+				return;
+			} 
+		} else if(status.statusText && status.statusText.length > 0) {
+			systemError(errorText + status.statusText);
+			return;
+		}
+		systemError(errorText + typeof status === "object" ? JSON.stringify(status) : JSON.stringify(xhr.response));
+	} else {
+		systemError(errorText + "Unknown error: "+ status);
+	}
+}
 function logout() {
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', "/logout", true);
@@ -771,11 +807,11 @@ function logout() {
 			cookies.sessionID = undefined;
 			window.location.replace(window.location.origin);
 		} else {
-			systemError('Error logging out: ' + err);
+			parseHttpError("Error logging out", xhr);
 		}
 	};
 	xhr.onerror = function () {
-		systemError("Error logging out");
+		parseHttpError("Error logging out", xhr);
 	};
 	xhr.send();
 }
@@ -789,11 +825,13 @@ function checkPass() {
             var status = xhr.status;
             if (status == 200) {
 				startServerConnectionRetry();
-            }
+            } else {
+				parseHttpError("Error checking pass", xhr);
+			}
         }
     }
     xhr.onerror = function () {
-        onSaveFail(xhr);
+		parseHttpError("Error checking pass", xhr);
     };
     if(storedHash) {
         xhr.send("{\"hashedPass\":\""+storedHash+"\", \"remember\":\""+!!storedHash+"\"}");
@@ -827,16 +865,16 @@ function getServerSettings(retry) {
 			setupSystemTags();
 			
 			initWebSocket();
-		} else if(status == 401) {
-			if(storedHash) {
-				checkPass();
-			} else {
-				window.location.replace(window.location.origin);
-			}
+		// } else if(status == 401) {
+		// 	if(storedHash) {
+		// 		checkPass();
+		// 	} else {
+		// 		window.location.replace(window.location.origin);
+		// 	}
 		} else {
-	/* 		if(!retry)
-				systemError("Error getting settings"); */
-			startServerConnectionRetry();
+			// startServerConnectionRetry();
+
+			parseHttpError("Error getting server settings", xhr);
 		}
 	}.bind(this);
 	xhr.onerror = function(evnt, retry) {
@@ -857,11 +895,11 @@ function getMediaActions() {
 		if (status === 200) {
 			MediaActions = xhr.response;
 		} else {
-			systemError("Error getting media actions: "+ xhr.responseText);
+			parseHttpError("Error getting media actions", xhr);
 		}
 	}.bind(this);
 	xhr.onerror = function(evnt) {
-		systemError("Error getting  media action: "+ xhr.responseText);
+		parseHttpError("Error getting media actions", xhr);
 	};
 	xhr.send();
 }
@@ -880,11 +918,11 @@ function getServerChannels() {
 			setupChannelData();
 			updateChannelsUI();
 		} else {
-			systemError("Error getting channels: "+ xhr.responseText);
+			parseHttpError("Error getting channels", xhr);
 		}
 	}.bind(this);
 	xhr.onerror = function(evnt) {
-		systemError("Error getting channels: "+ xhr.responseText);
+		parseHttpError("Error getting channels", xhr);
 	};
 	xhr.send();
 }
@@ -1044,11 +1082,11 @@ function getServerSessions() {
 					tBody.appendChild(row);
 				});
 			} else {
-				showAlertWindow(status.statusText);
+				parseHttpError("Error getting server sessions", xhr);
 			}
 		}.bind(this);
 		xhr.onerror = function(evnt, retry) {
-			onSaveFail(xhr);
+			parseHttpError("Error getting server sessions", xhr);
 		};
 		xhr.send();
 	}
@@ -1077,11 +1115,13 @@ function deleteSession (sessionID) {
 					delete_cookie("sessionID");
 					logout();
 				}
+			} else {
+				parseHttpError("Error deleting session", xhr);
 			}
 		}
 	}
 	xhr.onerror = function () {
-		onSaveFail(xhr);
+		parseHttpError("Error deleting session", xhr);
 	};
 	xhr.send();
 }
@@ -1164,11 +1204,11 @@ function getServerLibrary() {
 			loadMedia(mediaListDisplayed);
 			filter();
 		} else {
-			systemError('Error getting media list: ' + err);
+			parseHttpError("Error getting media", xhr);
 		}
 	};
 	xhr.onerror = function () {
-		systemError("Error getting media");
+		parseHttpError("Error getting media", xhr);
 	};
 	xhr.send();
 }
@@ -1415,15 +1455,18 @@ function getMediaFunscripts(path, isMFS) {
 				loadedFunscripts[index][at] = item["pos"];
 				loadedFunscripts[index].atList.push(at);
 			}
-		}
-		currentChannelIndex++;
-		if (currentChannelIndex < funscriptChannels.length) {
-			getMediaFunscripts(path, isMFS);
+			currentChannelIndex++;
+			if (currentChannelIndex < funscriptChannels.length) {
+				getMediaFunscripts(path, isMFS);
+			}
+			else {
+				currentChannelIndex = 0;
+				videoNode.play();
+				console.log("Funscripts load finish");
+			}
 		}
 		else {
-			currentChannelIndex = 0;
-			videoNode.play();
-			console.log("Funscripts load finish");
+			parseHttpError("Error getting media funscripts", xhr);
 		}
 	};
 	xhr.send();
@@ -1498,10 +1541,10 @@ function postMediaState(mediaState) {
 	xhr.oneload = function () {
 		var status = xhr.status;
 		if (status !== 200)
-			console.log('Error sending mediastate: ' + xhr.statusText)
+			parseHttpError("Error sending media state", xhr);
 	};
 	xhr.onerror = function () {
-		console.log('Error sending mediastate: ' + xhr.statusText)
+		parseHttpError("Error sending media state", xhr);
 	};
 }
 
@@ -1509,14 +1552,7 @@ function onSaveSuccess(node) {
 	setSaveState(node, false);
 }
 function onSaveFail(xhr, node) {
-	const statusTest = xhr.statusText ? xhr.statusText : xhr.status.statusText;
-	if(xhr.response)
-	{
-		try {
-			const obj = JSON.parse(xhr.response);
-			showAlertWindow(statusTest, obj.message);
-		} catch(e){ }
-	}
+	parseHttpError("Save fail", xhr);
 	setSaveState(node, false, statusTest);
 }
 
