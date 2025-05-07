@@ -883,7 +883,7 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
             disconnect(&xVideoPreview, nullptr,  nullptr, nullptr);
             onSaveThumb(itemID, vrMode, "Thumb loading timed out.");
         });
-        _thumbTimeoutTimer.start(30000);
+        _thumbTimeoutTimer.start(10000);
         //        if(!vrMode)
         // Webhandler
         emit saveNewThumbLoading(item);
