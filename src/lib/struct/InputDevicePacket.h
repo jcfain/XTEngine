@@ -8,7 +8,7 @@ struct InputDevicePacket
     QString path;
     qint64 duration;
     qint64 currentTime;
-    float playbackSpeed;
+    double playbackSpeed;
     bool playing;
     bool stopped;
 };

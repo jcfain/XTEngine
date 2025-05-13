@@ -103,7 +103,7 @@ private:
     bool _isPaused = false;
     bool _standAloneLoop;
     bool _isOtherMediaPlaying = false;
-    qint64 _standAloneFunscriptCurrentTime = 0;
+    double _standAloneFunscriptCurrentTime = 0;
     qint64 _currentPulseTime = 0;
     qint64 _seekTime = -1;
     qint64 _currentLocalVideoTime = 0;

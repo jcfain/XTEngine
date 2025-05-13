@@ -1534,6 +1534,8 @@ function postMediaItemMetaData(metaData) {
 }
 
 function postMediaState(mediaState) {
+	if(!xtpConnected)
+		return;
 	var xhr = new XMLHttpRequest();
 	xhr.open("POST", "/xtpweb", true);
 	xhr.setRequestHeader('Content-Type', 'application/json');
@@ -2662,7 +2664,7 @@ function sendMediaState() {
 				"playing": playingmediaItem.playing,
 				"currentTime": videoNode.currentTime,
 				"duration": videoNode.duration,
-				"playbackSpeed": videoNode.speed
+				"playbackSpeed": videoNode.playbackRate
 			});
 		} else {
 			postMediaState({
@@ -2670,7 +2672,7 @@ function sendMediaState() {
 				"playing": false,
 				"currentTime": 0,
 				"duration": 0,
-				"playbackSpeed": 1
+				"playbackSpeed": 1.0
 			});
 		}
 	}
