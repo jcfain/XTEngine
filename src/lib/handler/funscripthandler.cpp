@@ -273,10 +273,10 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(qint64 millis)
         qreal speedmodifier = XMediaStateHandler::getPlaybackSpeed();
         if(speedmodifier > 0 && speedmodifier != 1.0 && speedmodifier < 2.0)
         {
-            // LogHandler::Debug("interval before: "+ QString::number(interval));
+            LogHandler::Debug("interval before: "+ QString::number(interval));
             interval = round(speedmodifier < 1.0 ? interval / speedmodifier :
-                                 interval - (interval * (speedmodifier - 1)));
-            // LogHandler::Debug("interval after: "+ QString::number(interval));
+                                  interval - ((interval * speedmodifier) - interval));
+            LogHandler::Debug("interval after: "+ QString::number(interval));
         }
         std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { _channel, executionMillis, pos, interval, lastActionPos, lastActionInterval });
         //LogHandler::Debug("nextAction.speed: "+ QString::number(nextAction->speed));
