@@ -75,6 +75,14 @@ var Roles = {
 	ForegroundRole: 9
 };
 
+var ThumbState = {
+    Waiting: 0,
+    Loading: 1,
+    Error: 2,
+    Ready: 3,
+    Unknown: 4
+}
+
 var MediaActions = {};
 
 var mediaLoading = false;
@@ -1764,13 +1772,13 @@ function loadMedia(mediaList) {
 			if (obj.thumbFileExists)
 				image.dataset.src = "/thumb/" + obj.relativeThumb;
 			else
-				image.dataset.src = "/thumb/" + obj.thumbFileLoading;
+				image.dataset.src = "/thumb/" + (obj.thumbState === ThumbState.Unknown ? obj.thumbFileUnknown : obj.thumbFileLoading);
 			image.classList.add("lazy");
 		} else {
 			if (obj.thumbFileExists)
 				image.src = "/thumb/" + obj.relativeThumb;
-			else
-				image.src = "/thumb/" + obj.thumbFileLoading;
+			else 
+				image.src = "/thumb/" + (obj.thumbState === ThumbState.Unknown ? obj.thumbFileUnknown : obj.thumbFileLoading);
 			image.loading = "lazy"
 		}
 		image.classList.add("media-thumb-nail")

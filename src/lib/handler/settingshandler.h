@@ -313,6 +313,8 @@ public:
     static int getFunscriptOffsetStep();
     static void setPlaybackRateStep(double value);
     static double getPlaybackRateStep();
+    static void setDisableAutoThumbGeneration(bool value);
+    static bool getDisableAutoThumbGeneration();
 
     static void setLubePulseAmount(int value);
     static int getLubePulseAmount();

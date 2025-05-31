@@ -890,6 +890,7 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["thumbFileLoading"] = LOADING_IMAGE;
     object["thumbFileLoadingCurrent"] = LOADING_CURRENT_IMAGE;
     object["thumbFileError"] = ERROR_IMAGE;
+    object["thumbFileUnknown"] = UNKNOWN_IMAGE;
     object["thumbFileExists"] = item.thumbFileExists;
     object["loaded"] = false;
     object["playing"] = false;

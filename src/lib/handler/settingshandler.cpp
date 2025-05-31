@@ -3146,6 +3146,17 @@ double SettingsHandler::getPlaybackRateStep()
     return getSetting(SettingKeys::playbackRateStep).toDouble();
 }
 
+void SettingsHandler::setDisableAutoThumbGeneration(bool value)
+{
+    changeSetting(SettingKeys::disableAutoThumbGeneration, value);
+}
+
+bool SettingsHandler::getDisableAutoThumbGeneration()
+{
+    QMutexLocker locker(&mutex);
+    return getSetting(SettingKeys::disableAutoThumbGeneration).toBool();
+}
+
 void SettingsHandler::setLubePulseAmount(int value)
 {
     QMutexLocker locker(&mutex);

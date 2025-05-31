@@ -72,6 +72,7 @@ struct SettingKeys {
     static inline const QString useDTRAndRTS = "useDTRAndRTS";
     static inline const QString httpChunkSizeMB = "httpChunkSizeMB";
     static inline const QString playbackRateStep = "playbackRateStep";
+    static inline const QString disableAutoThumbGeneration = "disableAutoThumbGeneration";
 
 };
 
@@ -99,7 +100,9 @@ public:
         {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableTCodeValidation, FormControlTypes::Checkbox, false, "Disable TCode validation", "Disable the D1 validation when connecting to a tcode device.", false},
         {SettingProfile::System, SettingGroups::serial, SettingKeys::useDTRAndRTS, FormControlTypes::Checkbox, false, "Disable serial RTS/DTS", "Disable serial RTS/DTS when connecting via serial.", false},
         {SettingProfile::System, SettingGroups::web, SettingKeys::httpChunkSizeMB, FormControlTypes::Double, 26.214400, "Media streaming chunk size", "The chunk sise the web browser should ask for when steaming media.", true},
-        {SettingProfile::System, SettingGroups::media, SettingKeys::playbackRateStep, FormControlTypes::Double, 0.01, "Playback rate step", "The amount to change the playback rate by when using gamepad or input scroller.", false}
+        {SettingProfile::System, SettingGroups::media, SettingKeys::playbackRateStep, FormControlTypes::Double, 0.01, "Playback rate step", "The amount to change the playback rate by when using gamepad or input scroller.", false},
+        {SettingProfile::System, SettingGroups::media, SettingKeys::disableAutoThumbGeneration, FormControlTypes::Checkbox, false, "Disable automatic thumb generation", "If checked, when a new media item has been found, no thumb will be automattically generated. Manual generation will still be attemped..", false},
+
     };
     static inline QHash<QString, SettingMap> SettingsMap;
     // static inline QMap<SettingProfile, QMap<QString, QMap<QString, SettingMap>>> SettingsGroupMap;

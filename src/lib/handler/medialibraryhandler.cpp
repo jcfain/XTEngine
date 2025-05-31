@@ -837,14 +837,20 @@ void MediaLibraryHandler::saveNewThumbs(bool vrMode)
         LibraryListItem27 &item = _cachedLibraryItems[_thumbNailSearchIterator];
         emit backgroundProcessStateChange("Processing thumbs", round((_thumbNailSearchIterator/(float)_cachedLibraryItems.length())*100));
         _thumbNailSearchIterator++;
-        QFileInfo thumbInfo(item.thumbFile);
-        if (isLibraryItemVideo(item) && !thumbInfo.exists())
+        if (isLibraryItemVideo(item) && !item.thumbFileExists && !SettingsHandler::getDisableAutoThumbGeneration())
         {
             saveThumb(item, -1, vrMode);
         }
         else
         {
-            setThumbState(ThumbState::Ready, item);
+            if(!item.thumbFileExists && SettingsHandler::getDisableAutoThumbGeneration())
+            {
+                setThumbState(ThumbState::Unknown, item);
+            }
+            else
+            {
+                setThumbState(ThumbState::Ready, item);
+            }
             saveNewThumbs(vrMode);
         }
     }

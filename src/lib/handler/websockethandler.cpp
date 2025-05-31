@@ -15,6 +15,7 @@ WebSocketHandler::WebSocketHandler(QObject *parent):
 //    proxy.setPassword("password");
 //    QNetworkProxy::setApplicationProxy(proxy);
 //    m_pWebSocketServer->setProxy(proxy);
+    // m_pWebSocketServer->setProxy(QNetworkProxy::ProxyType::DefaultProxy);
     if (m_pWebSocketServer->listen(QHostAddress::Any, SettingsHandler::getWebSocketPort()))
     {
         LogHandler::Debug("Websocket listening on port " + QString::number(m_pWebSocketServer->serverPort()));
