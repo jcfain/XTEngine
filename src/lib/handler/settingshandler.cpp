@@ -115,6 +115,7 @@ void SettingsHandler::getSetting(const QString& settingName, QJsonObject& json)
             json[settingName] = getSetting(settingName).toJsonArray();
             break;
         }
+#if BUILD_QT5
         // XTE doesnt uses the following at this time.
         case QVariant::Char:
         case QVariant::ByteArray:
@@ -165,6 +166,7 @@ void SettingsHandler::getSetting(const QString& settingName, QJsonObject& json)
         case QVariant::SizePolicy:
         case QVariant::LastType:
             break;
+#endif
         default:
             break;
     }
@@ -312,6 +314,7 @@ void SettingsHandler::changeSetting(QString settingName, QVariant value, bool re
                     hasChanged = true;
                     break;
                 }
+#if BUILD_QT5
                 // XTE doesnt uses the following at this time.
                 case QVariant::Char:
                 case QVariant::ByteArray:
@@ -362,6 +365,7 @@ void SettingsHandler::changeSetting(QString settingName, QVariant value, bool re
                 case QVariant::SizePolicy:
                 case QVariant::LastType:
                     break;
+#endif
                 default:
                     break;
             }
@@ -571,7 +575,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         foreach(QVariant item, playlistArray)
         {
             auto itemTyped = LibraryListItem27::fromVariant(item);
-            itemTyped.ID = idTracker;
+            itemTyped.ID = QString::number(idTracker);
             items.append(itemTyped);
             idTracker++;
         }

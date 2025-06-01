@@ -14,9 +14,10 @@
 #include "websockethandler.h"
 #include "medialibraryhandler.h"
 #include "../struct/ConnectionChangedSignal.h"
+#include "../lookup/AxisType.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT HttpHandler : QObject
+class XTENGINE_EXPORT HttpHandler : public QObject
 {
     Q_OBJECT
 signals:
@@ -38,6 +39,7 @@ signals:
 
 public slots:
     void on_DeviceConnection_StateChange(ConnectionChangedSignal status);
+    void stopAllMedia();
 
 public:
     HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent = nullptr);
@@ -71,7 +73,6 @@ public:
 
 
     void sendWebSocketTextMessage(QString command, QString message = nullptr);
-    void stopAllMedia();
 
 private:
     QHttpServer* _server = 0;

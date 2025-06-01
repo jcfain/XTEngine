@@ -208,12 +208,13 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         newItem.isMFS = obj["isMFS"].toBool();
         newItem.hasAlternate = obj["hasAlternate"].toBool();
         newItem.dateAdded = QDateTime::fromString(obj["dateAdded"].toString(), Qt::DateFormat::ISODateWithMs);
-        foreach(auto bookmark, obj["bookmarks"].toArray())
+        foreach(auto jasonValueConstObj, obj["bookmarks"].toArray())
         {
-            Bookmark bookMark;
-            bookMark.Name = bookmark["Name"].toString();
-            bookMark.Time = bookmark["Time"].toString().toLongLong();
-            newItem.bookmarks.append(bookMark);
+            QJsonObject obj = jasonValueConstObj.toObject();
+            Bookmark bookmark;
+            bookmark.Name = obj["Name"].toString();
+            bookmark.Time = obj["Time"].toString().toLongLong();
+            newItem.bookmarks.append(bookmark);
         }
         foreach(auto funscript, obj["funscripts"].toArray())
         {

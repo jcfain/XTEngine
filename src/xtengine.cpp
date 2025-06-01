@@ -11,27 +11,27 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     QCoreApplication::setApplicationVersion(SettingsHandler::XTEVersion);
 
     qRegisterMetaType<QItemSelection>();
-    qRegisterMetaTypeStreamOperators<QList<QString>>("QList<QString>");
-    qRegisterMetaTypeStreamOperators<ChannelModel>("ChannelModel");
+    // qRegisterMetaTypeStreamOperators<QList<QString>>("QList<QString>");
+    // qRegisterMetaTypeStreamOperators<ChannelModel>("ChannelModel");
     qRegisterMetaType<ChannelDimension>("ChannelDimension");
     qRegisterMetaType<ChannelType>("ChannelType");
     qRegisterMetaType<ChannelTimeType>("ChannelTimeType");
     qRegisterMetaType<FunscriptAction>("FunscriptAction");
-    qRegisterMetaTypeStreamOperators<ChannelName>("ChannelName");
-    qRegisterMetaTypeStreamOperators<DecoderModel>("DecoderModel");
-    qRegisterMetaTypeStreamOperators<XMediaStatus>("XMediaStatus");
+    // qRegisterMetaTypeStreamOperators<ChannelName>("ChannelName");
+    // qRegisterMetaTypeStreamOperators<DecoderModel>("DecoderModel");
+    // qRegisterMetaTypeStreamOperators<XMediaStatus>("XMediaStatus");
     qRegisterMetaType<LibraryListItem>();
-    qRegisterMetaTypeStreamOperators<LibraryListItem>("LibraryListItem");
-    qRegisterMetaTypeStreamOperators<QMap<QString, QList<LibraryListItem>>>("QMap<QString, QList<LibraryListItem>>");
-    qRegisterMetaTypeStreamOperators<QList<LibraryListItem>>("QList<LibraryListItem>");
+    // qRegisterMetaTypeStreamOperators<LibraryListItem>("LibraryListItem");
+    // qRegisterMetaTypeStreamOperators<QMap<QString, QList<LibraryListItem>>>("QMap<QString, QList<LibraryListItem>>");
+    // qRegisterMetaTypeStreamOperators<QList<LibraryListItem>>("QList<LibraryListItem>");
     qRegisterMetaType<LibraryListItem27>();
-    qRegisterMetaTypeStreamOperators<LibraryListItem27>("LibraryListItem27");
-    qRegisterMetaTypeStreamOperators<QMap<QString, QList<LibraryListItem27>>>("QMap<QString, QList<LibraryListItem27>>");
-    qRegisterMetaTypeStreamOperators<QList<LibraryListItem27>>("QList<LibraryListItem27>");
-    qRegisterMetaTypeStreamOperators<TCodeVersion>("TCodeVersion");
-    qRegisterMetaTypeStreamOperators<LibraryListItemMetaData>("LibraryListItemMetaData");
-    qRegisterMetaTypeStreamOperators<LibraryListItemMetaData258>("LibraryListItemMetaData258");
-    qRegisterMetaTypeStreamOperators<Bookmark>("Bookmark");
+    // qRegisterMetaTypeStreamOperators<LibraryListItem27>("LibraryListItem27");
+    // qRegisterMetaTypeStreamOperators<QMap<QString, QList<LibraryListItem27>>>("QMap<QString, QList<LibraryListItem27>>");
+    // qRegisterMetaTypeStreamOperators<QList<LibraryListItem27>>("QList<LibraryListItem27>");
+    // qRegisterMetaTypeStreamOperators<TCodeVersion>("TCodeVersion");
+    // qRegisterMetaTypeStreamOperators<LibraryListItemMetaData>("LibraryListItemMetaData");
+    // qRegisterMetaTypeStreamOperators<LibraryListItemMetaData258>("LibraryListItemMetaData258");
+    // qRegisterMetaTypeStreamOperators<Bookmark>("Bookmark");
     qRegisterMetaType<QVector<int> >("QVector<int>");
 
     qRegisterMetaType<ScriptInfo>("ScriptInfo");
@@ -87,6 +87,7 @@ XTEngine::~XTEngine() {
 
 void XTEngine::init()
 {
+#if BUILD_QT5
     if(SettingsHandler::getEnableHttpServer())
     {
         _httpHandler = new HttpHandler(_mediaLibraryHandler, this);
@@ -111,6 +112,7 @@ void XTEngine::init()
         });
         _httpHandler->listen();
     }
+#endif
 
     connect(SettingsHandler::instance(), &SettingsHandler::settingChange, this, [this](QString key, QVariant value) {
         if(key == SettingKeys::scheduleLibraryLoadTime)
@@ -233,18 +235,23 @@ void XTEngine::skipToNextAction()
     if(SettingsHandler::getEnableHttpServer() && _syncHandler->isPlayingVR())
     {
         qint64 nextActionMillis = _syncHandler->getFunscriptNext();
+
+#if BUILD_QT5
         if(nextActionMillis > 1500)
         {
             _httpHandler->sendWebSocketTextMessage("skipToNextAction", QString::number((nextActionMillis / 1000) - 1, 'f', 1));
         }
+#endif
     }
 }
 
 void XTEngine::skipToMoneyShot()
 {
     _syncHandler->skipToMoneyShot();
+#if BUILD_QT5
     if(SettingsHandler::getEnableHttpServer())
         _httpHandler->sendWebSocketTextMessage("skipToMoneyShot");
+#endif
 }
 
 //void XTEngine::processVRMetaData(QString videoPath, QString funscriptPath, qint64 duration)

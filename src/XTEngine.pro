@@ -1,5 +1,15 @@
 QT -= gui
-QT += core serialport network texttospeech websockets multimedia httpserver gamepadlegacy bluetooth
+QT += core serialport network texttospeech websockets multimedia bluetooth
+
+equals(QT_MAJOR_VERSION, 6) {
+    QT += httpserver gamepadlegacy
+    DEFINES += BUILD_QT6=1
+}
+
+equals(QT_MAJOR_VERSION, 5) {
+    QT +=  gamepad
+    DEFINES += BUILD_QT5=1
+}
 
 TARGET = xtengine
 TEMPLATE = lib
@@ -23,10 +33,9 @@ SOURCES += \
     lib/handler/crypthandler.cpp \
     lib/handler/deohandler.cpp \
     lib/handler/funscripthandler.cpp \
-    lib/handler/gamepadhandler.cpp \
-    lib/handler/httphandler.cpp \
     lib/handler/loghandler.cpp \
     lib/handler/medialibraryhandler.cpp \
+    lib/handler/outputdevicehandler.cpp \
     lib/handler/scheduler.cpp \
     lib/handler/serialhandler.cpp \
     lib/handler/settingsactionhandler.cpp \
@@ -39,8 +48,6 @@ SOURCES += \
     lib/handler/whirligighandler.cpp \
     lib/handler/xmediastatehandler.cpp \
     lib/handler/xtpwebhandler.cpp \
-    lib/handler/xvideopreview.cpp \
-    lib/handler/xvideosurface.cpp \
     lib/lookup/MediaActions.cpp \
     lib/lookup/tcodechannellookup.cpp \
     lib/tool/heatmap.cpp \
@@ -51,15 +58,19 @@ SOURCES += \
     lib/tool/xtimer.cpp \
     xtengine.cpp
 
+equals(QT_MAJOR_VERSION, 5) {
+    SOURCES += \
+        lib/handler/gamepadhandler.cpp \
+        lib/handler/httphandler.cpp \
+        lib/handler/xvideopreview.cpp \
+        lib/handler/xvideosurface.cpp \
+}
 HEADERS += \
     XTEngine_global.h \
-    lib/handler/blehandler.h \
     lib/handler/connectionhandler.h \
     lib/handler/crypthandler.h \
     lib/handler/deohandler.h \
     lib/handler/funscripthandler.h \
-    lib/handler/gamepadhandler.h \
-    lib/handler/httphandler.h \
     lib/handler/inputdevicehandler.h \
     lib/handler/loghandler.h \
     lib/handler/medialibraryhandler.h \
@@ -76,8 +87,6 @@ HEADERS += \
     lib/handler/whirligighandler.h \
     lib/handler/xmediastatehandler.h \
     lib/handler/xtpwebhandler.h \
-    lib/handler/xvideopreview.h \
-    lib/handler/xvideosurface.h \
     lib/interface/networkdevice.h \
     lib/lookup/AxisDimension.h \
     lib/lookup/AxisNames.h \
@@ -123,6 +132,14 @@ HEADERS += \
     lib/tool/xtimer.h \
     xtengine.h
 
+equals(QT_MAJOR_VERSION, 5) {
+    HEADERS += \
+        lib/handler/blehandler.h \
+        lib/handler/gamepadhandler.h \
+        lib/handler/httphandler.h \
+        lib/handler/xvideopreview.h \
+        lib/handler/xvideosurface.h \
+}
 
 #unix {
 #    target.path = /usr/lib
@@ -134,17 +151,21 @@ unix:!mac {
 CONFIG += shared
     #QMAKE_PREFIX_SHLIB = so
     #QMAKE_RPATHDIR += ../lib
-    # INCLUDEPATH += $$PWD/../../HttpServer/src
-    # DEPENDPATH += $$PWD/../../HttpServer/src
     CONFIG(debug, debug|release) {
         DESTDIR = $$shell_path($$OUT_PWD/debug)
-        # LIBS += -L$$PWD/../../HttpServer/src/build/debug -lhttpServer
-        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
+        equals(QT_MAJOR_VERSION, 5) {
+            LIBS += -L$$PWD/../../HttpServer/src/build/debug -lhttpServer
+        }
     }
     else:CONFIG(release, debug|release): {
         DESTDIR = $$shell_path($$OUT_PWD/release)
-        # LIBS += -L$$PWD/../../HttpServer/src/build/release -lhttpServer
-        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
+        equals(QT_MAJOR_VERSION, 5) {
+            LIBS += -L$$PWD/../../HttpServer/src/build/release -lhttpServer
+        }
+    }
+    equals(QT_MAJOR_VERSION, 5) {
+        INCLUDEPATH += $$PWD/../../HttpServer/src
+        DEPENDPATH += $$PWD/../../HttpServer/src
     }
 }
 
@@ -172,11 +193,9 @@ CONFIG += shared
     # DEPENDPATH += $$PWD/../../HttpServer/src
     CONFIG(debug, debug|release) {
         DESTDIR = $$shell_path($$OUT_PWD/debug)
-        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
     }
     else:CONFIG(release, debug|release): {
         DESTDIR = $$shell_path($$OUT_PWD/release)
-        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
     }
     RPATHDIR *= @loader_path/../Frameworks @executable_path/../Frameworks
     QMAKE_LFLAGS_SONAME = -W1,-install_name,@rpath,
@@ -189,13 +208,9 @@ CONFIG += shared
 win32{
     build_pass: CONFIG(debug, debug|release) {
         DESTDIR = $$shell_path($$OUT_PWD/debug)
-        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
-        # INCLUDEPATH += $$PWD/../../qtgamepadlegacy/src/gamepad
     }
     else:win32:CONFIG(release, debug|release): {
         DESTDIR = $$shell_path($$OUT_PWD/release)
-        # LIBS += -L$$PWD/../../build-qtgamepadlegacy-Desktop_Qt_6_6_1_MinGW_64_bit-Release/bin -lqt6GamepadLegacy
-        # INCLUDEPATH += $$PWD/../../qtgamepadlegacy/src/gamepad
     }
     # INCLUDEPATH += $$PWD/../../HttpServer/src
     # DEPENDPATH += $$PWD/../../HttpServer/src

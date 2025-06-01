@@ -24,9 +24,11 @@ void BLEHandler::init(int waitTimeout)
     m_deviceDiscoveryAgent->setLowEnergyDiscoveryTimeout(waitTimeout);
 
     connect(m_deviceDiscoveryAgent, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered, this, &BLEHandler::foundDevice);
+#if BUILD_QT5
     connect(m_deviceDiscoveryAgent,
             static_cast<void (QBluetoothDeviceDiscoveryAgent::*)(QBluetoothDeviceDiscoveryAgent::Error)>(&QBluetoothDeviceDiscoveryAgent::error),
             this, &BLEHandler::scanError);
+#endif
 
     connect(m_deviceDiscoveryAgent, &QBluetoothDeviceDiscoveryAgent::finished, this, &BLEHandler::scanFinished);
     connect(m_deviceDiscoveryAgent, &QBluetoothDeviceDiscoveryAgent::canceled, this, &BLEHandler::scanFinished);
@@ -66,7 +68,7 @@ void BLEHandler::foundDevice(const QBluetoothDeviceInfo &info)
                 this, &BLEHandler::serviceDiscovered);
         connect(m_control, &QLowEnergyController::discoveryFinished,
                 this, &BLEHandler::serviceScanDone);
-
+#if BUILD_QT5
         connect(m_control, static_cast<void (QLowEnergyController::*)(QLowEnergyController::Error)>(&QLowEnergyController::error),
             this, [this](QLowEnergyController::Error error) {
                 Q_UNUSED(error);
@@ -74,6 +76,7 @@ void BLEHandler::foundDevice(const QBluetoothDeviceInfo &info)
                 LogHandler::Error("BLE Error");
                 emit connectionChange({DeviceType::Output, DeviceName::BLE, ConnectionStatus::Error, "BLE error" });
         });
+#endif
         connect(m_control, &QLowEnergyController::connected, this, [this]() {
             //setInfo("Controller connected. Search services...");
             m_control->discoverServices();
@@ -139,7 +142,11 @@ void BLEHandler::serviceScanDone()
 void BLEHandler::serviceStateChanged(QLowEnergyService::ServiceState newState)
 {
     switch (newState) {
+#if BUILD_QT5
         case QLowEnergyService::DiscoveringServices:
+#else
+        case QLowEnergyService::DiscoveringService:
+#endif
             LogHandler::Debug(tr("Service State change to: Discovering services..."));
             break;
         case QLowEnergyService::ServiceDiscovered:

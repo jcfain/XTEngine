@@ -6,8 +6,10 @@
 #include "../tool/file-util.h"
 
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
-    : QObject(parent),
-    xVideoPreview(this)
+    : QObject(parent)
+#if BUILD_QT5
+    , xVideoPreview(this)
+#endif
 {
     _thumbTimeoutTimer.setSingleShot(true);
     connect(this, &MediaLibraryHandler::prepareLibraryLoad, this, &MediaLibraryHandler::onPrepareLibraryLoad);
@@ -249,7 +251,11 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             item.mediaExtension = mediaExtension;
             item.thumbFile = nullptr;
             item.zipFile = zipFile;
+#if BUILD_QT5
             item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
+#else
+            item.modifiedDate = fileinfo.birthTime();// TODO: test linux because fileinfo.created() doesnt exist anymore.
+#endif
             item.duration = 0;
             item.thumbState = ThumbState::Waiting;
             item.metadata.isMFS = false;
@@ -362,7 +368,11 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 item.hasScript = true;
                 item.mediaExtension = mediaExtension;
                 item.zipFile = zipFile;
+#if BUILD_QT5
                 item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
+#else
+                item.modifiedDate = fileinfo.birthTime();// TODO: test linux because fileinfo.created() doesnt exist anymore.
+#endif
                 item.duration = 0;
                 item.thumbState = ThumbState::Waiting;
                 item.libraryPath = path;
@@ -424,7 +434,11 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     item.pathNoExtension = fileNameNoExtension;
     item.mediaExtension = mediaExtension;
     item.zipFile = zipFile;
+#if BUILD_QT5
     item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
+#else
+    item.modifiedDate = fileinfo.birthTime();// TODO: test linux because fileinfo.created() doesnt exist anymore.
+#endif
     item.duration = 0;
     item.thumbState = ThumbState::Waiting;
     setLiveProperties(item);
@@ -877,7 +891,7 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
         QDir dir; // Make thumb path if doesnt exist
         dir.mkpath(SettingsHandler::getSelectedThumbsDir());
 
-
+#if BUILD_QT5
         connect(&_thumbTimeoutTimer, &QTimer::timeout, &_thumbTimeoutTimer, [this, itemID, vrMode]() {
             disconnect(&xVideoPreview, nullptr,  nullptr, nullptr);
             onSaveThumb(itemID, vrMode, "Thumb loading timed out.");
@@ -941,6 +955,7 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
                 });
 
         xVideoPreview.load(videoFile);
+#endif
     }
 }
 

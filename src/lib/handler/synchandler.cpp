@@ -64,10 +64,10 @@ FunscriptHandler *SyncHandler::getFunscriptHandler(QString channel)
 {
     if(_funscriptHandlers.isEmpty())
         return 0;
-    auto it = std::find_if(_funscriptHandlers.begin(), _funscriptHandlers.end(), [channel](const FunscriptHandler* handler) {
+    QList<FunscriptHandler *>::iterator it = std::find_if(_funscriptHandlers.begin(), _funscriptHandlers.end(), [channel](const FunscriptHandler* handler) {
         return handler->channel() == channel;
     });
-    return it != _funscriptHandlers.end() ? it.i->t() : 0;
+    return it != _funscriptHandlers.end() ? (*it) : 0;
 }
 
 SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem)
@@ -573,10 +573,11 @@ bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadS
         //path.remove(path.lastIndexOf('.'), path.length() -  1) :
         libraryItem.pathNoExtension;
     //QFileInfo pathInfo(path);
+#if BUILD_QT5
     QZipReader* zipFile = 0;
     if(!libraryItem.zipFile.isEmpty())
         zipFile = new QZipReader(libraryItem.zipFile, QIODevice::ReadOnly);
-
+#endif
     auto availibleAxis = TCodeChannelLookup::getChannels();
     QString mainScript;
     foreach(auto axisName, availibleAxis)
@@ -615,6 +616,7 @@ bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadS
                 }
             }
         }
+#if BUILD_QT5
         else if(zipFile && zipFile->isReadable())
         {
             QString scriptFileNameNoExtension = XFileUtil::getNameNoExtension(pathNoExtension);
@@ -635,6 +637,7 @@ bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadS
                }
            }
         }
+#endif
     }
     FunscriptHandler::setModifier(libraryItem.metadata.funscriptModifier);
     loadState.hasScript = !_funscriptHandlers.isEmpty();
@@ -646,8 +649,10 @@ bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadS
             _playingStandAloneFunscript = loadState.mainScript;
         }
     }
+#if BUILD_QT5
     if(zipFile)
         delete zipFile;
+#endif
     return loadState.hasScript;
 }
 

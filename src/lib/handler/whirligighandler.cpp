@@ -41,7 +41,7 @@ void WhirligigHandler::send(const QString &command)
     {
         LogHandler::Debug("Sending to Whirligig: "+command);
         QByteArray currentRequest("\0\0\0");
-        currentRequest.append(command);
+        currentRequest.append(command.toUtf8());
         tcpSocket->write(currentRequest);
         tcpSocket->waitForBytesWritten();
     }
