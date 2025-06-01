@@ -21,6 +21,7 @@
 #include "../lookup/MediaActions.h"
 #include "../lookup/xvideorenderer.h"
 #include "../lookup/SettingMap.h"
+// #include "../tool/qsettings_json.hpp"
 #include "../tool/xmath.h"
 #include "../struct/ChannelModel.h"
 #include "../struct/ChannelModel33.h"
@@ -60,6 +61,7 @@ public:
         return m_instance;
     }
     static QSettings* getSettings();
+    static void copy(const QSettings* from, QSettings* into);
     static QVariant getSetting(const QString& settingName);
     static void getSetting(const QString& settingName, QJsonObject& json);
     static QString getSettingPath(const SettingMap &setting);
@@ -309,6 +311,10 @@ public:
     static double getFunscriptModifierStep();
     static void setFunscriptOffsetStep(int value);
     static int getFunscriptOffsetStep();
+    static void setPlaybackRateStep(double value);
+    static double getPlaybackRateStep();
+    static void setDisableAutoThumbGeneration(bool value);
+    static bool getDisableAutoThumbGeneration();
 
     static void setLubePulseAmount(int value);
     static int getLubePulseAmount();
@@ -340,7 +346,8 @@ public:
     static void Clear();
     static void Quit(bool restart);
     static void Restart();
-    static bool Import(QString file);
+    static bool Import(QString file, QSettings::Format format);
+    static bool Export(QString file, QSettings::Format format);
 
 
     static const QStringList getVideoExtensions()

@@ -4,6 +4,7 @@
 #include <QMetaType>
 #include <QDate>
 #include <QVariant>
+#include <QFileInfo>
 #include <QDataStream>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -183,11 +184,11 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
             mfsScripts.append(script);
         }
         obj["MFSTracks"] = mfsTracks;
-        QJsonArray altScripts;
+        QJsonArray scripts;
         foreach (auto script, item.scripts) {
-            altScripts.append(ScriptInfo::toJson(script));
+            scripts.append(ScriptInfo::toJson(script));
         }
-        obj["scripts"] = altScripts;
+        obj["scripts"] = scripts;
         return obj;
     }
 
@@ -234,7 +235,10 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         }
         foreach(auto track, obj["scripts"].toArray())
         {
-            newItem.scripts.append(ScriptInfo::fromJson(track.toObject()));
+            auto script = track.toObject();
+            auto path = script["path"].toString();
+            if(QFileInfo::exists(path))
+                newItem.scripts.append(ScriptInfo::fromJson(track.toObject()));
         }
         return newItem;
     }

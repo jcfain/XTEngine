@@ -12,7 +12,8 @@
     .modal-content {}
 
     .formElement {
-        grid-template-columns: 40% 60%;
+        grid-template-columns: repeat(auto-fit, 100%);
+        text-align: start;
     }
     
     .media-filter-input {
@@ -39,6 +40,21 @@
     
     .body-container {
     }
+}
+
+@media only screen and (max-width: 1026px) {
+    .video-controls {
+        left: 0;
+        max-width: 100vw;
+    }
+} 
+@media (orientation: landscape) {
+    .video-container-fixed {
+        width: 40vw;
+    }
+}
+@media (orientation: portrait) {
+
 }
 
 /* @media (min-width:320px)  { smartphones, iPhone, portrait 480x320 phones }

@@ -35,11 +35,13 @@ signals:
     void skipToNextAction();
     void channelPositionChange(QString channel, int position, int time, ChannelTimeType timeType);
     void scriptTogglePaused(bool paused);
+    void swapScript(ScriptInfo script);
     void clean1024();
 
 public slots:
     void on_DeviceConnection_StateChange(ConnectionChangedSignal status);
     void stopAllMedia();
+    void onSettingChange(QString settingName, QVariant value);
 
 public:
     HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent = nullptr);

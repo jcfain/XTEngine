@@ -1,6 +1,8 @@
 #include "websockethandler.h"
 #include "settingshandler.h"
 
+#include "xmediastatehandler.h"
+
 WebSocketHandler::WebSocketHandler(QObject *parent):
     QObject(parent),
     m_pWebSocketServer(new QWebSocketServer(QStringLiteral("XTP Websocket"),
@@ -14,6 +16,7 @@ WebSocketHandler::WebSocketHandler(QObject *parent):
 //    proxy.setPassword("password");
 //    QNetworkProxy::setApplicationProxy(proxy);
 //    m_pWebSocketServer->setProxy(proxy);
+    // m_pWebSocketServer->setProxy(QNetworkProxy::ProxyType::DefaultProxy);
     if (m_pWebSocketServer->listen(QHostAddress::Any, SettingsHandler::getWebSocketPort()))
     {
         LogHandler::Debug("Websocket listening on port " + QString::number(m_pWebSocketServer->serverPort()));
@@ -178,11 +181,18 @@ void WebSocketHandler::processTextMessage(QString message)
     } else if(command == "startMetadataProcess") {
         emit startMetadataProcess();
     } else if(command == "processMetadata") {
-        QString itemID = json["message"].toString();
-        emit processMetadata(itemID);
+        QString metadataKey = json["message"].toString();
+        emit processMetadata(metadataKey);
     } else if(command == "mediaAction") {
         QString action = json["message"].toString();
         emit mediaAction(action);
+    } else if (command == "swapScript") {
+        QJsonObject obj = json["message"].toObject();
+        ScriptInfo scriptInfo = ScriptInfo::fromJson(obj);
+        emit swapScript(scriptInfo);
+    } else if (command == "setPlaybackRate") {
+        auto value = json["message"].toString().toDouble();
+        XMediaStateHandler::setPlaybackSpeed(value);
     } else if(command == "clean1024") {
         emit clean1024();
     }

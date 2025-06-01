@@ -54,6 +54,9 @@ public:
     const QString IncreaseOffset = "IncreaseDelay";
     const QString DecreaseOffset = "DecreaseDelay";
     const QString ResetOffset = "ResetOffset";
+    const QString IncreasePlaybackRate = "IncreasePlaybackRate";
+    const QString DecreasePlaybackRate = "DecreasePlaybackRate";
+    const QString ResetPlaybackRate = "ResetPlaybackRate";
     const QString AltFunscriptNext = "AltFunscriptNext";
     const QString AltFunscriptPrev = "AltFunscriptPrev";
     const QMap<QString, QString> Values {
@@ -68,6 +71,9 @@ public:
         {Loop, "Media: Toggle loop (A/B/off)"},
         {Rewind, "Media: Rewind"},
         {FastForward, "Media: Fast forward"},
+        {IncreasePlaybackRate, "Media: Playback rate (increase)"},
+        {DecreasePlaybackRate, "Media: Playback rate (decrease)"},
+        {ResetPlaybackRate, "Media: Playback rate reset to normal (1.0)"},
         {TCodeSpeedUp, "Gamepad: speed up"},
         {TCodeSpeedDown, "Gamepad: speed down"},
         {TCodeHomeAll, "TCode: Device home"},

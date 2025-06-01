@@ -11,6 +11,7 @@
 #include "LibraryListItemMetaData258.h"
 
 #define ERROR_IMAGE "://images/icons/error.png"
+#define UNKNOWN_IMAGE "://images/icons/unknown.png"
 #define LOADING_IMAGE "://images/icons/loading.png"
 #define LOADING_CURRENT_IMAGE "://images/icons/loading_current.png"
 
@@ -27,7 +28,8 @@ enum class ThumbState {
     Waiting,
     Loading,
     Error,
-    Ready
+    Ready,
+    Unknown
 };
 
 struct  XTENGINE_EXPORT LibraryListItem27

@@ -1,6 +1,7 @@
 #include "synchandler.h"
 
 #include "../tool/file-util.h"
+#include "xmediastatehandler.h"
 
 SyncHandler::SyncHandler(QObject* parent):
     QObject(parent)
@@ -80,7 +81,8 @@ SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem, bool reset
 {
     if(reset)
         this->reset();
-    else {
+    else
+    {
         if(_funscriptHandlers.length() > 0)
         {
             foreach (auto handler, _funscriptHandlers) {
@@ -114,6 +116,16 @@ SyncLoadState SyncHandler::swap(const LibraryListItem27 &libraryItem, const Scri
     if(!paused)
         setPause(false);
     return loadState;
+}
+
+SyncLoadState SyncHandler::swap(const ScriptInfo &script)
+{
+    auto playingItem = XMediaStateHandler::getPlaying();
+    if(playingItem)
+    {
+        return swap(*playingItem, script);
+    }
+    return SyncLoadState();
 }
 
 bool SyncHandler::isLoaded()
@@ -243,11 +255,13 @@ void SyncHandler::playStandAlone() {
         qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
         qint64 timer1 = 0;
         qint64 timer2 = 0;
+        qint64 executionTimeNS = 1000000;
         mSecTimer.start();
         emit syncStart();
         while (_isStandAloneFunscriptPlaying)
         {
-            if (timer2 - timer1 >= 1)
+            double elapsedNS = timer2 - timer1;
+            if (elapsedNS >= executionTimeNS)
             {
                 timer1 = timer2;
                 // if (_inputDeviceHandler && _inputDeviceHandler->isConnected()) {
@@ -263,7 +277,7 @@ void SyncHandler::playStandAlone() {
                     }
                     else
                     {
-                        _standAloneFunscriptCurrentTime++;
+                        _standAloneFunscriptCurrentTime += ((elapsedNS/1000000) * XMediaStateHandler::getPlaybackSpeed());
                     }
                     // if(_funscriptHandler->isLoaded())
                     //     actionPosition = _funscriptHandler->getPosition(_currentTime);
@@ -300,7 +314,7 @@ void SyncHandler::playStandAlone() {
                 if(_seekTime > -1)
                     _seekTime = -1;
             }
-            timer2 = (round(mSecTimer.nsecsElapsed() / 1000000));
+            timer2 = mSecTimer.nsecsElapsed();
             if(!_standAloneLoop && _standAloneFunscriptCurrentTime >= funscriptMax)
             {
                 _isStandAloneFunscriptPlaying = false;
@@ -444,7 +458,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
         std::shared_ptr<FunscriptAction> actionPosition;
         QMap<QString, std::shared_ptr<FunscriptAction>> actions;
         InputDevicePacket currentVRPacket;
-        qint64 timeTracker = 0;
+        double timeTracker = 0;
         qint64 lastVRTime = 0;
         //qint64 lastVRSyncResetTime = 0;
         QElapsedTimer mSecTimer;
@@ -455,11 +469,14 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
         qint64 duration = 0;
         qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
         bool lastStatePlaying = false;
+        double lastPlaybackSpeed = 1.0;
+        qint64 executionTimeNS = 1000000;
         emit syncStart();
         while (_isVRFunscriptPlaying && _inputDeviceHandler && _inputDeviceHandler->isConnected() && !_isOtherMediaPlaying)
         {
             //execute once every millisecond
-            if (timer2 - timer1 >= 1)
+            double elapsedNS = timer2 - timer1;
+            if (elapsedNS >= executionTimeNS)
             {
                 timer1 = timer2;
                 currentVRPacket = _inputDeviceHandler->getCurrentPacket();
@@ -467,6 +484,11 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                     emit sendTCode("DSTOP");
                 }
                 lastStatePlaying = currentVRPacket.playing;
+                if(currentVRPacket.playbackSpeed > 0 && lastPlaybackSpeed != currentVRPacket.playbackSpeed) {
+                    XMediaStateHandler::setPlaybackSpeed(currentVRPacket.playbackSpeed);
+                    lastPlaybackSpeed = currentVRPacket.playbackSpeed;
+                    LogHandler::Debug("syncInputDeviceFunscript: change playback rate: " + QString::number(currentVRPacket.playbackSpeed));
+                }
                 //timer.start();
                 if(currentVRPacket.playing && !isPaused() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0)
                 {
@@ -487,8 +509,10 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                     }
                     else
                     {
-                        timeTracker++;
-//                        LogHandler::Debug("else: " + QString::number(timeTracker));
+                       //  LogHandler::Debug("elapsedNS: " + QString::number(elapsedNS));
+                       //  LogHandler::Debug("elapsedNS/1000000: " + QString::number(elapsedNS/1000000));
+                        timeTracker += ((elapsedNS/1000000) * lastPlaybackSpeed);
+                       // LogHandler::Debug("timeTracker: " + QString::number(timeTracker));
                         vrTime = timeTracker;
                     }
                     //LogHandler::Debug("funscriptHandler->getPosition: "+QString::number(currentTime));
@@ -516,7 +540,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                     {
                         emit sendTCode(tcode);
                     //     LogHandler::Debug("timer "+QString::number((round(timer.nsecsElapsed()) / 1000000)));
-                        sendPulse(timer1, nextPulseTime);
+                        sendPulse(timer1/1000000, nextPulseTime);
                     }
                     actions.clear();
                 //}
@@ -524,8 +548,8 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                     QThread::msleep(100);
                 }
             }
-            timer2 = (round(mSecTimer.nsecsElapsed() / 1000000));
-            //LogHandler::Debug("timer nsecsElapsed: "+QString::number(timer2));
+            timer2 = mSecTimer.nsecsElapsed();
+            // LogHandler::Debug("timer nsecsElapsed: "+QString::number(timer2));
         }
 
         QMutexLocker locker(&_mutex);
@@ -533,6 +557,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
         emit sendTCode("DSTOP");
         //emit funscriptVREnded(videoPath, funscript, duration);
         LogHandler::Debug("exit syncInputDeviceFunscript");
+        XMediaStateHandler::setPlaybackSpeed(1.0);
         emit syncEnd();
     });
 }

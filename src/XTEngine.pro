@@ -52,6 +52,7 @@ SOURCES += \
     lib/lookup/tcodechannellookup.cpp \
     lib/tool/heatmap.cpp \
     lib/tool/imagefactory.cpp \
+    lib/tool/qsettings_json.cpp \
     lib/tool/simplecrypt.cpp \
     lib/tool/tcodefactory.cpp \
     lib/tool/xmath.cpp \
@@ -123,6 +124,7 @@ HEADERS += \
     lib/tool/file-util.h \
     lib/tool/heatmap.h \
     lib/tool/imagefactory.h \
+    lib/tool/qsettings_json.h \
     lib/tool/simplecrypt.h \
     lib/tool/string-util.h \
     lib/tool/tcodefactory.h \
@@ -208,9 +210,15 @@ CONFIG += shared
 win32{
     build_pass: CONFIG(debug, debug|release) {
         DESTDIR = $$shell_path($$OUT_PWD/debug)
+        LIBS += -L$$PWD/../../HttpServer/build/debug -lhttpServer
+        INCLUDEPATH += $$PWD/../../HttpServer/build/debug
+        LIBS += -L$$PWD/../../zlib-1.3.1/build/Desktop_Qt_5_15_2_MinGW_64_bit-Debug -lzlib
     }
     else:win32:CONFIG(release, debug|release): {
         DESTDIR = $$shell_path($$OUT_PWD/release)
+        LIBS += -L$$PWD/../../HttpServer/build/release -lhttpServer
+        INCLUDEPATH += $$PWD/../../HttpServer/build/release
+        LIBS += -L$$PWD/../../zlib-1.3.1/build/Desktop_Qt_5_15_2_MinGW_64_bit-Release -lzlib
     }
     # INCLUDEPATH += $$PWD/../../HttpServer/src
     # DEPENDPATH += $$PWD/../../HttpServer/src
@@ -233,11 +241,30 @@ win32{
 #mypackagerule.command = exec my_package_script.sh
 #QMAKE_EXTRA_TARGETS += mypackagerule
 
-copydata.commands = $(COPY_DIR) $$shell_path($$PWD/www) $$shell_path($$DESTDIR/www)
+# https://dragly.org/2013/11/05/copying-data-files-to-the-build-directory-when-working-with-qmake/
+copydata.commands = $(COPY_DIR) $$shell_quote($$PWD/www) $$shell_quote($$DESTDIR)
 first.depends = $(first) copydata
 export(first.depends)
 export(copydata.commands)
 QMAKE_EXTRA_TARGETS += first copydata
+
+# defineTest(copyToDestDir) {
+#     files = $$1
+#     dir = $$2
+#     # replace slashes in destination path for Windows
+#     win32:dir ~= s,/,\\,g
+
+#     for(file, files) {
+#         # replace slashes in source path for Windows
+#         win32:file ~= s,/,\\,g
+
+#         QMAKE_POST_LINK += $$QMAKE_COPY_DIR $$shell_quote($$file) $$shell_quote($$dir) $$escape_expand(\\n\\t)
+#     }
+
+#     export(QMAKE_POST_LINK)
+# }
+
+# copyToDestDir($$PWD/www, $$DESTDIR/www)
 
 
 # Default rules for deployment.

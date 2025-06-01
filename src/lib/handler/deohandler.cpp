@@ -35,7 +35,7 @@ void HereSphereHandler::init(NetworkAddress address, int waitTimeout)
         nullptr,
         0,
         0,
-        0,
+        1.0,
         0,
         0
     };
@@ -134,7 +134,7 @@ void HereSphereHandler::readData()
         QString path = jsonObject["path"].toString();
         qint64 duration = jsonObject["duration"].toDouble() * 1000;
         qint64 currentTime = jsonObject["currentTime"].toDouble() * 1000;
-        float playbackSpeed = jsonObject["playbackSpeed"].toDouble() * 1.0;
+        double playbackSpeed = jsonObject["playbackSpeed"].toDouble() * 1.0;
         bool playing = jsonObject["playerState"].toInt() == 0; // 0 == true? right? I know...
         bool stopped = false;
 //        LogHandler::Debug("Deo path: "+path);

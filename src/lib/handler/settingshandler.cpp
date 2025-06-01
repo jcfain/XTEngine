@@ -1,10 +1,11 @@
 #include "settingshandler.h"
 
 #include "../tool/file-util.h"
+#include "../tool/qsettings_json.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.471b";
-const float SettingsHandler::XTEVersionNum = 0.471f;
+const QString SettingsHandler::XTEVersion = "0.472b";
+const float SettingsHandler::XTEVersionNum = 0.472f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -387,10 +388,26 @@ QSettings* SettingsHandler::getSettings() {
     return settings;
 }
 
+void SettingsHandler::copy(const QSettings* from, QSettings* into)
+{
+    auto keys = from->allKeys();
+    foreach (auto key, keys) {
+        into->setValue(key, settings->value(key));
+    }
+}
+
 void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 {
     QMutexLocker locker(&mutex);
-    _applicationDirPath = QCoreApplication::applicationDirPath();
+    QString appPath = QString(qgetenv("APPIMAGE"));
+    if(!appPath.isEmpty())
+    {
+        _applicationDirPath = QFileInfo(appPath).absolutePath();;
+    }
+    else
+    {
+        _applicationDirPath = QCoreApplication::applicationDirPath();
+    }
     _appdataLocation = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
     if(_appdataLocation.isEmpty())
         _appdataLocation = _applicationDirPath;
@@ -399,14 +416,21 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         dir.mkpath(_appdataLocation);
     if(!settingsToLoadFrom)
     {
-        QFile settingsini(_applicationDirPath + "/settings.ini");
-        m_isPortable = settingsini.exists();
-        if(m_isPortable)
+        if(QFile::exists(_applicationDirPath + "/settings.json"))
         {
+            m_isPortable = true;
+            LogHandler::Debug("Found local json. Loading settings from it: "+_applicationDirPath + "/settings.json");
+            settings = new QSettings(_applicationDirPath + "/settings.json", JSONSettingsFormatter::JsonFormat);
+        }
+        else if(QFile::exists(_applicationDirPath + "/settings.ini"))
+        {
+            m_isPortable = true;
+            LogHandler::Debug("Found local ini. Loading settings from it: "+_applicationDirPath + "/settings.ini");
             settings = new QSettings(_applicationDirPath + "/settings.ini", QSettings::Format::IniFormat);
         }
         else
         {
+            LogHandler::Debug("Local file not found. Loading settings native location");
             settings = new QSettings(ORGANIZATION_NAME, APPLICATION_NAME);
         }
         settingsToLoadFrom = settings;
@@ -785,7 +809,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
     QMutexLocker locker(&mutex);
     if (_saveOnExit)
     {
-        LogHandler::Info("Saving settings");
+        LogHandler::Debug("Saving XTE settings");
         if(!settingsToSaveTo)
             settingsToSaveTo = settings;
 
@@ -942,7 +966,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         Sync();
 
         settingsChangedEvent(false);
-        LogHandler::Info("Settings Save complete");
+        LogHandler::Debug("Save complete");
     }
 
 }
@@ -1013,21 +1037,76 @@ void SettingsHandler::Restart()
 #endif
 }
 
-bool SettingsHandler::Import(QString file)
+bool SettingsHandler::Import(QString file, QSettings::Format format)
 {
-    if(file.isEmpty()) {
-        LogHandler::Error("Invalid file: empty file");
+    if(file.isEmpty())
+    {
+        LogHandler::Error("Settigns Import: Invalid file: empty file path");
+        emit instance()->messageSend("Settigns Import: Invalid file: empty file path", XLogLevel::Critical);
         return false;
     }
-    if(!QFileInfo::exists(file)) {
-        LogHandler::Error("Invalid file: does not exist.");
+    if(!QFileInfo::exists(file))
+    {
+        LogHandler::Error("Settigns Import: Invalid file: does not exist.");
+        emit instance()->messageSend("Settigns Import: Invalid file: does not exist.", XLogLevel::Critical);
         return false;
     }
-    QSettings* settingsImport = new QSettings(file, QSettings::Format::IniFormat);
-    Load(settingsImport);
+    // TODO validate contents format?
+    // if(!file.endsWith(extension))
+    // {
+    //     LogHandler::Error("Invalid file: only "+extension+" files are valid: '"+ targetFile +"'");
+    //     return false;
+    // }
+    QSettings settingsImport(file, format);
+    settings->clear();
+    copy(&settingsImport, settings);
+    settings->sync();
+    return true;
+}
+
+bool SettingsHandler::Export(QString file, QSettings::Format format)
+{
+    if(file.isEmpty())
+    {
+        LogHandler::Error("Settigns Export: Invalid path: empty file file path");
+        emit instance()->messageSend("Settigns Export: Invalid path: empty file file path", XLogLevel::Critical);
+        return false;
+    }
+    // auto fileInfo = QFileInfo(file);
+    QFile fileTest(file);
+    QFile::OpenMode mode;
+    mode.setFlag(QFile::OpenModeFlag::WriteOnly);
+    if(!fileTest.open(mode)) {
+        LogHandler::Error("Settigns Export: Invalid path: not writable");
+        emit instance()->messageSend("Settigns Export: Invalid path: not writable", XLogLevel::Critical);
+        return false;
+    }
+    fileTest.close();
+    // // auto dirFilter = fileInfo.absoluteDir();
+    // // if(!dirFilter.filter().testFlag(QDir::Filter::Writable))
+    // // {
+    // //     LogHandler::Error("Settigns Export: Invalid path: not writable");
+    // //     emit instance()->messageSend("Settigns Export: Invalid path: not writable", XLogLevel::Critical);
+    // //     return false;
+    // // }
+    // if(fileInfo.isDir()) {
+    //     if(!file.endsWith(QDir::separator()))
+    //     {
+    //         file += QDir::separator();
+    //     }
+    //     file += "settings_export-"+XTEVersion + (format == QSettings::Format::IniFormat ? ".ini" : ".json");
+    // }
+    QSettings settingsExport(file, format);
+    settingsExport.clear();
     Save();
-    setSaveOnExit(false);
-    delete settingsImport;
+    copy(settings, &settingsExport);
+    settingsExport.sync();
+    if(!QFileInfo::exists(file))
+    {
+        LogHandler::Error("Settigns Export: Exported file does not exist");
+        emit instance()->messageSend("Settigns Export: Exported file does not exist", XLogLevel::Critical);
+        return false;
+    }
     return true;
 }
 
@@ -3058,6 +3137,28 @@ int  SettingsHandler::getFunscriptOffsetStep()
 {
     QMutexLocker locker(&mutex);
     return _funscriptOffsetStep;
+}
+
+void SettingsHandler::setPlaybackRateStep(double value)
+{
+    changeSetting(SettingKeys::playbackRateStep, value);
+}
+
+double SettingsHandler::getPlaybackRateStep()
+{
+    QMutexLocker locker(&mutex);
+    return getSetting(SettingKeys::playbackRateStep).toDouble();
+}
+
+void SettingsHandler::setDisableAutoThumbGeneration(bool value)
+{
+    changeSetting(SettingKeys::disableAutoThumbGeneration, value);
+}
+
+bool SettingsHandler::getDisableAutoThumbGeneration()
+{
+    QMutexLocker locker(&mutex);
+    return getSetting(SettingKeys::disableAutoThumbGeneration).toBool();
 }
 
 void SettingsHandler::setLubePulseAmount(int value)

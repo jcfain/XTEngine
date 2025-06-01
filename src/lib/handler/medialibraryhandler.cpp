@@ -4,6 +4,7 @@
 #include "../tool/imagefactory.h"
 #include "../lookup/xtags.h"
 #include "../tool/file-util.h"
+#include "../struct/ScriptInfo.h"
 
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     : QObject(parent)
@@ -850,14 +851,20 @@ void MediaLibraryHandler::saveNewThumbs(bool vrMode)
         LibraryListItem27 &item = _cachedLibraryItems[_thumbNailSearchIterator];
         emit backgroundProcessStateChange("Processing thumbs", round((_thumbNailSearchIterator/(float)_cachedLibraryItems.length())*100));
         _thumbNailSearchIterator++;
-        QFileInfo thumbInfo(item.thumbFile);
-        if (isLibraryItemVideo(item) && !thumbInfo.exists())
+        if (isLibraryItemVideo(item) && !item.thumbFileExists && !SettingsHandler::getDisableAutoThumbGeneration())
         {
             saveThumb(item, -1, vrMode);
         }
         else
         {
-            setThumbState(ThumbState::Ready, item);
+            if(!item.thumbFileExists && SettingsHandler::getDisableAutoThumbGeneration())
+            {
+                setThumbState(ThumbState::Unknown, item);
+            }
+            else
+            {
+                setThumbState(ThumbState::Ready, item);
+            }
             saveNewThumbs(vrMode);
         }
     }
@@ -896,7 +903,7 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
             disconnect(&xVideoPreview, nullptr,  nullptr, nullptr);
             onSaveThumb(itemID, vrMode, "Thumb loading timed out.");
         });
-        _thumbTimeoutTimer.start(30000);
+        _thumbTimeoutTimer.start(10000);
         //        if(!vrMode)
         // Webhandler
         emit saveNewThumbLoading(item);
@@ -1403,6 +1410,10 @@ bool MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
 bool MediaLibraryHandler::discoverMFS(LibraryListItem27 &item) {
     LogHandler::Debug("Discover MFS: "+item.ID);
     QStringList funscripts = TCodeChannelLookup::getValidMFSExtensions();
+    item.metadata.isMFS = false;
+    item.metadata.toolTip.clear();
+    item.metadata.MFSScripts.clear();
+    item.metadata.MFSTracks.clear();
     foreach(auto scriptExtension, funscripts)
     {
         if (QFileInfo::exists(item.pathNoExtension + scriptExtension))
@@ -1543,7 +1554,7 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
     {
         containerType = ScriptContainerType::BASE;
         QString filepath = scripts.next();
-        QFileInfo scriptInfo(filepath);
+        // QFileInfo scriptInfo(filepath);
         QString trackname = "";
         auto baseName = XFileUtil::getNameNoExtension(filepath);
         if(filepath.endsWith(".zip", Qt::CaseInsensitive)) {
@@ -1552,7 +1563,7 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
         if(filepath == item.script || filepath == item.zipFile)
         {
             LogHandler::Debug("Is default script");
-            funscriptsWithMedia.push_front({"Default", baseName, filepath, trackname, ScriptType::MAIN, containerType });
+            funscriptsWithMedia.push_front({"Default", baseName, filepath, trackname, ScriptType::MAIN, containerType, "" });
             continue;
         }
         //Is alternate script?
@@ -1584,12 +1595,12 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
                 //     return value.track == trackname;
                 // }) != funscriptsWithMedia.end();
                 LogHandler::Debug("MFS script found: " +trackname);
-                funscriptsWithMedia.append({fileName, baseName, filepath, trackname, ScriptType::MAIN, containerType });
+                funscriptsWithMedia.append({fileName, baseName, filepath, trackname, ScriptType::MAIN, containerType, "" });
             } else if(baseName.compare(fileName, Qt::CaseInsensitive)) {
                 auto name = QString(baseName).replace(fileName, "").trimmed();
                 LogHandler::Debug("Alt script found: " +name);
                 item.metadata.hasAlternate = true;
-                funscriptsWithMedia.append({name, baseName, filepath, trackname, ScriptType::ALTERNATE, containerType });
+                funscriptsWithMedia.append({name, baseName, filepath, trackname, ScriptType::ALTERNATE, containerType, "" });
             }
             // else {
             //     LogHandler::Debug("Is default script");
@@ -1598,6 +1609,24 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
         }
     }
     item.metadata.scripts = funscriptsWithMedia;
+}
+
+QList<ScriptInfo> MediaLibraryHandler::filterAlternateFunscriptsForMediaItem(QList<ScriptInfo> scriptInfos)
+{
+    QList<ScriptInfo> scriptInfosRet;
+    foreach(auto scriptInfo, scriptInfos)
+    {
+        if(!QFileInfo::exists(scriptInfo.path)) {
+            LogHandler::Error("Missing script file when grabbing alternate scripts, Try updating the metadata for the media item with path: "+ scriptInfo.path);
+            continue;
+        }
+        if((scriptInfo.containerType == ScriptContainerType::MFS || scriptInfo.containerType == ScriptContainerType::ZIP) && scriptInfo.type == ScriptType::MAIN)
+        {
+            continue;
+        }
+        scriptInfosRet.append(scriptInfo);
+    }
+    return scriptInfosRet;
 }
 
 bool MediaLibraryHandler::metadataProcessing()
@@ -1849,6 +1878,17 @@ LibraryListItem27 *MediaLibraryHandler::findItemByPartialAltScript(QString value
             return item.type == ScriptType::ALTERNATE && (item.filename.startsWith(value, Qt::CaseInsensitive) || item.filename.endsWith(value, Qt::CaseInsensitive));
         });
         return itr2 != item.metadata.scripts.end();
+    });
+    if(itr != _cachedLibraryItems.end())
+        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
+    return 0;
+}
+
+LibraryListItem27 *MediaLibraryHandler::findItemByMetadataKey(QString value)
+{
+    const QMutexLocker locker(&_mutex);
+    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [value](const LibraryListItem27& item) {
+        return item.metadata.key == value;
     });
     if(itr != _cachedLibraryItems.end())
         return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];

@@ -29,6 +29,7 @@ signals:
     void startMetadataProcess();
     void processMetadata(QString itemID);
     void mediaAction(QString action);
+    void swapScript(ScriptInfo value);
     void clean1024();
 public:
     explicit WebSocketHandler(QObject *parent = nullptr);

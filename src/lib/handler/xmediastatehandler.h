@@ -20,6 +20,8 @@ public:
     static QString getPlayingID();
     static void stop();
     static void updateDuration(qint64 currentPos, qint64 duration);
+    static void setPlaybackSpeed(qreal speed);
+    static qreal getPlaybackSpeed();
 
 //signals:
 
@@ -27,6 +29,7 @@ private:
     static MediaLibraryHandler* m_libraryHandler;
     static LibraryListItem27 m_playingItem;
     static bool m_isInternal;
+    static qreal m_playbackSpeed;
 
     static void processMetaData();
 };

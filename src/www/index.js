@@ -1,4 +1,4 @@
-const webVersion = "v0.47b";
+const webVersion = "v0.472b";
 var debugMode = false;
 
 var DeviceType = {
@@ -50,6 +50,17 @@ var MediaType = {
 	ExternalType: 5
 };
 
+var ScriptType = {
+    MAIN: 0,
+    ALTERNATE: 1
+};
+
+var ScriptContainerType = {
+    BASE: 0,
+    MFS: 1,
+    ZIP: 2
+};
+
 var Roles = {
 	DisplayRole: 0,
 	DecorationRole: 1,
@@ -63,6 +74,14 @@ var Roles = {
 	BackgroundRole: 8,
 	ForegroundRole: 9
 };
+
+var ThumbState = {
+    Waiting: 0,
+    Loading: 1,
+    Error: 2,
+    Ready: 3,
+    Unknown: 4
+}
 
 var MediaActions = {};
 
@@ -78,6 +97,8 @@ var remoteUserSettings;
 var mediaListGlobal = [];
 var mediaListDisplayed = [];
 var selectedMediaItemMetaData = null;
+var selectedMediaItemAltScript = null;
+var selectedMediaItemAltScriptCount = 0;
 var playingmediaItem;
 var playingmediaItemNode;
 var webSocket;
@@ -92,7 +113,7 @@ var deviceConnectionStatusInterval;
 var serverRetryTimeout;
 var serverRetryTimeoutTries = 0;
 var videoStallTimeout;
-var userFilterCriteria;
+var userFilterCriteria = "";
 var userTagFilterCriteria = [];
 var filterDebounce;
 var enableTextToSpeech = true;
@@ -155,7 +176,8 @@ var userAgentIsHereSphere = userAgent.indexOf("HereSphere") != -1;
 var userAgentIsMobile = userAgent.indexOf("Mobile") != -1;
 setDeoStyles(userAgentIsDeo);
 var settingsNode = document.getElementById("settingsModal");
-var mediaItemSettingsModalNode = document.getElementById("mediaItemSettingsModal");
+const mediaItemSettingsModalNode = document.getElementById("mediaItemSettingsModal");
+const metaDataTagsNode = document.getElementById("metaDataTags");// child of mediaItemSettingsModalNode
 var thumbsContainerNode = document.getElementById("thumbsContainer");
 var videoMediaName = document.getElementById("videoMediaName");
 
@@ -210,6 +232,9 @@ var devicePauseStatusIconButtonImageNodes = document.getElementsByName("devicePa
 
 var progressNode = document.getElementById("statusOutput");
 var progressLabelNode = document.getElementById("statusOutputLabel");
+
+var filterInput = document.getElementById('filterInput');
+filterInput.value = userFilterCriteria;
 
 /* 	
 	deoVideoNode = document.getElementById("deoVideoPlayer");
@@ -310,8 +335,6 @@ function sendOutputDeviceConnectionChange(device, checked) {
 	sendWebsocketMessage("connectOutputDevice", { deviceName: device, enabled: checked });
 }
 function sendSkipToNextActionClick() {
-	if(!controlsVisible)
-		return;
 	sendSkipToNextAction();
 }
 function sendSkipToNextAction() {
@@ -331,18 +354,24 @@ function sendUpdateMoneyShotAtPos(item) {
 	var pos = videoNode.currentTime;
 	sendWebsocketMessage("setMoneyShot", { itemID: item.id, pos: pos });
 }
+function sendUpdateMetadata(metadataKey) {
+	sendWebsocketMessage("processMetadata", metadataKey);
+}
 function sendDeviceHome() {
 	sendMediaAction(MediaActions.TCodeHomeAll);
 }
 function togglePauseAllDeviceActions() {
 	sendMediaAction(MediaActions.TogglePauseAllDeviceActions);
 }
+function sendSwapScript(scriptInfo) {
+	sendWebsocketMessage("swapScript", scriptInfo);
+}
 function settingChange(key, value) {
 	if(settingChangeDebounce)
 		clearTimeout(settingChangeDebounce);
 	settingChangeDebounce = setTimeout(function() {
 		sendWebsocketMessage("settingChange", { key: key, value: value });
-		markXTPFormDirty();
+		// markXTPFormDirty();
 	}, 500);
 }
 
@@ -443,6 +472,8 @@ function wsCallBackFunction(evt) {
 			case "systemWarning":
 				systemWarning(data["message"]);
 				break;
+			case "settingChange":
+				onSaveSuccess();
 			case "stopAllMedia":
 				stopVideo();
 				break;
@@ -551,6 +582,13 @@ function wsCallBackFunction(evt) {
 				setPauseScriptStatus(messageObj.isPaused);
 				setDevicePauseStatus(messageObj.isPaused);
 				break;
+			case "changePlayrate":
+				var messageObj = data["message"];
+				break;
+			case "metadataProcessingFinished":
+				getServerLibrary();
+				break;
+
 		}
 	}
 	catch (e) {
@@ -728,6 +766,42 @@ function onResizeDeo() {
 	}
 } 
 */
+function parseHttpError(preText, xhr) {
+// } else if(status == 401) {
+// 	if(storedHash) {
+// 		checkPass();
+// 	} else {
+// 		window.location.replace(window.location.origin);
+// 	}
+// } else {
+	// startServerConnectionRetry();
+	const status = xhr.status;
+	let errorText = preText+ ": ";
+	if (status === 401) { 
+		if(storedHash) {
+			checkPass();
+		} else {
+			window.location.replace(window.location.origin);
+		}
+		// userError("System authorization has expired. Refresh the page to continue.");
+	} else if(xhr.statusText && xhr.statusText.length > 0) {
+		systemError(errorText + xhr.statusText);
+	} else if(typeof status === "object" || typeof xhr.response === "object" ) {
+		if(typeof xhr.response === "object") {
+			const obj = JSON.parse(xhr.response);
+			if(obj.message && obj.message.length > 0) {
+				systemError(errorText + obj.message);
+				return;
+			} 
+		} else if(status.statusText && status.statusText.length > 0) {
+			systemError(errorText + status.statusText);
+			return;
+		}
+		systemError(errorText + typeof status === "object" ? JSON.stringify(status) : JSON.stringify(xhr.response));
+	} else {
+		systemError(errorText + "Unknown error: "+ status);
+	}
+}
 function logout() {
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', "/logout", true);
@@ -741,11 +815,11 @@ function logout() {
 			cookies.sessionID = undefined;
 			window.location.replace(window.location.origin);
 		} else {
-			systemError('Error logging out: ' + err);
+			parseHttpError("Error logging out", xhr);
 		}
 	};
 	xhr.onerror = function () {
-		systemError("Error logging out");
+		parseHttpError("Error logging out", xhr);
 	};
 	xhr.send();
 }
@@ -759,11 +833,13 @@ function checkPass() {
             var status = xhr.status;
             if (status == 200) {
 				startServerConnectionRetry();
-            }
+            } else {
+				parseHttpError("Error checking pass", xhr);
+			}
         }
     }
     xhr.onerror = function () {
-        onSaveFail(xhr);
+		parseHttpError("Error checking pass", xhr);
     };
     if(storedHash) {
         xhr.send("{\"hashedPass\":\""+storedHash+"\", \"remember\":\""+!!storedHash+"\"}");
@@ -780,7 +856,7 @@ function getServerSettings(retry) {
 		if (status === 200) {
 			remoteUserSettings = xhr.response;
 
-			document.getElementById("xteVersion").innerText = remoteUserSettings["settings"]["xteVersion"];
+			document.getElementById("xteVersion").innerText = remoteUserSettings["xteVersion"];
 
 			// document.getElementById("scheduleLibraryLoadEnabled").checked = remoteUserSettings["settings"]["scheduleLibraryLoadEnabled"];
 			// document.getElementById("scheduleLibraryLoadTime").value = remoteUserSettings["settings"]["scheduleLibraryLoadTime"];
@@ -789,30 +865,24 @@ function getServerSettings(retry) {
 			// document.getElementById("scheduleSettingsSync").checked = remoteUserSettings["settings"]["scheduleSettingsSync"];
 			// document.getElementById("disableUDPHeartBeat").checked = remoteUserSettings["settings"]["disableUDPHeartBeat"];
 			// document.getElementById("httpChunkSizeMB").value = remoteUserSettings["settings"]["httpChunkSizeMB"];
-			Object.keys(remoteUserSettings["settings"]).forEach(key => {
-				const element = document.getElementById(key);
-				if(!element)
-					return;
-				const value = remoteUserSettings["settings"][key];
-				typeof value === "boolean" ? element.checked = value : element.value = value;
-			})
-			
-			
+
+			Settings.load(remoteUserSettings);
+
 			setupChannelData();
 
 			setupSystemTags();
 			
 			initWebSocket();
-		} else if(status == 401) {
-			if(storedHash) {
-				checkPass();
-			} else {
-				window.location.replace(window.location.origin);
-			}
+		// } else if(status == 401) {
+		// 	if(storedHash) {
+		// 		checkPass();
+		// 	} else {
+		// 		window.location.replace(window.location.origin);
+		// 	}
 		} else {
-	/* 		if(!retry)
-				systemError("Error getting settings"); */
-			startServerConnectionRetry();
+			// startServerConnectionRetry();
+
+			parseHttpError("Error getting server settings", xhr);
 		}
 	}.bind(this);
 	xhr.onerror = function(evnt, retry) {
@@ -833,11 +903,11 @@ function getMediaActions() {
 		if (status === 200) {
 			MediaActions = xhr.response;
 		} else {
-			systemError("Error getting media actions: "+ xhr.responseText);
+			parseHttpError("Error getting media actions", xhr);
 		}
 	}.bind(this);
 	xhr.onerror = function(evnt) {
-		systemError("Error getting  media action: "+ xhr.responseText);
+		parseHttpError("Error getting media actions", xhr);
 	};
 	xhr.send();
 }
@@ -856,11 +926,11 @@ function getServerChannels() {
 			setupChannelData();
 			updateChannelsUI();
 		} else {
-			systemError("Error getting channels: "+ xhr.responseText);
+			parseHttpError("Error getting channels", xhr);
 		}
 	}.bind(this);
 	xhr.onerror = function(evnt) {
-		systemError("Error getting channels: "+ xhr.responseText);
+		parseHttpError("Error getting channels", xhr);
 	};
 	xhr.send();
 }
@@ -881,7 +951,6 @@ function setupChannelData() {
 function setupSystemTags() {
 	const tags = remoteUserSettings["allTags"];
 	const tagsFIlterNode = document.getElementById("tagFilterOptions");
-	const metaDataTagsNode = document.getElementById("metaDataTags");
 	removeAllChildNodes(tagsFIlterNode);
 	removeAllChildNodes(metaDataTagsNode);
 	const containter = document.createElement("div");
@@ -1021,11 +1090,11 @@ function getServerSessions() {
 					tBody.appendChild(row);
 				});
 			} else {
-				showAlertWindow(status.statusText);
+				parseHttpError("Error getting server sessions", xhr);
 			}
 		}.bind(this);
 		xhr.onerror = function(evnt, retry) {
-			onSaveFail(xhr);
+			parseHttpError("Error getting server sessions", xhr);
 		};
 		xhr.send();
 	}
@@ -1054,11 +1123,13 @@ function deleteSession (sessionID) {
 					delete_cookie("sessionID");
 					logout();
 				}
+			} else {
+				parseHttpError("Error deleting session", xhr);
 			}
 		}
 	}
 	xhr.onerror = function () {
-		onSaveFail(xhr);
+		parseHttpError("Error deleting session", xhr);
 	};
 	xhr.send();
 }
@@ -1141,11 +1212,11 @@ function getServerLibrary() {
 			loadMedia(mediaListDisplayed);
 			filter();
 		} else {
-			systemError('Error getting media list: ' + err);
+			parseHttpError("Error getting media", xhr);
 		}
 	};
 	xhr.onerror = function () {
-		systemError("Error getting media");
+		parseHttpError("Error getting media", xhr);
 	};
 	xhr.send();
 }
@@ -1269,7 +1340,7 @@ function setOutputConnectionStatus(deviceName, status, message) {
 				deviceConnectionStatusRetryButtonNode.style.backgroundColor = "chartreuse";
 				deviceConnectionStatusRetryButtonImageNode.src = "://images/icons/check-mark-black.png";
 				if (remoteUserSettings.connection.output.selectedDevice == DeviceType.Network) {
-					tcodeDeviceSettingsLink.href = "http://" + remoteUserSettings.connection.networkAddress;
+					tcodeDeviceSettingsLink.href = "http://" + remoteUserSettings.connection.output.networkAddress;
 					tcodeDeviceSettingsLink.hidden = false;
 				}
 				break;
@@ -1392,15 +1463,18 @@ function getMediaFunscripts(path, isMFS) {
 				loadedFunscripts[index][at] = item["pos"];
 				loadedFunscripts[index].atList.push(at);
 			}
-		}
-		currentChannelIndex++;
-		if (currentChannelIndex < funscriptChannels.length) {
-			getMediaFunscripts(path, isMFS);
+			currentChannelIndex++;
+			if (currentChannelIndex < funscriptChannels.length) {
+				getMediaFunscripts(path, isMFS);
+			}
+			else {
+				currentChannelIndex = 0;
+				videoNode.play();
+				console.log("Funscripts load finish");
+			}
 		}
 		else {
-			currentChannelIndex = 0;
-			videoNode.play();
-			console.log("Funscripts load finish");
+			parseHttpError("Error getting media funscripts", xhr);
 		}
 	};
 	xhr.send();
@@ -1431,7 +1505,22 @@ function postServerSettings() {
 	xhr.send(JSON.stringify(remoteUserSettings));
 }
 
+function validateMetadata(metaData) {
+	if(metaData.MFSScripts && metaData.MFSScripts.length > 100)
+	{
+		showAlertWindow("System error", `There is a possible issue with this items metadata.<br>
+			Doing a metadata process by clicking one of the buttons below or<br>
+			from 'Settings \> System \> Process metadata' should fix this issue<br>
+			You can also click 'Update metadata' from this media items context menu.<br>
+			Note: you may need to resave after the item has been updated.<br><br>
+			<button style='margin-top:8px' onclick='closeAlertWindow();sendUpdateMetadata(\"${metaData.key}\");'>Process ONLY THIS items metadata</button>
+			<button onclick='closeAlertWindow();startMetadataProcess();'>Start processing ALL metadata now</button>`
+		);
+	}
+}
+
 function postMediaItemMetaData(metaData) {
+	validateMetadata(metaData);
 	var xhr = new XMLHttpRequest();
 	xhr.open('POST', "/mediaItemMetadata", true);
 	xhr.setRequestHeader('Content-Type', 'application/json');
@@ -1453,6 +1542,8 @@ function postMediaItemMetaData(metaData) {
 }
 
 function postMediaState(mediaState) {
+	if(!xtpConnected)
+		return;
 	var xhr = new XMLHttpRequest();
 	xhr.open("POST", "/xtpweb", true);
 	xhr.setRequestHeader('Content-Type', 'application/json');
@@ -1460,10 +1551,10 @@ function postMediaState(mediaState) {
 	xhr.oneload = function () {
 		var status = xhr.status;
 		if (status !== 200)
-			console.log('Error sending mediastate: ' + xhr.statusText)
+			parseHttpError("Error sending media state", xhr);
 	};
 	xhr.onerror = function () {
-		console.log('Error sending mediastate: ' + xhr.statusText)
+		parseHttpError("Error sending media state", xhr);
 	};
 }
 
@@ -1471,14 +1562,7 @@ function onSaveSuccess(node) {
 	setSaveState(node, false);
 }
 function onSaveFail(xhr, node) {
-	const statusTest = xhr.statusText ? xhr.statusText : xhr.status.statusText;
-	if(xhr.response)
-	{
-		try {
-			const obj = JSON.parse(xhr.response);
-			showAlertWindow(statusTest, obj.message);
-		} catch(e){ }
-	}
+	parseHttpError("Save fail", xhr);
 	setSaveState(node, false, statusTest);
 }
 
@@ -1512,7 +1596,8 @@ function loadMedia(mediaList) {
 			contextMenu.classList.toggle("hidden");
 			var thumbAtPosMenuItem = contextMenu.getElementsByClassName("setThumbAtCurrent")[0];
 			var setMoneyShotAtCurrentMenuItem = contextMenu.getElementsByClassName("setMoneyShotAtCurrent")[0];
-			if(isVideoShown() && playingmediaItem && playingmediaItem.id === mediaItem.id) {
+			var isSelectPlayingCurrently = playingmediaItem && playingmediaItem.id === mediaItem.id;
+			if(isVideoShown() && isSelectPlayingCurrently) {
 				thumbAtPosMenuItem.classList.remove("disabled");
 				setMoneyShotAtCurrentMenuItem.classList.remove("disabled");
 				setMoneyShotAtCurrentMenuItem.title = "Set moneyshot at current"
@@ -1523,6 +1608,24 @@ function loadMedia(mediaList) {
 				setMoneyShotAtCurrentMenuItem.classList.add("disabled");
 				setMoneyShotAtCurrentMenuItem.title = "This is not the current playing video so it cannot be set at the current position."
 			}
+
+			var showAlternateScripts = contextMenu.getElementsByClassName("showAlternateScripts")[0];
+			if(isSelectPlayingCurrently) {
+				if(selectedMediaItemAltScriptCount > 0) {
+					showAlternateScripts.style.color = "green";
+					showAlternateScripts.classList.remove("disabled");
+					showAlternateScripts.title = "Select alternate scripts if there are any."
+				} else {
+					showAlternateScripts.style.color = "grey";
+					showAlternateScripts.classList.add("disabled");
+					showAlternateScripts.title = "No alternate scripts for current media."
+				}
+			} else {
+				showAlternateScripts.style.color = "grey";
+				showAlternateScripts.classList.add("disabled");
+				showAlternateScripts.title = "This is not the current playing video."
+			}
+
 			var regenerateThumbMenuItem = contextMenu.getElementsByClassName("regenerateThumb")[0];
 			if(mediaItem.managedThumb && !mediaItem.thumb.includes(".lock."))
 				regenerateThumbMenuItem.classList.remove("disabled");
@@ -1568,8 +1671,13 @@ function loadMedia(mediaList) {
 	};
 	var updateItemMetadata = function (mediaItem, contextMenu) {
 		return function () {
-			sendWebsocketMessage("processMetadata", mediaItem.id);
+			sendUpdateMetadata(mediaItem.metaData.key);
 			contextMenu.classList.add("hidden");
+		}
+	}
+	var showAlternateScripts = function (mediaItem, contextMenu) {
+		return function () {
+			openAlternateScriptsModal(mediaItem);
 		}
 	}
 
@@ -1643,6 +1751,9 @@ function loadMedia(mediaList) {
 		contextMenu.appendChild(updateMetadataMenuItem);
 		var contextMenuItem = createContextMenuItem("Edit metadata", mediaSettingsClick(obj, contextMenu));
 		contextMenu.appendChild(contextMenuItem);
+		var contextMenuItem = createContextMenuItem("Alternate scripts", showAlternateScripts(obj, contextMenu));
+		contextMenuItem.classList.add("showAlternateScripts", "disabled");
+		contextMenu.appendChild(contextMenuItem);
 		var contextCancelMenuItem = createContextMenuItem("Cancel", closeContext(contextMenu));
 		contextMenu.appendChild(contextCancelMenuItem);
 
@@ -1661,13 +1772,13 @@ function loadMedia(mediaList) {
 			if (obj.thumbFileExists)
 				image.dataset.src = "/thumb/" + obj.relativeThumb;
 			else
-				image.dataset.src = "/thumb/" + obj.thumbFileLoading;
+				image.dataset.src = "/thumb/" + (obj.thumbState === ThumbState.Unknown ? obj.thumbFileUnknown : obj.thumbFileLoading);
 			image.classList.add("lazy");
 		} else {
 			if (obj.thumbFileExists)
 				image.src = "/thumb/" + obj.relativeThumb;
-			else
-				image.src = "/thumb/" + obj.thumbFileLoading;
+			else 
+				image.src = "/thumb/" + (obj.thumbState === ThumbState.Unknown ? obj.thumbFileUnknown : obj.thumbFileLoading);
 			image.loading = "lazy"
 		}
 		image.classList.add("media-thumb-nail")
@@ -1768,6 +1879,19 @@ function updateItem(libraryItem, roles)
 	}
 	if(roles.findIndex(x => x == Roles.DecorationRole) > -1) {
 		mediaNode = updateSubTitle(libraryItem, mediaNode);
+	} else {
+		showChange(showGlobal);
+		systemSuccess(`Item updated!`);
+	}
+	var index = mediaListGlobal.findIndex(x => x.id == libraryItem.id);
+	if(index > -1) {
+		mediaListGlobal[index] = JSON.parse(JSON.stringify(libraryItem));
+	}
+	if(selectedMediaItem.id == libraryItem.id) {
+		selectedMediaItem = mediaListGlobal[index];
+	}
+	if(selectedMediaItemMetaData && selectedMediaItemMetaData.key == libraryItem.metaData.key) {
+		selectedMediaItemMetaData = libraryItem.metaData;
 	}
 }
 function addItem(libraryItem)
@@ -1969,9 +2093,9 @@ function getDisplayedMediaList(showValue, userClick) {
 	return filteredMediaScoped
 }
 
-function filter(criteria) {
-	userFilterCriteria = criteria;
-	var filterInput = document.getElementById("filterInput");
+function filter() {
+	const currentCriteria = document.getElementById("filterInput").value;
+	userFilterCriteria = currentCriteria;
 	filterInput.enabled = false;
 	var mediaItems = document.getElementsByClassName("media-item");
 	for (var item of mediaItems) {
@@ -1982,13 +2106,13 @@ function filter(criteria) {
 	filterInput.enabled = true;
 }
 
-function debounceFilter(criteria) {
+function debounceFilter() {
 	if (filterDebounce) 
 		clearTimeout(filterDebounce);
 	filterDebounce = setTimeout(function () {
-		filter(criteria);
+		filter();
 		filterDebounce = undefined;
-	}, 1000);
+	}, 500);
 }
 
 function isFiltered(criteria, textToSearch) {
@@ -2340,6 +2464,7 @@ function playVideo(obj) {
 	if(!isVideoShown())
 		showVideo();
 	dataLoading();
+	resetPlayRate();
 	setupVideoSource("/media" + obj.relativePath);
 	videoNode.setAttribute("title", obj.name);
 	videoMediaName.innerText = obj.name;
@@ -2353,8 +2478,6 @@ function playVideo(obj) {
 }
 
 function stopVideoClick() {
-	if(!controlsVisible)
-		return;
 	stopVideo();
 }
 function stopVideo() {
@@ -2380,8 +2503,6 @@ function skipVideoTo(timeInMSecs) {
 }
 
 function onSkipToMoneyShotClick() {
-	if(!controlsVisible)
-		return;
 	onSkipToMoneyShot();
 }
 
@@ -2396,19 +2517,69 @@ function onSkipToMoneyShot() {
 }
 
 function onToggleFilterInput(searchButton) {
-	var filterInput = document.getElementById('filterInput');
 	filterInput.classList.toggle('hidden');
 	searchButton.classList.toggle('icon-button-down');
 }
 
 function onToggleTagInput(tagButton) {
-	var filterInput = document.getElementById('tagFilterOptions');
-	filterInput.classList.toggle('hidden');
+	var tagFilterOptions = document.getElementById('tagFilterOptions');
+	tagFilterOptions.classList.toggle('hidden');
 	tagButton.classList.toggle('icon-button-down');
+}
+
+function setupAlternateScripts(mediaItem) {
+	var altScripts = mediaItem["metaData"]["scripts"];
+	if(!altScripts || !altScripts.length) {
+		userError("No scripts found in metadata. Try updating the metadata for the media item.")
+		return;
+	}
+	var altScriptsButton = document.getElementById("alternate-scripts-button");
+	altScriptsButton.disabled = true;
+	var altScriptsGroup = document.getElementById("altScriptsGroup");
+	removeAllChildNodes(altScriptsGroup);
+	selectedMediaItemAltScriptCount = 0;
+	altScripts.forEach(x => {
+		if((x.containerType == ScriptContainerType.MFS || x.containerType == ScriptContainerType.ZIP) && x.type == ScriptType.MAIN)
+		{
+			return;
+		}
+        if(x.type != ScriptType.MAIN) // Dont count the "Default" main script
+		selectedMediaItemAltScriptCount++;
+		var div = document.createElement("div");
+		var label = document.createElement("label");
+		var radio = document.createElement("input");
+		radio.type = "radio";
+		radio.name = "altScriptsGroup";
+		radio.value = x;
+		label.textContent = getScriptInfoName(x);
+		radio.id = getScriptInfoID(x);
+		label.setAttribute("for", radio.id);
+		if(!selectedMediaItemAltScript && x.name == "Default" || selectedMediaItemAltScript && selectedMediaItemAltScript.name == x.name) {
+			radio.checked = true;
+		}
+		radio.onclick = function (x) {
+			sendSwapScript(x);
+			selectedMediaItemAltScript = x.name == "Default" ? null : x;
+		}.bind(this, x);
+		div.appendChild(radio);
+		div.appendChild(label);
+		altScriptsGroup.appendChild(div);
+	});
+	altScriptsButton.disabled = selectedMediaItemAltScriptCount <= 0;
+	altScriptsButton.innerText = selectedMediaItemAltScriptCount;
+	altScriptsButton.style.color = selectedMediaItemAltScriptCount <= 0 ? "grey" : "green";
+}
+
+function getScriptInfoName(scriptInfo) {
+	return scriptInfo.name + (scriptInfo.containerTypeName.length ? " " + scriptInfo.containerTypeName : "");
+}
+function getScriptInfoID(scriptInfo) {
+	return getScriptInfoName(scriptInfo).replace(/^[0-9]+[\w\-\:\.]*$/, "");
 }
 
 function setPlayingMediaItem(obj) {
 	playingmediaItem = obj;
+	setupAlternateScripts(playingmediaItem);
 	playingmediaItemNode = document.getElementById(obj.id);
 	playingmediaItemNode.classList.add("media-item-playing");
 }
@@ -2420,8 +2591,6 @@ function clearPlayingMediaItem() {
 }
 
 function playNextVideoClick() {
-	if(!controlsVisible)
-		return;
 	playNextVideo();
 }
 
@@ -2448,8 +2617,6 @@ function playNextVideo() {
 	}
 }
 function playPreviousVideoClick() {
-	if(!controlsVisible)
-		return;
 	playPreviousVideo();
 }
 function playPreviousVideo() {
@@ -2505,7 +2672,7 @@ function sendMediaState() {
 				"playing": playingmediaItem.playing,
 				"currentTime": videoNode.currentTime,
 				"duration": videoNode.duration,
-				"playbackSpeed": videoNode.speed
+				"playbackSpeed": videoNode.playbackRate
 			});
 		} else {
 			postMediaState({
@@ -2513,7 +2680,7 @@ function sendMediaState() {
 				"playing": false,
 				"currentTime": 0,
 				"duration": 0,
-				"playbackSpeed": 1
+				"playbackSpeed": 1.0
 			});
 		}
 	}
@@ -2556,6 +2723,11 @@ function closeSettings() {
 }
 
 function openMetaDataModal(mediaItem) {
+	if(!mediaItem) {
+		if(!playingmediaItem)
+			return;
+		mediaItem = playingmediaItem;
+	}
 	selectedMediaItemMetaData = mediaItem["metaData"];
 	document.getElementById("mediaOffset").value = selectedMediaItemMetaData["offset"];
 	document.getElementById("moneyShotMillis").value = selectedMediaItemMetaData["moneyShotMillis"];
@@ -2571,6 +2743,21 @@ function closeMetaDataModal() {
 	mediaItemSettingsModalNode.style.visibility = "hidden";
 	mediaItemSettingsModalNode.style.opacity = 0;
 	document.getElementById("saveMediaItemMetaDataButton").disabled = true;
+}
+function openAlternateScriptsModal(mediaItem) {
+	if(!mediaItem) {
+		if(!playingmediaItem)
+			return;
+		mediaItem = playingmediaItem;
+	}
+	var alternateScriptsModal = document.getElementById("alternateScriptsModal");
+	alternateScriptsModal.style.visibility = "visible";
+	alternateScriptsModal.style.opacity = 1;
+}
+function closeAlternateScriptsModal() {
+	var alternateScriptsModal = document.getElementById("alternateScriptsModal");
+	alternateScriptsModal.style.visibility = "hidden";
+	alternateScriptsModal.style.opacity = 0;
 }
 function saveMetaData() {
 	selectedMediaItemMetaData["offset"] = parseInt(document.getElementById("mediaOffset").value);

@@ -53,6 +53,10 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             !_mediaLibraryHandler->metadataProcessing() &&
             !_mediaLibraryHandler->thumbProcessRunning())
         {
+            connect(_mediaLibraryHandler, &MediaLibraryHandler::metadataProcessEnd, this, [this]() {
+                disconnect(_mediaLibraryHandler, &MediaLibraryHandler::metadataProcessEnd, this, nullptr);
+                _webSocketHandler->sendCommand("metadataProcessingFinished");
+            });
             _mediaLibraryHandler->startMetadataProcess(true);
         }
     });
@@ -64,18 +68,21 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             _mediaLibraryHandler->startMetadataCleanProcess();
         }
     });
-    connect(_webSocketHandler, &WebSocketHandler::processMetadata, this, [this](QString libraryItemID) {
+    connect(_webSocketHandler, &WebSocketHandler::processMetadata, this, [this](QString metadataKey) {
         if(!_mediaLibraryHandler->metadataProcessing()) {
-            auto item = _mediaLibraryHandler->findItemByID(libraryItemID);
-            if(item)
+            auto item = _mediaLibraryHandler->findItemByMetadataKey(metadataKey);
+            if(item) {
                 _mediaLibraryHandler->processMetadata(*item);
-            else
+            } else
                 _webSocketHandler->sendError("Unknown library item");
         } else {
             _webSocketHandler->sendUserWarning("Please wait for metadata process to complete!");
         }
     });
     connect(_webSocketHandler, &WebSocketHandler::mediaAction, this, &HttpHandler::mediaAction);
+    connect(_webSocketHandler, &WebSocketHandler::swapScript, this, &HttpHandler::swapScript);
+
+
 
     connect(_webSocketHandler, &WebSocketHandler::settingChange, this, &HttpHandler::settingChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);
@@ -130,6 +137,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _webSocketHandler->sendCommand("statusOutput", obj);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::saveNewThumbLoading, this, [this](LibraryListItem27 item) {_webSocketHandler->sendUpdateThumb(item.ID, LOADING_CURRENT_IMAGE);});
+
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::thumbProcessBegin, this, [this]() {onLibraryLoadingStatusChange("Loading thumbs...");});
 
     connect(TCodeChannelLookup::instance(), &TCodeChannelLookup::channelProfileChanged, this, [this](QMap<QString, ChannelModel33>* channelProfile) {
@@ -185,6 +193,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
 
 
     config.port = SettingsHandler::getHTTPPort();
+    // config.maxRequestSize =
     config.requestTimeout = 20;
     if(LogHandler::getUserDebug())
         config.verbosity = HttpServerConfig::Verbose::All;
@@ -628,10 +637,15 @@ QFuture<QHttpServerResponse> HttpHandler::handleSettings(const QHttpServerReques
     // root["scheduleLibraryLoadFullProcess"] = SettingsHandler::scheduleLibraryLoadFullProcess();
     // root["processMetadataOnStart"] = SettingsHandler::processMetadataOnStart();
     QJsonObject settingsObj;
-    foreach (SettingMap map, XSettingsMap::SettingsMap) {
-        SettingsHandler::getSetting(map.key, settingsObj);
+    QJsonArray settingsArray;
+    foreach (SettingMap map, XSettingsMap::SettingsList) {
+        QJsonObject settingsObj = map.tojson();
+        QJsonObject value;
+        SettingsHandler::getSetting(map.key, value);
+        settingsObj["value"] = value[map.key];
+        settingsArray.append(settingsObj);
     }
-    root["settings"] = settingsObj;
+    root["settings"] = settingsArray;
 
     // root["APPIMAGE1"] = QProcessEnvironment::systemEnvironment().value(QStringLiteral("APPIMAGE"));
     // root["APPIMAGE2"] = QString(qgetenv("APPIMAGE"));
@@ -968,14 +982,24 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["thumbFileLoading"] = LOADING_IMAGE;
     object["thumbFileLoadingCurrent"] = LOADING_CURRENT_IMAGE;
     object["thumbFileError"] = ERROR_IMAGE;
+    object["thumbFileUnknown"] = UNKNOWN_IMAGE;
     object["thumbFileExists"] = item.thumbFileExists;
     object["loaded"] = false;
     object["playing"] = false;
     object["managedThumb"] = item.managedThumb;
 
-    object["metaData"] = LibraryListItemMetaData258::toJson(item.metadata);
     if(item.metadata.isMFS)
         object["displayName"] = "(MFS) " + item.nameNoExtension;
+    // Metadata
+
+    QJsonObject metadata = LibraryListItemMetaData258::toJson(item.metadata);
+    // auto altScripts = _mediaLibraryHandler->filterAlternateFunscriptsForMediaItem(item.metadata.scripts);
+    // QJsonArray altScriptsArray;
+    // foreach (ScriptInfo info, altScripts) {
+    //     altScriptsArray.append(ScriptInfo::toJson(info));
+    // }
+    // metadata["altScripts"] = altScriptsArray;
+    object["metaData"] = metadata;
 
     return object;
 }
@@ -1455,4 +1479,9 @@ void HttpHandler::on_DeviceConnection_StateChange(ConnectionChangedSignal status
 {
     if(_webSocketHandler)
         _webSocketHandler->sendDeviceConnectionStatus(status);
+}
+
+void HttpHandler::onSettingChange(QString settingName, QVariant value)
+{
+    _webSocketHandler->onSettingChange(settingName, value);
 }

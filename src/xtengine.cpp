@@ -37,7 +37,7 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     qRegisterMetaType<ScriptInfo>("ScriptInfo");
     qRegisterMetaType<QList<ScriptInfo>>("QList<ScriptInfo>");
 
-
+    XSettingsMap::init();
     SettingsHandler::Load();
     _tcodeFactory = new TCodeFactory(0.0, 1.0, this);
     _tcodeHandler = new TCodeHandler(this);
@@ -106,6 +106,9 @@ void XTEngine::init()
         connect(syncHandler(), &SyncHandler::togglePaused, _httpHandler, &HttpHandler::scriptTogglePaused, Qt::QueuedConnection);
         connect(_httpHandler, &HttpHandler::mediaAction, settingsActionHandler(), &SettingsActionHandler::media_action, Qt::QueuedConnection);
         connect(settingsActionHandler(), &SettingsActionHandler::actionExecuted, httpHandler(), &HttpHandler::actionExecuted, Qt::QueuedConnection);
+        connect(_httpHandler, &HttpHandler::swapScript, _syncHandler, QOverload<const ScriptInfo&>::of(&SyncHandler::swap));
+        connect(SettingsHandler::instance(), &SettingsHandler::settingChange, _httpHandler, &HttpHandler::onSettingChange);
+
 
         connect(_httpHandler, &HttpHandler::clean1024, this, [this]() {
             _mediaLibraryHandler->startMetadata1024Cleanup();
