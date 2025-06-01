@@ -34,6 +34,7 @@ SOURCES += \
     lib/handler/deohandler.cpp \
     lib/handler/funscripthandler.cpp \
     lib/handler/gamepadhandler.cpp \
+    lib/handler/httphandler.cpp \
     lib/handler/loghandler.cpp \
     lib/handler/medialibraryhandler.cpp \
     lib/handler/outputdevicehandler.cpp \
@@ -62,7 +63,6 @@ SOURCES += \
 
 equals(QT_MAJOR_VERSION, 5) {
     SOURCES += \
-        lib/handler/httphandler.cpp \
         lib/handler/xvideopreview.cpp \
         lib/handler/xvideosurface.cpp \
 }
@@ -74,6 +74,7 @@ HEADERS += \
     lib/handler/deohandler.h \
     lib/handler/funscripthandler.h \
     lib/handler/gamepadhandler.h \
+    lib/handler/httphandler.h \
     lib/handler/inputdevicehandler.h \
     lib/handler/loghandler.h \
     lib/handler/medialibraryhandler.h \
@@ -138,7 +139,6 @@ HEADERS += \
 
 equals(QT_MAJOR_VERSION, 5) {
     HEADERS += \
-        lib/handler/httphandler.h \
         lib/handler/xvideopreview.h \
         lib/handler/xvideosurface.h \
 }

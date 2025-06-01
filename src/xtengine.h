@@ -9,9 +9,7 @@
 #include "lib/handler/settingshandler.h"
 
 #include "lib/handler/settingsactionhandler.h"
-#if BUILD_QT5
 #include "lib/handler/httphandler.h"
-#endif
 #include "lib/handler/synchandler.h"
 #include "lib/handler/medialibraryhandler.h"
 #include "lib/handler/connectionhandler.h"
@@ -44,15 +42,11 @@ public:
     TCodeHandler* tcodeHandler() {
         return _tcodeHandler;
     }
-#if BUILD_QT5
     HttpHandler* httpHandler() {
-
         if(!SettingsHandler::getEnableHttpServer())
             LogHandler::Warn("Http server is not enabled");
         return _httpHandler;
-        return 0
     }
-#endif
     ConnectionHandler* connectionHandler() {
         return _connectionHandler;
     }
@@ -75,9 +69,7 @@ private:
     SyncHandler* _syncHandler = 0;
     MediaLibraryHandler* _mediaLibraryHandler = 0;
     TCodeHandler* _tcodeHandler = 0;
-#if BUILD_QT5
     HttpHandler* _httpHandler = 0;
-#endif
     ConnectionHandler* _connectionHandler = 0;
     SettingsActionHandler* _settingsActionHandler = 0;
     TCodeFactory *_tcodeFactory = 0;

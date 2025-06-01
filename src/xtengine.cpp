@@ -87,7 +87,6 @@ XTEngine::~XTEngine() {
 
 void XTEngine::init()
 {
-#if BUILD_QT5
     if(SettingsHandler::getEnableHttpServer())
     {
         _httpHandler = new HttpHandler(_mediaLibraryHandler, this);
@@ -115,7 +114,6 @@ void XTEngine::init()
         });
         _httpHandler->listen();
     }
-#endif
 
     connect(SettingsHandler::instance(), &SettingsHandler::settingChange, this, [this](QString key, QVariant value) {
         if(key == SettingKeys::scheduleLibraryLoadTime)
@@ -239,22 +237,18 @@ void XTEngine::skipToNextAction()
     {
         qint64 nextActionMillis = _syncHandler->getFunscriptNext();
 
-#if BUILD_QT5
         if(nextActionMillis > 1500)
         {
             _httpHandler->sendWebSocketTextMessage("skipToNextAction", QString::number((nextActionMillis / 1000) - 1, 'f', 1));
         }
-#endif
     }
 }
 
 void XTEngine::skipToMoneyShot()
 {
     _syncHandler->skipToMoneyShot();
-#if BUILD_QT5
     if(SettingsHandler::getEnableHttpServer())
         _httpHandler->sendWebSocketTextMessage("skipToMoneyShot");
-#endif
 }
 
 //void XTEngine::processVRMetaData(QString videoPath, QString funscriptPath, qint64 duration)

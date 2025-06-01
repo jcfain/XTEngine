@@ -2,6 +2,7 @@
 #define HTTPHANDLER_H
 
 #include <QHttpServer>
+#include <QTcpServer>
 #include <QTimer>
 #include <QBuffer>
 #include <QObject>
@@ -47,31 +48,30 @@ public:
     HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent = nullptr);
     ~HttpHandler();
     bool listen();
-    QHttpServerResponse handle(const QHttpServerRequest& request);
-    QHttpServerResponse handleAuth(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleActiveSessions(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleExpireSession(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleLogout(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleVideoStream(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleVideoList(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleThumbFile(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleFunscriptFile(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleSettings(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleChannels(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleAvailableSerialPorts(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleMediaActions(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleSettingsUpdate(const QHttpServerRequest& request);
-    QFuture<QHttpServerResponse> handleMediaItemMetadataUpdate(const QHttpServerRequest& request);
-    
-    //HttpPromise handleSubtitle(HttpDataPtr data);
+    void handle(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleAuth(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleActiveSessions(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleExpireSession(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleLogout(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    QFuture<QHttpServerResponse> handleVideoStream(const QHttpServerRequest &req);
+    void handleVideoList(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleThumbFile(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleFunscriptFile(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleSettings(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleChannels(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleAvailableSerialPorts(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleMediaActions(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleSettingsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleMediaItemMetadataUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleSubtitle(const QHttpServerRequest &req, QHttpServerResponder &responder);
 
-    // //HttpPromise handleChannelsUpdate(HttpDataPtr data);
-    // QFuture<QHttpServerResponse> handleDeviceConnected(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleConnectDevice(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleTCodeIn(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleDeo(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleHereSphere(const QHttpServerRequest& request);
-    // QFuture<QHttpServerResponse> handleWebTimeUpdate(const QHttpServerRequest& request);
+    void handleChannelsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleDeviceConnected(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleConnectDevice(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleTCodeIn(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleDeo(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleHereSphere(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleWebTimeUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
 
 
     void sendWebSocketTextMessage(QString command, QString message = nullptr);
@@ -89,7 +89,7 @@ private:
     QTimer m_sessionPolice;
     int m_sessionTimeout = 900; // 15 Min
     QString m_hostAddress;
-    QFuture<void> m_hlsFuture;
+    QFuture<QHttpServerResponse> m_hlsFuture;
 
     QJsonObject createMediaObject(LibraryListItem27 libraryListItem, QString hostAddress);
     QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);
@@ -100,7 +100,13 @@ private:
     void onSetLibraryLoaded();
     void onSetLibraryLoading();
     void onLibraryLoadingStatusChange(QString message);
-    bool isAuthenticated(const QHttpServerRequest& request);
+    bool isAuthenticated(const QHttpServerRequest &req);
+    QString getURL(const QHttpServerRequest &request);
+    QString getCookie(const QHttpServerRequest &request, const QString& name);
+    void sendFile(QHttpServerResponder &responder, const QString &path);
+    void sendFile(QHttpServerResponder &responder, QHttpHeaders& headers, const QString &path);
+    void sendFile(const QByteArray &byte);
+    void sendFile(const QIODevice &device);
 
 };
 
