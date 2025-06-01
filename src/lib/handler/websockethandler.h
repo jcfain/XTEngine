@@ -7,6 +7,7 @@
 #include "QtWebSockets/qwebsocket.h"
 
 #include "../struct/ConnectionChangedSignal.h"
+#include "../struct/ScriptInfo.h"
 
 class WebSocketHandler: public QObject
 {

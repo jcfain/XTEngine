@@ -6,7 +6,9 @@ enum class XMediaStatus {
     NoMedia,
     BufferingMedia,
     BufferedMedia,
+#if BUILD_QT5
     UnknownMediaStatus,
+#endif
     StalledMedia,
     InvalidMedia,
     EndOfMedia

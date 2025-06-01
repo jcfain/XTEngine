@@ -457,9 +457,9 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         locker.unlock();
         SetMapDefaults();
         SetSystemTagDefaults();
+        locker.relock();
     }
 
-    locker.relock();
 
     QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
     _funscriptLoaded.clear();
