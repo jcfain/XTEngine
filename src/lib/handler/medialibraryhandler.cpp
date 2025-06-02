@@ -231,10 +231,13 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 scriptPath = nullptr;
             }
             LibraryListItemType libratyItemType = vrMode || isStereo(fileName) ? LibraryListItemType::VR : LibraryListItemType::Video;
+
+#if BUILD_QT5
             QString zipFile = pathNoExtension + ".zip";
             if(!QFileInfo::exists(zipFile)) {
                 zipFile = nullptr;
             }
+#endif
             if(audioTypes.contains(mediaExtension))
             {
                 libratyItemType = LibraryListItemType::Audio;
@@ -246,10 +249,16 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             item.nameNoExtension = fileNameNoExtension; //nameNoExtension
             item.script = scriptPath; // script
             item.pathNoExtension = pathNoExtension;
-            item.hasScript = !scriptPath.isEmpty() || !zipFile.isEmpty();
+            item.hasScript = !scriptPath.isEmpty()
+#if BUILD_QT5
+                             || !zipFile.isEmpty()
+#endif
+                ;
             item.mediaExtension = mediaExtension;
             item.thumbFile = nullptr;
+#if BUILD_QT5
             item.zipFile = zipFile;
+#endif
 #if BUILD_QT5
             item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
 #else
@@ -264,8 +273,10 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 
             if(!vrMode && !scriptPath.isEmpty())
                 funscriptsWithMedia.append(scriptPath);
+#if BUILD_QT5
             if(!vrMode && !zipFile.isEmpty())
                 funscriptsWithMedia.append(zipFile);
+#endif
 
             onLibraryItemFound(item);
             //emit libraryItemFound(item);
@@ -279,7 +290,10 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
         {
             QStringList funscriptTypes = QStringList()
                                          << "*.funscript"
-                                         << "*.zip";
+#if BUILD_QT5
+                                         << "*.zip"
+#endif
+                ;
             QDirIterator funscripts(path, funscriptTypes, QDir::Files, QDirIterator::Subdirectories);
             while (funscripts.hasNext())
             {
@@ -350,11 +364,13 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 }
                 if (isExcluded)
                     continue;
+#if BUILD_QT5
                 QString zipFile = nullptr;
                 if(scriptPath.endsWith(".zip", Qt::CaseInsensitive))
                 {
                     zipFile = scriptPath;
                 }
+#endif
 
 
                 LibraryListItem27 item;
@@ -366,9 +382,11 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 item.pathNoExtension = pathNoExtension;
                 item.hasScript = true;
                 item.mediaExtension = mediaExtension;
-                item.zipFile = zipFile;
 #if BUILD_QT5
-                item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
+                item.zipFile = zipFile;
+#endif
+#if BUILD_QT5
+                item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.cr_Qt5eated();
 #else
                 item.modifiedDate = fileinfo.birthTime();// TODO: test linux because fileinfo.created() doesnt exist anymore.
 #endif
@@ -413,12 +431,14 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     QString scriptNoExtension = scriptPathExtIndex > -1 ? scriptPathTemp.remove(scriptPathExtIndex, scriptPathTemp.length() - 1) : scriptPathTemp;
     QString scriptNoExtensionTemp = QString(scriptNoExtension);
     QString fileDir = fileinfo.dir().path();
+#if BUILD_QT5
     QString zipFile = nullptr;
     if(scriptPath.endsWith(".zip", Qt::CaseInsensitive))
     {
         zipFile = scriptPath;
         scriptPath = nullptr;
     }
+#endif
     fileNameTemp = fileinfo.fileName();
     int fileNameExtIndex = fileNameTemp.lastIndexOf('.');
     QString fileNameNoExtension = fileNameExtIndex > -1 ? fileNameTemp.remove(fileNameExtIndex, fileNameTemp.length() -  1) : fileNameTemp;
@@ -432,7 +452,9 @@ LibraryListItem27 MediaLibraryHandler::createLibraryListItemFromFunscript(QStrin
     item.script = scriptPath; // script
     item.pathNoExtension = fileNameNoExtension;
     item.mediaExtension = mediaExtension;
+#if BUILD_QT5
     item.zipFile = zipFile;
+#endif
 #if BUILD_QT5
     item.modifiedDate = fileinfo.birthTime().isValid() ? fileinfo.birthTime() : fileinfo.created();
 #else
@@ -783,7 +805,11 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
         // if(!rolesChanged.contains(Qt::ForegroundRole))
         //     rolesChanged.append(Qt::ForegroundRole);
         bool scriptExists = QFileInfo::exists(item.script);
+#if BUILD_QT5
         bool zipScripExists = QFileInfo::exists(item.zipFile);
+#else
+        bool zipScripExists = false;
+#endif
         item.hasScript = scriptExists || zipScripExists;
     }
 }
@@ -1328,7 +1354,11 @@ bool MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
     localData.metadata.isMFS = false;
     bool itemChanged = false;
     bool scriptExists = QFileInfo::exists(localData.script);
+#if BUILD_QT5
     bool zipScripExists = QFileInfo::exists(localData.zipFile);
+#else
+    bool zipScripExists = false;
+#endif
     localData.hasScript = scriptExists || zipScripExists;
     if (localData.type != LibraryListItemType::PlaylistInternal && !scriptExists && !zipScripExists)
     {
@@ -1544,7 +1574,11 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
     }
     QFileInfo fileInfo(path);
     QString location = fileInfo.path();
-    QDirIterator scripts(location, QStringList() << "*.funscript" << "*.zip", QDir::Files);
+    QDirIterator scripts(location, QStringList() << "*.funscript"
+#if BUILD_QT5
+                                                 << "*.zip"
+#endif
+                         , QDir::Files);
 
     QString fileName = XFileUtil::getNameNoExtension(path);
     auto channels = TCodeChannelLookup::getChannels();
@@ -1557,10 +1591,16 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
         // QFileInfo scriptInfo(filepath);
         QString trackname = "";
         auto baseName = XFileUtil::getNameNoExtension(filepath);
+#if BUILD_QT5
         if(filepath.endsWith(".zip", Qt::CaseInsensitive)) {
             containerType = ScriptContainerType::ZIP;
         }
-        if(filepath == item.script || filepath == item.zipFile)
+#endif
+        if(filepath == item.script
+#if BUILD_QT5
+            || filepath == item.zipFile
+#endif
+            )
         {
             LogHandler::Debug("Is default script");
             funscriptsWithMedia.push_front({"Default", baseName, filepath, trackname, ScriptType::MAIN, containerType, "" });

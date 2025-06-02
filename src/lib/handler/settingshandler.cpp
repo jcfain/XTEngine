@@ -4,8 +4,8 @@
 #include "../tool/qsettings_json.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.472b";
-const float SettingsHandler::XTEVersionNum = 0.472f;
+const QString SettingsHandler::XTEVersion = "0.5b";
+const float SettingsHandler::XTEVersionNum = 0.5f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
