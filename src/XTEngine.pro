@@ -61,10 +61,14 @@ SOURCES += \
     lib/tool/xtimer.cpp \
     xtengine.cpp
 
-equals(QT_MAJOR_VERSION, 5) {
+equals(QT_MAJOR_VERSION, 6) {
     SOURCES += \
         lib/handler/xvideopreview.cpp \
-        lib/handler/xvideosurface.cpp \
+}
+equals(QT_MAJOR_VERSION, 5) {
+    SOURCES += \
+        lib/handler/xvideopreviewQt5.cpp \
+        lib/handler/xvideosurfaceQt5.cpp \
 }
 HEADERS += \
     XTEngine_global.h \
@@ -137,10 +141,14 @@ HEADERS += \
     lib/tool/xtimer.h \
     xtengine.h
 
-equals(QT_MAJOR_VERSION, 5) {
+equals(QT_MAJOR_VERSION, 6) {
     HEADERS += \
         lib/handler/xvideopreview.h \
-        lib/handler/xvideosurface.h \
+}
+equals(QT_MAJOR_VERSION, 5) {
+    HEADERS += \
+        lib/handler/xvideopreviewQt5.h \
+        lib/handler/xvideosurfaceQt5.h \
 }
 
 #unix {
@@ -210,15 +218,19 @@ CONFIG += shared
 win32{
     build_pass: CONFIG(debug, debug|release) {
         DESTDIR = $$shell_path($$OUT_PWD/debug)
-        LIBS += -L$$PWD/../../HttpServer/build/debug -lhttpServer
-        INCLUDEPATH += $$PWD/../../HttpServer/build/debug
-        LIBS += -L$$PWD/../../zlib-1.3.1/build/Desktop_Qt_5_15_2_MinGW_64_bit-Debug -lzlib
+        equals(QT_MAJOR_VERSION, 5) {
+            LIBS += -L$$PWD/../../HttpServer/build/debug -lhttpServer
+            INCLUDEPATH += $$PWD/../../HttpServer/build/debug
+            LIBS += -L$$PWD/../../zlib-1.3.1/build/Desktop_Qt_5_15_2_MinGW_64_bit-Debug -lzlib
+        }
     }
     else:win32:CONFIG(release, debug|release): {
         DESTDIR = $$shell_path($$OUT_PWD/release)
-        LIBS += -L$$PWD/../../HttpServer/build/release -lhttpServer
-        INCLUDEPATH += $$PWD/../../HttpServer/build/release
-        LIBS += -L$$PWD/../../zlib-1.3.1/build/Desktop_Qt_5_15_2_MinGW_64_bit-Release -lzlib
+        equals(QT_MAJOR_VERSION, 5) {
+            LIBS += -L$$PWD/../../HttpServer/build/release -lhttpServer
+            INCLUDEPATH += $$PWD/../../HttpServer/build/release
+            LIBS += -L$$PWD/../../zlib-1.3.1/build/Desktop_Qt_5_15_2_MinGW_64_bit-Release -lzlib
+        }
     }
     # INCLUDEPATH += $$PWD/../../HttpServer/src
     # DEPENDPATH += $$PWD/../../HttpServer/src

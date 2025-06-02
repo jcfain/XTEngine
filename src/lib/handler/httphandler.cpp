@@ -167,23 +167,23 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         QJsonObject obj;
         obj["mediaAction"] = action;
         obj["spokenText"] = spokenText;
-        switch(value.type())
+        switch(value.metaType().id())
         {
-            case QVariant::Type::Bool:
+            case QMetaType::Bool:
                 obj["value"] = value.toBool();
                 break;
-            case QVariant::Type::String:
+            case QMetaType::QString:
                 obj["value"] = value.toString();
                 break;
-            case QVariant::Type::Double:
+            case QMetaType::Double:
                 obj["value"] = value.toDouble();
                 break;
-            case QVariant::Type::LongLong:
-            case QVariant::Type::ULongLong:
+            case QMetaType::LongLong:
+            case QMetaType::ULongLong:
                 obj["value"] = value.toString();
                 break;
-            case QVariant::Type::Int:
-            case QVariant::Type::UInt:
+            case QMetaType::Int:
+            case QMetaType::UInt:
                 obj["value"] = value.toInt();
                 break;
         }
@@ -209,15 +209,15 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     extensions += SettingsHandler::getVideoExtensions().join("|");
     extensions += "|";
     extensions += SettingsHandler::getAudioExtensions().join("|");
-    _server->route("^/", QHttpServerRequest::Method::Get,  this, &HttpHandler::handle);
-    _server->route("^/*", QHttpServerRequest::Method::Get,  this, &HttpHandler::handle);
+    _server->route("/", QHttpServerRequest::Method::Get,  this, &HttpHandler::handleRoot);
+    _server->route("/auth", QHttpServerRequest::Method::Post, this, &HttpHandler::handleAuth);
+    _server->route("/settings", QHttpServerRequest::Method::Get, this, &HttpHandler::handleSettings);
     _server->route("^/media/(.*\\.(("+extensions+")$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleVideoStream);
     _server->route("^/media/(.*\\.(("+SettingsHandler::getSubtitleExtensions().join("|")+")$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleSubtitle);
     _server->route("^/media$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleVideoList);
     _server->route("^/thumb/.*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleThumbFile);
     _server->route("^/funscript/(.*\\.((funscript)$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleFunscriptFile);
     _server->route("^/deotest$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleDeo);
-    _server->route("^/settings$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleSettings);
     _server->route("^/channels$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleChannels);
     _server->route("^/availableSerialPorts$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleAvailableSerialPorts);
     _server->route("^/mediaActions$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleMediaActions);
@@ -228,8 +228,9 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     // _server->route("POST", "^/channels$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleChannelsUpdate);
     _server->route("^/xtpweb$",QHttpServerRequest::Method::Post, this, &HttpHandler::handleWebTimeUpdate);
     _server->route("^/heresphere$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleHereSphere);
-    _server->route("^/auth$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleAuth);
     _server->route("^/expireSession$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleExpireSession);
+
+    _server->route("/<arg>", QHttpServerRequest::Method::Get,  this, &HttpHandler::handleFile);
 
 }
 bool HttpHandler::listen()
@@ -256,17 +257,46 @@ HttpHandler::~HttpHandler()
 }
 
 
-void  HttpHandler::handle(const QHttpServerRequest &request, QHttpServerResponder &responder)
+void  HttpHandler::handleRoot(const QHttpServerRequest &request, QHttpServerResponder &responder)
 {
-    // bool foundRoute;
-    // HttpPromise promise = router.route(data, &foundRoute);
-    // if (foundRoute)
-    //     return promise;
-
-    auto path = request.url().path();
     auto root = SettingsHandler::getHttpServerRoot();
     auto hashedWebPass = SettingsHandler::hashedWebPass();
-    if(!hashedWebPass.isEmpty() && !isAuthenticated(request)) {
+    m_hostAddress = "http://" + request.headers().value("Host", "") + "/";
+    if(!hashedWebPass.isEmpty() && !isAuthenticated(request))
+    {
+        LogHandler::Debug("Sending root auth-min.html");
+        if(!QFileInfo::exists(root+"/auth-min.html"))
+        {
+            LogHandler::Debug("file does not exist: "+root+"/auth-min.html");
+            responder.write(QHttpServerResponse::StatusCode::BadRequest);
+        }
+        else
+        {
+            sendFile(responder, root+"/auth-min.html");
+        }
+
+    }
+    else
+    {
+        LogHandler::Debug("Sending root index-min.html");
+        if(!QFileInfo::exists(root+"/index-min.html"))
+        {
+            LogHandler::Debug("file does not exist: "+root+"/index-min.html");
+            responder.write(QHttpServerResponse::StatusCode::BadRequest);
+        }
+        else
+        {
+            sendFile(responder, root+"/index-min.html");
+        }
+    }
+}
+
+QHttpServerResponse HttpHandler::handleFile(const QUrl &url, const QHttpServerRequest &request)
+{
+    auto root = SettingsHandler::getHttpServerRoot();
+    auto hashedWebPass = SettingsHandler::hashedWebPass();
+    auto path = request.url().path();
+    if(!hashedWebPass.isEmpty() && !isAuthenticated(request)) {// Not authorized to see root with few exceptions
         if(path =="/common-min.js" || path =="/auth-min.js" ||
             path =="/js-sha3-min.js" ||
             path == "/styles-min.css"  ||
@@ -284,61 +314,40 @@ void  HttpHandler::handle(const QHttpServerRequest &request, QHttpServerResponde
             }
             if(QFile::exists(localPath))
             {
-                sendFile(responder, localPath);
+                return sendFile(localPath);
             }
             else
-                responder.write(QHttpServerResponse::StatusCode::BadRequest);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::BadRequest);
         }
-        else if(path == "/")
+        else
         {
-            m_hostAddress = "http://" + request.headers().value("Host", "") + "/";
-            LogHandler::Debug("Sending root auth-min.html");
-            if(!QFileInfo::exists(root+"/auth-min.html"))
+            return QHttpServerResponse(QHttpServerResponse::StatusCode::Unauthorized);
+        }
+    }
+    else // Is authorized to see root.
+    {
+        if(path.contains("favicon.ico"))
+        {
+            return sendFile(root+"/favicon.ico");
+        }
+        else
+        {
+            QString localPath;
+            if(path.startsWith("/:"))
             {
-                LogHandler::Debug("file does not exist: "+root+"/auth-min.html");
-                responder.write(QHttpServerResponse::StatusCode::BadRequest);
+                localPath = path.remove(0,1);
             }
             else
             {
-                sendFile(responder, root+"/auth-min.html");
+                localPath = root + path;
             }
+            if(QFile::exists(localPath))
+            {
+                return sendFile(localPath);
+            }
+            else
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::BadRequest);
         }
-
-    } else if(path == "/") {
-        m_hostAddress = "http://" + request.headers().value("Host", "") + "/";
-        LogHandler::Debug("Sending root index-min.html");
-        if(!QFileInfo::exists(root+"/index-min.html"))
-        {
-            LogHandler::Debug("file does not exist: "+root+"/index-min.html");
-            responder.write(QHttpServerResponse::StatusCode::BadRequest);
-        }
-        else
-        {
-            sendFile(responder, root+"/index-min.html");
-        }
-    }
-    else if(path.contains("favicon.ico"))
-    {
-        sendFile(responder, root+"/favicon.ico");
-        responder.write(QHttpServerResponse::StatusCode::Ok);
-    }
-    else
-    {
-        QString localPath;
-        if(path.startsWith("/:"))
-        {
-            localPath = path.remove(0,1);
-        }
-        else
-        {
-            localPath = root + path;
-        }
-        if(QFile::exists(localPath))
-        {
-            sendFile(responder, localPath);
-        }
-        else
-            responder.write(QHttpServerResponse::StatusCode::BadRequest);
     }
 }
 
@@ -393,10 +402,10 @@ void HttpHandler::handleAuth(const QHttpServerRequest &request, QHttpServerRespo
             // request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
             // request.response->compressBody();
             QHttpHeaders headers;
-            headers.append(QHttpHeaders::WellKnownHeader::Cookie, cookie.path());
+            headers.append(QHttpHeaders::WellKnownHeader::SetCookie, "sessionID="+sessionID);
 
             m_authenticated.insert(sessionID, createDate);
-            responder.write(QHttpServerResponse::StatusCode::Ok);
+            responder.write(headers, QHttpServerResponse::StatusCode::Ok);
         } else {
             response = QHttpServerResponse::StatusCode::Unauthorized;
         }
@@ -1142,6 +1151,9 @@ void HttpHandler::handleThumbFile(const QHttpServerRequest &request, QHttpServer
 //        // Global thumb directory thumbs.
 //        thumbToSend = thumbDirFile;
 //    }
+    if(thumbToSend.contains("BELLESEXUAL")) {
+        LogHandler::Debug("");
+    }
     int quality = SettingsHandler::getHttpThumbQuality();
     if(quality > -1)
     {
@@ -1162,10 +1174,7 @@ void HttpHandler::handleThumbFile(const QHttpServerRequest &request, QHttpServer
         delete newObj;
     }
     else {
-        QHttpHeaders headers;
-        QString mimeType = mimeDatabase.mimeTypeForFile(thumbToSend, QMimeDatabase::MatchExtension).name();
-        headers.append("Content-Type", mimeType);
-        responder.write(QFile(thumbToSend).readAll(), headers, QHttpServerResponse::StatusCode::Ok);
+        sendFile(responder, thumbToSend);
     }
     responder.write(QHttpServerResponse::StatusCode::Ok);
 }
@@ -1185,6 +1194,7 @@ void HttpHandler::handleSubtitle(const QHttpServerRequest &request, QHttpServerR
     if(!libraryItem || libraryItem->metadata.subtitle.isEmpty() || !QFileInfo::exists(libraryItem->metadata.subtitle))
     {
         responder.write(QHttpServerResponse::StatusCode::NotFound);
+        return;
     }
 
     QHttpHeaders headers;
@@ -1284,16 +1294,15 @@ QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerReq
             if(startByte)
                 file.skip(startByte);
             LogHandler::Debug("Video stream read start: "+ QString::number(timer.elapsed()));
-            QByteArray* byteArray = new QByteArray(file.read(chunkSize));
+            QByteArray byteArray(file.read(chunkSize));
             LogHandler::Debug("Video stream read end: "+ QString::number(timer.elapsed()));
-            QBuffer buffer(byteArray);
+            QBuffer buffer(&byteArray);
             //LogHandler::Debug("Chunk bytes: "+ QString::number(buffer.bytesAvailable()));
             //LogHandler::Debug("Video stream open buffer: "+ QString::number(timer.elapsed()));
             if (!buffer.open(QIODevice::ReadOnly))
             {
                 LogHandler::Error(QString("Unable to open buffer to be sent (%1): %2").arg(filename).arg(file.errorString()));
 
-                delete byteArray;
                 file.close();
                 return QHttpServerResponse(QHttpServerResponse::StatusCode::Forbidden);
             }
@@ -1302,16 +1311,16 @@ QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerReq
             //LogHandler::Debug("End bytes: " + QString::number(endByte));
             //LogHandler::Debug("Content length: " + QString::number(contentLength));
             QHttpHeaders headers;
-            headers.append("Accept-Ranges", "bytes");
-            headers.append("Content-Range", requestBytes);
-            headers.append("Content-Length", QString::number(contentLength));
+            headers.append(QHttpHeaders::WellKnownHeader::AcceptRanges, "bytes");
+            headers.append(QHttpHeaders::WellKnownHeader::ContentRange, requestBytes);
+            // headers.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(contentLength));
             //LogHandler::Debug("Video stream send chunk: "+ QString::number(timer.elapsed()));
             QString mimeType = mimeDatabase.mimeTypeForFile(filename, QMimeDatabase::MatchExtension).name();
+            headers.append(QHttpHeaders::WellKnownHeader::ContentType, mimeType);
             // response->sendFile(&buffer, mimeType);
-            auto response = QHttpServerResponse(buffer.buffer(), QHttpServerResponse::StatusCode::PartialContent);
+            auto response = QHttpServerResponse(byteArray, QHttpServerResponse::StatusCode::PartialContent);
             response.setHeaders(headers);
             LogHandler::Debug("Video stream send chunk finish: "+ QString::number(timer.elapsed()));
-            delete byteArray;
             file.close();
             return response;
         }
@@ -1382,7 +1391,20 @@ QString HttpHandler::getURL(const QHttpServerRequest &request)
 
 QString HttpHandler::getCookie(const QHttpServerRequest &request, const QString& name)
 {
-    return QString( request.headers().value(name).data());
+    auto headers = request.headers();
+    auto cookieHeader = headers.wellKnownHeaderName(QHttpHeaders::WellKnownHeader::Cookie);
+    auto header = request.headers().value(cookieHeader);
+    QString cookie = QString(header.constData());
+    if(cookie.contains("="))
+    {
+        auto arr = cookie.split("=");
+        for (int i=0; i<arr.length(); i++) {
+            if(arr[i] == name) {
+                return arr[i+1];
+            }
+        }
+    }
+    return cookie;
 }
 
 void HttpHandler::sendFile(QHttpServerResponder &responder, const QString &path)
@@ -1394,24 +1416,47 @@ void HttpHandler::sendFile(QHttpServerResponder &responder, const QString &path)
 void HttpHandler::sendFile(QHttpServerResponder &responder, QHttpHeaders& headers, const QString &path)
 {
     QFile fileInfo(path);
-    headers.append("filename", fileInfo.fileName());
-    QString mimeType = mimeDatabase.mimeTypeForFile(path, QMimeDatabase::MatchExtension).name();
-    headers.append("Content-Type", mimeType);
-    // responder.write(fileInfo.readAll(), headers, QHttpServerResponse::StatusCode::Ok);
+    // headers.append("filename", fileInfo.fileName());
+    // QString mimeType = mimeDatabase.mimeTypeForFile(path, QMimeDatabase::MatchExtension).name();
+    // if(mimeType.contains("empty")) {
+    //     LogHandler::Debug("");
+    // }
+    // headers.append("Content-Type", mimeType);
+    // // responder.write(fileInfo.readAll(), headers, QHttpServerResponse::StatusCode::Ok);
     QHttpServerResponse response = QHttpServerResponse::fromFile(path);
-    response.setHeaders(headers);
+    response.headers().append("filename", fileInfo.fileName());
     responder.sendResponse(response);
 
 }
 
-void HttpHandler::sendFile(const QByteArray &byte)
-{
+// void HttpHandler::sendFile(const QByteArray &byte)
+// {
 
+// }
+
+// void HttpHandler::sendFile(const QIODevice &device)
+// {
+
+// }
+
+QHttpServerResponse HttpHandler::sendFile(const QString &path)
+{
+    QHttpHeaders headers;
+    return sendFile(path, headers);
 }
 
-void HttpHandler::sendFile(const QIODevice &device)
+QHttpServerResponse HttpHandler::sendFile(const QString &path, QHttpHeaders &headers)
 {
-
+    QFile fileInfo(path);
+    // headers.append("filename", fileInfo.fileName());
+    // QString mimeType = mimeDatabase.mimeTypeForFile(path, QMimeDatabase::MatchExtension).name();
+    // if(mimeType.contains("empty")) {
+    //     LogHandler::Debug("");
+    // }
+    // headers.append("Content-Type", mimeType);
+    auto response = QHttpServerResponse::fromFile(path);
+    response.headers().append("filename", fileInfo.fileName());
+    return response;
 }
 
 void HttpHandler::on_webSocketClient_Connected(QWebSocket* client)

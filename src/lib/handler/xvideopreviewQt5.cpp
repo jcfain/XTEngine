@@ -3,17 +3,18 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 
-XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent),  _thumbPlayer(0)
+XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent), _thumbNailVideoSurface(0), _thumbPlayer(0)
 {
     LogHandler::Debug("XVideoPreview");
-    _thumbPlayer = new QMediaPlayer(this);
-    // _thumbNailVideoSurface = new XVideoSurface(_thumbPlayer);
-    _thumbPlayer->setVideoSink(&m_videoSink);
+    _thumbPlayer = new QMediaPlayer(this, QMediaPlayer::VideoSurface);
+    _thumbNailVideoSurface = new XVideoSurface(_thumbPlayer);
+    _thumbPlayer->setVideoOutput(_thumbNailVideoSurface);
+    _thumbPlayer->setMuted(true);
     m_debouncer.setSingleShot(true);
-    connect(_thumbPlayer, &QMediaPlayer::playbackStateChanged, this, &XVideoPreview::on_mediaStateChange);
+    connect(_thumbPlayer, &QMediaPlayer::stateChanged, this, &XVideoPreview::on_mediaStateChange);
     connect(_thumbPlayer, &QMediaPlayer::mediaStatusChanged, this, &XVideoPreview::on_mediaStatusChanged);
-    connect(&m_videoSink, &QVideoSink::videoFrameChanged, this, &XVideoPreview::on_thumbCapture);
-    // connect(m_videoSink, &QVideoSink::videoFrameChanged, this, &XVideoPreview::on_thumbError);
+    connect(_thumbNailVideoSurface, &XVideoSurface::frameCapture, this, &XVideoPreview::on_thumbCapture);
+    connect(_thumbNailVideoSurface, &XVideoSurface::frameCaptureError, this, &XVideoPreview::on_thumbError);
     connect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
     connect(&m_debouncer, &QTimer::timeout, this, [this]() {
         LogHandler::Debug("Extract debounce");
@@ -87,8 +88,8 @@ void XVideoPreview::extract() {
     LogHandler::Debug("extract at: " + QString::number(_time) + " from: "+ _file);
     m_processed = false;
     QUrl mediaUrl = QUrl::fromLocalFile(_file);
-    // QMediaContent mc(mediaUrl);
-    _thumbPlayer->setSource(mediaUrl);
+    QMediaContent mc(mediaUrl);
+    _thumbPlayer->setMedia(mc);
 //    bool isFFmpeg = checkForFFMpeg();
     if(_time > -1)
     {
@@ -118,18 +119,18 @@ void XVideoPreview::load(QString file)
 
 void XVideoPreview::stop()
 {
-    if(_thumbPlayer->playbackState() == QMediaPlayer::PlayingState)
+    if(_thumbPlayer->state() == QMediaPlayer::PlayingState)
         _thumbPlayer->stop();
-    // _thumbPlayer->setMedia(QMediaContent());
+    _thumbPlayer->setMedia(QMediaContent());
 }
 
 // Private
-void XVideoPreview::on_thumbCapture(const QVideoFrame &frame)
+void XVideoPreview::on_thumbCapture(QImage frame)
 {
     if(_extracting) {
         LogHandler::Debug("on_thumbCapture: "+ _file);
-        _lastImage = frame.toImage();
-        // frame = QImage();
+        _lastImage = frame.copy();
+        frame = QImage();
         //tearDownPlayer();
         process();
     }
@@ -152,13 +153,13 @@ void XVideoPreview::on_mediaStatusChanged(QMediaPlayer::MediaStatus status)
 //            _thumbNailVideoSurface->start(m_format);
     }
 }
-void XVideoPreview::on_mediaStateChange(QMediaPlayer::PlaybackState state)
+void XVideoPreview::on_mediaStateChange(QMediaPlayer::State state)
 {
-    if(state == QMediaPlayer::PlayingState)
+    if(state == QMediaPlayer::State::PlayingState)
     {
         //_thumbPlayer->pause();
     }
-    else if(state == QMediaPlayer::StoppedState)
+    else if(state == QMediaPlayer::State::StoppedState)
     {
         process();
 
@@ -168,22 +169,18 @@ void XVideoPreview::on_mediaStateChange(QMediaPlayer::PlaybackState state)
 void XVideoPreview::process() {
     if(!m_processed)
     {
-        if(_extracting)
-        {
+        if(_extracting) {
             _extracting = false;
-            if(!_lastError.isNull())
-            {
+            if(!_lastError.isNull()) {
                 m_processed = true;
                 emit frameExtractionError(_lastError);
                 _lastError.clear();
             }
-            else if(!_lastImage.isNull())
-            {
+            else if(!_lastImage.isNull()) {
                 m_processed = true;
                 emit frameExtracted(_lastImage.copy());
                 _lastImage = QImage();
             }
-            tearDownPlayer();
         }
         else if(_loadingInfo && _lastDuration > 0)
         {

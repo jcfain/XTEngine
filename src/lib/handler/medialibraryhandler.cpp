@@ -8,9 +8,7 @@
 
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     : QObject(parent)
-#if BUILD_QT5
     , xVideoPreview(this)
-#endif
 {
     _thumbTimeoutTimer.setSingleShot(true);
     connect(this, &MediaLibraryHandler::prepareLibraryLoad, this, &MediaLibraryHandler::onPrepareLibraryLoad);
@@ -832,6 +830,7 @@ void MediaLibraryHandler::stopThumbProcess()
 
 void MediaLibraryHandler::saveSingleThumb(QString id, qint64 position)
 {
+    LogHandler::Debug("[saveSingleThumb]");
     auto item = findItemByID(id);
     if(item && !_thumbProcessIsRunning && item->thumbFile.endsWith(SettingsHandler::getThumbFormatExtension()) && !item->thumbFile.contains(".lock."))
     {
@@ -885,20 +884,22 @@ void MediaLibraryHandler::saveNewThumbs(bool vrMode)
 
 void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bool vrMode)
 {
+    LogHandler::Debug("[saveThumb]");
     if(_thumbProcessIsRunning && (item.type == LibraryListItemType::Audio || item.type == LibraryListItemType::FunscriptType || item.thumbFile.contains(".lock.")))
     {
+        LogHandler::Debug("[saveThumb] audio or locked");
         setThumbState(ThumbState::Ready, item);
         saveNewThumbs(vrMode);
     }
     else
     {
+        LogHandler::Debug("[saveThumb] start");
         setThumbState(ThumbState::Loading, item);
         QString itemID = item.ID;
         QString itemPath = item.path;
         QDir dir; // Make thumb path if doesnt exist
         dir.mkpath(SettingsHandler::getSelectedThumbsDir());
 
-#if BUILD_QT5
         connect(&_thumbTimeoutTimer, &QTimer::timeout, &_thumbTimeoutTimer, [this, itemID, vrMode]() {
             disconnect(&xVideoPreview, nullptr,  nullptr, nullptr);
             onSaveThumb(itemID, vrMode, "Thumb loading timed out.");
@@ -962,7 +963,6 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
                 });
 
         xVideoPreview.load(videoFile);
-#endif
     }
 }
 

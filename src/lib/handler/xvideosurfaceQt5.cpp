@@ -1,19 +1,19 @@
 #include "xvideosurface.h"
 
 XVideoSurface::XVideoSurface(QObject *parent)
-    : QVideoSink(parent)
+    : QAbstractVideoSurface(parent)
     , imageFormat(QImage::Format_Invalid)
 {
 }
 
-QList<QPixelFormat> XVideoSurface::supportedPixelFormats(
+QList<QVideoFrame::PixelFormat> XVideoSurface::supportedPixelFormats(
         QAbstractVideoBuffer::HandleType handleType) const
 {
     if (handleType == QAbstractVideoBuffer::NoHandle) {
-        return QList<QPixelFormat>()
-             << QPixelFormat::Format_ARGB32
-             << QPixelFormat::Format_ARGB32_Premultiplied
-             << QPixelFormat::Format_RGB32
+        return QList<QVideoFrame::PixelFormat>()
+             << QVideoFrame::Format_ARGB32
+             << QVideoFrame::Format_ARGB32_Premultiplied
+             << QVideoFrame::Format_RGB32
              << QVideoFrame::Format_RGB24
              << QVideoFrame::Format_RGB565
              << QVideoFrame::Format_RGB555;

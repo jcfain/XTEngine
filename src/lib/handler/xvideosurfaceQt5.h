@@ -1,15 +1,15 @@
-#ifndef XVIDEOSURFACE_H
-#define XVIDEOSURFACE_H
+#ifndef XVIDEOSURFACEQT5_H
+#define XVIDEOSURFACEQT5_H
 
-#include <QVideoSink>
+#include <QAbstractVideoSurface>
 #include <QImage>
 #include <QPixmap>
 #include <QRect>
 #include <QVideoFrame>
-#include <QAbstractVideoBuffer>
-#include <qvideoframe.h>
+#include <qabstractvideosurface.h>
+#include <qvideosurfaceformat.h>
 
-class XVideoSurface : public QVideoSink
+class XVideoSurface : public QAbstractVideoSurface
 {
     Q_OBJECT
 signals:
@@ -25,8 +25,9 @@ private:
     QRect targetRect;
     QRect sourceRect;
 
-    QList<QPixelFormat> supportedPixelFormats(QAbstractVideoBuffer:: handleType = QAbstractVideoBuffer::NoHandle) const;
-    bool isFormatSupported(const QPixelFormat &format) const;
+    QList<QVideoFrame::PixelFormat> supportedPixelFormats(
+            QAbstractVideoBuffer::HandleType handleType = QAbstractVideoBuffer::NoHandle) const;
+    bool isFormatSupported(const QVideoSurfaceFormat &format) const;
 
 
 
@@ -35,4 +36,4 @@ private:
     QRect videoRect() const { return targetRect; }
 };
 
-#endif // XVIDEOSURFACE_H
+#endif // XVIDEOSURFACEQT5_H

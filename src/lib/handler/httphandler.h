@@ -48,7 +48,8 @@ public:
     HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent = nullptr);
     ~HttpHandler();
     bool listen();
-    void handle(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleRoot(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    QHttpServerResponse handleFile(const QUrl &url, const QHttpServerRequest &request);
     void handleAuth(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleActiveSessions(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleExpireSession(const QHttpServerRequest &req, QHttpServerResponder &responder);
@@ -105,8 +106,10 @@ private:
     QString getCookie(const QHttpServerRequest &request, const QString& name);
     void sendFile(QHttpServerResponder &responder, const QString &path);
     void sendFile(QHttpServerResponder &responder, QHttpHeaders& headers, const QString &path);
-    void sendFile(const QByteArray &byte);
-    void sendFile(const QIODevice &device);
+    // void sendFile(const QByteArray &byte);
+    // void sendFile(const QIODevice &device);
+    QHttpServerResponse sendFile(const QString &path);
+    QHttpServerResponse sendFile(const QString &path, QHttpHeaders& headers);
 
 };
 

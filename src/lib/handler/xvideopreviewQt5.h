@@ -1,16 +1,13 @@
-#ifndef XVIDEOPREVIEW_H
-#define XVIDEOPREVIEW_H
+#ifndef XVIDEOPREVIEWQT5_H
+#define XVIDEOPREVIEWQT5_H
 #include "XTEngine_global.h"
 
 #include <QMediaPlayer>
 #include <QTimer>
-#include <QVideoSink>
-#include <QImage>
-#include <QVideoFrame>
 //#include <QProcess>
 //#include <QCoreApplication>
 //#include <QFileInfo>
-// #include "xvideosurface.h"
+#include "xvideosurface.h"
 #include "loghandler.h"
 
 class XTENGINE_EXPORT XVideoPreview : public QObject
@@ -31,7 +28,7 @@ public:
 
 private:
     void extract();
-    // XVideoSurface* _thumbNailVideoSurface;
+    XVideoSurface* _thumbNailVideoSurface;
     QMediaPlayer* _thumbPlayer;
 //    QProcess* m_ffmpeg;
 //    QProcess* m_ffmprobe;
@@ -42,16 +39,16 @@ private:
     qint64 _lastDuration;
     QImage _lastImage;
     QString _lastError;
-    QVideoSink m_videoSink;
+    QVideoSurfaceFormat m_format;
     QTimer m_debouncer;
     bool m_processed;
 
     void setUpThumbPlayer();
     void setUpInfoPlayer();
     void tearDownPlayer();
-    void on_thumbCapture(const QVideoFrame &thumb);
+    void on_thumbCapture(QImage thumb);
     void on_mediaStatusChanged(QMediaPlayer::MediaStatus status);
-    void on_mediaStateChange(QMediaPlayer::PlaybackState state);
+    void on_mediaStateChange(QMediaPlayer::State state);
     void on_thumbError(QString error);
     void on_durationChanged(qint64 duration);
     void process();
@@ -62,4 +59,4 @@ private:
 //    void onFFMpegThumbSave();
 };
 
-#endif // XVIDEOPREVIEW_H
+#endif // XVIDEOPREVIEWQT5_H

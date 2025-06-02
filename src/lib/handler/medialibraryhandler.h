@@ -11,9 +11,7 @@
 #include "../struct/ScriptInfo.h"
 #include "../struct/LibraryListItemMetaData258.h"
 
-#if BUILD_QT5
 #include "xvideopreview.h"
-#endif
 
 #include "XTEngine_global.h"
 
@@ -135,9 +133,7 @@ private:
     bool updateToolTip(LibraryListItem27 &item);
     bool discoverMFS(LibraryListItem27 &item);
 
-#if BUILD_QT5
     XVideoPreview xVideoPreview;
-#endif
 
 };
 
