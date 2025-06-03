@@ -1106,18 +1106,17 @@ void HttpHandler::handleFunscriptFile(const QHttpServerRequest &request, QHttpSe
     // responder.write(funscriptName.data(), headers, QHttpServerResponse::StatusCode::Ok);
     responder.write(QHttpServerResponse::StatusCode::NotImplemented);
 }
-void HttpHandler::handleThumbFile(const QHttpServerRequest &request, QHttpServerResponder &responder)
+QHttpServerResponse HttpHandler::handleThumbFile(const QHttpServerRequest &request)
 {
     if(!isAuthenticated(request)) {
-        responder.write(QHttpServerResponse::StatusCode::Unauthorized);
-        return;
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::Unauthorized);
     }
 
     QString parameter = getURL(request);
     QString thumbName = parameter.remove("/thumb/");
     if(thumbName.contains("../"))
     {
-        responder.write(QHttpServerResponse::StatusCode::Forbidden);
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::Forbidden);
     }
 
     QString thumbToSend;
@@ -1130,7 +1129,7 @@ void HttpHandler::handleThumbFile(const QHttpServerRequest &request, QHttpServer
         }
         else
         {
-            responder.write(QHttpServerResponse::StatusCode::NotFound);
+            return QHttpServerResponse(QHttpServerResponse::StatusCode::NotFound);
         }
     }
 //    QString thumbDirFile = SettingsHandler::getSelectedThumbsDir() + thumbName;
@@ -1160,23 +1159,32 @@ void HttpHandler::handleThumbFile(const QHttpServerRequest &request, QHttpServer
         QPixmap pixmap = ImageFactory::resize(thumbToSend, {500, 500});
         QByteArray bytes;
         QBuffer buffer(&bytes);
-        buffer.open(QIODevice::ReadWrite);
-        pixmap.save(&buffer, "WEBP", quality);
-        auto newObj = new QBuffer(&bytes);
-        //LogHandler::Debug("Image resized: "+QString::number(bytes.length()));
-        newObj->open(QIODevice::ReadOnly);
+        if(!buffer.open(QIODevice::ReadWrite) || pixmap.isNull()) {
+            return QHttpServerResponse(QHttpServerResponse::StatusCode::InternalServerError);
+        }
+        if(!pixmap.save(&buffer, "JPG", quality)) {
+            return QHttpServerResponse(QHttpServerResponse::StatusCode::InternalServerError);
+        }
+        // auto newObj = new QBuffer(&bytes);
+        LogHandler::Debug("Image resized: "+QString::number(bytes.length()));
+        // newObj->open(QIODevice::ReadOnly);
         // request.response->sendFile(newObj, "image/webp", "", -1, Z_DEFAULT_COMPRESSION);
         QHttpHeaders headers;
-        headers.append("Content-Type", "image/webp");
-        responder.write(newObj, headers, QHttpServerResponse::StatusCode::Ok);
+        // QString mimeType = mimeDatabase.mimeTypeForFile(thumbToSend, QMimeDatabase::MatchExtension).name();
+        headers.append(QHttpHeaders::WellKnownHeader::ContentType, "image/jpeg");
+        headers.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(bytes.length()));
+        // responder.write(newObj, headers, QHttpServerResponse::StatusCode::Ok);
+        auto response = QHttpServerResponse(bytes);
+        response.setHeaders(headers);
         buffer.close();
-        newObj->close();
-        delete newObj;
+        // newObj->close();
+        // delete newObj;
+        return response;
     }
     else {
-        sendFile(responder, thumbToSend);
+        return sendFile(thumbToSend);
     }
-    responder.write(QHttpServerResponse::StatusCode::Ok);
+    // responder.write(QHttpServerResponse::StatusCode::Ok);
 }
 
 void HttpHandler::handleSubtitle(const QHttpServerRequest &request, QHttpServerResponder &responder)
@@ -1424,14 +1432,19 @@ void HttpHandler::sendFile(QHttpServerResponder &responder, QHttpHeaders& header
     // headers.append("Content-Type", mimeType);
     // // responder.write(fileInfo.readAll(), headers, QHttpServerResponse::StatusCode::Ok);
     QHttpServerResponse response = QHttpServerResponse::fromFile(path);
-    response.headers().append("filename", fileInfo.fileName());
+    // response.headers().append("filename", fileInfo.fileName());
+    response.headers().append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(fileInfo.size()));
     responder.sendResponse(response);
+    // if(response.mimeType() == "application/x-empty") {
+    //     LogHandler::Debug("");
+    // }
 
 }
 
-// void HttpHandler::sendFile(const QByteArray &byte)
+// void HttpHandler::sendFile(const QByteArray &data, const QByteArray &mimeType)
 // {
-
+//     // const QByteArray mimeType = QMimeDatabase().mimeTypeForFileNameAndData(fileName, data).name().toLocal8Bit();
+//     return QHttpServerResponse(mimeType, data);
 // }
 
 // void HttpHandler::sendFile(const QIODevice &device)
@@ -1455,7 +1468,7 @@ QHttpServerResponse HttpHandler::sendFile(const QString &path, QHttpHeaders &hea
     // }
     // headers.append("Content-Type", mimeType);
     auto response = QHttpServerResponse::fromFile(path);
-    response.headers().append("filename", fileInfo.fileName());
+    // response.headers().append("filename", fileInfo.fileName());
     return response;
 }
 

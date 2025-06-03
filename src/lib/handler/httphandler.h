@@ -56,7 +56,7 @@ public:
     void handleLogout(const QHttpServerRequest &req, QHttpServerResponder &responder);
     QFuture<QHttpServerResponse> handleVideoStream(const QHttpServerRequest &req);
     void handleVideoList(const QHttpServerRequest &req, QHttpServerResponder &responder);
-    void handleThumbFile(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    QHttpServerResponse handleThumbFile(const QHttpServerRequest &req);
     void handleFunscriptFile(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleSettings(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleChannels(const QHttpServerRequest &req, QHttpServerResponder &responder);
@@ -84,7 +84,8 @@ private:
     MediaLibraryHandler* _mediaLibraryHandler = 0;
     bool _libraryLoaded = false;
     QString _libraryLoadingStatus = "Loading...";
-    QMutex _mutex;
+    // QMutex _mutex;
+    QMutex m_fileMutex;
     QHash<QString, QDateTime> m_authenticated;
     QStringList m_authenticatedForMedia;
     QTimer m_sessionPolice;
