@@ -34,3 +34,4 @@ build-*
 *.user
 src/www/.vscode/settings.json
 /src/build
+/build

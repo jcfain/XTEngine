@@ -157,18 +157,30 @@ equals(QT_MAJOR_VERSION, 5) {
 ## Default rules for deployment.
 #!isEmpty(target.path): INSTALLS += target
 
+#CONFIG += shared
+CONFIG(debug, debug|release) {
+    DESTDIR = $$shell_path($$OUT_PWD/debug)
+} else: CONFIG(release, debug|release): {
+    DESTDIR = $$shell_path($$OUT_PWD/release)
+}
+
+equals(QT_MAJOR_VERSION, 5) {
+    INCLUDEPATH += $$PWD/../../HttpServer/src
+    DEPENDPATH += $$PWD/../../HttpServer/src
+}
+
 unix:!mac {
 CONFIG += shared
     #QMAKE_PREFIX_SHLIB = so
     #QMAKE_RPATHDIR += ../lib
     CONFIG(debug, debug|release) {
-        DESTDIR = $$shell_path($$OUT_PWD/debug)
+        #DESTDIR = $$shell_path($$OUT_PWD/debug)
         equals(QT_MAJOR_VERSION, 5) {
             LIBS += -L$$PWD/../../HttpServer/src/build/debug -lhttpServer
         }
     }
     else:CONFIG(release, debug|release): {
-        DESTDIR = $$shell_path($$OUT_PWD/release)
+        #DESTDIR = $$shell_path($$OUT_PWD/release)
         equals(QT_MAJOR_VERSION, 5) {
             LIBS += -L$$PWD/../../HttpServer/src/build/release -lhttpServer
         }
@@ -180,7 +192,7 @@ CONFIG += shared
 }
 
 unix:mac {
-    DESTDIR = $$shell_path($$OUT_PWD)
+   # DESTDIR = $$shell_path($$OUT_PWD)
 #    #INCLUDEPATH += $$QT.core.libs/QtCompress.framework/Versions/5/Headers
 #    QMAKE_LFLAGS += -F$$QT.core.libs
 ##    RPATHDIR *= @loader_path/../Frameworks
@@ -202,10 +214,10 @@ CONFIG += shared
     # INCLUDEPATH += $$PWD/../../HttpServer/src
     # DEPENDPATH += $$PWD/../../HttpServer/src
     CONFIG(debug, debug|release) {
-        DESTDIR = $$shell_path($$OUT_PWD/debug)
+        ##DESTDIR = $$shell_path($$OUT_PWD/debug)
     }
     else:CONFIG(release, debug|release): {
-        DESTDIR = $$shell_path($$OUT_PWD/release)
+        #DESTDIR = $$shell_path($$OUT_PWD/release)
     }
     RPATHDIR *= @loader_path/../Frameworks @executable_path/../Frameworks
     QMAKE_LFLAGS_SONAME = -W1,-install_name,@rpath,
@@ -215,9 +227,9 @@ CONFIG += shared
     }
     ICON = $$PWD/images/icons/XTP-icon.icns
 }
-win32{
+win32 {
     build_pass: CONFIG(debug, debug|release) {
-        DESTDIR = $$shell_path($$OUT_PWD/debug)
+        #DESTDIR = $$shell_path($$OUT_PWD/debug)
         equals(QT_MAJOR_VERSION, 5) {
             LIBS += -L$$PWD/../../HttpServer/build/debug -lhttpServer
             INCLUDEPATH += $$PWD/../../HttpServer/build/debug
@@ -225,7 +237,7 @@ win32{
         }
     }
     else:win32:CONFIG(release, debug|release): {
-        DESTDIR = $$shell_path($$OUT_PWD/release)
+        #DESTDIR = $$shell_path($$OUT_PWD/release)
         equals(QT_MAJOR_VERSION, 5) {
             LIBS += -L$$PWD/../../HttpServer/build/release -lhttpServer
             INCLUDEPATH += $$PWD/../../HttpServer/build/release
@@ -254,7 +266,11 @@ win32{
 #QMAKE_EXTRA_TARGETS += mypackagerule
 
 # https://dragly.org/2013/11/05/copying-data-files-to-the-build-directory-when-working-with-qmake/
-copydata.commands = $(COPY_DIR) $$shell_quote($$PWD/www) $$shell_quote($$DESTDIR)
+win32 {
+    copydata.commands = $(COPY_DIR) $$shell_quote($$shell_path($$PWD/www)) $$shell_quote($$shell_path($$DESTDIR/www))
+} else: {
+    copydata.commands = $(COPY_DIR) $$shell_quote($$PWD/www) $$shell_quote($$DESTDIR)
+}
 first.depends = $(first) copydata
 export(first.depends)
 export(copydata.commands)

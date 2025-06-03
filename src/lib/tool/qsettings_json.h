@@ -29,10 +29,17 @@
 
 // Heavily modified by Khrull
 
-#include <QtCore>
+//#include <QtCore>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QIODevice>
+#include <QSettings>
 #include <QObject>
 #include <QDebug>
-class JSONSettingsFormatter
+#include "XTEngine_global.h"
+
+class XTENGINE_EXPORT JSONSettingsFormatter
 {
 public:
     static const QSettings::Format JsonFormat;
