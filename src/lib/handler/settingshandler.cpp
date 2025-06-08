@@ -402,12 +402,17 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     QString appPath = QString(qgetenv("APPIMAGE"));
     if(!appPath.isEmpty())
     {
-        _applicationDirPath = QFileInfo(appPath).absolutePath();;
+        m_isAppImage = true;
+        LogHandler::Debug("Is appimage "+appPath);
+        _applicationDirPath = QFileInfo(appPath).absolutePath();
+        m_appimageMountDir = QString(qgetenv("APPDIR"));;
+        LogHandler::Debug("AppImage mount point "+m_appimageMountDir);
     }
     else
     {
         _applicationDirPath = QCoreApplication::applicationDirPath();
     }
+    LogHandler::Debug("Application path: "+_applicationDirPath);
     _appdataLocation = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
     if(_appdataLocation.isEmpty())
         _appdataLocation = _applicationDirPath;
@@ -3055,7 +3060,11 @@ QString SettingsHandler::setHttpServerRootDefault()
 #elif defined(Q_OS_MAC)
     _httpServerRoot = _applicationDirPath + "/www";
 #elif defined(Q_OS_LINUX)
-    _httpServerRoot = _applicationDirPath + "/www";
+    if(m_isAppImage) ///tmp/.mount_XTPlayMmaCGD/usr/bin/www/
+        _httpServerRoot = m_appimageMountDir + "/usr/bin/www";
+    else
+        _httpServerRoot = _applicationDirPath + "/www";
+
 #endif
     settingsChangedEvent(true);
     return _httpServerRoot;
@@ -3257,6 +3266,8 @@ void SettingsHandler::setForceMetaDataFullProcessComplete()
 
 QSettings* SettingsHandler::settings;
 bool SettingsHandler::m_isPortable = false;
+bool SettingsHandler::m_isAppImage = false;
+QString SettingsHandler::m_appimageMountDir;
 QMap<QString, QVariant> SettingsHandler::m_changedSettings;
 QString SettingsHandler::_applicationDirPath;
 SettingsHandler* SettingsHandler::m_instance = 0;

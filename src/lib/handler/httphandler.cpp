@@ -242,8 +242,8 @@ bool HttpHandler::listen()
 
     auto tcpserver = std::make_unique<QTcpServer>();
     if (!tcpserver->listen(QHostAddress::Any, SettingsHandler::getHTTPPort()) || !_server->bind(tcpserver.get())) {
-        qWarning() << QCoreApplication::translate("QHttpServerExample",
-                                                  "Server failed to listen on a port.");
+        LogHandler::Warn(QCoreApplication::translate("QHttpServer",
+                                                     "Http Server failed to listen on a port."));
         return false;
     }
 

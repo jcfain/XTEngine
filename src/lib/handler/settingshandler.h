@@ -433,6 +433,8 @@ private:
     SettingsHandler();
     ~SettingsHandler();
     static bool m_isPortable;
+    static bool m_isAppImage;
+    static QString m_appimageMountDir;
     static QMap<QString, QVariant> m_changedSettings;
     static QString _applicationDirPath;
     static SettingsHandler* m_instance;
