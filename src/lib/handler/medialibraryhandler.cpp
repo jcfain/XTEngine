@@ -860,6 +860,7 @@ void MediaLibraryHandler::saveSingleThumb(QString id, qint64 position)
     auto item = findItemByID(id);
     if(item && !_thumbProcessIsRunning && item->thumbFile.endsWith(SettingsHandler::getThumbFormatExtension()) && !item->thumbFile.contains(".lock."))
     {
+        item->metadata.thumbExtractError = nullptr;
         saveThumb(*item, position);
     }
 }
@@ -925,6 +926,12 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
         QString itemPath = item.path;
         QDir dir; // Make thumb path if doesnt exist
         dir.mkpath(SettingsHandler::getSelectedThumbsDir());
+        if(!item.thumbFileExists && !item.metadata.thumbExtractError.isEmpty())
+        {
+            LogHandler::Debug("[saveThumb] Thumb historically marked as errored. Skipping. Manually extract the thumb if available.");
+            onSaveThumb(itemID, vrMode, item.metadata.thumbExtractError);
+            return;
+        }
 
         connect(&_thumbTimeoutTimer, &QTimer::timeout, &_thumbTimeoutTimer, [this, itemID, vrMode]() {
             disconnect(&xVideoPreview, nullptr,  nullptr, nullptr);
@@ -1033,6 +1040,8 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
         if(!errorMessage.isEmpty())
         {
             LogHandler::Error("Save thumb error: " + errorMessage);
+            item->metadata.thumbExtractError = errorMessage;
+            SettingsHandler::updateLibraryListItemMetaData(*item);
             setThumbState(ThumbState::Error, *item);
             emit saveThumbError(cachedItem, vrMode, errorMessage);
         }
@@ -1040,6 +1049,8 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
         {
             LogHandler::Debug("Thumb saved: " + item->thumbFile);
             ImageFactory::removeCache(item->thumbFile);
+            item->metadata.thumbExtractError = nullptr;
+            SettingsHandler::updateLibraryListItemMetaData(*item, false);
             setThumbPath(cachedItem);
             setThumbState(ThumbState::Ready, cachedItem);
             emit saveNewThumb(*item, vrMode, item->thumbFile);

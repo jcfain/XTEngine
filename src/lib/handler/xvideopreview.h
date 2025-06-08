@@ -44,7 +44,7 @@ private:
     void on_thumbCapture(const QVideoFrame &thumb);
     void on_mediaStatusChanged(QMediaPlayer::MediaStatus status);
     void on_mediaStateChange(QMediaPlayer::PlaybackState state);
-    void on_thumbError(QString error);
+    void on_thumbError(QMediaPlayer::Error error, const QString &errorString);
     void on_durationChanged(qint64 duration);
     void process();
 };

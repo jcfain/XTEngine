@@ -16,6 +16,7 @@ TEMPLATE = lib
 DEFINES += XTENGINE_LIBRARY
 
 CONFIG += c++17
+#-DFFMPEG_DIR=/usr/local/ffmpeg/
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.

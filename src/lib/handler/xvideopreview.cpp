@@ -14,7 +14,7 @@ XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent),  _thumbPlayer(0
     connect(_thumbPlayer, &QMediaPlayer::playbackStateChanged, this, &XVideoPreview::on_mediaStateChange);
     connect(_thumbPlayer, &QMediaPlayer::mediaStatusChanged, this, &XVideoPreview::on_mediaStatusChanged);
     connect(&m_videoSink, &QVideoSink::videoFrameChanged, this, &XVideoPreview::on_thumbCapture);
-    // connect(m_videoSink, &QVideoSink::videoFrameChanged, this, &XVideoPreview::on_thumbError);
+    connect(_thumbPlayer, &QMediaPlayer::errorOccurred, this, &XVideoPreview::on_thumbError);
     connect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
     connect(&m_debouncer, &QTimer::timeout, this, [this]() {
         LogHandler::Debug("Extract debounce");
@@ -115,6 +115,9 @@ void XVideoPreview::stop()
 // Private
 void XVideoPreview::on_thumbCapture(const QVideoFrame &frame)
 {
+    // if(!frame.isValid()) {
+    //     emit frameExtractionError("Invalid!");
+    // }
     if(_extracting) {
         LogHandler::Debug("on_thumbCapture: "+ _file);
         _lastImage = frame.toImage();
@@ -124,14 +127,17 @@ void XVideoPreview::on_thumbCapture(const QVideoFrame &frame)
     }
 }
 
-void XVideoPreview::on_thumbError(QString error)
+void XVideoPreview::on_thumbError(QMediaPlayer::Error error, const QString &errorString)
 {
-    if(_extracting) {
-        LogHandler::Debug("on_thumbError: "+ _file);
-        _lastError = error;
-        //tearDownPlayer();
-        process();
-    }
+    LogHandler::Debug("on_thumbError: "+ _file);
+    m_processed = true;
+    emit frameExtractionError(errorString);
+    // if(_extracting) {
+    //     LogHandler::Debug("on_thumbError: "+ _file);
+    //     _lastError = errorString;
+    //     //tearDownPlayer();
+    //     process();
+    // }
 }
 
 void XVideoPreview::on_mediaStatusChanged(QMediaPlayer::MediaStatus status)
@@ -184,6 +190,7 @@ void XVideoPreview::process() {
         }
     }
 }
+
 void XVideoPreview::on_durationChanged(qint64 duration)
 {
     if(_loadingInfo && duration > 0)

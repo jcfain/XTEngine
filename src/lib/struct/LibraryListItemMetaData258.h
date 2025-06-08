@@ -30,6 +30,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     bool isMFS;
     bool hasAlternate;
     QDateTime dateAdded;
+    QString thumbExtractError;
 
     QList<Bookmark> bookmarks;
     QList<QString> funscripts;
@@ -55,6 +56,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream << object.isMFS;
         dataStream << object.hasAlternate;
         dataStream << object.dateAdded;
+        dataStream << object.thumbExtractError;
         foreach(auto bookmark, object.bookmarks )
             dataStream << bookmark;
         foreach(auto funscript, object.funscripts )
@@ -88,6 +90,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream >> object.isMFS;
         dataStream >> object.hasAlternate;
         dataStream >> object.dateAdded;
+        dataStream >> object.thumbExtractError;
         foreach(auto bookmark, object.bookmarks )
             dataStream >> bookmark;
         foreach(auto funscript, object.funscripts )
@@ -156,6 +159,8 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         obj["isMFS"] = item.isMFS;
         obj["hasAlternate"] = item.hasAlternate;
         obj["dateAdded"] = item.dateAdded.toString(Qt::DateFormat::ISODateWithMs);
+        obj["thumbExtractError"] = item.thumbExtractError;
+
         QJsonArray bookmarks;
         foreach(Bookmark bookmark, item.bookmarks) {
             QJsonObject bookmarkObj;
@@ -209,6 +214,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         newItem.isMFS = obj["isMFS"].toBool();
         newItem.hasAlternate = obj["hasAlternate"].toBool();
         newItem.dateAdded = QDateTime::fromString(obj["dateAdded"].toString(), Qt::DateFormat::ISODateWithMs);
+        newItem.thumbExtractError = obj["thumbExtractError"].toString(nullptr);
         foreach(auto jasonValueConstObj, obj["bookmarks"].toArray())
         {
             QJsonObject obj = jasonValueConstObj.toObject();
@@ -262,6 +268,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         isMFS = newItem.isMFS;
         hasAlternate = newItem.hasAlternate;
         bookmarks.clear();
+        thumbExtractError = newItem.thumbExtractError;
         foreach(auto bookmark, newItem.bookmarks)
         {
             Bookmark bookMark;
