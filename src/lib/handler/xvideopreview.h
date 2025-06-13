@@ -28,6 +28,7 @@ private:
     void extract();
     QMediaPlayer* _thumbPlayer;
     QString _file;
+    bool m_fileChanged;
     qint64 _time;
     bool _loadingInfo = false;
     bool _extracting = false;

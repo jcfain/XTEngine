@@ -31,7 +31,7 @@ void XVideoPreview::setUpThumbPlayer()
 }
 
 void XVideoPreview::setUpInfoPlayer() {
-    LogHandler::Debug("setUpThumbPlayer");
+    LogHandler::Debug("setUpInfoPlayer");
 }
 
 void XVideoPreview::tearDownPlayer()
@@ -63,6 +63,7 @@ void XVideoPreview::tearDownPlayer()
 void XVideoPreview::extract(QString file, qint64 time)
 {
     setUpThumbPlayer();
+    m_fileChanged = _file != file;
     _file = file;
     if(_file.isNull()) {
         LogHandler::Error("In valid file path.");
@@ -81,8 +82,12 @@ void XVideoPreview::extract(QString file, qint64 time)
 void XVideoPreview::extract() {
     LogHandler::Debug("extract at: " + QString::number(_time) + " from: "+ _file);
     m_processed = false;
-    QUrl mediaUrl = QUrl::fromLocalFile(_file);
-    _thumbPlayer->setSource(mediaUrl);
+    if(m_fileChanged)
+    {
+        QUrl mediaUrl = QUrl::fromLocalFile(_file);
+        _thumbPlayer->setSource(mediaUrl);
+        m_fileChanged = false;
+    }
     if(_time > -1)
     {
         _loadingInfo = false;
