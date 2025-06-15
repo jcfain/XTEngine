@@ -497,7 +497,7 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
         emit backgroundProcessStateChange("Processing metadata...", -1);
         //XTags tags = SettingsHandler::getXTags();
         bool saveSettings = false;
-        auto cachedLibraryItems = _cachedLibraryItems;
+        auto cachedLibraryItems = getCachedLibraryItems();
 
         foreach (LibraryListItem27 item, cachedLibraryItems) {
             if(_metadataFuture.isCanceled()) {
@@ -519,7 +519,7 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
                 SettingsHandler::updateLibraryListItemMetaData(item, false);
             }
 
-            float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
+            float percentage = XMath::roundTwoDecimal(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100.0);
             emit backgroundProcessStateChange("Processing metadata", percentage);
         }
         if(SettingsHandler::getForceMetaDataFullProcess() && cachedLibraryItems.length()) {
@@ -567,7 +567,7 @@ void MediaLibraryHandler::startMetadataCleanProcess()
                 if(tagUpdated)
                     SettingsHandler::updateLibraryListItemMetaData(*item, false);
             }
-            float percentage = round(((float)allMetadatakeys.indexOf(key)/allMetadatakeys.length()) * 100);
+            float percentage = XMath::roundTwoDecimal(((float)allMetadatakeys.indexOf(key)/allMetadatakeys.length()) *100.0);
             emit backgroundProcessStateChange("Cleaning metadata", percentage);
         }
         if(saveSettings)
@@ -601,7 +601,7 @@ void MediaLibraryHandler::startMetadata1024Cleanup()
                 LogHandler::Info("Change offset 1024 for media: "+item.name);
             }
 
-            float percentage = round(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100);
+            float percentage = XMath::roundTwoDecimal(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100.0);
             emit backgroundProcessStateChange("Cleaning metadata 1024", percentage);
         }
         if(saveSettings)
@@ -610,6 +610,17 @@ void MediaLibraryHandler::startMetadata1024Cleanup()
         emit backgroundProcessStateChange(nullptr, -1);
         LogHandler::Debug("End metadata clean 1024 process");
     });
+}
+
+const QList<LibraryListItem27> MediaLibraryHandler::getCachedLibraryItems() const
+{
+    return _cachedLibraryItems;
+}
+
+void MediaLibraryHandler::setCachedLibraryItems(const QList<LibraryListItem27> &newCachedLibraryItems)
+{
+    QMutexLocker locker(&m_cachedLibraryItemsMutex);
+    _cachedLibraryItems = newCachedLibraryItems;
 }
 
 void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess)
@@ -816,7 +827,7 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
 
 void MediaLibraryHandler::startThumbProcess(bool vrMode)
 {
-    LogHandler::Debug("Start thumb process, vrMode: " + QString::number(vrMode));
+    LogHandler::Debug("[MediaLibraryHandler::startThumbProcess] Start thumb process, vrMode: " + QString::number(vrMode));
     if(!vrMode)
     {
         emit thumbProcessBegin();
@@ -828,16 +839,18 @@ void MediaLibraryHandler::startThumbProcess(bool vrMode)
     {
         thumbDir.mkdir(thumbPath);
     }
-    stopThumbProcess();
+    if(_thumbProcessIsRunning)
+        stopThumbProcess();
     _thumbProcessIsRunning = true;
     saveNewThumbs(vrMode);
 }
 
 void MediaLibraryHandler::stopThumbProcess()
 {
+    LogHandler::Debug("[MediaLibraryHandler::stopThumbProcess]");
     if(_thumbProcessIsRunning)
     {
-        LogHandler::Debug("Stop thumb process");
+        LogHandler::Debug("[MediaLibraryHandler::stopThumbProcess] Stop thumb process");
         _thumbNailSearchIterator = 0;
         _thumbProcessIsRunning = false;
         if(_thumbTimeoutTimer.isActive())
@@ -856,7 +869,7 @@ void MediaLibraryHandler::stopThumbProcess()
 
 void MediaLibraryHandler::saveSingleThumb(QString id, qint64 position)
 {
-    LogHandler::Debug("[saveSingleThumb]");
+    LogHandler::Debug("[MediaLibraryHandler::saveSingleThumb]");
     auto item = findItemByID(id);
     if(item && !_thumbProcessIsRunning && item->thumbFile.endsWith(SettingsHandler::getThumbFormatExtension()) && !item->thumbFile.contains(".lock."))
     {
@@ -867,23 +880,58 @@ void MediaLibraryHandler::saveSingleThumb(QString id, qint64 position)
 
 bool MediaLibraryHandler::thumbProcessRunning()
 {
-    return _thumbProcessIsRunning;
+    return _thumbProcessIsRunning || m_thumbProcessFuture.isRunning();
+}
+
+void MediaLibraryHandler::processThumbs()
+{
+    m_thumbProcessFuture = QtConcurrent::run([this](){
+        QMutexLocker locker(&m_cachedLibraryItemsMutex);
+        for (int i = 0; i < _cachedLibraryItems.length(); ++i)
+        {
+            emit backgroundProcessStateChange("Processing thumbs", XMath::roundTwoDecimal(((float)i/(float)_cachedLibraryItems.length())*100.0));
+            auto item = _cachedLibraryItems[i];
+            XVideoPreview preview;
+            auto image = preview.extractSync(item.libraryPath);
+            if(image.isNull())
+            {
+                auto errorMessage = preview.getLastError();
+                LogHandler::Error("[MediaLibraryHandler::onSaveThumb] Save thumb error: " + errorMessage);
+                _cachedLibraryItems[i].metadata.thumbExtractError = errorMessage;
+                SettingsHandler::updateLibraryListItemMetaData(_cachedLibraryItems[i]);
+                setThumbState(ThumbState::Error, _cachedLibraryItems[i]);
+                emit saveThumbError(item, false, errorMessage);
+                continue;
+            }
+
+            LogHandler::Debug("[MediaLibraryHandler::onSaveThumb] Thumb saved: " + item.thumbFile);
+            ImageFactory::removeCache(item.thumbFile);
+            _cachedLibraryItems[i].metadata.thumbExtractError = nullptr;
+            SettingsHandler::updateLibraryListItemMetaData(_cachedLibraryItems[i], false);
+            setThumbPath(item);
+            setThumbState(ThumbState::Ready, item);
+            emit saveNewThumb(_cachedLibraryItems[i], false, item.thumbFile);
+        }
+    });
 }
 
 void MediaLibraryHandler::saveNewThumbs(bool vrMode)
 {
+    LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] vrMode: "+ QString::number(vrMode));
     if (_thumbProcessIsRunning && _thumbNailSearchIterator < _cachedLibraryItems.count())
     {
         LibraryListItem27 &item = _cachedLibraryItems[_thumbNailSearchIterator];
-        emit backgroundProcessStateChange("Processing thumbs", round((_thumbNailSearchIterator/(float)_cachedLibraryItems.length())*100));
+        LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] Precessing next item: "+ item.nameNoExtension);
+        emit backgroundProcessStateChange("Processing thumbs", XMath::roundTwoDecimal(((float)_thumbNailSearchIterator/(float)_cachedLibraryItems.length())*100.0));
         _thumbNailSearchIterator++;
-        if (isLibraryItemVideo(item) && !item.thumbFileExists && !SettingsHandler::getDisableAutoThumbGeneration())
+        auto disableThumbGen = SettingsHandler::getDisableAutoThumbGeneration();
+        if (isLibraryItemVideo(item) && !item.thumbFileExists && !disableThumbGen)
         {
             saveThumb(item, -1, vrMode);
         }
         else
         {
-            if(!item.thumbFileExists && SettingsHandler::getDisableAutoThumbGeneration())
+            if(!item.thumbFileExists && disableThumbGen)
             {
                 setThumbState(ThumbState::Unknown, item);
             }
@@ -891,6 +939,7 @@ void MediaLibraryHandler::saveNewThumbs(bool vrMode)
             {
                 setThumbState(ThumbState::Ready, item);
             }
+            LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] Nothing to do for item");
             saveNewThumbs(vrMode);
         }
     }
@@ -901,7 +950,7 @@ void MediaLibraryHandler::saveNewThumbs(bool vrMode)
             startThumbProcess(true);
         else
         {
-            LogHandler::Debug("Thumb process finished");
+            LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] Thumb process finished");
 
             emit backgroundProcessStateChange(nullptr, -1);
             emit thumbProcessEnd();// Must be callsed after backgroundProcessStateChange for queue order
@@ -911,16 +960,16 @@ void MediaLibraryHandler::saveNewThumbs(bool vrMode)
 
 void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bool vrMode)
 {
-    LogHandler::Debug("[saveThumb]");
+    LogHandler::Debug("[MediaLibraryHandler::saveThumb] vrMode: "+ QString::number(vrMode) + ", item name: " + item.nameNoExtension);
     if(_thumbProcessIsRunning && (item.type == LibraryListItemType::Audio || item.type == LibraryListItemType::FunscriptType || item.thumbFile.contains(".lock.")))
     {
-        LogHandler::Debug("[saveThumb] audio or locked");
+        LogHandler::Debug("[MediaLibraryHandler::saveThumb] audio or locked");
         setThumbState(ThumbState::Ready, item);
         saveNewThumbs(vrMode);
     }
     else
     {
-        LogHandler::Debug("[saveThumb] start");
+        LogHandler::Debug("[MediaLibraryHandler::saveThumb] start extract threads");
         setThumbState(ThumbState::Loading, item);
         QString itemID = item.ID;
         QString itemPath = item.path;
@@ -928,8 +977,9 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
         dir.mkpath(SettingsHandler::getSelectedThumbsDir());
         if(!item.thumbFileExists && !item.metadata.thumbExtractError.isEmpty())
         {
-            LogHandler::Debug("[saveThumb] Thumb historically marked as errored. Skipping. Manually extract the thumb if available.");
-            onSaveThumb(itemID, vrMode, item.metadata.thumbExtractError);
+            LogHandler::Debug("[MediaLibraryHandler::saveThumb] Thumb historically marked as errored. Skipping. Manually extract the thumb if available.");
+            setThumbState(ThumbState::Error, item);
+            saveNewThumbs(vrMode);
             return;
         }
 
@@ -948,9 +998,9 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
                 [this, videoFile, position](qint64 duration)
                 {
                     disconnect(&xVideoPreview, &XVideoPreview::durationChanged,  nullptr, nullptr);
-                    LogHandler::Debug("Loaded video for thumb. Duration: " + QString::number(duration));
+                    LogHandler::Debug("[MediaLibraryHandler::saveThumb] Loaded video for thumb. Duration: " + QString::number(duration));
                     qint64 randomPosition = position > 0 ? position : XMath::random((qint64)1, duration);
-                    LogHandler::Debug("Extracting at: " + QString::number(randomPosition));
+                    LogHandler::Debug("[MediaLibraryHandler::saveThumb] Extracting at: " + QString::number(randomPosition));
                     xVideoPreview.extract(videoFile, randomPosition);
                 });
 
@@ -968,7 +1018,7 @@ void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bo
                 {
                     if(!frame.isNull())
                     {
-                        LogHandler::Debug("Enter frameExtracted");
+                        LogHandler::Debug("[MediaLibraryHandler::saveThumb] Enter frameExtracted");
                         auto item = findItemByID(itemID);
                         if(!item) {
                             onSaveThumb(itemID, vrMode, "Media item no longer exists: "+itemID);
@@ -1028,7 +1078,7 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
 {
     LibraryListItem27* item = findItemByID(itemID);
     if(!item || item->ID.isEmpty()) {
-        LogHandler::Error("onSaveThumb item ID empty.");
+        LogHandler::Error("[MediaLibraryHandler::onSaveThumb] item ID empty.");
     } else {
         int cachedIndex = _cachedLibraryItems.indexOf(*item);
         if(cachedIndex == -1) {
@@ -1039,7 +1089,7 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
         LibraryListItem27 &cachedItem = _cachedLibraryItems[cachedIndex];
         if(!errorMessage.isEmpty())
         {
-            LogHandler::Error("Save thumb error: " + errorMessage);
+            LogHandler::Error("[MediaLibraryHandler::onSaveThumb] Save thumb error: " + errorMessage);
             item->metadata.thumbExtractError = errorMessage;
             SettingsHandler::updateLibraryListItemMetaData(*item);
             setThumbState(ThumbState::Error, *item);
@@ -1047,7 +1097,7 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
         }
         else
         {
-            LogHandler::Debug("Thumb saved: " + item->thumbFile);
+            LogHandler::Debug("[MediaLibraryHandler::onSaveThumb] Thumb saved: " + item->thumbFile);
             ImageFactory::removeCache(item->thumbFile);
             item->metadata.thumbExtractError = nullptr;
             SettingsHandler::updateLibraryListItemMetaData(*item, false);
@@ -1078,7 +1128,7 @@ QList<LibraryListItem27> MediaLibraryHandler::getPlaylist(QString name) {
     auto playlist = playlists.value(name);
     foreach (auto item, playlist) {
         int index = playlist.indexOf(item);
-        float percentage = round(((float)playlist.indexOf(item)/playlist.length()) * 100);
+        float percentage = XMath::roundTwoDecimal(((float)playlist.indexOf(item)/playlist.length()) * 100);
         emit backgroundProcessStateChange("Loading playlist", percentage);
         LibraryListItem27* itemRef = findItemByReference(&item);
         if(itemRef)
@@ -1155,11 +1205,9 @@ LibraryListItem27 MediaLibraryHandler::setupTempExternalItem(QString mediapath, 
     return item;
 }
 void MediaLibraryHandler::updateItem(LibraryListItem27 item, QVector<int> roles, bool notify) {
-    auto index = findItemIndexByID(item.ID);
+    auto index = m_mediaLibraryCache.findItemIndexByID(item.ID);
     if(index > -1) {
-        _mutex.lock();
-        LibraryListItem27::copyProperties(item, _cachedLibraryItems[index]);
-        _mutex.unlock();
+        LibraryListItem27::copyProperties(item, *m_mediaLibraryCache.getItem(index));
         if(notify) {
             emit itemUpdated(index, {roles});
         }
@@ -1480,7 +1528,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
             emit cleanUpThumbsFailed();
             return;
         }
-        auto cachedLibraryItems = _cachedLibraryItems;
+        auto cachedLibraryItems = m_mediaLibraryCache.getItems();
         emit backgroundProcessStateChange("Cleaning thumbs...", -1);
         foreach(auto libraryListItem, cachedLibraryItems) {
             if(m_thumbCleanupFuture.isCanceled()) {
@@ -1489,7 +1537,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
                 emit cleanUpThumbsFailed();
                 return;
             }
-            emit backgroundProcessStateChange("Cleaning duplicate thumbs:", round((cachedLibraryItems.indexOf(libraryListItem)/(float)cachedLibraryItems.length())*100));
+            emit backgroundProcessStateChange("Cleaning duplicate thumbs:", XMath::roundTwoDecimal(((float)cachedLibraryItems->indexOf(libraryListItem)/(float)cachedLibraryItems->length())*100.0));
             if(libraryListItem.type != LibraryListItemType::VR && libraryListItem.type != LibraryListItemType::Video)
                 continue;
             QString hasGlobal;
@@ -1541,7 +1589,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
                 } else if(!hasLocalLocked.isEmpty()) {
                     libraryListItem.thumbFile = hasLocalLocked;
                 }
-                updateItem(cachedLibraryItems.indexOf(libraryListItem), {Qt::DecorationRole});
+                updateItem(cachedLibraryItems->indexOf(libraryListItem), {Qt::DecorationRole});
             }
         }
 
@@ -1559,7 +1607,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
                 emit cleanUpThumbsFailed();
                 return;
             }
-            emit backgroundProcessStateChange("Cleaning stale thumbs", round((currentFileCount/(float)fileCount)*100));
+            emit backgroundProcessStateChange("Cleaning stale thumbs", XMath::roundTwoDecimal(((float)currentFileCount/(float)fileCount)*100.0));
             QString filepath = thumbs.next();
     //        QFileInfo fileinfo(filepath);
     //        QString fileName = fileinfo.fileName();
@@ -1776,184 +1824,44 @@ bool MediaLibraryHandler::isStereo(QString mediaPath) {
  * Returns default if not found
  * **/
 LibraryListItem27* MediaLibraryHandler::findItemByID(QString id) {
-//    foreach (LibraryListItem27 item, _cachedLibraryItems) {
-//        if(item.ID == id)
-//            return &_cachedLibraryItems[_cachedLibraryItems.indexOf(item)];
-//    }
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [id](const LibraryListItem27& item) {
-        return item.ID == id;
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
+    return m_mediaLibraryCache.findItemByID(id);
 }
 int MediaLibraryHandler::findItemIndexByID(QString id) {
-//    int foundItem = -1;
-//    foreach (LibraryListItem27 item, _cachedLibraryItems) {
-//        if(item.ID == id)
-//            return _cachedLibraryItems.indexOf(item);
-//    }
-    const QMutexLocker locker(&_mutex);
-
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [id](const LibraryListItem27& item) {
-        return item.ID == id;
-    });
-    if(itr != _cachedLibraryItems.end())
-        return itr - _cachedLibraryItems.begin();
-    return -1;
+    return m_mediaLibraryCache.findItemIndexByID(id);
 }
 LibraryListItem27* MediaLibraryHandler::findItemByNameNoExtension(QString nameNoExtension) {
-//    foreach (LibraryListItem27 item, _cachedLibraryItems) {
-//        if(item.nameNoExtension == nameNoExtension)
-//            return &_cachedLibraryItems[_cachedLibraryItems.indexOf(item)];
-//    }
-
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [nameNoExtension](const LibraryListItem27& item) {
-        return !item.nameNoExtension.compare(nameNoExtension, Qt::CaseInsensitive);
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
+    return m_mediaLibraryCache.findItemByNameNoExtension(nameNoExtension);
 }
 LibraryListItem27* MediaLibraryHandler::findItemByName(QString name) {
-//    foreach (LibraryListItem27 item, _cachedLibraryItems) {
-//        if(item.name == name)
-//            return &_cachedLibraryItems[_cachedLibraryItems.indexOf(item)];
-//    }
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [name](const LibraryListItem27& item) {
-        return !item.name.compare(name, Qt::CaseInsensitive);
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
+    return m_mediaLibraryCache.findItemByName(name);
 }
 LibraryListItem27* MediaLibraryHandler::findItemByMediaPath(QString mediaPath) {
-//    foreach (LibraryListItem27 item, _cachedLibraryItems) {
-//        if(item.path == mediaPath)
-//            return &_cachedLibraryItems[_cachedLibraryItems.indexOf(item)];
-//    }
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [mediaPath](const LibraryListItem27& item) {
-        return !item.path.compare(mediaPath, Qt::CaseInsensitive);
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
+    return m_mediaLibraryCache.findItemByMediaPath(mediaPath);
 }
-
 LibraryListItem27* MediaLibraryHandler::findItemByPartialMediaPath(QString partialMediaPath) {
-//    foreach (LibraryListItem27 item, _cachedLibraryItems) {
-//        if(item.path.startsWith(partialMediaPath))
-//            return &_cachedLibraryItems[_cachedLibraryItems.indexOf(item)];
-//        else if(item.path.endsWith(partialMediaPath))
-//            return &_cachedLibraryItems[_cachedLibraryItems.indexOf(item)];
-//    }
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [partialMediaPath](const LibraryListItem27& item) {
-        return item.path.startsWith(partialMediaPath, Qt::CaseInsensitive) || item.path.endsWith(partialMediaPath, Qt::CaseInsensitive);
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
+    return m_mediaLibraryCache.findItemByPartialMediaPath(partialMediaPath);
 }
-
 LibraryListItem27* MediaLibraryHandler::findItemByThumbPath(QString thumbPath) {
-
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [thumbPath](const LibraryListItem27& item) {
-        return !item.thumbFile.compare(thumbPath, Qt::CaseInsensitive);
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
+    return m_mediaLibraryCache.findItemByThumbPath(thumbPath);
 }
 LibraryListItem27* MediaLibraryHandler::findItemByPartialThumbPath(QString partialThumbPath) {
-//    foreach (LibraryListItem27 item, _cachedLibraryItems) {
-//        if(item.thumbFile.startsWith(partialThumbPath) || item.thumbFile.endsWith(partialThumbPath))
-//            return &_cachedLibraryItems[_cachedLibraryItems.indexOf(item)];
-//    }
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [partialThumbPath](const LibraryListItem27& item) {
-        return item.thumbFile.startsWith(partialThumbPath, Qt::CaseInsensitive) || item.thumbFile.endsWith(partialThumbPath, Qt::CaseInsensitive);
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
-
+    return m_mediaLibraryCache.findItemByPartialThumbPath(partialThumbPath);
 }
-
-LibraryListItem27 *MediaLibraryHandler::findItemBySubtitle(QString subtitle)
-{
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [subtitle](const LibraryListItem27& item) {
-        return !item.metadata.subtitle.compare(subtitle, Qt::CaseInsensitive);
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
+LibraryListItem27 *MediaLibraryHandler::findItemBySubtitle(QString subtitle) {
+    return m_mediaLibraryCache.findItemBySubtitle(subtitle);
 }
-
-LibraryListItem27 *MediaLibraryHandler::findItemByPartialSubtitle(QString partialSubtitle)
-{
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [partialSubtitle](const LibraryListItem27& item) {
-        return item.metadata.subtitle.startsWith(partialSubtitle, Qt::CaseInsensitive) || item.metadata.subtitle.endsWith(partialSubtitle, Qt::CaseInsensitive);
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
+LibraryListItem27 *MediaLibraryHandler::findItemByPartialSubtitle(QString partialSubtitle) {
+    return m_mediaLibraryCache.findItemByPartialSubtitle(partialSubtitle);
 }
-
-LibraryListItem27 *MediaLibraryHandler::findItemByAltScript(QString value)
-{
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [value](const LibraryListItem27& item) {
-            auto itr2 = std::find_if(item.metadata.scripts.begin(), item.metadata.scripts.end(), [value](const ScriptInfo& script) {
-                return script.type == ScriptType::ALTERNATE && !script.filename.compare(value, Qt::CaseInsensitive);
-            });
-        return itr2 != item.metadata.scripts.end();
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
+LibraryListItem27 *MediaLibraryHandler::findItemByAltScript(QString value) {
+    return m_mediaLibraryCache.findItemByAltScript(value);
 }
-
-LibraryListItem27 *MediaLibraryHandler::findItemByPartialAltScript(QString value)
-{
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [value](const LibraryListItem27& item) {
-        auto itr2 = std::find_if(item.metadata.scripts.begin(), item.metadata.scripts.end(), [value](const ScriptInfo& item) {
-            return item.type == ScriptType::ALTERNATE && (item.filename.startsWith(value, Qt::CaseInsensitive) || item.filename.endsWith(value, Qt::CaseInsensitive));
-        });
-        return itr2 != item.metadata.scripts.end();
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
+LibraryListItem27 *MediaLibraryHandler::findItemByPartialAltScript(QString value) {
+    return m_mediaLibraryCache.findItemByPartialAltScript(value);
 }
-
-LibraryListItem27 *MediaLibraryHandler::findItemByMetadataKey(QString value)
-{
-    const QMutexLocker locker(&_mutex);
-    auto itr = std::find_if(_cachedLibraryItems.begin(), _cachedLibraryItems.end(), [value](const LibraryListItem27& item) {
-        return item.metadata.key == value;
-    });
-    if(itr != _cachedLibraryItems.end())
-        return &_cachedLibraryItems[itr - _cachedLibraryItems.begin()];
-    return 0;
+LibraryListItem27 *MediaLibraryHandler::findItemByMetadataKey(QString value) {
+    return m_mediaLibraryCache.findItemByMetadataKey(value);
 }
-
-LibraryListItem27 *MediaLibraryHandler::findItemByReference(const LibraryListItem27 *playListItem)
-{
-    auto item = findItemByID(playListItem->ID);
-    if(!item) {
-        item = findItemByNameNoExtension(playListItem->nameNoExtension);
-    }
-    if(!item) {
-        item = findItemByMediaPath(playListItem->path);
-    }
-    return item;
+LibraryListItem27 *MediaLibraryHandler::findItemByReference(const LibraryListItem27 *playListItem) {
+    return m_mediaLibraryCache.findItemByReference(playListItem);
 }

@@ -23,6 +23,9 @@ public:
     void extract(QString videoPath, qint64 time = -1);
     void load(QString file);
     void stop();
+    QString getLastError();
+
+    QImage extractSync(QString videoPath, qint64 time = -1, qint64 timeout = 5000);
 
 private:
     void extract();

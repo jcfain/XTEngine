@@ -10,6 +10,7 @@
 #include "../struct/LibraryListItem27.h"
 #include "../struct/ScriptInfo.h"
 #include "../struct/LibraryListItemMetaData258.h"
+#include "../tool/medialibrarycache.h"
 
 #include "xvideopreview.h"
 
@@ -51,6 +52,7 @@ public:
     ~MediaLibraryHandler();
     void saveSingleThumb(QString id, qint64 position = 0);
     bool thumbProcessRunning();
+    void processThumbs();
     void startThumbProcess(bool vrMode = false);
     void stopThumbProcess();
     void loadLibraryAsync();
@@ -105,14 +107,13 @@ private:
     int _libraryItemIDTracker = 1;
     bool _thumbProcessIsRunning = false;
     int _thumbNailSearchIterator = 0;
-    QList<LibraryListItem27> _cachedLibraryItems;
+    MediaLibraryCache m_mediaLibraryCache;
     //QList<LibraryListItem27> _cachedVRItems;
     QFuture<void> _metadataFuture;
     QFuture<void> _loadingLibraryFuture;
     QFuture<void> m_thumbCleanupFuture;
+    QFuture<void> m_thumbProcessFuture;
     QTimer _thumbTimeoutTimer;
-    QMutex _mutex;
-    //XVideoPreview* _extractor = 0;
 
     void on_load_library(QStringList paths, bool vrMode);
     //void saveThumbs(QList<LibraryListItem27> items, qint64 position = 0, bool vrMode = false);

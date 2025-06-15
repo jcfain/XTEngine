@@ -3,6 +3,9 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include "loghandler.h"
+#include "QMediaMetaData"
+#include "QThread"
+#include "../tool/xmath.h"
 
 XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent),  _thumbPlayer(0)
 {
@@ -49,9 +52,9 @@ void XVideoPreview::tearDownPlayer()
 //        if(_thumbNailVideoSurface->isActive())
 //            _thumbNailVideoSurface->stop();
 
-    stop();
-
-        //_thumbPlayer->setMedia(QMediaContent());
+    //    if(_thumbPlayer->playbackState() == QMediaPlayer::PlayingState)
+    _thumbPlayer->stop();
+    // _thumbPlayer->setMedia(QMediaContent());
 //        else {
 //            delete _thumbPlayer;
 //            _thumbPlayer = 0;
@@ -112,9 +115,78 @@ void XVideoPreview::load(QString file)
 
 void XVideoPreview::stop()
 {
-    if(_thumbPlayer->playbackState() == QMediaPlayer::PlayingState)
-        _thumbPlayer->stop();
-    // _thumbPlayer->setMedia(QMediaContent());
+    tearDownPlayer();
+}
+
+QString XVideoPreview::getLastError()
+{
+    return _lastError;
+}
+
+QImage XVideoPreview::extractSync(QString file, qint64 time, qint64 timeout)
+{
+    LogHandler::Debug("[XVideoPreview::extractSync] at: " + QString::number(time) + " from: "+ file);
+    auto currentTime = QTime::currentTime().msecsSinceStartOfDay();
+    tearDownPlayer();
+    setUpThumbPlayer();
+    if(file.isNull()) {
+        LogHandler::Error("[XVideoPreview::extractSync] In valid file path.");
+//        emit frameExtractionError("In valid file path.");
+        _lastError = "Invalid file path.";
+        return QImage();
+    }
+    if(!QFile::exists(file)) {
+        LogHandler::Error("[XVideoPreview::extractSync] File: "+file+" does not exist.");
+        _lastError = "File: "+file+" does not exist.";
+//        emit frameExtractionError("File: "+file+" does not exist.");
+        return QImage();
+    }
+    m_fileChanged = file != _file;
+    _file = file;
+
+    m_processed = false;
+    if(m_fileChanged)
+    {
+        QUrl mediaUrl = QUrl::fromLocalFile(_file);
+        _thumbPlayer->setSource(mediaUrl);
+        _lastDuration = -1;
+    }
+    if(time == -1)
+    {
+        while(_lastDuration == -1)
+        {
+            auto duration = _thumbPlayer->metaData().value(QMediaMetaData::Duration).toLongLong(0);
+//            auto duration = _thumbPlayer->duration();
+            _lastDuration = duration == 0 ? duration : -1;
+            if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
+            {
+                _lastError = "Duration load timeout";
+                tearDownPlayer();
+                return QImage();
+            }
+            QThread::msleep(100);
+        }
+    }
+    qint64 position = time > 0 ? time : XMath::random((qint64)1, _lastDuration);
+    LogHandler::Debug("[XVideoPreview::extractSync] extract at: " + QString::number(position));
+//    _time = time;
+    _thumbPlayer->setPosition(position);
+    _thumbPlayer->play();
+//    m_debouncer.start(100);
+    _extracting = true;
+    currentTime = QTime::currentTime().msecsSinceStartOfDay();
+    while(_lastImage.isNull())
+    {
+        if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
+        {
+            _lastError = "Image extraction timeout";
+            tearDownPlayer();
+            return QImage();
+        }
+        QThread::msleep(100);
+    }
+    _lastError = "";
+    return _lastImage;
 }
 
 // Private

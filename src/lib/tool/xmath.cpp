@@ -155,3 +155,8 @@ QString XMath::calculateMD5(QString path)
     }
     return nullptr;
 }
+
+float XMath::roundTwoDecimal(float value)
+{
+    return roundf(value * 100) / 100;
+}

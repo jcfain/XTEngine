@@ -55,6 +55,7 @@ SOURCES += \
     lib/lookup/tcodechannellookup.cpp \
     lib/tool/heatmap.cpp \
     lib/tool/imagefactory.cpp \
+    lib/tool/medialibrarycache.cpp \
     lib/tool/qsettings_json.cpp \
     lib/tool/simplecrypt.cpp \
     lib/tool/tcodefactory.cpp \
@@ -132,6 +133,7 @@ HEADERS += \
     lib/tool/file-util.h \
     lib/tool/heatmap.h \
     lib/tool/imagefactory.h \
+    lib/tool/medialibrarycache.h \
     lib/tool/qsettings_json.h \
     lib/tool/simplecrypt.h \
     lib/tool/string-util.h \
