@@ -969,6 +969,7 @@ void MediaLibraryHandler::processThumb(ThumbExtractor* extractor, LibraryListIte
         return;
     }
     setThumbState(ThumbState::Loading, item);
+    emit saveNewThumbLoading(item);
     auto image = extractor->extract(item.path, position);
     if(image.isNull())
     {

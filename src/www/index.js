@@ -1772,13 +1772,13 @@ function loadMedia(mediaList) {
 			if (obj.thumbFileExists)
 				image.dataset.src = "/thumb/" + obj.relativeThumb;
 			else
-				image.dataset.src = "/thumb/" + (obj.thumbState === ThumbState.Unknown ? obj.thumbFileUnknown : obj.thumbFileLoading);
+				image.dataset.src = "/thumb/" + (obj.thumbState === ThumbState.Unknown ? obj.thumbFileUnknown : obj.thumbState === ThumbState.Error ? obj.thumbFileError : obj.thumbFileLoading);
 			image.classList.add("lazy");
 		} else {
 			if (obj.thumbFileExists)
 				image.src = "/thumb/" + obj.relativeThumb;
 			else 
-				image.src = "/thumb/" + (obj.thumbState === ThumbState.Unknown ? obj.thumbFileUnknown : obj.thumbFileLoading);
+				image.src = "/thumb/" + (obj.thumbState === ThumbState.Unknown ? obj.thumbFileUnknown : obj.thumbState === ThumbState.Error ? obj.thumbFileError : obj.thumbFileLoading);
 			image.loading = "lazy"
 		}
 		image.classList.add("media-thumb-nail")
