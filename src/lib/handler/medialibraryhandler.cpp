@@ -509,10 +509,10 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
             bool metadataChanged = false;
 
             QVector<int> rolesChanged;
-            m_mediaLibraryCache.lockForWrite();
+            m_mediaLibraryCache.lockForRead();
             LibraryListItem27* item = m_mediaLibraryCache.value(i);
-            processMetadata(*item, metadataChanged, rolesChanged, fullProcess);
             m_mediaLibraryCache.unlock();
+            processMetadata(*item, metadataChanged, rolesChanged, fullProcess);
             if(rolesChanged.count())
             {
                 updateItem(*item, rolesChanged);
@@ -601,16 +601,18 @@ void MediaLibraryHandler::startMetadata1024Cleanup()
                 emit backgroundProcessStateChange(nullptr, -1);
                 return;
             }
-            m_mediaLibraryCache.lockForWrite();
+            m_mediaLibraryCache.lockForRead();
             LibraryListItem27* item = m_mediaLibraryCache.value(i);
+            m_mediaLibraryCache.unlock();
             if(item->metadata.offset == 1024)
             {
                 saveSettings = true;
+                m_mediaLibraryCache.lockForWrite();
                 item->metadata.offset = 0;
                 SettingsHandler::updateLibraryListItemMetaData(*item, false);
+                m_mediaLibraryCache.unlock();
                 LogHandler::Info("Change offset 1024 for media: "+item->name);
             }
-            m_mediaLibraryCache.unlock();
 
             emit backgroundProcessStateChange("Cleaning metadata 1024", m_mediaLibraryCache.getProgress(*item));
         }
@@ -647,6 +649,7 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
         // Did this cause an issue? Need to test data integrety after full process?
         // item.metadata.libraryItemPath = item.path;
         // item.metadata.key = item.nameNoExtension;
+        m_mediaLibraryCache.lockForWrite();
         if(!hasExistingMetadata) {
             item.metadata.defaultValues(item.nameNoExtension, item.path);
             metadataChanged = true;
@@ -694,11 +697,13 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
 
             LogHandler::Debug("Find alternate scripts");
             auto ogScripts = item.metadata.scripts;
+            m_mediaLibraryCache.unlock();
             findAlternateFunscripts(item);
             if(item.metadata.scripts != ogScripts)
                 metadataChanged = true;
 
             LogHandler::Debug("Find subtitles");
+            m_mediaLibraryCache.lockForWrite();
             foreach(QString type, SettingsHandler::getSubtitleExtensions())
             {
                 QString subtitilePath = item.pathNoExtension + "."+ type;
@@ -820,6 +825,7 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
             // }
 
         }
+        m_mediaLibraryCache.unlock();
     } else {
         // if(!rolesChanged.contains(Qt::ToolTipRole))
         //     rolesChanged.append(Qt::ToolTipRole);
@@ -831,7 +837,9 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
 #else
         bool zipScripExists = false;
 #endif
+        m_mediaLibraryCache.lockForWrite();
         item.hasScript = scriptExists || zipScripExists;
+        m_mediaLibraryCache.unlock();
     }
 }
 
