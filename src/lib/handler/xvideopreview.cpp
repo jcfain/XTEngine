@@ -24,22 +24,24 @@ XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent),  _thumbPlayer(0
         extract();
     });
 }
-XVideoPreview::~XVideoPreview() {
-    LogHandler::Debug("~XVideoPreview");
+XVideoPreview::~XVideoPreview()
+{
+    LogHandler::Debug("~XVideoPreview::~XVideoPreview(");
     tearDownPlayer();
 }
 void XVideoPreview::setUpThumbPlayer()
 {
-    LogHandler::Debug("setUpThumbPlayer");
+    // LogHandler::Debug("XVideoPreview::setUpThumbPlayer");
 }
 
-void XVideoPreview::setUpInfoPlayer() {
-    LogHandler::Debug("setUpInfoPlayer");
+void XVideoPreview::setUpInfoPlayer()
+{
+    LogHandler::Debug("XVideoPreview::setUpInfoPlayer");
 }
 
 void XVideoPreview::tearDownPlayer()
 {
-    LogHandler::Debug("tearDownPlayer");
+    LogHandler::Debug("XVideoPreview::tearDownPlayer");
 //    if(_thumbPlayer)
 //    {
 //        disconnect(_thumbPlayer, nullptr, nullptr, nullptr);
@@ -66,7 +68,8 @@ void XVideoPreview::tearDownPlayer()
 void XVideoPreview::extract(QString file, qint64 time)
 {
     setUpThumbPlayer();
-    m_fileChanged = _file != file;
+    if(!m_fileChanged)
+        m_fileChanged = _file != file;
     _file = file;
     if(_file.isNull()) {
         LogHandler::Error("In valid file path.");
@@ -108,6 +111,7 @@ void XVideoPreview::load(QString file)
     } else {
         _lastDuration = 0;
     }
+    m_fileChanged = true;
     LogHandler::Debug("load: "+ file);
     _loadingInfo = true;
     extract(file);

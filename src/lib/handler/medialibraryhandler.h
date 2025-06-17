@@ -69,7 +69,7 @@ public:
     void removeFromCache(LibraryListItem27 item);
     void addItemFront(LibraryListItem27 item);
     void addItemBack(LibraryListItem27 item);
-    QList<LibraryListItem27> getLibraryCache();
+    MediaLibraryCache* getLibraryCache();
     QList<LibraryListItem27> getPlaylist(QString name);
     void fixPlaylist(QString name);
     //QList<LibraryListItem27> getVRLibraryCache();

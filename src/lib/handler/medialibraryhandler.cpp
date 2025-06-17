@@ -71,9 +71,7 @@ void MediaLibraryHandler::onPrepareLibraryLoad()
 {
     LogHandler::Debug("onPrepareLibraryLoad");
     stopAllSubProcesses();
-    _mutex.lock();
-    _cachedLibraryItems.clear();
-    _mutex.unlock();
+    m_mediaLibraryCache.clear();
     //emit libraryLoaded();
     _libraryItemIDTracker = 1;
 }
@@ -489,18 +487,20 @@ void MediaLibraryHandler::stopMetadataProcess()
 
 void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
 {
-    if(!_cachedLibraryItems.count() || _metadataFuture.isRunning())
+    if(!m_mediaLibraryCache.length() || _metadataFuture.isRunning())
         return;
-    _metadataFuture = QtConcurrent::run([this, fullProcess](){
+    _metadataFuture = QtConcurrent::run([this, fullProcess]()
+    {
         LogHandler::Debug("Start metadata process");
         emit metadataProcessBegin();
         emit backgroundProcessStateChange("Processing metadata...", -1);
         //XTags tags = SettingsHandler::getXTags();
         bool saveSettings = false;
-        auto cachedLibraryItems = getCachedLibraryItems();
 
-        foreach (LibraryListItem27 item, cachedLibraryItems) {
-            if(_metadataFuture.isCanceled()) {
+        for(int i=0; i<m_mediaLibraryCache.length(); i++)
+        {
+            if(_metadataFuture.isCanceled())
+            {
                 LogHandler::Debug("Cancel metadata process");
                 emit metadataProcessEnd();
                 emit backgroundProcessStateChange(nullptr, -1);
@@ -509,20 +509,27 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
             bool metadataChanged = false;
 
             QVector<int> rolesChanged;
-            processMetadata(item, metadataChanged, rolesChanged, fullProcess);
-            if(rolesChanged.count()) {
-                updateItem(item, rolesChanged);
+            m_mediaLibraryCache.lockForWrite();
+            LibraryListItem27* item = m_mediaLibraryCache.value(i);
+            processMetadata(*item, metadataChanged, rolesChanged, fullProcess);
+            m_mediaLibraryCache.unlock();
+            if(rolesChanged.count())
+            {
+                updateItem(*item, rolesChanged);
             }
 
-            if(metadataChanged) {
+            if(metadataChanged)
+            {
                 saveSettings = true;
-                SettingsHandler::updateLibraryListItemMetaData(item, false);
+                m_mediaLibraryCache.lockForRead();
+                SettingsHandler::updateLibraryListItemMetaData(*item, false);
+                m_mediaLibraryCache.unlock();
             }
 
-            float percentage = XMath::roundTwoDecimal(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100.0);
-            emit backgroundProcessStateChange("Processing metadata", percentage);
+            emit backgroundProcessStateChange("Processing metadata", m_mediaLibraryCache.getProgress(*item));
         }
-        if(SettingsHandler::getForceMetaDataFullProcess() && cachedLibraryItems.length()) {
+        if(SettingsHandler::getForceMetaDataFullProcess() && m_mediaLibraryCache.length())
+        {
             SettingsHandler::setForceMetaDataFullProcessComplete();
             saveSettings = true;
         }
@@ -585,24 +592,27 @@ void MediaLibraryHandler::startMetadata1024Cleanup()
         return;
     _metadataFuture = QtConcurrent::run([this](){
     emit backgroundProcessStateChange("Cleaning metadata 1024...", -1);
-        auto cachedLibraryItems = _cachedLibraryItems;
         bool saveSettings = false;
-        foreach (LibraryListItem27 item, cachedLibraryItems) {
+        for(int i=0; i<m_mediaLibraryCache.length(); i++)
+        {
             if(_metadataFuture.isCanceled()) {
                 LogHandler::Debug("Cancel metadata clean 1024 process");
                 emit metadataProcessEnd();
                 emit backgroundProcessStateChange(nullptr, -1);
                 return;
             }
-            if(item.metadata.offset == 1024) {
+            m_mediaLibraryCache.lockForWrite();
+            LibraryListItem27* item = m_mediaLibraryCache.value(i);
+            if(item->metadata.offset == 1024)
+            {
                 saveSettings = true;
-                item.metadata.offset = 0;
-                SettingsHandler::updateLibraryListItemMetaData(item, false);
-                LogHandler::Info("Change offset 1024 for media: "+item.name);
+                item->metadata.offset = 0;
+                SettingsHandler::updateLibraryListItemMetaData(*item, false);
+                LogHandler::Info("Change offset 1024 for media: "+item->name);
             }
+            m_mediaLibraryCache.unlock();
 
-            float percentage = XMath::roundTwoDecimal(((float)cachedLibraryItems.indexOf(item)/cachedLibraryItems.length()) * 100.0);
-            emit backgroundProcessStateChange("Cleaning metadata 1024", percentage);
+            emit backgroundProcessStateChange("Cleaning metadata 1024", m_mediaLibraryCache.getProgress(*item));
         }
         if(saveSettings)
             SettingsHandler::Save();
@@ -612,16 +622,16 @@ void MediaLibraryHandler::startMetadata1024Cleanup()
     });
 }
 
-const QList<LibraryListItem27> MediaLibraryHandler::getCachedLibraryItems() const
+MediaLibraryCache* MediaLibraryHandler::getLibraryCache()
 {
-    return _cachedLibraryItems;
+    return &m_mediaLibraryCache;
 }
 
-void MediaLibraryHandler::setCachedLibraryItems(const QList<LibraryListItem27> &newCachedLibraryItems)
-{
-    QMutexLocker locker(&m_cachedLibraryItemsMutex);
-    _cachedLibraryItems = newCachedLibraryItems;
-}
+// void MediaLibraryHandler::setCachedLibraryItems(const QList<LibraryListItem27> &newCachedLibraryItems)
+// {
+//     QMutexLocker locker(&m_cachedLibraryItemsMutex);
+//     _cachedLibraryItems = newCachedLibraryItems;
+// }
 
 void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess)
 {
@@ -886,31 +896,32 @@ bool MediaLibraryHandler::thumbProcessRunning()
 void MediaLibraryHandler::processThumbs()
 {
     m_thumbProcessFuture = QtConcurrent::run([this](){
-        QMutexLocker locker(&m_cachedLibraryItemsMutex);
-        for (int i = 0; i < _cachedLibraryItems.length(); ++i)
+        for (int i = 0; i < m_mediaLibraryCache.length(); ++i)
         {
-            emit backgroundProcessStateChange("Processing thumbs", XMath::roundTwoDecimal(((float)i/(float)_cachedLibraryItems.length())*100.0));
-            auto item = _cachedLibraryItems[i];
+            m_mediaLibraryCache.lockForWrite();
+            LibraryListItem27* item = m_mediaLibraryCache.value(i);
+            emit backgroundProcessStateChange("Processing thumbs", m_mediaLibraryCache.getProgress(*item));
             XVideoPreview preview;
-            auto image = preview.extractSync(item.libraryPath);
+            auto image = preview.extractSync(item->libraryPath);
             if(image.isNull())
             {
                 auto errorMessage = preview.getLastError();
                 LogHandler::Error("[MediaLibraryHandler::onSaveThumb] Save thumb error: " + errorMessage);
-                _cachedLibraryItems[i].metadata.thumbExtractError = errorMessage;
-                SettingsHandler::updateLibraryListItemMetaData(_cachedLibraryItems[i]);
-                setThumbState(ThumbState::Error, _cachedLibraryItems[i]);
-                emit saveThumbError(item, false, errorMessage);
+                item->metadata.thumbExtractError = errorMessage;
+                SettingsHandler::updateLibraryListItemMetaData(*item);
+                setThumbState(ThumbState::Error, *item);
+                emit saveThumbError(*item, false, errorMessage);
                 continue;
             }
 
-            LogHandler::Debug("[MediaLibraryHandler::onSaveThumb] Thumb saved: " + item.thumbFile);
-            ImageFactory::removeCache(item.thumbFile);
-            _cachedLibraryItems[i].metadata.thumbExtractError = nullptr;
-            SettingsHandler::updateLibraryListItemMetaData(_cachedLibraryItems[i], false);
-            setThumbPath(item);
-            setThumbState(ThumbState::Ready, item);
-            emit saveNewThumb(_cachedLibraryItems[i], false, item.thumbFile);
+            LogHandler::Debug("[MediaLibraryHandler::onSaveThumb] Thumb saved: " + item->thumbFile);
+            ImageFactory::removeCache(item->thumbFile);
+            item->metadata.thumbExtractError = nullptr;
+            SettingsHandler::updateLibraryListItemMetaData(*item, false);
+            setThumbPath(*item);
+            m_mediaLibraryCache.unlock();
+            setThumbState(ThumbState::Ready, *item);
+            emit saveNewThumb(*item, false, item->thumbFile);
         }
     });
 }
@@ -918,11 +929,11 @@ void MediaLibraryHandler::processThumbs()
 void MediaLibraryHandler::saveNewThumbs(bool vrMode)
 {
     LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] vrMode: "+ QString::number(vrMode));
-    if (_thumbProcessIsRunning && _thumbNailSearchIterator < _cachedLibraryItems.count())
+    if (_thumbProcessIsRunning && _thumbNailSearchIterator < m_mediaLibraryCache.length())
     {
-        LibraryListItem27 &item = _cachedLibraryItems[_thumbNailSearchIterator];
+        LibraryListItem27& item  = m_mediaLibraryCache.valueRef(_thumbNailSearchIterator);
         LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] Precessing next item: "+ item.nameNoExtension);
-        emit backgroundProcessStateChange("Processing thumbs", XMath::roundTwoDecimal(((float)_thumbNailSearchIterator/(float)_cachedLibraryItems.length())*100.0));
+        emit backgroundProcessStateChange("Processing thumbs", m_mediaLibraryCache.getProgress(item));
         _thumbNailSearchIterator++;
         auto disableThumbGen = SettingsHandler::getDisableAutoThumbGeneration();
         if (isLibraryItemVideo(item) && !item.thumbFileExists && !disableThumbGen)
@@ -1080,13 +1091,13 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
     if(!item || item->ID.isEmpty()) {
         LogHandler::Error("[MediaLibraryHandler::onSaveThumb] item ID empty.");
     } else {
-        int cachedIndex = _cachedLibraryItems.indexOf(*item);
+        int cachedIndex = m_mediaLibraryCache.indexOf(*item);
         if(cachedIndex == -1) {
             LibraryListItem27 emptyItem;
             emit saveThumbError(emptyItem, vrMode, "Missing media");
             return;
         }
-        LibraryListItem27 &cachedItem = _cachedLibraryItems[cachedIndex];
+        LibraryListItem27 &cachedItem = m_mediaLibraryCache.valueRef(cachedIndex);
         if(!errorMessage.isEmpty())
         {
             LogHandler::Error("[MediaLibraryHandler::onSaveThumb] Save thumb error: " + errorMessage);
@@ -1118,11 +1129,6 @@ void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString error
     }
 }
 
-QList<LibraryListItem27> MediaLibraryHandler::getLibraryCache()
-{
-    const QMutexLocker locker(&_mutex);
-    return _cachedLibraryItems;
-}
 QList<LibraryListItem27> MediaLibraryHandler::getPlaylist(QString name) {
     auto playlists = SettingsHandler::getPlaylists();
     auto playlist = playlists.value(name);
@@ -1207,7 +1213,7 @@ LibraryListItem27 MediaLibraryHandler::setupTempExternalItem(QString mediapath, 
 void MediaLibraryHandler::updateItem(LibraryListItem27 item, QVector<int> roles, bool notify) {
     auto index = m_mediaLibraryCache.findItemIndexByID(item.ID);
     if(index > -1) {
-        LibraryListItem27::copyProperties(item, *m_mediaLibraryCache.getItem(index));
+        LibraryListItem27::copyProperties(item, *m_mediaLibraryCache.value(index));
         if(notify) {
             emit itemUpdated(index, {roles});
         }
@@ -1223,31 +1229,25 @@ void MediaLibraryHandler::updateItem(int index, QVector<int> roles)
 
 void MediaLibraryHandler::removeFromCache(LibraryListItem27 itemToRemove) {
     auto index = findItemIndexByID(itemToRemove.ID);
-    _mutex.lock();
-    _cachedLibraryItems.removeOne(itemToRemove);
-    _mutex.unlock();
+    m_mediaLibraryCache.remove(itemToRemove);
     //if(!isLibraryLoading()) {
-        emit itemRemoved(index, _cachedLibraryItems.count());
+        emit itemRemoved(index, m_mediaLibraryCache.length());
         //emit libraryChange();
     //}
 }
 void MediaLibraryHandler::addItemFront(LibraryListItem27 item) {
-    _mutex.lock();
-    _cachedLibraryItems.push_front(item);
-    _mutex.unlock();
+    m_mediaLibraryCache.prepend(item);
     auto index = 0;
     if(!isLibraryProcessing()) {
-        emit itemAdded(index, _cachedLibraryItems.count());
+        emit itemAdded(index, m_mediaLibraryCache.length());
         //emit libraryChange();
     }
 }
 void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
-    _mutex.lock();
-    _cachedLibraryItems.push_back(item);
-    auto index = _cachedLibraryItems.count() - 1;
-    _mutex.unlock();
+    m_mediaLibraryCache.append(item);
+    auto index = m_mediaLibraryCache.length() - 1;
     if(!isLibraryProcessing()) {
-        emit itemAdded(index, _cachedLibraryItems.count());
+        emit itemAdded(index, m_mediaLibraryCache.length());
         //emit libraryChange();
     }
 }
@@ -1289,7 +1289,10 @@ void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)
             item.thumbFile = newName;
             int index = findItemIndexByID(item.ID);
             if(index > -1) {
-                _cachedLibraryItems[index].thumbFile = newName;
+                m_mediaLibraryCache.lockForWrite();
+                LibraryListItem27* item = m_mediaLibraryCache.value(index);
+                item->thumbFile = newName;
+                m_mediaLibraryCache.unlock();
                 emit itemUpdated(index, {Qt::DecorationRole});
             }
         } else {
@@ -1315,7 +1318,10 @@ void MediaLibraryHandler::unlockThumb(LibraryListItem27 &item)
             item.thumbFile = newName;
             int index = findItemIndexByID(item.ID);
             if(index > -1) {
-                _cachedLibraryItems[index].thumbFile = newName;
+                m_mediaLibraryCache.lockForWrite();
+                LibraryListItem27* item = m_mediaLibraryCache.value(index);
+                item->thumbFile = newName;
+                m_mediaLibraryCache.unlock();
                 emit itemUpdated(index, {Qt::DecorationRole});
             }
         } else {
@@ -1528,16 +1534,17 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
             emit cleanUpThumbsFailed();
             return;
         }
-        auto cachedLibraryItems = m_mediaLibraryCache.getItems();
         emit backgroundProcessStateChange("Cleaning thumbs...", -1);
-        foreach(auto libraryListItem, cachedLibraryItems) {
+        for(int i=0; i<m_mediaLibraryCache.length(); i++) {
             if(m_thumbCleanupFuture.isCanceled()) {
                 LogHandler::Debug("thumb cleanup stopped 1");
                 emit backgroundProcessStateChange(nullptr, -1);
                 emit cleanUpThumbsFailed();
                 return;
             }
-            emit backgroundProcessStateChange("Cleaning duplicate thumbs:", XMath::roundTwoDecimal(((float)cachedLibraryItems->indexOf(libraryListItem)/(float)cachedLibraryItems->length())*100.0));
+            const LibraryListItem27& libraryListItem = m_mediaLibraryCache.at(i);
+            auto libraryLength = m_mediaLibraryCache.length();
+            emit backgroundProcessStateChange("Cleaning duplicate thumbs:", XMath::roundTwoDecimal(((float)m_mediaLibraryCache.indexOf(libraryListItem)/(float)libraryLength)*100.0));
             if(libraryListItem.type != LibraryListItemType::VR && libraryListItem.type != LibraryListItemType::Video)
                 continue;
             QString hasGlobal;
@@ -1585,11 +1592,23 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
                 if(!hasGlobalLocked.isEmpty())
                     QFile::remove(hasGlobalLocked);
                 if(!hasLocal.isEmpty()) {
-                    libraryListItem.thumbFile = hasLocal;
+                    LibraryListItem27* item = m_mediaLibraryCache.findItemByID(item->ID);
+                    if(item)
+                    {
+                        m_mediaLibraryCache.lockForWrite();
+                        item->thumbFile = hasLocal;
+                        m_mediaLibraryCache.unlock();
+                    }
                 } else if(!hasLocalLocked.isEmpty()) {
-                    libraryListItem.thumbFile = hasLocalLocked;
+                    LibraryListItem27* item = m_mediaLibraryCache.findItemByID(item->ID);
+                    if(item)
+                    {
+                        m_mediaLibraryCache.lockForWrite();
+                        item->thumbFile = hasLocalLocked;
+                        m_mediaLibraryCache.unlock();
+                    }
                 }
-                updateItem(cachedLibraryItems->indexOf(libraryListItem), {Qt::DecorationRole});
+                updateItem(m_mediaLibraryCache.indexOf(libraryListItem), {Qt::DecorationRole});
             }
         }
 

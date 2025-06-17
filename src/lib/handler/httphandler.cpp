@@ -3,6 +3,7 @@
 #include <QNetworkCookie>
 #include "../tool/imagefactory.h"
 #include "settingshandler.h"
+#include "../tool/medialibrarycache.h"
 // #include "xtpwebhandler.h"
 // #include "../tool/videoformat.h"
 
@@ -110,7 +111,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemUpdated, this, [this](int index, QVector<int> roles) {
         if(_mediaLibraryHandler->isLibraryProcessing())
             return;
-        auto item = _mediaLibraryHandler->getLibraryCache().value(index);
+        auto item = _mediaLibraryHandler->getLibraryCache()->at(index);
 
         QString roleslist;
         foreach (int role, roles) {
@@ -125,7 +126,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemAdded, this, [this](int index, int newSize) {
         if(_mediaLibraryHandler->isLibraryProcessing())
             return;
-        auto item = _mediaLibraryHandler->getLibraryCache().value(index);
+        auto item = _mediaLibraryHandler->getLibraryCache()->at(index);
         QJsonDocument doc(createMediaObject(item, m_hostAddress));
         QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
         _webSocketHandler->sendAddItem(itemJson);
@@ -855,9 +856,11 @@ void HttpHandler::handleVideoList(const QHttpServerRequest &request, QHttpServer
     QJsonArray media;
     // TODO conflict?
     QString hostAddress = "http://" + request.headers().value("Host", "") + "/";
-    foreach(auto item, _mediaLibraryHandler->getLibraryCache())
+    auto libraryCache = _mediaLibraryHandler->getLibraryCache();
+    for(int i=0; i< libraryCache->length(); i++)
     {
         QJsonObject object;
+        auto item = libraryCache->at(i);
         if(item.type == LibraryListItemType::PlaylistInternal || item.type == LibraryListItemType::FunscriptType)
             continue;
         media.append(createMediaObject(item, m_hostAddress));
@@ -953,9 +956,11 @@ void HttpHandler::handleHereSphere(const QHttpServerRequest &request, QHttpServe
     library["name"] = "XTP Library";
     QJsonArray list;
 
-    foreach(auto item, _mediaLibraryHandler->getLibraryCache())
+    auto libraryCache = _mediaLibraryHandler->getLibraryCache();
+    for(int i=0; i< libraryCache->length(); i++)
     {
         QJsonObject object;
+        auto item = libraryCache->at(i);
         if(item.type == LibraryListItemType::PlaylistInternal || item.type == LibraryListItemType::FunscriptType)
             continue;
         list.append(createHeresphereObject(item, hostAddress));
@@ -1034,9 +1039,11 @@ void HttpHandler::handleDeo(const QHttpServerRequest &request, QHttpServerRespon
     QJsonObject library;
     QJsonArray list;
 
-    foreach(auto item, _mediaLibraryHandler->getLibraryCache())
+    auto libraryCache = _mediaLibraryHandler->getLibraryCache();
+    for(int i=0; i< libraryCache->length(); i++)
     {
         QJsonObject object;
+        auto item = libraryCache->at(i);
         if(item.type == LibraryListItemType::PlaylistInternal || item.type == LibraryListItemType::FunscriptType)
             continue;
         list.append(createDeoObject(item, hostAddress));
