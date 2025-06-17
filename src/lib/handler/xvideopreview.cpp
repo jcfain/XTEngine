@@ -18,6 +18,8 @@ XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent),  _thumbPlayer(0
     connect(_thumbPlayer, &QMediaPlayer::mediaStatusChanged, this, &XVideoPreview::on_mediaStatusChanged);
     connect(&m_videoSink, &QVideoSink::videoFrameChanged, this, &XVideoPreview::on_thumbCapture);
     connect(_thumbPlayer, &QMediaPlayer::errorOccurred, this, &XVideoPreview::on_thumbError);
+    connect(this, &XVideoPreview::startPlaying, _thumbPlayer, &QMediaPlayer::play);
+    connect(this, &XVideoPreview::stopPlaying, _thumbPlayer, &QMediaPlayer::stop);
     connect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
     connect(&m_debouncer, &QTimer::timeout, this, [this]() {
         LogHandler::Debug("Extract debounce");
@@ -26,7 +28,7 @@ XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent),  _thumbPlayer(0
 }
 XVideoPreview::~XVideoPreview()
 {
-    LogHandler::Debug("~XVideoPreview::~XVideoPreview(");
+    LogHandler::Debug("~XVideoPreview::~XVideoPreview");
     tearDownPlayer();
 }
 void XVideoPreview::setUpThumbPlayer()
@@ -109,7 +111,7 @@ void XVideoPreview::load(QString file)
         emit durationChanged(_lastDuration);
         return;
     } else {
-        _lastDuration = 0;
+        _lastDuration = -1;
     }
     m_fileChanged = true;
     LogHandler::Debug("load: "+ file);
@@ -131,8 +133,7 @@ QImage XVideoPreview::extractSync(QString file, qint64 time, qint64 timeout)
 {
     LogHandler::Debug("[XVideoPreview::extractSync] at: " + QString::number(time) + " from: "+ file);
     auto currentTime = QTime::currentTime().msecsSinceStartOfDay();
-    tearDownPlayer();
-    setUpThumbPlayer();
+    // setUpThumbPlayer();
     if(file.isNull()) {
         LogHandler::Error("[XVideoPreview::extractSync] In valid file path.");
 //        emit frameExtractionError("In valid file path.");
@@ -145,7 +146,8 @@ QImage XVideoPreview::extractSync(QString file, qint64 time, qint64 timeout)
 //        emit frameExtractionError("File: "+file+" does not exist.");
         return QImage();
     }
-    m_fileChanged = file != _file;
+    if(!m_fileChanged)
+        m_fileChanged = file != _file;
     _file = file;
 
     m_processed = false;
@@ -155,27 +157,32 @@ QImage XVideoPreview::extractSync(QString file, qint64 time, qint64 timeout)
         _thumbPlayer->setSource(mediaUrl);
         _lastDuration = -1;
     }
+    _loadingInfo = true;
+    // This will not play in a NON GUI thread.
+    emit startPlaying();
     if(time == -1)
     {
-        while(_lastDuration == -1)
+        while(_lastDuration <= 0)
         {
-            auto duration = _thumbPlayer->metaData().value(QMediaMetaData::Duration).toLongLong(0);
+            auto duration = _thumbPlayer->duration();
+            LogHandler::Debug("[XVideoPreview::extractSync] mediaStatus: " + QString::number(_thumbPlayer->mediaStatus()));
 //            auto duration = _thumbPlayer->duration();
-            _lastDuration = duration == 0 ? duration : -1;
+            _lastDuration = duration > 0 ? duration : -1;
             if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
             {
                 _lastError = "Duration load timeout";
                 tearDownPlayer();
+                _loadingInfo = false;
                 return QImage();
             }
             QThread::msleep(100);
         }
     }
+    _loadingInfo = false;
     qint64 position = time > 0 ? time : XMath::random((qint64)1, _lastDuration);
     LogHandler::Debug("[XVideoPreview::extractSync] extract at: " + QString::number(position));
 //    _time = time;
     _thumbPlayer->setPosition(position);
-    _thumbPlayer->play();
 //    m_debouncer.start(100);
     _extracting = true;
     currentTime = QTime::currentTime().msecsSinceStartOfDay();
@@ -185,11 +192,17 @@ QImage XVideoPreview::extractSync(QString file, qint64 time, qint64 timeout)
         {
             _lastError = "Image extraction timeout";
             tearDownPlayer();
+            _extracting = false;
             return QImage();
         }
         QThread::msleep(100);
     }
+    emit stopPlaying();
+    while(_thumbPlayer->isPlaying())
+        QThread::msleep(100);
+
     _lastError = "";
+    _extracting = false;
     return _lastImage;
 }
 

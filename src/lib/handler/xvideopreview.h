@@ -16,6 +16,8 @@ signals:
     void durationChanged(qint64 duration);
     void frameExtracted(QImage frame);
     void frameExtractionError(QString error);
+    void startPlaying();
+    void stopPlaying();
 
 public:
     XVideoPreview(QObject* parent = nullptr);
@@ -35,7 +37,7 @@ private:
     qint64 _time;
     bool _loadingInfo = false;
     bool _extracting = false;
-    qint64 _lastDuration;
+    qint64 _lastDuration = -1;
     QImage _lastImage;
     QString _lastError;
     QVideoSink m_videoSink;

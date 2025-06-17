@@ -50,9 +50,10 @@ signals:
 public:
     MediaLibraryHandler(QObject* parent = nullptr);
     ~MediaLibraryHandler();
-    void saveSingleThumb(QString id, qint64 position = 0);
+    void saveSingleThumb(QString id, qint64 position = -1);
     bool thumbProcessRunning();
     void processThumbs();
+    void processThumb(XVideoPreview* preview, LibraryListItem27& item, qint64 position = -1);
     void startThumbProcess(bool vrMode = false);
     void stopThumbProcess();
     void loadLibraryAsync();
