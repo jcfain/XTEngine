@@ -2,13 +2,14 @@
 
 SerialHandler::SerialHandler(QObject *parent) :
     OutputDeviceHandler(DeviceName::Serial, parent),
-    m_serial(new QSerialPort(parent))
+    m_serial(new QSerialPort(this))
 {
     qRegisterMetaType<ConnectionChangedSignal>();
     connect(m_serial, &QSerialPort::readyRead, this, &SerialHandler::onReadyRead, Qt::QueuedConnection);
 }
 
-SerialHandler::~SerialHandler() { }
+SerialHandler::~SerialHandler() {
+}
 
 void SerialHandler::init(const QString &portNameOrFriendlyName, int waitTimeout)
 {

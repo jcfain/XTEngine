@@ -1,10 +1,14 @@
 #include "gamepadhandler.h"
 
+#include "loghandler.h"
+#include "../lookup/GamepadAxisNames.h"
+#include "settingshandler.h"
+
 GamepadHandler::GamepadHandler(QObject *parent):
     QThread(parent)
 {
     qRegisterMetaType<ConnectionChangedSignal>();
-    _tcodeFactory = new TCodeFactory(0.0, 1.0);
+    _tcodeFactory = new TCodeFactory(0.0, 1.0, this);
 }
 
 GamepadHandler::~GamepadHandler()
@@ -13,7 +17,6 @@ GamepadHandler::~GamepadHandler()
         delete _gamepadState;
     if (_gamepad != nullptr)
         delete _gamepad;
-    delete _tcodeFactory;
 }
 
 void GamepadHandler::init()

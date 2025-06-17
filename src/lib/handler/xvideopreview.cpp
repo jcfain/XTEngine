@@ -16,11 +16,9 @@ XVideoPreview::XVideoPreview(QObject* parent) : QObject(parent),  _thumbPlayer(0
     m_debouncer.setSingleShot(true);
     connect(_thumbPlayer, &QMediaPlayer::playbackStateChanged, this, &XVideoPreview::on_mediaStateChange);
     connect(_thumbPlayer, &QMediaPlayer::mediaStatusChanged, this, &XVideoPreview::on_mediaStatusChanged);
+    connect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
     connect(&m_videoSink, &QVideoSink::videoFrameChanged, this, &XVideoPreview::on_thumbCapture);
     connect(_thumbPlayer, &QMediaPlayer::errorOccurred, this, &XVideoPreview::on_thumbError);
-    connect(this, &XVideoPreview::startPlaying, _thumbPlayer, &QMediaPlayer::play);
-    connect(this, &XVideoPreview::stopPlaying, _thumbPlayer, &QMediaPlayer::stop);
-    connect(_thumbPlayer, &QMediaPlayer::durationChanged, this, &XVideoPreview::on_durationChanged);
     connect(&m_debouncer, &QTimer::timeout, this, [this]() {
         LogHandler::Debug("Extract debounce");
         extract();
@@ -129,83 +127,6 @@ QString XVideoPreview::getLastError()
     return _lastError;
 }
 
-QImage XVideoPreview::extractSync(QString file, qint64 time, qint64 timeout)
-{
-    LogHandler::Debug("[XVideoPreview::extractSync] at: " + QString::number(time) + " from: "+ file);
-    auto currentTime = QTime::currentTime().msecsSinceStartOfDay();
-    // setUpThumbPlayer();
-    if(file.isNull()) {
-        LogHandler::Error("[XVideoPreview::extractSync] In valid file path.");
-//        emit frameExtractionError("In valid file path.");
-        _lastError = "Invalid file path.";
-        return QImage();
-    }
-    if(!QFile::exists(file)) {
-        LogHandler::Error("[XVideoPreview::extractSync] File: "+file+" does not exist.");
-        _lastError = "File: "+file+" does not exist.";
-//        emit frameExtractionError("File: "+file+" does not exist.");
-        return QImage();
-    }
-    if(!m_fileChanged)
-        m_fileChanged = file != _file;
-    _file = file;
-
-    m_processed = false;
-    if(m_fileChanged)
-    {
-        QUrl mediaUrl = QUrl::fromLocalFile(_file);
-        _thumbPlayer->setSource(mediaUrl);
-        _lastDuration = -1;
-    }
-    _loadingInfo = true;
-    // This will not play in a NON GUI thread.
-    emit startPlaying();
-    if(time == -1)
-    {
-        while(_lastDuration <= 0)
-        {
-            auto duration = _thumbPlayer->duration();
-            LogHandler::Debug("[XVideoPreview::extractSync] mediaStatus: " + QString::number(_thumbPlayer->mediaStatus()));
-//            auto duration = _thumbPlayer->duration();
-            _lastDuration = duration > 0 ? duration : -1;
-            if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
-            {
-                _lastError = "Duration load timeout";
-                tearDownPlayer();
-                _loadingInfo = false;
-                return QImage();
-            }
-            QThread::msleep(100);
-        }
-    }
-    _loadingInfo = false;
-    qint64 position = time > 0 ? time : XMath::random((qint64)1, _lastDuration);
-    LogHandler::Debug("[XVideoPreview::extractSync] extract at: " + QString::number(position));
-//    _time = time;
-    _thumbPlayer->setPosition(position);
-//    m_debouncer.start(100);
-    _extracting = true;
-    currentTime = QTime::currentTime().msecsSinceStartOfDay();
-    while(_lastImage.isNull())
-    {
-        if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
-        {
-            _lastError = "Image extraction timeout";
-            tearDownPlayer();
-            _extracting = false;
-            return QImage();
-        }
-        QThread::msleep(100);
-    }
-    emit stopPlaying();
-    while(_thumbPlayer->isPlaying())
-        QThread::msleep(100);
-
-    _lastError = "";
-    _extracting = false;
-    return _lastImage;
-}
-
 // Private
 void XVideoPreview::on_thumbCapture(const QVideoFrame &frame)
 {
@@ -262,7 +183,7 @@ void XVideoPreview::process() {
         if(_extracting)
         {
             _extracting = false;
-            if(!_lastError.isNull())
+            if(!_lastError.isEmpty())
             {
                 m_processed = true;
                 emit frameExtractionError(_lastError);

@@ -16,7 +16,7 @@ MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
         MediaLibraryHandler::startMetadataProcess(SettingsHandler::getForceMetaDataFullProcess() || SettingsHandler::processMetadataOnStart());
     });
     connect(this, &MediaLibraryHandler::metadataProcessEnd, this, [this]() {
-        MediaLibraryHandler::startThumbProcess();
+        MediaLibraryHandler::processThumbs();
     });
 }
 
@@ -858,9 +858,11 @@ void MediaLibraryHandler::startThumbProcess(bool vrMode)
 void MediaLibraryHandler::stopThumbProcess()
 {
     LogHandler::Debug("[MediaLibraryHandler::stopThumbProcess]");
-    if(_thumbProcessIsRunning)
+    if(_thumbProcessIsRunning || m_thumbProcessFuture.isRunning())
     {
         LogHandler::Debug("[MediaLibraryHandler::stopThumbProcess] Stop thumb process");
+        m_thumbProcessFuture.cancel();
+        m_thumbProcessFuture.waitForFinished();
         _thumbNailSearchIterator = 0;
         _thumbProcessIsRunning = false;
         if(_thumbTimeoutTimer.isActive())
@@ -880,18 +882,18 @@ void MediaLibraryHandler::stopThumbProcess()
 void MediaLibraryHandler::saveSingleThumb(QString id, qint64 position)
 {
     LogHandler::Debug("[MediaLibraryHandler::saveSingleThumb]");
-    // XVideoPreview* preview = new XVideoPreview();
-    // m_thumbProcessFuture = QtConcurrent::run([this, id, position, preview](){
+    ThumbExtractor* extractor = new ThumbExtractor(this);
+    m_thumbProcessFuture = QtConcurrent::run([this, id, position, extractor](){
         auto item = findItemByID(id);
         if(item && !_thumbProcessIsRunning && item->thumbFile.endsWith(SettingsHandler::getThumbFormatExtension()) && !item->thumbFile.contains(".lock."))
         {
             item->metadata.thumbExtractError = nullptr;
-            saveThumb(*item, position);
+            // saveThumb(*item, position);
             // This will not play in a NON GUI thread.
-            // processThumb(preview, *item, position);
-            // delete preview;
+            processThumb(extractor, *item, position);
         }
-    // });
+        delete extractor;
+    });
 }
 
 bool MediaLibraryHandler::thumbProcessRunning()
@@ -901,16 +903,54 @@ bool MediaLibraryHandler::thumbProcessRunning()
 
 void MediaLibraryHandler::processThumbs()
 {
-    XVideoPreview* preview = new XVideoPreview();
-    m_thumbProcessFuture = QtConcurrent::run([this, preview](){
+    stopThumbProcess();
+    emit thumbProcessBegin();
+    emit backgroundProcessStateChange("Processing thumbs...", -1);
+    QString thumbPath = SettingsHandler::getSelectedThumbsDir();
+    QDir thumbDir(thumbPath);
+    if (!thumbDir.exists())
+    {
+        thumbDir.mkdir(thumbPath);
+    }
+    ThumbExtractor* extractor = new ThumbExtractor(this);
+    m_thumbProcessFuture = QtConcurrent::run([this, extractor](){
         for (int i = 0; i < m_mediaLibraryCache.length(); ++i)
         {
+            if(m_thumbProcessFuture.isCanceled())
+            {
+                delete extractor;
+                _thumbProcessIsRunning = false;
+                emit backgroundProcessStateChange(nullptr, -1);
+                emit thumbProcessEnd();// Must be callsed after backgroundProcessStateChange for queue order
+                return;
+            }
             LibraryListItem27* item = m_mediaLibraryCache.value(i);
             emit backgroundProcessStateChange("Processing thumbs", m_mediaLibraryCache.getProgress(*item));
+            if(item->thumbFileExists)
+            {
+                setThumbState(ThumbState::Ready, *item);
+                continue;
+            }
+            if(!item->thumbFileExists)
+            {
+                if(SettingsHandler::getDisableAutoThumbGeneration())
+                {
+                    setThumbState(ThumbState::Unknown, *item);
+                    continue;
+                }
+                if(!item->metadata.thumbExtractError.isEmpty())
+                {
+                    LogHandler::Debug("[MediaLibraryHandler::saveThumb] Thumb historically marked as errored. Skipping. Manually extract the thumb if available.");
+                    setThumbState(ThumbState::Error, *item);
+                    continue;
+                }
+            }
             // This will not play in a NON GUI thread.
-            processThumb(preview, *item);
+            processThumb(extractor, *item);
         }
-        delete preview;
+        delete extractor;
+        emit backgroundProcessStateChange(nullptr, -1);
+        emit thumbProcessEnd();// Must be callsed after backgroundProcessStateChange for queue order
     });
 }
 
@@ -920,22 +960,23 @@ void MediaLibraryHandler::processThumbs()
 /// \param item
 /// \param position
 ///
-void MediaLibraryHandler::processThumb(XVideoPreview* preview, LibraryListItem27 &item, qint64 position)
+void MediaLibraryHandler::processThumb(ThumbExtractor* extractor, LibraryListItem27 &item, qint64 position)
 {
-    if(_thumbProcessIsRunning && (item.type == LibraryListItemType::Audio || item.type == LibraryListItemType::FunscriptType || item.thumbFile.contains(".lock.")))
+    if((item.type == LibraryListItemType::Audio || item.type == LibraryListItemType::FunscriptType || item.thumbFile.contains(".lock.")))
     {
-        LogHandler::Debug("[MediaLibraryHandler::processThumb] audio or locked");
+        // LogHandler::Debug("[MediaLibraryHandler::processThumb] Thimb is audio, funscript or locked");
         setThumbState(ThumbState::Ready, item);
         return;
     }
     setThumbState(ThumbState::Loading, item);
-    auto image = preview->extractSync(item.path, position);
+    auto image = extractor->extract(item.path, position);
     if(image.isNull())
     {
-        auto errorMessage = preview->getLastError();
+        auto errorMessage = extractor->lastError();
         LogHandler::Error("[MediaLibraryHandler::processThumb] Extract thumb error: " + errorMessage);
         m_mediaLibraryCache.lockForWrite();
         item.metadata.thumbExtractError = errorMessage;
+        item.metadata.toolTip = item.metadata.toolTip + "\n" +errorMessage;
         m_mediaLibraryCache.unlock();
         SettingsHandler::updateLibraryListItemMetaData(item);
         setThumbState(ThumbState::Error, item);
@@ -950,6 +991,7 @@ void MediaLibraryHandler::processThumb(XVideoPreview* preview, LibraryListItem27
             LogHandler::Error("[MediaLibraryHandler::processThumb] Save thumb error");
             setThumbState(ThumbState::Error, item);
             emit saveThumbError(item, false, "Save thumb error");
+            image = QImage();
             return;
         }
 
@@ -959,7 +1001,11 @@ void MediaLibraryHandler::processThumb(XVideoPreview* preview, LibraryListItem27
     LogHandler::Debug("[MediaLibraryHandler::processThumb] Thumb saved: " + item.thumbFile);
     ImageFactory::removeCache(item.thumbFile);
     m_mediaLibraryCache.lockForWrite();
-    item.metadata.thumbExtractError = nullptr;
+    if(!item.metadata.thumbExtractError.isEmpty())
+    {
+        updateToolTip(item);
+        item.metadata.thumbExtractError = nullptr;
+    }
     SettingsHandler::updateLibraryListItemMetaData(item, false);
     setThumbPath(item);
     m_mediaLibraryCache.unlock();

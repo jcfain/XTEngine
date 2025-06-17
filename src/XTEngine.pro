@@ -59,6 +59,7 @@ SOURCES += \
     lib/tool/qsettings_json.cpp \
     lib/tool/simplecrypt.cpp \
     lib/tool/tcodefactory.cpp \
+    lib/tool/thumbextractor.cpp \
     lib/tool/xmath.cpp \
     lib/tool/xtimer.cpp \
     xtengine.cpp
@@ -138,6 +139,7 @@ HEADERS += \
     lib/tool/simplecrypt.h \
     lib/tool/string-util.h \
     lib/tool/tcodefactory.h \
+    lib/tool/thumbextractor.h \
     lib/tool/videoformat.h \
     lib/tool/xmath.h \
     lib/tool/xnetwork.h \

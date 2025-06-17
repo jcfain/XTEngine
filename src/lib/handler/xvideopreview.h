@@ -16,8 +16,6 @@ signals:
     void durationChanged(qint64 duration);
     void frameExtracted(QImage frame);
     void frameExtractionError(QString error);
-    void startPlaying();
-    void stopPlaying();
 
 public:
     XVideoPreview(QObject* parent = nullptr);
@@ -26,8 +24,6 @@ public:
     void load(QString file);
     void stop();
     QString getLastError();
-
-    QImage extractSync(QString videoPath, qint64 time = -1, qint64 timeout = 5000);
 
 private:
     void extract();

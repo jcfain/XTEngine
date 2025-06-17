@@ -3,15 +3,12 @@
 #include <QString>
 #include <QHash>
 #include "../struct/ChannelModel33.h"
-#include "../handler/settingshandler.h"
-#include "../lookup/AxisNames.h"
-#include "boolinq.h"
-#include "xmath.h"
 
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT TCodeFactory : public QObject
 {
+    Q_OBJECT
 public:
     TCodeFactory(double inputStart, double inputEnd, QObject* parent = nullptr);
     void init();

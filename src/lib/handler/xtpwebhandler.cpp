@@ -28,6 +28,8 @@ void XTPWebHandler::init()
     qRegisterMetaType<InputDevicePacket>();
     emit connectionChange({DeviceType::Input, DeviceName::XTPWeb, ConnectionStatus::Connecting, "Waiting..."});
 
+    if (_currentPacket)
+        delete _currentPacket;
     _currentPacket = new InputDevicePacket
     {
         nullptr,

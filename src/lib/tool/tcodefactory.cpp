@@ -1,4 +1,7 @@
 #include "tcodefactory.h"
+#include "../handler/settingshandler.h"
+#include "boolinq.h"
+#include "xmath.h"
 
 TCodeFactory::TCodeFactory(double inputStart, double inputEnd, QObject* parent) : QObject(parent)
 {

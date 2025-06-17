@@ -11,6 +11,7 @@
 #include "../struct/ScriptInfo.h"
 #include "../struct/LibraryListItemMetaData258.h"
 #include "../tool/medialibrarycache.h"
+#include "../tool/thumbextractor.h"
 
 #include "xvideopreview.h"
 
@@ -53,7 +54,7 @@ public:
     void saveSingleThumb(QString id, qint64 position = -1);
     bool thumbProcessRunning();
     void processThumbs();
-    void processThumb(XVideoPreview* preview, LibraryListItem27& item, qint64 position = -1);
+    void processThumb(ThumbExtractor* preview, LibraryListItem27& item, qint64 position = -1);
     void startThumbProcess(bool vrMode = false);
     void stopThumbProcess();
     void loadLibraryAsync();
