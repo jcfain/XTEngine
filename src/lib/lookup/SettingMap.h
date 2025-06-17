@@ -96,7 +96,7 @@ public:
         {SettingProfile::System, SettingGroups::schedule, SettingKeys::scheduleSettingsSync, FormControlTypes::Checkbox, true, "Sync settings", "Flush the settings to disk.", false},
         {SettingProfile::System, SettingGroups::metadata, SettingKeys::processMetadataOnStart, FormControlTypes::Checkbox, false, "Process metadata on start", "Process the metadata when the application starts up.", false},
         {SettingProfile::System, SettingGroups::metadata, SettingKeys::forceMetaDataFullProcess, FormControlTypes::Checkbox, false, "Force metadata process after next restart", "Force the metadata process on next start.", true},
-        {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableUDPHeartBeat, FormControlTypes::Checkbox, false, "Disable UDP heartbeat", "Disable periodic UDP ping.", false},
+        {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableUDPHeartBeat, FormControlTypes::Checkbox, true, "Disable UDP heartbeat", "Disable periodic UDP ping.", false},
         {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableTCodeValidation, FormControlTypes::Checkbox, false, "Disable TCode validation", "Disable the D1 validation when connecting to a tcode device.", false},
         {SettingProfile::System, SettingGroups::serial, SettingKeys::useDTRAndRTS, FormControlTypes::Checkbox, false, "Disable serial RTS/DTS", "Disable serial RTS/DTS when connecting via serial.", false},
         {SettingProfile::System, SettingGroups::web, SettingKeys::httpChunkSizeMB, FormControlTypes::Double, 26.214400, "Media streaming chunk size", "The chunk sise the web browser should ask for when steaming media.", true},

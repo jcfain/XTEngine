@@ -8,7 +8,9 @@
 #include <QImage>
 #include <QTimer>
 
-class ThumbExtractor : public QObject
+#include "XTEngine_global.h"
+
+class XTENGINE_EXPORT ThumbExtractor : public QObject
 {
     Q_OBJECT
 public:
