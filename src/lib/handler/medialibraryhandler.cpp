@@ -509,30 +509,39 @@ void MediaLibraryHandler::startMetadataProcess(bool fullProcess)
             bool metadataChanged = false;
 
             QVector<int> rolesChanged;
+            // LogHandler::Debug("lockForRead");
             m_mediaLibraryCache.lockForRead();
             LibraryListItem27* item = m_mediaLibraryCache.value(i);
             m_mediaLibraryCache.unlock();
+            // LogHandler::Debug("processMetadata");
             processMetadata(*item, metadataChanged, rolesChanged, fullProcess);
+            // LogHandler::Debug("rolesChanged.count()");
             if(rolesChanged.count())
             {
+                // LogHandler::Debug("update Item");
                 updateItem(*item, rolesChanged);
             }
 
+            // LogHandler::Debug("metadataChanged");
             if(metadataChanged)
             {
                 saveSettings = true;
+                // LogHandler::Debug("metadataChanged lockForRead");
                 m_mediaLibraryCache.lockForRead();
                 SettingsHandler::updateLibraryListItemMetaData(*item, false);
                 m_mediaLibraryCache.unlock();
             }
 
+            // LogHandler::Debug("backgroundProcessStateChange");
             emit backgroundProcessStateChange("Processing metadata", m_mediaLibraryCache.getProgress(*item));
         }
         if(SettingsHandler::getForceMetaDataFullProcess() && m_mediaLibraryCache.length())
         {
+            // LogHandler::Debug("setForceMetaDataFullProcessComplete");
             SettingsHandler::setForceMetaDataFullProcessComplete();
             saveSettings = true;
         }
+        // LogHandler::Debug("saveSettings");
         if(saveSettings)
             SettingsHandler::Save();
         LogHandler::Debug("End metadata process");
@@ -640,11 +649,11 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
     bool hasExistingMetadata = SettingsHandler::hasLibraryListItemMetaData(item);
     if(!hasExistingMetadata || fullProcess || item.forceProcessMetadata)// path is ID for metadata
     {
-        LogHandler::Debug("Process metadata for: "+item.path + " Full process: "+ QString::number(fullProcess));
+        LogHandler::Debug("[MediaLibraryHandler::processMetadata] Process metadata for: "+item.path + " Full process: "+ QString::number(fullProcess));
         if(!fullProcess)
         {
-            LogHandler::Debug("Force item: "+QString::number(item.forceProcessMetadata));
-            LogHandler::Debug("New item: "+QString::number(!hasExistingMetadata));
+            LogHandler::Debug("[MediaLibraryHandler::processMetadata] Force item: "+QString::number(item.forceProcessMetadata));
+            LogHandler::Debug("[MediaLibraryHandler::processMetadata] New item: "+QString::number(!hasExistingMetadata));
         }
         // Did this cause an issue? Need to test data integrety after full process?
         // item.metadata.libraryItemPath = item.path;
@@ -695,14 +704,14 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
                 metadataChanged = true;
             }
 
-            LogHandler::Debug("Find alternate scripts");
+            LogHandler::Debug("[MediaLibraryHandler::processMetadata] Find alternate scripts");
             auto ogScripts = item.metadata.scripts;
             m_mediaLibraryCache.unlock();
             findAlternateFunscripts(item);
             if(item.metadata.scripts != ogScripts)
                 metadataChanged = true;
 
-            LogHandler::Debug("Find subtitles");
+            LogHandler::Debug("[MediaLibraryHandler::processMetadata] Find subtitles");
             m_mediaLibraryCache.lockForWrite();
             foreach(QString type, SettingsHandler::getSubtitleExtensions())
             {
@@ -717,7 +726,7 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
                 }
             }
 
-            LogHandler::Debug("Update tags");
+            LogHandler::Debug("[MediaLibraryHandler::processMetadata] Update tags");
             auto userTags = SettingsHandler::getTags();
 
             if(item.type == LibraryListItemType::Video &&
@@ -827,6 +836,7 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
         }
         m_mediaLibraryCache.unlock();
     } else {
+        // LogHandler::Debug("[MediaLibraryHandler::processMetadata] skip updating metadata for: "+ item.name);
         // if(!rolesChanged.contains(Qt::ToolTipRole))
         //     rolesChanged.append(Qt::ToolTipRole);
         // if(!rolesChanged.contains(Qt::ForegroundRole))
@@ -948,7 +958,7 @@ void MediaLibraryHandler::processThumbs()
                 }
                 if(!item->metadata.thumbExtractError.isEmpty())
                 {
-                    LogHandler::Debug("[MediaLibraryHandler::saveThumb] Thumb historically marked as errored. Skipping. Manually extract the thumb if available.");
+                    LogHandler::Debug("[MediaLibraryHandler::saveThumb] Thumb historically marked as errored. Skipping. Manually extract the thumb if available: "+ item->name);
                     setThumbState(ThumbState::Error, *item);
                     continue;
                 }

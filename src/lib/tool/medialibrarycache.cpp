@@ -1,6 +1,7 @@
 
 #include "medialibrarycache.h"
-
+#include "QThread"
+#include "../handler/loghandler.h"
 #include "../tool/xmath.h"
 
 MediaLibraryCache::MediaLibraryCache()
@@ -10,16 +11,19 @@ MediaLibraryCache::MediaLibraryCache()
 
 void MediaLibraryCache::lockForWrite()
 {
+    // qDebug() << "[MediaLibraryCache::lockForWrite]: from thread: " << QThread::currentThreadId();
     m_mutex.lockForWrite();
 }
 
 void MediaLibraryCache::lockForRead()
 {
+    // qDebug() << "[MediaLibraryCache::lockForRead]: from thread: " << QThread::currentThreadId();
     m_mutex.lockForRead();
 }
 
 void MediaLibraryCache::unlock()
 {
+    // qDebug() << "[MediaLibraryCache::unlock]: from thread: " << QThread::currentThreadId();
     m_mutex.unlock();
 }
 
