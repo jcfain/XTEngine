@@ -8,7 +8,6 @@
 
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     : QObject(parent)
-    , xVideoPreview(this)
 {
     _thumbTimeoutTimer.setSingleShot(true);
     connect(this, &MediaLibraryHandler::prepareLibraryLoad, this, &MediaLibraryHandler::onPrepareLibraryLoad);

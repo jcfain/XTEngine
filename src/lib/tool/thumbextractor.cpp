@@ -107,6 +107,11 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
             }
             QThread::msleep(100);
         }
+        if(!m_mediaPlayer->hasVideo())
+        {
+            m_lastError = "No video";
+            return m_lastImage;
+        }
     }
     LogHandler::Debug("[XVideoPreview::extractSync] Loaded media mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
     currentTime = QTime::currentTime().msecsSinceStartOfDay();

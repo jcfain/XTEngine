@@ -13,8 +13,6 @@
 #include "../tool/medialibrarycache.h"
 #include "../tool/thumbextractor.h"
 
-#include "xvideopreview.h"
-
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT MediaLibraryHandler : public QObject
@@ -135,9 +133,6 @@ private:
     void stopMetadataProcess();
     bool updateToolTip(LibraryListItem27 &item);
     bool discoverMFS(LibraryListItem27 &item);
-
-    XVideoPreview xVideoPreview;
-
 };
 
 #endif // MEDIALIBRARYHANDLER_H

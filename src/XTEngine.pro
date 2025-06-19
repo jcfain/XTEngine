@@ -64,15 +64,6 @@ SOURCES += \
     lib/tool/xtimer.cpp \
     xtengine.cpp
 
-equals(QT_MAJOR_VERSION, 6) {
-    SOURCES += \
-        lib/handler/xvideopreview.cpp \
-}
-equals(QT_MAJOR_VERSION, 5) {
-    SOURCES += \
-        lib/handler/xvideopreviewQt5.cpp \
-        lib/handler/xvideosurfaceQt5.cpp \
-}
 HEADERS += \
     XTEngine_global.h \
     lib/handler/blehandler.h \
@@ -146,15 +137,15 @@ HEADERS += \
     lib/tool/xtimer.h \
     xtengine.h
 
-equals(QT_MAJOR_VERSION, 6) {
-    HEADERS += \
-        lib/handler/xvideopreview.h \
-}
-equals(QT_MAJOR_VERSION, 5) {
-    HEADERS += \
-        lib/handler/xvideopreviewQt5.h \
-        lib/handler/xvideosurfaceQt5.h \
-}
+# equals(QT_MAJOR_VERSION, 6) {
+#     HEADERS += \
+#         lib/handler/xvideopreview.h \
+# }
+# equals(QT_MAJOR_VERSION, 5) {
+#     HEADERS += \
+#         lib/handler/xvideopreviewQt5.h \
+#         lib/handler/xvideosurfaceQt5.h \
+# }
 
 #unix {
 #    target.path = /usr/lib
