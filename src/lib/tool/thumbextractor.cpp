@@ -93,15 +93,36 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
         m_mediaPlayer->setSource(mediaUrl);
         m_lastDuration = -1;
         m_fileChanged = false;
+        while(m_mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia)
+        {
+            if(m_mediaPlayer->error() != QMediaPlayer::Error::NoError)
+            {
+                m_lastError = m_mediaPlayer->errorString();
+                return m_lastImage;
+            }
+            if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
+            {
+                m_lastError = "Load timeout";
+                return m_lastImage;
+            }
+            QThread::msleep(100);
+        }
     }
+    LogHandler::Debug("[XVideoPreview::extractSync] Loaded media mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
+    currentTime = QTime::currentTime().msecsSinceStartOfDay();
     // Do not start/stop QMediaPlayer in a non GUI thread.
     emit startPlaying();
     if(time == -1 || m_lastDuration == -1)
     {
         while(m_lastDuration <= 0)
         {
-            auto duration = m_mediaPlayer->duration();
             // LogHandler::Debug("[XVideoPreview::extractSync] mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
+            if(m_mediaPlayer->error() != QMediaPlayer::Error::NoError)
+            {
+                m_lastError = m_mediaPlayer->errorString();
+                return m_lastImage;
+            }
+            auto duration = m_mediaPlayer->duration();
             m_lastDuration = duration > 0 ? duration : -1;
             if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
             {
@@ -118,7 +139,17 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
     currentTime = QTime::currentTime().msecsSinceStartOfDay();
     while(m_mediaPlayer->position() < position)
     {
-        LogHandler::Debug("[ThumbExtractor::extract] Waiting for seek: " + QString::number(m_mediaPlayer->position()));
+        // LogHandler::Debug("[ThumbExtractor::extract] Waiting for seek: " + QString::number(m_mediaPlayer->position()));
+        if(!m_mediaPlayer->isSeekable())
+        {
+            m_lastError = "Cant seek media";
+            return m_lastImage;
+        }
+        if(m_mediaPlayer->error() != QMediaPlayer::Error::NoError)
+        {
+            m_lastError = m_mediaPlayer->errorString();
+            return m_lastImage;
+        }
         if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
         {
             m_lastError = "Seek timeout";
@@ -131,8 +162,14 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
     currentTime = QTime::currentTime().msecsSinceStartOfDay();
     while(m_lastImage.isNull())
     {
+        if(m_mediaPlayer->error() != QMediaPlayer::Error::NoError)
+        {
+            m_lastError = m_mediaPlayer->errorString();
+            return m_lastImage;
+        }
         if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
         {
+            LogHandler::Debug("[XVideoPreview::extractSync] Timeout mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
             m_lastError = "Image extraction timeout";
             m_extracting = false;
             emit stopPlaying();
