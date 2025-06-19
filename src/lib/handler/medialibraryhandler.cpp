@@ -853,25 +853,25 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
     }
 }
 
-void MediaLibraryHandler::startThumbProcess(bool vrMode)
-{
-    LogHandler::Debug("[MediaLibraryHandler::startThumbProcess] Start thumb process, vrMode: " + QString::number(vrMode));
-    if(!vrMode)
-    {
-        emit thumbProcessBegin();
-        emit backgroundProcessStateChange("Processing thumbs...", -1);
-    }
-    QString thumbPath = SettingsHandler::getSelectedThumbsDir();
-    QDir thumbDir(thumbPath);
-    if (!thumbDir.exists())
-    {
-        thumbDir.mkdir(thumbPath);
-    }
-    if(_thumbProcessIsRunning)
-        stopThumbProcess();
-    _thumbProcessIsRunning = true;
-    saveNewThumbs(vrMode);
-}
+// void MediaLibraryHandler::startThumbProcess(bool vrMode)
+// {
+//     LogHandler::Debug("[MediaLibraryHandler::startThumbProcess] Start thumb process, vrMode: " + QString::number(vrMode));
+//     if(!vrMode)
+//     {
+//         emit thumbProcessBegin();
+//         emit backgroundProcessStateChange("Processing thumbs...", -1);
+//     }
+//     QString thumbPath = SettingsHandler::getSelectedThumbsDir();
+//     QDir thumbDir(thumbPath);
+//     if (!thumbDir.exists())
+//     {
+//         thumbDir.mkdir(thumbPath);
+//     }
+//     if(_thumbProcessIsRunning)
+//         stopThumbProcess();
+//     _thumbProcessIsRunning = true;
+//     saveNewThumbs(vrMode);
+// }
 
 void MediaLibraryHandler::stopThumbProcess()
 {
@@ -1032,208 +1032,183 @@ void MediaLibraryHandler::processThumb(ThumbExtractor* extractor, LibraryListIte
     emit saveNewThumb(item, false, item.thumbFile);
 }
 
-void MediaLibraryHandler::saveNewThumbs(bool vrMode)
-{
-    LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] vrMode: "+ QString::number(vrMode));
-    if (_thumbProcessIsRunning && _thumbNailSearchIterator < m_mediaLibraryCache.length())
-    {
-        LibraryListItem27& item  = m_mediaLibraryCache.valueRef(_thumbNailSearchIterator);
-        LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] Precessing next item: "+ item.nameNoExtension);
-        emit backgroundProcessStateChange("Processing thumbs", m_mediaLibraryCache.getProgress(item));
-        _thumbNailSearchIterator++;
-        auto disableThumbGen = SettingsHandler::getDisableAutoThumbGeneration();
-        if (isLibraryItemVideo(item) && !item.thumbFileExists && !disableThumbGen)
-        {
-            saveThumb(item, -1, vrMode);
-        }
-        else
-        {
-            if(!item.thumbFileExists && disableThumbGen)
-            {
-                setThumbState(ThumbState::Unknown, item);
-            }
-            else
-            {
-                setThumbState(ThumbState::Ready, item);
-            }
-            LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] Nothing to do for item");
-            saveNewThumbs(vrMode);
-        }
-    }
-    else
-    {
-        stopThumbProcess();
-        if(!vrMode)
-            startThumbProcess(true);
-        else
-        {
-            LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] Thumb process finished");
+// void MediaLibraryHandler::saveNewThumbs(bool vrMode)
+// {
+//     LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] vrMode: "+ QString::number(vrMode));
+//     if (_thumbProcessIsRunning && _thumbNailSearchIterator < m_mediaLibraryCache.length())
+//     {
+//         LibraryListItem27& item  = m_mediaLibraryCache.valueRef(_thumbNailSearchIterator);
+//         LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] Precessing next item: "+ item.nameNoExtension);
+//         emit backgroundProcessStateChange("Processing thumbs", m_mediaLibraryCache.getProgress(item));
+//         _thumbNailSearchIterator++;
+//         auto disableThumbGen = SettingsHandler::getDisableAutoThumbGeneration();
+//         if (isLibraryItemVideo(item) && !item.thumbFileExists && !disableThumbGen)
+//         {
+//             saveThumb(item, -1, vrMode);
+//         }
+//         else
+//         {
+//             if(!item.thumbFileExists && disableThumbGen)
+//             {
+//                 setThumbState(ThumbState::Unknown, item);
+//             }
+//             else
+//             {
+//                 setThumbState(ThumbState::Ready, item);
+//             }
+//             LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] Nothing to do for item");
+//             saveNewThumbs(vrMode);
+//         }
+//     }
+//     else
+//     {
+//         stopThumbProcess();
+//         if(!vrMode)
+//             startThumbProcess(true);
+//         else
+//         {
+//             LogHandler::Debug("[MediaLibraryHandler::saveNewThumbs] Thumb process finished");
 
-            emit backgroundProcessStateChange(nullptr, -1);
-            emit thumbProcessEnd();// Must be callsed after backgroundProcessStateChange for queue order
-        }
-    }
-}
+//             emit backgroundProcessStateChange(nullptr, -1);
+//             emit thumbProcessEnd();// Must be callsed after backgroundProcessStateChange for queue order
+//         }
+//     }
+// }
 
-void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bool vrMode)
-{
-    LogHandler::Debug("[MediaLibraryHandler::saveThumb] vrMode: "+ QString::number(vrMode) + ", item name: " + item.nameNoExtension);
-    if(_thumbProcessIsRunning && (item.type == LibraryListItemType::Audio || item.type == LibraryListItemType::FunscriptType || item.thumbFile.contains(".lock.")))
-    {
-        LogHandler::Debug("[MediaLibraryHandler::saveThumb] audio or locked");
-        setThumbState(ThumbState::Ready, item);
-        saveNewThumbs(vrMode);
-    }
-    else
-    {
-        LogHandler::Debug("[MediaLibraryHandler::saveThumb] start extract threads");
-        setThumbState(ThumbState::Loading, item);
-        QString itemID = item.ID;
-        QString itemPath = item.path;
-        QDir dir; // Make thumb path if doesnt exist
-        dir.mkpath(SettingsHandler::getSelectedThumbsDir());
-        if(!item.thumbFileExists && !item.metadata.thumbExtractError.isEmpty())
-        {
-            LogHandler::Debug("[MediaLibraryHandler::saveThumb] Thumb historically marked as errored. Skipping. Manually extract the thumb if available.");
-            setThumbState(ThumbState::Error, item);
-            saveNewThumbs(vrMode);
-            return;
-        }
+// void MediaLibraryHandler::saveThumb(LibraryListItem27 &item, qint64 position, bool vrMode)
+// {
+//     LogHandler::Debug("[MediaLibraryHandler::saveThumb] vrMode: "+ QString::number(vrMode) + ", item name: " + item.nameNoExtension);
+//     if(_thumbProcessIsRunning && (item.type == LibraryListItemType::Audio || item.type == LibraryListItemType::FunscriptType || item.thumbFile.contains(".lock.")))
+//     {
+//         LogHandler::Debug("[MediaLibraryHandler::saveThumb] audio or locked");
+//         setThumbState(ThumbState::Ready, item);
+//         saveNewThumbs(vrMode);
+//     }
+//     else
+//     {
+//         LogHandler::Debug("[MediaLibraryHandler::saveThumb] start extract threads");
+//         setThumbState(ThumbState::Loading, item);
+//         QString itemID = item.ID;
+//         QString itemPath = item.path;
+//         QDir dir; // Make thumb path if doesnt exist
+//         dir.mkpath(SettingsHandler::getSelectedThumbsDir());
+//         if(!item.thumbFileExists && !item.metadata.thumbExtractError.isEmpty())
+//         {
+//             LogHandler::Debug("[MediaLibraryHandler::saveThumb] Thumb historically marked as errored. Skipping. Manually extract the thumb if available.");
+//             setThumbState(ThumbState::Error, item);
+//             saveNewThumbs(vrMode);
+//             return;
+//         }
 
-        connect(&_thumbTimeoutTimer, &QTimer::timeout, &_thumbTimeoutTimer, [this, itemID, vrMode]() {
-            disconnect(&xVideoPreview, nullptr,  nullptr, nullptr);
-            onSaveThumb(itemID, vrMode, "Thumb loading timed out.");
-        });
-        _thumbTimeoutTimer.start(10000);
-        //        if(!vrMode)
-        // Webhandler
-        emit saveNewThumbLoading(item);
-        // Get the duration and randomize the position with in the video.
-        QString videoFile = item.path;
-        LogHandler::Debug("Getting thumb: " + item.thumbFile);
-        connect(&xVideoPreview, &XVideoPreview::durationChanged, this,
-                [this, videoFile, position](qint64 duration)
-                {
-                    disconnect(&xVideoPreview, &XVideoPreview::durationChanged,  nullptr, nullptr);
-                    LogHandler::Debug("[MediaLibraryHandler::saveThumb] Loaded video for thumb. Duration: " + QString::number(duration));
-                    qint64 randomPosition = position > 0 ? position : XMath::random((qint64)1, duration);
-                    LogHandler::Debug("[MediaLibraryHandler::saveThumb] Extracting at: " + QString::number(randomPosition));
-                    xVideoPreview.extract(videoFile, randomPosition);
-                });
-
-
-        //        connect(_thumbNailPlayer, &AVPlayer::error, _thumbNailPlayer,
-        //           [this, cachedListItem, vrMode](QtAV::AVError er)
-        //            {
-        //                QString error = "Video load error from: " + cachedListItem.path + " Error: " + er.ffmpegErrorString();
-        //                onSaveThumb(cachedListItem, vrMode, error);
-        //            });
+//         connect(&_thumbTimeoutTimer, &QTimer::timeout, &_thumbTimeoutTimer, [this, itemID, vrMode]() {
+//             disconnect(&xVideoPreview, nullptr,  nullptr, nullptr);
+//             onSaveThumb(itemID, vrMode, "Thumb loading timed out.");
+//         });
+//         _thumbTimeoutTimer.start(10000);
+//         //        if(!vrMode)
+//         // Webhandler
+//         emit saveNewThumbLoading(item);
+//         // Get the duration and randomize the position with in the video.
+//         QString videoFile = item.path;
+//         LogHandler::Debug("Getting thumb: " + item.thumbFile);
+//         connect(&xVideoPreview, &XVideoPreview::durationChanged, this,
+//                 [this, videoFile, position](qint64 duration)
+//                 {
+//                     disconnect(&xVideoPreview, &XVideoPreview::durationChanged,  nullptr, nullptr);
+//                     LogHandler::Debug("[MediaLibraryHandler::saveThumb] Loaded video for thumb. Duration: " + QString::number(duration));
+//                     qint64 randomPosition = position > 0 ? position : XMath::random((qint64)1, duration);
+//                     LogHandler::Debug("[MediaLibraryHandler::saveThumb] Extracting at: " + QString::number(randomPosition));
+//                     xVideoPreview.extract(videoFile, randomPosition);
+//                 });
 
 
-        connect(&xVideoPreview, &XVideoPreview::frameExtracted, this,
-                [this, itemID, vrMode](QImage frame)
-                {
-                    if(!frame.isNull())
-                    {
-                        LogHandler::Debug("[MediaLibraryHandler::saveThumb] Enter frameExtracted");
-                        auto item = findItemByID(itemID);
-                        if(!item) {
-                            onSaveThumb(itemID, vrMode, "Media item no longer exists: "+itemID);
-                            return;
-                        }
-                        bool hasError = frame.isNull() || !frame.save(item->thumbFile, nullptr, 15);
-                        if (hasError)
-                        {
-                            onSaveThumb(itemID, vrMode, "Error saving thumbnail");
-                            return;
-                        }
+//         //        connect(_thumbNailPlayer, &AVPlayer::error, _thumbNailPlayer,
+//         //           [this, cachedListItem, vrMode](QtAV::AVError er)
+//         //            {
+//         //                QString error = "Video load error from: " + cachedListItem.path + " Error: " + er.ffmpegErrorString();
+//         //                onSaveThumb(cachedListItem, vrMode, error);
+//         //            });
 
-                    }
-                    frame = QImage();
-                    disconnect(&xVideoPreview, nullptr,  nullptr, nullptr);
-                    onSaveThumb(itemID, vrMode);
-                });
 
-        connect(&xVideoPreview, &XVideoPreview::frameExtractionError, this,
-                [this, itemID, itemPath, vrMode](const QString &errorMessage)
-                {
-                    disconnect(&xVideoPreview, nullptr,  nullptr, nullptr);
-                    QString error = "Error extracting image from: " + itemPath + " Error: " + errorMessage;
-                    onSaveThumb(itemID, vrMode, error);
-                });
+//         connect(&xVideoPreview, &XVideoPreview::frameExtracted, this,
+//                 [this, itemID, vrMode](QImage frame)
+//                 {
+//                     if(!frame.isNull())
+//                     {
+//                         LogHandler::Debug("[MediaLibraryHandler::saveThumb] Enter frameExtracted");
+//                         auto item = findItemByID(itemID);
+//                         if(!item) {
+//                             onSaveThumb(itemID, vrMode, "Media item no longer exists: "+itemID);
+//                             return;
+//                         }
+//                         bool hasError = frame.isNull() || !frame.save(item->thumbFile, nullptr, 15);
+//                         if (hasError)
+//                         {
+//                             onSaveThumb(itemID, vrMode, "Error saving thumbnail");
+//                             return;
+//                         }
 
-        xVideoPreview.load(videoFile);
-    }
-}
+//                     }
+//                     frame = QImage();
+//                     disconnect(&xVideoPreview, nullptr,  nullptr, nullptr);
+//                     onSaveThumb(itemID, vrMode);
+//                 });
 
-//void MediaLibraryHandler::saveThumbs(QList<LibraryListItem27> items, qint64 position, bool vrMode)
-//{
-//    thumbNailPlayer->setAsyncLoad(false);
-//    extractor->setAsync(false);
-//    //extractor->setAutoExtract(false);
-//    QtConcurrent::run([this, items, position, vrMode]() {
-//        foreach(LibraryListItem27 item, items)
-//        {
-//            if(!thumbProcessIsRunning)
-//                return;
-//            if(thumbProcessIsRunning && (item.type == LibraryListItemType::Audio || item.type == LibraryListItemType::FunscriptType || item.thumbFile.contains(".lock.")))
-//                continue;
-//            thumbNailPlayer->setFile(item.path);
-//            if(!thumbNailPlayer->load()) {
-//                QString error = tr("Video load error from: ") + item.path;
-//                onSaveThumb(item, vrMode, error);
-//                continue;
-//            }
-//            extractor->setSource(item.path);
-//            qint64 randomPosition = position > 0 ? position : XMath::rand((qint64)1, thumbNailPlayer->duration());
-//            extractor->setPosition(randomPosition);
-//        }
-//    });
-//}
+//         connect(&xVideoPreview, &XVideoPreview::frameExtractionError, this,
+//                 [this, itemID, itemPath, vrMode](const QString &errorMessage)
+//                 {
+//                     disconnect(&xVideoPreview, nullptr,  nullptr, nullptr);
+//                     QString error = "Error extracting image from: " + itemPath + " Error: " + errorMessage;
+//                     onSaveThumb(itemID, vrMode, error);
+//                 });
 
-void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString errorMessage)
-{
-    LibraryListItem27* item = findItemByID(itemID);
-    if(!item || item->ID.isEmpty()) {
-        LogHandler::Error("[MediaLibraryHandler::onSaveThumb] item ID empty.");
-    } else {
-        int cachedIndex = m_mediaLibraryCache.indexOf(*item);
-        if(cachedIndex == -1) {
-            LibraryListItem27 emptyItem;
-            emit saveThumbError(emptyItem, vrMode, "Missing media");
-            return;
-        }
-        LibraryListItem27 &cachedItem = m_mediaLibraryCache.valueRef(cachedIndex);
-        if(!errorMessage.isEmpty())
-        {
-            LogHandler::Error("[MediaLibraryHandler::onSaveThumb] Save thumb error: " + errorMessage);
-            item->metadata.thumbExtractError = errorMessage;
-            SettingsHandler::updateLibraryListItemMetaData(*item);
-            setThumbState(ThumbState::Error, *item);
-            emit saveThumbError(cachedItem, vrMode, errorMessage);
-        }
-        else
-        {
-            LogHandler::Debug("[MediaLibraryHandler::onSaveThumb] Thumb saved: " + item->thumbFile);
-            ImageFactory::removeCache(item->thumbFile);
-            item->metadata.thumbExtractError = nullptr;
-            SettingsHandler::updateLibraryListItemMetaData(*item, false);
-            setThumbPath(cachedItem);
-            setThumbState(ThumbState::Ready, cachedItem);
-            emit saveNewThumb(*item, vrMode, item->thumbFile);
-        }
-    }
-    _thumbTimeoutTimer.stop();
-    disconnect(&_thumbTimeoutTimer, &QTimer::timeout, nullptr, nullptr);
+//         xVideoPreview.load(videoFile);
+//     }
+// }
 
-    if(_thumbProcessIsRunning)
-        saveNewThumbs(vrMode);
-    else {
-        //disconnect(xVideoPreview.data(), nullptr,  nullptr, nullptr);
-//        delete _extractor;
-//        _extractor = 0;
-    }
-}
+// void MediaLibraryHandler::onSaveThumb(QString itemID, bool vrMode, QString errorMessage)
+// {
+//     LibraryListItem27* item = findItemByID(itemID);
+//     if(!item || item->ID.isEmpty()) {
+//         LogHandler::Error("[MediaLibraryHandler::onSaveThumb] item ID empty.");
+//     } else {
+//         int cachedIndex = m_mediaLibraryCache.indexOf(*item);
+//         if(cachedIndex == -1) {
+//             LibraryListItem27 emptyItem;
+//             emit saveThumbError(emptyItem, vrMode, "Missing media");
+//             return;
+//         }
+//         LibraryListItem27 &cachedItem = m_mediaLibraryCache.valueRef(cachedIndex);
+//         if(!errorMessage.isEmpty())
+//         {
+//             LogHandler::Error("[MediaLibraryHandler::onSaveThumb] Save thumb error: " + errorMessage);
+//             item->metadata.thumbExtractError = errorMessage;
+//             SettingsHandler::updateLibraryListItemMetaData(*item);
+//             setThumbState(ThumbState::Error, *item);
+//             emit saveThumbError(cachedItem, vrMode, errorMessage);
+//         }
+//         else
+//         {
+//             LogHandler::Debug("[MediaLibraryHandler::onSaveThumb] Thumb saved: " + item->thumbFile);
+//             ImageFactory::removeCache(item->thumbFile);
+//             item->metadata.thumbExtractError = nullptr;
+//             SettingsHandler::updateLibraryListItemMetaData(*item, false);
+//             setThumbPath(cachedItem);
+//             setThumbState(ThumbState::Ready, cachedItem);
+//             emit saveNewThumb(*item, vrMode, item->thumbFile);
+//         }
+//     }
+//     _thumbTimeoutTimer.stop();
+//     disconnect(&_thumbTimeoutTimer, &QTimer::timeout, nullptr, nullptr);
+
+//     if(_thumbProcessIsRunning)
+//         saveNewThumbs(vrMode);
+//     else {
+//         //disconnect(xVideoPreview.data(), nullptr,  nullptr, nullptr);
+// //        delete _extractor;
+// //        _extractor = 0;
+//     }
+// }
 
 QList<LibraryListItem27> MediaLibraryHandler::getPlaylist(QString name) {
     auto playlists = SettingsHandler::getPlaylists();

@@ -111,6 +111,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemUpdated, this, [this](int index, QVector<int> roles) {
         if(_mediaLibraryHandler->isLibraryProcessing())
             return;
+        _mediaLibraryHandler->getLibraryCache()->lockForRead();
         auto item = _mediaLibraryHandler->getLibraryCache()->at(index);
 
         QString roleslist;
@@ -120,14 +121,17 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
                 roleslist +=",";
         }
         QJsonDocument doc(createMediaObject(item, m_hostAddress));
+        _mediaLibraryHandler->getLibraryCache()->unlock();
         QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
         _webSocketHandler->sendUpdateItem(itemJson, roleslist);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemAdded, this, [this](int index, int newSize) {
         if(_mediaLibraryHandler->isLibraryProcessing())
             return;
+        _mediaLibraryHandler->getLibraryCache()->lockForRead();
         auto item = _mediaLibraryHandler->getLibraryCache()->at(index);
         QJsonDocument doc(createMediaObject(item, m_hostAddress));
+        _mediaLibraryHandler->getLibraryCache()->unlock();
         QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
         _webSocketHandler->sendAddItem(itemJson);
     });
@@ -857,6 +861,7 @@ void HttpHandler::handleVideoList(const QHttpServerRequest &request, QHttpServer
     // TODO conflict?
     QString hostAddress = "http://" + request.headers().value("Host", "") + "/";
     auto libraryCache = _mediaLibraryHandler->getLibraryCache();
+    libraryCache->lockForRead();
     for(int i=0; i< libraryCache->length(); i++)
     {
         QJsonObject object;
@@ -865,6 +870,7 @@ void HttpHandler::handleVideoList(const QHttpServerRequest &request, QHttpServer
             continue;
         media.append(createMediaObject(item, m_hostAddress));
     }
+    libraryCache->unlock();
     // request.response->setStatus(QHttpServerResponse::StatusCode::Ok, QJsonDocument(media));
     // request.response->compressBody();
     // return HttpPromise::resolve(data);
@@ -957,6 +963,7 @@ void HttpHandler::handleHereSphere(const QHttpServerRequest &request, QHttpServe
     QJsonArray list;
 
     auto libraryCache = _mediaLibraryHandler->getLibraryCache();
+    libraryCache->lockForRead();
     for(int i=0; i< libraryCache->length(); i++)
     {
         QJsonObject object;
@@ -965,6 +972,7 @@ void HttpHandler::handleHereSphere(const QHttpServerRequest &request, QHttpServe
             continue;
         list.append(createHeresphereObject(item, hostAddress));
     }
+    libraryCache->unlock();
 
     root["library"] = list;
     QHttpHeaders headers;
@@ -1040,6 +1048,7 @@ void HttpHandler::handleDeo(const QHttpServerRequest &request, QHttpServerRespon
     QJsonArray list;
 
     auto libraryCache = _mediaLibraryHandler->getLibraryCache();
+    libraryCache->lockForRead();
     for(int i=0; i< libraryCache->length(); i++)
     {
         QJsonObject object;
@@ -1048,6 +1057,7 @@ void HttpHandler::handleDeo(const QHttpServerRequest &request, QHttpServerRespon
             continue;
         list.append(createDeoObject(item, hostAddress));
     }
+    libraryCache->unlock();
 
     library["libraryData"] = list;
     scenes.append(library);

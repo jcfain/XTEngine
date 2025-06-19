@@ -55,7 +55,7 @@ public:
     bool thumbProcessRunning();
     void processThumbs();
     void processThumb(ThumbExtractor* preview, LibraryListItem27& item, qint64 position = -1);
-    void startThumbProcess(bool vrMode = false);
+    // void startThumbProcess(bool vrMode = false);
     void stopThumbProcess();
     void loadLibraryAsync();
     bool isLibraryProcessing();
@@ -121,11 +121,11 @@ private:
     //void saveThumbs(QList<LibraryListItem27> items, qint64 position = 0, bool vrMode = false);
     void onPrepareLibraryLoad();
     void onLibraryItemFound(LibraryListItem27 item);
-    void onSaveThumb(QString itemID, bool vrMode, QString errorMessage = nullptr);
+    // void onSaveThumb(QString itemID, bool vrMode, QString errorMessage = nullptr);
     void setThumbPath(LibraryListItem27 &item);
     void setThumbState(ThumbState state, LibraryListItem27 &item);
-    void saveNewThumbs(bool vrMode = false);
-    void saveThumb(LibraryListItem27 &item, qint64 position = 0, bool vrMode = false);
+    // void saveNewThumbs(bool vrMode = false);
+    // void saveThumb(LibraryListItem27 &item, qint64 position = 0, bool vrMode = false);
     void assignID(LibraryListItem27 &item);
 
     void stopAllSubProcesses();
