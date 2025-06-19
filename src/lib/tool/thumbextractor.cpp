@@ -89,15 +89,16 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
 
     if(m_fileChanged)
     {
+        LogHandler::Debug("[ThumbExtractor::extract] File changed: " + m_file);
         QUrl mediaUrl = QUrl::fromLocalFile(m_file);
         m_mediaPlayer->setSource(mediaUrl);
         m_lastDuration = -1;
         m_fileChanged = false;
         while(m_mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia)
         {
-            if(m_mediaPlayer->error() != QMediaPlayer::Error::NoError)
+            if(mediaHasError())
             {
-                m_lastError = m_mediaPlayer->errorString();
+                stopAndWait();
                 return m_lastImage;
             }
             if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
@@ -113,7 +114,7 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
             return m_lastImage;
         }
     }
-    LogHandler::Debug("[XVideoPreview::extractSync] Loaded media mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
+    LogHandler::Debug("[ThumbExtractor::extract] Loaded media mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
     currentTime = QTime::currentTime().msecsSinceStartOfDay();
     // Do not start/stop QMediaPlayer in a non GUI thread.
     emit startPlaying();
@@ -122,9 +123,9 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
         while(m_lastDuration <= 0)
         {
             // LogHandler::Debug("[XVideoPreview::extractSync] mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
-            if(m_mediaPlayer->error() != QMediaPlayer::Error::NoError)
+            if(mediaHasError())
             {
-                m_lastError = m_mediaPlayer->errorString();
+                stopAndWait();
                 return m_lastImage;
             }
             auto duration = m_mediaPlayer->duration();
@@ -132,7 +133,7 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
             if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
             {
                 m_lastError = "Duration load timeout";
-                emit stopPlaying();
+                stopAndWait();
                 return m_lastImage;
             }
             QThread::msleep(100);
@@ -148,17 +149,18 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
         if(!m_mediaPlayer->isSeekable())
         {
             m_lastError = "Cant seek media";
+            stopAndWait();
             return m_lastImage;
         }
-        if(m_mediaPlayer->error() != QMediaPlayer::Error::NoError)
+        if(mediaHasError())
         {
-            m_lastError = m_mediaPlayer->errorString();
+            stopAndWait();
             return m_lastImage;
         }
         if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
         {
             m_lastError = "Seek timeout";
-            emit stopPlaying();
+            stopAndWait();
             return m_lastImage;
         }
         QThread::msleep(100);
@@ -167,9 +169,9 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
     currentTime = QTime::currentTime().msecsSinceStartOfDay();
     while(m_lastImage.isNull())
     {
-        if(m_mediaPlayer->error() != QMediaPlayer::Error::NoError)
+        if(mediaHasError())
         {
-            m_lastError = m_mediaPlayer->errorString();
+            stopAndWait();
             return m_lastImage;
         }
         if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
@@ -177,14 +179,12 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
             LogHandler::Debug("[XVideoPreview::extractSync] Timeout mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
             m_lastError = "Image extraction timeout";
             m_extracting = false;
-            emit stopPlaying();
+            stopAndWait();
             return m_lastImage;
         }
         QThread::msleep(100);
     }
-    emit stopPlaying();
-    while(m_mediaPlayer->playbackState() != QMediaPlayer::StoppedState)
-        QThread::msleep(100);
+    stopAndWait();
     m_extracting = false;
     return m_lastImage;
 }
@@ -192,6 +192,23 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
 QString ThumbExtractor::lastError()
 {
     return m_lastError;
+}
+
+void ThumbExtractor::stopAndWait()
+{
+    emit stopPlaying();
+    while(m_mediaPlayer->playbackState() != QMediaPlayer::StoppedState)
+        QThread::msleep(100);
+}
+
+bool ThumbExtractor::mediaHasError()
+{
+    if(m_mediaPlayer->error() != QMediaPlayer::Error::NoError)
+    {
+        m_lastError = m_mediaPlayer->errorString();
+        return true;
+    }
+    return false;
 }
 
 // Private

@@ -995,15 +995,15 @@ void MediaLibraryHandler::processThumb(ThumbExtractor* extractor, LibraryListIte
         m_mediaLibraryCache.lockForWrite();
         item.metadata.thumbExtractError = errorMessage;
         item.metadata.toolTip = item.metadata.toolTip + "\n" +errorMessage;
-        m_mediaLibraryCache.unlock();
         SettingsHandler::updateLibraryListItemMetaData(item);
+        m_mediaLibraryCache.unlock();
         setThumbState(ThumbState::Error, item);
         emit saveThumbError(item, false, errorMessage);
         return;
     }
     else
     {
-        LogHandler::Debug("[MediaLibraryHandler::processThumb] Frame Extracted");
+        LogHandler::Debug("[MediaLibraryHandler::processThumb] Frame Extracted, saving to disk...");
         if (!image.save(item.thumbFile, nullptr, 15))
         {
             LogHandler::Error("[MediaLibraryHandler::processThumb] Save thumb error");

@@ -41,6 +41,8 @@ private:
     qint64 m_lastTimeout;
     qint64 m_lastDuration = -1;
     QTimer m_debouncer;
+    void stopAndWait();
+    bool mediaHasError();
     void videoFrameChanged(const QVideoFrame &thumb);
     void on_mediaError(QMediaPlayer::Error error, const QString &errorString);
 };
