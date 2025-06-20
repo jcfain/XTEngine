@@ -16,9 +16,10 @@ class XTENGINE_EXPORT ThumbExtractor : public QObject
 public:
     explicit ThumbExtractor(QObject *parent = nullptr);
 
-    QImage extract(QString videoPath, qint64 time = -1, qint64 timeout = 5000);
-    void extractDebounce(QString videoPath, qint64 time = -1, qint64 timeout = 5000);
+    QImage extract(QString videoPath, qint64 time = -1, qint64 timeout = m_defaultTimeout);
+    void extractDebounce(QString videoPath, qint64 time = -1, qint64 timeout = m_defaultTimeout);
     QString lastError();
+    void reset();
 
 signals:
     void startPlaying();
@@ -29,7 +30,7 @@ signals:
     void frameExtractionError(QString error);
 
 private:
-
+    static constexpr int m_defaultTimeout = 5000;
     bool m_extracting = false;
     bool m_fileChanged = false;
     QString m_file;

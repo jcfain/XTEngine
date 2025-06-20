@@ -41,10 +41,10 @@ signals:
     void cleanUpThumbsFinished();
     void cleanUpThumbsFailed();
     void saveNewThumbLoading(LibraryListItem27 item);
-    void saveNewThumb(LibraryListItem27 item, bool vrMode, QString thumbFile);
-    void saveThumbError(LibraryListItem27 item, bool vrMode, QString error);
-    void frameExtracted(LibraryListItem27 item, bool vrMode, QImage frame);
-    void frameExtractedError(LibraryListItem27 item, bool vrMode, const QString &errorMessage);
+    void saveNewThumb(LibraryListItem27 item, QString thumbFile);
+    void saveThumbError(LibraryListItem27 item, QString error);
+//    void frameExtracted(LibraryListItem27 item, bool vrMode, QImage frame);
+//    void frameExtractedError(LibraryListItem27 item, bool vrMode, const QString &errorMessage);
 //    void videoLoadError(LibraryListItem27 item, bool vrMode, QtAV::AVError er);
 public:
     MediaLibraryHandler(QObject* parent = nullptr);

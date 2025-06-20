@@ -62,7 +62,8 @@ void MediaLibraryHandler::stopLibraryLoading()
     {
         _loadingLibraryFuture.cancel();
         _loadingLibraryFuture.waitForFinished();
-        emit libraryLoadingStatus("Loading media stopped");
+//        Caused crash on deconstruct. Only place it is used is http handler and stop is called on deconstruct. Not sure this is needed here anyways.
+//        emit libraryLoadingStatus("Loading media stopped");
     }
 }
 
@@ -988,17 +989,16 @@ void MediaLibraryHandler::processThumb(ThumbExtractor* extractor, LibraryListIte
     setThumbState(ThumbState::Loading, item);
     emit saveNewThumbLoading(item);
     auto image = extractor->extract(item.path, position);
-    if(image.isNull())
+    if(image.isNull() || image.width() <= 0)
     {
         auto errorMessage = extractor->lastError();
         LogHandler::Error("[MediaLibraryHandler::processThumb] Extract thumb error: " + errorMessage);
         m_mediaLibraryCache.lockForWrite();
         item.metadata.thumbExtractError = errorMessage;
-        item.metadata.toolTip = item.metadata.toolTip + "\n" +errorMessage;
         SettingsHandler::updateLibraryListItemMetaData(item);
         m_mediaLibraryCache.unlock();
         setThumbState(ThumbState::Error, item);
-        emit saveThumbError(item, false, errorMessage);
+        emit saveThumbError(item, errorMessage);
         return;
     }
     else
@@ -1008,7 +1008,7 @@ void MediaLibraryHandler::processThumb(ThumbExtractor* extractor, LibraryListIte
         {
             LogHandler::Error("[MediaLibraryHandler::processThumb] Save thumb error");
             setThumbState(ThumbState::Error, item);
-            emit saveThumbError(item, false, "Save thumb error");
+            emit saveThumbError(item, "Save thumb error");
             image = QImage();
             return;
         }
@@ -1028,7 +1028,7 @@ void MediaLibraryHandler::processThumb(ThumbExtractor* extractor, LibraryListIte
     setThumbPath(item);
     m_mediaLibraryCache.unlock();
     setThumbState(ThumbState::Ready, item);
-    emit saveNewThumb(item, false, item.thumbFile);
+    emit saveNewThumb(item, item.thumbFile);
 }
 
 // void MediaLibraryHandler::saveNewThumbs(bool vrMode)
