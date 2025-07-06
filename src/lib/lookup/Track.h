@@ -1,9 +1,9 @@
-#ifndef AXISNAMES_H
-#define AXISNAMES_H
+#ifndef TRACK_H
+#define TRACK_H
 #include <QString>
 #include <QMap>
 
-enum class ChannelName
+enum class Track
 {
     None,
     Stroke,
@@ -32,6 +32,6 @@ enum class ChannelName
     SuckPosition,
     SuckMorePosition,
     SuckLessPosition,
-    AXIS_NAMES_LENGTH
+    TRACKS_LENGTH
 };
-#endif // AXISNAMES_H
+#endif // TRACK_H

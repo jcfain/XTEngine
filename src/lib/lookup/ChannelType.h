@@ -1,5 +1,5 @@
-#ifndef AXISTYPE_H
-#define AXISTYPE_H
+#ifndef CHANNELTYPE_H
+#define CHANNELTYPE_H
 #include <QString>
 #include <QMap>
 #include <QVariant>
@@ -27,4 +27,4 @@ enum class ChannelTimeType {
 };
 
 Q_DECLARE_METATYPE(ChannelType);
-#endif // AXISTYPE_H
+#endif // CHANNELTYPE_H

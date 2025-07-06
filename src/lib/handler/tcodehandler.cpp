@@ -53,9 +53,9 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
         if(!TCodeChannelLookup::ChannelExists(axis))
             continue;
         auto axisModel = TCodeChannelLookup::getChannel(axis);
-        if (axisModel->AxisName != TCodeChannelLookup::Stroke() && axisModel->TrackName.isEmpty())
+        if (axisModel->ChannelName != TCodeChannelLookup::Stroke() && axisModel->trackName.isEmpty())
             continue;
-        if((axisModel->AxisName == TCodeChannelLookup::Suck() || axisModel->AxisName == TCodeChannelLookup::SuckPosition()) && (tcode.contains(TCodeChannelLookup::Suck()) || tcode.contains(TCodeChannelLookup::SuckPosition())))
+        if((axisModel->ChannelName == TCodeChannelLookup::Suck() || axisModel->ChannelName == TCodeChannelLookup::SuckPosition()) && (tcode.contains(TCodeChannelLookup::Suck()) || tcode.contains(TCodeChannelLookup::SuckPosition())))
             continue;
         std::shared_ptr<FunscriptAction> axisAction = actions.value(axis);
         if (axisModel->Channel == TCodeChannelLookup::Stroke())
@@ -98,7 +98,7 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 continue;
             if (SettingsHandler::getFunscriptLoaded(axis))
                 continue;
-            if((channel->AxisName == TCodeChannelLookup::Suck() || channel->AxisName == TCodeChannelLookup::SuckPosition()) && (tcode.contains(TCodeChannelLookup::Suck()) || tcode.contains(TCodeChannelLookup::SuckPosition())))
+            if((channel->ChannelName == TCodeChannelLookup::Suck() || channel->ChannelName == TCodeChannelLookup::SuckPosition()) && (tcode.contains(TCodeChannelLookup::Suck()) || tcode.contains(TCodeChannelLookup::SuckPosition())))
                 continue;
             if (channel->MultiplierEnabled)
             {

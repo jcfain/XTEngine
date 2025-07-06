@@ -331,7 +331,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                         if(track->Dimension != ChannelDimension::Heave &&
                             track->Type != ChannelType::HalfOscillate &&
                             track->Type != ChannelType::None &&
-                            fileNameNoExtension.endsWith(track->TrackName, Qt::CaseInsensitive))
+                            fileNameNoExtension.endsWith(track->trackName, Qt::CaseInsensitive))
                         {
                             isMfs = true;
                             break;
@@ -1779,11 +1779,11 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
             LogHandler::Debug("Is MFS?");
             foreach (auto channel, channels) {
                 auto track = TCodeChannelLookup::getChannel(channel);
-                if(channel == TCodeChannelLookup::Stroke() || track->Type == ChannelType::HalfOscillate || track->TrackName.isEmpty())
+                if(channel == TCodeChannelLookup::Stroke() || track->Type == ChannelType::HalfOscillate || track->trackName.isEmpty())
                     continue;
-                if(filepath.endsWith("."+track->TrackName+".funscript") && !path.endsWith("."+track->TrackName+".funscript")) {
-                    LogHandler::Debug("Is MFS track: " + track->TrackName);
-                    trackname = track->TrackName;
+                if(filepath.endsWith("."+track->trackName+".funscript") && !path.endsWith("."+track->trackName+".funscript")) {
+                    LogHandler::Debug("Is MFS track: " + track->trackName);
+                    trackname = track->trackName;
                     containerType = ScriptContainerType::MFS;
                     break;
                 }

@@ -6,8 +6,9 @@
 #include <QDataStream>
 #include <QVariant>
 #include <QJsonObject>
-#include "../lookup/AxisType.h"
-#include "../lookup/AxisDimension.h"
+#include "../lookup/Track.h"
+#include "../lookup/ChannelType.h"
+#include "../lookup/ChannelDimension.h"
 
 
 struct ChannelValueModel
@@ -26,7 +27,8 @@ struct ChannelValueModel
 struct ChannelModel33
 {
     QString FriendlyName;
-    QString AxisName;
+    Track track;
+    QString ChannelName;
     QString Channel;
     int Min;
     int Mid;
@@ -36,7 +38,7 @@ struct ChannelModel33
     int UserMax;
     ChannelDimension Dimension;
     ChannelType Type;
-    QString TrackName;
+    QString trackName;
     bool MultiplierEnabled;
     bool DamperEnabled;
     bool DamperRandom;
@@ -105,7 +107,8 @@ struct ChannelModel33
     {
         ChannelModel33 newItem;
         newItem.FriendlyName = obj["friendlyName"].toString();
-        newItem.AxisName = obj["axisName"].toString();
+        newItem.track = (Track)obj["track"].toInt();
+        newItem.ChannelName = obj["axisName"].toString();
         newItem.Channel = obj["channel"].toString();
         newItem.Min = obj["min"].toInt();
         newItem.Mid = obj["mid"].toInt();
@@ -115,7 +118,7 @@ struct ChannelModel33
         newItem.UserMax = obj["userMax"].toInt();
         newItem.Dimension = (ChannelDimension)obj["dimension"].toInt();
         newItem.Type = (ChannelType)obj["type"].toInt();
-        newItem.TrackName = obj["trackName"].toString();
+        newItem.trackName = obj["trackName"].toString();
         newItem.MultiplierEnabled = obj["multiplierEnabled"].toBool();
         newItem.DamperEnabled = obj["damperEnabled"].toBool();
         newItem.DamperRandom = obj["damperRandom"].toBool();
@@ -136,7 +139,8 @@ struct ChannelModel33
     {
         QJsonObject obj;
         obj["friendlyName"] = item.FriendlyName;
-        obj["axisName"] = item.AxisName;
+        obj["track"] = (int)item.track;
+        obj["axisName"] = item.ChannelName;
         obj["channel"] = item.Channel;
         obj["min"] = item.Min;
         obj["mid"] = item.Mid;
@@ -146,7 +150,7 @@ struct ChannelModel33
         obj["userMax"] = item.UserMax;
         obj["dimension"] = (int)item.Dimension;
         obj["type"] = (int)item.Type;
-        obj["trackName"] = item.TrackName;
+        obj["trackName"] = item.trackName;
         obj["multiplierEnabled"] = item.MultiplierEnabled;
         obj["damperEnabled"] = item.DamperEnabled;
         obj["speedRandom"] = item.DamperRandom;

@@ -164,17 +164,13 @@ void XTEngine::init()
     connect(_syncHandler, &SyncHandler::sendTCode, _connectionHandler, &ConnectionHandler::sendTCode, Qt::QueuedConnection);
     connect(_syncHandler, &SyncHandler::funscriptLoaded, this, [this](QString funscriptPath) {
         // Generate first load moneyshot based off heatmap if not already set.
-        auto funscriptHandler = _syncHandler->getFunscriptHandler();
-        if(funscriptHandler)
+        auto funscript = _syncHandler->getFunscript();
+        if(funscript)
         {
-            auto funscript = funscriptHandler->currentFunscript();
             auto playingItem = XMediaStateHandler::getPlaying();
             if(playingItem && playingItem->metadata.moneyShotMillis > 0)
                 return;
-
-            if(funscript) {
-                m_heatmap->getMaxHeatAsync(funscript->actions);
-            }
+            m_heatmap->getMaxHeatAsync(funscript->actions);
         }
     });
     connect(_syncHandler, &SyncHandler::funscriptSearchResult, this, &XTEngine::onFunscriptSearchResult);

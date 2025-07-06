@@ -12,8 +12,6 @@ SyncHandler::SyncHandler(QObject* parent):
 
 SyncHandler::~SyncHandler()
 {
-    //delete _funscriptHandler;
-    qDeleteAll(_funscriptHandlers);
 }
 
 void SyncHandler::togglePause()
@@ -55,21 +53,33 @@ bool SyncHandler::isPlayingVR()
     return _isVRFunscriptPlaying;
 }
 
-FunscriptHandler* SyncHandler::getFunscriptHandler() {
-    if(_funscriptHandlers.isEmpty())
-        return 0;
-    return getFunscriptHandler(TCodeChannelLookup::Stroke()) ?: _funscriptHandlers.first();
+const Funscript *SyncHandler::getFunscript()
+{
+    return m_funscriptHandler.getFunscript();
 }
 
-FunscriptHandler *SyncHandler::getFunscriptHandler(QString channel)
+const Funscript *SyncHandler::getFunscript(Track channel)
 {
-    if(_funscriptHandlers.isEmpty())
+    if(!m_funscriptHandler.isLoaded(channel))
         return 0;
-    QList<FunscriptHandler *>::iterator it = std::find_if(_funscriptHandlers.begin(), _funscriptHandlers.end(), [channel](const FunscriptHandler* handler) {
-        return handler->channel() == channel;
-    });
-    return it != _funscriptHandlers.end() ? (*it) : 0;
+    return m_funscriptHandler.getFunscript(channel);
 }
+
+// FunscriptHandler* SyncHandler::getFunscriptHandler() {
+//     if(_funscriptHandlers.isEmpty())
+//         return 0;
+//     return getFunscriptHandler(TCodeChannelLookup::Stroke()) ?: _funscriptHandlers.first();
+// }
+
+// FunscriptHandler *SyncHandler::getFunscriptHandler(QString channel)
+// {
+//     if(_funscriptHandlers.isEmpty())
+//         return 0;
+//     QList<FunscriptHandler *>::iterator it = std::find_if(_funscriptHandlers.begin(), _funscriptHandlers.end(), [channel](const FunscriptHandler* handler) {
+//         return handler->channel() == channel;
+//     });
+//     return it != _funscriptHandlers.end() ? (*it) : 0;
+// }
 
 SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem)
 {
@@ -83,14 +93,11 @@ SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem, bool reset
         this->reset();
     else
     {
-        if(_funscriptHandlers.length() > 0)
-        {
-            foreach (auto handler, _funscriptHandlers) {
-                emit channelPositionChange(handler->channel(), 0, 0, ChannelTimeType::None);
-            }
-            qDeleteAll(_funscriptHandlers);
-            _funscriptHandlers.clear();
+        auto loaded = m_funscriptHandler.getLoaded();
+        foreach (auto name, loaded) {
+            emit channelPositionChange(TCodeChannelLookup::ToString(name), 0, 0, ChannelTimeType::None);
         }
+        m_funscriptHandler.unload();
     }
     SyncLoadState loadState;
     loadFunscripts(libraryItem, loadState);
@@ -130,7 +137,7 @@ SyncLoadState SyncHandler::swap(const ScriptInfo &script)
 
 bool SyncHandler::isLoaded()
 {
-    return _funscriptHandlers.length() > 0;
+    return m_funscriptHandler.getLoaded().length() > 0;
 }
 
 void SyncHandler::stopAll()
@@ -188,14 +195,11 @@ void SyncHandler::clear()
 {
     LogHandler::Debug("Clear sync");
     //_funscriptHandler->setLoaded(false);
-    if(_funscriptHandlers.length() > 0)
-    {
-        foreach (auto handler, _funscriptHandlers) {
-            emit channelPositionChange(handler->channel(), 0, 0, ChannelTimeType::None);
-        }
-        qDeleteAll(_funscriptHandlers);
-        _funscriptHandlers.clear();
+    auto loaded = m_funscriptHandler.getLoaded();
+    foreach (auto name, loaded) {
+        emit channelPositionChange(TCodeChannelLookup::ToString(name), 0, 0, ChannelTimeType::None);
     }
+    m_funscriptHandler.unload();
     QMutexLocker locker(&_mutex);
     _standAloneFunscriptCurrentTime = 0;
     setStandAloneLoop(false);
@@ -248,7 +252,6 @@ void SyncHandler::playStandAlone() {
     _funscriptStandAloneFuture = QtConcurrent::run([this, funscriptMax]()
     {
         std::shared_ptr<FunscriptAction> actionPosition;
-        QMap<QString, std::shared_ptr<FunscriptAction>> actions;
         int secCounter1 = 0;
         int secCounter2 = 0;
         QElapsedTimer mSecTimer;
@@ -279,20 +282,7 @@ void SyncHandler::playStandAlone() {
                     {
                         _standAloneFunscriptCurrentTime += ((elapsedNS/1000000) * XMediaStateHandler::getPlaybackSpeed());
                     }
-                    // if(_funscriptHandler->isLoaded())
-                    //     actionPosition = _funscriptHandler->getPosition(_currentTime);
-                    // if(actionPosition != nullptr)
-                    //     emit channelPositionChange(TCodeChannelLookup::Stroke(), actionPosition->pos);
-                    foreach(auto funscriptHandler, _funscriptHandlers)
-                    {
-                        auto action = funscriptHandler->getPosition(_standAloneFunscriptCurrentTime);
-                        if(action != nullptr)
-                        {
-                            actions.insert(funscriptHandler->channel(), action);
-                            emit channelPositionChange(funscriptHandler->channel(), action->pos, action->speed, ChannelTimeType::Interval);
-                        }
-                    }
-                    QString tcode = _tcodeHandler->funscriptToTCode(actions);
+                    QString tcode = buildChannelActions(_standAloneFunscriptCurrentTime);
                     if(_funscriptStandAloneFuture.isCanceled())
                         break;
                     if(!tcode.isEmpty() && !isPaused())
@@ -300,7 +290,6 @@ void SyncHandler::playStandAlone() {
                         emit sendTCode(tcode);
                         sendPulse(mSecTimer.elapsed(), nextPulseTime);
                     }
-                    actions.clear();
                 } else {
                     QThread::msleep(100);
                 }
@@ -351,35 +340,36 @@ qint64 SyncHandler::getFunscriptTime()
 
 qint64 SyncHandler::getFunscriptMin()
 {
-    auto funscriptHandler = getFunscriptHandler();
-    if(funscriptHandler && funscriptHandler->getMax() > -1)
+    auto funscript = getFunscript();
+    if(funscript && funscript->settings.max > -1)
     {
-        return funscriptHandler->getMin();
+        return funscript->settings.min;
     }
     return 0;
 }
 
 qint64 SyncHandler::getFunscriptNext()
 {
-    auto funscriptHandler = getFunscriptHandler();
-    if(funscriptHandler && funscriptHandler->getMax() > -1)
+    auto funscript = getFunscript();
+    if(funscript && funscript->settings.max > -1)
     {
-        return funscriptHandler->getNext();
+        return m_funscriptHandler.getNext(funscript->settings.channel);
     }
     return 0;
 }
 
 qint64 SyncHandler::getFunscriptMax()
 {
-    auto funscriptHandler = getFunscriptHandler();
-    if(funscriptHandler && funscriptHandler->getMax() > -1)
+    auto funscript = getFunscript();
+    if(funscript && funscript->settings.max > -1)
     {
-        return funscriptHandler->getMax();
+        return funscript->settings.max;
     }
     qint64 otherMax = -1;
-    foreach(auto handler, _funscriptHandlers)
+    auto loaded = m_funscriptHandler.getLoaded();
+    foreach(auto name, loaded)
     {
-        auto max = handler->getMax();
+        auto max = m_funscriptHandler.getMax(name);
         if(max > -1 && max > otherMax)
             otherMax = max;
     }
@@ -395,7 +385,6 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
     _funscriptMediaFuture = QtConcurrent::run([this, getMediaPosition]()
     {
         std::shared_ptr<FunscriptAction> actionPosition;
-        QMap<QString, std::shared_ptr<FunscriptAction>> actions;
         QElapsedTimer mSecTimer;
         qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
         qint64 timer1 = 0;
@@ -410,19 +399,16 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
                 if(!isPaused())
                 {
                     qint64 currentTime = getMediaPosition();//_videoHandler->position();
-                    // actionPosition = _funscriptHandler->getPosition(currentTime);
-                    // if(actionPosition != nullptr)
-                    //     emit channelPositionChange(TCodeChannelLookup::Stroke(), actionPosition->pos);
-                    foreach(auto funscriptHandlerOther, _funscriptHandlers)
-                    {
-                        auto action = funscriptHandlerOther->getPosition(currentTime);
-                        if(action != nullptr)
-                        {
-                            actions.insert(funscriptHandlerOther->channel(), action);
-                            emit channelPositionChange(funscriptHandlerOther->channel(), action->pos, action->speed, ChannelTimeType::Interval);
-                        }
-                    }
-                    QString tcode = _tcodeHandler->funscriptToTCode(actions);
+                    // foreach(auto funscriptHandlerOther, _funscriptHandlers)
+                    // {
+                    //     auto action = funscriptHandlerOther->getPosition(currentTime);
+                    //     if(action != nullptr)
+                    //     {
+                    //         actions.insert(funscriptHandlerOther->channel(), action);
+                    //         emit channelPositionChange(funscriptHandlerOther->channel(), action->pos, action->speed, ChannelTimeType::Interval);
+                    //     }
+                    // }
+                    QString tcode = buildChannelActions(currentTime);
                     if(_funscriptMediaFuture.isCanceled())
                         break;
                     if(!tcode.isEmpty() && !isPaused())
@@ -430,7 +416,6 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
                         emit sendTCode(tcode);
                         sendPulse(mSecTimer.elapsed(), nextPulseTime);
                     }
-                    actions.clear();
 
                 } else {
                     QThread::msleep(100);
@@ -456,7 +441,6 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
     _funscriptVRFuture = QtConcurrent::run([this]()
     {
         std::shared_ptr<FunscriptAction> actionPosition;
-        QMap<QString, std::shared_ptr<FunscriptAction>> actions;
         InputDevicePacket currentVRPacket;
         double timeTracker = 0;
         qint64 lastVRTime = 0;
@@ -524,16 +508,16 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
 // //                        LogHandler::Debug("actionPosition != nullptr/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////lastPos: "+QString::number(actionPosition->lastPos));
 // //                        LogHandler::Debug("actionPosition != nullptr/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////lastSpeed: "+QString::number(actionPosition->lastSpeed));
 //                     }
-                    foreach(auto funscriptHandler, _funscriptHandlers)
-                    {
-                        auto action = funscriptHandler->getPosition(vrTime);
-                        if(action != nullptr)
-                        {
-                            actions.insert(funscriptHandler->channel(), action);
-                            emit channelPositionChange(funscriptHandler->channel(), action->pos, action->speed, ChannelTimeType::Interval);
-                        }
-                    }
-                    QString tcode = _tcodeHandler->funscriptToTCode(actions);
+                    // foreach(auto funscriptHandler, _funscriptHandlers)
+                    // {
+                    //     auto action = funscriptHandler->getPosition(vrTime);
+                    //     if(action != nullptr)
+                    //     {
+                    //         actions.insert(funscriptHandler->channel(), action);
+                    //         emit channelPositionChange(funscriptHandler->channel(), action->pos, action->speed, ChannelTimeType::Interval);
+                    //     }
+                    // }
+                    QString tcode = buildChannelActions(vrTime);
                     if(_funscriptVRFuture.isCanceled())
                         break;
                     if(!tcode.isEmpty() && !isPaused())
@@ -542,7 +526,6 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                     //     LogHandler::Debug("timer "+QString::number((round(timer.nsecsElapsed()) / 1000000)));
                         sendPulse(timer1/1000000, nextPulseTime);
                     }
-                    actions.clear();
                 //}
                 } else {
                     QThread::msleep(100);
@@ -562,33 +545,46 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
     });
 }
 
+QString SyncHandler::buildChannelActions(qint64 time)
+{
+    QMap<QString, std::shared_ptr<FunscriptAction>> actions;
+    auto loaded = m_funscriptHandler.getLoaded();
+    foreach(auto track, loaded)
+    {
+        auto action = m_funscriptHandler.getPosition(track, time);
+        if(action != nullptr)
+        {
+            auto channel = TCodeChannelLookup::ToString(track);
+            actions.insert(channel, action);
+            emit channelPositionChange(channel, action->pos, action->speed, ChannelTimeType::Interval);
+        }
+    }
+    return _tcodeHandler->funscriptToTCode(actions);
+}
+
 // Private
-// bool SyncHandler::load(QByteArray funscript)
+
+// FunscriptHandler* SyncHandler::createFunscriptHandler(QString channel, QString funscript)
 // {
-//     return _funscriptHandler->load(funscript);
+//     FunscriptHandler* funscriptHandler = new FunscriptHandler(channel);
+//     if(!funscriptHandler->load(funscript)) {
+//         delete funscriptHandler;
+//         return 0;
+//     } else
+//         _funscriptHandlers.append(funscriptHandler);
+//     return funscriptHandler;
 // }
 
-FunscriptHandler* SyncHandler::createFunscriptHandler(QString channel, QString funscript)
-{
-    FunscriptHandler* funscriptHandler = new FunscriptHandler(channel);
-    if(!funscriptHandler->load(funscript)) {
-        delete funscriptHandler;
-        return 0;
-    } else
-        _funscriptHandlers.append(funscriptHandler);
-    return funscriptHandler;
-}
-
-FunscriptHandler* SyncHandler::createFunscriptHandler(QString channel, QByteArray funscript)
-{
-    FunscriptHandler* funscriptHandler = new FunscriptHandler(channel);
-    if(!funscriptHandler->load(funscript)) {
-        delete funscriptHandler;
-        return 0;
-    } else
-        _funscriptHandlers.append(funscriptHandler);
-    return funscriptHandler;
-}
+// FunscriptHandler* SyncHandler::createFunscriptHandler(QString channel, QByteArray funscript)
+// {
+//     FunscriptHandler* funscriptHandler = new FunscriptHandler(channel);
+//     if(!funscriptHandler->load(funscript)) {
+//         delete funscriptHandler;
+//         return 0;
+//     } else
+//         _funscriptHandlers.append(funscriptHandler);
+//     return funscriptHandler;
+// }
 
 bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadState &loadState)
 {
@@ -603,39 +599,52 @@ bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadS
     if(!libraryItem.zipFile.isEmpty())
         zipFile = new QZipReader(libraryItem.zipFile, QIODevice::ReadOnly);
 #endif
-    auto availibleAxis = TCodeChannelLookup::getChannels();
-    QString mainScript;
-    foreach(auto axisName, availibleAxis)
+    QString mainScript = pathNoExtension + ".funscript";
+    if(QFileInfo::exists(mainScript))
     {
-        auto track = TCodeChannelLookup::getChannel(axisName);
-        if(track->Type == ChannelType::HalfOscillate)
+        // Attempt to load SFMA format first. This will also load the main actions array if there is one.
+        if(!m_funscriptHandler.load(mainScript))
+        {
+            LogHandler::Error("Found main funscript but there was an error loading it");
+            loadState.invalidScripts.append("Script: " + mainScript);
+        }
+    }
+    else
+    {
+        mainScript.clear();
+    }
+    // Start searching for stand alone scripts and override any found in the SFMA.
+    auto channelNames = TCodeChannelLookup::getChannels();
+    foreach(QString channelName, channelNames)
+    {
+        auto track = TCodeChannelLookup::getChannel(channelName);
+        if(track->Type == ChannelType::HalfOscillate || (track->track == Track::Stroke && m_funscriptHandler.isLoaded(Track::Stroke)))
             continue;
-        FunscriptHandler* funscriptHandler = 0;
         // IF we are the stroke channel and media doesnt exist in the XTP library,
         // then loop below will incorrectly think this is the L0 funscript as we
         // dont have the video path here.
         // Check every channel as a work around for now.
-        if(libraryItem.type == LibraryListItemType::External && axisName == TCodeChannelLookup::Stroke())
+        if(libraryItem.type == LibraryListItemType::External && track->track == Track::Stroke)
         {
-            foreach(auto axisName2, availibleAxis)
+            foreach(auto channelName2, channelNames)
             {
-                auto track2 = TCodeChannelLookup::getChannel(axisName2);
-                if(pathNoExtension.endsWith("."+ track2->TrackName))
-                    continue;
+                auto track2 = TCodeChannelLookup::getChannel(channelName2);
+                if(pathNoExtension.endsWith("."+ track2->trackName))
+                    continue;// Looking at this now I have no clue why this is here... need to test external media again.
             }
         }
-        QFileInfo fileInfo(pathNoExtension + (axisName == TCodeChannelLookup::Stroke() ? "" : "."+ track->TrackName) + ".funscript");
-        if(fileInfo.exists())
+        QString filePath = pathNoExtension + (track->track == Track::Stroke ? "" : "."+ track->trackName) + ".funscript";
+        if(QFileInfo::exists(filePath))
         {
+            QFileInfo fileInfo(filePath);
             LogHandler::Debug("Loading track: "+ fileInfo.absoluteFilePath());
-            funscriptHandler = createFunscriptHandler(axisName, fileInfo.absoluteFilePath());
-            if(!funscriptHandler)
+            if(!m_funscriptHandler.load(track->track, fileInfo.absoluteFilePath()))
             {
                 loadState.invalidScripts.append("Script: " + fileInfo.absoluteFilePath());
             }
             else
             {
-                if(axisName == TCodeChannelLookup::Stroke() || mainScript.isEmpty())
+                if(track->track == Track::Stroke || mainScript.isEmpty())
                 {
                     mainScript = fileInfo.absoluteFilePath();
                 }
@@ -646,16 +655,16 @@ bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadS
         {
             QString scriptFileNameNoExtension = XFileUtil::getNameNoExtension(pathNoExtension);
             //fileName.remove(fileName.lastIndexOf('.'), pathTemp.length() -  1);
-            QString trackFileName = scriptFileNameNoExtension + (axisName == TCodeChannelLookup::Stroke() ? "" : "."+ track->TrackName) + ".funscript";
+            QString trackFileName = scriptFileNameNoExtension + (channelName == TCodeChannelLookup::Stroke() ? "" : "."+ track->TrackName) + ".funscript";
             QByteArray data = zipFile->fileData(trackFileName);
             if (!data.isEmpty())
             {
                LogHandler::Debug("Loading track from zip: "+ trackFileName);
-                   funscriptHandler = createFunscriptHandler(axisName, data);
+                   funscriptHandler = createFunscriptHandler(channelName, data);
                if(!funscriptHandler)
                    loadState.invalidScripts.append("Zip script: " + trackFileName);
                else{
-                   if(axisName == TCodeChannelLookup::Stroke() || mainScript.isEmpty())
+                   if(channelName == TCodeChannelLookup::Stroke() || mainScript.isEmpty())
                    {
                        mainScript = trackFileName;
                    }
@@ -665,7 +674,7 @@ bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadS
 #endif
     }
     FunscriptHandler::setModifier(libraryItem.metadata.funscriptModifier);
-    loadState.hasScript = !_funscriptHandlers.isEmpty();
+    loadState.hasScript = m_funscriptHandler.isLoaded();
     if(loadState.hasScript) {
         loadState.mainScript = mainScript;
         emit funscriptLoaded(mainScript);

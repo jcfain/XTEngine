@@ -17,7 +17,7 @@ void TCodeFactory::calculate(QString axisName, double value, QVector<ChannelValu
 {
     if (axisName != TCodeChannelLookup::None()) {
         ChannelModel33* tcodeAxis = TCodeChannelLookup::getChannel(axisName);
-        bool isNegative = tcodeAxis->AxisName.contains(TCodeChannelLookup::NegativeModifier);
+        bool isNegative = tcodeAxis->ChannelName.contains(TCodeChannelLookup::NegativeModifier);
         //auto isPositive = tcodeAxis.AxisName.contains(TCodeChannelLookup::PositiveModifier);
         if (_addedAxis->contains(tcodeAxis->Channel) && _addedAxis->value(tcodeAxis->Channel) == 0 && value != 0)
         {

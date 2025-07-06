@@ -90,14 +90,14 @@ HEADERS += \
     lib/handler/xmediastatehandler.h \
     lib/handler/xtpwebhandler.h \
     lib/interface/networkdevice.h \
-    lib/lookup/AxisDimension.h \
-    lib/lookup/AxisNames.h \
-    lib/lookup/AxisType.h \
+    lib/lookup/ChannelDimension.h \
+    lib/lookup/ChannelType.h \
     lib/lookup/GamepadAxisNames.h \
     lib/lookup/MediaActions.h \
     lib/lookup/SettingMap.h \
     lib/lookup/TCodeCommand.h \
     lib/lookup/TCodeVersion.h \
+    lib/lookup/Track.h \
     lib/lookup/XMedia.h \
     lib/lookup/enum.h \
     lib/lookup/tcodechannellookup.h \

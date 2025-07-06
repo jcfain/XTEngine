@@ -21,7 +21,7 @@ QPixmap HeatMap::drawPixmap(int width, int height, FunscriptHandler* data, qint6
     }
     QMap<qint64, int> actions;
 
-    auto funscript = data->currentFunscript();
+    auto funscript = data->getFunscript();
     if(!funscript) {
         return QPixmap();
     }
@@ -159,6 +159,8 @@ qint64 HeatMap::getMaxHeat(QHash<qint64, int> actions) {
 }
 
 void HeatMap::getSegments(QMap<qint64, int> actions, ActionSegments* actionSegments) {
+    if(actions.isEmpty())
+        return;
     //QList<QMap<qint64, int>> segments;
     int previousAt = 0;
     int previousPos = 0;

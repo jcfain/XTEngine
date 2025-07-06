@@ -3,6 +3,7 @@
 
 #include <QString>
 #include <QHash>
+#include "../lookup/Track.h"
 
 struct FunscriptAction {
     QString channel;
@@ -38,12 +39,26 @@ struct FunscriptMetadata {
     QList<FunscriptChapter> chapters;
 };
 
+struct XFunscript {
+    Track channel;
+    QString trackName;
+    double modifier = 1;
+    qint64 lastActionIndex = -1;
+    qint64 nextActionIndex = 0;
+    int lastActionPos = 0;
+    int lastActionInterval = 0;
+    qint64 min = -1;
+    qint64 max = -1;
+    QList<qint64> atList;
+};
+
 struct Funscript {
     QString version;
-    bool inverted;
-    int range;
+    bool inverted = false;
+    // int range = 1;
     QHash<qint64, int> actions;
     FunscriptMetadata metadata;
+    XFunscript settings;
 };
 
 

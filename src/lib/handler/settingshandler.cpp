@@ -4,8 +4,8 @@
 #include "../tool/qsettings_json.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.51b";
-const float SettingsHandler::XTEVersionNum = 0.51f;
+const QString SettingsHandler::XTEVersion = "0.53b";
+const float SettingsHandler::XTEVersionNum = 0.53f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -730,7 +730,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             locker.unlock();
             setupKeyboardKeyMap();
             auto channel = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke());
-            if(TCodeChannelLookup::getChannels().isEmpty() || !channel || channel->AxisName.isEmpty()) {
+            if(TCodeChannelLookup::getChannels().isEmpty() || !channel || channel->ChannelName.isEmpty()) {
                 TCodeChannelLookup::setAllProfileDefaults();
                 SaveChannelMap();
             }
@@ -804,6 +804,12 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setHTTPChunkSize(httpChunkSize);
             settingsToLoadFrom->remove("httpChunkSize");
             Save();
+        }
+        if(currentVersion < 0.53f) {
+            locker.unlock();
+            MigrateTo52(settingsToLoadFrom);
+            Save();
+            Load();
         }
     }
     settingsChangedEvent(false);
@@ -1643,6 +1649,22 @@ void SettingsHandler::MigrateTo46(QSettings *settingsToLoadFrom)
     }
 }
 
+void SettingsHandler::MigrateTo52(QSettings *settingsToLoadFrom)
+{
+    auto profilekeys = TCodeChannelLookup::getChannelProfiles();
+    foreach(auto profile, profilekeys)
+    {
+        auto channels = TCodeChannelLookup::getChannels(profile);
+        foreach(auto channelName, channels)
+        {
+            auto channel = TCodeChannelLookup::getChannel(channelName, profile);
+            LogHandler::Debug("Migrate channel from name: "+ QString::number((int)channel->track));
+            channel->track = TCodeChannelLookup::FromString(channelName);
+            LogHandler::Debug("to name: "+ QString::number((int)channel->track));
+        }
+    }
+}
+
 void SettingsHandler::changeSelectedTCodeVersion(TCodeVersion key)
 {
     if(TCodeChannelLookup::getSelectedTCodeVersion() != key)
@@ -2113,7 +2135,7 @@ void SettingsHandler::setAxis(QString axis, ChannelModel33 channel)
 void SettingsHandler::addAxis(ChannelModel33 channel)
 {
     QMutexLocker locker(&mutex);
-    TCodeChannelLookup::addChannel(channel.AxisName, channel);
+    TCodeChannelLookup::addChannel(channel.ChannelName, channel);
     settingsChangedEvent(true);
 }
 void SettingsHandler::deleteAxis(QString axis)
@@ -2958,6 +2980,11 @@ void SettingsHandler::setupTCodeCommandMap()
     //         m_tcodeCommandMap.insert(it.key(), defaultCommands[it.key()]);
     //     }
     // }
+}
+
+void SettingsHandler::clearFunscriptLoaded()
+{
+    _funscriptLoaded.clear();
 }
 
 void SettingsHandler::setFunscriptLoaded(QString key, bool loaded)

@@ -15,7 +15,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include "loghandler.h"
 #include "../lookup/enum.h"
-#include "../lookup/AxisNames.h"
+#include "../lookup/Track.h"
 #include "../lookup/tcodechannellookup.h"
 #include "../lookup/GamepadAxisNames.h"
 #include "../lookup/MediaActions.h"
@@ -256,6 +256,7 @@ public:
     static void addNewPlaylist(QString name);
     static void deletePlaylist(QString name);
 
+    static void clearFunscriptLoaded();
     static void setFunscriptLoaded(QString key, bool loaded);
     static bool getFunscriptLoaded(QString key);
 
@@ -460,6 +461,8 @@ private:
     static void MigrateTo32a(QSettings* settingsToLoadFrom);
     static void MigrateTo42(QSettings* settingsToLoadFrom);
     static void MigrateTo46(QSettings* settingsToLoadFrom);
+    static void MigrateTo52(QSettings* settingsToLoadFrom);
+
 
     static void SaveChannelMap(QSettings* settingsToSaveTo = 0);
     static void SaveTCodeCommandMap(QSettings* settingsToSaveTo = 0);

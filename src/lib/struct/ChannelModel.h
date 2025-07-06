@@ -7,9 +7,9 @@
 #include <QVariant>
 #include <QJsonObject>
 #include "ChannelModel33.h"
-#include "../lookup/AxisNames.h"
-#include "../lookup/AxisType.h"
-#include "../lookup/AxisDimension.h"
+#include "../lookup/Track.h"
+#include "../lookup/ChannelType.h"
+#include "../lookup/ChannelDimension.h"
 
 
 struct ChannelModel
@@ -85,7 +85,7 @@ struct ChannelModel
     ChannelModel33 toChannelModel33() {
         ChannelModel33 item;
         item.FriendlyName = FriendlyName;
-        item.AxisName = AxisName;
+        item.ChannelName = AxisName;
         item.Channel = Channel;
         item.Min = Min;
         item.Mid = Mid;
@@ -95,7 +95,7 @@ struct ChannelModel
         item.UserMax = UserMax;
         item.Dimension = Dimension;
         item.Type = Type;
-        item.TrackName = TrackName;
+        item.trackName = TrackName;
         item.MultiplierEnabled = MultiplierEnabled;
         item.DamperEnabled = DamperEnabled;
         item.DamperValue = DamperValue;

@@ -1,5 +1,5 @@
-#ifndef AXISDIMENSION_H
-#define AXISDIMENSION_H
+#ifndef CHANNELDIMENSION_H
+#define CHANNELDIMENSION_H
 #include <QString>
 #include <QMap>
 #include <QVariant>
@@ -27,4 +27,4 @@ const QMap<QString, ChannelDimension> ChannelDimensions =
 };
 
 Q_DECLARE_METATYPE(ChannelDimension);
-#endif // AXISDIMENSION_H
+#endif // CHANNELDIMENSION_H

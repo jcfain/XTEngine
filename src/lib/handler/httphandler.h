@@ -15,7 +15,7 @@
 #include "websockethandler.h"
 #include "medialibraryhandler.h"
 #include "../struct/ConnectionChangedSignal.h"
-#include "../lookup/AxisType.h"
+#include "../lookup/ChannelType.h"
 #include "XTEngine_global.h"
 
 class XTENGINE_EXPORT HttpHandler : public QObject

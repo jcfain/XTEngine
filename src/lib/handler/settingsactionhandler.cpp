@@ -205,9 +205,9 @@ void SettingsActionHandler::media_action(QString action)
     }
     else if (action == actions.ToggleFunscriptInvert)
     {
-        bool inverted = FunscriptHandler::getInverted();
+        bool inverted = FunscriptHandler::getInverted(Track::Stroke);
         emit actionExecuted(action, inverted ? "Funscript normal" : "Funscript inverted",inverted);
-        FunscriptHandler::setInverted(!inverted);
+        FunscriptHandler::setInverted(Track::Stroke, !inverted);
     }
     else if(action == actions.TogglePauseAllDeviceActions)
     {
@@ -224,17 +224,17 @@ void SettingsActionHandler::media_action(QString action)
     else if (action == actions.IncreaseFunscriptModifier || action == actions.DecreaseFunscriptModifier || action == actions.ResetFunscriptModifier)
     {
         if(action == actions.ResetFunscriptModifier) {
-            FunscriptHandler::resetModifier();
+            FunscriptHandler::resetModifier(Track::Stroke);
             emit actionExecuted(action, "Reset funscript modifier", QVariant());
         } else {
             bool increase = action == actions.IncreaseFunscriptModifier;
             QString verb = increase ? "Increase" : "Decrease";
-            double modifier = FunscriptHandler::getModifier();
+            double modifier = FunscriptHandler::getModifier(Track::Stroke);
             double modedModifier = increase ? modifier + SettingsHandler::getFunscriptModifierStep() : modifier - SettingsHandler::getFunscriptModifierStep();
 
             if(modedModifier > 0)
             {
-                FunscriptHandler::setModifier(modedModifier);
+                FunscriptHandler::setModifier(Track::Stroke, modedModifier);
                 emit actionExecuted(action, verb + " funscript modifier to "+ QString::number(modedModifier) + "percent", modedModifier);
             }
             else
@@ -246,7 +246,7 @@ void SettingsActionHandler::media_action(QString action)
             LibraryListItem27* item = XMediaStateHandler::getPlaying();
             if(item)
             {
-                item->metadata.funscriptModifier = FunscriptHandler::getModifier();
+                item->metadata.funscriptModifier = FunscriptHandler::getModifier(Track::Stroke);
                 SettingsHandler::updateLibraryListItemMetaData(*item);
             }
         }

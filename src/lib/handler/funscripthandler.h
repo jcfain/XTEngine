@@ -20,49 +20,53 @@ class XTENGINE_EXPORT FunscriptHandler : public QObject
 {
     Q_OBJECT
 public:
-    FunscriptHandler(QString name , QObject* parent = nullptr);
+    FunscriptHandler(QObject* parent = nullptr);
     ~FunscriptHandler();
-    bool load(QString funscript);
-    bool load(QByteArray funscript);
+    bool load(const QString& funscript);
+    bool load(const QByteArray& funscript);
+    bool load(const Track& channelName, const QString& funscript);
+    bool load(const Track& channelName, const QByteArray& funscript);
+    void unload();
     bool isLoaded();
-    void setLoaded(bool value);
-    bool exists(QString path);
-    Funscript* currentFunscript();
-    static bool getInverted();
-    static void setInverted(bool value);
-    qint64 getMin() const;
-    qint64 getMax() const;
-    qint64 getNext() const;
-    std::shared_ptr<FunscriptAction> getPosition(qint64 at);
-    QString channel() const;
+    bool isLoaded(const Track& channelName);
+    // void setLoaded(const ChannelName& channelName, const bool& value);
+    bool exists(const QString& path);
+    const Funscript* getFunscript();
+    const Funscript* getFunscript(const Track& channelName);
+    qint64 getMin(const Track& channelName) const;
+    qint64 getMax(const Track& channelName) const;
+    qint64 getNext(const Track& channelName) const;
+    std::shared_ptr<FunscriptAction> getPosition(const Track& channelName, const qint64& at);
 
     void play(QString funscript);
     void stop();
 
+    static const QList<Track> getLoaded();
+    static bool getInverted(const Track& channelName);
+    static void setInverted(const bool& value);
+    static void setInverted(const Track& channelName, const bool& value);
+    static double getModifier(const Track& channelName);
     static void setModifier(double percentage);
+    static void setModifier(const Track& channelName, double percentage);
     static void resetModifier();
-    static double getModifier();
+    static void resetModifier(const Track& channelName);
 
 
 private:
-    static QMutex mutexStat;
-    static bool _inverted;
-    QMutex mutex;
-    QString _channel;
-    bool _loaded = false;
+    static inline QMutex mutex;
+    static inline QHash<Track, Funscript> m_funscripts;
+    // static bool _inverted;
+    // QString _channel;
+    bool m_loaded = false;
     bool _firstActionExecuted;
-    void JSonToFunscript(QJsonObject jsonDoc);
-    qint64 findClosest(qint64 value, QList<qint64> a);
-    qint64 lastActionIndex;
-    qint64 nextActionIndex;
-    int lastActionPos;
-    int lastActionInterval;
-    QList<qint64> atList;
-    Funscript* funscript = 0;
-    int n;
-    qint64 _funscriptMin = 0;
-    qint64 _funscriptMax = -1;
-    static double _modifier;
+    QByteArray readFile(QString file);
+    QJsonObject readJson(QByteArray data);
+    void jsonToFunscript(QJsonObject json);
+    void jsonToFunscript(const QJsonObject& json, Funscript& funscript);
+    void jsonToFunscript(const QJsonObject& json, FunscriptMetadata& metadata);
+    void jsonToFunscript(const QJsonObject& json, QHash<qint64, int>& actions);
+    void setFunscriptSettings(const Track& channelName, Funscript& funscript);
+    qint64 findClosest(const qint64& value, const QList<qint64>& a);
 };
 
 #endif // FUNSCRIPTHANDLER_H

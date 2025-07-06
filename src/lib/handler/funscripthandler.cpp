@@ -3,235 +3,316 @@
 #include <qmath.h>
 #include "xmediastatehandler.h"
 
-FunscriptHandler::FunscriptHandler(QString channel, QObject* parent) : QObject(parent)
-{
-    _channel = channel;
-}
+FunscriptHandler::FunscriptHandler(QObject* parent) : QObject(parent) { }
 
 FunscriptHandler::~FunscriptHandler()
 {
-    if(funscript)
-        delete funscript;
-    _loaded = false;
-    SettingsHandler::setFunscriptLoaded(_channel, _loaded);
+    m_loaded = false;
 }
 
-QString FunscriptHandler::channel() const
+bool FunscriptHandler::load(const QString& funscriptString)
 {
-    return _channel;
-}
-
-bool FunscriptHandler::load(QString funscriptString)
-{
-    QMutexLocker locker(&mutex);
-    if (funscriptString == nullptr)
-    {
-        _loaded = false;
-        LogHandler::Error("Loading funscript failed: Empty string" );
-        SettingsHandler::setFunscriptLoaded(_channel, _loaded);
-        return false;
-    }
-    LogHandler::Debug("Funscript load: "+funscriptString);
-    QFile loadFile(funscriptString);
-    lastActionIndex = -1;
-    nextActionIndex = 1;
-    if (!loadFile.open(QIODevice::ReadOnly)) {
-        LogHandler::Warn("Loading funscript failed: Couldn't open funscript file.");
-        _loaded = false;
-        SettingsHandler::setFunscriptLoaded(_channel, _loaded);
-        return false;
-    }
-
+    unload();
     //LogHandler::Debug("funscriptHandler->load "+QString::number((round(timer.nsecsElapsed()) / 1000000)));
-    QByteArray funData = loadFile.readAll();
-    locker.unlock();
+    QByteArray funData = readFile(funscriptString);
+    if(funData.isEmpty())
+        return false;
     return load(funData);
 }
 
-bool FunscriptHandler::load(QByteArray byteArray)
+bool FunscriptHandler::load(const QByteArray& byteArray)
 {
     QMutexLocker locker(&mutex);
-    resetModifier();
-    _firstActionExecuted = false;
-    _funscriptMax = -1;
-    QJsonParseError* error = new QJsonParseError();
-    QJsonDocument doc = QJsonDocument::fromJson(byteArray, error);
-
-    if(doc.isNull()) {
-        LogHandler::Error("Loading funscript JSON failed: " + error->errorString());
-        delete error;
-        _loaded = false;
-        SettingsHandler::setFunscriptLoaded(_channel, _loaded);
+    unload();
+    QJsonObject obj = readJson(byteArray);
+    if(obj.isEmpty())
         return false;
-    }
-    delete error;
-    JSonToFunscript(doc.object());
-    _funscriptMax = atList.length() > 0 ? atList.last() : -1;
-    _funscriptMin = 0;
-    foreach(qint64 value, atList)
-    {
-        if(value > 0)
-        {
-            _funscriptMin = value;
-            break;
-        }
-    }
 
-    _loaded = true;
-    SettingsHandler::setFunscriptLoaded(_channel, _loaded);
+    jsonToFunscript(obj);
+
+    m_loaded = true;
     return true;
 }
 
-Funscript* FunscriptHandler::currentFunscript()
+bool FunscriptHandler::load(const Track &channelName, const QString &funscriptPath)
+{
+    QByteArray funData = readFile(funscriptPath);
+    if(funData.isEmpty())
+        return false;
+
+    QJsonObject obj = readJson(funData);
+    if(obj.isEmpty())
+        return false;
+
+    Funscript funscript;
+    jsonToFunscript(obj, funscript);
+    setFunscriptSettings(channelName, funscript);
+    SettingsHandler::setFunscriptLoaded(TCodeChannelLookup::ToString(channelName), true);
+    m_funscripts[channelName] = funscript;
+    return true;
+}
+
+void FunscriptHandler::unload()
+{
+    m_loaded = false;
+    SettingsHandler::clearFunscriptLoaded();
+    m_funscripts.clear();
+    _firstActionExecuted = false;
+}
+
+///
+/// \brief FunscriptHandler::getFunscript
+/// \return Stroke funscript if exists. If not it returns the first loaded funscript or null
+///
+const Funscript *FunscriptHandler::getFunscript()
+{
+    if(!isLoaded())
+        return 0;
+    QMutexLocker locker(&mutex);
+    if(m_funscripts.contains(Track::Stroke))
+        return &m_funscripts[Track::Stroke];
+    auto loaded = getLoaded();
+    return &m_funscripts[loaded[0]];
+}
+
+///
+/// \brief FunscriptHandler::getFunscript
+/// \param channelName
+/// \return null if channel not found
+///
+const Funscript* FunscriptHandler::getFunscript(const Track& channelName)
 {
     QMutexLocker locker(&mutex);
-    return funscript;
+    if(!m_funscripts.contains(channelName))
+        return 0;
+    return &m_funscripts[channelName];
 }
 
 bool FunscriptHandler::isLoaded()
 {
     QMutexLocker locker(&mutex);
-    return _loaded;
+    return m_loaded;
 }
 
-void FunscriptHandler::setLoaded(bool value)
+bool FunscriptHandler::isLoaded(const Track &channelName)
 {
-    QMutexLocker locker(&mutex);
-    _loaded = value;
-    if(!value && funscript) {
-        delete funscript;
-        funscript = 0;
-    }
-    SettingsHandler::setFunscriptLoaded(_channel, _loaded);
+    return m_funscripts.contains(channelName);
 }
 
-qint64 FunscriptHandler::getMin() const
+// void FunscriptHandler::setLoaded(const Track& channelName, const bool& value)
+// {
+//     QMutexLocker locker(&mutex);
+//     m_loaded = value;
+//     if(!value && m_funscript) {
+//         delete m_funscript;
+//         m_funscript = 0;
+//     }
+//     SettingsHandler::setFunscriptLoaded(_channel, m_loaded);
+// }
+
+qint64 FunscriptHandler::getMin(const Track& channelName) const
 {
-    return _funscriptMin;
+    if(!m_funscripts.contains(channelName))
+        return 0;
+    return m_funscripts.value(channelName).settings.min;
 }
 
-qint64 FunscriptHandler::getMax() const
+qint64 FunscriptHandler::getMax(const Track& channelName) const
 {
-    return _funscriptMax;
+    if(!m_funscripts.contains(channelName))
+        return 0;
+    return m_funscripts.value(channelName).settings.max;
 }
 
-qint64 FunscriptHandler::getNext() const {
-    if(lastActionIndex == nextActionIndex) {
-        int nextAction = lastActionIndex + 1;
+qint64 FunscriptHandler::getNext(const Track& channelName) const
+{
+    if(!m_funscripts.contains(channelName))
+        return 0;
+    const Funscript* funscript = &m_funscripts[channelName];
+    auto atList = funscript->settings.atList;
+    if(funscript->settings.lastActionIndex == funscript->settings.nextActionIndex) {
+        int nextAction = funscript->settings.lastActionIndex + 1;
         if(nextAction >= atList.length())
-            return getMin();
+            return getMin(channelName);
         return atList[nextAction];
     }
-    if(nextActionIndex > -1) {
-        return atList[nextActionIndex];
+    if(funscript->settings.nextActionIndex > -1) {
+        return atList[funscript->settings.nextActionIndex];
     }
-    return getMin();
+    return getMin(channelName);
 }
 
-void FunscriptHandler::JSonToFunscript(QJsonObject json)
+void FunscriptHandler::jsonToFunscript(QJsonObject json)
 {
-    if(!funscript)
-        funscript = new Funscript();
-    if (json.contains("range"))
-        funscript->range = json["range"].toInt();
+    m_funscripts.clear();
+    SettingsHandler::clearFunscriptLoaded();
+    if (json.contains("tracks") && json["tracks"].isObject())
+    {
+        auto jsonTracks = json["tracks"].toObject();
+        auto channels = TCodeChannelLookup::getChannels();
+        foreach(QString channelName, channels)
+        {
+            ChannelModel33* channel = TCodeChannelLookup::getChannel(channelName);
+            if(channel->Type == ChannelType::HalfOscillate)
+                continue;
+            QString trackName = channel->trackName;
+            if(channel->track == Track::Stroke)// Modify for optional stroke in tracks object
+                trackName = "stroke";
+            if(jsonTracks.contains(trackName))
+            {
+                Funscript funscript;
+                jsonToFunscript(jsonTracks[trackName].toObject(), funscript);
+                setFunscriptSettings(channel->track, funscript);
+                m_funscripts.insert(channel->track, funscript);
+                SettingsHandler::setFunscriptLoaded(channelName, true);
+            }
+        }
+    }
+    if(!m_funscripts.contains(Track::Stroke))
+    {
+        Funscript funscript;
+        jsonToFunscript(json, funscript);
+        setFunscriptSettings(Track::Stroke, funscript);
+        SettingsHandler::setFunscriptLoaded(TCodeChannelLookup::Stroke(), true);
+        m_funscripts[Track::Stroke] = funscript;
+    }
+}
+
+void FunscriptHandler::jsonToFunscript(const QJsonObject &json, Funscript &funscript)
+{
+    // if (json.contains("range"))
+    //     funscript.range = json["range"].toInt();
     if (json.contains("version") && json["version"].isString())
-        funscript->version = json["version"].toString();
+        funscript.version = json["version"].toString();
     if (json.contains("inverted") && json["inverted"].isBool())
     {
-        _inverted = json["inverted"].toBool();
-        funscript->inverted = json["inverted"].toBool();
+        funscript.inverted = json["inverted"].toBool();
     }
+    jsonToFunscript(json, funscript.metadata);
+    jsonToFunscript(json, funscript.actions);
+}
+
+void FunscriptHandler::jsonToFunscript(const QJsonObject& json, QHash<qint64, int>& actions)
+{
+    actions.clear();
     if (json.contains("actions") && json["actions"].isArray())
     {
-        funscript->actions.clear();
         QJsonArray actionArray = json["actions"].toArray();
         foreach(QJsonValue value, actionArray)
         {
             QJsonObject obj = value.toObject();
             if (obj.contains("at") && obj.contains("pos"))
             {
-                funscript->actions[(qint64)obj["at"].toDouble()] = obj["pos"].toInt();
+                actions[(qint64)obj["at"].toDouble()] = obj["pos"].toInt();
             }
         }
-        atList = funscript->actions.keys();
-        std::sort(atList.begin(), atList.end());
-        n = atList.length() / sizeof(atList.first());
     }
-
-    QJsonObject metaData = json;
-    if(json.contains("metadata"))
-        metaData = json["metadata"].toObject();
-
-    if (metaData.contains("creator") && metaData["creator"].isString())
-        funscript->metadata.creator = metaData["creator"].toString();
-    if (metaData.contains("original_name") && metaData["original_name"].isString())
-        funscript->metadata.original_name = metaData["original_name"].toString();
-    if (metaData.contains("url") && metaData["url"].isString())
-        funscript->metadata.url = metaData["url"].toString();
-    if (metaData.contains("url_video") && metaData["url_video"].isString())
-        funscript->metadata.url_video = metaData["url_video"].toString();
-    if (metaData.contains("tags") && metaData["tags"].isArray())
-    {
-        QJsonArray tags = metaData["tags"].toArray();;
-        foreach(QJsonValue tag, tags)
-            funscript->metadata.tags.append(tag.toString());
-    }
-    if (metaData.contains("performers") && metaData["performers"].isArray())
-    {
-        QJsonArray performers = metaData["performers"].toArray();;
-        foreach(QJsonValue performer, performers)
-            funscript->metadata.performers.append(performer.toString());
-    }
-    if (metaData.contains("bookmarks") && metaData["bookmarks"].isArray())
-    {
-        QJsonArray bookmarks = metaData["bookmarks"].toArray();;
-        foreach(QJsonValue bookmark, bookmarks) {
-            qint64 milliseconds = QTime::fromString(bookmark.toObject()["time"].toString(), Qt::DateFormat::ISODateWithMs).msecsSinceStartOfDay();
-            funscript->metadata.bookmarks.append({bookmark.toObject()["name"].toString(), milliseconds});
-        }
-    }
-    if (metaData.contains("chapters") && metaData["chapters"].isArray())
-    {
-        QJsonArray chapters = metaData["chapters"].toArray();;
-        foreach(QJsonValue chapter, chapters) {
-            qint64 startTime = QTime::fromString(chapter.toObject()["startTime"].toString(), Qt::DateFormat::ISODateWithMs).msecsSinceStartOfDay();
-            qint64 endTime = QTime::fromString(chapter.toObject()["endTime"].toString(), Qt::DateFormat::ISODateWithMs).msecsSinceStartOfDay();
-            funscript->metadata.chapters.append({chapter.toObject()["name"].toString(), startTime, endTime});
-        }
-    }
-    if (metaData.contains("paid") && metaData["paid"].isBool())
-        funscript->metadata.paid = metaData["paid"].toBool();
-    if (metaData.contains("comment") && metaData["comment"].isString())
-        funscript->metadata.comment = metaData["comment"].toString();
-    if (metaData.contains("original_total_duration_ms"))
-        funscript->metadata.original_total_duration_ms = metaData["original_total_duration_ms"].toString().toLongLong();
 }
 
-bool FunscriptHandler::exists(QString path)
+void FunscriptHandler::jsonToFunscript(const QJsonObject& json, FunscriptMetadata& metadata)
 {
-    QFile fpath(path);
-    return fpath.exists();
+    if(json.contains("metadata")) {
+        QJsonObject metaDataJson = json["metadata"].toObject();
+
+        if (metaDataJson.contains("creator") && metaDataJson["creator"].isString())
+            metadata.creator = metaDataJson["creator"].toString();
+        if (metaDataJson.contains("original_name") && metaDataJson["original_name"].isString())
+            metadata.original_name = metaDataJson["original_name"].toString();
+        if (metaDataJson.contains("url") && metaDataJson["url"].isString())
+            metadata.url = metaDataJson["url"].toString();
+        if (metaDataJson.contains("url_video") && metaDataJson["url_video"].isString())
+            metadata.url_video = metaDataJson["url_video"].toString();
+        if (metaDataJson.contains("tags") && metaDataJson["tags"].isArray())
+        {
+            QJsonArray tags = metaDataJson["tags"].toArray();;
+            foreach(QJsonValue tag, tags)
+                metadata.tags.append(tag.toString());
+        }
+        if (metaDataJson.contains("performers") && metaDataJson["performers"].isArray())
+        {
+            QJsonArray performers = metaDataJson["performers"].toArray();;
+            foreach(QJsonValue performer, performers)
+                metadata.performers.append(performer.toString());
+        }
+        if (metaDataJson.contains("bookmarks") && metaDataJson["bookmarks"].isArray())
+        {
+            QJsonArray bookmarks = metaDataJson["bookmarks"].toArray();;
+            foreach(QJsonValue bookmark, bookmarks) {
+                qint64 milliseconds = QTime::fromString(bookmark.toObject()["time"].toString(), Qt::DateFormat::ISODateWithMs).msecsSinceStartOfDay();
+                metadata.bookmarks.append({bookmark.toObject()["name"].toString(), milliseconds});
+            }
+        }
+        if (metaDataJson.contains("chapters") && metaDataJson["chapters"].isArray())
+        {
+            QJsonArray chapters = metaDataJson["chapters"].toArray();;
+            foreach(QJsonValue chapter, chapters) {
+                qint64 startTime = QTime::fromString(chapter.toObject()["startTime"].toString(), Qt::DateFormat::ISODateWithMs).msecsSinceStartOfDay();
+                qint64 endTime = QTime::fromString(chapter.toObject()["endTime"].toString(), Qt::DateFormat::ISODateWithMs).msecsSinceStartOfDay();
+                metadata.chapters.append({chapter.toObject()["name"].toString(), startTime, endTime});
+            }
+        }
+        if (metaDataJson.contains("paid") && metaDataJson["paid"].isBool())
+            metadata.paid = metaDataJson["paid"].toBool();
+        if (metaDataJson.contains("comment") && metaDataJson["comment"].isString())
+            metadata.comment = metaDataJson["comment"].toString();
+        if (metaDataJson.contains("original_total_duration_ms"))
+            metadata.original_total_duration_ms = metaDataJson["original_total_duration_ms"].toString().toLongLong();
+    }
 }
 
-std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(qint64 millis)
+void FunscriptHandler::setFunscriptSettings(const Track& channelName, Funscript &funscript)
+{
+    funscript.settings.channel = channelName;
+    funscript.settings.trackName = TCodeChannelLookup::ToString(channelName);
+    funscript.settings.lastActionIndex = -1;
+    funscript.settings.nextActionIndex = 1;
+    funscript.settings.atList = funscript.actions.keys();
+    std::sort(funscript.settings.atList.begin(), funscript.settings.atList.end());
+    funscript.settings.max = funscript.settings.atList.length() > 0 ? funscript.settings.atList.last() : -1;
+    funscript.settings.min = 0;
+    foreach(qint64 value, funscript.settings.atList)
+    {
+        if(value > 0)
+        {
+            funscript.settings.min = value;
+            return;
+        }
+    }
+}
+
+bool FunscriptHandler::exists(const QString& path)
+{
+    return QFileInfo::exists(path);
+}
+
+const QList<Track> FunscriptHandler::getLoaded()
+{
+    return m_funscripts.keys();
+}
+
+std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& channelName, const qint64& at)
 {
     QMutexLocker locker(&mutex);
-    millis += SettingsHandler::getLiveOffSet() + SettingsHandler::getSmartOffSet();
+    qint64 millis = at + SettingsHandler::getLiveOffSet() + SettingsHandler::getSmartOffSet();
+    if(!m_funscripts.contains(channelName))
+        return nullptr;
+    Funscript* funscript = &m_funscripts[channelName];
+    auto atList = funscript->settings.atList;
     qint64 closestMillis = findClosest(millis, atList);
     if(closestMillis == -1)
         return nullptr;
-    nextActionIndex = atList.indexOf(closestMillis) + 1;
-    if(nextActionIndex >= atList.length())
+    funscript->settings.nextActionIndex = atList.indexOf(closestMillis) + 1;
+    if(funscript->settings.nextActionIndex >= atList.length())
         return nullptr;
-    qint64 nextMillis = atList[nextActionIndex];
+    qint64 nextMillis = atList[funscript->settings.nextActionIndex];
     //LogHandler::Debug("millis: "+ QString::number(millis));
     //LogHandler::Debug("closestMillis: "+ QString::number(closestMillis));
     //LogHandler::Debug("lastActionIndex: "+ QString::number(lastActionIndex));
     //LogHandler::Debug("nextActionIndex: "+ QString::number(nextActionIndex));
 //    LogHandler::Debug("nextMillis: "+ QString::number(nextMillis));
-    if ((lastActionIndex != nextActionIndex && millis >= closestMillis) || lastActionIndex == -1)
+    if ((funscript->settings.lastActionIndex != funscript->settings.nextActionIndex && millis >= closestMillis) || funscript->settings.lastActionIndex == -1)
     {
-        int interval = lastActionIndex == -1 ? closestMillis : nextMillis - closestMillis;
+        int interval = funscript->settings.lastActionIndex == -1 ? closestMillis : nextMillis - closestMillis;
         if(!_firstActionExecuted)
         {
             _firstActionExecuted = true;
@@ -248,19 +329,17 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(qint64 millis)
 //        LogHandler::Debug("lastActionIndex: "+ QString::number(lastActionIndex));
 //        LogHandler::Debug("nextActionIndex: "+ QString::number(nextActionIndex));
         //LogHandler::Debug("nextActionPos: "+ QString::number(funscript->actions.value(nextMillis)));
-        qint64 executionMillis = lastActionIndex == -1 ? closestMillis : nextMillis;
-        if(!funscript)
-            return nullptr;
+        qint64 executionMillis = funscript->settings.lastActionIndex == -1 ? closestMillis : nextMillis;
         int pos = funscript->actions.value(executionMillis);
-        if(lastActionIndex > -1 && _modifier != 1)
+        if(funscript->settings.lastActionIndex > -1 && funscript->settings.modifier != 1)
         {
             //int ogPos = pos;
-            double distance = pos - lastActionPos;
+            double distance = pos - funscript->settings.lastActionPos;
             double amplitude = distance / 2.0;
-            if(_modifier > 1)
-                pos = qRound(pos + (amplitude * _modifier) - amplitude);
-            else if(_modifier > 0)
-                pos = qRound(pos - (amplitude * _modifier) - amplitude);
+            if(funscript->settings.modifier > 1)
+                pos = qRound(pos + (amplitude * funscript->settings.modifier) - amplitude);
+            else if(funscript->settings.modifier > 0)
+                pos = qRound(pos - (amplitude * funscript->settings.modifier) - amplitude);
             else
                 pos = abs(amplitude);
             pos = XMath::constrain(pos, 0, 100);
@@ -278,73 +357,142 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(qint64 millis)
                                   interval - ((interval * speedmodifier) - interval));
             LogHandler::Debug("interval after: "+ QString::number(interval));
         }
-        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { _channel, executionMillis, pos, interval, lastActionPos, lastActionInterval });
+        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { funscript->settings.trackName, executionMillis, pos, interval, funscript->settings.lastActionPos, funscript->settings.lastActionInterval });
         //LogHandler::Debug("nextAction.speed: "+ QString::number(nextAction->speed));
-        lastActionIndex = nextActionIndex;
-        lastActionPos = funscript->actions.value(executionMillis);
-        lastActionInterval = interval;
+        funscript->settings.lastActionIndex = funscript->settings.nextActionIndex;
+        funscript->settings.lastActionPos = funscript->actions.value(executionMillis);
+        funscript->settings.lastActionInterval = interval;
         return nextAction;
     }
     return nullptr;
 }
 
-qint64 FunscriptHandler::findClosest(qint64 value, QList<qint64> a) {
+
+QByteArray FunscriptHandler::readFile(QString file)
+{
+    if (file.isEmpty())
+    {
+        LogHandler::Error("Loading funscript failed: Empty string" );
+        return QByteArray();
+    }
+    LogHandler::Debug("Funscript load: "+file);
+    QFile loadFile(file);
+    if (!loadFile.open(QIODevice::ReadOnly)) {
+        LogHandler::Warn("Loading funscript failed: Couldn't open funscript file.");
+        return QByteArray();
+    }
+
+    //LogHandler::Debug("funscriptHandler->load "+QString::number((round(timer.nsecsElapsed()) / 1000000)));
+    return loadFile.readAll();
+}
+
+QJsonObject FunscriptHandler::readJson(QByteArray data)
+{
+    if (data.isEmpty())
+    {
+        LogHandler::Error("Loading funscript failed: Empty byte array" );
+        return QJsonObject();
+    }
+
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
+
+    if(doc.isNull()) {
+        LogHandler::Error("Loading funscript JSON failed: " + error.errorString());
+        return QJsonObject();
+    }
+    return doc.object();
+}
+
+qint64 FunscriptHandler::findClosest(const qint64& value, const QList<qint64>& a)
+{
 
     if(a.length() == 0)
         return -1;
-      if(value < a[0]) {
-          return a[0];
-      }
-      if(value > a[a.length()-1]) {
-          return a[a.length()-1];
-      }
+    if(value < a[0])
+    {
+        return a[0];
+    }
+    if(value > a[a.length()-1])
+    {
+        return a[a.length()-1];
+    }
 
-      int lo = 0;
-      int hi = a.length() - 1;
+    int lo = 0;
+    int hi = a.length() - 1;
 
-      while (lo <= hi) {
-          int mid = (hi + lo) / 2;
+    while (lo <= hi)
+    {
+        int mid = (hi + lo) / 2;
 
-          if (value < a[mid]) {
-              hi = mid - 1;
-          } else if (value > a[mid]) {
-              lo = mid + 1;
-          } else {
-              return a[mid];
-          }
-      }
-      // lo == hi + 1
-      return (a[lo] - value) < (value - a[hi]) ? a[lo] : a[hi];
-  }
+        if (value < a[mid]) {
+            hi = mid - 1;
+        } else if (value > a[mid]) {
+            lo = mid + 1;
+        } else {
+            return a[mid];
+        }
+    }
+    // lo == hi + 1
+    return (a[lo] - value) < (value - a[hi]) ? a[lo] : a[hi];
+}
 
 
 //static
-bool FunscriptHandler::getInverted()
+
+void FunscriptHandler::setInverted(const bool& value)
 {
-    QMutexLocker locker(&mutexStat);
-    return _inverted;
+    QMutexLocker locker(&mutex);
+    auto loaded = getLoaded();
+    foreach (auto name, loaded) {
+        m_funscripts[name].inverted = value;
+    }
 }
-void FunscriptHandler::setInverted(bool value)
+
+bool FunscriptHandler::getInverted(const Track& channelName)
 {
-    QMutexLocker locker(&mutexStat);
-    _inverted = value;
+    QMutexLocker locker(&mutex);
+    return m_funscripts.contains(channelName) ? m_funscripts.value(channelName).inverted : false;
+}
+
+void FunscriptHandler::setInverted(const Track& channelName, const bool& value)
+{
+    QMutexLocker locker(&mutex);
+    if(m_funscripts.contains(channelName)) {
+        m_funscripts[channelName].inverted = value;
+    }
 }
 
 void FunscriptHandler::setModifier(double percentage)
 {
-    _modifier = percentage / 100.0;
-}
-
-double FunscriptHandler::getModifier()
-{
-    return _modifier * 100.0;
+    QMutexLocker locker(&mutex);
+    auto loaded = getLoaded();
+    foreach (auto name, loaded) {
+        m_funscripts[name].settings.modifier = percentage / 100.0;
+    }
 }
 
 void FunscriptHandler::resetModifier()
 {
-    _modifier = 1.0;
+    setModifier(1.0);
 }
 
-double FunscriptHandler::_modifier = 1.0;
-bool FunscriptHandler::_inverted = false;
-QMutex FunscriptHandler::mutexStat;
+
+void FunscriptHandler::setModifier(const Track& channelName, double percentage)
+{
+    QMutexLocker locker(&mutex);
+    if(m_funscripts.contains(channelName)) {
+        m_funscripts[channelName].settings.modifier = percentage / 100.0;
+    }
+}
+
+double FunscriptHandler::getModifier(const Track& channelName)
+{
+    QMutexLocker locker(&mutex);
+    return m_funscripts.contains(channelName) ? m_funscripts.value(channelName).settings.modifier * 100.0 : 1;
+}
+
+void FunscriptHandler::resetModifier(const Track& channelName)
+{
+    setModifier(channelName, 1.0);
+}

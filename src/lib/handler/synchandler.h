@@ -82,15 +82,15 @@ public:
     bool isPlayingVR();
     QString getPlayingStandAloneScript();
 
-    FunscriptHandler* getFunscriptHandler();
-    FunscriptHandler *getFunscriptHandler(QString channel);
+    const Funscript *getFunscript();
+    const Funscript *getFunscript(Track channel);
 
     void buildScriptItem(LibraryListItem27 &item, QString altScript);
 
 private:
     TCodeHandler* _tcodeHandler;
-    //FunscriptHandler* _funscriptHandler = 0;
-    QList<FunscriptHandler*> _funscriptHandlers;
+    FunscriptHandler m_funscriptHandler;
+    // QList<FunscriptHandler*> _funscriptHandlers;
     InputDeviceHandler* _inputDeviceHandler = 0;
     //OutputDeviceHandler* _outputDeviceHandler = 0;
 
@@ -120,8 +120,10 @@ private:
     SyncLoadState load(const QString& funscript);
     //bool load(QByteArray funscript);
     bool loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadState &loadState);
-    FunscriptHandler* createFunscriptHandler(QString channel, QString funscript);
-    FunscriptHandler* createFunscriptHandler(QString channel, QByteArray funscript);
+    // FunscriptHandler* createFunscriptHandler(QString channel, QString funscript);
+    // FunscriptHandler* createFunscriptHandler(QString channel, QByteArray funscript);
+
+    QString buildChannelActions(qint64 time);
 
     void sendPulse(qint64 currentMsecs, qint64 &nextPulseTime);
 
