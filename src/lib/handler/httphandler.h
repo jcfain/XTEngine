@@ -93,9 +93,9 @@ private:
     QString m_hostAddress;
     QFuture<QHttpServerResponse> m_hlsFuture;
 
-    QJsonObject createMediaObject(LibraryListItem27 libraryListItem, QString hostAddress);
-    QJsonObject createDeoObject(LibraryListItem27 libraryListItem, QString hostAddress);
-    QJsonObject createHeresphereObject(LibraryListItem27 libraryListItem, QString hostAddress);
+    QJsonObject createMediaObject(const LibraryListItem27& libraryListItem, QString hostAddress);
+    QJsonObject createDeoObject(const LibraryListItem27& libraryListItem, QString hostAddress);
+    QJsonObject createHeresphereObject(const LibraryListItem27&  libraryListItem, QString hostAddress);
     QJsonObject createSelectedChannels();
     QJsonDocument createError(QString message);
     void on_webSocketClient_Connected(QWebSocket* client);

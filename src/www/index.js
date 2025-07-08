@@ -1,4 +1,4 @@
-const webVersion = "v0.472b";
+const webVersion = "v0.53b";
 var debugMode = false;
 
 var DeviceType = {
@@ -1960,7 +1960,9 @@ function updateScriptStatus(libraryItem, mediaNode, displayNameNode) {
 	if(!displayNameNode)
 		return undefined;
 	displayNameNode.innerText = libraryItem.displayName;
-	if (libraryItem.isMFS && libraryItem.hasScript) {
+	if(libraryItem.metaData.isSFMA) {
+		mediaNode.classList.add("media-item-sfma");
+	} else if (libraryItem.isMFS && libraryItem.hasScript) {
 		mediaNode.classList.add("media-item-mfs");
 	} else if(libraryItem.isMFS && !libraryItem.hasScript) {
 		mediaNode.classList.remove("media-item-mfs");

@@ -879,17 +879,15 @@ void HttpHandler::handleVideoList(const QHttpServerRequest &request, QHttpServer
     responder.write(QJsonDocument(media), headers, QHttpServerResponse::StatusCode::Ok);
 }
 
-QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostAddress)
+QJsonObject HttpHandler::createMediaObject(const LibraryListItem27& item, QString hostAddress)
 {
     //VideoFormat videoFormat;
     QJsonObject object;
     object["id"] = item.ID;
     object["type"] = (int)item.type;
     object["name"] = item.nameNoExtension;
-    if(item.metadata.isMFS)
-        object["displayName"] = "(MFS) " + item.nameNoExtension;
-    else
-        object["displayName"] = item.nameNoExtension;
+    QString displayText = (item.metadata.isSFMA && item.metadata.isMFS ? "(SFMA) (MFS) " : item.metadata.isSFMA ? "(SFMA) " : item.metadata.isMFS ? "(MFS) " : "") + item.nameNoExtension;
+    object["displayName"] = displayText;
     QString relativePath = item.path;
     relativePath = relativePath.replace(item.libraryPath +"/", "");
     object["path"] = hostAddress + "media/" + QString(QUrl::toPercentEncoding(relativePath));
@@ -925,9 +923,6 @@ QJsonObject HttpHandler::createMediaObject(LibraryListItem27 item, QString hostA
     object["loaded"] = false;
     object["playing"] = false;
     object["managedThumb"] = item.managedThumb;
-
-    if(item.metadata.isMFS)
-        object["displayName"] = "(MFS) " + item.nameNoExtension;
     // Metadata
 
     QJsonObject metadata = LibraryListItemMetaData258::toJson(item.metadata);
@@ -979,14 +974,15 @@ void HttpHandler::handleHereSphere(const QHttpServerRequest &request, QHttpServe
     headers.append("HereSphere-JSON-Version", QString("1"));
     responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
 }
-QJsonObject HttpHandler::createHeresphereObject(LibraryListItem27 item, QString hostAddress)
+QJsonObject HttpHandler::createHeresphereObject(const LibraryListItem27& item, QString hostAddress)
 {
     QJsonObject root;
-    QJsonArray encodings;
-    QJsonObject encodingsObj;
-    QJsonArray videoSources;
-    QJsonObject videoSource;
-    QString relativePath = item.path.replace(item.libraryPath, "");
+    // QJsonArray encodings;
+    // QJsonObject encodingsObj;
+    // QJsonArray videoSources;
+    // QJsonObject videoSource;
+    QString path = item.path;
+    QString relativePath = path.replace(item.libraryPath, "");
 //    videoSource["resolution"] = 1080;
 //    videoSource["url"] = hostAddress + "video" + QString(QUrl::toPercentEncoding(relativePath));
 //    videoSources.append(videoSource);
@@ -1001,7 +997,7 @@ QJsonObject HttpHandler::createHeresphereObject(LibraryListItem27 item, QString 
     root["dateAdded"] = item.modifiedDate.toString("YYYY-MM-DD");
     root["duration"] = (double)item.duration;
     root["url"] = hostAddress + "video/" + relativePath;
-    QString relativeThumb = item.thumbFile.isEmpty() ? "://images/icons/error.png" : item.thumbFile.replace(SettingsHandler::getSelectedThumbsDir(), "");
+    QString relativeThumb = item.thumbFile.isEmpty() ? "://images/icons/error.png" : QString(item.thumbFile).replace(SettingsHandler::getSelectedThumbsDir(), "");
     root["thumbnailImage"] = hostAddress + "thumb/" + relativeThumb;
     //root["id"] = item.nameNoExtension;
     root["projection"] = _mediaLibraryHandler->getScreenType(item.path);
@@ -1066,14 +1062,14 @@ void HttpHandler::handleDeo(const QHttpServerRequest &request, QHttpServerRespon
     QHttpHeaders headers;
     responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
 }
-QJsonObject HttpHandler::createDeoObject(LibraryListItem27 item, QString hostAddress)
+QJsonObject HttpHandler::createDeoObject(const LibraryListItem27& item, QString hostAddress)
 {
     QJsonObject root;
-    QJsonArray encodings;
-    QJsonObject encodingsObj;
-    QJsonArray videoSources;
-    QJsonObject videoSource;
-    QString relativePath = item.path.replace(item.libraryPath, "");
+    // QJsonArray encodings;
+    // QJsonObject encodingsObj;
+    // QJsonArray videoSources;
+    // QJsonObject videoSource;
+    QString relativePath = QString(item.path).replace(item.libraryPath, "");
 //    videoSource["resolution"] = 1080;
 //    videoSource["url"] = hostAddress + "video" + QString(QUrl::toPercentEncoding(relativePath));
 //    videoSources.append(videoSource);
@@ -1091,7 +1087,7 @@ QJsonObject HttpHandler::createDeoObject(LibraryListItem27 item, QString hostAdd
     //fisheye" - 180 degrees fisheye mesh, mkx200, "mkx200" - 200 degrees fisheye mesh
     root["stereoMode"] = _mediaLibraryHandler->getStereoMode(item.path);
 //    root["skipIntro"] = 0;
-    QString relativeThumb = item.thumbFile.isEmpty() ? "://images/icons/error.png" : item.thumbFile.replace(SettingsHandler::getSelectedThumbsDir(), "");
+    QString relativeThumb = item.thumbFile.isEmpty() ? "://images/icons/error.png" : QString(item.thumbFile).replace(SettingsHandler::getSelectedThumbsDir(), "");
     root["thumbnailUrl"] = hostAddress + "thumb/" + relativeThumb;
     return root;
 }
@@ -1167,9 +1163,6 @@ QHttpServerResponse HttpHandler::handleThumbFile(const QHttpServerRequest &reque
 //        // Global thumb directory thumbs.
 //        thumbToSend = thumbDirFile;
 //    }
-    if(thumbToSend.contains("BELLESEXUAL")) {
-        LogHandler::Debug("");
-    }
     int quality = SettingsHandler::getHttpThumbQuality();
     if(quality > -1)
     {

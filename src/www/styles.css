@@ -512,6 +512,36 @@ input:hover:not(.range-input) {
     box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
 }
 
+.media-item-sfma:not(.media-item-playing):hover {
+    color: yellow;
+    box-shadow: -1px 1px 5px 0px yellow, 1px -1px 5px 0px orange, 1px 1px 5px 0px red, -1px -1px 5px 0px yellow;
+}
+
+.media-item-sfma:not(.media-item-playing) a {
+    color: yellow;
+}
+
+.media-item-sfma:not(.media-context):not(.media-item-playing):hover a {
+    color: yellow;
+}
+.media-item-sfma.media-item-playing {
+    color: cornflowerblue;
+    box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
+}
+
+.media-item-sfma-noscript:not(.media-item-playing) a {
+    color: cyan;
+}
+
+.media-item-sfma-noscript:not(.media-context):not(.media-item-playing):hover a {
+    color: lightcyan;
+}
+
+.media-item-sfma-noscript.media-item-playing {
+    color: cornflowerblue;
+    box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
+}
+
 .media-item-playing {
     color: cornflowerblue;
     box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px cornflowerblue;

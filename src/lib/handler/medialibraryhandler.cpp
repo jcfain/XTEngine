@@ -1609,9 +1609,10 @@ bool MediaLibraryHandler::discoverMultiAxis(LibraryListItem27 &item) {
     if(!sfmaTracks.empty())
     {
         item.metadata.isSFMA = true;
+        item.metadata.toolTip += "SFMA tracks:";
         foreach(auto track, sfmaTracks)
         {
-            item.metadata.toolTip += "SFMA tracks: \n";
+            item.metadata.toolTip += "\n";
             item.metadata.toolTip += track.track;
             item.metadata.MFSTracks << track.track;
         }
@@ -1620,8 +1621,13 @@ bool MediaLibraryHandler::discoverMultiAxis(LibraryListItem27 &item) {
     {
         if (QFileInfo::exists(item.pathNoExtension + scriptExtension))
         {
-            item.metadata.isMFS = true;
-            item.metadata.toolTip += "MFS tracks: \n";
+            if(!item.metadata.isMFS)
+            {
+                item.metadata.isMFS = true;
+                auto header = QString(item.metadata.isSFMA ? "\n " : "") + "MFS tracks:";
+                item.metadata.toolTip += header;
+            }
+            item.metadata.toolTip += "\n";
             item.metadata.toolTip += item.pathNoExtension + scriptExtension;
             item.metadata.MFSScripts << item.pathNoExtension + scriptExtension;
             item.metadata.MFSTracks << scriptExtension.remove("funscript").remove(".");
