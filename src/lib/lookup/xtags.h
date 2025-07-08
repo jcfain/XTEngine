@@ -7,6 +7,7 @@
 class XTags {
 public:
     const static inline QString MFS = "mfs";
+    const static inline QString SFMA = "sfma";
     const static inline QString VR = "vr";
     const static inline QString VIDEO_2D = "2d";
     const static inline QString AUDIO = "audio";
@@ -90,7 +91,8 @@ private:
         HAS_SCRIPT,
         VIEWED,
         UNVIEWED,
-        ALTSCRIPT
+        ALTSCRIPT,
+        SFMA
     };
     const QStringList m_builtInSmartTags = {
         PMV,

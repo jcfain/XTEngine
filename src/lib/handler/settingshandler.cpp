@@ -4,8 +4,8 @@
 #include "../tool/qsettings_json.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.53b";
-const float SettingsHandler::XTEVersionNum = 0.53f;
+const QString SettingsHandler::XTEVersion = "0.54b";
+const float SettingsHandler::XTEVersionNum = 0.54f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -808,6 +808,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.53f) {
             locker.unlock();
             MigrateTo52(settingsToLoadFrom);
+            Save();
+            Load();
+        }
+        if(currentVersion < 0.54f) {
+            locker.unlock();
+            setForceMetaDataFullProcess(true);
+            m_xTags.addTag(XTags::SFMA);
             Save();
             Load();
         }

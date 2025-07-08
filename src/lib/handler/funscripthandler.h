@@ -51,6 +51,11 @@ public:
     static void resetModifier();
     static void resetModifier(const Track& channelName);
 
+    static bool isSFMA(QString libraryItemMediaPath);
+    static QList<ScriptInfo> getSFMATracks(QString libraryItemMediaPath);
+    static bool isMFS(QString libraryItemMediaPath);
+    static QList<ScriptInfo> getMFSTracks(QString libraryItemMediaPath);
+
 
 private:
     static inline QMutex mutex;
@@ -59,8 +64,8 @@ private:
     // QString _channel;
     bool m_loaded = false;
     bool _firstActionExecuted;
-    QByteArray readFile(QString file);
-    QJsonObject readJson(QByteArray data);
+    static QByteArray readFile(QString file);
+    static QJsonObject readJson(QByteArray data);
     void jsonToFunscript(QJsonObject json);
     void jsonToFunscript(const QJsonObject& json, Funscript& funscript);
     void jsonToFunscript(const QJsonObject& json, FunscriptMetadata& metadata);

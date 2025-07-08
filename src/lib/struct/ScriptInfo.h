@@ -15,7 +15,8 @@ enum class ScriptType {
 enum class ScriptContainerType {
     BASE,
     MFS,
-    ZIP
+    ZIP,
+    SFMA
 };
 
 struct ScriptInfo {

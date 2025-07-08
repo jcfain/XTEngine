@@ -5,6 +5,7 @@
 #include "../lookup/xtags.h"
 #include "../tool/file-util.h"
 #include "../struct/ScriptInfo.h"
+#include "funscripthandler.h"
 
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     : QObject(parent)
@@ -682,17 +683,22 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
 
         if(item.type != LibraryListItemType::PlaylistInternal)
         {
-            if(!item.metadata.isMFS && discoverMFS(item))
+            auto isMFS = item.metadata.isMFS;
+            auto isSFMA = item.metadata.isMFS;
+            if(discoverMultiAxis(item))
             {
-                metadataChanged = true;
-                if(!rolesChanged.contains(Qt::DisplayRole))
-                    rolesChanged.append(Qt::DisplayRole);
-                if(!rolesChanged.contains(Qt::ToolTipRole))
-                    rolesChanged.append(Qt::ToolTipRole);
-                if(!rolesChanged.contains(Qt::ForegroundRole))
-                    rolesChanged.append(Qt::ForegroundRole);
-                if(!rolesChanged.contains(Qt::FontRole))
-                    rolesChanged.append(Qt::FontRole);
+                if((isMFS != item.metadata.isMFS) || (isSFMA != item.metadata.isSFMA))
+                {
+                    metadataChanged = true;
+                    if(!rolesChanged.contains(Qt::DisplayRole))
+                        rolesChanged.append(Qt::DisplayRole);
+                    if(!rolesChanged.contains(Qt::ToolTipRole))
+                        rolesChanged.append(Qt::ToolTipRole);
+                    if(!rolesChanged.contains(Qt::ForegroundRole))
+                        rolesChanged.append(Qt::ForegroundRole);
+                    if(!rolesChanged.contains(Qt::FontRole))
+                        rolesChanged.append(Qt::FontRole);
+                }
             }
 
             if(item.metadata.isMFS && !item.metadata.tags.contains(XTags::MFS)) {
@@ -701,6 +707,14 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
             }
             else if(!item.metadata.isMFS && item.metadata.tags.contains(XTags::MFS)) {
                 item.metadata.tags.removeAll(XTags::MFS);
+                metadataChanged = true;
+            }
+            if(item.metadata.isSFMA && !item.metadata.tags.contains(XTags::SFMA)) {
+                item.metadata.tags.append(XTags::SFMA);
+                metadataChanged = true;
+            }
+            else if(!item.metadata.isSFMA && item.metadata.tags.contains(XTags::SFMA)) {
+                item.metadata.tags.removeAll(XTags::SFMA);
                 metadataChanged = true;
             }
 
@@ -1584,25 +1598,36 @@ bool MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
 //     }
 //     return item.metadata.isMFS;
 // }
-bool MediaLibraryHandler::discoverMFS(LibraryListItem27 &item) {
+bool MediaLibraryHandler::discoverMultiAxis(LibraryListItem27 &item) {
     LogHandler::Debug("Discover MFS: "+item.ID);
     QStringList funscripts = TCodeChannelLookup::getValidMFSExtensions();
     item.metadata.isMFS = false;
     item.metadata.toolTip.clear();
     item.metadata.MFSScripts.clear();
     item.metadata.MFSTracks.clear();
+    auto sfmaTracks = FunscriptHandler::getSFMATracks(item.path);
+    if(!sfmaTracks.empty())
+    {
+        item.metadata.isSFMA = true;
+        foreach(auto track, sfmaTracks)
+        {
+            item.metadata.toolTip += "SFMA tracks: \n";
+            item.metadata.toolTip += track.track;
+            item.metadata.MFSTracks << track.track;
+        }
+    }
     foreach(auto scriptExtension, funscripts)
     {
         if (QFileInfo::exists(item.pathNoExtension + scriptExtension))
         {
             item.metadata.isMFS = true;
-            item.metadata.toolTip += "\n";
+            item.metadata.toolTip += "MFS tracks: \n";
             item.metadata.toolTip += item.pathNoExtension + scriptExtension;
             item.metadata.MFSScripts << item.pathNoExtension + scriptExtension;
             item.metadata.MFSTracks << scriptExtension.remove("funscript").remove(".");
         }
     }
-    return item.metadata.isMFS;
+    return item.metadata.isMFS || item.metadata.isSFMA;
 }
 
 void MediaLibraryHandler::cleanGlobalThumbDirectory() {
@@ -1726,13 +1751,13 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
     if(item.type == LibraryListItemType::FunscriptType || item.type == LibraryListItemType::PlaylistInternal)
         return;
     QList<ScriptInfo> funscriptsWithMedia;
-    QString path = item.path;
-    if(!QFileInfo::exists(path)) {
+    QString libraryItemMediaPath = item.path;
+    if(!QFileInfo::exists(libraryItemMediaPath)) {
         LogHandler::Error("No file found when searching for alternate scripts: "+ item.path);
         item.metadata.scripts = {};
         return;
     }
-    QFileInfo fileInfo(path);
+    QFileInfo fileInfo(libraryItemMediaPath);
     QString location = fileInfo.path();
     QDirIterator scripts(location, QStringList() << "*.funscript"
 #if BUILD_QT5
@@ -1740,30 +1765,30 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
 #endif
                          , QDir::Files);
 
-    QString fileName = XFileUtil::getNameNoExtension(path);
+    QString fileName = XFileUtil::getNameNoExtension(libraryItemMediaPath);
     auto channels = TCodeChannelLookup::getChannels();
     ScriptContainerType containerType = ScriptContainerType::BASE;
     LogHandler::Debug("Searching for alternative scripts for: "+ fileName);
     while (scripts.hasNext())
     {
         containerType = ScriptContainerType::BASE;
-        QString filepath = scripts.next();
+        QString scriptFilePath = scripts.next();
         // QFileInfo scriptInfo(filepath);
         QString trackname = "";
-        auto baseName = XFileUtil::getNameNoExtension(filepath);
+        auto baseName = XFileUtil::getNameNoExtension(scriptFilePath);
 #if BUILD_QT5
         if(filepath.endsWith(".zip", Qt::CaseInsensitive)) {
             containerType = ScriptContainerType::ZIP;
         }
 #endif
-        if(filepath == item.script
+        if(scriptFilePath == item.script
 #if BUILD_QT5
             || filepath == item.zipFile
 #endif
             )
         {
             LogHandler::Debug("Is default script");
-            funscriptsWithMedia.push_front({"Default", baseName, filepath, trackname, ScriptType::MAIN, containerType, "" });
+            funscriptsWithMedia.push_front({"Default", baseName, scriptFilePath, trackname, ScriptType::MAIN, containerType, "" });
             continue;
         }
         //Is alternate script?
@@ -1781,7 +1806,7 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
                 auto track = TCodeChannelLookup::getChannel(channel);
                 if(channel == TCodeChannelLookup::Stroke() || track->Type == ChannelType::HalfOscillate || track->trackName.isEmpty())
                     continue;
-                if(filepath.endsWith("."+track->trackName+".funscript") && !path.endsWith("."+track->trackName+".funscript")) {
+                if(scriptFilePath.endsWith("."+track->trackName+".funscript") && !libraryItemMediaPath.endsWith("."+track->trackName+".funscript")) {
                     LogHandler::Debug("Is MFS track: " + track->trackName);
                     trackname = track->trackName;
                     containerType = ScriptContainerType::MFS;
@@ -1791,21 +1816,14 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
             if(containerType == ScriptContainerType::MFS)
                 baseName = XFileUtil::getNameNoExtension(baseName);
             if(containerType == ScriptContainerType::MFS && !baseName.compare(fileName, Qt::CaseInsensitive)) {
-                // bool hasTrack = std::find_if(funscriptsWithMedia.begin(), funscriptsWithMedia.end(), [trackname](const ScriptInfo& value) {
-                //     return value.track == trackname;
-                // }) != funscriptsWithMedia.end();
                 LogHandler::Debug("MFS script found: " +trackname);
-                funscriptsWithMedia.append({fileName, baseName, filepath, trackname, ScriptType::MAIN, containerType, "" });
+                funscriptsWithMedia.append({fileName, baseName, scriptFilePath, trackname, ScriptType::MAIN, containerType, "" });
             } else if(baseName.compare(fileName, Qt::CaseInsensitive)) {
                 auto name = QString(baseName).replace(fileName, "").trimmed();
                 LogHandler::Debug("Alt script found: " +name);
                 item.metadata.hasAlternate = true;
-                funscriptsWithMedia.append({name, baseName, filepath, trackname, ScriptType::ALTERNATE, containerType, "" });
+                funscriptsWithMedia.append({name, baseName, scriptFilePath, trackname, ScriptType::ALTERNATE, containerType, "" });
             }
-            // else {
-            //     LogHandler::Debug("Is default script");
-            //     funscriptsWithMedia.push_front({"Default", baseName, filepath, trackname, ScriptType::MAIN, containerType });
-            // }
         }
     }
     item.metadata.scripts = funscriptsWithMedia;

@@ -132,7 +132,7 @@ private:
     void processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess = false);
     void stopMetadataProcess();
     bool updateToolTip(LibraryListItem27 &item);
-    bool discoverMFS(LibraryListItem27 &item);
+    bool discoverMultiAxis(LibraryListItem27 &item);
 };
 
 #endif // MEDIALIBRARYHANDLER_H

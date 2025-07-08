@@ -2,6 +2,7 @@
 
 #include <qmath.h>
 #include "xmediastatehandler.h"
+#include "../tool/file-util.h"
 
 FunscriptHandler::FunscriptHandler(QObject* parent) : QObject(parent) { }
 
@@ -495,4 +496,97 @@ double FunscriptHandler::getModifier(const Track& channelName)
 void FunscriptHandler::resetModifier(const Track& channelName)
 {
     setModifier(channelName, 1.0);
+}
+
+QList<ScriptInfo> FunscriptHandler::getSFMATracks(QString libraryItemMediaPath)
+{
+    QList<ScriptInfo> scriptInfos;
+    QString scriptPath = XFileUtil::getPathNoExtension(libraryItemMediaPath) + ".funscript";
+    QByteArray bytes = readFile(scriptPath);
+    if(bytes.isEmpty())
+        return scriptInfos;
+    QJsonObject json = readJson(bytes);
+    if(json.isEmpty())
+        return scriptInfos;
+
+    // scriptInfos.append({"Default", libraryItemMediaPathNoExt, scriptPath, TCodeChannelLookup::ToString(Track::Stroke), ScriptType::MAIN, ScriptContainerType::BASE, "" });
+    if(!json["tracks"].isNull())
+    {
+        QString libraryItemMediaNameNoExt = XFileUtil::getNameNoExtension(libraryItemMediaPath);
+        auto jsonTracks = json["tracks"].toObject();
+        auto channels = TCodeChannelLookup::getChannels();
+        foreach(QString channelName, channels)
+        {
+            ChannelModel33* channel = TCodeChannelLookup::getChannel(channelName);
+            if(channel->Type == ChannelType::HalfOscillate || channel->track == Track::Stroke)
+                continue;
+            if(jsonTracks.contains(channel->trackName)) {
+                scriptInfos.append({libraryItemMediaNameNoExt, libraryItemMediaNameNoExt, scriptPath, channel->trackName, ScriptType::MAIN, ScriptContainerType::SFMA, "" });
+            }
+        }
+    }
+    return scriptInfos;
+}
+
+bool FunscriptHandler::isSFMA(QString libraryItemMediaPath)
+{
+    QString scriptPath = XFileUtil::getPathNoExtension(libraryItemMediaPath) + ".funscript";
+    QByteArray bytes = readFile(scriptPath);
+    if(bytes.isEmpty())
+        return false;
+    QJsonObject json = readJson(bytes);
+    if(json.isEmpty() || json["tracks"].isNull())
+        return false;
+
+    auto jsonTracks = json["tracks"].toObject();
+    auto channels = TCodeChannelLookup::getChannels();
+    foreach(QString channelName, channels)
+    {
+        ChannelModel33* channel = TCodeChannelLookup::getChannel(channelName);
+        if(channel->Type == ChannelType::HalfOscillate || channel->track == Track::Stroke)
+            continue;
+        if(jsonTracks.contains(channel->trackName))
+            return true;
+    }
+    return false;
+}
+
+bool FunscriptHandler::isMFS(QString libraryItemMediaPath)
+{
+    QString libraryItemMediaPathNoExt = XFileUtil::getPathNoExtension(libraryItemMediaPath);
+    auto channels = TCodeChannelLookup::getChannels();
+    foreach(QString channelName, channels)
+    {
+        ChannelModel33* channel = TCodeChannelLookup::getChannel(channelName);
+        if(channel->Type == ChannelType::HalfOscillate || channel->track == Track::Stroke || channel->trackName.isEmpty() || libraryItemMediaPath.endsWith("."+channel->trackName+".funscript"))
+            continue;
+        if(QFileInfo::exists(libraryItemMediaPathNoExt+"."+channel->trackName+".funscript")) {
+            return true;
+        }
+    }
+    return false;
+}
+
+///
+/// \brief FunscriptHandler::getMFSTracks Searches all funscripts in the libraryItemMediaPath directore for scripts matching MFS standard.
+/// \param libraryItemMediaPath
+/// \param scriptPath
+/// \return A list of script info objects to the found scripts
+///
+QList<ScriptInfo> FunscriptHandler::getMFSTracks(QString libraryItemMediaPath)
+{
+    QList<ScriptInfo> scriptInfos;
+    QString libraryItemMediaPathNoExt = XFileUtil::getPathNoExtension(libraryItemMediaPath);
+    auto channels = TCodeChannelLookup::getChannels();
+    foreach(QString channelName, channels)
+    {
+        ChannelModel33* channel = TCodeChannelLookup::getChannel(channelName);
+        if(channel->Type == ChannelType::HalfOscillate || channel->track == Track::Stroke || channel->trackName.isEmpty() || libraryItemMediaPath.endsWith("."+channel->trackName+".funscript"))
+            continue;
+        auto scriptPath = libraryItemMediaPathNoExt+"."+channel->trackName+".funscript";
+        if(QFileInfo::exists(scriptPath)) {
+            scriptInfos.append({libraryItemMediaPathNoExt, libraryItemMediaPathNoExt, scriptPath, channel->trackName, ScriptType::MAIN, ScriptContainerType::MFS, "" });
+        }
+    }
+    return scriptInfos;
 }

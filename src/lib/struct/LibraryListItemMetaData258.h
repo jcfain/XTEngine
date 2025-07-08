@@ -28,6 +28,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     QString toolTip;
     QString subtitle;
     bool isMFS;
+    bool isSFMA;
     bool hasAlternate;
     QDateTime dateAdded;
     QString thumbExtractError;
@@ -54,6 +55,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream << object.toolTip;
         dataStream << object.subtitle;
         dataStream << object.isMFS;
+        dataStream << object.isSFMA;
         dataStream << object.hasAlternate;
         dataStream << object.dateAdded;
         dataStream << object.thumbExtractError;
@@ -88,6 +90,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream >> object.toolTip;
         dataStream >> object.subtitle;
         dataStream >> object.isMFS;
+        dataStream >> object.isSFMA;
         dataStream >> object.hasAlternate;
         dataStream >> object.dateAdded;
         dataStream >> object.thumbExtractError;
@@ -157,6 +160,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         obj["toolTip"] = item.toolTip;
         obj["subtitle"] = item.subtitle;
         obj["isMFS"] = item.isMFS;
+        obj["isSFMA"] = item.isSFMA;
         obj["hasAlternate"] = item.hasAlternate;
         obj["dateAdded"] = item.dateAdded.toString(Qt::DateFormat::ISODateWithMs);
         obj["thumbExtractError"] = item.thumbExtractError;
@@ -212,6 +216,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         newItem.toolTip = obj["toolTip"].toString();
         newItem.subtitle = obj["subtitle"].toString();
         newItem.isMFS = obj["isMFS"].toBool();
+        newItem.isSFMA = obj["isSFMA"].toBool();
         newItem.hasAlternate = obj["hasAlternate"].toBool();
         newItem.dateAdded = QDateTime::fromString(obj["dateAdded"].toString(), Qt::DateFormat::ISODateWithMs);
         newItem.thumbExtractError = obj["thumbExtractError"].toString(nullptr);
@@ -266,6 +271,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         toolTip = newItem.toolTip;
         subtitle = newItem.subtitle;
         isMFS = newItem.isMFS;
+        isSFMA = newItem.isSFMA;
         hasAlternate = newItem.hasAlternate;
         bookmarks.clear();
         thumbExtractError = newItem.thumbExtractError;
