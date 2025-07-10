@@ -20,9 +20,9 @@ var ConnectionStatus = {
 
 var ChannelType = {
 	None: 0,
-	Range: 1,
-	Switch: 2,
-	HalfRange: 3
+	Oscillate: 1,
+	Ramp: 2,
+	HalfOscillate: 3
 };
 
 const ChannelTimeType = {
@@ -2873,6 +2873,8 @@ async function setupSliders() {
 	removeAllChildNodes(tcodeRanges);
 	for (var i = 0; i < availableChannels.length; i++) {
 		var channel = availableChannels[i];
+		if(channel.type == ChannelType.HalfOscillate)
+			continue;
 
 		var formElementNode = document.createElement("div");
 		formElementNode.classList.add("formElement");
@@ -3087,6 +3089,8 @@ async function setupMotionModifiers() {
 	for (var i = 0; i < availableChannels.length; i++) {
 
 		var channel = availableChannels[i];
+		if(channel.type == ChannelType.HalfOscillate)
+			continue;
 		var channelName = channel.channel;
 
 		var formElementNode = document.createElement("div");
@@ -3163,9 +3167,9 @@ async function setupMotionModifiers() {
 		availableChannels.forEach(element => {
 			if (element.channel !== channel.channel) {
 				var relatedChannelOptionNode = document.createElement("option");
-				relatedChannelOptionNode.innerHTML = element.friendlyName
-				relatedChannelOptionNode.value = element.channel
-				relatedChannelNode.appendChild(relatedChannelOptionNode)
+				relatedChannelOptionNode.innerHTML = element.friendlyName;
+				relatedChannelOptionNode.value = element.axisName;
+				relatedChannelNode.appendChild(relatedChannelOptionNode);
 			}
 		});
 		relatedChannelNode.value = channel.relatedChannel;
@@ -3247,6 +3251,8 @@ async function setUpInversionMotionModifier() {
 	for (var i = 0; i < availableChannels.length; i++) {
 
 		var channel = availableChannels[i];
+		if(channel.type == ChannelType.HalfOscillate)
+			continue;
 		var channelName = channel.channel;
 
 		var formElementNode = document.createElement("div");

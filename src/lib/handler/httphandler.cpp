@@ -1013,7 +1013,7 @@ QJsonObject HttpHandler::createSelectedChannels()
     foreach(auto channelName, channels)
     {
         auto channel = TCodeChannelLookup::getChannel(channelName);
-        if(channel->Type != ChannelType::HalfOscillate && channel->Type != ChannelType::None)
+        if(channel->Type != ChannelType::None)
         {
             availableChannelsJson[channelName] = ChannelModel33::toJson(*channel);
         }
