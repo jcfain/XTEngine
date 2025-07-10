@@ -2996,8 +2996,7 @@ void SettingsHandler::clearFunscriptLoaded()
 
 void SettingsHandler::setFunscriptLoaded(QString key, bool loaded)
 {
-    if (_funscriptLoaded.contains(key))
-        _funscriptLoaded[key] = loaded;
+    _funscriptLoaded[key] = loaded;
 }
 bool SettingsHandler::getFunscriptLoaded(QString key)
 {

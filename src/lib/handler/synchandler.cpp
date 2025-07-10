@@ -38,19 +38,19 @@ void SyncHandler::setStandAloneLoop(bool enabled)
 
 bool SyncHandler::isPlaying()
 {
-    return _isVRFunscriptPlaying || _isMediaFunscriptPlaying || _isStandAloneFunscriptPlaying;
+    return _funscriptVRFuture.isRunning() || _funscriptMediaFuture.isRunning() || _funscriptStandAloneFuture.isRunning();
 }
 bool SyncHandler::isPlayingInternal()
 {
-    return _isMediaFunscriptPlaying;
+    return _funscriptMediaFuture.isRunning();
 }
 bool SyncHandler::isPlayingStandAlone()
 {
-    return _isStandAloneFunscriptPlaying;
+    return _funscriptStandAloneFuture.isRunning();
 }
 bool SyncHandler::isPlayingVR()
 {
-    return _isVRFunscriptPlaying;
+    return _funscriptVRFuture.isRunning();
 }
 
 const Funscript *SyncHandler::getFunscript()
@@ -152,7 +152,6 @@ void SyncHandler::stopStandAloneFunscript()
     LogHandler::Debug("Stop standalone sync");
     QMutexLocker locker(&_mutex);
     _standAloneFunscriptCurrentTime = 0;
-    _isStandAloneFunscriptPlaying = false;
     locker.unlock();
     if(_funscriptStandAloneFuture.isRunning())
     {
@@ -167,7 +166,6 @@ void SyncHandler::stopOtherMediaFunscript()
 {
     LogHandler::Debug("Stop media sync");
     QMutexLocker locker(&_mutex);
-    _isMediaFunscriptPlaying = false;
     locker.unlock();
     if(_funscriptMediaFuture.isRunning())
     {
@@ -181,7 +179,6 @@ void SyncHandler::stopInputDeviceFunscript()
 {
     LogHandler::Debug("Stop VR sync");
     QMutexLocker locker(&_mutex);
-    _isVRFunscriptPlaying = false;
     locker.unlock();
     if(_funscriptVRFuture.isRunning())
     {
@@ -226,7 +223,6 @@ void SyncHandler::skipToMoneyShot()
             QFile file(funscript);
             if(file.exists())
             {
-                stopAll();
                 load(funscript);
                 playStandAlone();
                 setStandAloneLoop(SettingsHandler::getSkipToMoneyShotStandAloneLoop());
@@ -239,11 +235,10 @@ void SyncHandler::playStandAlone() {
     LogHandler::Debug("play Funscript stand alone start thread");
     // if(!funscript.isEmpty()) //Override standalone funscript. aka: skip to moneyshot
     //     load(funscript);
+    stopAll();
     QMutexLocker locker(&_mutex);
     _standAloneFunscriptCurrentTime = 0;
     setStandAloneLoop(false);
-    _isMediaFunscriptPlaying = true;
-    _isStandAloneFunscriptPlaying = true;
     locker.unlock();
     emit funscriptStarted();
     qint64 funscriptMax = getFunscriptMax();
@@ -261,7 +256,7 @@ void SyncHandler::playStandAlone() {
         qint64 executionTimeNS = 1000000;
         mSecTimer.start();
         emit syncStart();
-        while (_isStandAloneFunscriptPlaying)
+        while (!_funscriptStandAloneFuture.isCanceled())
         {
             double elapsedNS = timer2 - timer1;
             if (elapsedNS >= executionTimeNS)
@@ -306,7 +301,7 @@ void SyncHandler::playStandAlone() {
             timer2 = mSecTimer.nsecsElapsed();
             if(!_standAloneLoop && _standAloneFunscriptCurrentTime >= funscriptMax)
             {
-                _isStandAloneFunscriptPlaying = false;
+                _funscriptStandAloneFuture.cancel();
                 if(!_isOtherMediaPlaying)
                     emit funscriptStatusChanged(XMediaStatus::EndOfMedia);
             }
@@ -316,7 +311,7 @@ void SyncHandler::playStandAlone() {
             }
         }
         QMutexLocker locker(&_mutex);
-        _isMediaFunscriptPlaying = false;
+        // _isMediaFunscriptPlaying = false;
         _playingStandAloneFunscript = nullptr;
         _standAloneFunscriptCurrentTime = 0;
         emit funscriptEnded();
@@ -380,7 +375,6 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
 {
     stopAll();
     QMutexLocker locker(&_mutex);
-    _isMediaFunscriptPlaying = true;
     LogHandler::Debug("syncFunscript start thread");
     _funscriptMediaFuture = QtConcurrent::run([this, getMediaPosition]()
     {
@@ -391,7 +385,7 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
         qint64 timer2 = 0;
         mSecTimer.start();
         emit syncStart();
-        while (_isMediaFunscriptPlaying && _isOtherMediaPlaying)
+        while (!_funscriptMediaFuture.isCanceled() && _isOtherMediaPlaying)
         {
             if (timer2 - timer1 >= 1)
             {
@@ -425,7 +419,6 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
             timer2 = (round(mSecTimer.nsecsElapsed() / 1000000));
         }
         _currentLocalVideoTime = 0;
-        _isMediaFunscriptPlaying = false;
         emit sendTCode("DSTOP");
         LogHandler::Debug("exit syncFunscript");
         emit syncEnd();
@@ -436,7 +429,6 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
 {
     load(libraryItem);
     QMutexLocker locker(&_mutex);
-    _isVRFunscriptPlaying = true;
     LogHandler::Debug("syncInputDeviceFunscript start thread");
     _funscriptVRFuture = QtConcurrent::run([this]()
     {
@@ -456,7 +448,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
         double lastPlaybackSpeed = 1.0;
         qint64 executionTimeNS = 1000000;
         emit syncStart();
-        while (_isVRFunscriptPlaying && _inputDeviceHandler && _inputDeviceHandler->isConnected() && !_isOtherMediaPlaying)
+        while (!_funscriptVRFuture.isCanceled() && _inputDeviceHandler && _inputDeviceHandler->isConnected() && !_isOtherMediaPlaying)
         {
             //execute once every millisecond
             double elapsedNS = timer2 - timer1;
@@ -536,7 +528,6 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
         }
 
         QMutexLocker locker(&_mutex);
-        _isVRFunscriptPlaying = false;
         emit sendTCode("DSTOP");
         //emit funscriptVREnded(videoPath, funscript, duration);
         LogHandler::Debug("exit syncInputDeviceFunscript");

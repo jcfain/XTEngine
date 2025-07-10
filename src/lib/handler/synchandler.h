@@ -97,9 +97,6 @@ private:
 
     QMutex _mutex;
     QString _playingStandAloneFunscript;
-    bool _isMediaFunscriptPlaying = false;
-    bool _isVRFunscriptPlaying = false;
-    bool _isStandAloneFunscriptPlaying = false;
     bool _isPaused = false;
     bool _standAloneLoop;
     bool _isOtherMediaPlaying = false;

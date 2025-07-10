@@ -52,11 +52,13 @@ public:
 
 
     static ChannelModel33* getChannel(QString name, QString profile = nullptr);
+    static ChannelModel33* getChannel(Track track, QString profile = nullptr);
     static void setChannel(QString name, ChannelModel33 channel, QString profile = nullptr);
     static void addChannel(QString name, ChannelModel33 channel, QString profile = nullptr);
     static void deleteChannel(QString axis, QString profile = nullptr);
     static void clearChannels(QString profile = nullptr);
     static bool hasChannel(QString name, QString profile = nullptr);
+    static bool hasChannel(Track track, QString profile = nullptr);
     static bool hasProfile(QString profile);
     static void clearChannelProfiles();
     static void setAllProfileDefaults(bool keepCurrent = false);
@@ -103,6 +105,7 @@ public:
     static QString SuckMorePosition();
     static QString SuckLessPosition();
     static bool isDefaultChannel(QString channelName);
+    static QString removeModifier(QString& name);
 private:
     static TCodeChannelLookup* m_instance;
     static QMutex m_mutex;

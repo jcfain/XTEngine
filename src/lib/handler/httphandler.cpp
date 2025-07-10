@@ -886,7 +886,7 @@ QJsonObject HttpHandler::createMediaObject(const LibraryListItem27& item, QStrin
     object["id"] = item.ID;
     object["type"] = (int)item.type;
     object["name"] = item.nameNoExtension;
-    QString displayText = (item.metadata.isSFMA && item.metadata.isMFS ? "(SFMA) (MFS) " : item.metadata.isSFMA ? "(SFMA) " : item.metadata.isMFS ? "(MFS) " : "") + item.nameNoExtension;
+    QString displayText = (item.metadata.isSFMA && item.metadata.isMFS ? "(SFMA/MFS) " : item.metadata.isSFMA ? "(SFMA) " : item.metadata.isMFS ? "(MFS) " : "") + item.nameNoExtension;
     object["displayName"] = displayText;
     QString relativePath = item.path;
     relativePath = relativePath.replace(item.libraryPath +"/", "");

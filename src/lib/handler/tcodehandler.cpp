@@ -111,11 +111,31 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 //     continue;
                 int value = -1;
                 // int channelDistance = 100;
-                if (channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel))
+                auto relatedChannel = channel->RelatedChannel;
+                auto modifier = TCodeChannelLookup::removeModifier(relatedChannel);
+                if (channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(relatedChannel))
                 {
-                    if(actions.contains(channel->RelatedChannel))
-                        value = actions.value(channel->RelatedChannel)->pos;
-                    else
+                    if(actions.contains(relatedChannel)) {
+                        value = actions.value(relatedChannel)->pos;
+                        if(!modifier.isEmpty())
+                        {
+                            // auto relatedTrack = TCodeChannelLookup::getChannel(TCodeChannelLookup::FromString(relatedChannel));
+                            if(modifier == TCodeChannelLookup::PositiveModifier)
+                            {
+                                if(value >= 50)
+                                    value = XMath::mapRange(value, 0, 100, 50, 100);
+                                else
+                                    value = 50;
+                            }
+                            else
+                            {
+                                if(value < 50)
+                                    value = XMath::mapRange(value, 0, 100, 0, 50);
+                                else
+                                    value = 50;
+                            }
+                        }
+                    } else
                         continue;
 //                        LogHandler::Debug("Channel: "+ axis);
 //                        LogHandler::Debug("FriendlyName: "+ channel->FriendlyName);

@@ -106,7 +106,9 @@ void TCodeChannelLookup::addUserChannelMap(QString channel) {
     }
 }
 void TCodeChannelLookup::deleteUserChannelMap(QString channel) {
-    auto key = m_selectedTCodeVersionMap.keys().value(m_selectedTCodeVersionMap.values().indexOf(channel));
+    auto keys = m_selectedTCodeVersionMap.keys();
+    auto values = m_selectedTCodeVersionMap.values();
+    auto key = keys.value(values.indexOf(channel));
     if(key != Track::None) {
         m_selectedTCodeVersionMap.remove(key);
         m_channelCount--;
@@ -114,7 +116,8 @@ void TCodeChannelLookup::deleteUserChannelMap(QString channel) {
 }
 bool TCodeChannelLookup::ChannelExists(QString channel)
 {
-    return m_selectedTCodeVersionMap.values().contains(channel);
+    auto values = m_selectedTCodeVersionMap.values();
+    return values.contains(channel);
 }
 QString TCodeChannelLookup::None()
 {
@@ -250,6 +253,26 @@ ChannelModel33* TCodeChannelLookup::getChannel(QString name, QString profile) {
     return 0;
 }
 
+ChannelModel33 *TCodeChannelLookup::getChannel(Track track, QString profile)
+{
+    QMutexLocker locker(&m_mutex);
+    if(track == Track::None)
+        return 0;
+    if(profile.isEmpty())
+        profile = m_selectedChannelProfile;
+    if(m_availableChanels.contains(profile))
+    {
+        auto channels = m_availableChanels[profile];
+        auto it = std::find_if(channels.begin(), channels.end(), [track](const ChannelModel33& channel) {
+            return channel.track == track;
+        });
+        if(it != channels.end()){
+            return &it.value();
+        }
+    }
+return 0;
+}
+
 bool TCodeChannelLookup::hasChannel(QString name, QString profile) {
     if(name.isEmpty())
         name = None();
@@ -257,6 +280,23 @@ bool TCodeChannelLookup::hasChannel(QString name, QString profile) {
         profile = m_selectedChannelProfile;
     if(m_availableChanels.contains(profile))
         return m_availableChanels[profile].contains(name);
+    return false;
+}
+
+bool TCodeChannelLookup::hasChannel(Track track, QString profile)
+{
+    if(track == Track::None)
+        return false;
+    if(profile.isEmpty())
+        profile = m_selectedChannelProfile;
+    if(m_availableChanels.contains(profile))
+    {
+        auto channels = m_availableChanels[profile];
+        auto it = std::find_if(channels.begin(), channels.end(), [track](const ChannelModel33& channel) {
+            return channel.track == track;
+        });
+        return it != channels.end();
+    }
     return false;
 }
 
@@ -295,7 +335,8 @@ void TCodeChannelLookup::deleteChannel(QString name, QString profile)
     QMutexLocker locker(&m_mutex);
     if(profile.isEmpty())
         profile = m_selectedChannelProfile;
-    if(m_availableChanels.contains(profile)) {
+    if(m_availableChanels.contains(profile))
+    {
         m_availableChanels[profile].remove(name);
         deleteUserChannelMap(name);
         profileChanged();
@@ -307,7 +348,9 @@ void TCodeChannelLookup::clearChannels(QString profile) {
     if(profile.isEmpty())
         profile = m_selectedChannelProfile;
     if(m_availableChanels.contains(profile))
+    {
         m_availableChanels[profile].clear();
+    }
 }
 
 //QMap<QString, ChannelModel33>* TCodeChannelLookup::getAvailableChannels() {
@@ -565,6 +608,21 @@ void TCodeChannelLookup::syncChannelMapToCurrentProfile() {
 //        if(m_availableChanels.contains(__begin.value()))
 //            deleteUserChannelMap(__begin.value());
 //    }
+}
+
+QString TCodeChannelLookup::removeModifier(QString &name)
+{
+    if(name.endsWith(PositiveModifier))
+    {
+        name.remove(PositiveModifier);
+        return PositiveModifier;
+    }
+    if(name.endsWith(NegativeModifier))
+    {
+        name.remove(NegativeModifier);
+        return NegativeModifier;
+    }
+    return "";
 }
 
 TCodeChannelLookup* TCodeChannelLookup::m_instance = 0;
