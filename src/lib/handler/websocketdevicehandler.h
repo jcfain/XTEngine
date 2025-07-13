@@ -8,15 +8,15 @@
 #include <QThread>
 #include <QMutex>
 #include <QWaitCondition>
-#include "lib/interface/networkdevice.h"
+#include "lib/interface/outputnetworkconnectionhandler.h"
 #include "../struct/NetworkAddress.h"
 
-class WebsocketDeviceHandler : public NetworkDevice
+class OutputWebsocketConnectionHandler : public OutputNetworkConnectionHandler
 {
     Q_OBJECT
 public:
-    explicit WebsocketDeviceHandler(QObject *parent = nullptr);
-    ~WebsocketDeviceHandler();
+    explicit OutputWebsocketConnectionHandler(QObject *parent = nullptr);
+    ~OutputWebsocketConnectionHandler();
     void init(NetworkAddress _address, int waitTimeout = 5000) override;
     void dispose() override;
     void sendTCode(const QString &tcode) override;

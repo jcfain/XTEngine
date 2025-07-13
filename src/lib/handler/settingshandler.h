@@ -32,7 +32,7 @@
 #include "../struct/LibraryListItemMetaData258.h"
 #include "lib/lookup/TCodeCommand.h"
 #include "../lookup/xtags.h"
-#include "../struct/NetworkDeviceInfo.h"
+#include "../struct/NetworkConnectionInfo.h"
 
 #define ORGANIZATION_NAME "cUrbSide prOd"
 #define APPLICATION_NAME "XTEngine"
@@ -102,12 +102,12 @@ public:
     static void setUseMediaDirForThumbs(bool value);
     static bool getUseMediaDirForThumbs();
     static QString getSelectedFunscriptLibrary();
-    static DeviceName getSelectedOutputDevice();
-    static void setSelectedOutputDevice(DeviceName deviceName);
-    static DeviceName getSelectedInputDevice();
-    static void setSelectedInputDevice(DeviceName deviceName);
-    static void setSelectedNetworkDevice(NetworkProtocol value);
-    static NetworkProtocol getSelectedNetworkDevice();
+    static ConnectionInterface getSelectedOutputDevice();
+    static void setSelectedOutputConnection(ConnectionInterface deviceName);
+    static ConnectionInterface getSelectedInputDevice();
+    static void setSelectedInputConnection(ConnectionInterface deviceName);
+    static void setSelectedNetworkProtocol(NetworkProtocol value);
+    static NetworkProtocol getSelectedNetworkProtocol();
     static QStringList getCustomTCodeCommands();
     static void addCustomTCodeCommand(QString command);
     static void removeCustomTCodeCommand(QString command);
@@ -483,7 +483,7 @@ private:
     static QString _selectedThumbsDir;
     static bool _useMediaDirForThumbs;
     static QString selectedFile;
-    static int _selectedOutputDevice;
+    static int _selectedOutputConnection;
     static NetworkProtocol _selectedNetworkDeviceType;
     static QString serialPort;
     static QString serverAddress;

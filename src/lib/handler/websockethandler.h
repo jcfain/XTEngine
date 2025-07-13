@@ -14,8 +14,8 @@ class WebSocketHandler: public QObject
     Q_OBJECT
 signals:
     void settingChange(QString settingName, QVariant value);
-    void connectOutputDevice(DeviceName deviceName, bool checked);
-    void connectInputDevice(DeviceName deviceName, bool checked);
+    void connectOutputDevice(ConnectionInterface deviceName, bool checked);
+    void connectInputDevice(ConnectionInterface deviceName, bool checked);
     void tcode(QString tcode);
     void setChannelRange(QString channelName, int min, int max);
     void changeChannelProfile(QString name);
@@ -56,9 +56,9 @@ public:
 private:
     QWebSocketServer *m_pWebSocketServer;
     QList<QWebSocket *> m_clients;
-    ConnectionChangedSignal _outputDeviceStatus = {DeviceType::Output, DeviceName::Serial, ConnectionStatus::Disconnected, "Disconnected"};
-    ConnectionChangedSignal _inputDeviceStatus = {DeviceType::Input, DeviceName::None, ConnectionStatus::Disconnected, "Disconnected"};
-    ConnectionChangedSignal _gamepadStatus = {DeviceType::Input, DeviceName::Gamepad, ConnectionStatus::Disconnected, "Disconnected"};
+    ConnectionChangedSignal _outputDeviceStatus = {ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Disconnected, "Disconnected"};
+    ConnectionChangedSignal _inputDeviceStatus = {ConnectionDirection::Input, ConnectionInterface::None, ConnectionStatus::Disconnected, "Disconnected"};
+    ConnectionChangedSignal _gamepadStatus = {ConnectionDirection::Input, ConnectionInterface::Gamepad, ConnectionStatus::Disconnected, "Disconnected"};
     bool scriptPaused = false;
 
     void closed();

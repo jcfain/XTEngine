@@ -5,13 +5,13 @@
 #include "../tool/xnetwork.h"
 #include "settingshandler.h"
 
-UdpHandler::UdpHandler(QObject *parent) :
-    NetworkDevice(parent),
+OutputUdpConnectionHandler::OutputUdpConnectionHandler(QObject *parent) :
+    OutputNetworkConnectionHandler(parent),
     m_udpSocket(new QUdpSocket(this))
 {
     qRegisterMetaType<ConnectionChangedSignal>();
-    connect(m_udpSocket, &QUdpSocket::readyRead, this, &UdpHandler::onReadyRead, Qt::QueuedConnection);
-    connect(this, &UdpHandler::connectionChange, this, [this](ConnectionChangedSignal signal) {
+    connect(m_udpSocket, &QUdpSocket::readyRead, this, &OutputUdpConnectionHandler::onReadyRead, Qt::QueuedConnection);
+    connect(this, &OutputUdpConnectionHandler::connectionChange, this, [this](ConnectionChangedSignal signal) {
         if(signal.status == ConnectionStatus::Connected) {
             onConnected();
         } else if(signal.status == ConnectionStatus::Disconnected) {
@@ -19,14 +19,14 @@ UdpHandler::UdpHandler(QObject *parent) :
             // Infinitloop danger
         }
     });
-    connect(&m_heartBeatTimer, &QTimer::timeout, this, &UdpHandler::sendHeartbeat, Qt::QueuedConnection);
-    connect(this, &UdpHandler::disposeMe, this, &UdpHandler::dispose);
+    connect(&m_heartBeatTimer, &QTimer::timeout, this, &OutputUdpConnectionHandler::sendHeartbeat, Qt::QueuedConnection);
+    connect(this, &OutputUdpConnectionHandler::disposeMe, this, &OutputUdpConnectionHandler::dispose);
 }
-UdpHandler::~UdpHandler() {}
+OutputUdpConnectionHandler::~OutputUdpConnectionHandler() {}
 
-void UdpHandler::init(NetworkAddress address, int waitTimeout)
+void OutputUdpConnectionHandler::init(NetworkAddress address, int waitTimeout)
 {
-    emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connecting, "Connecting..."});
+    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Connecting, "Connecting..."});
     _address = address;
 
     m_hostAddress = QHostAddress(_address.address);
@@ -39,13 +39,13 @@ void UdpHandler::init(NetworkAddress address, int waitTimeout)
         LogHandler::Debug("Hostname passed in to UDP: "+_address.address);
         QHostInfo info = QHostInfo::fromName(_address.address);
         if(info.error() != QHostInfo::NoError) {
-            emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, info.errorString()});
+            emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Error, info.errorString()});
             return;
         }
         if (!info.addresses().isEmpty()) {
             m_hostAddress = QHostAddress(info.addresses().constFirst());
         } else {
-            emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "No IP for: " + _address.address + " found"});
+            emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Error, "No IP for: " + _address.address + " found"});
             return;
         }
         LogHandler::Debug("IP resolved: "+m_hostAddress.toString());
@@ -55,7 +55,7 @@ void UdpHandler::init(NetworkAddress address, int waitTimeout)
 
 }
 
-void UdpHandler::sendTCode(const QString &tcode)
+void OutputUdpConnectionHandler::sendTCode(const QString &tcode)
 {
     LogHandler::Debug("Sending TCode UDP: "+tcode);
     QMutexLocker locker(&m_socketMutex);
@@ -66,7 +66,7 @@ void UdpHandler::sendTCode(const QString &tcode)
     //m_udpSocket->write(currentRequest);
 }
 
-void UdpHandler::onReadyRead()
+void OutputUdpConnectionHandler::onReadyRead()
 {
     QString recieved;
     while (m_udpSocket->waitForReadyRead(100))
@@ -85,7 +85,7 @@ void UdpHandler::onReadyRead()
     processDeviceInput(recieved);
 }
 
-void UdpHandler::onConnected()
+void OutputUdpConnectionHandler::onConnected()
 {
     if(!hasAddress(m_hostAddress))
         m_connectedHosts.append(m_hostAddress);
@@ -96,7 +96,7 @@ void UdpHandler::onConnected()
     }
 }
 
-void UdpHandler::sendHeartbeat()
+void OutputUdpConnectionHandler::sendHeartbeat()
 {
     if(!SettingsHandler::getDisableHeartBeat())
     {
@@ -128,7 +128,7 @@ void UdpHandler::sendHeartbeat()
     }
 }
 
-bool UdpHandler::hasAddress(const QHostAddress &addressIn)
+bool OutputUdpConnectionHandler::hasAddress(const QHostAddress &addressIn)
 {
     auto it = std::find_if(m_connectedHosts.begin(), m_connectedHosts.end(),
                            [addressIn](const QHostAddress &address) {
@@ -137,11 +137,11 @@ bool UdpHandler::hasAddress(const QHostAddress &addressIn)
     return it != m_connectedHosts.end();
 }
 
-void UdpHandler::dispose()
+void OutputUdpConnectionHandler::dispose()
 {
     LogHandler::Debug("Udp dispose "+ _address.address);
     m_udpSocket->close();
     m_heartBeatTimer.stop();
-    OutputDeviceHandler::dispose();
+    OutputConnectionHandler::dispose();
 }
 

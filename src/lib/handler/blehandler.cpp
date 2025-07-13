@@ -2,8 +2,8 @@
 
 #include <QLowEnergyController>
 
-BLEHandler::BLEHandler(QObject *parent)
-    : OutputDeviceHandler{DeviceName::BLE, parent},
+OutputBLEConnectionHandler::OutputBLEConnectionHandler(QObject *parent)
+    : OutputConnectionHandler{ConnectionInterface::BLE, parent},
     m_serviceUUID(QUuid("{ff1b451d-3070-4276-9c81-5dc5ea1043bc}")),
     m_characteristicUUID(QUuid("{c5f1543e-338d-47a0-8525-01e3c621359d}"))
 {
@@ -14,28 +14,28 @@ BLEHandler::BLEHandler(QObject *parent)
     // });
 }
 
-void BLEHandler::init(int waitTimeout)
+void OutputBLEConnectionHandler::init(int waitTimeout)
 {
     if(m_deviceDiscoveryAgent)
         return;
     m_waitTimeout = waitTimeout;
-    emit connectionChange({DeviceType::Output, DeviceName::BLE, ConnectionStatus::Connecting, "BLE connecting" });
+    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::BLE, ConnectionStatus::Connecting, "BLE connecting" });
     m_deviceDiscoveryAgent = new QBluetoothDeviceDiscoveryAgent(this);
     m_deviceDiscoveryAgent->setLowEnergyDiscoveryTimeout(waitTimeout);
 
-    connect(m_deviceDiscoveryAgent, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered, this, &BLEHandler::foundDevice);
+    connect(m_deviceDiscoveryAgent, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered, this, &OutputBLEConnectionHandler::foundDevice);
 #if BUILD_QT5
     connect(m_deviceDiscoveryAgent,
             static_cast<void (QBluetoothDeviceDiscoveryAgent::*)(QBluetoothDeviceDiscoveryAgent::Error)>(&QBluetoothDeviceDiscoveryAgent::error),
             this, &BLEHandler::scanError);
 #endif
 
-    connect(m_deviceDiscoveryAgent, &QBluetoothDeviceDiscoveryAgent::finished, this, &BLEHandler::scanFinished);
-    connect(m_deviceDiscoveryAgent, &QBluetoothDeviceDiscoveryAgent::canceled, this, &BLEHandler::scanFinished);
+    connect(m_deviceDiscoveryAgent, &QBluetoothDeviceDiscoveryAgent::finished, this, &OutputBLEConnectionHandler::scanFinished);
+    connect(m_deviceDiscoveryAgent, &QBluetoothDeviceDiscoveryAgent::canceled, this, &OutputBLEConnectionHandler::scanFinished);
     m_deviceDiscoveryAgent->start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
 }
 
-void BLEHandler::sendTCode(const QString &tcode)
+void OutputBLEConnectionHandler::sendTCode(const QString &tcode)
 {
     if(m_service && m_service->state() == QLowEnergyService::ServiceState::ServiceDiscovered) {
         LogHandler::Debug("Sending TCode BLE: "+ tcode);
@@ -44,7 +44,7 @@ void BLEHandler::sendTCode(const QString &tcode)
     }
 }
 
-void BLEHandler::dispose()
+void OutputBLEConnectionHandler::dispose()
 {
     LogHandler::Debug("BLE dispose");
     if(m_control)
@@ -58,16 +58,16 @@ void BLEHandler::dispose()
     }
 }
 
-void BLEHandler::foundDevice(const QBluetoothDeviceInfo &info)
+void OutputBLEConnectionHandler::foundDevice(const QBluetoothDeviceInfo &info)
 {
     LogHandler::Debug("BLE Device found: "+info.name() + " address: "+ info.address().toString());
     if (info.coreConfigurations() & QBluetoothDeviceInfo::LowEnergyCoreConfiguration && info.name() == m_deviceName)
     {
         m_control = QLowEnergyController::createCentral(info, m_deviceDiscoveryAgent);
         connect(m_control, &QLowEnergyController::serviceDiscovered,
-                this, &BLEHandler::serviceDiscovered);
+                this, &OutputBLEConnectionHandler::serviceDiscovered);
         connect(m_control, &QLowEnergyController::discoveryFinished,
-                this, &BLEHandler::serviceScanDone);
+                this, &OutputBLEConnectionHandler::serviceScanDone);
 #if BUILD_QT5
         connect(m_control, static_cast<void (QLowEnergyController::*)(QLowEnergyController::Error)>(&QLowEnergyController::error),
             this, [this](QLowEnergyController::Error error) {
@@ -83,7 +83,7 @@ void BLEHandler::foundDevice(const QBluetoothDeviceInfo &info)
         });
         connect(m_control, &QLowEnergyController::disconnected, this, [this]() {
             //setError("LowEnergy controller disconnected");
-            emit connectionChange({DeviceType::Output, DeviceName::BLE, ConnectionStatus::Disconnected, "BLE disconnected" });
+            emit connectionChange({ConnectionDirection::Output, ConnectionInterface::BLE, ConnectionStatus::Disconnected, "BLE disconnected" });
         });
 
         // Connect
@@ -91,26 +91,26 @@ void BLEHandler::foundDevice(const QBluetoothDeviceInfo &info)
     }
 }
 
-void BLEHandler::updateDevice(const QBluetoothDeviceInfo &info, QBluetoothDeviceInfo::Fields updatedFields)
+void OutputBLEConnectionHandler::updateDevice(const QBluetoothDeviceInfo &info, QBluetoothDeviceInfo::Fields updatedFields)
 {
     LogHandler::Debug("updateDevice");
 }
 
-void BLEHandler::scanError(QBluetoothDeviceDiscoveryAgent::Error error)
+void OutputBLEConnectionHandler::scanError(QBluetoothDeviceDiscoveryAgent::Error error)
 {
     LogHandler::Debug("scanError");
-    emit connectionChange({DeviceType::Output, DeviceName::BLE, ConnectionStatus::Error, "BLE error" });
+    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::BLE, ConnectionStatus::Error, "BLE error" });
 }
 
-void BLEHandler::scanFinished()
+void OutputBLEConnectionHandler::scanFinished()
 {
     LogHandler::Debug("scanFinished");
     if(!m_control) {
-        emit connectionChange({DeviceType::Output, DeviceName::BLE, ConnectionStatus::Error, "BLE "+m_deviceName+" not found" });
+        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::BLE, ConnectionStatus::Error, "BLE "+m_deviceName+" not found" });
     }
 }
 
-void BLEHandler::serviceDiscovered(const QBluetoothUuid &newService)
+void OutputBLEConnectionHandler::serviceDiscovered(const QBluetoothUuid &newService)
 {
     if(newService == m_serviceUUID) {
         LogHandler::Debug("Service discovered!");
@@ -122,24 +122,24 @@ void BLEHandler::serviceDiscovered(const QBluetoothUuid &newService)
         m_service = m_control->createServiceObject(m_serviceUUID, m_control);
 
         if (m_service) {
-            connect(m_service, &QLowEnergyService::stateChanged, this, &BLEHandler::serviceStateChanged);
-            connect(m_service, &QLowEnergyService::characteristicChanged, this, &BLEHandler::characteristicChanged);
-            connect(m_service, &QLowEnergyService::characteristicWritten, this, &BLEHandler::characteristicChanged);
-            connect(m_service, &QLowEnergyService::descriptorWritten, this, &BLEHandler::descriptorWritten);
+            connect(m_service, &QLowEnergyService::stateChanged, this, &OutputBLEConnectionHandler::serviceStateChanged);
+            connect(m_service, &QLowEnergyService::characteristicChanged, this, &OutputBLEConnectionHandler::characteristicChanged);
+            connect(m_service, &QLowEnergyService::characteristicWritten, this, &OutputBLEConnectionHandler::characteristicChanged);
+            connect(m_service, &QLowEnergyService::descriptorWritten, this, &OutputBLEConnectionHandler::descriptorWritten);
             m_service->discoverDetails();
         } else {
             LogHandler::Error("BLE Error: TCode service not found");
-            emit connectionChange({DeviceType::Output, DeviceName::BLE, ConnectionStatus::Error, "BLE error: TCode service not found" });
+            emit connectionChange({ConnectionDirection::Output, ConnectionInterface::BLE, ConnectionStatus::Error, "BLE error: TCode service not found" });
         }
     }
 }
 
-void BLEHandler::serviceScanDone()
+void OutputBLEConnectionHandler::serviceScanDone()
 {
     LogHandler::Debug("Service scan done!");
 }
 
-void BLEHandler::serviceStateChanged(QLowEnergyService::ServiceState newState)
+void OutputBLEConnectionHandler::serviceStateChanged(QLowEnergyService::ServiceState newState)
 {
     switch (newState) {
 #if BUILD_QT5
@@ -156,7 +156,7 @@ void BLEHandler::serviceStateChanged(QLowEnergyService::ServiceState newState)
             m_characteristic = m_service->characteristic(m_characteristicUUID);
             if (!m_characteristic.isValid()) {
                 LogHandler::Error("TCode characteristic not found.");
-                emit connectionChange({DeviceType::Output, DeviceName::BLE, ConnectionStatus::Error, "BLE error: TCode characteristic not found" });
+                emit connectionChange({ConnectionDirection::Output, ConnectionInterface::BLE, ConnectionStatus::Error, "BLE error: TCode characteristic not found" });
             } else {
                 tryConnectDevice(m_waitTimeout);
             }
@@ -173,22 +173,22 @@ void BLEHandler::serviceStateChanged(QLowEnergyService::ServiceState newState)
     }
 }
 
-void BLEHandler::characteristicChanged(const QLowEnergyCharacteristic &info, const QByteArray &value)
+void OutputBLEConnectionHandler::characteristicChanged(const QLowEnergyCharacteristic &info, const QByteArray &value)
 {
     LogHandler::Debug("characteristicChanged: "+ QString(value));
 }
 
-void BLEHandler::characteristicRead(const QLowEnergyCharacteristic &info, const QByteArray &value)
+void OutputBLEConnectionHandler::characteristicRead(const QLowEnergyCharacteristic &info, const QByteArray &value)
 {
     LogHandler::Debug("characteristicRead: "+ QString(value));
 }
 
-void BLEHandler::characteristicWritten(const QLowEnergyCharacteristic &info, const QByteArray &value)
+void OutputBLEConnectionHandler::characteristicWritten(const QLowEnergyCharacteristic &info, const QByteArray &value)
 {
     LogHandler::Debug("characteristicWritten: "+ QString(value));
 }
 
-void BLEHandler::descriptorWritten(const QLowEnergyDescriptor &info, const QByteArray &value)
+void OutputBLEConnectionHandler::descriptorWritten(const QLowEnergyDescriptor &info, const QByteArray &value)
 {
     LogHandler::Debug("descriptorWritten: "+ QString(value));
 }

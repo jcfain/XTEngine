@@ -1,33 +1,33 @@
 #include "deohandler.h"
 
-HereSphereHandler::HereSphereHandler(QObject *parent) :
-    InputDeviceHandler(parent),
+InputHeresphereConnectionHandler::InputHeresphereConnectionHandler(QObject *parent) :
+    InputConnectionHandler(parent),
     m_connectTries(0)
 {
     qRegisterMetaType<ConnectionChangedSignal>();
-    qRegisterMetaType<InputDevicePacket>();
+    qRegisterMetaType<InputConnectionPacket>();
 }
 
-HereSphereHandler::~HereSphereHandler()
+InputHeresphereConnectionHandler::~InputHeresphereConnectionHandler()
 {
     _isConnected = false;
 }
 
-DeviceName HereSphereHandler::name() {
-    return DeviceName::HereSphere;
+ConnectionInterface InputHeresphereConnectionHandler::name() {
+    return ConnectionInterface::HereSphere;
 }
 
-void HereSphereHandler::init(NetworkAddress address, int waitTimeout)
+void InputHeresphereConnectionHandler::init(NetworkAddress address, int waitTimeout)
 {
-    emit connectionChange({DeviceType::Input, DeviceName::HereSphere, ConnectionStatus::Connecting, "Waiting..."});
+    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::HereSphere, ConnectionStatus::Connecting, "Waiting..."});
 
     _waitTimeout = waitTimeout;
     _address = address;
 
     QHostAddress addressObj;
     addressObj.setAddress(_address.address);
-    connect(&tcpSocket, &QTcpSocket::stateChanged, this, &HereSphereHandler::onSocketStateChange);
-    connect(&tcpSocket, &QTcpSocket::errorOccurred, this, &HereSphereHandler::tcpErrorOccured);
+    connect(&tcpSocket, &QTcpSocket::stateChanged, this, &InputHeresphereConnectionHandler::onSocketStateChange);
+    connect(&tcpSocket, &QTcpSocket::errorOccurred, this, &InputHeresphereConnectionHandler::tcpErrorOccured);
     m_connectTries++;
     tcpSocket.connectToHost(addressObj, _address.port);
     currentPacket =
@@ -41,7 +41,7 @@ void HereSphereHandler::init(NetworkAddress address, int waitTimeout)
     };
 }
 
-void HereSphereHandler::sendKeepAlive()
+void InputHeresphereConnectionHandler::sendKeepAlive()
 {
     if (_isConnected)
     {
@@ -54,7 +54,7 @@ void HereSphereHandler::sendKeepAlive()
     }
 }
 
-void HereSphereHandler::send(const QString &command)
+void InputHeresphereConnectionHandler::send(const QString &command)
 {
     _sendCommand = command;
     if (!command.isEmpty())
@@ -75,7 +75,7 @@ void HereSphereHandler::send(const QString &command)
     tcpSocket.flush();
 }
 
-void HereSphereHandler::sendPacket(InputDevicePacket packet) {
+void InputHeresphereConnectionHandler::sendPacket(InputConnectionPacket packet) {
     QJsonObject jsonObject;
     jsonObject["path"] = packet.path;
     jsonObject["currentTime"] = packet.currentTime;
@@ -83,31 +83,31 @@ void HereSphereHandler::sendPacket(InputDevicePacket packet) {
     send(QJsonDocument(jsonObject).toJson(QJsonDocument::Compact).toStdString().c_str());
 }
 
-void HereSphereHandler::dispose()
+void InputHeresphereConnectionHandler::dispose()
 {
     LogHandler::Debug("Deo/HereSphere: dispose");
     tearDown();
-    emit connectionChange({DeviceType::Input, DeviceName::HereSphere, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::HereSphere, ConnectionStatus::Disconnected, "Disconnected"});
 }
 
-void HereSphereHandler::tearDown()
+void InputHeresphereConnectionHandler::tearDown()
 {
 
     _isConnected = false;
     _isPlaying = false;
-    disconnect(&keepAliveTimer, &QTimer::timeout, this, &HereSphereHandler::sendKeepAlive);
+    disconnect(&keepAliveTimer, &QTimer::timeout, this, &InputHeresphereConnectionHandler::sendKeepAlive);
     if (keepAliveTimer.isActive())
         keepAliveTimer.stop();
-    disconnect(&tcpSocket, &QTcpSocket::stateChanged, this, &HereSphereHandler::onSocketStateChange);
-    disconnect(&tcpSocket, &QTcpSocket::errorOccurred, this, &HereSphereHandler::tcpErrorOccured);
+    disconnect(&tcpSocket, &QTcpSocket::stateChanged, this, &InputHeresphereConnectionHandler::onSocketStateChange);
+    disconnect(&tcpSocket, &QTcpSocket::errorOccurred, this, &InputHeresphereConnectionHandler::tcpErrorOccured);
     if (tcpSocket.isOpen())
         tcpSocket.disconnectFromHost();
 }
 
-void HereSphereHandler::messageSend(QByteArray message) {
+void InputHeresphereConnectionHandler::messageSend(QByteArray message) {
     //readData(message);
 }
-void HereSphereHandler::readData()
+void InputHeresphereConnectionHandler::readData()
 {
     QByteArray datagram = tcpSocket.readAll();
     datagram.remove(0, 4);
@@ -162,11 +162,11 @@ void HereSphereHandler::readData()
     }
 }
 
-bool HereSphereHandler::isConnected()
+bool InputHeresphereConnectionHandler::isConnected()
 {
     return _isConnected;
 }
-bool HereSphereHandler::isPlaying()
+bool InputHeresphereConnectionHandler::isPlaying()
 {
     const QMutexLocker locker(&_mutex);
     //LogHandler::Error("DeoHandler::isPlaying(): "+ QString::number(_isPlaying));
@@ -185,13 +185,13 @@ bool HereSphereHandler::isPlaying()
 //    QJsonDocument jsonResponse = QJsonDocument(pausePacket);
 //    send(QString::fromLatin1(jsonResponse.toJson()));
 //}
-InputDevicePacket HereSphereHandler::getCurrentPacket()
+InputConnectionPacket InputHeresphereConnectionHandler::getCurrentPacket()
 {
     const QMutexLocker locker(&_mutex);
     return !_isConnected ? blankPacket : currentPacket;
 }
 
-void HereSphereHandler::onSocketStateChange (QAbstractSocket::SocketState state)
+void InputHeresphereConnectionHandler::onSocketStateChange (QAbstractSocket::SocketState state)
 {
     //const QMutexLocker locker(&_mutex);
     switch(state) {
@@ -203,16 +203,16 @@ void HereSphereHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             send(nullptr);
             if (keepAliveTimer.isActive())
                 keepAliveTimer.stop();
-            connect(&keepAliveTimer, &QTimer::timeout, this, &HereSphereHandler::sendKeepAlive);
+            connect(&keepAliveTimer, &QTimer::timeout, this, &InputHeresphereConnectionHandler::sendKeepAlive);
             keepAliveTimer.start(1000);
-            connect(&tcpSocket, &QTcpSocket::readyRead, this, &HereSphereHandler::readData);
-            emit connectionChange({DeviceType::Input, DeviceName::HereSphere, ConnectionStatus::Connected, "Connected"});
+            connect(&tcpSocket, &QTcpSocket::readyRead, this, &InputHeresphereConnectionHandler::readData);
+            emit connectionChange({ConnectionDirection::Input, ConnectionInterface::HereSphere, ConnectionStatus::Connected, "Connected"});
             break;
         }
         case QAbstractSocket::SocketState::UnconnectedState:
         {
             _isConnected = false;
-            if(SettingsHandler::getSelectedInputDevice() == DeviceName::HereSphere)
+            if(SettingsHandler::getSelectedInputDevice() == ConnectionInterface::HereSphere)
             {
                 LogHandler::Debug("HereSphere retrying: " +QString::number(m_connectTries) + " " + _address.address);
                 tearDown();
@@ -223,14 +223,14 @@ void HereSphereHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             else
             {
                 LogHandler::Debug("Deo/HereSphere disconnected");
-                emit connectionChange({DeviceType::Input, DeviceName::HereSphere, ConnectionStatus::Disconnected, "Disconnected"});
+                emit connectionChange({ConnectionDirection::Input, ConnectionInterface::HereSphere, ConnectionStatus::Disconnected, "Disconnected"});
             }
             break;
         }
         case QAbstractSocket::SocketState::ConnectingState:
         {
             LogHandler::Debug("Deo/HereSphere connecting");
-            emit connectionChange({DeviceType::Input, DeviceName::HereSphere, ConnectionStatus::Connecting, "Waiting..."});
+            emit connectionChange({ConnectionDirection::Input, ConnectionInterface::HereSphere, ConnectionStatus::Connecting, "Waiting..."});
             break;
         }
         case QAbstractSocket::SocketState::BoundState:
@@ -256,7 +256,7 @@ void HereSphereHandler::onSocketStateChange (QAbstractSocket::SocketState state)
     }
 }
 
-void HereSphereHandler::tcpErrorOccured(QAbstractSocket::SocketError state)
+void InputHeresphereConnectionHandler::tcpErrorOccured(QAbstractSocket::SocketError state)
 {
 
     switch(state)

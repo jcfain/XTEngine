@@ -157,10 +157,10 @@ void WebSocketHandler::processTextMessage(QString message)
         emit changeChannelProfile(json["message"].toString());
     } else if (command == "connectOutputDevice") {
         QJsonObject obj = json["message"].toObject();
-        emit connectOutputDevice((DeviceName)obj["deviceName"].toInt(), obj["enabled"].toBool());
+        emit connectOutputDevice((ConnectionInterface)obj["deviceName"].toInt(), obj["enabled"].toBool());
     } else if (command == "connectInputDevice") {
         QJsonObject obj = json["message"].toObject();
-        emit connectInputDevice((DeviceName)obj["deviceName"].toInt(), obj["enabled"].toBool());
+        emit connectInputDevice((ConnectionInterface)obj["deviceName"].toInt(), obj["enabled"].toBool());
     } else if (command == "restartService") {
         emit restartService();
     } else if (command == "cleanupThumbs") {
@@ -226,13 +226,13 @@ void WebSocketHandler::closed()
 
 void  WebSocketHandler::sendDeviceConnectionStatus(ConnectionChangedSignal status, QWebSocket* client)
 {
-    QString messageJson = "{ \"status\": "+QString::number(status.status)+", \"deviceName\": "+QString::number(status.deviceName)+", \"message\": \""+status.message+"\" }";
-    if(status.type == DeviceType::Output)
+    QString messageJson = "{ \"status\": "+QString::number(status.status)+", \"deviceName\": "+QString::number(status.connectionName)+", \"message\": \""+status.message+"\" }";
+    if(status.type == ConnectionDirection::Output)
     {
         _outputDeviceStatus = status;
         sendCommand("outputDeviceStatus", messageJson, client);
     }
-    else if(status.deviceName == DeviceName::Gamepad)
+    else if(status.connectionName == ConnectionInterface::Gamepad)
     {
         _gamepadStatus = status;
         sendCommand("inputDeviceStatus", messageJson, client);

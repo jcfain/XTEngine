@@ -433,7 +433,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
     _funscriptVRFuture = QtConcurrent::run([this]()
     {
         std::shared_ptr<FunscriptAction> actionPosition;
-        InputDevicePacket currentVRPacket;
+        InputConnectionPacket currentVRPacket;
         double timeTracker = 0;
         qint64 lastVRTime = 0;
         //qint64 lastVRSyncResetTime = 0;
@@ -692,11 +692,11 @@ void SyncHandler::sendPulse(qint64 currentMsecs, qint64 &nextPulseTime)
     }
 }
 
-void SyncHandler::on_input_device_change(InputDeviceHandler* inputDeviceHandler) {
+void SyncHandler::on_input_device_change(InputConnectionHandler* inputDeviceHandler) {
     _inputDeviceHandler = inputDeviceHandler;
 }
 
-void SyncHandler::on_output_device_change(OutputDeviceHandler* outputDeviceHandler) {
+void SyncHandler::on_output_device_change(OutputConnectionHandler* outputDeviceHandler) {
    // _outputDeviceHandler = outputDeviceHandler;
 }
 
@@ -704,7 +704,7 @@ void SyncHandler::on_other_media_state_change(XMediaState state) {
     _isOtherMediaPlaying = state == XMediaState::Playing || state ==  XMediaState::Paused;
 }
 
-void SyncHandler::searchForFunscript(InputDevicePacket packet)
+void SyncHandler::searchForFunscript(InputConnectionPacket packet)
 {
         //LogHandler::Debug("VR path: "+packet.path);
 //LogHandler::Debug("VR duration: "+QString::number(packet.duration));

@@ -3,16 +3,16 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include "../struct/SerialComboboxItem.h"
-#include "outputdevicehandler.h"
+#include "outputconnectionhandler.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT SerialHandler : public OutputDeviceHandler
+class XTENGINE_EXPORT OutputSerialConnectionHandler : public OutputConnectionHandler
 {
     Q_OBJECT
 
 public:
-    explicit SerialHandler(QObject *parent = nullptr);
-    ~SerialHandler();
+    explicit OutputSerialConnectionHandler(QObject *parent = nullptr);
+    ~OutputSerialConnectionHandler();
 
     QList<SerialComboboxItem> getPorts();
     void sendTCode(const QString &tcode) override;

@@ -8,12 +8,12 @@
 #include "tcodehandler.h"
 #include "funscripthandler.h"
 #include "lib/lookup/XMedia.h"
-#include "lib/struct/InputDevicePacket.h"
+#include "lib/struct/InputConnectionPacket.h"
 #include "lib/struct/ConnectionChangedSignal.h"
 #include <QtConcurrent/QtConcurrent>
 #include <QElapsedTimer>
-#include "lib/handler/inputdevicehandler.h"
-#include "lib/handler/outputdevicehandler.h"
+#include "lib/handler/inputconnectionhandler.h"
+#include "lib/handler/outputconnectionhandler.h"
 #include "lib/struct/ScriptInfo.h"
 #include "XTEngine_global.h"
 
@@ -45,10 +45,10 @@ signals:
     void funscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
 
 public slots:
-    void on_output_device_change(OutputDeviceHandler* outputDeviceHandler);
-    void on_input_device_change(InputDeviceHandler* inputDeviceHandler);
+    void on_output_device_change(OutputConnectionHandler* outputDeviceHandler);
+    void on_input_device_change(InputConnectionHandler* inputDeviceHandler);
     void on_other_media_state_change(XMediaState state);
-    void searchForFunscript(InputDevicePacket packet);
+    void searchForFunscript(InputConnectionPacket packet);
     SyncLoadState swap(const ScriptInfo &script);
 
 public:
@@ -91,7 +91,7 @@ private:
     TCodeHandler* _tcodeHandler;
     FunscriptHandler m_funscriptHandler;
     // QList<FunscriptHandler*> _funscriptHandlers;
-    InputDeviceHandler* _inputDeviceHandler = 0;
+    InputConnectionHandler* _inputDeviceHandler = 0;
     //OutputDeviceHandler* _outputDeviceHandler = 0;
 
 

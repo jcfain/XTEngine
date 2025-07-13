@@ -632,32 +632,32 @@ void HttpHandler::handleSettingsUpdate(const QHttpServerRequest &request, QHttpS
         QJsonObject input = connection["input"].toObject();
         QJsonObject output = connection["output"].toObject();
 
-        DeviceName selectedInputDevice = (DeviceName)input["selectedDevice"].toInt();
+        ConnectionInterface selectedInputDevice = (ConnectionInterface)input["selectedDevice"].toInt();
         QString deoAddress = input["deoAddress"].toString();
         QString deoPort = input["deoPort"].toString();
         if(deoAddress != SettingsHandler::getDeoAddress() || deoPort != SettingsHandler::getDeoPort())
         {
             SettingsHandler::setDeoAddress(deoAddress);
             SettingsHandler::setDeoPort(deoPort);
-            if(selectedInputDevice == DeviceName::HereSphere)
-                emit connectInputDevice(DeviceName::HereSphere, true);
+            if(selectedInputDevice == ConnectionInterface::HereSphere)
+                emit connectInputDevice(ConnectionInterface::HereSphere, true);
         }
-        DeviceName selectedOutputDevice = (DeviceName)output["selectedDevice"].toInt();
+        ConnectionInterface selectedOutputDevice = (ConnectionInterface)output["selectedDevice"].toInt();
         QString networkAddress = output["networkAddress"].toString();
         QString networkPort = output["networkPort"].toString();
         if(!networkAddress.isEmpty() && (networkAddress != SettingsHandler::getServerAddress() || networkPort != SettingsHandler::getServerPort()))
         {
             SettingsHandler::setServerAddress(networkAddress);
             SettingsHandler::setServerPort(networkPort);
-            if(selectedOutputDevice == DeviceName::Network)
-                emit connectOutputDevice(DeviceName::Network, true);
+            if(selectedOutputDevice == ConnectionInterface::Network)
+                emit connectOutputDevice(ConnectionInterface::Network, true);
         }
         QString serialPort = output["serialPort"].toString();
         if(!serialPort.isEmpty() && serialPort != SettingsHandler::getSerialPort())
         {
             SettingsHandler::setSerialPort(serialPort);
-            if(selectedOutputDevice == DeviceName::Serial)
-                emit connectOutputDevice(DeviceName::Serial, true);
+            if(selectedOutputDevice == ConnectionInterface::Serial)
+                emit connectOutputDevice(ConnectionInterface::Serial, true);
         }
         if(!doc["tagsToRemove"].isNull())
         {

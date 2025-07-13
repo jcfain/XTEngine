@@ -33,12 +33,13 @@ SOURCES += \
     lib/handler/connectionhandler.cpp \
     lib/handler/crypthandler.cpp \
     lib/handler/deohandler.cpp \
+    lib/handler/devicehandler.cpp \
     lib/handler/funscripthandler.cpp \
     lib/handler/gamepadhandler.cpp \
     lib/handler/httphandler.cpp \
     lib/handler/loghandler.cpp \
     lib/handler/medialibraryhandler.cpp \
-    lib/handler/outputdevicehandler.cpp \
+    lib/handler/outputconnectionhandler.cpp \
     lib/handler/scheduler.cpp \
     lib/handler/serialhandler.cpp \
     lib/handler/settingsactionhandler.cpp \
@@ -70,13 +71,14 @@ HEADERS += \
     lib/handler/connectionhandler.h \
     lib/handler/crypthandler.h \
     lib/handler/deohandler.h \
+    lib/handler/devicehandler.h \
     lib/handler/funscripthandler.h \
     lib/handler/gamepadhandler.h \
     lib/handler/httphandler.h \
-    lib/handler/inputdevicehandler.h \
+    lib/handler/inputconnectionhandler.h \
     lib/handler/loghandler.h \
     lib/handler/medialibraryhandler.h \
-    lib/handler/outputdevicehandler.h \
+    lib/handler/outputconnectionhandler.h \
     lib/handler/scheduler.h \
     lib/handler/serialhandler.h \
     lib/handler/settingsactionhandler.h \
@@ -89,7 +91,7 @@ HEADERS += \
     lib/handler/whirligighandler.h \
     lib/handler/xmediastatehandler.h \
     lib/handler/xtpwebhandler.h \
-    lib/interface/networkdevice.h \
+    lib/interface/outputnetworkconnectionhandler.h \
     lib/lookup/ChannelDimension.h \
     lib/lookup/ChannelType.h \
     lib/lookup/GamepadAxisNames.h \
@@ -110,16 +112,18 @@ HEADERS += \
     lib/struct/DecoderModel.h \
     lib/struct/Funscript.h \
     lib/struct/GamepadState.h \
+    lib/struct/InputConnectionPacket.h \
     lib/struct/LibraryListItem.h \
     lib/struct/LibraryListItem27.h \
     lib/struct/LibraryListItemMetaData.h \
     lib/struct/LibraryListItemMetaData258.h \
     lib/struct/NetworkAddress.h \
-    lib/struct/NetworkDeviceInfo.h \
-    lib/struct/OutputDevicePacket.h \
+    lib/struct/NetworkConnectionInfo.h \
+    lib/struct/OutputConnectionPacket.h \
     lib/struct/ScriptInfo.h \
     lib/struct/SerialComboboxItem.h \
-    lib/struct/InputDevicePacket.h \
+    lib/struct/connection.h \
+    lib/struct/device.h \
     lib/tool/array-util.h \
     lib/tool/boolinq.h \
     lib/tool/file-util.h \

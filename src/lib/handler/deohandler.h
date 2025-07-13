@@ -8,10 +8,10 @@
 #include <QTimer>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include "inputdevicehandler.h"
+#include "inputconnectionhandler.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT HereSphereHandler : public InputDeviceHandler
+class XTENGINE_EXPORT InputHeresphereConnectionHandler : public InputConnectionHandler
 {
 
     Q_OBJECT
@@ -19,18 +19,18 @@ public slots:
     void messageSend(QByteArray message) override;
 
 public:
-    explicit HereSphereHandler(QObject *parent = nullptr);
-    ~HereSphereHandler();
+    explicit InputHeresphereConnectionHandler(QObject *parent = nullptr);
+    ~InputHeresphereConnectionHandler();
     void init(NetworkAddress _address, int waitTimeout = 5000) override;
     void dispose() override;
     void send(const QString &command) override;
     bool isConnected() override;
     bool isPlaying() override;
     //void togglePause();
-    InputDevicePacket getCurrentPacket() override;
-    void sendPacket(InputDevicePacket packet) override;
+    InputConnectionPacket getCurrentPacket() override;
+    void sendPacket(InputConnectionPacket packet) override;
 
-    DeviceName name() override;
+    ConnectionInterface name() override;
 
 private:
     void readData();
@@ -39,8 +39,8 @@ private:
     void sendKeepAlive();
     void tearDown();
 
-    InputDevicePacket currentPacket;
-    InputDevicePacket blankPacket = {
+    InputConnectionPacket currentPacket;
+    InputConnectionPacket blankPacket = {
         NULL,
         0,
         0,

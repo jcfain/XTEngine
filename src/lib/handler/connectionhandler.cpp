@@ -3,42 +3,42 @@
 ConnectionHandler::ConnectionHandler(QObject *parent)
     : QObject(parent)
 {
-    _serialHandler = new SerialHandler(this);
-    _udpHandler = new UdpHandler(this);
-    _webSocketHandler = new WebsocketDeviceHandler(this);
-    _networkDevice = _udpHandler;
-    m_hereSphereHandler = new HereSphereHandler(this);
-    _xtpWebHandler = new XTPWebHandler(this);
-    _whirligigHandler = new WhirligigHandler(this);
+    _serialHandler = new OutputSerialConnectionHandler(this);
+    _udpHandler = new OutputUdpConnectionHandler(this);
+    _webSocketHandler = new OutputWebsocketConnectionHandler(this);
+    _networkConnection = _udpHandler;
+    m_hereSphereHandler = new InputHeresphereConnectionHandler(this);
+    _xtpWebHandler = new InputXTPWebConnectionHandler(this);
+    _whirligigHandler = new InputWhirligigConnectionHandler(this);
     _gamepadHandler = new GamepadHandler(this);
-    m_bleHandler = new BLEHandler(this);
+    m_bleHandler = new OutputBLEConnectionHandler(this);
 }
 
 void ConnectionHandler::init()
 {
-    DeviceName outputDeviceName = SettingsHandler::getSelectedOutputDevice();
-    if(outputDeviceName != DeviceName::None)
-        initOutputDevice(outputDeviceName);
+    ConnectionInterface outputDeviceName = SettingsHandler::getSelectedOutputDevice();
+    if(outputDeviceName != ConnectionInterface::None)
+        initOutputConnection(outputDeviceName);
 
-    DeviceName inputDeviceName = SettingsHandler::getSelectedInputDevice();
-    if(inputDeviceName != DeviceName::None)
-        initInputDevice(inputDeviceName);
+    ConnectionInterface inputDeviceName = SettingsHandler::getSelectedInputDevice();
+    if(inputDeviceName != ConnectionInterface::None)
+        initInputConnection(inputDeviceName);
 
     if(SettingsHandler::getGamepadEnabled())
     {
-        initInputDevice(DeviceName::Gamepad);
+        initInputConnection(ConnectionInterface::Gamepad);
     }
 }
 
 void ConnectionHandler::dispose()
 {
-    disposeInputDevice(DeviceName::HereSphere);
-    disposeInputDevice(DeviceName::Whirligig);
-    disposeInputDevice(DeviceName::XTPWeb);
-    disposeInputDevice(DeviceName::Gamepad);
-    disposeOutputDevice(DeviceName::Serial);
-    disposeOutputDevice(DeviceName::Network);
-    disposeOutputDevice(DeviceName::BLE);
+    disposeInputConnection(ConnectionInterface::HereSphere);
+    disposeInputConnection(ConnectionInterface::Whirligig);
+    disposeInputConnection(ConnectionInterface::XTPWeb);
+    disposeInputConnection(ConnectionInterface::Gamepad);
+    disposeOutputConnection(ConnectionInterface::Serial);
+    disposeOutputConnection(ConnectionInterface::Network);
+    disposeOutputConnection(ConnectionInterface::BLE);
     if(_initFuture.isRunning())
     {
         _initFuture.cancel();
@@ -46,28 +46,28 @@ void ConnectionHandler::dispose()
     }
 }
 
-bool ConnectionHandler::isOutputDeviceConnected()
+bool ConnectionHandler::isOutputConnected()
 {
-    return _outputDevice && _outputDevice->isConnected();
+    return m_outputConnection && m_outputConnection->isConnected();
 }
 
-bool ConnectionHandler::isInputDeviceConnected()
+bool ConnectionHandler::isInputConnected()
 {
-    return _inputDevice && _inputDevice->isConnected();
+    return m_inputConnection && m_inputConnection->isConnected();
 }
 
-void ConnectionHandler::setOutputDevice(OutputDeviceHandler* device)
+void ConnectionHandler::setOutputConnection(OutputConnectionHandler* device)
 {
-    if(!device && _outputDevice) {
-        disconnect(_outputDevice, &OutputDeviceHandler::connectionChange, this, nullptr);
-        disconnect(_outputDevice, &OutputDeviceHandler::commandRecieve, this, nullptr);
-        _outputDevice->dispose();
+    if(!device && m_outputConnection) {
+        disconnect(m_outputConnection, &OutputConnectionHandler::connectionChange, this, nullptr);
+        disconnect(m_outputConnection, &OutputConnectionHandler::commandRecieve, this, nullptr);
+        m_outputConnection->dispose();
     }
-    _outputDevice = device;
-    if(_outputDevice) {
-        connect(_outputDevice, &OutputDeviceHandler::connectionChange, this, &ConnectionHandler::on_output_connectionChanged, Qt::UniqueConnection);
-        connect(_outputDevice, &OutputDeviceHandler::commandRecieve, this, &ConnectionHandler::outputMessageRecieved);
-        connect(_outputDevice, &OutputDeviceHandler::commandRecieve, this, [this](OutputDevicePacket packet) {
+    m_outputConnection = device;
+    if(m_outputConnection) {
+        connect(m_outputConnection, &OutputConnectionHandler::connectionChange, this, &ConnectionHandler::on_output_connectionChanged, Qt::UniqueConnection);
+        connect(m_outputConnection, &OutputConnectionHandler::commandRecieve, this, &ConnectionHandler::outputMessageRecieved);
+        connect(m_outputConnection, &OutputConnectionHandler::commandRecieve, this, [this](OutputConnectionPacket packet) {
             if(!packet.original.isEmpty()) {
                 auto actions = SettingsHandler::getTCodeCommandMapCommands(packet.original);
                 foreach(QString actionValue, actions) {
@@ -77,42 +77,42 @@ void ConnectionHandler::setOutputDevice(OutputDeviceHandler* device)
         });
     }
 }
-void ConnectionHandler::setInputDevice(InputDeviceHandler* device)
+void ConnectionHandler::setInputConnection(InputConnectionHandler* device)
 {
-    if(!device && _inputDevice) {
-        disconnect(_inputDevice, &InputDeviceHandler::connectionChange, this, nullptr);
-        disconnect(_inputDevice, &InputDeviceHandler::messageRecieved, this, nullptr);
-        _inputDevice->dispose();
+    if(!device && m_inputConnection) {
+        disconnect(m_inputConnection, &InputConnectionHandler::connectionChange, this, nullptr);
+        disconnect(m_inputConnection, &InputConnectionHandler::messageRecieved, this, nullptr);
+        m_inputConnection->dispose();
     }
-    _inputDevice = device;
-    if(_inputDevice) {
-        connect(_inputDevice, &InputDeviceHandler::connectionChange, this, &ConnectionHandler::on_input_connectionChanged, Qt::UniqueConnection);
-        connect(_inputDevice, &InputDeviceHandler::messageRecieved, this, [this](InputDevicePacket packet){
-            if(_inputDevice->isConnected())
+    m_inputConnection = device;
+    if(m_inputConnection) {
+        connect(m_inputConnection, &InputConnectionHandler::connectionChange, this, &ConnectionHandler::on_input_connectionChanged, Qt::UniqueConnection);
+        connect(m_inputConnection, &InputConnectionHandler::messageRecieved, this, [this](InputConnectionPacket packet){
+            if(m_inputConnection->isConnected())
                 emit inputMessageRecieved(packet);
         });
     }
 }
 
-OutputDeviceHandler* ConnectionHandler::getSelectedOutputDevice() {
-    return _outputDevice;
+OutputConnectionHandler* ConnectionHandler::getSelectedOutputConnection() {
+    return m_outputConnection;
 }
-InputDeviceHandler* ConnectionHandler::getSelectedInputDevice() {
-    return _inputDevice;
+InputConnectionHandler* ConnectionHandler::getSelectedInputConnection() {
+    return m_inputConnection;
 }
-NetworkDevice* ConnectionHandler::getNetworkHandler() {
-    return _networkDevice;
+OutputNetworkConnectionHandler* ConnectionHandler::getNetworkHandler() {
+    return _networkConnection;
 }
-SerialHandler* ConnectionHandler::getSerialHandler() {
+OutputSerialConnectionHandler* ConnectionHandler::getSerialHandler() {
     return _serialHandler;
 }
-HereSphereHandler* ConnectionHandler::getHereSphereHandler() {
+InputHeresphereConnectionHandler* ConnectionHandler::getHereSphereHandler() {
    return m_hereSphereHandler;
 }
-XTPWebHandler* ConnectionHandler::getXTPWebHandler() {
+InputXTPWebConnectionHandler* ConnectionHandler::getXTPWebHandler() {
     return _xtpWebHandler;
 }
-WhirligigHandler* ConnectionHandler::getWhirligigHandler() {
+InputWhirligigConnectionHandler* ConnectionHandler::getWhirligigHandler() {
     return _whirligigHandler;
 }
 GamepadHandler* ConnectionHandler::getGamepadHandler() {
@@ -120,86 +120,86 @@ GamepadHandler* ConnectionHandler::getGamepadHandler() {
 }
 
 void ConnectionHandler::inputMessageSend(QByteArray message) {
-    if(_inputDevice)
-        _inputDevice->messageSend(message);
+    if(m_inputConnection)
+        m_inputConnection->messageSend(message);
 }
 void ConnectionHandler::sendTCode(QString tcode)
 {
-    if(!tcode.isEmpty() && _outputDevice && _outputDevice->isConnected())
-        _outputDevice->sendTCode(tcode);
+    if(!tcode.isEmpty() && m_outputConnection && m_outputConnection->isConnected())
+        m_outputConnection->sendTCode(tcode);
 }
 
-void ConnectionHandler::stopOutputDevice()
+void ConnectionHandler::stopOutputConnection()
 {
     sendTCode("DSTOP");
 }
 
-void ConnectionHandler::initOutputDevice(DeviceName outputDevice)
+void ConnectionHandler::initOutputConnection(ConnectionInterface outputDevice)
 {
-    if (_outputDevice && _outputDevice->isConnected())
+    if (m_outputConnection && m_outputConnection->isConnected())
     {
-        _outputDevice->dispose();
-        disconnect(_outputDevice, &OutputDeviceHandler::connectionChange, nullptr, nullptr);
+        m_outputConnection->dispose();
+        disconnect(m_outputConnection, &OutputConnectionHandler::connectionChange, nullptr, nullptr);
     }
     if(_initFuture.isRunning())
     {
         _initFuture.cancel();
         _initFuture.waitForFinished();
     }
-    if(outputDevice == DeviceName::None)
+    if(outputDevice == ConnectionInterface::None)
     {
         return;
     }
-    else if(outputDevice == DeviceName::Serial)
+    else if(outputDevice == ConnectionInterface::Serial)
     {
-        setOutputDevice(_serialHandler);
+        setOutputConnection(_serialHandler);
         _serialHandler->init(SettingsHandler::getSerialPort());
     }
-    else if (outputDevice == DeviceName::Network)
+    else if (outputDevice == ConnectionInterface::Network)
     {
-        if(SettingsHandler::getSelectedNetworkDevice() == NetworkProtocol::WEBSOCKET) {
-           _networkDevice = _webSocketHandler;
+        if(SettingsHandler::getSelectedNetworkProtocol() == NetworkProtocol::WEBSOCKET) {
+           _networkConnection = _webSocketHandler;
         } else {
-           _networkDevice = _udpHandler;
+           _networkConnection = _udpHandler;
         }
-        setOutputDevice(_networkDevice);
+        setOutputConnection(_networkConnection);
         if(!SettingsHandler::getServerAddress().isEmpty() && !SettingsHandler::getServerPort().isEmpty() &&
             SettingsHandler::getServerAddress() != "0" && SettingsHandler::getServerPort() != "0")
         {
             NetworkAddress address { SettingsHandler::getServerAddress(), SettingsHandler::getServerPort().toInt() };
 
-            _networkDevice->init(address);
+            _networkConnection->init(address);
 //            _initFuture = QtConcurrent::run([this, address]() {
 //                _webSocketHandler->init(address);
 //            });
         }
     }
-    else if(outputDevice == DeviceName::BLE)
+    else if(outputDevice == ConnectionInterface::BLE)
     {
-        setOutputDevice(m_bleHandler);
+        setOutputConnection(m_bleHandler);
         m_bleHandler->init();
     }
 }
 
-void ConnectionHandler::disposeOutputDevice(DeviceName outputDevice)
+void ConnectionHandler::disposeOutputConnection(ConnectionInterface outputDevice)
 {
-    if(outputDevice == DeviceName::Serial)
+    if(outputDevice == ConnectionInterface::Serial)
     {
         _serialHandler->dispose();
     }
-    else if (outputDevice == DeviceName::Network)
+    else if (outputDevice == ConnectionInterface::Network)
     {
         _udpHandler->dispose();
     }
-    else if (outputDevice == DeviceName::BLE)
+    else if (outputDevice == ConnectionInterface::BLE)
     {
         m_bleHandler->dispose();
     }
 }
 
-void ConnectionHandler::initInputDevice(DeviceName inputDevice)
+void ConnectionHandler::initInputConnection(ConnectionInterface inputConnection)
 {
-    if(inputDevice == DeviceName::Gamepad)
+    if(inputConnection == ConnectionInterface::Gamepad)
     {
         connect(_gamepadHandler, &GamepadHandler::connectionChange, this, &ConnectionHandler::on_gamepad_connectionChanged);
         connect(_gamepadHandler, &GamepadHandler::emitTCode, this, &ConnectionHandler::sendTCode);
@@ -207,19 +207,19 @@ void ConnectionHandler::initInputDevice(DeviceName inputDevice)
         _gamepadHandler->init();
         return;
     }
-    if (_inputDevice)
+    if (m_inputConnection)
     {
-        disconnect(_inputDevice, &InputDeviceHandler::messageRecieved, nullptr, nullptr);
-        _inputDevice->dispose();
-        disconnect(_inputDevice, &InputDeviceHandler::connectionChange, nullptr, nullptr);
+        disconnect(m_inputConnection, &InputConnectionHandler::messageRecieved, nullptr, nullptr);
+        m_inputConnection->dispose();
+        disconnect(m_inputConnection, &InputConnectionHandler::connectionChange, nullptr, nullptr);
     }
-    if(inputDevice == DeviceName::None)
+    if(inputConnection == ConnectionInterface::None)
     {
         return;
     }
-    else if(inputDevice == DeviceName::HereSphere)
+    else if(inputConnection == ConnectionInterface::HereSphere)
     {
-        setInputDevice(m_hereSphereHandler);
+        setInputConnection(m_hereSphereHandler);
         if(!SettingsHandler::getDeoAddress().isEmpty() && !SettingsHandler::getDeoPort().isEmpty() &&
             SettingsHandler::getDeoAddress() != "0" && SettingsHandler::getDeoPort() != "0")
         {
@@ -227,9 +227,9 @@ void ConnectionHandler::initInputDevice(DeviceName inputDevice)
             m_hereSphereHandler->init(address);
         }
     }
-    else if(inputDevice == DeviceName::Whirligig)
+    else if(inputConnection == ConnectionInterface::Whirligig)
     {
-        setInputDevice(_whirligigHandler);
+        setInputConnection(_whirligigHandler);
         if(!SettingsHandler::getWhirligigAddress().isEmpty() && !SettingsHandler::getWhirligigPort().isEmpty() &&
             SettingsHandler::getWhirligigAddress() != "0" && SettingsHandler::getWhirligigPort() != "0")
         {
@@ -237,32 +237,32 @@ void ConnectionHandler::initInputDevice(DeviceName inputDevice)
             _whirligigHandler->init(address);
         }
     }
-    else if(inputDevice == DeviceName::XTPWeb)
+    else if(inputConnection == ConnectionInterface::XTPWeb)
     {
-        setInputDevice(_xtpWebHandler);
+        setInputConnection(_xtpWebHandler);
         if(SettingsHandler::getEnableHttpServer())
             _xtpWebHandler->init();
     }
 }
 
-void ConnectionHandler::disposeInputDevice(DeviceName inputDevice)
+void ConnectionHandler::disposeInputConnection(ConnectionInterface inputConnection)
 {
-    if(inputDevice == DeviceName::Gamepad)
+    if(inputConnection == ConnectionInterface::Gamepad)
     {
         _gamepadHandler->dispose();
         disconnect(_gamepadHandler, &GamepadHandler::emitTCode, nullptr, nullptr);
         disconnect(_gamepadHandler, &GamepadHandler::emitAction, nullptr, nullptr);
         disconnect(_gamepadHandler, &GamepadHandler::connectionChange, nullptr, nullptr);
     }
-    else if(inputDevice == DeviceName::HereSphere)
+    else if(inputConnection == ConnectionInterface::HereSphere)
     {
         m_hereSphereHandler->dispose();
     }
-    else if(inputDevice == DeviceName::Whirligig)
+    else if(inputConnection == ConnectionInterface::Whirligig)
     {
         _whirligigHandler->dispose();
     }
-    else if(inputDevice == DeviceName::XTPWeb)
+    else if(inputConnection == ConnectionInterface::XTPWeb)
     {
         _xtpWebHandler->dispose();
     }
@@ -273,14 +273,14 @@ void ConnectionHandler::on_input_connectionChanged(ConnectionChangedSignal event
     _deoConnectionStatus = event.status;
     if (event.status == ConnectionStatus::Error)
     {
-        setInputDevice(0);
+        setInputConnection(0);
         emit inputConnectionChange(event);
     }
     else
     {
-        SettingsHandler::setSelectedInputDevice(event.deviceName);
+        SettingsHandler::setSelectedInputConnection(event.connectionName);
     }
-    ConnectionChangedSignal status = {event.type, event.deviceName, event.status, event.message};
+    ConnectionChangedSignal status = {event.type, event.connectionName, event.status, event.message};
     emit inputConnectionChange(status);
     emit connectionChange(status);
 }
@@ -289,14 +289,14 @@ void ConnectionHandler::on_output_connectionChanged(ConnectionChangedSignal even
     _deoConnectionStatus = event.status;
     if (event.status == ConnectionStatus::Error)
     {
-        setOutputDevice(0);
+        setOutputConnection(0);
         emit outputConnectionChange(event);
     }
     else
     {
-        SettingsHandler::setSelectedOutputDevice(event.deviceName);
+        SettingsHandler::setSelectedOutputConnection(event.connectionName);
     }
-    ConnectionChangedSignal status = {event.type, event.deviceName, event.status, event.message};
+    ConnectionChangedSignal status = {event.type, event.connectionName, event.status, event.message};
     emit outputConnectionChange(status);
     emit connectionChange(status);
 }

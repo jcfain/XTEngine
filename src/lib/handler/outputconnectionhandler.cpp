@@ -1,29 +1,29 @@
-#include "outputdevicehandler.h"
+#include "outputconnectionhandler.h"
 
-OutputDeviceHandler::OutputDeviceHandler(DeviceName deviceName, QObject *parent)
+OutputConnectionHandler::OutputConnectionHandler(ConnectionInterface deviceName, QObject *parent)
     : QObject(parent), m_deviceName(deviceName), m_newline("(\r\n|\r|\n)") {
-    connect(this, &OutputDeviceHandler::sendHandShake, this, &OutputDeviceHandler::onSendHandShake);
+    connect(this, &OutputConnectionHandler::sendHandShake, this, &OutputConnectionHandler::onSendHandShake);
 }
-void OutputDeviceHandler::dispose() {
+void OutputConnectionHandler::dispose() {
     tryConnectStop();
     setConnected(false);
-    emit connectionChange({DeviceType::Output, m_deviceName,
+    emit connectionChange({ConnectionDirection::Output, m_deviceName,
                            ConnectionStatus::Disconnected, "Disconnected"});
-};
-DeviceName OutputDeviceHandler::name() { return m_deviceName; };
-bool OutputDeviceHandler::isConnected() {
+}
+ConnectionInterface OutputConnectionHandler::name() { return m_deviceName; }
+bool OutputConnectionHandler::isConnected() {
     const QMutexLocker locker(&m_mutex);
     return m_isConnected;
 }
-void OutputDeviceHandler::onSendHandShake() { sendTCode("D1"); };
-void OutputDeviceHandler::tryConnectStop() {
+void OutputConnectionHandler::onSendHandShake() { sendTCode("D1"); }
+void OutputConnectionHandler::tryConnectStop() {
     if (m_initFuture.isRunning()) {
         m_stop = true;
         m_initFuture.cancel();
         m_initFuture.waitForFinished();
     }
 }
-void OutputDeviceHandler::tryConnectDevice(unsigned long waitTimeout) {
+void OutputConnectionHandler::tryConnectDevice(unsigned long waitTimeout) {
     tryConnectStop();
 
     m_stop = false;
@@ -39,11 +39,11 @@ void OutputDeviceHandler::tryConnectDevice(unsigned long waitTimeout) {
             }
             if (!m_stop && timeouttracker > maxTries) {
                 setConnected(false);
-                emit connectionChange({DeviceType::Output, m_deviceName,
+                emit connectionChange({ConnectionDirection::Output, m_deviceName,
                                        ConnectionStatus::Error, "Timed out"});
             }
         } else {
-            emit connectionChange({DeviceType::Output, m_deviceName,
+            emit connectionChange({ConnectionDirection::Output, m_deviceName,
                                    ConnectionStatus::Connected,
                                    "Connected: No Validate"});
             m_stop = true;
@@ -51,7 +51,7 @@ void OutputDeviceHandler::tryConnectDevice(unsigned long waitTimeout) {
         }
     });
 }
-void OutputDeviceHandler::processDeviceInput(QString buffer) {
+void OutputConnectionHandler::processDeviceInput(QString buffer) {
     m_readBuffer += buffer;
     if (m_readBuffer.isEmpty()) // Must end with newline char
         return;
@@ -73,10 +73,9 @@ void OutputDeviceHandler::processDeviceInput(QString buffer) {
             QString version = "Unknown v?";
 
             bool validated = false;
-            for (auto supportedversion :
-                 TCodeChannelLookup::SupportedTCodeVersions.keys()) {
-                auto tcodeVersion =
-                    TCodeChannelLookup::SupportedTCodeVersions.value(supportedversion);
+            auto keys = TCodeChannelLookup::SupportedTCodeVersions.keys();
+            for (auto supportedversion : keys) {
+                auto tcodeVersion = TCodeChannelLookup::SupportedTCodeVersions.value(supportedversion);
                 if (m_readBuffer.contains(tcodeVersion)) {
                     version = tcodeVersion;
                     validated = true;
@@ -85,12 +84,12 @@ void OutputDeviceHandler::processDeviceInput(QString buffer) {
             if (validated) {
                 LogHandler::Debug(tr("Recieved device validation: ") + m_readBuffer);
                 setConnected(true);
-                emit connectionChange({DeviceType::Output, m_deviceName,
+                emit connectionChange({ConnectionDirection::Output, m_deviceName,
                                        ConnectionStatus::Connected, version});
             }
             m_readBuffer.clear();
         } else {
-            emit connectionChange({DeviceType::Output, m_deviceName,
+            emit connectionChange({ConnectionDirection::Output, m_deviceName,
                                    ConnectionStatus::Connected,
                                    "Connected: No Validate"});
             setConnected(true);
@@ -101,12 +100,12 @@ void OutputDeviceHandler::processDeviceInput(QString buffer) {
         m_readBuffer.clear();
     }
 }
-void OutputDeviceHandler::setConnected(bool connected) {
+void OutputConnectionHandler::setConnected(bool connected) {
     m_mutex.lock();
     m_isConnected = connected;
     m_mutex.unlock();
 }
-void OutputDeviceHandler::processCommand(QString data) {
+void OutputConnectionHandler::processCommand(QString data) {
     QString command = data;
     auto indexOfValue = data.indexOf(":");
     double value = -1;

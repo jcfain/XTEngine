@@ -1,17 +1,17 @@
 #include "serialhandler.h"
 
-SerialHandler::SerialHandler(QObject *parent) :
-    OutputDeviceHandler(DeviceName::Serial, parent),
+OutputSerialConnectionHandler::OutputSerialConnectionHandler(QObject *parent) :
+    OutputConnectionHandler(ConnectionInterface::Serial, parent),
     m_serial(new QSerialPort(this))
 {
     qRegisterMetaType<ConnectionChangedSignal>();
-    connect(m_serial, &QSerialPort::readyRead, this, &SerialHandler::onReadyRead, Qt::QueuedConnection);
+    connect(m_serial, &QSerialPort::readyRead, this, &OutputSerialConnectionHandler::onReadyRead, Qt::QueuedConnection);
 }
 
-SerialHandler::~SerialHandler() {
+OutputSerialConnectionHandler::~OutputSerialConnectionHandler() {
 }
 
-void SerialHandler::init(const QString &portNameOrFriendlyName, int waitTimeout)
+void OutputSerialConnectionHandler::init(const QString &portNameOrFriendlyName, int waitTimeout)
 {
     auto available = getPorts();
     LogHandler::Debug("Init port: "+ portNameOrFriendlyName);
@@ -35,16 +35,16 @@ void SerialHandler::init(const QString &portNameOrFriendlyName, int waitTimeout)
     }
     if(_portName.isEmpty() && available.count() > 0)
     {
-        emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Disconnected,  portNameOrFriendlyName.isEmpty() ? "No existing ports found with Arduino, CP210x or ch340 in the name. Select a port from the settings menu.": portNameOrFriendlyName+ " not found in available ports. Select a new port from the settings menu."});
+        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Disconnected,  portNameOrFriendlyName.isEmpty() ? "No existing ports found with Arduino, CP210x or ch340 in the name. Select a port from the settings menu.": portNameOrFriendlyName+ " not found in available ports. Select a new port from the settings menu."});
         return;
     }
     else if(_portName.isEmpty() || available.length() == 0)
     {
         //LogHandler::Dialog("No portname specified", XLogLevel::Critical);
-        emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Disconnected, "No COM"});
+        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Disconnected, "No COM"});
         return;
     }
-    emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Connecting, "Connecting..."});
+    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Connecting, "Connecting..."});
 
 
     LogHandler::Debug("Connecting to: "+ _portName);
@@ -64,12 +64,12 @@ void SerialHandler::init(const QString &portNameOrFriendlyName, int waitTimeout)
     if (!m_serial->open(QIODevice::ReadWrite))
     {
         LogHandler::Error("Error opening: "+ _portName + ", Error: "+m_serial->errorString());
-        emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Error, tr("Can't open %1, error %2")
+        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Error, tr("Can't open %1, error %2")
                                                                                                     .arg(_portName).arg(m_serial->errorString())});
         return;
     }
     if(!m_serial->setBaudRate(QSerialPort::BaudRate::Baud115200)) {
-        emit connectionChange({DeviceType::Output, DeviceName::Serial, ConnectionStatus::Error, tr("Error setting  %1 baud:\n115200, error %2")
+        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Error, tr("Error setting  %1 baud:\n115200, error %2")
                                                                                                     .arg(_portName).arg(m_serial->errorString())});
         m_serial->close();
         return;
@@ -87,7 +87,7 @@ void SerialHandler::init(const QString &portNameOrFriendlyName, int waitTimeout)
 }
 
 
-void SerialHandler::sendTCode(const QString &tcode)
+void OutputSerialConnectionHandler::sendTCode(const QString &tcode)
 {
     LogHandler::Debug("Sending TCode serial: "+ tcode);
     if(m_serial->isOpen())
@@ -98,14 +98,14 @@ void SerialHandler::sendTCode(const QString &tcode)
     }
 }
 
-void SerialHandler::dispose()
+void OutputSerialConnectionHandler::dispose()
 {
     LogHandler::Debug("Serial dispose "+ _portName);
     m_serial->close();
-    OutputDeviceHandler::dispose();
+    OutputConnectionHandler::dispose();
 }
 
-void SerialHandler::onReadyRead()
+void OutputSerialConnectionHandler::onReadyRead()
 {
     QByteArray responseData = m_serial->readAll();
     while (m_serial->bytesAvailable())
@@ -113,7 +113,7 @@ void SerialHandler::onReadyRead()
     processDeviceInput(QString::fromUtf8(responseData));
 }
 
-QList<SerialComboboxItem> SerialHandler::getPorts()
+QList<SerialComboboxItem> OutputSerialConnectionHandler::getPorts()
 {
     const auto serialPortInfos = QSerialPortInfo::availablePorts();
 

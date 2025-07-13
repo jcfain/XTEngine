@@ -1705,7 +1705,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
                 if(!hasGlobalLocked.isEmpty())
                     QFile::remove(hasGlobalLocked);
                 if(!hasLocal.isEmpty()) {
-                    LibraryListItem27* item = m_mediaLibraryCache.findItemByID(item->ID);
+                    LibraryListItem27* item = m_mediaLibraryCache.findItemByID(libraryListItem.ID);
                     if(item)
                     {
                         m_mediaLibraryCache.lockForWrite();
@@ -1713,7 +1713,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
                         m_mediaLibraryCache.unlock();
                     }
                 } else if(!hasLocalLocked.isEmpty()) {
-                    LibraryListItem27* item = m_mediaLibraryCache.findItemByID(item->ID);
+                    LibraryListItem27* item = m_mediaLibraryCache.findItemByID(libraryListItem.ID);
                     if(item)
                     {
                         m_mediaLibraryCache.lockForWrite();
@@ -1779,6 +1779,10 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
     {
         containerType = ScriptContainerType::BASE;
         QString scriptFilePath = scripts.next();
+        if(scriptFilePath.contains("Grabby"))
+        {
+            LogHandler::Debug("");
+        }
         // QFileInfo scriptInfo(filepath);
         QString trackname = "";
         auto baseName = XFileUtil::getNameNoExtension(scriptFilePath);

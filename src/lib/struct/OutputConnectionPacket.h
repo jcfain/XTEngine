@@ -1,5 +1,5 @@
-#ifndef OUTPUTDEVICEPACKET_H
-#define OUTPUTDEVICEPACKET_H
+#ifndef OUTPUTCONNECTIONPACKET_H
+#define OUTPUTCONNECTIONPACKET_H
 #include <QString>
 #include <QMetaType>
 
@@ -9,7 +9,7 @@ enum class OutputDeviceCommandType {
     BUTTON
 };
 
-struct XTENGINE_EXPORT OutputDevicePacket
+struct XTENGINE_EXPORT OutputConnectionPacket
 {
     OutputDeviceCommandType type;
     QString command;
@@ -17,5 +17,5 @@ struct XTENGINE_EXPORT OutputDevicePacket
     QString original;
 };
 
-Q_DECLARE_METATYPE(OutputDevicePacket);
-#endif // OUTPUTDEVICEPACKET_H
+Q_DECLARE_METATYPE(OutputConnectionPacket);
+#endif // OUTPUTCONNECTIONPACKET_H

@@ -1,16 +1,16 @@
 #ifndef BLEHANDLER_H
 #define BLEHANDLER_H
 
-#include "outputdevicehandler.h"
+#include "outputconnectionhandler.h"
 
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QLowEnergyController>
 
-class BLEHandler : public OutputDeviceHandler
+class OutputBLEConnectionHandler : public OutputConnectionHandler
 {
     Q_OBJECT
 public:
-    explicit BLEHandler(QObject *parent = nullptr);
+    explicit OutputBLEConnectionHandler(QObject *parent = nullptr);
     void init(int waitTimeout = 5000);
     void sendTCode(const QString &tcode) override;
     void dispose() override;

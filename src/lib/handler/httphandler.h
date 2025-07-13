@@ -28,8 +28,8 @@ signals:
     void actionExecuted(QString action, QString spokenText, QVariant value);
     void xtpWebPacketRecieve(QByteArray data);
     void tcode(QString tcode);
-    void connectOutputDevice(DeviceName deviceName, bool checked);
-    void connectInputDevice(DeviceName deviceName, bool checked);
+    void connectOutputDevice(ConnectionInterface deviceName, bool checked);
+    void connectInputDevice(ConnectionInterface deviceName, bool checked);
     void restartService();
     void cleanupThumbs();
     void skipToMoneyShot();

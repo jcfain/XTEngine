@@ -1,9 +1,9 @@
-#ifndef INPUTDEVICEPACKET_H
-#define INPUTDEVICEPACKET_H
+#ifndef INPUTCONNECTIONPACKET_H
+#define INPUTCONNECTIONPACKET_H
 #include <QString>
 #include <QMetaType>
 
-struct InputDevicePacket
+struct InputConnectionPacket
 {
     QString path;
     qint64 duration;
@@ -13,5 +13,5 @@ struct InputDevicePacket
     bool stopped;
 };
 
-Q_DECLARE_METATYPE(InputDevicePacket);
-#endif // INPUTDEVICEPACKET_H
+Q_DECLARE_METATYPE(InputConnectionPacket);
+#endif // INPUTCONNECTIONPACKET_H

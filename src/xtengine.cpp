@@ -96,8 +96,8 @@ void XTEngine::init()
         connect(_httpHandler, &HttpHandler::skipToMoneyShot, this, &XTEngine::skipToMoneyShot);
         connect(_httpHandler, &HttpHandler::skipToNextAction, this, &XTEngine::skipToNextAction);
         connect(_httpHandler, &HttpHandler::cleanupThumbs, _mediaLibraryHandler, &MediaLibraryHandler::cleanGlobalThumbDirectory);
-        connect(_httpHandler, &HttpHandler::connectInputDevice, _connectionHandler, &ConnectionHandler::initInputDevice);
-        connect(_httpHandler, &HttpHandler::connectOutputDevice, _connectionHandler, &ConnectionHandler::initOutputDevice);
+        connect(_httpHandler, &HttpHandler::connectInputDevice, _connectionHandler, &ConnectionHandler::initInputConnection);
+        connect(_httpHandler, &HttpHandler::connectOutputDevice, _connectionHandler, &ConnectionHandler::initOutputConnection);
         connect(this, &XTEngine::stopAllMedia, _httpHandler, &HttpHandler::stopAllMedia);
         connect(_connectionHandler, &ConnectionHandler::connectionChange, _httpHandler, &HttpHandler::on_DeviceConnection_StateChange);
         connect(_httpHandler, &HttpHandler::settingChange, qOverload<QString, QVariant>(SettingsHandler::changeSetting));
@@ -128,19 +128,19 @@ void XTEngine::init()
         }
     });
     
-    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, [this](InputDevicePacket packet) {
+    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, [this](InputConnectionPacket packet) {
         if(!_mediaLibraryHandler->isLoadingMediaPaths())
             _syncHandler->searchForFunscript(packet);
         else
             LogHandler::Warn("Waiting for media paths to load to search for funscripts....");
     });
-    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, this, [](InputDevicePacket packet) {
+    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, this, [](InputConnectionPacket packet) {
         XMediaStateHandler::updateDuration(packet.currentTime, packet.duration);
     });
     connect(_connectionHandler, &ConnectionHandler::action, _settingsActionHandler, &SettingsActionHandler::media_action);
     connect(_connectionHandler, &ConnectionHandler::inputConnectionChange, this, [this](ConnectionChangedSignal event) {
-        auto selectedInputDevice = _connectionHandler->getSelectedInputDevice();
-        if(event.type == DeviceType::Input && (!selectedInputDevice || selectedInputDevice->name() == event.deviceName))
+        auto selectedInputDevice = _connectionHandler->getSelectedInputConnection();
+        if(event.type == ConnectionDirection::Input && (!selectedInputDevice || selectedInputDevice->name() == event.connectionName))
         {
             _syncHandler->on_input_device_change(selectedInputDevice);
             if(event.status == ConnectionStatus::Connected)
@@ -150,8 +150,8 @@ void XTEngine::init()
         }
     });
     connect(_connectionHandler, &ConnectionHandler::outputConnectionChange, this, [this](ConnectionChangedSignal event) {
-        auto selectedOutputDevice = _connectionHandler->getSelectedOutputDevice();
-        if(event.type == DeviceType::Output && (!selectedOutputDevice || selectedOutputDevice->name() == event.deviceName))
+        auto selectedOutputDevice = _connectionHandler->getSelectedOutputConnection();
+        if(event.type == ConnectionDirection::Output && (!selectedOutputDevice || selectedOutputDevice->name() == event.connectionName))
         {
             _syncHandler->on_output_device_change(selectedOutputDevice);
             if(event.status == ConnectionStatus::Connected)

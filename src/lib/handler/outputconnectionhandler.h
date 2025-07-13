@@ -1,5 +1,5 @@
-#ifndef OUTPUTDEVICEHANDLER_H
-#define OUTPUTDEVICEHANDLER_H
+#ifndef OUTPUTCONNECTIONHANDLER_H
+#define OUTPUTCONNECTIONHANDLER_H
 #include <QTime>
 #include <QMutex>
 #include <QRegularExpression>
@@ -10,33 +10,33 @@
 #include "loghandler.h"
 #include "lib/lookup/enum.h"
 #include "lib/struct/ConnectionChangedSignal.h"
-#include "lib/struct/OutputDevicePacket.h"
+#include "lib/struct/OutputConnectionPacket.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT OutputDeviceHandler : public QObject
+class XTENGINE_EXPORT OutputConnectionHandler : public QObject
 {
     Q_OBJECT
 
 signals:
     void connectionChange(ConnectionChangedSignal status);
-    void commandRecieve(OutputDevicePacket packet);
+    void commandRecieve(OutputConnectionPacket packet);
     void sendHandShake();
 
 public:
-    explicit OutputDeviceHandler(DeviceName deviceName,
+    explicit OutputConnectionHandler(ConnectionInterface deviceName,
                                  QObject *parent = nullptr);
-    ~OutputDeviceHandler() {};
+    ~OutputConnectionHandler() {};
     virtual void sendTCode(const QString &tcode) = 0;
     virtual void dispose();
 
-    DeviceName name();
+    ConnectionInterface name();
     bool isConnected();
 
 protected slots:
     void onSendHandShake();
 
 protected:
-    DeviceName m_deviceName;
+    ConnectionInterface m_deviceName;
     void tryConnectStop();
     void tryConnectDevice(unsigned long waitTimeout = 5000);
 
@@ -55,4 +55,4 @@ private:
     void processCommand(QString data);
 };
 
-#endif // OUTPUTDEVICEHANDLER_H
+#endif // OUTPUTCONNECTIONHANDLER_H

@@ -1,12 +1,12 @@
 #ifndef ENUM_H
 #define ENUM_H
-enum DeviceType
+enum ConnectionDirection
 {
     Input,
     Output
 };
 
-enum DeviceName
+enum ConnectionInterface
 {
     Serial,
     Network,
@@ -18,17 +18,17 @@ enum DeviceName
     None
 };
 
-enum class NetworkProtocol {
-    UDP,
-    WEBSOCKET
-};
-
 enum ConnectionStatus
 {
     Connected,
     Disconnected,
     Connecting,
     Error
+};
+
+enum class NetworkProtocol {
+    UDP,
+    WEBSOCKET
 };
 
 enum LibraryView

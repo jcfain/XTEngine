@@ -1,11 +1,11 @@
 #include "xtpwebhandler.h"
 
-XTPWebHandler::XTPWebHandler(QObject *parent) :
-    InputDeviceHandler(parent)
+InputXTPWebConnectionHandler::InputXTPWebConnectionHandler(QObject *parent) :
+    InputConnectionHandler(parent)
 {
 }
 
-XTPWebHandler::~XTPWebHandler()
+InputXTPWebConnectionHandler::~InputXTPWebConnectionHandler()
 {
     _isConnected = false;
 //    if (keepAliveTimer != nullptr)
@@ -14,23 +14,23 @@ XTPWebHandler::~XTPWebHandler()
         delete _currentPacket;
 }
 
-DeviceName XTPWebHandler::name() {
-    return DeviceName::XTPWeb;
+ConnectionInterface InputXTPWebConnectionHandler::name() {
+    return ConnectionInterface::XTPWeb;
 }
 
-void XTPWebHandler::init(NetworkAddress address, int waitTimeout)
+void InputXTPWebConnectionHandler::init(NetworkAddress address, int waitTimeout)
 {
 }
 
-void XTPWebHandler::init()
+void InputXTPWebConnectionHandler::init()
 {
     qRegisterMetaType<ConnectionChangedSignal>();
-    qRegisterMetaType<InputDevicePacket>();
-    emit connectionChange({DeviceType::Input, DeviceName::XTPWeb, ConnectionStatus::Connecting, "Waiting..."});
+    qRegisterMetaType<InputConnectionPacket>();
+    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::XTPWeb, ConnectionStatus::Connecting, "Waiting..."});
 
     if (_currentPacket)
         delete _currentPacket;
-    _currentPacket = new InputDevicePacket
+    _currentPacket = new InputConnectionPacket
     {
         nullptr,
         0,
@@ -41,32 +41,32 @@ void XTPWebHandler::init()
     };
 }
 
-void XTPWebHandler::send(const QString &command)
+void InputXTPWebConnectionHandler::send(const QString &command)
 {
 
 }
-void XTPWebHandler::sendPacket(InputDevicePacket packet) {
+void InputXTPWebConnectionHandler::sendPacket(InputConnectionPacket packet) {
 
 }
 
-void XTPWebHandler::dispose()
+void InputXTPWebConnectionHandler::dispose()
 {
     LogHandler::Debug("XTP Web: dispose");
     _isConnected = false;
-    emit connectionChange({DeviceType::Input, DeviceName::XTPWeb, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::XTPWeb, ConnectionStatus::Disconnected, "Disconnected"});
 //    if(_httpHandler)
 //        disconnect(_httpHandler, &HttpHandler::readyRead, this, &XTPWebHandler::readData);
 }
 
-void XTPWebHandler::messageSend(QByteArray message) {
+void InputXTPWebConnectionHandler::messageSend(QByteArray message) {
     readData(message);
 }
-void XTPWebHandler::readData(QByteArray data)
+void InputXTPWebConnectionHandler::readData(QByteArray data)
 {
     if(!_isConnected)
     {
         _isConnected = true;
-        emit connectionChange({DeviceType::Input, DeviceName::XTPWeb, ConnectionStatus::Connected, "Connected"});
+        emit connectionChange({ConnectionDirection::Input, ConnectionInterface::XTPWeb, ConnectionStatus::Connected, "Connected"});
     }
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(data, &error);
@@ -91,7 +91,7 @@ void XTPWebHandler::readData(QByteArray data)
 //        LogHandler::Debug("XTP Web playbackSpeed: "+QString::number(playbackSpeed));
 //        LogHandler::Debug("XTP Web playing: "+QString::number(playing));
         _mutex.lock();
-        _currentPacket = new InputDevicePacket
+        _currentPacket = new InputConnectionPacket
         {
             path,
             duration,
@@ -109,21 +109,21 @@ void XTPWebHandler::readData(QByteArray data)
     }
 }
 
-bool XTPWebHandler::isConnected()
+bool InputXTPWebConnectionHandler::isConnected()
 {
     return _isConnected;
 }
 
-bool XTPWebHandler::isPlaying()
+bool InputXTPWebConnectionHandler::isPlaying()
 {
     const QMutexLocker locker(&_mutex);
     return _isPlaying;
 }
 
-InputDevicePacket XTPWebHandler::getCurrentPacket()
+InputConnectionPacket InputXTPWebConnectionHandler::getCurrentPacket()
 {
     const QMutexLocker locker(&_mutex);
-    InputDevicePacket blankPacket = {
+    InputConnectionPacket blankPacket = {
         NULL,
         0,
         0,

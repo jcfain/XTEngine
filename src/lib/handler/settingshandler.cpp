@@ -482,7 +482,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _selectedThumbsDir = settingsToLoadFrom->value("selectedThumbsDir").toString();
     _useMediaDirForThumbs = settingsToLoadFrom->value("useMediaDirForThumbs").toBool();
     _hideWelcomeScreen = settingsToLoadFrom->value("hideWelcomeScreen").toBool();
-    _selectedOutputDevice = settingsToLoadFrom->value("selectedDevice").toInt();
+    _selectedOutputConnection = settingsToLoadFrom->value("selectedDevice").toInt();
     _selectedNetworkDeviceType = (NetworkProtocol)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
     playerVolume = settingsToLoadFrom->value("playerVolume").toInt();
     offSet = settingsToLoadFrom->value("offSet").toInt();
@@ -846,7 +846,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("selectedLibrary", selectedLibrary);
         settingsToSaveTo->setValue("selectedThumbsDir", _selectedThumbsDir);
         settingsToSaveTo->setValue("useMediaDirForThumbs", _useMediaDirForThumbs);
-        settingsToSaveTo->setValue("selectedDevice", _selectedOutputDevice);
+        settingsToSaveTo->setValue("selectedDevice", _selectedOutputConnection);
         settingsToSaveTo->setValue("selectedNetworkDeviceType", (int)_selectedNetworkDeviceType);
         settingsToSaveTo->setValue("offSet", offSet);
         settingsToSaveTo->setValue("selectedFunscriptLibrary", selectedFunscriptLibrary);
@@ -1999,41 +1999,41 @@ bool SettingsHandler::getUseMediaDirForThumbs()
     return _useMediaDirForThumbs;
 }
 
-DeviceName SettingsHandler::getSelectedOutputDevice()
+ConnectionInterface SettingsHandler::getSelectedOutputDevice()
 {
     QMutexLocker locker(&mutex);
-    return (DeviceName)_selectedOutputDevice;
+    return (ConnectionInterface)_selectedOutputConnection;
 }
 
-void SettingsHandler::setSelectedOutputDevice(DeviceName deviceName)
+void SettingsHandler::setSelectedOutputConnection(ConnectionInterface value)
 {
     QMutexLocker locker(&mutex);
-    _selectedOutputDevice = deviceName;
+    _selectedOutputConnection = value;
 }
 
-DeviceName SettingsHandler::getSelectedInputDevice()
+ConnectionInterface SettingsHandler::getSelectedInputDevice()
 {
     QMutexLocker locker(&mutex);
     if(deoEnabled)
-        return DeviceName::HereSphere;
+        return ConnectionInterface::HereSphere;
     else if(whirligigEnabled)
-        return DeviceName::Whirligig;
+        return ConnectionInterface::Whirligig;
     else if(_xtpWebSyncEnabled)
-        return DeviceName::XTPWeb;
-    return DeviceName::None;
+        return ConnectionInterface::XTPWeb;
+    return ConnectionInterface::None;
 }
 
-void SettingsHandler::setSelectedInputDevice(DeviceName deviceName)
+void SettingsHandler::setSelectedInputConnection(ConnectionInterface value)
 {
-    deoEnabled = deviceName == DeviceName::HereSphere;
-    whirligigEnabled = deviceName == DeviceName::Whirligig;
-    _xtpWebSyncEnabled = deviceName == DeviceName::XTPWeb;
+    deoEnabled = value == ConnectionInterface::HereSphere;
+    whirligigEnabled = value == ConnectionInterface::Whirligig;
+    _xtpWebSyncEnabled = value == ConnectionInterface::XTPWeb;
 }
 
-void SettingsHandler::setSelectedNetworkDevice(NetworkProtocol value) {
+void SettingsHandler::setSelectedNetworkProtocol(NetworkProtocol value) {
     _selectedNetworkDeviceType = value;
 }
-NetworkProtocol SettingsHandler::getSelectedNetworkDevice() {
+NetworkProtocol SettingsHandler::getSelectedNetworkProtocol() {
     return _selectedNetworkDeviceType;
 }
 
@@ -3318,7 +3318,7 @@ QHash<QString, QVariant> SettingsHandler::deoDnlaFunscriptLookup;
 QStringList SettingsHandler::selectedLibrary;
 QString SettingsHandler::_selectedThumbsDir;
 bool SettingsHandler::_useMediaDirForThumbs;
-int SettingsHandler::_selectedOutputDevice;
+int SettingsHandler::_selectedOutputConnection;
 NetworkProtocol SettingsHandler::_selectedNetworkDeviceType;
 int SettingsHandler::_librarySortMode;
 int SettingsHandler::playerVolume;

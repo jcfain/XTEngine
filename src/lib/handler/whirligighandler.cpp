@@ -1,11 +1,11 @@
 #include "whirligighandler.h"
 
-WhirligigHandler::WhirligigHandler(QObject *parent) :
-    InputDeviceHandler(parent)
+InputWhirligigConnectionHandler::InputWhirligigConnectionHandler(QObject *parent) :
+    InputConnectionHandler(parent)
 {
 }
 
-WhirligigHandler::~WhirligigHandler()
+InputWhirligigConnectionHandler::~InputWhirligigConnectionHandler()
 {
     _isConnected = false;
     if (tcpSocket != nullptr)
@@ -14,27 +14,27 @@ WhirligigHandler::~WhirligigHandler()
         delete currentVRPacket;
 }
 
-DeviceName WhirligigHandler::name() {
-    return DeviceName::Whirligig;
+ConnectionInterface InputWhirligigConnectionHandler::name() {
+    return ConnectionInterface::Whirligig;
 }
 
-void WhirligigHandler::init(NetworkAddress address, int waitTimeout)
+void InputWhirligigConnectionHandler::init(NetworkAddress address, int waitTimeout)
 {
     qRegisterMetaType<ConnectionChangedSignal>();
-    qRegisterMetaType<InputDevicePacket>();
-    emit connectionChange({DeviceType::Input, DeviceName::Whirligig, ConnectionStatus::Connecting, "Waiting..."});
+    qRegisterMetaType<InputConnectionPacket>();
+    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Connecting, "Waiting..."});
     _waitTimeout = waitTimeout;
     _address = address;
 
     QHostAddress addressObj;
     addressObj.setAddress(_address.address);
     tcpSocket = new QTcpSocket(this);
-    connect(tcpSocket, &QTcpSocket::stateChanged, this, &WhirligigHandler::onSocketStateChange);
-    connect(tcpSocket, &QTcpSocket::errorOccurred, this, &WhirligigHandler::tcpErrorOccured);
+    connect(tcpSocket, &QTcpSocket::stateChanged, this, &InputWhirligigConnectionHandler::onSocketStateChange);
+    connect(tcpSocket, &QTcpSocket::errorOccurred, this, &InputWhirligigConnectionHandler::tcpErrorOccured);
     tcpSocket->connectToHost(addressObj, _address.port);
 }
 
-void WhirligigHandler::send(const QString &command)
+void InputWhirligigConnectionHandler::send(const QString &command)
 {
     _sendCommand = command;
     if (command != nullptr)
@@ -54,30 +54,30 @@ void WhirligigHandler::send(const QString &command)
     tcpSocket->flush();
 }
 
-void WhirligigHandler::sendPacket(InputDevicePacket packet) {
+void InputWhirligigConnectionHandler::sendPacket(InputConnectionPacket packet) {
 
 }
 
-void WhirligigHandler::dispose()
+void InputWhirligigConnectionHandler::dispose()
 {
     LogHandler::Debug("Whirligig: dispose");
     _isConnected = false;
     _isPlaying = false;
-    emit connectionChange({DeviceType::Input, DeviceName::Whirligig, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Disconnected, "Disconnected"});
     if (tcpSocket != nullptr)
     {
-        disconnect(tcpSocket, &QTcpSocket::stateChanged, this, &WhirligigHandler::onSocketStateChange);
-        disconnect(tcpSocket, &QTcpSocket::errorOccurred, this, &WhirligigHandler::tcpErrorOccured);
+        disconnect(tcpSocket, &QTcpSocket::stateChanged, this, &InputWhirligigConnectionHandler::onSocketStateChange);
+        disconnect(tcpSocket, &QTcpSocket::errorOccurred, this, &InputWhirligigConnectionHandler::tcpErrorOccured);
         if (tcpSocket->isOpen())
             tcpSocket->disconnectFromHost();
     }
 }
 
-void WhirligigHandler::messageSend(QByteArray message) {
+void InputWhirligigConnectionHandler::messageSend(QByteArray message) {
     //readData(message);
 }
 
-void WhirligigHandler::readData()
+void InputWhirligigConnectionHandler::readData()
 {
     //LogHandler::Debug("Whirligig packet recieved");
     QByteArray datagram = tcpSocket->readAll();
@@ -120,7 +120,7 @@ void WhirligigHandler::readData()
     _mutex.lock();
     _isPlaying = playing;
     //LogHandler::Debug("Whirligig current time: "+QString::number(currentTime));
-    currentVRPacket = new InputDevicePacket
+    currentVRPacket = new InputConnectionPacket
     {
         path,
         duration,
@@ -139,17 +139,17 @@ void WhirligigHandler::readData()
     time2 = (round(mSecTimer.nsecsElapsed() / 1000000));
 }
 
-bool WhirligigHandler::isConnected()
+bool InputWhirligigConnectionHandler::isConnected()
 {
     return _isConnected;
 }
-bool WhirligigHandler::isPlaying()
+bool InputWhirligigConnectionHandler::isPlaying()
 {
     const QMutexLocker locker(&_mutex);
     //LogHandler::Error("WhirligigHandler::isPlaying(): "+ QString::number(_isPlaying));
     return _isPlaying;
 }
-//void WhirligigHandler::togglePause()
+//void InputWhirligigConnectionHandler::togglePause()
 //{
 //    bool isPaused = false;
 //    if(!getCurrentWhirligigPacket()->playing)
@@ -162,10 +162,10 @@ bool WhirligigHandler::isPlaying()
 //    QJsonDocument jsonResponse = QJsonDocument(pausePacket);
 //    send(QString::fromLatin1(jsonResponse.toJson()));
 //}
-InputDevicePacket WhirligigHandler::getCurrentPacket()
+InputConnectionPacket InputWhirligigConnectionHandler::getCurrentPacket()
 {
     const QMutexLocker locker(&_mutex);
-    InputDevicePacket blankPacket = {
+    InputConnectionPacket blankPacket = {
         NULL,
         0,
         0,
@@ -176,7 +176,7 @@ InputDevicePacket WhirligigHandler::getCurrentPacket()
     return (currentVRPacket == nullptr) ? blankPacket : *currentVRPacket;
 }
 
-void WhirligigHandler::onSocketStateChange (QAbstractSocket::SocketState state)
+void InputWhirligigConnectionHandler::onSocketStateChange (QAbstractSocket::SocketState state)
 {
     //const QMutexLocker locker(&_mutex);
     switch(state) {
@@ -187,14 +187,14 @@ void WhirligigHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             LogHandler::Debug("Whirligig connected");
             //send(nullptr);
             mSecTimer.start();
-            connect(tcpSocket, &QTcpSocket::readyRead, this, &WhirligigHandler::readData);
+            connect(tcpSocket, &QTcpSocket::readyRead, this, &InputWhirligigConnectionHandler::readData);
             //if (keepAliveTimer != nullptr && keepAliveTimer->isActive())
                 //keepAliveTimer->stop();
             //keepAliveTimer = new QTimer(this);
             //_mutex.unlock();
             //connect(keepAliveTimer, &QTimer::timeout, this, &WhirligigHandler::sendKeepAlive);
             //keepAliveTimer->start(1000);
-            emit connectionChange({DeviceType::Input, DeviceName::Whirligig, ConnectionStatus::Connected, "Connected"});
+            emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Connected, "Connected"});
             break;
         }
         case QAbstractSocket::SocketState::UnconnectedState:
@@ -205,7 +205,7 @@ void WhirligigHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             //_mutex.unlock();
             //if (keepAliveTimer != nullptr && keepAliveTimer->isActive())
                 //keepAliveTimer->stop();
-            if(SettingsHandler::getSelectedInputDevice() == DeviceName::Whirligig)
+            if(SettingsHandler::getSelectedInputDevice() == ConnectionInterface::Whirligig)
             {
                 LogHandler::Debug("Whirligig retrying: " + _address.address);
                 LogHandler::Debug("port: " + QString::number(_address.port));
@@ -216,14 +216,14 @@ void WhirligigHandler::onSocketStateChange (QAbstractSocket::SocketState state)
             else
             {
                 LogHandler::Debug("Whirligig disconnected");
-                emit connectionChange({DeviceType::Input, DeviceName::Whirligig, ConnectionStatus::Disconnected, "Disconnected"});
+                emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Disconnected, "Disconnected"});
             }
             break;
         }
         case QAbstractSocket::SocketState::ConnectingState:
         {
             LogHandler::Debug("Whirligig connecting");
-            emit connectionChange({DeviceType::Input, DeviceName::Whirligig, ConnectionStatus::Connecting, "Waiting..."});
+            emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Connecting, "Waiting..."});
             break;
         }
         case QAbstractSocket::SocketState::BoundState:
@@ -249,7 +249,7 @@ void WhirligigHandler::onSocketStateChange (QAbstractSocket::SocketState state)
     }
 }
 
-void WhirligigHandler::tcpErrorOccured(QAbstractSocket::SocketError state)
+void InputWhirligigConnectionHandler::tcpErrorOccured(QAbstractSocket::SocketError state)
 {
 
     switch(state)

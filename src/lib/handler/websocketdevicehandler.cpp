@@ -2,37 +2,37 @@
 #include "loghandler.h"
 #include "settingshandler.h"
 
-WebsocketDeviceHandler::WebsocketDeviceHandler(QObject *parent)
-    : NetworkDevice{parent}
+OutputWebsocketConnectionHandler::OutputWebsocketConnectionHandler(QObject *parent)
+    : OutputNetworkConnectionHandler{parent}
 {
     qRegisterMetaType<ConnectionChangedSignal>();
     //qRegisterMetaType<QAbstractSocket::SocketState>();
 
 }
 
-WebsocketDeviceHandler::~WebsocketDeviceHandler()
+OutputWebsocketConnectionHandler::~OutputWebsocketConnectionHandler()
 {
 }
 
-void WebsocketDeviceHandler::init(NetworkAddress address, int waitTimeout)
+void OutputWebsocketConnectionHandler::init(NetworkAddress address, int waitTimeout)
 {
     _address = address;
     if(_isListening || isConnected()) {
         m_webSocket.close();
     }
-    emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connecting, "Connecting..."});
-    connect(&m_webSocket, &QWebSocket::connected, this, &WebsocketDeviceHandler::onConnected);
-    connect(&m_webSocket, &QWebSocket::disconnected, this, &WebsocketDeviceHandler::onClosed);
-    connect(&m_webSocket, &QWebSocket::stateChanged, this, &WebsocketDeviceHandler::onSocketStateChange);
-    connect(&m_webSocket, QOverload<QAbstractSocket::SocketError>::of(&QWebSocket::error), this, &WebsocketDeviceHandler::onErrorOccured);
+    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Connecting, "Connecting..."});
+    connect(&m_webSocket, &QWebSocket::connected, this, &OutputWebsocketConnectionHandler::onConnected);
+    connect(&m_webSocket, &QWebSocket::disconnected, this, &OutputWebsocketConnectionHandler::onClosed);
+    connect(&m_webSocket, &QWebSocket::stateChanged, this, &OutputWebsocketConnectionHandler::onSocketStateChange);
+    connect(&m_webSocket, QOverload<QAbstractSocket::SocketError>::of(&QWebSocket::error), this, &OutputWebsocketConnectionHandler::onErrorOccured);
     m_webSocket.open(QUrl("ws://" + address.address + ":" + QString::number(address.port) + "/ws"));
     _isListening = true;
 }
 
-void WebsocketDeviceHandler::onConnected() {
-    connect(&m_webSocket, &QWebSocket::textMessageReceived, this, &WebsocketDeviceHandler::onTextMessageReceived);
+void OutputWebsocketConnectionHandler::onConnected() {
+    connect(&m_webSocket, &QWebSocket::textMessageReceived, this, &OutputWebsocketConnectionHandler::onTextMessageReceived);
     if(SettingsHandler::getDisableTCodeValidation()) {
-        emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: No validate"});
+        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Connected, "Connected: No validate"});
         setConnected(true);
     } else {
         emit sendHandShake();
@@ -40,13 +40,13 @@ void WebsocketDeviceHandler::onConnected() {
 
 }
 
-void WebsocketDeviceHandler::onClosed() {
+void OutputWebsocketConnectionHandler::onClosed() {
     disconnect(&m_webSocket, nullptr, nullptr, nullptr);
-    emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Disconnected, "Disconnected"});
     setConnected(false);
 }
 
-// void WebsocketDeviceHandler::onReadyRead()
+// void OutputWebsocketConnectionHandler::onReadyRead()
 // {
 //     QString recieved;
 //     while (m_udpSocket->waitForReadyRead(100))
@@ -68,7 +68,7 @@ void WebsocketDeviceHandler::onClosed() {
 //     LogHandler::Debug("Recieved UDP: "+recieved);
 //     processDeviceInput(recieved);
 // }
-void WebsocketDeviceHandler::onTextMessageReceived(QString response)
+void OutputWebsocketConnectionHandler::onTextMessageReceived(QString response)
 {
     QJsonDocument doc = QJsonDocument::fromJson(response.toUtf8());
     processDeviceInput(doc["command"].toString());
@@ -96,7 +96,7 @@ void WebsocketDeviceHandler::onTextMessageReceived(QString response)
     // }
 }
 
-void WebsocketDeviceHandler::sendTCode(const QString &tcode)
+void OutputWebsocketConnectionHandler::sendTCode(const QString &tcode)
 {
     //const QMutexLocker locker(&_mutex);
     QString tcodeFormatted = tcode + "\n";
@@ -107,15 +107,15 @@ void WebsocketDeviceHandler::sendTCode(const QString &tcode)
 
 }
 
-void WebsocketDeviceHandler::dispose()
+void OutputWebsocketConnectionHandler::dispose()
 {
     LogHandler::Debug("Websocket dispose "+ _address.address);
     m_webSocket.close();
-    OutputDeviceHandler::dispose();
+    OutputConnectionHandler::dispose();
 }
 
 
-void WebsocketDeviceHandler::onSocketStateChange (QAbstractSocket::SocketState state)
+void OutputWebsocketConnectionHandler::onSocketStateChange (QAbstractSocket::SocketState state)
 {
     //const QMutexLocker locker(&_mutex);
     switch(state) {
@@ -193,7 +193,7 @@ void WebsocketDeviceHandler::onSocketStateChange (QAbstractSocket::SocketState s
     }
 }
 
-void WebsocketDeviceHandler::onErrorOccured(QAbstractSocket::SocketError state)
+void OutputWebsocketConnectionHandler::onErrorOccured(QAbstractSocket::SocketError state)
 {
 
     switch(state)
