@@ -208,6 +208,8 @@ unix:mac {
 #https://stackoverflow.com/questions/12977739/qt-creator-or-qmake-on-macosx-build-library-as-so-not-dylib
 #QMAKE_LFLAGS_PLUGIN -= -dynamiclib
 #QMAKE_LFLAGS_PLUGIN += -bundle
+
+QMAKE_APPLE_DEVICE_ARCHS = x86_64 x86_64h arm64
 CONFIG += shared
     #QMAKE_PREFIX_SHLIB = so
     #QMAKE_RPATHDIR += ../lib
