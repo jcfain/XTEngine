@@ -7,7 +7,7 @@
 struct NetworkAddress
 {
     QString address;
-    int16_t port;
+    int port;
 
     static QJsonObject toJson(const NetworkAddress item)
     {
