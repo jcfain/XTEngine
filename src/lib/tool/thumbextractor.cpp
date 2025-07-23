@@ -186,11 +186,9 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
     }
     m_extracting = false;
 //    disconnect(&m_videoSink, &QVideoSink::videoFrameChanged, this, &ThumbExtractor::videoFrameChanged);
-    stopAndWait();
-    if(m_lastImage.isNull())
+    if(!stopAndWait() || m_lastImage.isNull())
     {
         LogHandler::Debug("[XVideoPreview::extractSync] Race condition: " + QString::number(m_mediaPlayer->mediaStatus()));
-        m_lastError = "Race conditiont";
         return QImage();
     }
     return m_lastImage.copy();
@@ -210,7 +208,7 @@ void ThumbExtractor::reset()
     m_mediaPlayer->setSource(QUrl());
 }
 
-void ThumbExtractor::stopAndWait()
+bool ThumbExtractor::stopAndWait()
 {
     emit stopPlaying();
     auto currentTime = QTime::currentTime().msecsSinceStartOfDay();
@@ -220,10 +218,11 @@ void ThumbExtractor::stopAndWait()
         {
             LogHandler::Debug("[XVideoPreview::extractSync] Timeout media stop: " + QString::number(m_mediaPlayer->playbackState()));
             m_lastError = "Timed out waiting for media to stop";
-            return;
+            return false;
         }
         QThread::msleep(100);
     }
+    return true;
 }
 
 bool ThumbExtractor::mediaHasError()
