@@ -765,6 +765,26 @@ section .range-values {
     height: 100%;
 }
 
+.modal-sections {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+.modal-section {
+    flex-basis: 33%;
+    min-width: 360px;
+    padding: 16px;  
+}
+
+.modal-section--metadata-tags {
+    flex-basis: 16%;
+    min-width: 100px;
+}
+
+.system-tag-checkbox {
+    margin: 0px 0px 4px 4px;
+}
+
 .modal-body--alert {
     margin: 16px;
 }

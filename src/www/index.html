@@ -220,107 +220,138 @@
 			<div id="mediaItemSettingsModal" class="modal">
 				<div class="modal-content modal-content--other">
 					<div class="modal-header">
-						<span class="modal-title">Media settings</span>
+						<span class="modal-title">Metadata</span>
 						<button class="close-modal icon-button" onclick="closeMetaDataModal()">
 							<image class="buttonImage" src="://images/icons/x.svg" />
 						</button>
 					</div>
 					<div id="modalBody" class="modal-body">
-						<div class="formElement">
-							<label title="Change the sync offset for the current media item"
-								for="mediaOffset">Offset (ms)
-							</label>
-							<input id="mediaOffset" type="number" step="1" oninput="metaDataChange()" />
-						</div>
-						<div class="formElement">
-							<label>
-							</label>
-							<div class="form-buttons">
-								<button onclick="addToSelectedMetaDataOffset(10)">
-									+10
-								</button>
-								<button onclick="addToSelectedMetaDataOffset(50)">
-									+50
-								</button>
-								<button onclick="addToSelectedMetaDataOffset(100)">
-									+100
-								</button>
-								<button onclick="addToSelectedMetaDataOffset(500)">
-									+500
-								</button>
-								<button onclick="addToSelectedMetaDataOffset(-10)">
-									-10
-								</button>
-								<button onclick="addToSelectedMetaDataOffset(-50)">
-									-50
-								</button>
-								<button onclick="addToSelectedMetaDataOffset(-100)">
-									-100
-								</button>
-								<button onclick="addToSelectedMetaDataOffset(-500)">
-									-500
-								</button>
+						<div class="modal-sections">
+							<div id="metadataInfo" class="modal-section">
+								<h3>Information</h3>
+								<label for="metadataDateHasAlternate">Has alternate:</label>
+								<input id="metadataDateHasAlternate" type="checkbox" disabled/>
+								<h4>Date Added:</h4>
+								<div id="metadataDateAdded"></div>
+								<h4>Date Created:</h4>
+								<div id="metadataDateCreated"></div>
+								<h4>Scripts:</h4>
+								<div id="metadataDateFunscripts"></div>
+								<h4>Media Path:</h4>
+								<div id="metadataDatePath"></div>
+								<!-- <h4>Tracks:</h4>
+								<div id="metadataDateSFMATracks"></div>
+								<h4>MFS Scripts:</h4>
+								<div id="metadataDateMFSFunscripts"></div> -->
 							</div>
-						</div>
-						<div class="formElement">
-							<label title="Change the funscript range of the current media item"
-								for="funscriptModifier">Funscript modifier (%)
-							</label>
-							<input id="funscriptModifier" type="number" step="10.0" min="0.0" oninput="metaDataChange()" />
-						</div>
-						<div class="formElement">
-							<label>
-							</label>
-							<div class="form-buttons">
-								<button onclick="addToSelectedMetaDataModifier(5)">
-									+5
-								</button>
-								<button onclick="addToSelectedMetaDataModifier(10)">
-									+10
-								</button>
-								<button onclick="addToSelectedMetaDataModifier(30)">
-									+30
-								</button>
-								<button onclick="addToSelectedMetaDataModifier(50)">
-									+50
-								</button>
-								<button onclick="addToSelectedMetaDataModifier(-5)">
-									-5
-								</button>
-								<button onclick="addToSelectedMetaDataModifier(-10)">
-									-10
-								</button>
-								<button onclick="addToSelectedMetaDataModifier(-30)">
-									-30
-								</button>
-								<button onclick="addToSelectedMetaDataModifier(-50)">
-									-50
-								</button>
+							<div id="metadataSettings" class="modal-section">
+								<h3>Settings</h3>
+								<div class="formElement">
+									<label title="Change the sync offset for the current media item"
+										for="mediaOffset">Offset (ms)
+									</label>
+									<input id="mediaOffset" type="number" step="1" oninput="metaDataChange()" />
+								</div>
+								<div class="formElement">
+									<label>
+									</label>
+									<div class="form-buttons">
+										<button onclick="addToSelectedMetaDataOffset(10)">
+											+10
+										</button>
+										<button onclick="addToSelectedMetaDataOffset(50)">
+											+50
+										</button>
+										<button onclick="addToSelectedMetaDataOffset(100)">
+											+100
+										</button>
+										<button onclick="addToSelectedMetaDataOffset(500)">
+											+500
+										</button>
+										<button onclick="addToSelectedMetaDataOffset(-10)">
+											-10
+										</button>
+										<button onclick="addToSelectedMetaDataOffset(-50)">
+											-50
+										</button>
+										<button onclick="addToSelectedMetaDataOffset(-100)">
+											-100
+										</button>
+										<button onclick="addToSelectedMetaDataOffset(-500)">
+											-500
+										</button>
+									</div>
+								</div>
+								<div class="formElement">
+									<label title="Change the funscript range of the current media item"
+										for="funscriptModifier">Funscript modifier (%)
+									</label>
+									<input id="funscriptModifier" type="number" step="10.0" min="0.0" oninput="metaDataChange()" />
+								</div>
+								<div class="formElement">
+									<label>
+									</label>
+									<div class="form-buttons">
+										<button onclick="addToSelectedMetaDataModifier(5)">
+											+5
+										</button>
+										<button onclick="addToSelectedMetaDataModifier(10)">
+											+10
+										</button>
+										<button onclick="addToSelectedMetaDataModifier(30)">
+											+30
+										</button>
+										<button onclick="addToSelectedMetaDataModifier(50)">
+											+50
+										</button>
+										<button onclick="addToSelectedMetaDataModifier(-5)">
+											-5
+										</button>
+										<button onclick="addToSelectedMetaDataModifier(-10)">
+											-10
+										</button>
+										<button onclick="addToSelectedMetaDataModifier(-30)">
+											-30
+										</button>
+										<button onclick="addToSelectedMetaDataModifier(-50)">
+											-50
+										</button>
+									</div>
+								</div>
+								<div class="formElement">
+									<label title="Change the moneyshot for the current media item"
+										for="moneyShotMillis">Moneyshot (ms)
+									</label>
+									<input id="moneyShotMillis" type="number" step="1000" oninput="metaDataChange()" />
+								</div>
+								<div class="formElement">
+									<label>
+									</label>
+									<div class="form-buttons">
+										<button onclick="resetMoneyShot()">
+											Reset money shot
+										</button>
+									</div>
+								</div>
 							</div>
-						</div>
-						<div class="formElement">
-							<label title="Change the moneyshot for the current media item"
-								for="moneyShotMillis">Moneyshot (ms)
-							</label>
-							<input id="moneyShotMillis" type="number" step="1000" oninput="metaDataChange()" />
-						</div>
-						<div class="formElement">
-							<label>
-							</label>
-							<div class="form-buttons">
-								<button onclick="resetMoneyShot()">
-									Reset money shot
-								</button>
+							<div id="metadataTags" class="modal-section modal-section--metadata-tags">
+								<h3>Tags</h3>
+								<div id="metaDataTags" class="media-tag-metadata-container"></div>
 							</div>
-						</div>
-						<div class="formElement">
-							<label>Tags
-							</label>
-							<div id="metaDataTags" class="media-tag-metadata-container"></div>
 						</div>
 					</div>
 					<div class="modal-footer">
 						<div class="modal-footer-content">
+							<button name="deviceStatusRetryButton" class="icon-button icon-button--group device-status-retry-button"
+								onclick="tcodeDeviceConnectRetry()">
+								<img name="connectionStatusIconImage" class="buttonImage" src="://images/icons/reload.svg" />
+							</button>
+							<button title="TCode device pause\n(Click to toggle device actions)" name="devicePauseStatusButton" class="icon-button icon-button--group video-control--device-state" onclick="togglePauseAllDeviceActions()">
+								<img name="devicePauseStatusIconImage" class="buttonImage" src="://images/icons/pause.svg" />
+							</button>
+							<button  title="Send TCode home" name="deviceHomeButton" class="icon-button icon-button--group" onclick="sendDeviceHome()">
+								<img name="deviceHomeButtonImage" class="buttonImage" src="://images/icons/home.svg" />
+							</button>
 						</div>
 						<div class="modal-footer-content">
 							<span id="metaDataSaveState" class="save-status"></span>

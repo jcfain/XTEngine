@@ -899,6 +899,7 @@ QJsonObject HttpHandler::createMediaObject(const LibraryListItem27& item, QStrin
         object["subtitle"] = hostAddress + "media/" + QString(QUrl::toPercentEncoding(relativeSubtitlePath));
         object["subtitleRelative"] = "/" + QString(QUrl::toPercentEncoding(relativeSubtitlePath));
     }
+    object["script"] = item.script;
     QString scriptNoExtensionRelativePath = item.pathNoExtension;
     scriptNoExtensionRelativePath = scriptNoExtensionRelativePath.replace(item.libraryPath, "");
     object["scriptNoExtensionRelativePath"] = "funscript/" + QString(QUrl::toPercentEncoding(scriptNoExtensionRelativePath));

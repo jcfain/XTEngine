@@ -88,6 +88,7 @@ function closeTextWindow() {
 
 function createCheckBoxDiv(id, name, value, labelText, onCheckedChange) {
 	const divNode = document.createElement("div");
+	divNode.classList.add("system-tag-checkbox")
 	const label = document.createElement("label");
 	label.innerText = labelText;
 	label.setAttribute("for", id);

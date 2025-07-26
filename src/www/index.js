@@ -2734,6 +2734,41 @@ function openMetaDataModal(mediaItem) {
 	document.getElementById("mediaOffset").value = selectedMediaItemMetaData["offset"];
 	document.getElementById("moneyShotMillis").value = selectedMediaItemMetaData["moneyShotMillis"];
 	document.getElementById("funscriptModifier").value = selectedMediaItemMetaData["funscriptModifier"];
+
+	document.getElementById("metadataDatePath").innerText = selectedMediaItemMetaData["libraryItemPath"];
+	document.getElementById("metadataDateAdded").innerText = selectedMediaItemMetaData["dateAdded"];
+	document.getElementById("metadataDateHasAlternate").checked = selectedMediaItemMetaData["hasAlternate"];
+	
+	document.getElementById("metadataDateCreated").innerText = mediaItem.modifiedDate;
+	const metadataDateFunscripts = document.getElementById("metadataDateFunscripts");
+	metadataDateFunscripts.innerText = "";
+	if(selectedMediaItemMetaData.scripts)
+		selectedMediaItemMetaData.scripts.forEach(x => 
+	{ 
+		const fileExt = (x.track.length > 0 ? "." + x.track : "") ;
+		metadataDateFunscripts.innerHTML += x.filename + fileExt + (selectedMediaItemMetaData.scripts.indexOf(x) < selectedMediaItemMetaData.scripts.length ? "<br>" : "");
+	});
+	// const metadataDateSFMATracks = document.getElementById("metadataDateSFMATracks");
+	// metadataDateFunscripts.innerText = "";
+	// if(selectedMediaItemMetaData.MFSTracks)
+	// 	selectedMediaItemMetaData.MFSTracks.forEach(x => metadataDateSFMATracks.innerHTML += x + (selectedMediaItemMetaData.MFSTracks.indexOf(x) < selectedMediaItemMetaData.MFSTracks.length ? ", " : ""));
+	// const metadataDateMFSFunscripts = document.getElementById("metadataDateMFSFunscripts");
+	// metadataDateMFSFunscripts.innerText = "";
+	// if(selectedMediaItemMetaData.MFSScripts)
+	// 	selectedMediaItemMetaData.MFSScripts.forEach(x => metadataDateMFSFunscripts.innerHTML += x + '<br>');
+
+	//MediaItem: 
+	//duration
+	// Metadata:
+	//subtitle
+	//hasAlternate
+	//isSFMA
+	//isMFS
+	//thumbExtractError
+	//MFSScripts[]
+	//MFSTracks[]
+	//scripts[]
+	//bookmarks[{Name, Time}]
 	const tagCheckboxes = document.getElementsByName(metadataTagCheckboxesName);
 	tagCheckboxes.forEach(x => {
 		x.checked = selectedMediaItemMetaData.tags.findIndex(y => y == x.value) > -1;
