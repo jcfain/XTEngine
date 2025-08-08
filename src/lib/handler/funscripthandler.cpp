@@ -334,21 +334,39 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
         int pos = funscript->actions.value(executionMillis);
         if(funscript->settings.lastActionIndex > -1 && funscript->settings.modifier != 1)
         {
-            //int ogPos = pos;
-            double distance = pos - funscript->settings.lastActionPos;
-            double amplitude = distance / 2.0;
-            if(funscript->settings.modifier > 1)
-                pos = qRound(pos + (amplitude * funscript->settings.modifier) - amplitude);
-            else if(funscript->settings.modifier > 0)
-                pos = qRound(pos - (amplitude * funscript->settings.modifier) - amplitude);
+            if(pos == funscript->settings.lastActionPos && funscript->settings.lastActionPosModified)
+            {
+                pos = funscript->settings.lastActionPosModified;
+                if(funscript->settings.channel == Track::Stroke)
+                    LogHandler::Debug(funscript->settings.trackName + " Modified pos unchanged: "+QString::number(pos));
+            }
             else
-                pos = abs(amplitude);
-            pos = XMath::constrain(pos, 0, 100);
-            // LogHandler::Debug("Modified pos: "+QString::number(pos));
-            // LogHandler::Debug("from: "+QString::number(ogPos));
-            // LogHandler::Debug("modifier: "+QString::number(_modifier));
-            // LogHandler::Debug("last pos: "+QString::number(lastActionPos));
-            // LogHandler::Debug("distance: "+QString::number(distance));
+            {
+                int ogPos = pos;
+                double distance = pos - funscript->settings.lastActionPos;
+                double amplitude = distance / 2.0;
+                if(funscript->settings.modifier > 1)
+                {
+                    pos = qRound(pos + ((amplitude * funscript->settings.modifier) - amplitude));
+                }
+                else if(funscript->settings.modifier > 0)
+                {
+                    pos = qRound(pos - ((amplitude * funscript->settings.modifier) - amplitude));
+                }
+                else
+                    pos = abs(amplitude);
+                pos = XMath::constrain(pos, 0, 100);
+                funscript->settings.lastActionPosModified = pos;
+                if(funscript->settings.channel == Track::Stroke)
+                {
+                    LogHandler::Debug(funscript->settings.trackName + " Modifier: "+QString::number(funscript->settings.modifier));
+                    LogHandler::Debug(funscript->settings.trackName + " last pos: "+QString::number(funscript->settings.lastActionPos));
+                    LogHandler::Debug(funscript->settings.trackName + " pos: "+QString::number(ogPos));
+                    LogHandler::Debug(funscript->settings.trackName + " distance: "+QString::number(distance));
+                    LogHandler::Debug(funscript->settings.trackName + " amplitude: "+QString::number(amplitude));
+                    LogHandler::Debug(funscript->settings.trackName + " Modified pos: "+QString::number(pos));
+                }
+            }
         }
         qreal speedmodifier = XMediaStateHandler::getPlaybackSpeed();
         if(speedmodifier > 0 && speedmodifier != 1.0 && speedmodifier < 2.0)

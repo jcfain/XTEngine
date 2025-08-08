@@ -46,6 +46,7 @@ struct XFunscript {
     qint64 lastActionIndex = -1;
     qint64 nextActionIndex = 0;
     int lastActionPos = 0;
+    int lastActionPosModified = 0;
     int lastActionInterval = 0;
     qint64 min = -1;
     qint64 max = -1;
