@@ -347,14 +347,26 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
                 double amplitude = distance / 2.0;
                 if(funscript->settings.modifier > 1)
                 {
-                    pos = qRound(pos + ((amplitude * funscript->settings.modifier) - amplitude));
+                    pos = qRound(pos + (amplitude * (funscript->settings.modifier - 1)));
                 }
                 else if(funscript->settings.modifier > 0)
                 {
-                    pos = qRound(pos - ((amplitude * funscript->settings.modifier) - amplitude));
+                    pos = qRound(pos - (amplitude * (1 - funscript->settings.modifier)));
                 }
-                else
-                    pos = abs(amplitude);
+                // double modifier = funscript->settings.modifier;
+                // if(modifier > 1 )
+                // {
+                //     modifier = funscript->settings.modifier - 1;
+                // }
+                // bool downstroke = distance < 0;
+                // if(downstroke)
+                // {
+                //     pos = qRound(pos + (modifier * 100));// Add % to the bottom end (current position)
+                // }
+                // else
+                // {
+                //     pos = qRound(pos - (modifier * 100));// Subtract % from the top end (current position)
+                // }
                 pos = XMath::constrain(pos, 0, 100);
                 funscript->settings.lastActionPosModified = pos;
                 if(funscript->settings.channel == Track::Stroke)
@@ -363,7 +375,7 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
                     LogHandler::Debug(funscript->settings.trackName + " last pos: "+QString::number(funscript->settings.lastActionPos));
                     LogHandler::Debug(funscript->settings.trackName + " pos: "+QString::number(ogPos));
                     LogHandler::Debug(funscript->settings.trackName + " distance: "+QString::number(distance));
-                    LogHandler::Debug(funscript->settings.trackName + " amplitude: "+QString::number(amplitude));
+                    // LogHandler::Debug(funscript->settings.trackName + " amplitude: "+QString::number(amplitude));
                     LogHandler::Debug(funscript->settings.trackName + " Modified pos: "+QString::number(pos));
                 }
             }
