@@ -660,31 +660,37 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         {
             locker.unlock();
             MigrateTo23();
+            locker.relock();
         }
         if(currentVersion < 0.25f)
         {
             locker.unlock();
             MigrateTo25();
+            locker.relock();
         }
         if(currentVersion < 0.252f)
         {
             locker.unlock();
             MigrateTo252();
+            locker.relock();
         }
         if(currentVersion < 0.2581f)
         {
             locker.unlock();
             TCodeChannelLookup::setAllProfileDefaults();
+            locker.relock();
         }
         if(currentVersion < 0.2615f)
         {
             locker.unlock();
             MigratrTo2615();
+            locker.relock();
         }
         if(currentVersion < 0.263f)
         {
             locker.unlock();
             MigrateTo263();
+            locker.relock();
         }
         if(currentVersion < 0.27f)
         {
@@ -692,6 +698,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             settings->setValue("version", 0.27f);
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.272f)
         {
@@ -699,6 +706,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             MigrateToQVariant(settingsToLoadFrom);
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.284f)
         {
@@ -706,6 +714,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             MigrateToQVariant2(settingsToLoadFrom);
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.286f) {
             locker.unlock();
@@ -713,18 +722,21 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             TCodeChannelLookup::setAllProfileDefaults();
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.32f) {
             locker.unlock();
             MigrateTo32a(settingsToLoadFrom);
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.324f) {
             locker.unlock();
             MigrateToQVariantChannelModel(settingsToLoadFrom);
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.333f) {
             locker.unlock();
@@ -738,6 +750,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             _libraryExclusions = QStringList(libraryExclusions);
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.41f) {
             locker.unlock();
@@ -746,30 +759,35 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
                 selectedLibrary.append(library);
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.414f) {
             locker.unlock();
             MigrateTo42(settingsToLoadFrom);
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.426f) {
             locker.unlock();
             _hashedPass = nullptr;
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.451f) {
             locker.unlock();
             SetTCodeCommandMapDefaults();
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.454f) {
             locker.unlock();
             SetSystemTagDefaults();
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.459f) {
             locker.unlock();
@@ -777,6 +795,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setForceMetaDataFullProcess(true);
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.465f) {
             locker.unlock();
@@ -784,6 +803,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setForceMetaDataFullProcess(true);
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.469f) {
             locker.unlock();
@@ -792,11 +812,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             bool disableTCodeValidation = settingsToLoadFrom->value("disableSerialTCodeValidation").toBool();
             setDisableTCodeValidation(disableTCodeValidation);
             Save();// No need to load as these are under the new settings system.
+            locker.relock();
         }
         if(currentVersion < 0.47f) {
             locker.unlock();
             setForceMetaDataFullProcess(true);
             Save();
+            locker.relock();
         }
         if(currentVersion < 0.471f) {
             locker.unlock();
@@ -804,12 +826,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setHTTPChunkSize(httpChunkSize);
             settingsToLoadFrom->remove("httpChunkSize");
             Save();
+            locker.relock();
         }
         if(currentVersion < 0.53f) {
             locker.unlock();
             MigrateTo52(settingsToLoadFrom);
             Save();
             Load();
+            locker.relock();
         }
         if(currentVersion < 0.54f) {
             locker.unlock();
@@ -817,6 +841,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             m_xTags.addTag(XTags::SFMA);
             Save();
             Load();
+            locker.relock();
         }
     }
     settingsChangedEvent(false);
