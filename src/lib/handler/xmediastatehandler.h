@@ -9,8 +9,12 @@
 
 class XTENGINE_EXPORT XMediaStateHandler// : public QObject
 {
+    //Q_OBJECT
+// signals:
+//     void playing(LibraryListItem27* item);
+//     void stopped();
 public:
-
+    // static XMediaStateHandler* instance();
     static void setMediaLibraryHandler(MediaLibraryHandler* libraryHandler);
     static bool isPlaying();
     static bool isExternal();
@@ -30,8 +34,6 @@ private:
     static LibraryListItem27 m_playingItem;
     static bool m_isInternal;
     static qreal m_playbackSpeed;
-
-    static void processMetaData();
 };
 
 #endif // XMEDIASTATEHANDLER_H

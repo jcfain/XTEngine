@@ -2121,18 +2121,6 @@ void SettingsHandler::setoffSet(int value)
     offSet = value;
 }
 
-int SettingsHandler::getLiveOffSet()
-{
-    QMutexLocker locker(&mutex);
-    return _liveOffset ? _liveOffset : offSet;
-}
-void SettingsHandler::setLiveOffset(int value)
-{
-    QMutexLocker locker(&mutex);
-    _liveOffset = value;
-    //settingsChangedEvent(true);
-}
-
 bool SettingsHandler::isSmartOffSet()
 {
     return m_smartOffsetEnabled;

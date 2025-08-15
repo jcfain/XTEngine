@@ -38,11 +38,13 @@ signals:
     void scriptTogglePaused(bool paused);
     void swapScript(ScriptInfo script);
     void clean1024();
+    void updateMetadata(LibraryListItemMetaData258 value);
 
 public slots:
     void on_DeviceConnection_StateChange(ConnectionChangedSignal status);
     void stopAllMedia();
     void onSettingChange(QString settingName, QVariant value);
+    void itemUpdated(const LibraryListItem27* item, const QVector<int>& roles);
 
 public:
     HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent = nullptr);

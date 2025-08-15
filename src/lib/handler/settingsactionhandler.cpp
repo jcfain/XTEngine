@@ -288,14 +288,14 @@ void SettingsActionHandler::media_action(QString action)
                {
                     newOffset = increase ? item->metadata.offset + SettingsHandler::getFunscriptOffsetStep() : item->metadata.offset - SettingsHandler::getFunscriptOffsetStep();
                     item->metadata.offset = newOffset;
-                    SettingsHandler::setLiveOffset(newOffset);
+                    FunscriptHandler::setOffset(newOffset);
                     SettingsHandler::updateLibraryListItemMetaData(*item);
                     emit actionExecuted(action, verb + " offset to " + QString::number(newOffset), newOffset);
                }
             }
             else
             {
-                newOffset = increase ? SettingsHandler::getLiveOffSet() + SettingsHandler::getFunscriptOffsetStep() : SettingsHandler::getLiveOffSet() - SettingsHandler::getFunscriptOffsetStep();
+                newOffset = increase ? FunscriptHandler::getOffSet() + SettingsHandler::getFunscriptOffsetStep() : FunscriptHandler::getOffSet() - SettingsHandler::getFunscriptOffsetStep();
             }
         }
         else
@@ -303,7 +303,7 @@ void SettingsActionHandler::media_action(QString action)
             newOffset = 0;
             emit actionExecuted(action, verb + " offset to " + QString::number(newOffset), newOffset);
         }
-        SettingsHandler::setLiveOffset(newOffset);
+        FunscriptHandler::setOffset(newOffset);
     }
     else if (action == actions.SkipToMoneyShot)
     {

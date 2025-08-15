@@ -102,6 +102,7 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 continue;
             if (channel->MultiplierEnabled)
             {
+                multiplierEnabledTracker[channel->track] = true;
                 // // Establish link to related channel to axis that are NOT stroke.
                 // if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && actions.contains(channel->RelatedChannel)))
                 //     mainAction = actions.value(channel->RelatedChannel);
@@ -217,10 +218,11 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                     tcode += QString::number(speed);
                 }
             }
-//            else
-//            {
-//                getChannelHome(channel, tcode);
-//            }
+            else if(multiplierEnabledTracker.value(channel->track, false))
+            {
+                multiplierEnabledTracker[channel->track] = false;
+                getChannelHome(channel, tcode);
+            }
         }
     }
     return tcode;

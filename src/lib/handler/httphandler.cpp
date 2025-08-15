@@ -3,6 +3,7 @@
 #include <QNetworkCookie>
 #include "../tool/imagefactory.h"
 #include "settingshandler.h"
+#include "funscripthandler.h"
 #include "../tool/medialibrarycache.h"
 // #include "xtpwebhandler.h"
 // #include "../tool/videoformat.h"
@@ -10,6 +11,7 @@
 HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent) : QObject(parent)
 {
     _mediaLibraryHandler = mediaLibraryHandler;
+
 
 
     _webSocketHandler = new WebSocketHandler(this);
@@ -113,17 +115,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             return;
         _mediaLibraryHandler->getLibraryCache()->lockForRead();
         auto item = _mediaLibraryHandler->getLibraryCache()->at(index);
-
-        QString roleslist;
-        foreach (int role, roles) {
-            roleslist += QString::number(role);
-            if(roles.indexOf(role) < roles.length() - 1)
-                roleslist +=",";
-        }
-        QJsonDocument doc(createMediaObject(item, m_hostAddress));
-        _mediaLibraryHandler->getLibraryCache()->unlock();
-        QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
-        _webSocketHandler->sendUpdateItem(itemJson, roleslist);
+        itemUpdated(&item, roles);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemAdded, this, [this](int index, int newSize) {
         if(_mediaLibraryHandler->isLibraryProcessing())
@@ -719,13 +711,13 @@ void HttpHandler::handleMediaItemMetadataUpdate(const QHttpServerRequest &reques
     }
     else
     {
-        auto metaData = LibraryListItemMetaData258::fromJson(doc.object());
-        SettingsHandler::setLiveOffset(metaData.offset);
-        auto libraryItem = _mediaLibraryHandler->findItemByNameNoExtension(metaData.key);
+        auto metadata = LibraryListItemMetaData258::fromJson(doc.object());
+        auto libraryItem = _mediaLibraryHandler->findItemByNameNoExtension(metadata.key);
         if(libraryItem)
         {
-            libraryItem->metadata = metaData;
+            libraryItem->metadata = metadata;
             SettingsHandler::updateLibraryListItemMetaData(*libraryItem);
+            emit updateMetadata(libraryItem->metadata);
         } else {
             SettingsHandler::setForceMetaDataFullProcess(true);
             responder.write(createError("Invalid metadata item please process metadata<br> In System tab under settings."), QHttpServerResponse::StatusCode::Conflict);
@@ -1501,4 +1493,20 @@ void HttpHandler::on_DeviceConnection_StateChange(ConnectionChangedSignal status
 void HttpHandler::onSettingChange(QString settingName, QVariant value)
 {
     _webSocketHandler->onSettingChange(settingName, value);
+}
+
+void HttpHandler::itemUpdated(const LibraryListItem27 *item, const QVector<int>& roles)
+{
+    if(!item)
+        return;
+    QString roleslist;
+    foreach (int role, roles) {
+        roleslist += QString::number(role);
+        if(roles.indexOf(role) < roles.length() - 1)
+            roleslist +=",";
+    }
+    QJsonDocument doc(createMediaObject(*item, m_hostAddress));
+    _mediaLibraryHandler->getLibraryCache()->unlock();
+    QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
+    _webSocketHandler->sendUpdateItem(itemJson, roleslist);
 }

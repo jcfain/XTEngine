@@ -19,6 +19,8 @@
 class XTENGINE_EXPORT FunscriptHandler : public QObject
 {
     Q_OBJECT
+public slots:
+    static void updateMetadata(LibraryListItemMetaData258 value);
 public:
     FunscriptHandler(QObject* parent = nullptr);
     ~FunscriptHandler();
@@ -50,6 +52,9 @@ public:
     static void setModifier(const Track& channelName, double percentage);
     static void resetModifier();
     static void resetModifier(const Track& channelName);
+    static int getOffSet();
+    static void setOffset(int value);
+    static void resetOffset(int value);
 
     static bool isSFMA(QString libraryItemMediaPath);
     static QList<ScriptInfo> getSFMATracks(QString libraryItemMediaPath);
@@ -64,6 +69,7 @@ private:
     // QString _channel;
     bool m_loaded = false;
     bool _firstActionExecuted;
+    static inline int m_offset;
     static QByteArray readFile(QString file);
     static QJsonObject readJson(QByteArray data);
     void jsonToFunscript(QJsonObject json);

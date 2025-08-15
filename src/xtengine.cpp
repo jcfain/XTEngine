@@ -106,6 +106,7 @@ void XTEngine::init()
         connect(_httpHandler, &HttpHandler::mediaAction, settingsActionHandler(), &SettingsActionHandler::media_action, Qt::QueuedConnection);
         connect(settingsActionHandler(), &SettingsActionHandler::actionExecuted, httpHandler(), &HttpHandler::actionExecuted, Qt::QueuedConnection);
         connect(_httpHandler, &HttpHandler::swapScript, _syncHandler, QOverload<const ScriptInfo&>::of(&SyncHandler::swap));
+        connect(_httpHandler, &HttpHandler::updateMetadata, _syncHandler, &SyncHandler::updateMetadata);
         connect(SettingsHandler::instance(), &SettingsHandler::settingChange, _httpHandler, &HttpHandler::onSettingChange);
 
 
@@ -174,6 +175,9 @@ void XTEngine::init()
         }
     });
     connect(_syncHandler, &SyncHandler::funscriptSearchResult, this, &XTEngine::onFunscriptSearchResult);
+
+
+    // connect(XMediaStateHandler::instance(), &XMediaStateHandler::playing, _syncHandler, &SyncHandler::updateMetadata);
 
     connect(_settingsActionHandler, &SettingsActionHandler::tcode_action, this, [this](QString tcode) {
         if(tcode == "DHOME") {

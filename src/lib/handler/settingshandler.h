@@ -238,8 +238,6 @@ public:
     static void setLiveMultiplierEnabled(bool value);
     static bool getLiveGamepadConnected();
     static void setLiveGamepadConnected(bool value);
-    static int getLiveOffSet();
-    static void setLiveOffset(int value);
     static bool isSmartOffSet();
     static int getSmartOffSet();
     static void setSmartOffset(int value);

@@ -1,13 +1,12 @@
 #include "xmediastatehandler.h"
 #include "settingshandler.h"
+#include "funscripthandler.h"
 
-// XMediaStateHandler::XMediaStateHandler(MediaLibraryHandler* libraryHandler, QObject *parent):
-//     m_libraryHandler(libraryHandler) {}
-
-//XMediaStateHandler::~XMediaStateHandler()
-//{
-
-//}
+// XMediaStateHandler *XMediaStateHandler::instance()
+// {
+//     static XMediaStateHandler instance;
+//     return &instance;
+// }
 
 void XMediaStateHandler::setMediaLibraryHandler(MediaLibraryHandler *libraryHandler)
 {
@@ -33,10 +32,9 @@ bool XMediaStateHandler::isExternal()
 
 void XMediaStateHandler::setPlaying(const LibraryListItem27* playingItem, bool internal)
 {
-    if(!playingItem->ID.isEmpty()) {
+    if(playingItem && !playingItem->ID.isEmpty()) {
         m_playingItem = *playingItem;
         m_isInternal = internal;
-        processMetaData();
     } else {
         stop();
     }
@@ -86,14 +84,6 @@ void XMediaStateHandler::setPlaybackSpeed(qreal speed)
 qreal XMediaStateHandler::getPlaybackSpeed()
 {
     return m_playbackSpeed;
-}
-
-void XMediaStateHandler::processMetaData()
-{
-    auto mediaItem = getPlaying();
-    if(!mediaItem)
-        return;
-    SettingsHandler::setLiveOffset(mediaItem->metadata.offset);
 }
 
 LibraryListItem27 XMediaStateHandler::m_playingItem;

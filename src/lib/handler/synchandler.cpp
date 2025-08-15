@@ -8,6 +8,7 @@ SyncHandler::SyncHandler(QObject* parent):
 {
     _tcodeHandler = new TCodeHandler(parent);
     //_funscriptHandler = new FunscriptHandler(TCodeChannelLookup::Stroke());
+    connect(this, &SyncHandler::updateMetadata, &m_funscriptHandler, &FunscriptHandler::updateMetadata);
 }
 
 SyncHandler::~SyncHandler()
@@ -664,7 +665,7 @@ bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadS
         }
 #endif
     }
-    FunscriptHandler::setModifier(libraryItem.metadata.funscriptModifier);
+    FunscriptHandler::updateMetadata(libraryItem.metadata);
     loadState.hasScript = m_funscriptHandler.isLoaded();
     if(loadState.hasScript) {
         loadState.mainScript = mainScript;

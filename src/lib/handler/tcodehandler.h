@@ -26,6 +26,7 @@ private:
     QMutex mutex;
     void getChannelHome(ChannelModel33* channel, QString &tcode);
     QMap<QString, int> channelValueTracker;
+    QHash<Track, bool> multiplierEnabledTracker;
     int getDistance(int current, int last);
 };
 

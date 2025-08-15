@@ -43,6 +43,7 @@ signals:
     void sendTCode(QString tcode);
     void channelPositionChange(QString channel, int position, int time, ChannelTimeType timeType);
     void funscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
+    void updateMetadata(LibraryListItemMetaData258 value);
 
 public slots:
     void on_output_device_change(OutputConnectionHandler* outputDeviceHandler);

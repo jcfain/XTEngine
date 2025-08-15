@@ -294,7 +294,7 @@ const QList<Track> FunscriptHandler::getLoaded()
 std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& channelName, const qint64& at)
 {
     QMutexLocker locker(&mutex);
-    qint64 millis = at + SettingsHandler::getLiveOffSet() + SettingsHandler::getSmartOffSet();
+    qint64 millis = at + getOffSet();
     if(!m_funscripts.contains(channelName))
         return nullptr;
     Funscript* funscript = &m_funscripts[channelName];
@@ -523,9 +523,25 @@ double FunscriptHandler::getModifier(const Track& channelName)
     return m_funscripts.contains(channelName) ? m_funscripts.value(channelName).settings.modifier * 100.0 : 1;
 }
 
+void FunscriptHandler::updateMetadata(LibraryListItemMetaData258 value)
+{
+    setModifier(value.funscriptModifier);
+    setOffset(value.offset);
+}
+
 void FunscriptHandler::resetModifier(const Track& channelName)
 {
     setModifier(channelName, 1.0);
+}
+
+int FunscriptHandler::getOffSet()
+{
+    return m_offset;
+}
+
+void FunscriptHandler::setOffset(int value)
+{
+    m_offset = value ? value : SettingsHandler::getoffSet();
 }
 
 QList<ScriptInfo> FunscriptHandler::getSFMATracks(QString libraryItemMediaPath)
