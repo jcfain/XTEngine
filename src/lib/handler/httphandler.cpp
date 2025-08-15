@@ -5,6 +5,7 @@
 #include "settingshandler.h"
 #include "funscripthandler.h"
 #include "../tool/medialibrarycache.h"
+#include "xmediastatehandler.h"
 // #include "xtpwebhandler.h"
 // #include "../tool/videoformat.h"
 

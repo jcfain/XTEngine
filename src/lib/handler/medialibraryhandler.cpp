@@ -661,7 +661,7 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
         // item.metadata.key = item.nameNoExtension;
         m_mediaLibraryCache.lockForWrite();
         if(!hasExistingMetadata) {
-            item.metadata.defaultValues(item.nameNoExtension, item.path);
+            item.metadata.defaultValues(item.ID, item.nameNoExtension, item.path);
             metadataChanged = true;
         }
         if(item.path != item.metadata.libraryItemPath) {
@@ -1357,6 +1357,7 @@ void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
         libraryListItem.metadata.dateAdded = QDateTime::currentDateTime();
         libraryListItem.forceProcessMetadata = true;
     }
+    libraryListItem.metadata.ID = libraryListItem.ID;
 }
 
 void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)

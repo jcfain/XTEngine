@@ -1508,7 +1508,7 @@ void SettingsHandler::MigrateLibraryMetaDataTo258()
         if(file.exists())
         {
             LibraryListItemMetaData258 newMetadata;
-            newMetadata.defaultValues(key, libraryListItemMetaData.libraryItemPath);
+            newMetadata.defaultValues("", key, libraryListItemMetaData.libraryItemPath);
             newMetadata.lastPlayPosition = libraryListItemMetaData.lastPlayPosition;
             newMetadata.lastLoopEnabled = libraryListItemMetaData.lastLoopEnabled;
             newMetadata.lastLoopStart = libraryListItemMetaData.lastLoopStart;
@@ -3262,7 +3262,7 @@ void SettingsHandler::getLibraryListItemMetaData(LibraryListItem27& item)
         return;// _libraryListItemMetaDatas.value(item.path);
     }
     LibraryListItemMetaData258 newMetadata;
-    newMetadata.defaultValues(item.nameNoExtension, item.path);
+    newMetadata.defaultValues(item.ID, item.nameNoExtension, item.path);
     _libraryListItemMetaDatas.insert(item.nameNoExtension, newMetadata);
     item.metadata = _libraryListItemMetaDatas.value(item.nameNoExtension);
 }

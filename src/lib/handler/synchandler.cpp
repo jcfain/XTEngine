@@ -7,8 +7,6 @@ SyncHandler::SyncHandler(QObject* parent):
     QObject(parent)
 {
     _tcodeHandler = new TCodeHandler(parent);
-    //_funscriptHandler = new FunscriptHandler(TCodeChannelLookup::Stroke());
-    connect(this, &SyncHandler::updateMetadata, &m_funscriptHandler, &FunscriptHandler::updateMetadata);
 }
 
 SyncHandler::~SyncHandler()
@@ -134,6 +132,13 @@ SyncLoadState SyncHandler::swap(const ScriptInfo &script)
         return swap(*playingItem, script);
     }
     return SyncLoadState();
+}
+
+void SyncHandler::updateMetadata(LibraryListItemMetaData258 value)
+{
+    auto playingMediaID = XMediaStateHandler::getPlayingID();
+    if(!playingMediaID.isEmpty() && playingMediaID == value.ID)
+        m_funscriptHandler.updateMetadata(value);
 }
 
 bool SyncHandler::isLoaded()

@@ -14,6 +14,7 @@
 
 struct XTENGINE_EXPORT LibraryListItemMetaData258
 {
+    QString ID;
     QString key;
     QString libraryItemPath;
     bool watched;
@@ -42,6 +43,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
 
     friend QDataStream & operator<<(QDataStream &dataStream, const LibraryListItemMetaData258 &object )
     {
+        dataStream << object.ID;
         dataStream << object.key;
         dataStream << object.libraryItemPath;
         dataStream << object.watched;
@@ -77,6 +79,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
 
     friend QDataStream & operator>>(QDataStream &dataStream, LibraryListItemMetaData258 &object)
     {
+        dataStream >> object.ID;
         dataStream >> object.key;
         dataStream >> object.libraryItemPath;
         dataStream >> object.watched;
@@ -146,6 +149,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     static QJsonObject toJson(LibraryListItemMetaData258 item)
     {
         QJsonObject obj;
+        obj["ID"] = item.ID;
         obj["key"] = item.key;
         obj["libraryItemPath"] = item.libraryItemPath;
         obj["watched"] = item.watched;
@@ -203,6 +207,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
 
     static LibraryListItemMetaData258 fromJson(QJsonObject obj) {
         LibraryListItemMetaData258 newItem;
+        newItem.ID = obj["ID"].toString();
         newItem.key = obj["key"].toString();
         newItem.libraryItemPath = obj["libraryItemPath"].toString();
         newItem.watched = obj["watched"].toBool();
@@ -254,10 +259,11 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         return newItem;
     }
 
-    void defaultValues(const QString& keyIn, const QString& libraryMediaPathIn)
+    void defaultValues(const QString& IDIn, const QString& keyIn, const QString& libraryMediaPathIn)
     {
         QJsonObject obj;
         LibraryListItemMetaData258 newItem = fromJson(obj);
+        ID = IDIn;
         key = keyIn;
         libraryItemPath = libraryMediaPathIn;
         watched = newItem.watched;

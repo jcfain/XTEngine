@@ -43,7 +43,6 @@ signals:
     void sendTCode(QString tcode);
     void channelPositionChange(QString channel, int position, int time, ChannelTimeType timeType);
     void funscriptSearchResult(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
-    void updateMetadata(LibraryListItemMetaData258 value);
 
 public slots:
     void on_output_device_change(OutputConnectionHandler* outputDeviceHandler);
@@ -51,6 +50,7 @@ public slots:
     void on_other_media_state_change(XMediaState state);
     void searchForFunscript(InputConnectionPacket packet);
     SyncLoadState swap(const ScriptInfo &script);
+    void updateMetadata(LibraryListItemMetaData258 value);
 
 public:
     SyncHandler(QObject *parent = nullptr);
