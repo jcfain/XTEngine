@@ -60,14 +60,14 @@ void ConnectionHandler::setOutputConnection(OutputConnectionHandler* device)
 {
     if(!device && m_outputConnection) {
         disconnect(m_outputConnection, &OutputConnectionHandler::connectionChange, this, nullptr);
-        disconnect(m_outputConnection, &OutputConnectionHandler::commandRecieve, this, nullptr);
+        disconnect(m_outputConnection, &OutputConnectionHandler::commandReceive, this, nullptr);
         m_outputConnection->dispose();
     }
     m_outputConnection = device;
     if(m_outputConnection) {
         connect(m_outputConnection, &OutputConnectionHandler::connectionChange, this, &ConnectionHandler::on_output_connectionChanged, Qt::UniqueConnection);
-        connect(m_outputConnection, &OutputConnectionHandler::commandRecieve, this, &ConnectionHandler::outputMessageRecieved);
-        connect(m_outputConnection, &OutputConnectionHandler::commandRecieve, this, [this](OutputConnectionPacket packet) {
+        connect(m_outputConnection, &OutputConnectionHandler::commandReceive, this, &ConnectionHandler::outputMessageReceived);
+        connect(m_outputConnection, &OutputConnectionHandler::commandReceive, this, [this](OutputConnectionPacket packet) {
             if(!packet.original.isEmpty()) {
                 auto actions = SettingsHandler::getTCodeCommandMapCommands(packet.original);
                 foreach(QString actionValue, actions) {
@@ -81,15 +81,15 @@ void ConnectionHandler::setInputConnection(InputConnectionHandler* device)
 {
     if(!device && m_inputConnection) {
         disconnect(m_inputConnection, &InputConnectionHandler::connectionChange, this, nullptr);
-        disconnect(m_inputConnection, &InputConnectionHandler::messageRecieved, this, nullptr);
+        disconnect(m_inputConnection, &InputConnectionHandler::messageReceived, this, nullptr);
         m_inputConnection->dispose();
     }
     m_inputConnection = device;
     if(m_inputConnection) {
         connect(m_inputConnection, &InputConnectionHandler::connectionChange, this, &ConnectionHandler::on_input_connectionChanged, Qt::UniqueConnection);
-        connect(m_inputConnection, &InputConnectionHandler::messageRecieved, this, [this](InputConnectionPacket packet){
+        connect(m_inputConnection, &InputConnectionHandler::messageReceived, this, [this](InputConnectionPacket packet){
             if(m_inputConnection->isConnected())
-                emit inputMessageRecieved(packet);
+                emit inputMessageReceived(packet);
         });
     }
 }
@@ -209,7 +209,7 @@ void ConnectionHandler::initInputConnection(ConnectionInterface inputConnection)
     }
     if (m_inputConnection)
     {
-        disconnect(m_inputConnection, &InputConnectionHandler::messageRecieved, nullptr, nullptr);
+        disconnect(m_inputConnection, &InputConnectionHandler::messageReceived, nullptr, nullptr);
         m_inputConnection->dispose();
         disconnect(m_inputConnection, &InputConnectionHandler::connectionChange, nullptr, nullptr);
     }

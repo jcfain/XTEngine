@@ -104,7 +104,7 @@ void InputXTPWebConnectionHandler::readData(QByteArray data)
         _currentTime = currentTime;
         //LogHandler::Debug("XTP Web _isPlaying: "+QString::number(_isPlaying));
         _mutex.unlock();
-        emit messageRecieved(*_currentPacket);
+        emit messageReceived(*_currentPacket);
 
     }
 }

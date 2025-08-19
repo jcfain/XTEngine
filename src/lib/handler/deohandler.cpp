@@ -157,7 +157,7 @@ void InputHeresphereConnectionHandler::readData()
         _currentTime = currentTime;
         //LogHandler::Debug("Deo _isPlaying: "+QString::number(_isPlaying));
         _mutex.unlock();
-        emit messageRecieved(currentPacket);
+        emit messageReceived(currentPacket);
 
     }
 }

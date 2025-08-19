@@ -77,16 +77,16 @@ void MediaLibraryCache::append(const LibraryListItem27& item)
 
 void MediaLibraryCache::remove(const LibraryListItem27& item)
 {
-    const QWriteLocker locker(&m_mutex);
     int index = findItemIndexByID(item.ID);
+    const QWriteLocker locker(&m_mutex);
     if(index > -1)
         m_items.remove(index);
 }
 
 void MediaLibraryCache::update(const LibraryListItem27 &value)
 {
-    const QWriteLocker locker(&m_mutex);
     int i = findItemIndexByID(value.ID);
+    const QWriteLocker locker(&m_mutex);
     if(i > -1) {
         m_items[i] = value;
     }

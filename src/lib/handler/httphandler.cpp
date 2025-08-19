@@ -465,7 +465,7 @@ void HttpHandler::handleWebTimeUpdate(const QHttpServerRequest &request, QHttpSe
     }
     auto body = request.body();
     //LogHandler::Debug("HTTP time sync update: "+QString(body));
-    emit xtpWebPacketRecieve(body);
+    emit xtpWebPacketReceive(body);
     responder.write(QHttpServerResponse::StatusCode::Ok);
 }
 void HttpHandler::handleAvailableSerialPorts(const QHttpServerRequest &request, QHttpServerResponder &responder) {

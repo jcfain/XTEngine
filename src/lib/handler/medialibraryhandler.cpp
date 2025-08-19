@@ -155,13 +155,13 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 
         auto playlists = SettingsHandler::getPlaylists();
         //For some reason sorting random without any playlists crashes. Add dummy and hide it in proxy model.
-        if(playlists.empty())
-            setupPlaylistItem("DummyPlaylistThatNoOneShouldEverSeeOrNameTheSame");
-        else
-            foreach(auto playlist, playlists.keys())
-            {
-                setupPlaylistItem(playlist);
-            }
+        // if(playlists.empty())
+        //     setupPlaylistItem(DUMMY_PLAYLISTITEM);
+        // else
+        foreach(auto playlist, playlists.keys())
+        {
+            setupPlaylistItem(playlist);
+        }
 
         foreach(auto path, vrLibrary)
         {
@@ -1280,9 +1280,9 @@ LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
     item.modifiedDate = QDateTime::currentDateTime();
     item.duration = 0;
     item.metadata.isMFS = false;
-    setThumbState(ThumbState::Ready, item);
     setLiveProperties(item);
     addItemFront(item);
+    setThumbState(ThumbState::Ready, item);
     //emit playListItem(item);
     return item;
 }

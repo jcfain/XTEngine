@@ -15,7 +15,7 @@ signals:
     void connectionChange(ConnectionChangedSignal status);
     void emitTCode(QString tcode);
     void emitAction(QString action);
-    void onListenForInputRecieve(QString gamepadAxisName);
+    void onListenForInputReceive(QString gamepadAxisName);
 
 public:
     GamepadHandler(QObject *parent = nullptr);

@@ -26,7 +26,7 @@ signals:
     void settingChange(QString settingName, QVariant value);
     void mediaAction(QString action);
     void actionExecuted(QString action, QString spokenText, QVariant value);
-    void xtpWebPacketRecieve(QByteArray data);
+    void xtpWebPacketReceive(QByteArray data);
     void tcode(QString tcode);
     void connectOutputDevice(ConnectionInterface deviceName, bool checked);
     void connectInputDevice(ConnectionInterface deviceName, bool checked);

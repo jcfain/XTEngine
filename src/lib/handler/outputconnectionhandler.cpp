@@ -63,7 +63,7 @@ void OutputConnectionHandler::processDeviceInput(QString buffer) {
         if (!m_readBuffer.endsWith('\n')) // Must end with newline char
             return;
         m_readBuffer.remove(m_newline);
-        LogHandler::Debug(tr("Recieved device command: ") + m_readBuffer);
+        LogHandler::Debug(tr("Received device command: ") + m_readBuffer);
         processCommand(m_readBuffer);
         m_readBuffer.clear();
     } else if (!isConnected()) {
@@ -82,7 +82,7 @@ void OutputConnectionHandler::processDeviceInput(QString buffer) {
                 }
             }
             if (validated) {
-                LogHandler::Debug(tr("Recieved device validation: ") + m_readBuffer);
+                LogHandler::Debug(tr("Received device validation: ") + m_readBuffer);
                 setConnected(true);
                 emit connectionChange({ConnectionDirection::Output, m_deviceName,
                                        ConnectionStatus::Connected, version});
@@ -95,7 +95,7 @@ void OutputConnectionHandler::processDeviceInput(QString buffer) {
             setConnected(true);
         }
     } else {
-        LogHandler::Debug(tr("Recieved other data: ") + m_readBuffer);
+        LogHandler::Debug(tr("Received other data: ") + m_readBuffer);
         // emit debug log event?
         m_readBuffer.clear();
     }
@@ -118,5 +118,5 @@ void OutputConnectionHandler::processCommand(QString data) {
         }
     }
     // TODO: how to tell if is another type?
-    emit commandRecieve({OutputDeviceCommandType::BUTTON, command, value, data});
+    emit commandReceive({OutputDeviceCommandType::BUTTON, command, value, data});
 }

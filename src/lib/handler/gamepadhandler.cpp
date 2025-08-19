@@ -241,7 +241,7 @@ void GamepadHandler::cancelListenForInput()
 
 void GamepadHandler::onListenForInput(QString button)
 {
-    emit onListenForInputRecieve(button);
+    emit onListenForInputReceive(button);
     cancelListenForInput();
 }
 

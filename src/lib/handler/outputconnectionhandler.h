@@ -19,7 +19,7 @@ class XTENGINE_EXPORT OutputConnectionHandler : public QObject
 
 signals:
     void connectionChange(ConnectionChangedSignal status);
-    void commandRecieve(OutputConnectionPacket packet);
+    void commandReceive(OutputConnectionPacket packet);
     void sendHandShake();
 
 public:

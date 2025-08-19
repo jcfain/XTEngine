@@ -15,7 +15,7 @@ class XTENGINE_EXPORT InputConnectionHandler : public QObject
 signals:
     void errorOccurred(QString error);
     void connectionChange(ConnectionChangedSignal status);
-    void messageRecieved(InputConnectionPacket message);
+    void messageReceived(InputConnectionPacket message);
     // For gamepad
     void emitTCode(QString tcode);
     void emitAction(QStringList actions);

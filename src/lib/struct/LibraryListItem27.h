@@ -14,6 +14,7 @@
 #define UNKNOWN_IMAGE "://images/icons/unknown.png"
 #define LOADING_IMAGE "://images/icons/loading.png"
 #define LOADING_CURRENT_IMAGE "://images/icons/loading_current.png"
+#define DUMMY_PLAYLISTITEM "DummyPlaylistThatNoOneShouldEverSeeOrNameTheSame" // Not needed anymore?
 
 enum class LibraryListItemType {
     PlaylistInternal,

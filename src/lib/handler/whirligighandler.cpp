@@ -134,7 +134,7 @@ void InputWhirligigConnectionHandler::readData()
     {
         time1 = time2;
         //LogHandler::Debug("Whirligig _isPlaying: "+QString::number(_isPlaying));
-        emit messageRecieved(*currentVRPacket);
+        emit messageReceived(*currentVRPacket);
     }
     time2 = (round(mSecTimer.nsecsElapsed() / 1000000));
 }

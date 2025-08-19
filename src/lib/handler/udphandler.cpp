@@ -81,7 +81,7 @@ void OutputUdpConnectionHandler::onReadyRead()
             LogHandler::Warn("Bad datagram");
         }
     }
-    LogHandler::Debug("Recieved UDP: "+recieved);
+    LogHandler::Debug("Received UDP: "+recieved);
     processDeviceInput(recieved);
 }
 

@@ -91,7 +91,7 @@ void XTEngine::init()
     {
         _httpHandler = new HttpHandler(_mediaLibraryHandler, this);
         connect(_httpHandler, &HttpHandler::tcode, _connectionHandler, &ConnectionHandler::sendTCode);
-        connect(_httpHandler, &HttpHandler::xtpWebPacketRecieve, _connectionHandler, &ConnectionHandler::inputMessageSend);
+        connect(_httpHandler, &HttpHandler::xtpWebPacketReceive, _connectionHandler, &ConnectionHandler::inputMessageSend);
         connect(_httpHandler, &HttpHandler::restartService, SettingsHandler::instance(), &SettingsHandler::Restart);
         connect(_httpHandler, &HttpHandler::skipToMoneyShot, this, &XTEngine::skipToMoneyShot);
         connect(_httpHandler, &HttpHandler::skipToNextAction, this, &XTEngine::skipToNextAction);
@@ -129,13 +129,13 @@ void XTEngine::init()
         }
     });
     
-    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, _syncHandler, [this](InputConnectionPacket packet) {
+    connect(_connectionHandler, &ConnectionHandler::inputMessageReceived, _syncHandler, [this](InputConnectionPacket packet) {
         if(!_mediaLibraryHandler->isLoadingMediaPaths())
             _syncHandler->searchForFunscript(packet);
         else
             LogHandler::Warn("Waiting for media paths to load to search for funscripts....");
     });
-    connect(_connectionHandler, &ConnectionHandler::inputMessageRecieved, this, [](InputConnectionPacket packet) {
+    connect(_connectionHandler, &ConnectionHandler::inputMessageReceived, this, [](InputConnectionPacket packet) {
         XMediaStateHandler::updateDuration(packet.currentTime, packet.duration);
     });
     connect(_connectionHandler, &ConnectionHandler::action, _settingsActionHandler, &SettingsActionHandler::media_action);

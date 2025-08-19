@@ -65,7 +65,7 @@ void OutputWebsocketConnectionHandler::onClosed() {
 //             LogHandler::Warn("Bad datagram");
 //         }
 //     }
-//     LogHandler::Debug("Recieved UDP: "+recieved);
+//     LogHandler::Debug("Received UDP: "+recieved);
 //     processDeviceInput(recieved);
 // }
 void OutputWebsocketConnectionHandler::onTextMessageReceived(QString response)
