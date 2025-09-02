@@ -168,7 +168,7 @@ var cookies = parseCookie(document.cookie);
 if(!cookies.sessionID) {
 	document.getElementById("logoutSection").style.display = "none";
 	document.getElementById("logoutSectionSpacing").style.display = "none";
-	document.getElementById("sessionInfoTable").hidden = true;
+	document.getElementById("sessionInfo").hidden = true;
 }
 getBrowserInformation();
 var userAgentIsDeo = userAgent.indexOf("Deo VR") != -1;
@@ -3066,6 +3066,7 @@ async function setupMotionModifiers() {
 
 	var formElementNode = document.createElement("div");
 	formElementNode.classList.add("formElement");
+	
 
 	// var headerDivNode = document.createElement("div");
 	// headerDivNode.classList.add("tab-content-header");
@@ -3291,8 +3292,7 @@ async function setUpInversionMotionModifier() {
 		var channelName = channel.channel;
 
 		var formElementNode = document.createElement("div");
-		formElementNode.classList.add("formElement");
-		formElementNode.classList.add("formElement--inverted");
+		formElementNode.classList.add("formElement", "formElement--label-large");
 		
 
 		var labelNode = document.createElement("label");

@@ -22,6 +22,7 @@ Settings = {
         let div = document.createElement('div');
         div.id = group;
         div.classList.add("form");
+        div.classList.add("tab-content-settings-section");
         let h2 = document.createElement('h3');
         h2.innerText = capitalizeFirstLetter(group);
         div.appendChild(h2);
@@ -29,8 +30,9 @@ Settings = {
     },
     createFormControl(labelText, type, id, value) {
         let div = document.createElement('div');
-        div.classList.add("formElement");
+        div.classList.add("formElement", "formElement--label-large");
         let labelElement = document.createElement('label');
+        labelElement.setAttribute("title", labelText)
         labelElement.textContent = labelText;
         labelElement.setAttribute("for", id);
         let control;

@@ -1280,9 +1280,9 @@ LibraryListItem27 MediaLibraryHandler::setupPlaylistItem(QString playlistName)
     item.modifiedDate = QDateTime::currentDateTime();
     item.duration = 0;
     item.metadata.isMFS = false;
+    item.thumbState = ThumbState::Ready;
     setLiveProperties(item);
     addItemFront(item);
-    setThumbState(ThumbState::Ready, item);
     //emit playListItem(item);
     return item;
 }
@@ -1344,6 +1344,66 @@ void MediaLibraryHandler::addItemBack(LibraryListItem27 item) {
         emit itemAdded(index, m_mediaLibraryCache.length());
         //emit libraryChange();
     }
+}
+
+void MediaLibraryHandler::deleteItem(const QString &itemID, QStringList& errors)
+{
+    LibraryListItem27* item = findItemByID(itemID);
+    if(!item) {
+        LogHandler::Error("Item not found with ID: "+ itemID);
+        return;
+    }
+    if(item->type == LibraryListItemType::External) {
+        LogHandler::Debug("Item is external type: "+ itemID);
+        removeFromCache(*item);
+        SettingsHandler::removeLibraryListItemMetaData(*item);
+        return;
+    }
+    if(QFileInfo::exists(item->path))
+    {
+        if(!QFile(item->path).remove())
+        {
+            errors << "Failed to remove media item: "+item->path;
+            LogHandler::Error("Failed to remove media item: "+item->path);
+        }
+    }
+    SettingsHandler::removeLibraryListItemMetaData(*item);
+    // if(item->hasScript)
+    // {
+    //     if(QFileInfo::exists(item->script)) {
+    //         hasError = QFile(item->path).remove();
+    //         if(hasError)
+    //         {
+    //             errors << "Failed to remove script: "+item->path;
+    //             LogHandler::Error(error);
+    //         }
+    //     }
+    QList<ScriptInfo> scripts = item->metadata.scripts;
+    for(auto script : scripts)
+    {
+        if(QFileInfo::exists(script.path))
+        {
+            if(!QFile(script.path).remove())
+            {
+                errors << "Failed to remove script: "+script.path;
+                LogHandler::Error("Failed to remove script: "+script.path);
+            }
+        }
+    }
+    // }
+    if(item->type == LibraryListItemType::Video || item->type == LibraryListItemType::VR)
+    {
+        if(QFileInfo::exists(item->thumbFile) && !item->thumbFile.startsWith(":"))
+        {
+            if(!QFile(item->thumbFile).remove())
+            {
+                errors << "Failed to remove thumbnail: "+item->thumbFile;
+                LogHandler::Error("Failed to remove thumbnail: "+item->thumbFile);
+            }
+        }
+    }
+    if(errors.empty())
+        removeFromCache(*item);
 }
 void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
 {

@@ -69,6 +69,7 @@ public:
     void removeFromCache(LibraryListItem27 item);
     void addItemFront(LibraryListItem27 item);
     void addItemBack(LibraryListItem27 item);
+    void deleteItem(const QString& itemID, QStringList& errors);
     MediaLibraryCache* getLibraryCache();
     QList<LibraryListItem27> getPlaylist(QString name);
     void fixPlaylist(QString name);

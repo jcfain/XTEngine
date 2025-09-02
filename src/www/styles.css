@@ -155,11 +155,11 @@ select:disabled {
     grid-template-columns: 25% 75%;
     margin-top: 8px;
     width: 100%;
-    text-align: end;
+    text-align: end;  
 }
 
-.formElement--inverted {
-    grid-template-columns: 75% 25%;
+.formElement--label-large {
+    grid-template-columns: 70% 30%;
 }
 
 .formElement--column {
@@ -183,6 +183,9 @@ select:disabled {
     flex-basis: 20%;
     padding-top: 4px;
     margin-right: 8px;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 .formElement--column label {
     height: 24px;
@@ -202,11 +205,13 @@ select:disabled {
 }
 /* width: max-content Hack to get to align left. Somthings not right but im not looking for it now.  */
 .formElement input[type='checkbox'] {
-    width: max-content;
-    /* margin-right: 8px; */
+    width: min-content;
+    height: min-content;
+    margin: 8px;
 }
 .formElement--column input[type='checkbox'] {
-    width: max-content;
+    width: min-content;
+    height: min-content;
     margin: auto;
 }
 .form-buttons {  
@@ -881,6 +886,26 @@ section .range-values {
     margin-bottom: 4px;
 }
 
+.tab-content-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.tab-content-settings-section {
+    display: flex;
+    flex-flow: row wrap;
+    max-width: 350px;  
+    border-width: 2px;
+    border-color: white;
+    border-style: solid;
+    border-radius: 25px;  
+    margin: 8px;
+    padding: 8px;
+    justify-content: center;
+    align-content: flex-start;  
+    flex-grow: 1;
+}
+
 .sync-device-status {
     border-radius: 10px;
     padding: 3px;
@@ -938,7 +963,12 @@ section .range-values {
     margin-left: 16px;
 }
 .session-info {
-    margin-top: 30px;
+    border-width: 2px;
+    border-color: white;
+    border-style: solid;
+    border-radius: 25px;  
+    margin: 8px;
+    padding: 8px;
 }
 .session-info-table, 
 .session-info-table td, 
@@ -956,15 +986,18 @@ section .range-values {
 
 .system-tags {
     display: flex;
+    width: 100%;
 }
 .system-tags-section {
     margin-right: 8px;
+    flex-basis: 50%;
 }
 .system-tags-section-button {
     width: 50%;
 }
 .system-tags-select {
     height: 257px;
+    min-width: 100%;
 }
 /* .ms {
     width: 100%;

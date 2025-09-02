@@ -314,6 +314,8 @@ public:
     static double getPlaybackRateStep();
     static void setDisableAutoThumbGeneration(bool value);
     static bool getDisableAutoThumbGeneration();
+    static void setEnableMediaManagement(bool value);
+    static bool getEnableMediaManagement();
 
     static void setLubePulseAmount(int value);
     static int getLubePulseAmount();

@@ -3216,6 +3216,17 @@ bool SettingsHandler::getDisableAutoThumbGeneration()
     return getSetting(SettingKeys::disableAutoThumbGeneration).toBool();
 }
 
+void SettingsHandler::setEnableMediaManagement(bool value)
+{
+    changeSetting(SettingKeys::enableMediaManagement, value);
+}
+
+bool SettingsHandler::getEnableMediaManagement()
+{
+    QMutexLocker locker(&mutex);
+    return getSetting(SettingKeys::enableMediaManagement).toBool();
+}
+
 void SettingsHandler::setLubePulseAmount(int value)
 {
     QMutexLocker locker(&mutex);
@@ -3274,8 +3285,7 @@ bool SettingsHandler::hasLibraryListItemMetaData(const LibraryListItem27& item)
 
 void SettingsHandler::removeLibraryListItemMetaData(LibraryListItem27& item)
 {
-    _libraryListItemMetaDatas.remove(item.nameNoExtension);
-    getLibraryListItemMetaData(item);
+    removeLibraryListItemMetaData(item.nameNoExtension);
 }
 
 void SettingsHandler::removeLibraryListItemMetaData(const QString key)

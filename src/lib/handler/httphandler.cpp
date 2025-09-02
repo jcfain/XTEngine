@@ -112,14 +112,14 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemUpdated, this, [this](int index, QVector<int> roles) {
-        if(_mediaLibraryHandler->isLibraryProcessing())
+        if(_mediaLibraryHandler->isLibraryProcessing() || index < 0)
             return;
         _mediaLibraryHandler->getLibraryCache()->lockForRead();
         auto item = _mediaLibraryHandler->getLibraryCache()->at(index);
         itemUpdated(&item, roles);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemAdded, this, [this](int index, int newSize) {
-        if(_mediaLibraryHandler->isLibraryProcessing())
+        if(_mediaLibraryHandler->isLibraryProcessing() || index < 0)
             return;
         _mediaLibraryHandler->getLibraryCache()->lockForRead();
         auto item = _mediaLibraryHandler->getLibraryCache()->at(index);

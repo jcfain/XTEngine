@@ -691,19 +691,103 @@
 							<div id="tabFunscriptInversion" class="tab-content-body-column-section--small tab-content-body-column-section"></div>
 						</div>
 					</div>
-					<div id="systemInfoTab" class="tab-content">
-						<h3>Versions</h3>
-						<div>
-							<span>XTE: </span>
-							<span id="xteVersion"></span>
+					<div class="tab-content">
+						<div id="systemInfoTab" class="tab-content-container">
+							<div class="tab-content-settings-section">
+								<div>
+									<h3>Versions</h3>
+									<div>
+										<span>XTE: </span>
+										<span id="xteVersion"></span>
+									</div>
+									<div>
+										<span>XTP Web: </span>
+										<span id="webVersion"></span>
+									</div>
+								</div>
+								<div>
+									<h3>Current browser information</h3>
+									<div id="browserInfo"></div>
+								</div>
+							</div>
+
+							<div class="tab-content-settings-section">
+								<h3>Media Library</h3>
+								<div id="systemTags" class="system-tags">
+									<div id="userTags" class="system-tags-section">
+										<h4 id="userTagsHeader">System tags</h4>
+										<div>
+											<select id="systemTagsSelect" class="system-tags-select" multiple="multiple" onChange="systemTagsSelectChange(this)"></select>
+										</div>
+										<button id="addTagButton" class="system-tags-section-button" onclick="addSystemTag(false)">Add</button>
+										<button id="removeTagButton" disabled="true" class="system-tags-section-button" onclick="removeSystemTags(false)">Remove</button>
+									</div>
+									<div id="smartTags" class="system-tags-section">
+										<h3 id="smartTagsHeader" title="Smart tags are a special tag. When in the system and the metadata is being processed,\nthis processing will look for the tag text in the video path.\nif found, the tag is automattically added to the media.">Smart tags</h3>
+										<div>
+											<select id="smartTagsSelect" class="system-tags-select" multiple="multiple" onChange="smartagsSelectChange(this)"></select>
+										</div>
+										<button id="addSmartTagButton" class="system-tags-section-button" onclick="addSystemTag(true)">Add</button>
+										<button id="removeSmartTagButton" disabled="true" class="system-tags-section-button" onclick="removeSystemTags(true)">Remove</button>
+									</div>
+								</div>
+								<button id="startMetadataProcessButton" style="margin-top:8px" onclick="startMetadataProcess()">Process metadata</button>
+								<button id="startMetadataCleanProcessButton" style="margin-top:8px" onclick="startMetadataCleanProcess()">Clean metadata</button>
+								<button id="cleanupThumbsButton" style="margin-top:8px" onclick="startThumbCleanupProcess()">Clean up thumbs</button>
+								<button id="clean1024" style="margin-top:8px" onclick="startClean1024Process()">Reset metadata offset 1024</button>
+							</div>
+							<!-- <div class="formElement">
+								<label for="processMetadataOnStart">Process all metadata on start</label>
+								<input id="processMetadataOnStart" type="checkbox"
+									onclick="settingChange(this.id, this.checked)" />
+							</div>
+							<h4>Schedule</h4>
+							<div class="formElement">
+								<label for="scheduleLibraryLoadEnabled">Enabled</label>
+								<input id="scheduleLibraryLoadEnabled" type="checkbox"
+									onclick="settingChange(this.id, this.checked)" />
+							</div>
+							<div class="formElement">
+								<label for="scheduleLibraryLoadTime">At time</label>
+								<input id="scheduleLibraryLoadTime" type="time" name="scheduleLibraryLoad" min="00:00" max="23:59"
+									onchange="settingChange(this.id, this.value)" />
+							</div>
+							<div class="formElement">
+								<label for="scheduleLibraryLoadFullProcess">Full metadata process</label>
+								<input id="scheduleLibraryLoadFullProcess" type="checkbox"
+									onclick="settingChange(this.id, this.checked)" />
+							</div>
+							<div class="formElement">
+								<label for="scheduleSettingsSync">Sync settings</label>
+								<input id="scheduleSettingsSync" type="checkbox"
+									onclick="settingChange(this.id, this.checked)" />
+							</div>
+							<h4>TCode</h4>
+							<div class="formElement">
+								<label for="disableTCodeValidation">Disable TCode validation</label>
+								<input id="disableTCodeValidation" type="checkbox"
+									onclick="settingChange(this.id, this.checked)" />
+							</div>
+							<div class="formElement">
+								<label for="disableUDPHeartBeat">Disable UDP heartbeat</label>
+								<input id="disableUDPHeartBeat" type="checkbox"
+									onclick="settingChange(this.id, this.checked)" />
+							</div>
+							<h4>Web</h4>
+							<div class="formElement">
+								<label for="httpChunkSizeMB">Media streaming chunk size</label>
+								<input id="httpChunkSizeMB" type="number" min="0.000001" step="1.0"
+									onchange="settingChange(this.id, this.value)" />
+							</div>
+							<h4>Media</h4>
+							<div class="formElement">
+								<label for="playbackRateStep">Playback rate step</label>
+								<input id="playbackRateStep" type="number" min="0.000001" step="0.01"
+									onchange="settingChange(this.id, this.value)" />
+							</div> -->
+
 						</div>
-						<div>
-							<span>XTP Web: </span>
-							<span id="webVersion"></span>
-						</div>
-						<h3>Current browser information</h3>
-						<div id="browserInfo"></div>
-						<div id="sessionInfo" class="session-info">
+						<div id="sessionInfo" class="session-info ">
 							<h3>Authorized browser sessions</h3>
 							<table id="sessionInfoTable" 
 									class="session-info-table">
@@ -719,79 +803,6 @@
 								<tbody id="sessionInfoBody"></tbody>
 							</table>
 						</div>
-
-						<h3>Media Library</h3>
-						<div id="systemTags" class="system-tags">
-							<div id="userTags" class="system-tags-section">
-								<h4 id="userTagsHeader">System tags</h4>
-								<div>
-									<select id="systemTagsSelect" class="system-tags-select" multiple="multiple" onChange="systemTagsSelectChange(this)"></select>
-								</div>
-								<button id="addTagButton" class="system-tags-section-button" onclick="addSystemTag(false)">Add</button>
-								<button id="removeTagButton" disabled="true" class="system-tags-section-button" onclick="removeSystemTags(false)">Remove</button>
-							</div>
-							<div id="smartTags" class="system-tags-section">
-								<h3 id="smartTagsHeader" title="Smart tags are a special tag. When in the system and the metadata is being processed,\nthis processing will look for the tag text in the video path.\nif found, the tag is automattically added to the media.">Smart tags</h3>
-								<div>
-									<select id="smartTagsSelect" class="system-tags-select" multiple="multiple" onChange="smartagsSelectChange(this)"></select>
-								</div>
-								<button id="addSmartTagButton" class="system-tags-section-button" onclick="addSystemTag(true)">Add</button>
-								<button id="removeSmartTagButton" disabled="true" class="system-tags-section-button" onclick="removeSystemTags(true)">Remove</button>
-							</div>
-						</div>
-						<button id="startMetadataProcessButton" style="margin-top:8px" onclick="startMetadataProcess()">Process metadata</button>
-						<button id="startMetadataCleanProcessButton" style="margin-top:8px" onclick="startMetadataCleanProcess()">Clean metadata</button>
-						<button id="cleanupThumbsButton" style="margin-top:8px" onclick="startThumbCleanupProcess()">Clean up thumbs</button>
-						<button id="clean1024" style="margin-top:8px" onclick="startClean1024Process()">Reset metadata offset 1024</button>
-						<!-- <div class="formElement">
-							<label for="processMetadataOnStart">Process all metadata on start</label>
-							<input id="processMetadataOnStart" type="checkbox"
-								onclick="settingChange(this.id, this.checked)" />
-						</div>
-						<h4>Schedule</h4>
-						<div class="formElement">
-							<label for="scheduleLibraryLoadEnabled">Enabled</label>
-							<input id="scheduleLibraryLoadEnabled" type="checkbox"
-								onclick="settingChange(this.id, this.checked)" />
-						</div>
-						<div class="formElement">
-							<label for="scheduleLibraryLoadTime">At time</label>
-							<input id="scheduleLibraryLoadTime" type="time" name="scheduleLibraryLoad" min="00:00" max="23:59"
-								onchange="settingChange(this.id, this.value)" />
-						</div>
-						<div class="formElement">
-							<label for="scheduleLibraryLoadFullProcess">Full metadata process</label>
-							<input id="scheduleLibraryLoadFullProcess" type="checkbox"
-								onclick="settingChange(this.id, this.checked)" />
-						</div>
-						<div class="formElement">
-							<label for="scheduleSettingsSync">Sync settings</label>
-							<input id="scheduleSettingsSync" type="checkbox"
-								onclick="settingChange(this.id, this.checked)" />
-						</div>
-						<h4>TCode</h4>
-						<div class="formElement">
-							<label for="disableTCodeValidation">Disable TCode validation</label>
-							<input id="disableTCodeValidation" type="checkbox"
-								onclick="settingChange(this.id, this.checked)" />
-						</div>
-						<div class="formElement">
-							<label for="disableUDPHeartBeat">Disable UDP heartbeat</label>
-							<input id="disableUDPHeartBeat" type="checkbox"
-								onclick="settingChange(this.id, this.checked)" />
-						</div>
-						<h4>Web</h4>
-						<div class="formElement">
-							<label for="httpChunkSizeMB">Media streaming chunk size</label>
-							<input id="httpChunkSizeMB" type="number" min="0.000001" step="1.0"
-								onchange="settingChange(this.id, this.value)" />
-						</div>
-						<h4>Media</h4>
-						<div class="formElement">
-							<label for="playbackRateStep">Playback rate step</label>
-							<input id="playbackRateStep" type="number" min="0.000001" step="0.01"
-								onchange="settingChange(this.id, this.value)" />
-						</div> -->
 					</div>
 					
 				</section>

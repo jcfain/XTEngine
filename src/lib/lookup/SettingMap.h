@@ -73,6 +73,7 @@ struct SettingKeys {
     static inline const QString httpChunkSizeMB = "httpChunkSizeMB";
     static inline const QString playbackRateStep = "playbackRateStep";
     static inline const QString disableAutoThumbGeneration = "disableAutoThumbGeneration";
+    static inline const QString enableMediaManagement = "enableMediaManagement";
 
 };
 
@@ -102,6 +103,7 @@ public:
         {SettingProfile::System, SettingGroups::web, SettingKeys::httpChunkSizeMB, FormControlTypes::Double, 26.214400, "Media streaming chunk size", "The chunk sise the web browser should ask for when steaming media.", true},
         {SettingProfile::System, SettingGroups::media, SettingKeys::playbackRateStep, FormControlTypes::Double, 0.01, "Playback rate step", "The amount to change the playback rate by when using gamepad or input scroller.", false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::disableAutoThumbGeneration, FormControlTypes::Checkbox, false, "Disable automatic thumb generation", "If checked, when a new media item has been found, no thumb will be automattically generated. Manual generation will still be attemped..", false},
+        {SettingProfile::System, SettingGroups::media, SettingKeys::enableMediaManagement, FormControlTypes::Checkbox, false, "Enable media management", "If checked, certain media management options like delete will become available", false},
 
     };
     static inline QHash<QString, SettingMap> SettingsMap;
