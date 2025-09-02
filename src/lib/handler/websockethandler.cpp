@@ -195,6 +195,10 @@ void WebSocketHandler::processTextMessage(QString message)
         XMediaStateHandler::setPlaybackSpeed(value);
     } else if(command == "clean1024") {
         emit clean1024();
+    } else if(command == "deleteMediaItem") {
+        QJsonObject obj = json["message"].toObject();
+        QString itemID = obj["itemID"].toString();
+        emit deleteMediaItem(itemID);
     }
 
 }

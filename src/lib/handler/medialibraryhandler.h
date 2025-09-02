@@ -30,6 +30,7 @@ signals:
     void libraryChange();
     void itemAdded(int index, int newSize);
     void itemRemoved(int index, int newSize);
+    void itemRemoved(QString itemID);
     void itemUpdated(int index, QVector<int> roles);
     //void playListItem(LibraryListItem27 item);
 

@@ -128,6 +128,20 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
         _webSocketHandler->sendAddItem(itemJson);
     });
+    connect(_mediaLibraryHandler, QOverload<QString>::of(&MediaLibraryHandler::itemRemoved), this, [this](QString itemID) {
+        QJsonObject ret;
+        ret["itemID"] = itemID;
+        _webSocketHandler->sendCommand("deleteItem", ret);
+    });
+    connect(_webSocketHandler, &WebSocketHandler::deleteMediaItem, this, [this](QString itemID) {
+        QStringList errors;
+        _mediaLibraryHandler->deleteItem(itemID, errors);
+        if(!errors.empty()) {
+            QString errorString = "There was errors when deleteing the media item.<br>";
+            errorString += errors.join("<br>");
+            _webSocketHandler->sendError(errorString);
+        }
+    });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::backgroundProcessStateChange, this, [this](QString message, float percentage) {
         QJsonObject obj;
         obj["message"] = message;
@@ -568,7 +582,6 @@ void HttpHandler::handleSettings(const QHttpServerRequest &request, QHttpServerR
     // root["scheduleLibraryLoadTime"] = SettingsHandler::scheduleLibraryLoadTime().toString("hh:mm");
     // root["scheduleLibraryLoadFullProcess"] = SettingsHandler::scheduleLibraryLoadFullProcess();
     // root["processMetadataOnStart"] = SettingsHandler::processMetadataOnStart();
-    QJsonObject settingsObj;
     QJsonArray settingsArray;
     foreach (SettingMap map, XSettingsMap::SettingsList) {
         QJsonObject settingsObj = map.tojson();

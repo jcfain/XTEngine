@@ -1323,6 +1323,7 @@ void MediaLibraryHandler::updateItem(int index, QVector<int> roles)
 
 void MediaLibraryHandler::removeFromCache(LibraryListItem27 itemToRemove) {
     auto index = findItemIndexByID(itemToRemove.ID);
+    emit itemRemoved(itemToRemove.ID);
     m_mediaLibraryCache.remove(itemToRemove);
     //if(!isLibraryLoading()) {
         emit itemRemoved(index, m_mediaLibraryCache.length());

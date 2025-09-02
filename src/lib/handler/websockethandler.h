@@ -32,6 +32,8 @@ signals:
     void mediaAction(QString action);
     void swapScript(ScriptInfo value);
     void clean1024();
+    void deleteMediaItem(QString itemID);
+
 public:
     explicit WebSocketHandler(QObject *parent = nullptr);
     ~WebSocketHandler();

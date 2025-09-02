@@ -127,6 +127,7 @@ var rangeChangeAmount = 100;
 
 var shufflePlayMode = false;
 var shufflePlayModePlayedIndexed = {};
+var mediaManagementEnabled = false;
 
 const tagCheckboxesName = "TagCheckbox";
 const metadataTagCheckboxesName = "MetadataTagCheckbox";
@@ -354,6 +355,9 @@ function sendUpdateMoneyShotAtPos(item) {
 	var pos = videoNode.currentTime;
 	sendWebsocketMessage("setMoneyShot", { itemID: item.id, pos: pos });
 }
+function sendDeleteMediaItem(item) {
+	sendWebsocketMessage("deleteMediaItem", { itemID: item.id });
+}
 function sendUpdateMetadata(metadataKey) {
 	sendWebsocketMessage("processMetadata", metadataKey);
 }
@@ -524,6 +528,11 @@ function wsCallBackFunction(evt) {
 				var libraryItem = message["item"];
 				var roles = message["roles"];
 				addItem(libraryItem);
+				break;
+			case "deleteItem":
+				var message = data["message"];
+				var itemID = message["itemID"];
+				deleteItem(itemID);
 				break;
 			case "textToSpeech":
 				var message = data["message"];
@@ -1681,6 +1690,12 @@ function loadMedia(mediaList) {
 		}
 	}
 
+	var deleteMediaItemWrapper = function (mediaItem, contextMenu) {
+		return function () {
+			deleteMediaItem(mediaItem);
+		}
+	}
+
 	var textHeight = 0
 	var width = 0;
 	var widthInt = 0;
@@ -1754,6 +1769,10 @@ function loadMedia(mediaList) {
 		var contextMenuItem = createContextMenuItem("Alternate scripts", showAlternateScripts(obj, contextMenu));
 		contextMenuItem.classList.add("showAlternateScripts", "disabled");
 		contextMenu.appendChild(contextMenuItem);
+		if(mediaManagementEnabled) {
+			var contextMenuItem = createContextMenuItem("Delete...", deleteMediaItemWrapper(obj, contextMenu));
+			contextMenu.appendChild(contextMenuItem);
+		}
 		var contextCancelMenuItem = createContextMenuItem("Cancel", closeContext(contextMenu));
 		contextMenu.appendChild(contextCancelMenuItem);
 
@@ -1897,6 +1916,13 @@ function updateItem(libraryItem, roles)
 function addItem(libraryItem)
 {
 	mediaListGlobal.push(libraryItem);
+	showChange(showGlobal);
+}
+
+function deleteItem(itemID) {
+	const index = mediaListGlobal.findIndex(x => x.id == itemID);
+	if(index > -1)
+		mediaListGlobal.splice(index, 1);
 	showChange(showGlobal);
 }
 
@@ -2790,6 +2816,19 @@ function openAlternateScriptsModal(mediaItem) {
 	var alternateScriptsModal = document.getElementById("alternateScriptsModal");
 	alternateScriptsModal.style.visibility = "visible";
 	alternateScriptsModal.style.opacity = 1;
+}
+function deleteMediaItem(mediaItem) {
+	if(!mediaItem)
+		return;
+	if(playingmediaItem && mediaItem.id == playingmediaItem.id) {
+		userError("Cannot delete currently playing item.");
+		return;
+	}
+	showAlertWindow("Delete media item", `Are you sure you want to delete the media item: "${mediaItem.displayName}"<br>
+		This will delete the following items:<br><br>&nbsp&nbsp*All funscripts<br>&nbsp&nbsp*Thumbnails<br>&nbsp&nbsp*Metadata<br><br>This action cannot be undone!!`, function() {
+			closeAlertWindow();
+			sendDeleteMediaItem(mediaItem);
+		});
 }
 function closeAlternateScriptsModal() {
 	var alternateScriptsModal = document.getElementById("alternateScriptsModal");

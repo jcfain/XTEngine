@@ -93,6 +93,7 @@ Settings = {
                 if(!element.validity.valid) 
                     return;
                 settingChange(id, element.value);
+		        this.callBackExtensions(id, element.value, element);
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
 
@@ -112,6 +113,7 @@ Settings = {
                 if(!element.validity.valid && !element.validity.stepMismatch)
                     return;
                 settingChange(id, parseInt(element.value));
+		        this.callBackExtensions(id, element.value, element);
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
         return element;
@@ -130,6 +132,7 @@ Settings = {
                 if(!element.validity.valid && !element.validity.stepMismatch)
                     return;
                 settingChange(id, parseFloat(element.value));
+		        this.callBackExtensions(id, element.value, element);
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
         return element;
@@ -165,6 +168,7 @@ Settings = {
                 if(!element.validity.valid) 
                     return;
                 settingChange(id, element.checked);
+		        this.callBackExtensions(id, element.checked, element);
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
 
@@ -185,6 +189,7 @@ Settings = {
                 if(!element.validity.valid) 
                     return;
                 settingChange(id, element.checked);
+		        this.callBackExtensions(id, element.checked, element);
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
 
@@ -208,6 +213,7 @@ Settings = {
                 if(!element.validity.valid) 
                     return;
                 settingChange(id, element.value);
+		        this.callBackExtensions(id, element.value, element);
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
 
@@ -261,7 +267,18 @@ Settings = {
                 formControl.control.min = "00:00";
                 formControl.control.max = "23:59";
                 break;
+            case "enableMediaManagement":
+                mediaManagementEnabled = value;
+                break;
                 
+        }
+    },
+    callBackExtensions(key, value, formControl) {
+        switch(key) {
+            case "enableMediaManagement":
+                mediaManagementEnabled = value;
+	            showChange(showGlobal);
+                break;
         }
     }
 }
