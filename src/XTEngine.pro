@@ -209,7 +209,7 @@ unix:mac {
 #QMAKE_LFLAGS_PLUGIN -= -dynamiclib
 #QMAKE_LFLAGS_PLUGIN += -bundle
 
-QMAKE_APPLE_DEVICE_ARCHS = x86_64 x86_64h arm64
+QMAKE_APPLE_DEVICE_ARCHS = x86_64 x86_64h# arm64
 CONFIG += shared
     #QMAKE_PREFIX_SHLIB = so
     #QMAKE_RPATHDIR += ../lib
