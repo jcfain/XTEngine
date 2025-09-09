@@ -1204,31 +1204,29 @@ QHttpServerResponse HttpHandler::handleThumbFile(const QHttpServerRequest &reque
     // responder.write(QHttpServerResponse::StatusCode::Ok);
 }
 
-void HttpHandler::handleSubtitle(const QHttpServerRequest &request, QHttpServerResponder &responder)
+QHttpServerResponse HttpHandler::handleSubtitle(const QHttpServerRequest &request)
 {
     if(!isAuthenticated(request)) {
-        responder.write(QHttpServerResponse::StatusCode::Unauthorized);
-        return;
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::Forbidden);
     }
-    auto match = request.query().query();// data->state["match"].value<QRegularExpressionMatch>();
-    QString parameter = match;
+    QString parameter = getURL(request);
     //QString parameter = getURL(request);
     QString apiStr("/media/");
     QString subtitleFileName = parameter.replace(parameter.indexOf(apiStr), apiStr.size(), "");
     LibraryListItem27* libraryItem = _mediaLibraryHandler->findItemByPartialSubtitle(subtitleFileName);
     if(!libraryItem || libraryItem->metadata.subtitle.isEmpty() || !QFileInfo::exists(libraryItem->metadata.subtitle))
     {
-        responder.write(QHttpServerResponse::StatusCode::NotFound);
-        return;
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::NotFound);
     }
 
     QHttpHeaders headers;
     QFile fileInfo(libraryItem->metadata.subtitle);
-    headers.append("Content-Disposition", "attachment");
+    headers.append(QHttpHeaders::WellKnownHeader::ContentDisposition, "attachment");
     headers.append("filename", fileInfo.fileName());
     QString mimeType = mimeDatabase.mimeTypeForFile(libraryItem->metadata.subtitle, QMimeDatabase::MatchExtension).name();
-    headers.append("Content-Type", mimeType);
-    responder.write(fileInfo.readAll(), headers, QHttpServerResponse::StatusCode::Ok);
+    headers.append(QHttpHeaders::WellKnownHeader::ContentType, mimeType);
+    headers.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(fileInfo.size()));
+    return sendFile(libraryItem->metadata.subtitle, headers);
 }
 
 QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerRequest &request)

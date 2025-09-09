@@ -66,7 +66,7 @@ public:
     void handleMediaActions(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleSettingsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleMediaItemMetadataUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
-    void handleSubtitle(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    QHttpServerResponse handleSubtitle(const QHttpServerRequest &req);
 
     void handleChannelsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleDeviceConnected(const QHttpServerRequest &req, QHttpServerResponder &responder);
