@@ -34,11 +34,12 @@ private:
     QStringList m_libraryFunscript;
     QStringList m_libraryExclusions;
 
-    QStringList& getLibraryPaths(const LibraryType& type);
+    QStringList* getLibraryPaths(const LibraryType& type);
     QMutex* getLibraryMutex(const LibraryType& type);
     bool isLibraryParentChildOrEqual(const LibraryType& type, const QString& value, const QString& name, QStringList& errorMessages);
     bool isLibraryChildOrEqual(const LibraryType& type, const QString& value, const QString& name, QStringList& errorMessages);
-    bool contains(const QString& value, QStringList& errorMessages);
+    bool mediaContains(const QString& value, QStringList& errorMessages);
+    bool exclusionContains(const QString& value, QStringList& errorMessages);
     // bool contains(const LibraryType& type, const QString& value, QStringList& errorMessages);
 };
 

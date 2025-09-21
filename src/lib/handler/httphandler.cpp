@@ -1246,10 +1246,10 @@ QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerReq
 //            return HttpPromise::resolve(data);
 //        }
 //    }
-    auto match = getURL(request);//.state["match"].value<QRegularExpressionMatch>();
-    auto requestHeaders = request.headers();
+    QString match = getURL(request);//.state["match"].value<QRegularExpressionMatch>();
+    QHttpHeaders requestHeaders = request.headers();
 
-    m_hlsFuture = QtConcurrent::run([this, match, requestHeaders]()
+    m_hlsFuture = QtConcurrent::run([this](QString match, QHttpHeaders requestHeaders)
     {
         try
         {
@@ -1351,7 +1351,7 @@ QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerReq
             // reject(std::current_exception());
             return QHttpServerResponse(QHttpServerResponse::StatusCode::InternalServerError);
         }
-    });
+    }, match, requestHeaders);
     return m_hlsFuture;
 }
 

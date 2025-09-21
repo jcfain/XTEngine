@@ -27,35 +27,36 @@ void MediaLibrarySettings::Save(QSettings *settings)
 void MediaLibrarySettings::set(const LibraryType& type, const QStringList &value)
 {
     auto library = getLibraryPaths(type);
-    library = value;
+    *library = value;
     emit settingsChangedEvent(true);
 }
 
 QStringList MediaLibrarySettings::get(const LibraryType& type)
 {
     QMutexLocker locker(getLibraryMutex(type));
-    return getLibraryPaths(type);
+    return *getLibraryPaths(type);
 }
 
-QString  MediaLibrarySettings::getLast(const LibraryType& type)
+QString MediaLibrarySettings::getLast(const LibraryType& type)
 {
     QMutexLocker locker(getLibraryMutex(type));
     auto library = getLibraryPaths(type);
-    library.removeAll("");
-    if(!library.isEmpty())
-        return library.last();
+    library->removeAll("");
+    if(!library->isEmpty())
+        return library->last();
     return QCoreApplication::applicationDirPath();
 }
 
 bool MediaLibrarySettings::add(const LibraryType& type, const QString& value, QStringList &errorMessages)
 {
-    QMutexLocker locker(getLibraryMutex(type));
     auto library = getLibraryPaths(type);
-    if(contains(value, errorMessages))
+    bool error = type == LibraryType::EXCLUSION ? exclusionContains(value, errorMessages) : mediaContains(value, errorMessages);
+    if(error)
         return false;
-    if(!value.isEmpty() && !library.contains(value))
-        library << value;
-    library.removeDuplicates();
+    QMutexLocker locker(getLibraryMutex(type));
+    if(!value.isEmpty() && !library->contains(value))
+        *library << value;
+    library->removeDuplicates();
     emit settingsChangedEvent(true);
     return true;
 }
@@ -69,21 +70,21 @@ void MediaLibrarySettings::add(const LibraryType &type, const QString &value)
 void MediaLibrarySettings::remove(const LibraryType& type, const QString& value)
 {
     QMutexLocker locker(getLibraryMutex(type));
-    getLibraryPaths(type).removeOne(value);
+    getLibraryPaths(type)->removeOne(value);
     emit settingsChangedEvent(true);
 }
 
 void MediaLibrarySettings::remove(const LibraryType& type, const QList<int>& indexes)
 {
     foreach(auto index, indexes)
-        getLibraryPaths(type).removeAt(index);
+        getLibraryPaths(type)->removeAt(index);
     emit settingsChangedEvent(true);
 }
 
 void MediaLibrarySettings::clear(const LibraryType& type)
 {
     QMutexLocker locker(getLibraryMutex(type));
-    getLibraryPaths(type).clear();
+    getLibraryPaths(type)->clear();
     emit settingsChangedEvent(true);
 }
 
@@ -104,41 +105,74 @@ QMutex* MediaLibrarySettings::getLibraryMutex(const LibraryType &type)
     }
 }
 
-QStringList &MediaLibrarySettings::getLibraryPaths(const LibraryType &type)
+QStringList* MediaLibrarySettings::getLibraryPaths(const LibraryType &type)
 {
     switch(type)
     {
     case LibraryType::MAIN:
-        return m_libraryMain;
+        return &m_libraryMain;
     case LibraryType::FUNSCRIPT:
-        return m_libraryFunscript;
+        return &m_libraryFunscript;
     case LibraryType::VR:
-        return m_libraryVR;
+        return &m_libraryVR;
     default:
-        return m_libraryExclusions;
+        return &m_libraryExclusions;
     }
 }
 
 bool MediaLibrarySettings::isLibraryParentChildOrEqual(const LibraryType& type, const QString& value, const QString& name, QStringList& errorMessages)
 {
     QMutexLocker locker(getLibraryMutex(type));
-    return XFileUtil::isDirParentChildOrEqual(getLibraryPaths(type), value, name, errorMessages);
+    return XFileUtil::isDirParentChildOrEqual(*getLibraryPaths(type), value, name, errorMessages);
 }
 
 bool MediaLibrarySettings::isLibraryChildOrEqual(const LibraryType& type, const QString &value, const QString& name, QStringList& errorMessages)
 {
     QMutexLocker locker(getLibraryMutex(type));
-    return XFileUtil::isDirChildOrEqual(getLibraryPaths(type), value, name, errorMessages);
+    return XFileUtil::isDirChildOrEqual(*getLibraryPaths(type), value, name, errorMessages);
 }
 
-bool MediaLibrarySettings::contains(const QString &value, QStringList& errorMessages)
+bool MediaLibrarySettings::mediaContains(const QString &value, QStringList& errorMessages)
 {
     isLibraryParentChildOrEqual(LibraryType::MAIN, value, "main media library", errorMessages);
     isLibraryParentChildOrEqual(LibraryType::VR, value, "VR media library", errorMessages);
-    isLibraryParentChildOrEqual(LibraryType::FUNSCRIPT, value, "funscript library", errorMessages);
-    isLibraryParentChildOrEqual(LibraryType::EXCLUSION, "library exclusions", value, errorMessages);
+    // isLibraryParentChildOrEqual(LibraryType::FUNSCRIPT, value, "funscript library", errorMessages); // Funscripts are just for searching. They are not loaded into library.
+    isLibraryChildOrEqual(LibraryType::EXCLUSION, "library exclusions", value, errorMessages);// Media dirs can be a parent of an exclusion
     return !errorMessages.isEmpty();
 }
+
+bool MediaLibrarySettings::exclusionContains(const QString& value, QStringList& errorMessages)
+{
+    bool hasDuplicate = false;
+    bool isChild = false;
+    if(XFileUtil::isDirParentChildOrEqual(m_libraryExclusions, value, "library exclusions", errorMessages))
+        hasDuplicate = true;
+    foreach (auto originalPath, *getLibraryPaths(LibraryType::MAIN)) {
+        if(originalPath==value) {
+            errorMessages << "Directory '"+value+"' is already in the main library list!";
+            hasDuplicate = true;
+        } else if(value.startsWith(originalPath)) {
+            isChild = true;
+        }
+    }
+    foreach (auto originalPath, *getLibraryPaths(LibraryType::VR)) {
+        if(originalPath==value) {
+            errorMessages << "Directory '"+value+"' is in the vr library list!";
+            hasDuplicate = true;
+        } else if(value.startsWith(originalPath)) {
+            isChild = true;
+        }
+    }
+    if(!isChild) {
+        errorMessages << "Directory '"+value+"' is NOT a child of any of the select libraries!";
+        return true;
+    }
+    if(hasDuplicate) {
+        return true;
+    }
+    return false;
+}
+
 // QStringList SettingsHandler::getVRLibrary()
 // {
 //     return _vrLibrary;

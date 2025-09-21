@@ -1,5 +1,5 @@
 QT -= gui
-QT += core serialport network texttospeech websockets multimedia bluetooth
+QT += core concurrent serialport network texttospeech websockets multimedia bluetooth
 
 equals(QT_MAJOR_VERSION, 6) {
     QT += httpserver gamepadlegacy
@@ -56,6 +56,7 @@ SOURCES += \
     lib/lookup/tcodechannellookup.cpp \
     lib/settings/medialibrarysettings.cpp \
     lib/settings/settingsbase.cpp \
+    lib/tool/funscriptsearch.cpp \
     lib/tool/heatmap.cpp \
     lib/tool/imagefactory.cpp \
     lib/tool/medialibrarycache.cpp \
@@ -131,6 +132,7 @@ HEADERS += \
     lib/tool/array-util.h \
     lib/tool/boolinq.h \
     lib/tool/file-util.h \
+    lib/tool/funscriptsearch.h \
     lib/tool/heatmap.h \
     lib/tool/imagefactory.h \
     lib/tool/medialibrarycache.h \

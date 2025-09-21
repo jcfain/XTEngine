@@ -95,9 +95,9 @@ void MediaLibraryHandler::loadLibraryAsync()
         emit libraryStopped();
         return;
     }
-    _loadingLibraryFuture = QtConcurrent::run([this, library, vrLibrary]() {
+    _loadingLibraryFuture = QtConcurrent::run([this](QStringList library, QStringList vrLibrary) {
         on_load_library(library.isEmpty() ? vrLibrary : library, library.isEmpty());
-    });
+    }, library, vrLibrary);
 }
 
 void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
@@ -185,7 +185,6 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 
         QDirIterator library(path, mediaTypes, QDir::Files, QDirIterator::Subdirectories);
 
-
         while (library.hasNext())
         {
             if(_loadingLibraryFuture.isCanceled())
@@ -210,7 +209,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             QString fileNameTemp = fileinfo.fileName();
             int fileNameExtIndex = fileNameTemp.lastIndexOf('.');
             QString fileNameNoExtension = fileNameExtIndex > -1 ? fileNameTemp.remove(fileNameExtIndex, fileNameTemp.length() -  1) : fileNameTemp;
-            QString scriptFile = fileNameNoExtension + ".funscript";
+            // QString scriptFile = fileNameNoExtension + ".funscript";
             QString scriptPath;
             int videoPathExtIndex = videoPathTemp.lastIndexOf('.');
             QString pathNoExtension = videoPathExtIndex > -1 ? videoPathTemp.remove(videoPathExtIndex, videoPathTemp.length() - 1) : videoPathTemp;
