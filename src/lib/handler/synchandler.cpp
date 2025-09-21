@@ -747,8 +747,8 @@ void SyncHandler::searchForFunscript(InputConnectionPacket packet)
         _funscriptSearchFuture = QtConcurrent::run([this, packet, videoPath]() {
             LogHandler::Debug("searchForFunscript thread start for media: "+videoPath);
             QStringList extensions = QStringList() << ".funscript" << ".zip";
-            QStringList libraryPaths = SettingsHandler::getVRLibrary();
-            QStringList mainLibraryPaths = SettingsHandler::getSelectedLibrary();
+            QStringList libraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::VR);
+            QStringList mainLibraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::MAIN);
             foreach(QString libraryPath, mainLibraryPaths)
             {
                 libraryPaths << libraryPath;

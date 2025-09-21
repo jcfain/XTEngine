@@ -54,6 +54,8 @@ SOURCES += \
     lib/handler/xtpwebhandler.cpp \
     lib/lookup/MediaActions.cpp \
     lib/lookup/tcodechannellookup.cpp \
+    lib/settings/medialibrarysettings.cpp \
+    lib/settings/settingsbase.cpp \
     lib/tool/heatmap.cpp \
     lib/tool/imagefactory.cpp \
     lib/tool/medialibrarycache.cpp \
@@ -105,6 +107,8 @@ HEADERS += \
     lib/lookup/tcodechannellookup.h \
     lib/lookup/xtags.h \
     lib/lookup/xvideorenderer.h \
+    lib/settings/medialibrarysettings.h \
+    lib/settings/settingsbase.h \
     lib/struct/Bookmark.h \
     lib/struct/ChannelModel.h \
     lib/struct/ChannelModel33.h \

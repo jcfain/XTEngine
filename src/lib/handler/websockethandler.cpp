@@ -8,23 +8,27 @@ WebSocketHandler::WebSocketHandler(QObject *parent):
     m_pWebSocketServer(new QWebSocketServer(QStringLiteral("XTP Websocket"),
                                             QWebSocketServer::NonSecureMode, this))
 {
-//    QNetworkProxy proxy;
-//    proxy.setType(QNetworkProxy::Socks5Proxy);
-    //proxy.setHostName("proxy.example.com");
-//    proxy.setPort(80);
-//    proxy.setUser("username");
-//    proxy.setPassword("password");
-//    QNetworkProxy::setApplicationProxy(proxy);
-//    m_pWebSocketServer->setProxy(proxy);
+   // QNetworkProxy proxy;
+   // proxy.setType(QNetworkProxy::HttpProxy);
+   // // proxy.setHostName("xtptest.faincloud.com");
+   // // proxy.setPort(SettingsHandler::getWebSocketPort());
+   // // proxy.setUser("username");
+   // // proxy.setPassword("password");
+   // // QNetworkProxy::setApplicationProxy(proxy);
+   // m_pWebSocketServer->setProxy(proxy);
+   // QHostAddress mHost;
+   // mHost.setAddress("192.168.0.243");
     // m_pWebSocketServer->setProxy(QNetworkProxy::ProxyType::DefaultProxy);
-    if (m_pWebSocketServer->listen(QHostAddress::Any, SettingsHandler::getWebSocketPort()))
+    if (m_pWebSocketServer->listen(QHostAddress::LocalHost, SettingsHandler::getWebSocketPort()))
     {
         LogHandler::Debug("Websocket listening on port " + QString::number(m_pWebSocketServer->serverPort()));
         connect(m_pWebSocketServer, &QWebSocketServer::newConnection, this, &WebSocketHandler::onNewConnection);
         connect(m_pWebSocketServer, &QWebSocketServer::closed, this, &WebSocketHandler::closed);
     }
-    else
+    else {
         LogHandler::Error("Websocket start fail on port: "+QString::number(SettingsHandler::getWebSocketPort()));
+        LogHandler::Error("Websocket Error: "+m_pWebSocketServer->errorString());
+    }
 }
 
 WebSocketHandler::~WebSocketHandler()

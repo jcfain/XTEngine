@@ -14,6 +14,7 @@
 #include <QDirIterator>
 #include <QtConcurrent/QtConcurrent>
 #include "loghandler.h"
+#include "../settings/medialibrarysettings.h"
 #include "../lookup/enum.h"
 #include "../lookup/Track.h"
 #include "../lookup/tcodechannellookup.h"
@@ -55,11 +56,25 @@ public slots:
     void addBookmark(LibraryListItem27& LibraryListItem27, QString name, qint64 currentPosition);
 
 public:
-    static SettingsHandler* instance(){
-        if(!m_instance)
-            m_instance = new SettingsHandler();
-        return m_instance;
+    static SettingsHandler* instance()
+    {
+        static SettingsHandler instance;
+        return &instance;
     }
+
+    static void setSaveOnExit(bool enabled);
+    static bool getFirstLoad();
+    static void Load(QSettings* settingsToLoadFrom = 0);
+    static void Save(QSettings* settingsToSaveTo = 0);
+    static void Sync(QSettings* settingsToSaveTo = 0);
+    static void SaveLinkedFunscripts(QSettings* settingsToSaveTo = nullptr);
+    static void PersistSelectSettings();
+    static void Default();
+    static void Clear();
+    static void Quit(bool restart);
+    static void Restart();
+    static bool Import(QString file, QSettings::Format format);
+    static bool Export(QString file, QSettings::Format format);
     static QSettings* getSettings();
     static void copy(const QSettings* from, QSettings* into);
     static QVariant getSetting(const QString& settingName);
@@ -70,6 +85,9 @@ public:
     static const QString XTEVersionTimeStamp;
     static const float XTEVersionNum;
     static bool getSettingsChanged();
+
+    static inline MediaLibrarySettings mediaLibrarySettings;
+
     static bool getHideWelcomeScreen();
     static void setHideWelcomeScreen(bool value);
     static int getTCodePadding();
@@ -78,30 +96,28 @@ public:
     //static void migrateTCodeVersion();
     static QString getDeoDnlaFunscript(QString key);
     static QHash<QString, QVariant> getDeoDnlaFunscripts();
-    static QStringList getSelectedLibrary();
-    static bool hasAnyLibrary(const QString& value, QStringList& messages);
-    static bool isLibraryParentChildOrEqual(const QString& value, QStringList& messages);
-    static bool isLibraryChildOrEqual(const QString& value, QStringList& messages);
-    static QString getLastSelectedLibrary();
-    static bool addSelectedLibrary(QString value, QStringList &messages);
-    static void removeSelectedLibrary(QString value);
-    static QStringList getVRLibrary();
-    static bool isVRLibraryParentChildOrEqual(const QString& value, QStringList& messages);
-    static bool isVRLibraryChildOrEqual(const QString& value, QStringList& messages);
-    static QString getLastSelectedVRLibrary();
-    static bool addSelectedVRLibrary(QString value, QStringList &messages);
-    static void removeSelectedVRLibrary(QString value);
-    static void removeAllVRLibraries();
-    static QStringList getLibraryExclusions();
-    static bool isLibraryExclusionChildOrEqual(const QString& value, QStringList& messages);
-    static bool addToLibraryExclusions(QString values, QStringList& errors);
-    static void removeFromLibraryExclusions(QList<int> indexes);
+
+
+    // static QStringList getSelectedFunscriptLibrary();
+    // static QString getLastSelectedFunscriptLibrary();
+    // static bool addSelectedFunscriptLibrary(QString value, QStringList &messages);
+    // static void removeSelectedFunscriptLibrary(QString value);
+
+    // static QStringList getVRLibrary();
+    // static QString getLastSelectedVRLibrary();
+    // static bool addSelectedVRLibrary(QString value, QStringList &messages);
+    // static void removeSelectedVRLibrary(QString value);
+    // static void removeAllVRLibraries();
+
+    // static QStringList getLibraryExclusions();
+    // static bool addToLibraryExclusions(QString values, QStringList& errors);
+    // static void removeFromLibraryExclusions(QList<int> indexes);
+
     static QString getSelectedThumbsDir();
     static void setSelectedThumbsDir(QString thumbDir);
     static void setSelectedThumbsDirDefault();
     static void setUseMediaDirForThumbs(bool value);
     static bool getUseMediaDirForThumbs();
-    static QString getSelectedFunscriptLibrary();
     static ConnectionInterface getSelectedOutputDevice();
     static void setSelectedOutputConnection(ConnectionInterface deviceName);
     static ConnectionInterface getSelectedInputDevice();
@@ -148,7 +164,6 @@ public:
 
     static void setLinkedVRFunscript(QString key, QString value);
     static void removeLinkedVRFunscript(QString key);
-    static void setSelectedFunscriptLibrary(QString value);
 
     static QString getDeoAddress();
     static QString getDeoPort();
@@ -336,20 +351,6 @@ public:
     static void setUseDTRAndRTS(bool value);
     static bool getUseDTRAndRTS();
 
-    static void setSaveOnExit(bool enabled);
-    static bool getFirstLoad();
-    static void Load(QSettings* settingsToLoadFrom = 0);
-    static void Save(QSettings* settingsToSaveTo = 0);
-    static void Sync();
-    static void SaveLinkedFunscripts(QSettings* settingsToSaveTo = nullptr);
-    static void PersistSelectSettings();
-    static void Default();
-    static void Clear();
-    static void Quit(bool restart);
-    static void Restart();
-    static bool Import(QString file, QSettings::Format format);
-    static bool Export(QString file, QSettings::Format format);
-
 
     static const QStringList getVideoExtensions()
     {
@@ -438,7 +439,6 @@ private:
     static QString m_appimageMountDir;
     static QMap<QString, QVariant> m_changedSettings;
     static QString _applicationDirPath;
-    static SettingsHandler* m_instance;
     static QFuture<void> m_syncFuture;
     static bool _settingsChanged;
     static void settingsChangedEvent(bool dirty);
@@ -470,6 +470,7 @@ private:
 
     static void storeMediaMetaDatas(QSettings* settingsToSaveTo = 0);
 
+
     static QString _appdataLocation;
     static GamepadAxisName gamepadAxisNames;
     static MediaActions mediaActions;
@@ -477,9 +478,6 @@ private:
     static bool _hideWelcomeScreen;
 
     static QHash<QString, QVariant> deoDnlaFunscriptLookup;
-    static QStringList selectedLibrary;
-    static QStringList _vrLibrary;
-    static QString selectedFunscriptLibrary;
     static QString _selectedThumbsDir;
     static bool _useMediaDirForThumbs;
     static QString selectedFile;
@@ -530,7 +528,6 @@ private:
 
     static QList<DecoderModel> decoderPriority;
     static XVideoRenderer _selectedVideoRenderer;
-    static QStringList _libraryExclusions;
     static QMap<QString, QList<LibraryListItem27>> _playlists;
     static QHash<QString, LibraryListItemMetaData258> _libraryListItemMetaDatas;
 

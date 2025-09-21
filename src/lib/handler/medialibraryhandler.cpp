@@ -86,8 +86,8 @@ void MediaLibraryHandler::loadLibraryAsync()
     LogHandler::Debug("loadLibraryAsync");
     onPrepareLibraryLoad();
     LogHandler::Debug("loadLibraryAsync after stop");
-    QStringList library = SettingsHandler::getSelectedLibrary();
-    QStringList vrLibrary = SettingsHandler::getVRLibrary();
+    QStringList library = SettingsHandler::mediaLibrarySettings.get(LibraryType::MAIN);
+    QStringList vrLibrary = SettingsHandler::mediaLibrarySettings.get(LibraryType::VR);
     if(library.isEmpty() && vrLibrary.isEmpty())
     {
         emit libraryLoadingStatus("No media folder specified");
@@ -146,8 +146,8 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
     mediaTypes.append(videoTypes);
     mediaTypes.append(audioTypes);
 
-    QStringList vrLibrary = SettingsHandler::getVRLibrary();
-    QStringList excludedLibraryPaths = SettingsHandler::getLibraryExclusions();
+    QStringList vrLibrary = SettingsHandler::mediaLibrarySettings.get(LibraryType::VR);
+    QStringList excludedLibraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::EXCLUSION);
     bool hasVRLibrary = false;
 
     if(!vrMode)
@@ -158,7 +158,8 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
         // if(playlists.empty())
         //     setupPlaylistItem(DUMMY_PLAYLISTITEM);
         // else
-        foreach(auto playlist, playlists.keys())
+        auto keys = playlists.keys();
+        foreach(auto playlist, keys)
         {
             setupPlaylistItem(playlist);
         }

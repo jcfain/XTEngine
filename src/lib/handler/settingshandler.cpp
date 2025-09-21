@@ -4,18 +4,17 @@
 #include "../tool/qsettings_json.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.55b";
-const float SettingsHandler::XTEVersionNum = 0.55f;
+const QString SettingsHandler::XTEVersion = "0.56b";
+const float SettingsHandler::XTEVersionNum = 0.56f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
     m_settingsChangedNotificationDebounce.setSingleShot(true);
+    connect(&mediaLibrarySettings, &MediaLibrarySettings::settingsChangedEvent, this, &SettingsHandler::settingsChangedEvent);
 }
 SettingsHandler::~SettingsHandler()
 {
     delete settings;
-    if(m_instance)
-        delete m_instance;
     if(m_syncFuture.isRunning())
         m_syncFuture.waitForFinished();
 }
@@ -464,7 +463,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         SetSystemTagDefaults();
         locker.relock();
     }
-
+    mediaLibrarySettings.Load(settingsToLoadFrom);
 
     QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
     _funscriptLoaded.clear();
@@ -478,7 +477,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         }
     }
 
-    selectedLibrary = settingsToLoadFrom->value("selectedLibrary").toStringList();
     _selectedThumbsDir = settingsToLoadFrom->value("selectedThumbsDir").toString();
     _useMediaDirForThumbs = settingsToLoadFrom->value("useMediaDirForThumbs").toBool();
     _hideWelcomeScreen = settingsToLoadFrom->value("hideWelcomeScreen").toBool();
@@ -486,7 +484,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _selectedNetworkDeviceType = (NetworkProtocol)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
     playerVolume = settingsToLoadFrom->value("playerVolume").toInt();
     offSet = settingsToLoadFrom->value("offSet").toInt();
-    selectedFunscriptLibrary = settingsToLoadFrom->value("selectedFunscriptLibrary").toString();
     serialPort = settingsToLoadFrom->value("serialPort").toString();
     serverAddress = settingsToLoadFrom->value("serverAddress").toString();
     serverAddress = serverAddress.isEmpty() ? "tcode.local" : serverAddress;
@@ -569,7 +566,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     {
         setHttpServerRootDefault();
     }
-    _vrLibrary = settingsToLoadFrom->value("vrLibrary").toStringList();
     _httpPort = settingsToLoadFrom->value("httpPort", 80).toInt();
     _webSocketPort = settingsToLoadFrom->value("webSocketPort").toInt();
     _httpThumbQuality = settingsToLoadFrom->value("httpThumbQuality", -1).toInt();
@@ -590,7 +586,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
     _selectedVideoRenderer = (XVideoRenderer)settingsToLoadFrom->value("selectedVideoRenderer").toInt();
 
-    _libraryExclusions = settingsToLoadFrom->value("libraryExclusions").toStringList();
 
     QVariantMap playlists = settingsToLoadFrom->value("playlists").toMap();
     _playlists.clear();
@@ -747,7 +742,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
                 SaveChannelMap();
             }
             auto libraryExclusions = settingsToLoadFrom->value("libraryExclusions").value<QList<QString>>();
-            _libraryExclusions = QStringList(libraryExclusions);
+            mediaLibrarySettings.set(LibraryType::EXCLUSION, QStringList(libraryExclusions));
             Save();
             Load();
             locker.relock();
@@ -755,8 +750,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.41f) {
             locker.unlock();
             auto library = settingsToLoadFrom->value("selectedLibrary").toString();
-            if(!selectedLibrary.contains(library))
-                selectedLibrary.append(library);
+            mediaLibrarySettings.add(LibraryType::MAIN, library);
             Save();
             Load();
             locker.relock();
@@ -843,6 +837,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Load();
             locker.relock();
         }
+        if(currentVersion < 0.56f) {
+            locker.unlock();
+            mediaLibrarySettings.clear(LibraryType::FUNSCRIPT);
+            Save();
+            Load();
+            locker.relock();
+        }
     }
     settingsChangedEvent(false);
 }
@@ -861,6 +862,8 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         if(XTEVersionNum > currentVersion)
             settingsToSaveTo->setValue("version", XTEVersionNum);
 
+        mediaLibrarySettings.Save(settingsToSaveTo);
+
         //TODO: move to TCodeChannelLookup
         settingsToSaveTo->setValue("selectedTCodeVersion", ((int)TCodeChannelLookup::getSelectedTCodeVersion()));
         settingsToSaveTo->setValue("selectedChannelProfile", TCodeChannelLookup::getSelectedChannelProfile());
@@ -868,13 +871,11 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("playerVolume", playerVolume);
 
         settingsToSaveTo->setValue("hideWelcomeScreen", ((int)_hideWelcomeScreen));
-        settingsToSaveTo->setValue("selectedLibrary", selectedLibrary);
         settingsToSaveTo->setValue("selectedThumbsDir", _selectedThumbsDir);
         settingsToSaveTo->setValue("useMediaDirForThumbs", _useMediaDirForThumbs);
         settingsToSaveTo->setValue("selectedDevice", _selectedOutputConnection);
         settingsToSaveTo->setValue("selectedNetworkDeviceType", (int)_selectedNetworkDeviceType);
         settingsToSaveTo->setValue("offSet", offSet);
-        settingsToSaveTo->setValue("selectedFunscriptLibrary", selectedFunscriptLibrary);
         settingsToSaveTo->setValue("serialPort", serialPort);
         settingsToSaveTo->setValue("serverAddress", serverAddress);
         settingsToSaveTo->setValue("serverPort", serverPort);
@@ -942,7 +943,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("disableVRScriptSelect", _disableVRScriptSelect);
         settingsToSaveTo->setValue("disableNoScriptFound", _disableNoScriptFound);
 
-        settingsToSaveTo->setValue("libraryExclusions", QVariant::fromValue(_libraryExclusions));
 
         QVariantMap playlists;
         foreach(auto playlist, _playlists.keys())
@@ -972,7 +972,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         settingsToSaveTo->setValue("enableHttpServer", _enableHttpServer);
         settingsToSaveTo->setValue("httpServerRoot", _httpServerRoot);
-        settingsToSaveTo->setValue("vrLibrary", _vrLibrary);
         settingsToSaveTo->setValue("httpPort", _httpPort);
         settingsToSaveTo->setValue("webSocketPort", _webSocketPort);
         settingsToSaveTo->setValue("httpThumbQuality", _httpThumbQuality);
@@ -1006,7 +1005,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         }
         settingsToSaveTo->setValue("smartTags", smartTagsList);
 
-        Sync();
+        Sync(settingsToSaveTo);
 
         settingsChangedEvent(false);
         LogHandler::Debug("Save complete");
@@ -1014,11 +1013,13 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
 }
 
-void SettingsHandler::Sync()
+void SettingsHandler::Sync(QSettings* settingsToSaveTo)
 {
-    m_syncFuture = QtConcurrent::run([]() {
+    if(!settingsToSaveTo)
+        settingsToSaveTo = settings;
+    m_syncFuture = QtConcurrent::run([settingsToSaveTo]() {
         QMutexLocker locker(&mutex);
-        settings->sync();
+        settingsToSaveTo->sync();
         LogHandler::Debug("Settings sync complete");
     });
 }
@@ -1028,7 +1029,7 @@ void SettingsHandler::SaveLinkedFunscripts(QSettings* settingsToSaveTo)
     if(!settingsToSaveTo)
         settingsToSaveTo = settings;
     settingsToSaveTo->setValue("deoDnlaFunscriptLookup", deoDnlaFunscriptLookup);
-    Sync();
+    Sync(settingsToSaveTo);
 }
 
 void SettingsHandler::Clear()
@@ -1847,168 +1848,18 @@ int SettingsHandler::getTCodePadding()
     return TCodeChannelLookup::getSelectedTCodeVersion() == TCodeVersion::v3 ? 4 : 3;
 }
 
-QStringList SettingsHandler::getSelectedLibrary()
-{
-    QMutexLocker locker(&mutex);
-    return selectedLibrary;
-}
-
-bool SettingsHandler::hasAnyLibrary(const QString &value, QStringList& messages)
-{
-    isLibraryParentChildOrEqual(value, messages);
-    isVRLibraryParentChildOrEqual(value, messages);
-    isLibraryExclusionChildOrEqual(value, messages);
-    return !messages.isEmpty();
-}
-
-bool SettingsHandler::isLibraryParentChildOrEqual(const QString& value, QStringList& messages)
-{
-    return XFileUtil::isDirParentChildOrEqual(selectedLibrary, value, "main media library", messages);
-}
-
-bool SettingsHandler::isLibraryChildOrEqual(const QString &value, QStringList &messages)
-{
-    return XFileUtil::isDirChildOrEqual(selectedLibrary, value, "main media library", messages);
-}
-
-QString  SettingsHandler::getLastSelectedLibrary() {
-    selectedLibrary.removeAll("");
-    if(!selectedLibrary.isEmpty())
-        return selectedLibrary.last();
-    return QCoreApplication::applicationDirPath();
-}
-bool SettingsHandler::addSelectedLibrary(QString value, QStringList &messages)
-{
-    QMutexLocker locker(&mutex);
-    if(hasAnyLibrary(value, messages))
-        return false;
-    if(!value.isEmpty() && !selectedLibrary.contains(value))
-        selectedLibrary << value;
-    selectedLibrary.removeDuplicates();
-    settingsChangedEvent(true);
-    return true;
-}
-void SettingsHandler::removeSelectedLibrary(QString value)
-{
-    QMutexLocker locker(&mutex);
-    selectedLibrary.removeOne(value);
-    settingsChangedEvent(true);
-}
-
-QStringList SettingsHandler::getVRLibrary()
-{
-    return _vrLibrary;
-}
-
-bool SettingsHandler::isVRLibraryParentChildOrEqual(const QString& value, QStringList& messages)
-{
-    return XFileUtil::isDirParentChildOrEqual(_vrLibrary, value, "vr library", messages);
-}
-
-bool SettingsHandler::isVRLibraryChildOrEqual(const QString &value, QStringList &messages)
-{
-    return XFileUtil::isDirChildOrEqual(_vrLibrary, value, "vr library", messages);
-}
-QString SettingsHandler::getLastSelectedVRLibrary() {
-    _vrLibrary.removeAll("");
-    if(!_vrLibrary.isEmpty())
-        return _vrLibrary.last();
-    //return QCoreApplication::applicationDirPath();
-    return "";
-    // Used for selecting new main libraries but not used with
-    // VR libraries as only one is possible at this time.
-    // If this changes need to add a new method or something for default VR library
-}
-bool SettingsHandler::addSelectedVRLibrary(QString value, QStringList &messages)
-{
-    QMutexLocker locker(&mutex);
-    if(hasAnyLibrary(value, messages))
-        return false;
-    _vrLibrary.clear();
-    if(!value.isEmpty())
-        _vrLibrary << value;
-    settingsChangedEvent(true);
-    return true;
-}
-void SettingsHandler::removeSelectedVRLibrary(QString value)
-{
-    QMutexLocker locker(&mutex);
-    _vrLibrary.clear();
-    _vrLibrary.removeOne(value);
-    settingsChangedEvent(true);
-}
-
-void SettingsHandler::removeAllVRLibraries()
-{
-    QMutexLocker locker(&mutex);
-    _vrLibrary.clear();
-    settingsChangedEvent(true);
-}
-
-QStringList SettingsHandler::getLibraryExclusions()
-{
-    return _libraryExclusions;
-}
-
-bool SettingsHandler::isLibraryExclusionChildOrEqual(const QString &value, QStringList &messages)
-{
-    return XFileUtil::isDirChildOrEqual(_libraryExclusions, value, "library exclusions", messages);
-}
-bool SettingsHandler::addToLibraryExclusions(QString value, QStringList& errors)
-{
-    bool hasDuplicate = false;
-    bool isChild = false;
-    if(XFileUtil::isDirParentChildOrEqual(_libraryExclusions, value, "library exclusions", errors))
-        hasDuplicate = true;
-    foreach (auto originalPath, getSelectedLibrary()) {
-        if(originalPath==value) {
-            errors << "Directory '"+value+"' is already in the main library list!";
-            hasDuplicate = true;
-        } else if(value.startsWith(originalPath)) {
-            isChild = true;
-        }
-    }
-    foreach (auto originalPath, getVRLibrary()) {
-        if(originalPath==value) {
-            errors << "Directory '"+value+"' is in the vr library list!";
-            hasDuplicate = true;
-        } else if(value.startsWith(originalPath)) {
-            isChild = true;
-        }
-    }
-    if(!isChild) {
-        errors << "Directory '"+value+"' is NOT a child of any of the select libraries!";
-        return false;
-    }
-    if(hasDuplicate) {
-        return false;
-    }
-    _libraryExclusions.append(value);
-    settingsChangedEvent(true);
-    return true;
-}
-void SettingsHandler::removeFromLibraryExclusions(QList<int> indexes)
-{
-    foreach(auto index, indexes)
-        _libraryExclusions.removeAt(index);
-    settingsChangedEvent(true);
-}
-
-QString SettingsHandler::getSelectedFunscriptLibrary()
-{
-     QMutexLocker locker(&mutex);
-    return selectedFunscriptLibrary;
-}
 QString SettingsHandler::getSelectedThumbsDir()
 {
     auto customThumbDirExists  = !_selectedThumbsDir.isEmpty() && QFileInfo::exists(_selectedThumbsDir);
     return (customThumbDirExists ? _selectedThumbsDir + "/" : _appdataLocation + "/thumbs/");
 }
+
 void SettingsHandler::setSelectedThumbsDir(QString thumbDir)
 {
     QMutexLocker locker(&mutex);
    _selectedThumbsDir = thumbDir;
 }
+
 void SettingsHandler::setSelectedThumbsDirDefault()
 {
     QMutexLocker locker(&mutex);
@@ -2690,12 +2541,6 @@ QMap<QString, QString> SettingsHandler::getAllActions()
 //     m_tcodeCommands.remove(key);
 // }
 
-void SettingsHandler::setSelectedFunscriptLibrary(QString value)
-{
-    QMutexLocker locker(&mutex);
-    selectedFunscriptLibrary = value;
-    settingsChangedEvent(true);
-}
 void SettingsHandler::setSerialPort(QString value)
 {
     QMutexLocker locker(&mutex);
@@ -3326,7 +3171,6 @@ bool SettingsHandler::m_isAppImage = false;
 QString SettingsHandler::m_appimageMountDir;
 QMap<QString, QVariant> SettingsHandler::m_changedSettings;
 QString SettingsHandler::_applicationDirPath;
-SettingsHandler* SettingsHandler::m_instance = 0;
 QFuture<void> SettingsHandler::m_syncFuture;
 bool SettingsHandler::m_firstLoad;
 bool SettingsHandler::_settingsChanged;
@@ -3338,7 +3182,7 @@ QSize SettingsHandler::_maxThumbnailSize = {500, 500};
 GamepadAxisName SettingsHandler::gamepadAxisNames;
 MediaActions SettingsHandler::mediaActions;
 QHash<QString, QVariant> SettingsHandler::deoDnlaFunscriptLookup;
-QStringList SettingsHandler::selectedLibrary;
+bool SettingsHandler::_showVRInLibraryView;
 QString SettingsHandler::_selectedThumbsDir;
 bool SettingsHandler::_useMediaDirForThumbs;
 int SettingsHandler::_selectedOutputConnection;
@@ -3375,7 +3219,6 @@ int SettingsHandler::_xRangeStep;
 bool SettingsHandler::_liveMultiplierEnabled = false;
 bool SettingsHandler::_multiplierEnabled;
 
-QString SettingsHandler::selectedFunscriptLibrary;
 QString SettingsHandler::selectedFile;
 QString SettingsHandler::serialPort;
 QString SettingsHandler::serverAddress;
@@ -3405,8 +3248,6 @@ QString SettingsHandler::_httpServerRoot;
 int SettingsHandler::_httpPort;
 int SettingsHandler::_webSocketPort;
 int SettingsHandler::_httpThumbQuality;
-QStringList SettingsHandler::_vrLibrary;
-bool SettingsHandler::_showVRInLibraryView;
 
 double SettingsHandler::_funscriptModifierStep;
 int SettingsHandler::_funscriptOffsetStep;
@@ -3427,7 +3268,6 @@ float SettingsHandler::m_viewedThreshold;
 // QTime SettingsHandler::m_scheduleLibraryLoadTime;
 // bool SettingsHandler::m_scheduleLibraryLoadFullProcess;
 
-QStringList SettingsHandler::_libraryExclusions;
 QMap<QString, QList<LibraryListItem27>> SettingsHandler::_playlists;
 QHash<QString, LibraryListItemMetaData258> SettingsHandler::_libraryListItemMetaDatas;
 

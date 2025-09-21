@@ -101,8 +101,8 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb);
             return;
         }
-        auto selectLibraryPaths = SettingsHandler::getSelectedLibrary();
-        selectLibraryPaths.append(SettingsHandler::getVRLibrary());
+        auto selectLibraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::MAIN);
+        selectLibraryPaths.append(SettingsHandler::mediaLibrarySettings.get(LibraryType::VR));
         foreach (auto path, selectLibraryPaths) {
             if(thumbFile.startsWith(path)) {
                 relativeThumb = thumbFile.replace(path, "");
@@ -210,7 +210,6 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     // if(LogHandler::getUserDebug())
     //     config.verbosity = HttpServerConfig::Verbose::All;
     // config.maxMultipartSize = 512 * 1024 * 1024;
-
 
 
 //    config.errorDocumentMap[HttpStatus::NotFound] = "data/404_2.html";

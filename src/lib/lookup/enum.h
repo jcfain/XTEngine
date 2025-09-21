@@ -50,4 +50,12 @@ enum LibrarySortMode {
     NONE
 };
 
+enum class LibraryType
+{
+    MAIN,
+    FUNSCRIPT,
+    VR,
+    EXCLUSION
+};
+
 #endif // ENUM_H
