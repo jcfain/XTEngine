@@ -8,6 +8,7 @@
 #include "tcodehandler.h"
 #include "funscripthandler.h"
 #include "lib/lookup/XMedia.h"
+#include "lib/tool/funscriptsearch.h"
 #include "lib/struct/InputConnectionPacket.h"
 #include "lib/struct/ConnectionChangedSignal.h"
 #include <QtConcurrent/QtConcurrent>
@@ -51,6 +52,8 @@ public slots:
     void searchForFunscript(InputConnectionPacket packet);
     SyncLoadState swap(const ScriptInfo &script);
     void updateMetadata(LibraryListItemMetaData258 value);
+private slots:
+    void funscriptSearchFinish(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
 
 public:
     SyncHandler(QObject *parent = nullptr);
@@ -108,11 +111,10 @@ private:
     QFuture<void> _funscriptMediaFuture;
     QFuture<void> _funscriptVRFuture;
     QFuture<void> _funscriptStandAloneFuture;
-    QFuture<void> _funscriptSearchFuture;
+    FunscriptSearch m_funscriptSearch;
 
-    bool _funscriptSearchNotFound = false;
-    bool m_stopFunscript = false;
     QString _lastSearchedMediaPath;
+    bool _funscriptSearchNotFound;
 
     SyncLoadState load(const LibraryListItem27 &libraryItem, bool reset);
     SyncLoadState load(const QString& funscript);
@@ -124,14 +126,6 @@ private:
     QString buildChannelActions(qint64 time);
 
     void sendPulse(qint64 currentMsecs, qint64 &nextPulseTime);
-
-    QString searchForFunscript(QString videoPath, QStringList extensions, QStringList libraryPaths);
-    QString searchForFunscriptDeep(QString videoPath, QStringList extensions, QStringList libraryPaths);
-    QString searchForFunscript(QString videoPath, QStringList extensions, QString pathToSearch);
-    QString searchForFunscriptHttp(QString videoPath, QStringList extensions, QString pathToSearch);
-    QString searchForFunscriptMFS(QString mediaPath, QStringList libraryPaths);
-    QString searchForFunscriptMFSDeep(QString mediaPath, QStringList libraryPaths);
-
 
     // QStringList getFunscriptPaths(QString videoPath, QStringList extensions, QString path);
     // QString getNameNoExtension(QString file);

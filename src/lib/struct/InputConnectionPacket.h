@@ -13,5 +13,5 @@ struct InputConnectionPacket
     bool stopped;
 };
 
-Q_DECLARE_METATYPE(InputConnectionPacket);
+Q_DECLARE_METATYPE(InputConnectionPacket)
 #endif // INPUTCONNECTIONPACKET_H
