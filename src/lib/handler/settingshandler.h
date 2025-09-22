@@ -51,7 +51,7 @@ signals:
 
 public slots:
     static void changeSetting(QString settingName, QVariant value);
-    static void changeSetting(QString settingName, QVariant value, bool restart);
+    static void changeSetting(QString settingName, QVariant value, bool needsRestart);
     void setMoneyShot(LibraryListItem27& selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
     void addBookmark(LibraryListItem27& LibraryListItem27, QString name, qint64 currentPosition);
 
@@ -78,6 +78,7 @@ public:
     static QSettings* getSettings();
     static void copy(const QSettings* from, QSettings* into);
     static QVariant getSetting(const QString& settingName);
+    static QVariant getSetting(const QString& settingName, const QSettings* getFrom);
     static void getSetting(const QString& settingName, QJsonObject& json);
     static QString getSettingPath(const SettingMap &setting);
     static QString getSettingPath(const QString &settingName);

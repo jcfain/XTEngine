@@ -44,8 +44,13 @@ void SettingsHandler::addBookmark(LibraryListItem27& libraryListItem, QString na
 
 QVariant SettingsHandler::getSetting(const QString& settingName)
 {
+    return getSetting(settingName, settings);
+}
+
+QVariant SettingsHandler::getSetting(const QString &settingName, const QSettings* getFrom)
+{
     const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
-    return settings->value(getSettingPath(settingMap), settingMap.defaultValue);
+    return getFrom->value(getSettingPath(settingMap), settingMap.defaultValue);
 }
 
 void SettingsHandler::getSetting(const QString& settingName, QJsonObject& json)
@@ -188,7 +193,7 @@ void SettingsHandler::changeSetting(QString settingName, QVariant value)
     changeSetting(settingName, value, false);
 }
 
-void SettingsHandler::changeSetting(QString settingName, QVariant value, bool restart)
+void SettingsHandler::changeSetting(QString settingName, QVariant value, bool needsRestart)
 {
     QMutexLocker locker(&mutex);
     QVariant currentValue = settings->value(getSettingPath(settingName));
@@ -197,7 +202,7 @@ void SettingsHandler::changeSetting(QString settingName, QVariant value, bool re
 
     LogHandler::Debug("Enter changeSetting debounce");
     m_changedSettings.insert(settingName, value);
-    QTimer::singleShot(100, instance(), [restart] () {
+    QTimer::singleShot(100, instance(), [needsRestart] () {
         QMutexLocker locker(&mutex);
         auto keys = m_changedSettings.keys();
         foreach(auto key, keys) {
@@ -205,14 +210,15 @@ void SettingsHandler::changeSetting(QString settingName, QVariant value, bool re
             QString settingName = key;
             QVariant value = m_changedSettings.value(key);
             const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
-            QVariant::Type valueType = settingMap.defaultValue.type();
+            QMetaType::Type defaultValueType = static_cast<QMetaType::Type>(settingMap.defaultValue.userType());
+            QMetaType::Type valueType = static_cast<QMetaType::Type>(value.userType());
             QString settingPath = getSettingPath(settingMap);
-            switch(valueType)
+            switch(defaultValueType)
             {
-                case QVariant::Date:
+                case QMetaType::QDate:
                 {
                     QDate realValue;
-                    if(value.type() == QVariant::String)
+                    if(valueType == QMetaType::QString)
                         realValue = QDate::fromString(value.toString());
                     else
                         realValue = value.toDate();
@@ -222,10 +228,10 @@ void SettingsHandler::changeSetting(QString settingName, QVariant value, bool re
                     }
                     break;
                 }
-                case QVariant::Time:
+                case QMetaType::QTime:
                 {
                     QTime realValue;
-                    if(value.type() == QVariant::String)
+                    if(valueType == QMetaType::QString)
                         realValue = QTime::fromString(value.toString());
                     else
                         realValue = value.toTime();
@@ -235,10 +241,10 @@ void SettingsHandler::changeSetting(QString settingName, QVariant value, bool re
                     }
                     break;
                 }
-                case QVariant::DateTime:
+                case QMetaType::QDateTime:
                 {
                     QDateTime realValue;
-                    if(value.type() == QVariant::String)
+                    if(valueType == QMetaType::QString)
                         realValue = QDateTime::fromString(value.toString());
                     else
                         realValue = value.toDateTime();
@@ -248,11 +254,11 @@ void SettingsHandler::changeSetting(QString settingName, QVariant value, bool re
                     }
                     break;
                 }
-                case QVariant::LongLong:
-                case QVariant::ULongLong:
+                case QMetaType::LongLong:
+                case QMetaType::ULongLong:
                 {
                     qint64 realValue = 0;
-                    if(value.type() == QVariant::String)
+                    if(valueType == QMetaType::QString)
                         realValue = value.toString().toLongLong();
                     else
                         realValue = value.toLongLong();
@@ -261,49 +267,49 @@ void SettingsHandler::changeSetting(QString settingName, QVariant value, bool re
                     break;
                 }
                 // Follow through on primitives
-                case QVariant::String:
+                case QMetaType::QString:
                 // {
                 //     settings->setValue(settingPath, value.toString());
                 //     hasChanged = true;
                 //     break;
                 // }
-                case QVariant::Bool:
+                case QMetaType::Bool:
                 // {
                 //     settings->setValue(settingPath, value.toBool());
                 //     hasChanged = true;
                 //     break;
                 // }
-                case QVariant::Int:
+                case QMetaType::Int:
                 // {
                 //     settings->setValue(settingPath, value.toInt());
                 //     hasChanged = true;
                 //     break;
                 // }
-                case QVariant::UInt:
+                case QMetaType::UInt:
                 // {
                 //     settings->setValue(settingPath, value.toUInt());
                 //     hasChanged = true;
                 //     break;
                 // }
-                case QVariant::Double:
+                case QMetaType::Double:
                 // {
                 //     settings->setValue(settingPath, value.toDouble());
                 //     hasChanged = true;
                 //     break;
                 // }
-                case QVariant::Map:
+                case QMetaType::QVariantMap:
                 // {
                 //     settings->setValue(settingPath, value.toMap());
                 //     hasChanged = true;
                 //     break;
                 // }
-                case QVariant::List:
+                case QMetaType::QVariantList:
                 // {
                 //     settings->setValue(settingPath, value.toList());
                 //     hasChanged = true;
                 //     break;
                 // }
-                case QVariant::StringList:
+                case QMetaType::QStringList:
                 // {
                 //     settings->setValue(settingPath, value.toStringList());
                 //     hasChanged = true;
@@ -316,54 +322,54 @@ void SettingsHandler::changeSetting(QString settingName, QVariant value, bool re
                 }
 #if BUILD_QT5
                 // XTE doesnt uses the following at this time.
-                case QVariant::Char:
-                case QVariant::ByteArray:
-                case QVariant::BitArray:
-                case QVariant::UserType:
-                case QVariant::Url:
-                case QVariant::Locale:
-                case QVariant::Rect:
-                case QVariant::RectF:
-                case QVariant::Size:
-                case QVariant::SizeF:
-                case QVariant::Line:
-                case QVariant::LineF:
-                case QVariant::Point:
-                case QVariant::PointF:
-                case QVariant::RegExp:
-                case QVariant::RegularExpression:
-                case QVariant::Hash:
-                case QVariant::EasingCurve:
-                case QVariant::Uuid:
-                case QVariant::ModelIndex:
-                case QVariant::PersistentModelIndex:
-                case QVariant::LastCoreType:
-                case QVariant::Font:
-                case QVariant::Pixmap:
-                case QVariant::Brush:
-                case QVariant::Color:
-                case QVariant::Palette:
-                case QVariant::Image:
-                case QVariant::Polygon:
-                case QVariant::Region:
-                case QVariant::Bitmap:
-                case QVariant::Cursor:
-                case QVariant::KeySequence:
-                case QVariant::Pen:
-                case QVariant::TextLength:
-                case QVariant::TextFormat:
-                case QVariant::Matrix:
-                case QVariant::Transform:
-                case QVariant::Matrix4x4:
-                case QVariant::Vector2D:
-                case QVariant::Vector3D:
-                case QVariant::Vector4D:
-                case QVariant::Quaternion:
-                case QVariant::PolygonF:
-                case QVariant::Icon:
-                case QVariant::LastGuiType:
-                case QVariant::SizePolicy:
-                case QVariant::LastType:
+                case QMetaType::Char:
+                case QMetaType::ByteArray:
+                case QMetaType::BitArray:
+                case QMetaType::UserType:
+                case QMetaType::Url:
+                case QMetaType::Locale:
+                case QMetaType::Rect:
+                case QMetaType::RectF:
+                case QMetaType::Size:
+                case QMetaType::SizeF:
+                case QMetaType::Line:
+                case QMetaType::LineF:
+                case QMetaType::Point:
+                case QMetaType::PointF:
+                case QMetaType::RegExp:
+                case QMetaType::RegularExpression:
+                case QMetaType::Hash:
+                case QMetaType::EasingCurve:
+                case QMetaType::Uuid:
+                case QMetaType::ModelIndex:
+                case QMetaType::PersistentModelIndex:
+                case QMetaType::LastCoreType:
+                case QMetaType::Font:
+                case QMetaType::Pixmap:
+                case QMetaType::Brush:
+                case QMetaType::Color:
+                case QMetaType::Palette:
+                case QMetaType::Image:
+                case QMetaType::Polygon:
+                case QMetaType::Region:
+                case QMetaType::Bitmap:
+                case QMetaType::Cursor:
+                case QMetaType::KeySequence:
+                case QMetaType::Pen:
+                case QMetaType::TextLength:
+                case QMetaType::TextFormat:
+                case QMetaType::Matrix:
+                case QMetaType::Transform:
+                case QMetaType::Matrix4x4:
+                case QMetaType::Vector2D:
+                case QMetaType::Vector3D:
+                case QMetaType::Vector4D:
+                case QMetaType::Quaternion:
+                case QMetaType::PolygonF:
+                case QMetaType::Icon:
+                case QMetaType::LastGuiType:
+                case QMetaType::SizePolicy:
+                case QMetaType::LastType:
                     break;
 #endif
                 default:
@@ -375,7 +381,7 @@ void SettingsHandler::changeSetting(QString settingName, QVariant value, bool re
                 LogHandler::Debug("Setting changed: "+key);
                 emit instance()->settingChange(key, m_changedSettings[key]);
                 settingsChangedEvent(true);
-                if(restart)
+                if(needsRestart)
                     emit instance()->restartRequired(true);
             }
         }
@@ -463,6 +469,26 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         SetSystemTagDefaults();
         locker.relock();
     }
+
+
+    bool useSystemMediaBackend = getSetting(SettingKeys::useSystemMediaBackend, settingsToLoadFrom).toBool();
+    if(useSystemMediaBackend)
+    {
+        // https://doc.qt.io/qt-6/qtmultimedia-index.html#changing-backends
+#if defined(Q_OS_WIN)
+        const char* backend = "windows";
+        LogHandler::Info("Load Settings: OS is Windows");
+#elif defined(Q_OS_LINUX)
+        const char* backend = "gstreamer";
+        LogHandler::Info("Load Settings: OS is Linux");
+#else // defined(Q_OS_MAC) MAC_OS, IOS or ANDROID
+        LogHandler::Info("Load Settings: OS is Other");
+        const char* backend = "darwin";
+#endif
+        setenv("QT_MEDIA_BACKEND", backend, 1);
+        LogHandler::Info("Using media backend: "+QString(backend));
+    }
+
     mediaLibrarySettings.Load(settingsToLoadFrom);
 
     QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
