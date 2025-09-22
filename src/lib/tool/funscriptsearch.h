@@ -6,8 +6,9 @@
 #include "QFuture"
 
 #include "../struct/InputConnectionPacket.h"
+#include "XTEngine_global.h"
 
-class FunscriptSearch : public QObject
+class XTENGINE_EXPORT FunscriptSearch : public QObject
 {
     Q_OBJECT
 signals:
@@ -16,18 +17,18 @@ signals:
     void searchFinish(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
 public:
     FunscriptSearch(QObject *parent = nullptr);
-    void searchForFunscript(QString videoPath, qint64 mediaDuration = -1, QStringList extensions = QStringList() << ".funscript");
-    void searchForFunscript(QString videoPath, QStringList libraryPaths, qint64 mediaDuration = -1, QStringList extensions = QStringList() << ".funscript");
+    void searchForFunscript(const QString& mediaPath, const qint64& mediaDuration = -1, const QStringList& extensions = QStringList() << ".funscript");
+    void searchForFunscript(const QString& mediaPath, const QStringList& pathsToSearch, const qint64& mediaDuration = -1, const QStringList& extensions = QStringList() << ".funscript");
 private:
     QFuture<void> _funscriptSearchFuture;
     bool m_stopResursiveFunscriptSearch = false;
 
-    QString searchForFunscript(QString videoPath, QStringList libraryPaths, QStringList extensions = QStringList() << ".funscript");
-    QString searchForFunscriptDeep(QString videoPath, QStringList libraryPaths, QStringList extensions = QStringList() << ".funscript");
-    QString searchForFunscript(QString videoPath, QString pathToSearch, QStringList extensions = QStringList() << ".funscript");
-    QString searchForFunscriptHttp(QString videoPath, QString pathToSearch, QStringList extensions = QStringList() << ".funscript");
-    QString searchForFunscriptMFS(QString mediaPath, QStringList libraryPaths);
-    QString searchForFunscriptMFSDeep(QString mediaPath, QStringList libraryPaths);
+    QString searchForFunscript(const QString& mediaPath, const QStringList& pathsToSearch, const QStringList& extensions = QStringList() << ".funscript");
+    QString searchForFunscriptDeep(const QString& mediaPath, const QStringList& pathsToSearch, const QStringList& extensions = QStringList() << ".funscript");
+    QString searchForFunscript(const QString& mediaPath, const QString& pathToSearch, const QStringList& extensions = QStringList() << ".funscript");
+    QString searchForFunscriptHttp(const QString& mediaPath, const QString& pathToSearch, const QStringList& extensions = QStringList() << ".funscript");
+    QString searchForFunscriptMFS(const QString& mediaPath, const QStringList& pathsToSearch);
+    QString searchForFunscriptMFSDeep(const QString& mediaPath, const QStringList& pathsToSearch);
 };
 
 #endif // FUNSCRIPTSEARCH_H

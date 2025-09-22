@@ -142,15 +142,6 @@ void SyncHandler::updateMetadata(LibraryListItemMetaData258 value)
         m_funscriptHandler.updateMetadata(value);
 }
 
-void SyncHandler::funscriptSearchFinish(QString mediaPath, QString funscriptPath, qint64 mediaDuration)
-{
-    if(funscriptPath.isEmpty())
-    {
-        _funscriptSearchNotFound = true;
-    }
-    emit funscriptSearchResult(mediaPath, funscriptPath, mediaDuration);
-}
-
 bool SyncHandler::isLoaded()
 {
     return m_funscriptHandler.getLoaded().length() > 0;
@@ -749,6 +740,15 @@ void SyncHandler::searchForFunscript(InputConnectionPacket packet)
 
     if(!_funscriptSearchNotFound)
         m_funscriptSearch.searchForFunscript(videoPath, packet.duration);
+}
+
+void SyncHandler::funscriptSearchFinish(QString mediaPath, QString funscriptPath, qint64 mediaDuration)
+{
+    if(funscriptPath.isEmpty())
+    {
+        _funscriptSearchNotFound = true;
+    }
+    emit funscriptSearchResult(mediaPath, funscriptPath, mediaDuration);
 }
 
 void SyncHandler::buildScriptItem(LibraryListItem27 &item, QString altScript)
