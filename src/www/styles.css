@@ -132,6 +132,14 @@ body {
     margin-right: 4px;
 }
 
+.restart-required {
+    visibility: hidden;
+    opacity: 0;
+    -webkit-transition: opacity 500ms, visibility 500ms linear;
+    transition: opacity 500ms, visibility 500ms linear;
+    margin-right: 4px;
+}
+
 .close-modal:hover,
 .close-modal:focus {
     color: black;

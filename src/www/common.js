@@ -17,6 +17,14 @@ function systemWarning(message) {
 function systemSuccess(message) {
 	showAlertWindow("Success!", message);
 }
+function showRestartRequired() {
+	var restartRequiredNodes = document.getElementsByClassName("restart-required");
+	for (let element of restartRequiredNodes) {
+		element.style.color = "red";
+		element.style.visibility = "visible";
+		element.style.opacity = "1";
+	}
+}
 
 
 function showAlertWindow(header, message, yesCallback) {

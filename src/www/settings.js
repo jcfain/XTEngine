@@ -28,7 +28,7 @@ Settings = {
         div.appendChild(h2);
         return div;
     },
-    createFormControl(labelText, type, id, value) {
+    createFormControl(labelText, type, id, value, requiresRestart) {
         let div = document.createElement('div');
         div.classList.add("formElement", "formElement--label-large");
         let labelElement = document.createElement('label');
@@ -38,31 +38,31 @@ Settings = {
         let control;
         switch(type) {
             case this.FormControlTypes.Double:
-                control = this.createDoubleInput(id, value);
+                control = this.createDoubleInput(id, value, requiresRestart);
                 break;
             case this.FormControlTypes.Int:
-                control = this.createNumberInput(id, value);
+                control = this.createNumberInput(id, value, requiresRestart);
                 break;
             case this.FormControlTypes.Text:
-                control = this.createTextInput(id, value);
+                control = this.createTextInput(id, value, requiresRestart);
                 break;
             case this.FormControlTypes.Radio:
-                control = this.createRadioInput(id, value);
+                control = this.createRadioInput(id, value, requiresRestart);
             break;
             case this.FormControlTypes.Combo:
-                control = this.createComboInput(id, value);
+                control = this.createComboInput(id, value, requiresRestart);
             break;
             case this.FormControlTypes.Checkbox:
-                control = this.createCheckboxInput(id, value);
+                control = this.createCheckboxInput(id, value, requiresRestart);
             break;
             case this.FormControlTypes.DateTime:
-                control = this.createDateTimeInput(id, value);
+                control = this.createDateTimeInput(id, value, requiresRestart);
             break;
             case this.FormControlTypes.Date:
-                control = this.createDateInput(id, value);
+                control = this.createDateInput(id, value, requiresRestart);
             break;
             case this.FormControlTypes.Time:
-                control = this.createTimeInput(id, value);
+                control = this.createTimeInput(id, value, requiresRestart);
             break;
         }
         div.appendChild(labelElement);
@@ -78,7 +78,7 @@ Settings = {
         element.id = id;
         return element;
     },
-    createTextInput(id, value) {
+    createTextInput(id, value, requiresRestart) {
         let element = this.createInput(id);
         element.type = "text";
         element.value = value;
@@ -94,12 +94,15 @@ Settings = {
                     return;
                 settingChange(id, element.value);
 		        this.callBackExtensions(id, element.value, element);
+                if(requiresRestart) {
+                    showRestartRequired();
+                }
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
 
         return element;
     },
-    createNumberInput(id, value) {
+    createNumberInput(id, value, requiresRestart) {
         const element = this.createInput(id);
         element.value = parseInt(value);
         element.type = "number";
@@ -114,11 +117,14 @@ Settings = {
                     return;
                 settingChange(id, parseInt(element.value));
 		        this.callBackExtensions(id, element.value, element);
+                if(requiresRestart) {
+                    showRestartRequired();
+                }
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
         return element;
     },
-    createDoubleInput(id, value) {
+    createDoubleInput(id, value, requiresRestart) {
         const element = this.createInput(id);
         element.value = parseFloat(value);
         element.type = "number";
@@ -133,26 +139,29 @@ Settings = {
                     return;
                 settingChange(id, parseFloat(element.value));
 		        this.callBackExtensions(id, element.value, element);
+                if(requiresRestart) {
+                    showRestartRequired();
+                }
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
         return element;
     },
-    createTimeInput(id, value) {
+    createTimeInput(id, value, requiresRestart) {
         const element = this.createTextInput(id, value);
         element.type = "time";
         return element;
     },
-    createDateInput(id, value) {
+    createDateInput(id, value, requiresRestart) {
         const element = this.createTextInput(id, value);
         element.type = "date";
         return element;
     },
-    createDateTimeInput(id, value) {
+    createDateTimeInput(id, value, requiresRestart) {
         const element = this.createTextInput(id, value);
         element.type = "datetime-local";
         return element;
     },
-    createRadioInput(id, group, checked) {
+    createRadioInput(id, group, checked, requiresRestart) {
         let element = this.createInput(id);
         element.type = "radio";
         element.name = group;
@@ -169,12 +178,15 @@ Settings = {
                     return;
                 settingChange(id, element.checked);
 		        this.callBackExtensions(id, element.checked, element);
+                if(requiresRestart) {
+                    showRestartRequired();
+                }
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
 
         return element;
     },
-    createCheckboxInput(id, checked) {
+    createCheckboxInput(id, checked, requiresRestart) {
         let element = this.createInput(id);
         element.type = "checkbox";
         element.checked = checked;
@@ -190,12 +202,15 @@ Settings = {
                     return;
                 settingChange(id, element.checked);
 		        this.callBackExtensions(id, element.checked, element);
+                if(requiresRestart) {
+                    showRestartRequired();
+                }
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
 
         return element;
     },
-    createComboInput(id, values) {
+    createComboInput(id, values, requiresRestart) {
         let element = document.createElement("select");
         element.id = id;
         values.forEach(x => {
@@ -214,6 +229,9 @@ Settings = {
                     return;
                 settingChange(id, element.value);
 		        this.callBackExtensions(id, element.value, element);
+                if(requiresRestart) {
+                    showRestartRequired();
+                }
             }.bind(this, id, element), this.debounceerTimeout);
         }.bind(this, element, id);
 
@@ -248,7 +266,7 @@ Settings = {
                 systemError("Invalid settings profile: " + setting.profile);
                 return;
         }
-        const formControl = this.createFormControl(setting.label, setting.type, setting.key, setting.value);
+        const formControl = this.createFormControl(setting.label, setting.type, setting.key, setting.value, setting.requiresRestart);
         groupElement.appendChild(formControl.div);
         this.setSpecialProperties(setting.key, setting.value, formControl);
     },
