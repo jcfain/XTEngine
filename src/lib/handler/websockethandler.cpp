@@ -19,7 +19,7 @@ WebSocketHandler::WebSocketHandler(QObject *parent):
    // QHostAddress mHost;
    // mHost.setAddress("192.168.0.243");
     // m_pWebSocketServer->setProxy(QNetworkProxy::ProxyType::DefaultProxy);
-    if (m_pWebSocketServer->listen(QHostAddress::LocalHost, SettingsHandler::getWebSocketPort()))
+    if (m_pWebSocketServer->listen(QHostAddress::Any, SettingsHandler::getWebSocketPort()))
     {
         LogHandler::Debug("Websocket listening on port " + QString::number(m_pWebSocketServer->serverPort()));
         connect(m_pWebSocketServer, &QWebSocketServer::newConnection, this, &WebSocketHandler::onNewConnection);
