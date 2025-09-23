@@ -4,8 +4,8 @@
 #include "../tool/qsettings_json.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.56b";
-const float SettingsHandler::XTEVersionNum = 0.56f;
+const QString SettingsHandler::XTEVersion = "0.57b";
+const float SettingsHandler::XTEVersionNum = 0.57f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -866,6 +866,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.56f) {
             locker.unlock();
             mediaLibrarySettings.clear(LibraryType::FUNSCRIPT);
+            Save();
+            Load();
+            locker.relock();
+        }
+        if(currentVersion < 0.57f) {
+            locker.unlock();
+            setForceMetaDataFullProcess(true);
             Save();
             Load();
             locker.relock();

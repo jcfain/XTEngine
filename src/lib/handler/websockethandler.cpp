@@ -10,7 +10,7 @@ WebSocketHandler::WebSocketHandler(QObject *parent):
 {
    // QNetworkProxy proxy;
    // proxy.setType(QNetworkProxy::HttpProxy);
-   // // proxy.setHostName("xtptest.faincloud.com");
+   // // proxy.setHostName("localhost");
    // // proxy.setPort(SettingsHandler::getWebSocketPort());
    // // proxy.setUser("username");
    // // proxy.setPassword("password");

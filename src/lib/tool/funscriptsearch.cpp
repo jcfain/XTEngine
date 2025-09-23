@@ -32,39 +32,39 @@ void FunscriptSearch::searchForFunscript(const QString& mediaPath, const QString
         _funscriptSearchFuture.waitForFinished();
     }
 
-    _funscriptSearchFuture = QtConcurrent::run([this](const QString& videoPath, const QStringList& pathsToSearch, const qint64& mediaDuration, const QStringList& extensions) {
-        LogHandler::Debug("searchForFunscript thread start for media: "+videoPath);
-        QString funscriptPath = searchForFunscript(videoPath, pathsToSearch, extensions);
+    _funscriptSearchFuture = QtConcurrent::run([this](const QString& mediaPath, const QStringList& pathsToSearch, const qint64& mediaDuration, const QStringList& extensions) {
+        LogHandler::Debug("searchForFunscript thread start for media: "+mediaPath);
+        QString funscriptPath = searchForFunscript(mediaPath, pathsToSearch, extensions);
 
-        if(_funscriptSearchFuture.isCanceled()) {
-            LogHandler::Debug("searchForFunscript canceled: "+videoPath);
+        if(_funscriptSearchFuture.isRunning() && _funscriptSearchFuture.isCanceled()) {
+            LogHandler::Debug("searchForFunscript canceled: "+mediaPath);
             emit searchStop();
             return;
         }
 
         if(funscriptPath.isEmpty())
         {
-            funscriptPath = SettingsHandler::getDeoDnlaFunscript(videoPath);
+            funscriptPath = SettingsHandler::getDeoDnlaFunscript(mediaPath);
             if(!funscriptPath.isEmpty())
             {
                 if(!QFile::exists(funscriptPath))
                 {
-                    SettingsHandler::removeLinkedVRFunscript(videoPath);
+                    SettingsHandler::removeLinkedVRFunscript(mediaPath);
                     funscriptPath = nullptr;
                 }
             }
         }
 
         if(funscriptPath.isEmpty())
-            funscriptPath = searchForFunscriptMFS(videoPath, pathsToSearch);
+            funscriptPath = searchForFunscriptMFS(mediaPath, pathsToSearch);
 
         // Deep search last
         if(funscriptPath.isEmpty())
-            funscriptPath = searchForFunscriptDeep(videoPath, pathsToSearch, extensions);
+            funscriptPath = searchForFunscriptDeep(mediaPath, pathsToSearch, extensions);
         if(funscriptPath.isEmpty())
-            funscriptPath = searchForFunscriptMFSDeep(videoPath, pathsToSearch);
+            funscriptPath = searchForFunscriptMFSDeep(mediaPath, pathsToSearch);
 
-        emit searchFinish(videoPath, funscriptPath, mediaDuration);
+        emit searchFinish(mediaPath, funscriptPath, mediaDuration);
 
     }, mediaPath, pathsToSearch, mediaDuration, extensions);
 }
@@ -74,15 +74,15 @@ QString FunscriptSearch::searchForFunscript(const QString& mediaPath, const QStr
     QString funscriptPath;
     foreach(QString libraryPath, pathsToSearch)
     {
-        if(_funscriptSearchFuture.isCanceled()) {
+        if(_funscriptSearchFuture.isRunning() && _funscriptSearchFuture.isCanceled()) {
             LogHandler::Debug("searchForFunscript paths canceled: "+mediaPath);
             return funscriptPath;
         }
         LogHandler::Debug("searchForFunscript in library: "+libraryPath);
-        funscriptPath = searchForFunscriptHttp(mediaPath, libraryPath);
+        funscriptPath = searchForFunscriptHttp(mediaPath, libraryPath, extensions);
         if(!funscriptPath.isEmpty())
             return funscriptPath;
-        funscriptPath = searchForFunscript(mediaPath, libraryPath);
+        funscriptPath = searchForFunscript(mediaPath, libraryPath, extensions);
         if(!funscriptPath.isEmpty())
             return funscriptPath;
 
@@ -96,7 +96,7 @@ QString FunscriptSearch::searchForFunscriptDeep(const QString& mediaPath, const 
     LogHandler::Debug("searchForFunscript deep "+ mediaPath);
     foreach(QString libraryPath, pathsToSearch)
     {
-        if(_funscriptSearchFuture.isCanceled()) {
+        if(_funscriptSearchFuture.isRunning() && _funscriptSearchFuture.isCanceled()) {
             LogHandler::Debug("searchForFunscriptDeep canceled: "+mediaPath);
             return funscriptPath;
         }
@@ -115,7 +115,7 @@ QString FunscriptSearch::searchForFunscript(const QString& mediaPath, const QStr
     QStringList libraryScriptPaths = XFileUtil::getFunscriptPaths(mediaPath, extensions, pathToSearch);
     foreach (QString libraryScriptPath, libraryScriptPaths)
     {
-        if(_funscriptSearchFuture.isCanceled()) {
+        if(_funscriptSearchFuture.isRunning() && _funscriptSearchFuture.isCanceled()) {
             LogHandler::Debug("searchForFunscript path canceled: "+mediaPath);
             return funscriptPath;
         }

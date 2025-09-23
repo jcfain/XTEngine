@@ -6,6 +6,7 @@
 #include "../tool/file-util.h"
 #include "../struct/ScriptInfo.h"
 #include "funscripthandler.h"
+#include "../tool/funscriptsearch.h"
 
 MediaLibraryHandler::MediaLibraryHandler(QObject* parent)
     : QObject(parent)
@@ -148,7 +149,10 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 
     QStringList vrLibrary = SettingsHandler::mediaLibrarySettings.get(LibraryType::VR);
     QStringList excludedLibraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::EXCLUSION);
+    QStringList funscriptLibraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::FUNSCRIPT);
     bool hasVRLibrary = false;
+
+    FunscriptSearch funscriptSearch;
 
     if(!vrMode)
     {
@@ -216,18 +220,10 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
             fileNameTemp = fileinfo.fileName();
             QString mediaExtension = "*" + (fileNameExtIndex > -1 ? fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameExtIndex)) : "");
 
-            // if (SettingsHandler::getSelectedFunscriptLibrary() == Q_NULLPTR)
-            // {
-                scriptPath = pathNoExtension + ".funscript";// Not used
-            // }
-            // else //Not used
-            // {
-            //     pathNoExtension = SettingsHandler::getSelectedFunscriptLibrary() + QDir::separator() + fileNameNoExtension;
-            //     scriptPath = SettingsHandler::getSelectedFunscriptLibrary() + QDir::separator() + scriptFile;
-            // }
+            scriptPath = pathNoExtension + ".funscript";
             if (!QFileInfo::exists(scriptPath))
             {
-                scriptPath = nullptr;
+                scriptPath = funscriptSearch.searchForFunscriptDeep(videoPath, funscriptLibraryPaths);
             }
             LibraryListItemType libratyItemType = vrMode || isStereo(fileName) ? LibraryListItemType::VR : LibraryListItemType::Video;
 
@@ -311,14 +307,11 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
                 QString mediaExtension = "*." + (fileNameExtIndex > -1 ? fileNameTemp.remove(0, fileNameTemp.length() - (fileNameTemp.length() - fileNameExtIndex)) : "");
 
                 QString scriptPath = fileinfo.filePath();
-                if(fileName == "I'M DISGUSTING! - belle delphine (ft. my dad) hard.funscript") {
-                    LogHandler::Debug("");
-                }
                 //QString scriptPathTemp = fileinfo.filePath();
                 //int scriptPathExtIndex = scriptPathTemp.lastIndexOf('.');
                 QString pathNoExtension = fileinfo.absolutePath() + XFileUtil::getSeperator(scriptPath) + fileNameNoExtension;//scriptPathExtIndex > -1 ? scriptPathTemp.remove(scriptPathExtIndex, scriptPathTemp.length() - 1) : scriptPathTemp;
                 //QString filenameNoMfsExtension = QString(fileNameNoExtension);
-                if(funscriptsWithMedia.contains(scriptPath, Qt::CaseSensitivity::CaseInsensitive))
+                if(funscriptsWithMedia.contains(scriptPath))
                     continue;
                 int scriptNoExtensionIndex = fileNameMfsExtension.lastIndexOf('.');
                 bool isMfs = false;
@@ -1494,82 +1487,115 @@ void MediaLibraryHandler::setThumbState(ThumbState state, LibraryListItem27 &ite
     emit itemUpdated(index, {Qt::DecorationRole});
 }
 
-void MediaLibraryHandler::setThumbPath(LibraryListItem27 &libraryListItem)
+void MediaLibraryHandler::setThumbPath(LibraryListItem27 &item)
 {
-    if(libraryListItem.type == LibraryListItemType::Audio)
+    if(item.type == LibraryListItemType::Audio)
     {
-        libraryListItem.thumbFile = "://images/icons/audio.png";
-        libraryListItem.thumbFileExists = true;
-        libraryListItem.managedThumb = true;
+        if(setLocalThumbPath(item))
+            return;
+        item.thumbFile = "://images/icons/audio.png";
+        item.thumbFileExists = true;
+        item.managedThumb = true;
         return;
     }
-    else if(libraryListItem.type == LibraryListItemType::PlaylistInternal)
+    else if(item.type == LibraryListItemType::PlaylistInternal)
     {
-        libraryListItem.thumbFile = "://images/icons/playlist.png";
-        libraryListItem.thumbFileExists = true;
-        libraryListItem.managedThumb = true;
+        item.thumbFile = "://images/icons/playlist.png";
+        item.thumbFileExists = true;
+        item.managedThumb = true;
         return;
     }
-    else if(libraryListItem.type == LibraryListItemType::FunscriptType)
+    else if(item.type == LibraryListItemType::FunscriptType)
     {
-        libraryListItem.thumbFile = "://images/icons/funscript.png";
-        libraryListItem.thumbFileExists = true;
-        libraryListItem.managedThumb = true;
+        if(setLocalThumbPath(item))
+            return;
+        item.thumbFile = "://images/icons/funscript.png";
+        item.thumbFileExists = true;
+        item.managedThumb = true;
         return;
     }
-    QFileInfo mediaInfo(libraryListItem.path);
-    QString globalPath = SettingsHandler::getSelectedThumbsDir() + libraryListItem.name;
+    QString globalPath = SettingsHandler::getSelectedThumbsDir() + item.name;
 
     QString filepathGlobal = globalPath + "." + SettingsHandler::getThumbFormatExtension();
     if(QFileInfo::exists(filepathGlobal))
     {
-        libraryListItem.thumbFileExists = true;
-        libraryListItem.managedThumb = true;
-        libraryListItem.thumbFile = filepathGlobal;
+        item.thumbFileExists = true;
+        item.managedThumb = true;
+        item.thumbFile = filepathGlobal;
         return;
     }
     QString filepathGlobalLocked = globalPath + ".lock." + SettingsHandler::getThumbFormatExtension();
     if(QFileInfo::exists(filepathGlobalLocked))
     {
-        libraryListItem.thumbFileExists = true;
-        libraryListItem.managedThumb = true;
-        libraryListItem.thumbFile = filepathGlobalLocked;
+        item.thumbFileExists = true;
+        item.managedThumb = true;
+        item.thumbFile = filepathGlobalLocked;
         return;
     }
 
-    QString absolutePath = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension;
+    if(setLocalThumbPath(item))
+        return;
+    // QString absolutePath = mediaInfo.absolutePath() + QDir::separator() + libraryListItem.nameNoExtension;
+    // QStringList imageExtensions = SettingsHandler::getImageExtensions();
+    // foreach(QString ext, imageExtensions) {
+    //     QString filepathLocked = absolutePath + ".lock." + ext;
+    //     if(QFileInfo::exists(filepathLocked))
+    //     {
+    //         libraryListItem.thumbFileExists = true;
+    //         libraryListItem.managedThumb = false;
+    //         libraryListItem.thumbFile = filepathLocked;
+    //         return;
+    //     }
+    //     QString filepath = absolutePath + "." + ext;
+    //     if(QFileInfo::exists(filepath))
+    //     {
+    //         libraryListItem.thumbFileExists = true;
+    //         libraryListItem.managedThumb = false;
+    //         libraryListItem.thumbFile = filepath;
+    //         return;
+    //     }
+    // }
+
+    if(SettingsHandler::getUseMediaDirForThumbs())// Not exposed in any UI
+    {
+        QFileInfo mediaInfo(item.path);
+        item.thumbFile = mediaInfo.absolutePath() + item.nameNoExtension + "." + SettingsHandler::getThumbFormatExtension();
+        item.thumbFileExists = QFileInfo::exists(item.thumbFile);
+        item.managedThumb = true;
+        return;
+    }
+
+    item.managedThumb = true;
+    item.thumbFile = SettingsHandler::getSelectedThumbsDir() + item.name + "." + SettingsHandler::getThumbFormatExtension();
+    item.thumbFileExists = QFileInfo::exists(item.thumbFile);
+
+}
+
+bool MediaLibraryHandler::setLocalThumbPath(LibraryListItem27 &item)
+{
+    QFileInfo mediaInfo(item.path);
+    QString absolutePath = mediaInfo.absolutePath() + QDir::separator() + item.nameNoExtension;
     QStringList imageExtensions = SettingsHandler::getImageExtensions();
-    foreach(QString ext, imageExtensions) {
+    foreach(QString ext, imageExtensions)
+    {
         QString filepathLocked = absolutePath + ".lock." + ext;
         if(QFileInfo::exists(filepathLocked))
         {
-            libraryListItem.thumbFileExists = true;
-            libraryListItem.managedThumb = false;
-            libraryListItem.thumbFile = filepathLocked;
-            return;
+            item.thumbFileExists = true;
+            item.managedThumb = false;
+            item.thumbFile = filepathLocked;
+            return true;
         }
         QString filepath = absolutePath + "." + ext;
         if(QFileInfo::exists(filepath))
         {
-            libraryListItem.thumbFileExists = true;
-            libraryListItem.managedThumb = false;
-            libraryListItem.thumbFile = filepath;
-            return;
+            item.thumbFileExists = true;
+            item.managedThumb = false;
+            item.thumbFile = filepath;
+            return true;
         }
     }
-
-    if(SettingsHandler::getUseMediaDirForThumbs())
-    {
-        libraryListItem.thumbFile = mediaInfo.absolutePath() + libraryListItem.nameNoExtension + "." + SettingsHandler::getThumbFormatExtension();
-        libraryListItem.thumbFileExists = QFileInfo::exists(libraryListItem.thumbFile);
-        libraryListItem.managedThumb = true;
-        return;
-    }
-
-    libraryListItem.managedThumb = true;
-    libraryListItem.thumbFile = SettingsHandler::getSelectedThumbsDir() + libraryListItem.name + "." + SettingsHandler::getThumbFormatExtension();
-    libraryListItem.thumbFileExists = QFileInfo::exists(libraryListItem.thumbFile);
-
+    return false;
 }
 
 bool MediaLibraryHandler::updateToolTip(LibraryListItem27 &localData)
@@ -1667,7 +1693,8 @@ bool MediaLibraryHandler::discoverMultiAxis(LibraryListItem27 &item) {
     item.metadata.toolTip.clear();
     item.metadata.MFSScripts.clear();
     item.metadata.MFSTracks.clear();
-    auto sfmaTracks = FunscriptHandler::getSFMATracks(item.path);
+    QString path = item.script.isEmpty() ? item.path : item.script;
+    auto sfmaTracks = FunscriptHandler::getSFMATracks(path);
     if(!sfmaTracks.empty())
     {
         item.metadata.isSFMA = true;
@@ -1679,9 +1706,10 @@ bool MediaLibraryHandler::discoverMultiAxis(LibraryListItem27 &item) {
             item.metadata.MFSTracks << track.track;
         }
     }
+    QString pathNoExtension = XFileUtil::getPathNoExtension(path);
     foreach(auto scriptExtension, funscripts)
     {
-        if (QFileInfo::exists(item.pathNoExtension + scriptExtension))
+        if (QFileInfo::exists(pathNoExtension + scriptExtension))
         {
             if(!item.metadata.isMFS)
             {
@@ -1690,8 +1718,8 @@ bool MediaLibraryHandler::discoverMultiAxis(LibraryListItem27 &item) {
                 item.metadata.toolTip += header;
             }
             item.metadata.toolTip += "\n";
-            item.metadata.toolTip += item.pathNoExtension + scriptExtension;
-            item.metadata.MFSScripts << item.pathNoExtension + scriptExtension;
+            item.metadata.toolTip += pathNoExtension + scriptExtension;
+            item.metadata.MFSScripts << pathNoExtension + scriptExtension;
             item.metadata.MFSTracks << scriptExtension.remove("funscript").remove(".");
         }
     }
@@ -1819,7 +1847,7 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
     if(item.type == LibraryListItemType::FunscriptType || item.type == LibraryListItemType::PlaylistInternal)
         return;
     QList<ScriptInfo> funscriptsWithMedia;
-    QString libraryItemMediaPath = item.path;
+    QString libraryItemMediaPath = item.script.isEmpty() ? item.path : item.script;
     if(!QFileInfo::exists(libraryItemMediaPath)) {
         LogHandler::Error("No file found when searching for alternate scripts: "+ item.path);
         item.metadata.scripts = {};
@@ -1841,10 +1869,6 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
     {
         containerType = ScriptContainerType::BASE;
         QString scriptFilePath = scripts.next();
-        if(scriptFilePath.contains("Grabby"))
-        {
-            LogHandler::Debug("");
-        }
         // QFileInfo scriptInfo(filepath);
         QString trackname = "";
         auto baseName = XFileUtil::getNameNoExtension(scriptFilePath);

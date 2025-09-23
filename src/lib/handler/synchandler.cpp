@@ -587,11 +587,7 @@ QString SyncHandler::buildChannelActions(qint64 time)
 bool SyncHandler::loadFunscripts(const LibraryListItem27 &libraryItem, SyncLoadState &loadState)
 {
     QString path = libraryItem.script.isEmpty() ? libraryItem.path : libraryItem.script;
-    QString pathNoExtension = libraryItem.type == LibraryListItemType::External ?
-        XFileUtil::getPathNoExtension(path) :
-        //path.remove(path.lastIndexOf('.'), path.length() -  1) :
-        libraryItem.pathNoExtension;
-    //QFileInfo pathInfo(path);
+    QString pathNoExtension = XFileUtil::getPathNoExtension(path);
 #if BUILD_QT5
     QZipReader* zipFile = 0;
     if(!libraryItem.zipFile.isEmpty())

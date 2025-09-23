@@ -123,6 +123,7 @@ private:
     void onLibraryItemFound(LibraryListItem27 item);
     // void onSaveThumb(QString itemID, bool vrMode, QString errorMessage = nullptr);
     void setThumbPath(LibraryListItem27 &item);
+    bool setLocalThumbPath(LibraryListItem27 &item);
     void setThumbState(ThumbState state, LibraryListItem27 &item);
     // void saveNewThumbs(bool vrMode = false);
     // void saveThumb(LibraryListItem27 &item, qint64 position = 0, bool vrMode = false);
