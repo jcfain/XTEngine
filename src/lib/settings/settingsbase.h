@@ -4,7 +4,9 @@
 #include <QObject>
 #include <QSettings>
 
-class SettingsBase : public QObject
+#include "XTEngine_global.h"
+
+class XTENGINE_EXPORT SettingsBase : public QObject
 {
     Q_OBJECT
 public:

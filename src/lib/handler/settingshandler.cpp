@@ -478,14 +478,16 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 #if defined(Q_OS_WIN)
         const char* backend = "windows";
         LogHandler::Info("Load Settings: OS is Windows");
+        putenv(const_cast<char *>("QT_MEDIA_BACKEND=windows"));
 #elif defined(Q_OS_LINUX)
         const char* backend = "gstreamer";
         LogHandler::Info("Load Settings: OS is Linux");
+        setenv("QT_MEDIA_BACKEND", backend, 1);
 #else // defined(Q_OS_MAC) MAC_OS, IOS or ANDROID
         LogHandler::Info("Load Settings: OS is Other");
         const char* backend = "darwin";
-#endif
         setenv("QT_MEDIA_BACKEND", backend, 1);
+#endif
         LogHandler::Info("Using media backend: "+QString(backend));
     }
 

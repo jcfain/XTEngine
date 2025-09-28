@@ -5,7 +5,9 @@
 #include "settingsbase.h"
 #include "../lookup/enum.h"
 
-class MediaLibrarySettings : public SettingsBase
+#include "XTEngine_global.h"
+
+class XTENGINE_EXPORT MediaLibrarySettings : public SettingsBase
 {
     Q_OBJECT
 public:
