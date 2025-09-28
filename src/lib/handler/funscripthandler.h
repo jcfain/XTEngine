@@ -65,8 +65,7 @@ public:
 private:
     static inline QMutex mutex;
     static inline QHash<Track, Funscript> m_funscripts;
-    // static bool _inverted;
-    // QString _channel;
+    static inline const QString m_sfmaJSONObjectName = "channels";
     bool m_loaded = false;
     bool _firstActionExecuted;
     static inline int m_offset;

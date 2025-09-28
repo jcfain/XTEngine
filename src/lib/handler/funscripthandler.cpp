@@ -147,9 +147,9 @@ void FunscriptHandler::jsonToFunscript(QJsonObject json)
 {
     m_funscripts.clear();
     SettingsHandler::clearFunscriptLoaded();
-    if (json.contains("tracks") && json["tracks"].isObject())
+    if (json.contains(m_sfmaJSONObjectName) && json[m_sfmaJSONObjectName].isObject())
     {
-        auto jsonTracks = json["tracks"].toObject();
+        auto jsonTracks = json[m_sfmaJSONObjectName].toObject();
         auto channels = TCodeChannelLookup::getChannels();
         foreach(QString channelName, channels)
         {
@@ -556,10 +556,10 @@ QList<ScriptInfo> FunscriptHandler::getSFMATracks(QString libraryItemMediaPath)
         return scriptInfos;
 
     // scriptInfos.append({"Default", libraryItemMediaPathNoExt, scriptPath, TCodeChannelLookup::ToString(Track::Stroke), ScriptType::MAIN, ScriptContainerType::BASE, "" });
-    if(!json["tracks"].isNull())
+    if(!json[m_sfmaJSONObjectName].isNull())
     {
         QString libraryItemMediaNameNoExt = XFileUtil::getNameNoExtension(libraryItemMediaPath);
-        auto jsonTracks = json["tracks"].toObject();
+        auto jsonTracks = json[m_sfmaJSONObjectName].toObject();
         auto channels = TCodeChannelLookup::getChannels();
         foreach(QString channelName, channels)
         {
@@ -581,10 +581,10 @@ bool FunscriptHandler::isSFMA(QString libraryItemMediaPath)
     if(bytes.isEmpty())
         return false;
     QJsonObject json = readJson(bytes);
-    if(json.isEmpty() || json["tracks"].isNull())
+    if(json.isEmpty() || json[m_sfmaJSONObjectName].isNull())
         return false;
 
-    auto jsonTracks = json["tracks"].toObject();
+    auto jsonTracks = json[m_sfmaJSONObjectName].toObject();
     auto channels = TCodeChannelLookup::getChannels();
     foreach(QString channelName, channels)
     {
