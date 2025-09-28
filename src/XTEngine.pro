@@ -1,5 +1,5 @@
 QT -= gui
-QT += core concurrent serialport network texttospeech websockets multimedia bluetooth
+QT += core serialport network texttospeech websockets multimedia bluetooth
 
 equals(QT_MAJOR_VERSION, 6) {
     QT += httpserver gamepadlegacy
