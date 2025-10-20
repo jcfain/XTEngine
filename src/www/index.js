@@ -82,6 +82,11 @@ var ThumbState = {
     Ready: 3,
     Unknown: 4
 }
+var NetworkProtocol = {
+    UDP: 0,
+    WEBSOCKET: 1
+};
+
 
 var MediaActions = {};
 
@@ -3427,6 +3432,7 @@ function setupConnectionsTab() {
 	
 	document.getElementById("networkAddress").value = remoteUserSettings.connection.output.networkAddress
 	document.getElementById("networkPort").value = remoteUserSettings.connection.output.networkPort
+	document.getElementById("networkProtocolWebsocket").checked = remoteUserSettings.connection.output.networkProtocol == NetworkProtocol.WEBSOCKET;
 	document.getElementById("serialPort").value = remoteUserSettings.connection.output.serialPort
 }
 
@@ -3489,6 +3495,11 @@ function onNetworkPortChange(input) {
 	remoteUserSettings.connection.output.networkPort = input.value.trim();
 	markXTPFormDirty();
 }
+function onNetworkWebsocketChange(input) {
+	remoteUserSettings.connection.output.networkProtocol = input.checked ? NetworkProtocol.WEBSOCKET : NetworkProtocol.UDP;
+	markXTPFormDirty();
+}
+
 function onSerialPortChange(input) {
 	remoteUserSettings.connection.output.serialPort = input.value;
 	markXTPFormDirty();

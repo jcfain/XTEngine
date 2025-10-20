@@ -620,6 +620,11 @@
 									<span class="sync-device-input-label">Port</span> 
 									<input class="sync-device-port" id="networkPort" onchange="onNetworkPortChange(this)"></input>
 								</div>
+								<div class="form-group-control">
+									<span class="sync-device-input-label">Use websocket</span> 
+									<!-- <label for="networkWebsocket">Use websocket</label> -->
+									<input id="networkProtocolWebsocket" type="checkbox" onclick="onNetworkWebsocketChange(this)" />
+								</div>
 							</section>
 						</div>
 						<h3>Input connections</h3>

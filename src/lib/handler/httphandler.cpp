@@ -550,6 +550,8 @@ void HttpHandler::handleSettings(const QHttpServerRequest &request, QHttpServerR
     connectionOutputSettingsJson["selectedDevice"] = SettingsHandler::getSelectedOutputDevice();
     connectionOutputSettingsJson["networkAddress"] = SettingsHandler::getServerAddress();
     connectionOutputSettingsJson["networkPort"] = SettingsHandler::getServerPort();
+    connectionOutputSettingsJson["networkProtocol"] = (int)SettingsHandler::getSelectedNetworkProtocol();
+
     connectionOutputSettingsJson["serialPort"] = SettingsHandler::getSerialPort();
     connectionSettingsJson["output"] = connectionOutputSettingsJson;
 
@@ -650,10 +652,14 @@ void HttpHandler::handleSettingsUpdate(const QHttpServerRequest &request, QHttpS
         ConnectionInterface selectedOutputDevice = (ConnectionInterface)output["selectedDevice"].toInt();
         QString networkAddress = output["networkAddress"].toString();
         QString networkPort = output["networkPort"].toString();
-        if(!networkAddress.isEmpty() && (networkAddress != SettingsHandler::getServerAddress() || networkPort != SettingsHandler::getServerPort()))
+        NetworkProtocol networkProtocol = static_cast<NetworkProtocol>(output["networkProtocol"].toInt());
+        if(!networkAddress.isEmpty() && (networkAddress != SettingsHandler::getServerAddress()
+                                          || networkPort != SettingsHandler::getServerPort()
+                                          || networkProtocol != SettingsHandler::getSelectedNetworkProtocol()))
         {
             SettingsHandler::setServerAddress(networkAddress);
             SettingsHandler::setServerPort(networkPort);
+            SettingsHandler::setSelectedNetworkProtocol(networkProtocol);
             if(selectedOutputDevice == ConnectionInterface::Network)
                 emit connectOutputDevice(ConnectionInterface::Network, true);
         }
