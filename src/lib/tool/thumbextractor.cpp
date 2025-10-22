@@ -37,6 +37,7 @@ ThumbExtractor::ThumbExtractor(QObject *parent)
             }
         });
     });
+    m_mediaFormat = new MediaFormat(m_mediaPlayer, this);
 }
 
 ///
@@ -108,11 +109,14 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
             }
             QThread::msleep(100);
         }
-        if(!m_mediaPlayer->hasVideo())
-        {
-            m_lastError = "No video";
-            return QImage();
-        }
+    }
+    if(!m_mediaPlayer->hasVideo())
+    {
+        m_lastError = "No video";
+        return QImage();
+    }
+    if(!m_mediaFormat->isCodecSupported(m_lastError)) {
+        return QImage();
     }
     LogHandler::Debug("[ThumbExtractor::extract] Loaded media mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
     currentTime = QTime::currentTime().msecsSinceStartOfDay();

@@ -59,6 +59,7 @@ SOURCES += \
     lib/tool/funscriptsearch.cpp \
     lib/tool/heatmap.cpp \
     lib/tool/imagefactory.cpp \
+    lib/tool/mediaformat.cpp \
     lib/tool/medialibrarycache.cpp \
     lib/tool/qsettings_json.cpp \
     lib/tool/simplecrypt.cpp \
@@ -135,6 +136,7 @@ HEADERS += \
     lib/tool/funscriptsearch.h \
     lib/tool/heatmap.h \
     lib/tool/imagefactory.h \
+    lib/tool/mediaformat.h \
     lib/tool/medialibrarycache.h \
     lib/tool/qsettings_json.h \
     lib/tool/simplecrypt.h \
