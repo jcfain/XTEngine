@@ -4,8 +4,8 @@
 #include "../tool/qsettings_json.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.58b";
-const float SettingsHandler::XTEVersionNum = 0.58f;
+const QString SettingsHandler::XTEVersion = "0.59b";
+const float SettingsHandler::XTEVersionNum = 0.59f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -511,7 +511,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _selectedOutputConnection = settingsToLoadFrom->value("selectedDevice").toInt();
     _selectedNetworkDeviceType = (NetworkProtocol)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
     playerVolume = settingsToLoadFrom->value("playerVolume").toInt();
-    offSet = settingsToLoadFrom->value("offSet").toInt();
     serialPort = settingsToLoadFrom->value("serialPort").toString();
     serverAddress = settingsToLoadFrom->value("serverAddress").toString();
     serverAddress = serverAddress.isEmpty() ? "tcode.local" : serverAddress;
@@ -879,6 +878,15 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Load();
             locker.relock();
         }
+        if(currentVersion < 0.59f) {
+            locker.unlock();
+            int offSet = settingsToLoadFrom->value("offSet").toInt();
+            setGlobalOffSet(offSet);
+            Save();
+            Load();
+            locker.relock();
+        }
+
     }
     settingsChangedEvent(false);
 }
@@ -910,7 +918,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("useMediaDirForThumbs", _useMediaDirForThumbs);
         settingsToSaveTo->setValue("selectedDevice", _selectedOutputConnection);
         settingsToSaveTo->setValue("selectedNetworkDeviceType", (int)_selectedNetworkDeviceType);
-        settingsToSaveTo->setValue("offSet", offSet);
         settingsToSaveTo->setValue("serialPort", serialPort);
         settingsToSaveTo->setValue("serverAddress", serverAddress);
         settingsToSaveTo->setValue("serverPort", serverPort);
@@ -1996,15 +2003,22 @@ int SettingsHandler::getPlayerVolume()
     return playerVolume;
 }
 
-int SettingsHandler::getoffSet()
+int SettingsHandler::getGlobalOffSet()
 {
-    QMutexLocker locker(&mutex);
-    return offSet;
+    return getSetting(SettingKeys::globalOffset).toBool();
 }
-void SettingsHandler::setoffSet(int value)
+void SettingsHandler::setGlobalOffSet(int value)
 {
-    QMutexLocker locker(&mutex);
-    offSet = value;
+    changeSetting(SettingKeys::globalOffset, value);
+}
+
+int SettingsHandler::getGlobalOffSetWeb()
+{
+    return getSetting(SettingKeys::globalOffsetWeb).toBool();
+}
+void SettingsHandler::setGlobalOffSetWeb(int value)
+{
+    changeSetting(SettingKeys::globalOffsetWeb, value);
 }
 
 bool SettingsHandler::isSmartOffSet()
@@ -3224,7 +3238,6 @@ int SettingsHandler::_selectedOutputConnection;
 NetworkProtocol SettingsHandler::_selectedNetworkDeviceType;
 int SettingsHandler::_librarySortMode;
 int SettingsHandler::playerVolume;
-int SettingsHandler::offSet;
 QStringList SettingsHandler::m_customTCodeCommands;
 
 int SettingsHandler::libraryView = LibraryView::Thumb;
@@ -3246,7 +3259,6 @@ int SettingsHandler::_gamepadSpeed;
 int SettingsHandler::_gamepadSpeedStep;
 int SettingsHandler::_liveGamepadSpeed;
 bool SettingsHandler::_liveGamepadConnected;
-int SettingsHandler::_liveOffset;
 bool SettingsHandler::m_smartOffsetEnabled = false;
 int SettingsHandler::m_smartOffset = 0;
 

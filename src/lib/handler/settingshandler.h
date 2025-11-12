@@ -138,7 +138,6 @@ public:
     static QString getServerPort();
 
     static int getPlayerVolume();
-    static int getoffSet();
     static bool getDisableTCodeValidation();
     static void setDisableTCodeValidation(bool value);
 
@@ -177,7 +176,11 @@ public:
     static void setWhirligigPort(QString value);
 
     static void setPlayerVolume(int value);
-    static void setoffSet(int value);
+
+    static int getGlobalOffSet();
+    static void setGlobalOffSet(int value);
+    static int getGlobalOffSetWeb();
+    static void setGlobalOffSetWeb(int value);
 
     static bool getMultiplierChecked(QString channel);
     static void setMultiplierChecked(QString channel, bool value);
@@ -496,7 +499,6 @@ private:
     static bool whirligigEnabled;
     static bool _xtpWebSyncEnabled;
     static int playerVolume;
-    static int offSet;
     static QStringList m_customTCodeCommands;
 
     static bool _gamePadEnabled;
@@ -513,7 +515,6 @@ private:
     static int _gamepadSpeedStep;
     static int _liveGamepadSpeed;
     static bool _liveGamepadConnected;
-    static int _liveOffset;
     static bool m_smartOffsetEnabled;
     static int m_smartOffset;
 

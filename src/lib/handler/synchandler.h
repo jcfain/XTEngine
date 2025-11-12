@@ -123,7 +123,7 @@ private:
     // FunscriptHandler* createFunscriptHandler(QString channel, QString funscript);
     // FunscriptHandler* createFunscriptHandler(QString channel, QByteArray funscript);
 
-    QString buildChannelActions(qint64 time);
+    QString buildChannelActions(qint64 time, int offset = 0);
 
     void sendPulse(qint64 currentMsecs, qint64 &nextPulseTime);
 

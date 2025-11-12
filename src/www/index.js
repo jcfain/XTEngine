@@ -483,6 +483,7 @@ function wsCallBackFunction(evt) {
 				break;
 			case "settingChange":
 				onSaveSuccess();
+				break;
 			case "stopAllMedia":
 				stopVideo();
 				break;

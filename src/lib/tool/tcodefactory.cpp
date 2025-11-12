@@ -10,7 +10,7 @@ TCodeFactory::TCodeFactory(double inputStart, double inputEnd, QObject* parent) 
 }
 void TCodeFactory::init()
 {
-    _addedAxis->clear();
+    _addedAxis.clear();
 }
 
 void TCodeFactory::calculate(QString axisName, double value, QVector<ChannelValueModel> &axisValues)
@@ -19,9 +19,9 @@ void TCodeFactory::calculate(QString axisName, double value, QVector<ChannelValu
         ChannelModel33* tcodeAxis = TCodeChannelLookup::getChannel(axisName);
         bool isNegative = tcodeAxis->ChannelName.contains(TCodeChannelLookup::NegativeModifier);
         //auto isPositive = tcodeAxis.AxisName.contains(TCodeChannelLookup::PositiveModifier);
-        if (_addedAxis->contains(tcodeAxis->Channel) && _addedAxis->value(tcodeAxis->Channel) == 0 && value != 0)
+        if (_addedAxis.contains(tcodeAxis->Channel) && _addedAxis.value(tcodeAxis->Channel) == 0 && value != 0)
         {
-            _addedAxis->remove(tcodeAxis->Channel);
+            _addedAxis.remove(tcodeAxis->Channel);
             const ChannelValueModel cvm = boolinq::from(axisValues).firstOrDefault([tcodeAxis](const ChannelValueModel &x) { return x.Channel == tcodeAxis->Channel; });
             axisValues.removeOne(cvm);
         }
@@ -40,7 +40,7 @@ void TCodeFactory::calculate(QString axisName, double value, QVector<ChannelValu
                 calculateTcodeRange(calculatedValue, tcodeAxis),
                 tcodeAxis->Channel
             });
-            _addedAxis->insert(tcodeAxis->Channel, value);
+            _addedAxis.insert(tcodeAxis->Channel, value);
         }
     }
 }

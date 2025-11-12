@@ -290,11 +290,16 @@ const QList<Track> FunscriptHandler::getLoaded()
 {
     return m_funscripts.keys();
 }
-
-std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& channelName, const qint64& at)
+int lastOffset = -1;
+std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& channelName, const qint64& at, const int offset)
 {
     QMutexLocker locker(&mutex);
-    qint64 millis = at + getOffSet();
+    int offsetLocal =  offset ?: getOffSet();
+    if(lastOffset != offsetLocal) {
+        lastOffset = offsetLocal;
+        LogHandler::Debug("FunscriptHandler::getPosition offset: "+ QString::number(offsetLocal));
+    }
+    qint64 millis = at + offsetLocal;
     if(!m_funscripts.contains(channelName))
         return nullptr;
     Funscript* funscript = &m_funscripts[channelName];
@@ -526,7 +531,7 @@ double FunscriptHandler::getModifier(const Track& channelName)
 void FunscriptHandler::updateMetadata(LibraryListItemMetaData258 value)
 {
     setModifier(value.funscriptModifier);
-    setOffset(value.offset);
+    setScriptOffset(value.offset);
 }
 
 void FunscriptHandler::resetModifier(const Track& channelName)
@@ -536,12 +541,32 @@ void FunscriptHandler::resetModifier(const Track& channelName)
 
 int FunscriptHandler::getOffSet()
 {
+    return m_offset ?: m_globalOffset;
+}
+
+int FunscriptHandler::getScriptOffSet()
+{
     return m_offset;
 }
 
-void FunscriptHandler::setOffset(int value)
+void FunscriptHandler::setScriptOffset(int value)
 {
-    m_offset = value ? value : SettingsHandler::getoffSet();
+    m_offset = value;
+}
+
+void FunscriptHandler::setGlobalOffset(int value)
+{
+    m_globalOffset = value;
+}
+
+void FunscriptHandler::setGlobalOffsetWeb(int value)
+{
+    m_globalOffsetWeb = value;
+}
+
+int FunscriptHandler::getGlobalOffsetWeb()
+{
+    return m_globalOffsetWeb;
 }
 
 QList<ScriptInfo> FunscriptHandler::getSFMATracks(QString libraryItemMediaPath)

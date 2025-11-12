@@ -127,6 +127,14 @@ void XTEngine::init()
         {
             scheduleLibraryLoadEnableChange(value.toBool());
         }
+        else if(key == SettingKeys::globalOffset)
+        {
+            FunscriptHandler::setGlobalOffset(value.toInt());
+        }
+        else if(key == SettingKeys::globalOffsetWeb)
+        {
+            FunscriptHandler::setGlobalOffsetWeb(value.toInt());
+        }
     });
     
     connect(_connectionHandler, &ConnectionHandler::inputMessageReceived, _syncHandler, [this](InputConnectionPacket packet) {

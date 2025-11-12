@@ -516,7 +516,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                     //         emit channelPositionChange(funscriptHandler->channel(), action->pos, action->speed, ChannelTimeType::Interval);
                     //     }
                     // }
-                    QString tcode = buildChannelActions(vrTime);
+                    QString tcode = buildChannelActions(vrTime, FunscriptHandler::getScriptOffSet() ?: FunscriptHandler::getGlobalOffsetWeb());
                     if(_funscriptVRFuture.isCanceled())
                         break;
                     if(!tcode.isEmpty() && !isPaused())
@@ -543,13 +543,13 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
     });
 }
 
-QString SyncHandler::buildChannelActions(qint64 time)
+QString SyncHandler::buildChannelActions(qint64 time, int offset)
 {
     QMap<QString, std::shared_ptr<FunscriptAction>> actions;
     auto loaded = m_funscriptHandler.getLoaded();
     foreach(auto track, loaded)
     {
-        auto action = m_funscriptHandler.getPosition(track, time);
+        auto action = m_funscriptHandler.getPosition(track, time, offset);
         if(action != nullptr)
         {
             auto channel = TCodeChannelLookup::ToString(track);

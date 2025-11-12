@@ -22,7 +22,8 @@ enum class FormControlTypes {
     Checkbox,
     DateTime,
     Date,
-    Time
+    Time,
+    Long
 };
 
 struct SettingMap {
@@ -77,6 +78,8 @@ struct SettingKeys {
     static inline const QString disableAutoThumbGeneration = "disableAutoThumbGeneration";
     static inline const QString enableMediaManagement = "enableMediaManagement";
     static inline const QString useSystemMediaBackend = "useSystemMediaBackend";
+    static inline const QString globalOffset = "globalOffset";
+    static inline const QString globalOffsetWeb = "globalOffsetWeb";
 
 };
 
@@ -108,6 +111,9 @@ public:
         {SettingProfile::System, SettingGroups::media, SettingKeys::disableAutoThumbGeneration, FormControlTypes::Checkbox, false, "Disable automatic thumb generation", "If checked, when a new media item has been found, no thumb will be automattically generated. Manual generation will still be attemped..", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::enableMediaManagement, FormControlTypes::Checkbox, false, "Enable media management", "If checked, certain media management options like delete will become available", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::useSystemMediaBackend, FormControlTypes::Checkbox, false, "Use the media backend of the OS", "If checked, XTP will use the OS media backend. Requires restart...", false, true},
+        {SettingProfile::System, SettingGroups::media, SettingKeys::globalOffset, FormControlTypes::Int, 0, "Global offset", "Offest specified in milliseconds", false, false},
+        {SettingProfile::System, SettingGroups::media, SettingKeys::globalOffsetWeb, FormControlTypes::Int, 0, "Global offset (web)", "Offset for scripts played from web ONLY. Offest specified in milliseconds", false, false},
+
 
     };
     static inline QHash<QString, SettingMap> SettingsMap;

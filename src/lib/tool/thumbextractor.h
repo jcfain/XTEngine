@@ -45,6 +45,7 @@ private:
     qint64 m_lastDuration = -1;
     QTimer m_debouncer;
     MediaFormat* m_mediaFormat;
+    void createMediaPlayer();
     bool stopAndWait();
     bool mediaHasError();
     void videoFrameChanged(const QVideoFrame &thumb);
