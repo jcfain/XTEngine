@@ -20,14 +20,14 @@ bool MediaFormat::isCodecSupported(QString& error)
     const QMediaFormat::AudioCodec fileAudioCodec = fileMetadata.value(QMediaMetaData::AudioCodec).value<QMediaFormat::AudioCodec>();
     if(!isCodecSupported(fileAudioCodec))
     {
-        error += tr("Audio %1 (%2) is not supported by your system.")
+        error += tr("Audio %1 (%2) is not supported by your system. ")
                     .arg(QMediaFormat::audioCodecName(fileAudioCodec),
                          QMediaFormat::audioCodecDescription(fileAudioCodec));
     }
     const QMediaFormat::VideoCodec fileVideoCodec = fileMetadata.value(QMediaMetaData::VideoCodec).value<QMediaFormat::VideoCodec>();
     if(!isCodecSupported(fileVideoCodec))
     {
-        error += tr("Video %1 (%2) is not supported by your system.")
+        error += tr("Video %1 (%2) is not supported by your system. ")
                              .arg(QMediaFormat::videoCodecName(fileVideoCodec),
                                   QMediaFormat::videoCodecDescription(fileVideoCodec));
     }

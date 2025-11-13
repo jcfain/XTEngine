@@ -108,9 +108,9 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
         m_lastError = "No video";
         return QImage();
     }
-    if(!m_mediaFormat->isCodecSupported(m_lastError)) {
-        return QImage();
-    }
+    // if(!m_mediaFormat->isCodecSupported(m_lastError)) {
+    //     return QImage();
+    // }
     LogHandler::Debug("[ThumbExtractor::extract] Loaded media mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
     currentTime = QTime::currentTime().msecsSinceStartOfDay();
     // Do not start/stop QMediaPlayer in a non GUI thread.
