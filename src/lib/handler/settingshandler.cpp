@@ -490,7 +490,8 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 #endif
         LogHandler::Info("Using media backend: "+QString(backend));
     }
-
+    // Unsure about this...
+    //setenv("QT_ENABLE_EXPERIMENTAL_CODECS", "1", 1);
     mediaLibrarySettings.Load(settingsToLoadFrom);
 
     QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();

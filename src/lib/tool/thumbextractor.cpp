@@ -108,6 +108,7 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
         m_lastError = "No video";
         return QImage();
     }
+    // This didnt work on the orangepi5 but did on main pc...
     // if(!m_mediaFormat->isCodecSupported(m_lastError)) {
     //     return QImage();
     // }
