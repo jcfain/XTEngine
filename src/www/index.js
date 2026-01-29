@@ -241,6 +241,7 @@ var progressLabelNode = document.getElementById("statusOutputLabel");
 
 var filterInput = document.getElementById('filterInput');
 filterInput.value = userFilterCriteria;
+var filterInputContainer = document.getElementById('filterInputContainer');
 
 /* 	
 	deoVideoNode = document.getElementById("deoVideoPlayer");
@@ -2127,8 +2128,13 @@ function getDisplayedMediaList(showValue, userClick) {
 	return filteredMediaScoped
 }
 
+function clearFilterinput() {
+	filterInput.value = "";
+	filter();
+}
+
 function filter() {
-	const currentCriteria = document.getElementById("filterInput").value;
+	const currentCriteria = filterInput.value;
 	userFilterCriteria = currentCriteria;
 	filterInput.enabled = false;
 	var mediaItems = document.getElementsByClassName("media-item");
@@ -2551,7 +2557,7 @@ function onSkipToMoneyShot() {
 }
 
 function onToggleFilterInput(searchButton) {
-	filterInput.classList.toggle('hidden');
+	filterInputContainer.classList.toggle('hidden');
 	searchButton.classList.toggle('icon-button-down');
 }
 

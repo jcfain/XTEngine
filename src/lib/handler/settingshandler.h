@@ -356,46 +356,57 @@ public:
     static bool getUseDTRAndRTS();
 
 
-    static const QStringList getVideoExtensions()
+    static const QStringList& getVideoExtensions()
     {
-        return QStringList()
-                << "mp4"
-                << "avi"
-                << "mpg"
-                << "wmv"
-                << "mkv"
-                << "webm"
-                << "mp2"
-                << "mpeg"
-                << "mpv"
-                << "ogg"
-                << "m4p"
-                << "m4v"
-                << "mov"
-                << "qt"
-                << "flv"
-                << "swf"
-                << "avchd";
+        static QStringList ext = QStringList()
+                                 << "mp4"
+                                 << "avi"
+                                 << "mpg"
+                                 << "wmv"
+                                 << "mkv"
+                                 << "webm"
+                                 << "mp2"
+                                 << "mpeg"
+                                 << "mpv"
+                                 << "ogg"
+                                 << "m4p"
+                                 << "m4v"
+                                 << "mov"
+                                 << "qt"
+                                 << "flv"
+                                 << "swf"
+                                 << "avchd";
+        return ext;
     }
-    static const QStringList getAudioExtensions()
+    static const QStringList& getAudioExtensions()
     {
-        return QStringList()
-                << "m4a"
-                << "mp3"
-                << "aac"
-                << "flac"
-                << "wav"
-                << "wma";
+        static QStringList ext = QStringList()
+                                 << "m4a"
+                                 << "mp3"
+                                 << "aac"
+                                 << "flac"
+                                 << "wav"
+                                 << "wma";
+        return ext;
     }
-    static const QStringList getSubtitleExtensions()
+    static const QStringList& getSubtitleExtensions()
     {
-        return QStringList()
-               << "vtt"
-               << "srt";
+        static QStringList ext = QStringList()
+                                 << "vtt"
+                                 << "srt";
+        return ext;
     }
-    static const QStringList getImageExtensions()
+    static const QStringList& getImageExtensions()
     {
-        return QStringList() << "jpg" << "jpeg" << "png" << "jfif" << "webp" << "gif";
+        static QStringList ext = QStringList()
+                                 << "jpg"
+                                 << "jpeg"
+                                 << "png"
+                                 << "jfif"
+                                 << "webp"
+                                 << "gif"
+                                 << "avif";
+        return ext;
     }
 
     static const QString getThumbFormatExtension() {
