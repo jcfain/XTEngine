@@ -1349,6 +1349,7 @@ float SettingsHandler::getViewedThreshold()
 void SettingsHandler::setViewedThreshold(float newViewedThreshold)
 {
     m_viewedThreshold = newViewedThreshold;
+    settingsChangedEvent(true);
 }
 
 XTags SettingsHandler::getXTags()
@@ -1907,11 +1908,13 @@ void SettingsHandler::setSelectedThumbsDirDefault()
 {
     QMutexLocker locker(&mutex);
     _selectedThumbsDir = nullptr;
+    settingsChangedEvent(true);
 }
 void SettingsHandler::setUseMediaDirForThumbs(bool value)
 {
     QMutexLocker locker(&mutex);
     _useMediaDirForThumbs = value;
+    settingsChangedEvent(true);
 }
 bool SettingsHandler::getUseMediaDirForThumbs()
 {
@@ -1928,6 +1931,7 @@ void SettingsHandler::setSelectedOutputConnection(ConnectionInterface value)
 {
     QMutexLocker locker(&mutex);
     _selectedOutputConnection = value;
+    settingsChangedEvent(true);
 }
 
 ConnectionInterface SettingsHandler::getSelectedInputDevice()
@@ -1951,6 +1955,7 @@ void SettingsHandler::setSelectedInputConnection(ConnectionInterface value)
 
 void SettingsHandler::setSelectedNetworkProtocol(NetworkProtocol value) {
     _selectedNetworkDeviceType = value;
+    settingsChangedEvent(true);
 }
 NetworkProtocol SettingsHandler::getSelectedNetworkProtocol() {
     return _selectedNetworkDeviceType;
@@ -2035,6 +2040,7 @@ int SettingsHandler::getSmartOffSet()
 void SettingsHandler::setSmartOffset(int value)
 {
     m_smartOffset = value;
+    settingsChangedEvent(true);
 }
 
 bool SettingsHandler::getDisableTCodeValidation()
@@ -2296,6 +2302,7 @@ void SettingsHandler::setLiveMultiplierEnabled(bool value)
 {
     QMutexLocker locker(&mutex);
     _liveMultiplierEnabled = value;
+    settingsChangedEvent(true);
 }
 
 bool SettingsHandler::getMultiplierEnabled()
@@ -3126,6 +3133,7 @@ void SettingsHandler::setLubePulseAmount(int value)
 {
     QMutexLocker locker(&mutex);
     _channelPulseAmount = value;
+    settingsChangedEvent(true);
 }
 int SettingsHandler::getLubePulseAmount()
 {
@@ -3136,6 +3144,7 @@ void SettingsHandler::setLubePulseEnabled(bool value)
 {
     QMutexLocker locker(&mutex);
     _channelPulseEnabled = value;
+    settingsChangedEvent(true);
 }
 bool SettingsHandler::getLubePulseEnabled()
 {
@@ -3146,6 +3155,7 @@ void SettingsHandler::setLubePulseFrequency(int value)
 {
     QMutexLocker locker(&mutex);
     _channelPulseFrequency = value;
+    settingsChangedEvent(true);
 }
 int SettingsHandler::getLubePulseFrequency()
 {

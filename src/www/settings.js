@@ -28,11 +28,11 @@ Settings = {
         div.appendChild(h2);
         return div;
     },
-    createFormControl(labelText, type, id, value, requiresRestart) {
+    createFormControl(labelText, description, type, id, value, requiresRestart) {
         let div = document.createElement('div');
         div.classList.add("formElement", "formElement--label-large");
         let labelElement = document.createElement('label');
-        labelElement.setAttribute("title", labelText)
+        labelElement.setAttribute("title", description)
         labelElement.textContent = labelText;
         labelElement.setAttribute("for", id);
         let control;
@@ -65,6 +65,7 @@ Settings = {
                 control = this.createTimeInput(id, value, requiresRestart);
             break;
         }
+        control.setAttribute("title", description);
         div.appendChild(labelElement);
         if(control) {
             div.appendChild(control);
@@ -266,7 +267,7 @@ Settings = {
                 systemError("Invalid settings profile: " + setting.profile);
                 return;
         }
-        const formControl = this.createFormControl(setting.label, setting.type, setting.key, setting.value, setting.requiresRestart);
+        const formControl = this.createFormControl(setting.label, setting.description, setting.type, setting.key, setting.value, setting.requiresRestart);
         groupElement.appendChild(formControl.div);
         this.setSpecialProperties(setting.key, setting.value, formControl);
     },
