@@ -85,15 +85,17 @@ Settings = {
         element.value = value;
 
         element.onchange = function (element, id) {
-            if(!element.validity.valid)
-                return;
+            // if(!element.validity.valid) {
+            //         return;
+            // }
             if(this.debounceer[id])
                 clearTimeout(this.debounceer[id]);
             this.debounceer[id] = setTimeout(function(id, element) {
                 this.debounceer[id] = undefined;
-                if(!element.validity.valid) 
+                if(!element.validity.valid) {
+                    saveFail(`Error saving ${element.id}: Error: ${element.validationMessage}`);
                     return;
-                settingChange(id, element.value);
+                }
 		        this.callBackExtensions(id, element.value, element);
                 if(requiresRestart) {
                     showRestartRequired();
@@ -108,16 +110,17 @@ Settings = {
         element.value = parseInt(value);
         element.type = "number";
         element.onchange = function (element, id) {
-            if(!element.validity.valid && !element.validity.stepMismatch)
-                return;
+            // if(!element.validity.valid && !element.validity.stepMismatch)
+            //     return;
             if(this.debounceer[id])
                 clearTimeout(this.debounceer[id]);
             this.debounceer[id] = setTimeout(function(id, element) {
                 this.debounceer[id] = undefined;
-                if(!element.validity.valid && !element.validity.stepMismatch)
+                if(!element.validity.valid && !element.validity.stepMismatch) {
+                    saveFail(`Error saving ${element.id}: Error: ${element.validationMessage}`);
                     return;
-                settingChange(id, parseInt(element.value));
-		        this.callBackExtensions(id, element.value, element);
+                }
+		        this.callBackExtensions(id,  parseInt(element.value), element);
                 if(requiresRestart) {
                     showRestartRequired();
                 }
@@ -130,16 +133,17 @@ Settings = {
         element.value = parseFloat(value);
         element.type = "number";
         element.onchange = function (element, id) {
-            if(!element.validity.valid && !element.validity.stepMismatch)
-                return;
+            // if(!element.validity.valid && !element.validity.stepMismatch)
+            //     return;
             if(this.debounceer[id])
                 clearTimeout(this.debounceer[id]);
             this.debounceer[id] = setTimeout(function(id, element) {
                 this.debounceer[id] = undefined;
-                if(!element.validity.valid && !element.validity.stepMismatch)
+                if(!element.validity.valid && !element.validity.stepMismatch) {
+                    saveFail(`Error saving ${element.id}: Error: ${element.validationMessage}`);
                     return;
-                settingChange(id, parseFloat(element.value));
-		        this.callBackExtensions(id, element.value, element);
+                }
+		        this.callBackExtensions(id, parseFloat(element.value), element);
                 if(requiresRestart) {
                     showRestartRequired();
                 }
@@ -169,15 +173,17 @@ Settings = {
         element.checked = checked;
         
         element.onchange = function (element, id) {
-            if(!element.validity.valid)
-                return;
+            // if(!element.validity.valid) {
+            //         return;
+            // }
             if(this.debounceer[id])
                 clearTimeout(this.debounceer[id]);
             this.debounceer[id] = setTimeout(function(id, element) {
                 this.debounceer[id] = undefined;
-                if(!element.validity.valid) 
+                if(!element.validity.valid) {
+                    saveFail(`Error saving ${element.id}: Error: ${element.validationMessage}`);
                     return;
-                settingChange(id, element.checked);
+                }
 		        this.callBackExtensions(id, element.checked, element);
                 if(requiresRestart) {
                     showRestartRequired();
@@ -193,15 +199,17 @@ Settings = {
         element.checked = checked;
 
         element.onchange = function (element, id) {
-            if(!element.validity.valid)
-                return;
+            // if(!element.validity.valid) {
+            //     return;
+            // }
             if(this.debounceer[id])
                 clearTimeout(this.debounceer[id]);
             this.debounceer[id] = setTimeout(function(id, element) {
                 this.debounceer[id] = undefined;
-                if(!element.validity.valid) 
+                if(!element.validity.valid) {
+                    saveFail(`Error saving ${element.id}: Error: ${element.validationMessage}`);
                     return;
-                settingChange(id, element.checked);
+                }
 		        this.callBackExtensions(id, element.checked, element);
                 if(requiresRestart) {
                     showRestartRequired();
@@ -226,9 +234,10 @@ Settings = {
                 clearTimeout(debounceer[id]);
             this.debounceer[id] = setTimeout(function(id, element) {
                 this.debounceer[id] = undefined;
-                if(!element.validity.valid) 
+                if(!element.validity.valid) {
+                    saveFail(`Error saving ${element.id}: Error: ${element.validationMessage}`);
                     return;
-                settingChange(id, element.value);
+                }
 		        this.callBackExtensions(id, element.value, element);
                 if(requiresRestart) {
                     showRestartRequired();
@@ -289,15 +298,22 @@ Settings = {
             case "enableMediaManagement":
                 mediaManagementEnabled = value;
                 break;
-                
+            case "viewedThreshold":
+                formControl.control.min = 1;
+                formControl.control.max = 99;
+                formControl.control.step = 1;
+                break;
         }
     },
     callBackExtensions(key, value, formControl) {
+        let valueMutable = value;
         switch(key) {
             case "enableMediaManagement":
                 mediaManagementEnabled = value;
 	            showChange(showGlobal);
                 break;
         }
+
+        settingChange(key, valueMutable);
     }
 }

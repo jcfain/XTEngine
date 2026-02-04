@@ -64,7 +64,7 @@ void XMediaStateHandler::updateDuration(qint64 currentPos, qint64 duration)
     if(!mediaItem)
         return;
     // const qint64 timeLeft = duration - currentPos;
-    const qint64 viewedThreshold = duration * SettingsHandler::getViewedThreshold();
+    const qint64 viewedThreshold = duration * (SettingsHandler::getViewedThreshold() / (float)100);
     if(duration > 0 && currentPos > -1 && currentPos > viewedThreshold)
     {
         if(!mediaItem->metadata.tags.contains(SettingsHandler::getXTags().VIEWED))

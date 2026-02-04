@@ -427,8 +427,8 @@ public:
     static void addUserSmartTag(QString tag);
     static bool hasSmartTag(QString tag);
 
-    static float getViewedThreshold();
-    static void setViewedThreshold(float value);
+    static int getViewedThreshold();
+    static void setViewedThreshold(int value);
 
     static bool scheduleLibraryLoadEnabled();
     static void setScheduleLibraryLoadEnabled(bool value);
@@ -574,8 +574,6 @@ private:
     static QString _channelPulseChannel;
     static qint64 _channelPulseFrequency;
     static int _channelPulseAmount;
-
-    static float m_viewedThreshold;
 
     // static bool m_scheduleLibraryLoadEnabled;
     // static QTime m_scheduleLibraryLoadTime;

@@ -4,8 +4,8 @@
 #include "../tool/qsettings_json.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.59b";
-const float SettingsHandler::XTEVersionNum = 0.59f;
+const QString SettingsHandler::XTEVersion = "0.591b";
+const float SettingsHandler::XTEVersionNum = 0.591f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -56,65 +56,70 @@ QVariant SettingsHandler::getSetting(const QString &settingName, const QSettings
 void SettingsHandler::getSetting(const QString& settingName, QJsonObject& json)
 {
     const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
-    QVariant::Type valueType = settingMap.defaultValue.type();
+    QMetaType::Type valueType = static_cast<QMetaType::Type>(settingMap.defaultValue.metaType().id());
     switch(valueType)
     {
-        case QVariant::Date:
+        case QMetaType::QDate:
         {
             json[settingName] = getSetting(settingName).toDate().toString("yyyy-MM-dd");
             break;
         }
-        case QVariant::Time:
+        case QMetaType::QTime:
         {
             json[settingName] = getSetting(settingName).toTime().toString("HH:mm");
             break;
         }
-        case QVariant::DateTime:
+        case QMetaType::QDateTime:
         {
             json[settingName] = getSetting(settingName).toDateTime().toString("yyyy-MM-ddTHH:mm:ssZ");
             break;
         }
-        case QVariant::LongLong:
-        case QVariant::ULongLong:
+        case QMetaType::LongLong:
+        case QMetaType::ULongLong:
         {
             json[settingName] = QString::number(getSetting(settingName).toLongLong());
             break;
         }
         // Follow through on primitives
-        case QVariant::String:
+        case QMetaType::QString:
         {
             json[settingName] = getSetting(settingName).toString();
             break;
         }
-        case QVariant::Bool:
+        case QMetaType::Bool:
         {
             json[settingName] = getSetting(settingName).toBool();
             break;
         }
-        case QVariant::Int:
-        case QVariant::UInt:
+        case QMetaType::Int:
+        case QMetaType::UInt:
         {
             json[settingName] = getSetting(settingName).toInt();
             break;
         }
-        case QVariant::Double:
+        case QMetaType::Double:
         {
             json[settingName] = getSetting(settingName).toDouble();
             break;
         }
-        case QVariant::Map:
+        case QMetaType::Float:
+        {
+            json[settingName] = getSetting(settingName).toFloat();
+            break;
+        }
+        case QMetaType::QVariantMap:
         {
             // TODO check this
             json[settingName] = getSetting(settingName).toJsonObject();
             break;
         }
-        case QVariant::List:
+        case QMetaType::QVariantList:
         {
             // TODO check this
             json[settingName] = getSetting(settingName).toJsonArray();
             break;
         }
-        case QVariant::StringList:
+        case QMetaType::QStringList:
         {
             // TODO check this
             json[settingName] = getSetting(settingName).toJsonArray();
@@ -652,8 +657,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         m_xTags.addSmartTag(tag);
     }
 
-    m_viewedThreshold = settingsToLoadFrom->value("viewedThreshold", 0.9f).toFloat();
-
     // m_scheduleLibraryLoadEnabled = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadEnabled, false).toBool();
     // m_scheduleLibraryLoadTime = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadTime, QTime(2,0)).toTime();
     // m_scheduleLibraryLoadFullProcess = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadFullProcess, true).toBool();
@@ -882,11 +885,22 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(currentVersion < 0.59f) {
             locker.unlock();
             int offSet = settingsToLoadFrom->value("offSet").toInt();
+            settingsToLoadFrom->remove("offSet");
             setGlobalOffSet(offSet);
             Save();
             Load();
             locker.relock();
         }
+        if(currentVersion < 0.591f) {
+            locker.unlock();
+            float viewedThreshold = settingsToLoadFrom->value("viewedThreshold", 0.9f).toFloat();
+            settingsToLoadFrom->remove("viewedThreshold");
+            setViewedThreshold(viewedThreshold * 100);
+            Save();
+            Load();
+            locker.relock();
+        }
+
 
     }
     settingsChangedEvent(false);
@@ -1027,8 +1041,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("channelPulseFrequency", _channelPulseFrequency);
 
         settingsToSaveTo->setValue("customTCodeCommands", m_customTCodeCommands);
-
-        settingsToSaveTo->setValue("viewedThreshold", m_viewedThreshold);
 
         // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadEnabled, m_scheduleLibraryLoadEnabled);
         // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadTime, m_scheduleLibraryLoadTime);
@@ -1341,15 +1353,14 @@ void SettingsHandler::setScheduleLibraryLoadEnabled(bool value)
     changeSetting(SettingKeys::scheduleLibraryLoadEnabled, value);
 }
 
-float SettingsHandler::getViewedThreshold()
+int SettingsHandler::getViewedThreshold()
 {
-    return m_viewedThreshold;
+    return getSetting(SettingKeys::viewedThreshold).toInt();
 }
 
-void SettingsHandler::setViewedThreshold(float newViewedThreshold)
+void SettingsHandler::setViewedThreshold(int value)
 {
-    m_viewedThreshold = newViewedThreshold;
-    settingsChangedEvent(true);
+    changeSetting(SettingKeys::viewedThreshold, value);
 }
 
 XTags SettingsHandler::getXTags()
@@ -3319,8 +3330,6 @@ QString SettingsHandler::_hashedWebPass;
 
 QList<DecoderModel> SettingsHandler::decoderPriority;
 XVideoRenderer SettingsHandler::_selectedVideoRenderer;
-
-float SettingsHandler::m_viewedThreshold;
 
 // bool SettingsHandler::m_scheduleLibraryLoadEnabled;
 // QTime SettingsHandler::m_scheduleLibraryLoadTime;

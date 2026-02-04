@@ -1,4 +1,4 @@
-const webVersion = "v0.59b";
+const webVersion = "v0.591b";
 var debugMode = false;
 
 var DeviceType = {
@@ -1577,9 +1577,13 @@ function postMediaState(mediaState) {
 function onSaveSuccess(node) {
 	setSaveState(node, false);
 }
-function onSaveFail(xhr, node) {
-	parseHttpError("Save fail", xhr);
-	setSaveState(node, false, statusTest);
+function onSaveFail(xhr, node, message) {
+	if(xhr)
+		parseHttpError("Save fail", xhr);
+	setSaveState(node, false, message);
+}
+function saveFail(message) {
+	onSaveFail(null, null, message)
 }
 
 function clearMediaList() {

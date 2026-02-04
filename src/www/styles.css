@@ -147,6 +147,14 @@ body {
     cursor: pointer;
 }
 
+input:invalid,
+textarea:invalid,
+button:invalid,
+select:invalid {
+    border-color: red;
+    border-width: 2px;
+}
+
 input:disabled,
 textarea:disabled,
 button:disabled,
