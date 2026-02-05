@@ -969,6 +969,11 @@ function setupSystemTags() {
 	const tagsFIlterNode = document.getElementById("tagFilterOptions");
 	removeAllChildNodes(tagsFIlterNode);
 	removeAllChildNodes(metaDataTagsNode);
+	const optionsContainer = document.createElement("div");
+	const ornode = createCheckBoxDiv("tagFilterORChk", "OR", false, "OR", onFilterByTagClicked);
+	ornode.setAttribute("title", "If checked, the selected tags will be inclusive.")
+	optionsContainer.appendChild(ornode);
+	tagsFIlterNode.appendChild(optionsContainer);
 	const containter = document.createElement("div");
 	containter.classList.add("media-tag-filter-container")
 	tagsFIlterNode.appendChild(containter);
@@ -2186,24 +2191,28 @@ function filterByTag(filterCriteria) {
 	var tagsFilterOptions = document.getElementsByName(tagCheckboxesName);
 	tagsFilterOptions.forEach(x => x.enabled = false);
 	var mediaItems = document.getElementsByClassName("media-item");
+	var orNode = document.getElementById("tagFilterORChk");
 	for (var item of mediaItems) {
 		const libraryItem = mediaListDisplayed.find(x => x.id === item.id);
 
-		item.hidden = isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags) || isFiltered(userFilterCriteria, item.textContent);
+		item.hidden = isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags, orNode.checked) || isFiltered(userFilterCriteria, item.textContent);
 	};
 	tagsFilterOptions.forEach(x => x.enabled = true);
 }
 
-function isTagFiltered(selectedTags, mediaTags) {
+function isTagFiltered(selectedTags, mediaTags, orMode) {
 	if (!selectedTags || !selectedTags.length || !mediaTags || !mediaTags.length)
 		return false;
 	else {
-		  for(let i=0; i<selectedTags.length; i++) {
-			if(!mediaTags.includes(selectedTags[i]))
+		for(let i=0; i<selectedTags.length; i++) {
+			if(orMode) {
+				if (mediaTags.includes(selectedTags[i]))
+					return false;
+			} else if(!mediaTags.includes(selectedTags[i]))
 				return true;
-		  }
-		return false;
+		}
 	}
+	return orMode;
 }
 /* 
 function onClickUseDeoWebCheckbox(checkbox)
