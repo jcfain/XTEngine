@@ -221,7 +221,8 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 }
                 if(channel->Delay > 0)
                 {
-                    emit delayTCode(tcodeTemp, channel->Delay);
+                    int delayMS = channel->Delay * speed;
+                    emit delayTCode(tcodeTemp, delayMS);
                 }
                 else
                 {

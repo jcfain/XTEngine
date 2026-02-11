@@ -47,7 +47,7 @@ struct ChannelModel33
     bool GamepadInverted;
     bool LinkToRelatedMFS;
     QString RelatedChannel;
-    int Delay;
+    float Delay;
 
 //    friend QDataStream & operator<<( QDataStream &dataStream, const ChannelModel33 &object )
 //    {
@@ -128,7 +128,7 @@ struct ChannelModel33
         newItem.GamepadInverted = obj["gamepadInverted"].toBool();
         newItem.LinkToRelatedMFS = obj["linkToRelatedMFS"].toBool();
         newItem.RelatedChannel = obj["relatedChannel"].toString();
-        newItem.Delay = obj["delay"].toInt();
+        newItem.Delay = obj["delay"].toDouble();
         return newItem;
     }
 

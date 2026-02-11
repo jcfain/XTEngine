@@ -625,7 +625,7 @@ function setStatusOutput(message, percentage) {
 	}
 	// !message ? progressNode.classList.add("hidden-visibility") : progressNode.classList.remove("hidden-visibility");
 	// !message ? progressLabelNode.classList.add("hidden-visibility") : progressLabelNode.classList.remove("hidden-visibility");
-	progressLabelNode.innerText = (!message ? "" : message) + (percentage > -1 ? ": "+percentage+"%" : "");
+	progressLabelNode.innerText = (!message ? "" : message) + (percentage > -1 ? ": "+round(percentage, 2)+"%" : "");
 	progressNode.value = (percentage > -1 ? percentage : 0);
 }
 function setMediaLoading() {
@@ -3155,6 +3155,7 @@ async function setupMotionModifiers() {
 	multiplierEnabledNode.id = "multiplierEnabled";
 	multiplierEnabledNode.type = "checkbox";
 	multiplierEnabledNode.checked = remoteUserSettings.multiplierEnabled;
+	multiplierEnabledNode.setAttribute("title", "Global random motion toggle.")
 
 	multiplierEnabledNode.oninput = function (event) {
 		remoteUserSettings.multiplierEnabled = event.target.checked;
@@ -3164,17 +3165,22 @@ async function setupMotionModifiers() {
 
 	sectionNode.appendChild(multiplierEnabledNode);
 
+	const enabledHelptext = "The will toggle wether this channel is included in the random motion generation.";
+	const linkToHelptext = "This will match the values of the linked channel 1:1 with modifiers speed and delay applied.";
+	const speedHelptext = "The percentage of the parents time to modify the speed.\nIf the speed is 0.1 and the parent action interval is 300ms, the speed will be 30ms\nMinimum value is 0.01";
+	const delayHelpText = "The percentage of the parents time to delay.\nIf the delay is 0.1 and the parent action interval is 300ms, the delay will be 30ms\nMinimum value is 0 and Maximum is 1";
 	var headers = [
 		//"Modifier", 
-		"Link to script", 
-		"Speed", 
-		"Delay"]
+		{text: "Link to script", helpText: linkToHelptext}, 
+		{text: "Speed", helpText: speedHelptext},  
+		{text: "Delay", helpText: delayHelpText}]
 	headers.forEach(element => {
 		var gridHeaderNode = document.createElement("div");
 		gridHeaderNode.classList.add("form-group-control");
 		gridHeaderNode.classList.add("form-group-control-header");
 		var gridHeaderContentNode = document.createElement("span");
-		gridHeaderContentNode.innerText = element;
+		gridHeaderContentNode.innerText = element.text;
+		gridHeaderContentNode.setAttribute("title", element.helpText)
 		gridHeaderNode.appendChild(gridHeaderContentNode);
 		sectionNode.appendChild(gridHeaderNode);
 	});
@@ -3227,6 +3233,7 @@ async function setupMotionModifiers() {
 		multiplierEnabledNode.setAttribute("name", "motionModifierInput");
 		multiplierEnabledNode.type = "checkbox";
 		multiplierEnabledNode.checked = channel.multiplierEnabled;
+		multiplierEnabledNode.setAttribute("title", enabledHelptext);
 
 		multiplierEnabledNode.oninput = function (channelName, event) {
 			remoteUserSettings.availableChannels[channelName].multiplierEnabled = event.target.checked;
@@ -3254,6 +3261,7 @@ async function setupMotionModifiers() {
 		var linkToRelatedMFSNode = document.createElement("input");
 		linkToRelatedMFSNode.setAttribute("name", "motionModifierInput");
 		linkToRelatedMFSNode.type = "checkbox";
+		linkToRelatedMFSNode.setAttribute("title", linkToHelptext)
 		linkToRelatedMFSNode.checked = channel.linkToRelatedMFS;
 
 		linkToRelatedMFSNode.oninput = function (channelName, event) {
@@ -3282,6 +3290,7 @@ async function setupMotionModifiers() {
 
 		linkedEnabledValueNode.appendChild(linkToRelatedMFSNode);
 		linkedEnabledValueNode.appendChild(relatedChannelNode);
+		linkedEnabledValueNode.setAttribute("title", linkToHelptext);
 
 		var damperEnabledValueNode = document.createElement("div");
 		damperEnabledValueNode.classList.add("form-group-control");
@@ -3290,6 +3299,7 @@ async function setupMotionModifiers() {
 		damperEnabledNode.setAttribute("name", "motionModifierInput");
 		damperEnabledNode.type = "checkbox";
 		damperEnabledNode.checked = channel.damperEnabled;
+		damperEnabledNode.setAttribute("title", speedHelptext);
 
 		damperEnabledNode.oninput = function (channelName, event) {
 			remoteUserSettings.availableChannels[channelName].damperEnabled = event.target.checked;
@@ -3298,8 +3308,9 @@ async function setupMotionModifiers() {
 
 		var damperValueNode = document.createElement("input");
 		damperValueNode.setAttribute("name", "motionModifierInput");
-		damperValueNode.setAttribute("min", "0");
+		damperValueNode.setAttribute("min", "0.01");
 		damperValueNode.setAttribute("step", "0.01");
+		damperValueNode.setAttribute("title", speedHelptext);
 		damperValueNode.type = "number";
 		damperValueNode.value = round(channel.damperValue, 2);
 
@@ -3320,14 +3331,16 @@ async function setupMotionModifiers() {
 		var delayValueNode = document.createElement("input");
 		delayValueNode.setAttribute("name", "motionModifierInput");
 		delayValueNode.setAttribute("min", "0");
-		delayValueNode.setAttribute("step", "1");
+		delayValueNode.setAttribute("max", "1");
+		delayValueNode.setAttribute("step", "0.01");
+		delayValueNode.setAttribute("title", delayHelpText);
 		delayValueNode.type = "number";
 		delayValueNode.value = channel.delay;
 
 		delayValueNode.oninput = function (channelName, event) {
 			if(!event.target.validity.valid)
 				return;
-			var value = parseInt(event.target.value);
+			var value = parseFloat(event.target.value);
 			if (value) {
 				remoteUserSettings.availableChannels[channelName].delay = value;
 				markXTPFormDirty();

@@ -2213,7 +2213,7 @@ void SettingsHandler::setLinkToRelatedAxis(QString channel, QString linkedChanne
     }
 }
 
-void SettingsHandler::setDelayValue(QString channel, int value)
+void SettingsHandler::setDelayValue(QString channel, float value)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel)) {
@@ -2222,7 +2222,7 @@ void SettingsHandler::setDelayValue(QString channel, int value)
     }
 }
 
-int SettingsHandler::getDelayValue(QString channel)
+float SettingsHandler::getDelayValue(QString channel)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel))
