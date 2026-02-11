@@ -3167,7 +3167,8 @@ async function setupMotionModifiers() {
 	var headers = [
 		//"Modifier", 
 		"Link to script", 
-		"Speed"]
+		"Speed", 
+		"Delay"]
 	headers.forEach(element => {
 		var gridHeaderNode = document.createElement("div");
 		gridHeaderNode.classList.add("form-group-control");
@@ -3297,18 +3298,46 @@ async function setupMotionModifiers() {
 
 		var damperValueNode = document.createElement("input");
 		damperValueNode.setAttribute("name", "motionModifierInput");
-		damperValueNode.value = channel.damperValue;
+		damperValueNode.setAttribute("min", "0");
+		damperValueNode.setAttribute("step", "0.01");
+		damperValueNode.type = "number";
+		damperValueNode.value = round(channel.damperValue, 2);
 
 		damperValueNode.oninput = function (channelName, event) {
+			if(!event.target.validity.valid)
+				return;
 			var value = parseFloat(event.target.value);
 			if (value) {
-				remoteUserSettings.availableChannels[channelName].damperValue = value;
+				remoteUserSettings.availableChannels[channelName].damperValue = round(value, 2);
 				markXTPFormDirty();
 			}
 		}.bind(damperValueNode, channelName);
 
 		damperEnabledValueNode.appendChild(damperEnabledNode);
 		damperEnabledValueNode.appendChild(damperValueNode);
+
+
+		var delayValueNode = document.createElement("input");
+		delayValueNode.setAttribute("name", "motionModifierInput");
+		delayValueNode.setAttribute("min", "0");
+		delayValueNode.setAttribute("step", "1");
+		delayValueNode.type = "number";
+		delayValueNode.value = channel.delay;
+
+		delayValueNode.oninput = function (channelName, event) {
+			if(!event.target.validity.valid)
+				return;
+			var value = parseInt(event.target.value);
+			if (value) {
+				remoteUserSettings.availableChannels[channelName].delay = value;
+				markXTPFormDirty();
+			}
+		}.bind(delayValueNode, channelName);
+
+		damperEnabledValueNode.appendChild(damperEnabledNode);
+		damperEnabledValueNode.appendChild(damperValueNode);
+
+		damperEnabledValueNode.appendChild(delayValueNode);
 
 		sectionNode.appendChild(enabledValueNode);
 		sectionNode.appendChild(linkedEnabledValueNode);

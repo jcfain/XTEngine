@@ -3,10 +3,10 @@
 #include "../tool/file-util.h"
 #include "xmediastatehandler.h"
 
-SyncHandler::SyncHandler(QObject* parent):
+SyncHandler::SyncHandler(TCodeHandler* tcodeHandler, QObject* parent):
     QObject(parent)
 {
-    _tcodeHandler = new TCodeHandler(parent);
+    _tcodeHandler = tcodeHandler;
     connect(&m_funscriptSearch, &FunscriptSearch::searchFinish, this, &SyncHandler::funscriptSearchFinish);
 }
 

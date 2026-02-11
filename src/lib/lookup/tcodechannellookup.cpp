@@ -503,29 +503,31 @@ ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, T
     TCodeChannelLookup::setSelectedTCodeVersion(m_selectedTCodeVersion);
     int max = m_selectedTCodeVersion == TCodeVersion::v2 ? 999 : 9999;
     int mid = m_selectedTCodeVersion == TCodeVersion::v2 ? 500 : 5000;
-    return {
-             friendlyName,
-             channelName,
-             axisName,
-             channel,
-             0, //Min
-             mid,
-             max,
-             0, //UserMin
-             mid,
-             max,
-             dimension,
-             type,
-             mfsTrackName,
-             false, //MultiplierEnabled
-             false, //DamperEnabled
-             false,//bool DamperRandom;
-             1.0, //DamperValue
-             false, //FunscriptInverted
-             false, //GamepadInverted
-             false, //LinkToRelatedMFS
-             relatedChannel
-          };
+    return
+        {
+            friendlyName,
+            channelName,
+            axisName,
+            channel,
+            0, //Min
+            mid,
+            max,
+            0, //UserMin
+            mid,
+            max,
+            dimension,
+            type,
+            mfsTrackName,
+            false, //MultiplierEnabled
+            false, //DamperEnabled
+            false,//bool DamperRandom;
+            1.0, //DamperValue
+            false, //FunscriptInverted
+            false, //GamepadInverted
+            false, //LinkToRelatedMFS
+            relatedChannel,
+            0
+        };
 }
 
 void TCodeChannelLookup::setLiveXRangeMin(int value)

@@ -2156,14 +2156,14 @@ void SettingsHandler::setChannelFunscriptInverseChecked(QString channel, bool va
     }
 }
 
-float SettingsHandler::getDamperValue(QString channel)
+float SettingsHandler::getSpeedValue(QString channel)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel))
         return TCodeChannelLookup::getChannel(channel)->DamperValue;
     return 0.0;
 }
-void SettingsHandler::setDamperValue(QString channel, float value)
+void SettingsHandler::setSpeedValue(QString channel, float value)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel)) {
@@ -2172,14 +2172,14 @@ void SettingsHandler::setDamperValue(QString channel, float value)
     }
 }
 
-bool SettingsHandler::getDamperChecked(QString channel)
+bool SettingsHandler::getSpeedChecked(QString channel)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel))
         return TCodeChannelLookup::getChannel(channel)->DamperEnabled;
     return false;
 }
-void SettingsHandler::setDamperChecked(QString channel, bool value)
+void SettingsHandler::setSpeedChecked(QString channel, bool value)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel)) {
@@ -2211,6 +2211,23 @@ void SettingsHandler::setLinkToRelatedAxis(QString channel, QString linkedChanne
         TCodeChannelLookup::getChannel(channel)->RelatedChannel = linkedChannel;
         settingsChangedEvent(true);
     }
+}
+
+void SettingsHandler::setDelayValue(QString channel, int value)
+{
+    QMutexLocker locker(&mutex);
+    if(TCodeChannelLookup::hasChannel(channel)) {
+        TCodeChannelLookup::getChannel(channel)->Delay = value;
+        settingsChangedEvent(true);
+    }
+}
+
+int SettingsHandler::getDelayValue(QString channel)
+{
+    QMutexLocker locker(&mutex);
+    if(TCodeChannelLookup::hasChannel(channel))
+        return TCodeChannelLookup::getChannel(channel)->Delay;
+    return 0;
 }
 
 bool SettingsHandler::getChannelGamepadInverse(QString channel)

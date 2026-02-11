@@ -4,13 +4,17 @@
 #include <QPair>
 #include <QMutex>
 
+#include "connectionhandler.h"
 #include "../struct/Funscript.h"
 #include "../struct/ChannelModel33.h"
 #include "XTEngine_global.h"
 
-class XTENGINE_EXPORT TCodeHandler : QObject
+class XTENGINE_EXPORT TCodeHandler : public QObject
 {
     Q_OBJECT
+signals:
+    //void sendTCode(QString tcode);
+    void delayTCode(QString tcode, int delayMS);
 public:
     TCodeHandler(QObject* parent = nullptr);
     ~TCodeHandler();

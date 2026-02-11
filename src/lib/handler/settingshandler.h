@@ -190,13 +190,15 @@ public:
     static bool getChannelGamepadInverse(QString channel);
     static void setChannelGamepadInverse(QString channel, bool value);
 
-    static float getDamperValue(QString channel);
-    static void setDamperValue(QString channel, float value);
-    static bool getDamperChecked(QString channel);
-    static void setDamperChecked(QString channel, bool value);
+    static float getSpeedValue(QString channel);
+    static void setSpeedValue(QString channel, float value);
+    static bool getSpeedChecked(QString channel);
+    static void setSpeedChecked(QString channel, bool value);
     static bool getLinkToRelatedAxisChecked(QString channel);
     static void setLinkToRelatedAxisChecked(QString channel, bool value);
     static void setLinkToRelatedAxis(QString channel, QString linkedChannel);
+    static void setDelayValue(QString channel, int value);
+    static int getDelayValue(QString channel);
 
     static void setLibraryView(int value);
     static void setThumbSize(int value);

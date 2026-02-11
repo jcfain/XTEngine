@@ -129,6 +129,13 @@ void ConnectionHandler::sendTCode(QString tcode)
         m_outputConnection->sendTCode(tcode);
 }
 
+void ConnectionHandler::delayTCode(QString tcode, int delayMS)
+{
+    QTimer::singleShot(delayMS, [this, tcode]() {
+        sendTCode(tcode);
+    });
+}
+
 void ConnectionHandler::stopOutputConnection()
 {
     sendTCode("DSTOP");

@@ -1,5 +1,7 @@
 #include "tcodehandler.h"
 
+#include <QTimer>
+
 #include "../lookup/tcodechannellookup.h"
 #include "../tool/xmath.h"
 #include "settingshandler.h"
@@ -192,8 +194,8 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                     //LogHandler::Debug("inverted: "+ QString::number(value));
                     value = XMath::reverseNumber(value, 0, 100);
                 }
-                tcode += " ";
-                tcode += axis;
+                QString tcodeTemp = "";
+                tcodeTemp += axis;
                 int range = calculateRange(axis.toUtf8(), value);
                 if(range < 0) {
                     LogHandler::Warn("Value cant be less than zero: "+ QString::number(range) +" originalValue: " + QString::number(value));
@@ -202,20 +204,29 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
                 // if(range > 9999) {
                 //     LogHandler::Warn("Value cant be greater than 9999: "+ QString::number(range) +" originalValue: " + QString::number(value));
                 // }
-                tcode += QString::number(range).rightJustified(SettingsHandler::getTCodePadding(), '0');
-                tcode += channel->LinkToRelatedMFS ? "I" : "S";
-                // float channelDistancePercentage = channelDistance/100.0f;
+                tcodeTemp += QString::number(range).rightJustified(SettingsHandler::getTCodePadding(), '0');
+                tcodeTemp += channel->LinkToRelatedMFS ? "I" : "S";
+                // tcodeTemp channelDistancePercentage = channelDistance/100.0f;
 
                 auto speed = mainAction && mainAction->speed > 0 ? mainAction->speed : XMath::random(250, 1500);
                 if (channel->DamperEnabled && channel->DamperValue > 0.0)
                 {
                     float speedModifierValue = channel->DamperRandom ? XMath::random(0.1f, channel->DamperValue) : channel->DamperValue;
                     speed = qRound(channel->LinkToRelatedMFS ? speed/speedModifierValue : speed * speedModifierValue);
-                    tcode += QString::number(speed);
+                    tcodeTemp += QString::number(speed);
                 }
                 else
                 {
-                    tcode += QString::number(speed);
+                    tcodeTemp += QString::number(speed);
+                }
+                if(channel->Delay > 0)
+                {
+                    emit delayTCode(tcodeTemp, channel->Delay);
+                }
+                else
+                {
+                    tcode += " ";
+                    tcode += tcodeTemp;
                 }
             }
             else if(multiplierEnabledTracker.value(channel->track, false))
