@@ -3173,8 +3173,8 @@ async function setupMotionModifiers() {
 
 	const enabledHelptext = "The will toggle whether this channel is included in the random motion generation or not.";
 	const linkToHelptext = "This will match the values of the linked channel 1:1 with modifiers speed and delay applied.";
-	const speedHelptext = "The percentage of the parents time to modify the speed.\nIf the speed is 0.1 and the parent action interval is 300ms, the speed will be 30ms\nMinimum value is 0.01";
-	const delayHelpText = "The percentage of the parents time to delay.\nIf the delay is 0.1 and the parent action interval is 300ms, the delay will be 30ms\nCan be any value between 0.00 and 1.00";
+	const speedHelptext = "The percentage of the linked scripts time to modify the speed.\nIf the speed is 0.1, the speed will be 10% of the linked script or 90% slower.\nA value of 2 will be 200% faster.\nMinimum value is 0.01";
+	const delayHelpText = "The percentage of the linked scripts time to delay.\nIf the delay is 0.1 and the parent action interval is 300ms, the delay will be 30ms after the linked script event.\nCan be any value between 0.00 and 1.00";
 	var headers = [
 		//"Modifier", 
 		{text: "Link to script", helpText: linkToHelptext}, 
@@ -3341,7 +3341,7 @@ async function setupMotionModifiers() {
 		delayValueNode.setAttribute("step", "0.01");
 		delayValueNode.setAttribute("title", delayHelpText);
 		delayValueNode.type = "number";
-		delayValueNode.value = channel.delay;
+		delayValueNode.value = round(channel.delay, 2);
 
 		delayValueNode.oninput = function (channelName, event) {
 			if(!event.target.validity.valid)
