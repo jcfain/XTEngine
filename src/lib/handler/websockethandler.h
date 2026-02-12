@@ -19,6 +19,9 @@ signals:
     void tcode(QString tcode);
     void setChannelRange(QString channelName, int min, int max);
     void changeChannelProfile(QString name);
+    void addChannelProfile(QString name);
+    void deleteChannelProfile(QString name);
+    void cloneChannelProfile(QString fromName, QString toName);
     void newWebSocketConnected(QWebSocket* client);
     void restartService();
     void cleanupThumbs();

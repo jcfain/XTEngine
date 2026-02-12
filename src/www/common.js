@@ -1,6 +1,7 @@
 
 var alertModelNode = document.getElementById("alertModal");
 var textModelNode = document.getElementById("textModal");
+var selectModelNode = document.getElementById("selectModal");
 
 function userError(message) {
 	showAlertWindow("Error", message);
@@ -91,6 +92,66 @@ function closeTextWindow() {
 		confirmButton.onclick = undefined;
 		var textModalInput = document.getElementById("textModalInput");
 		textModalInput.value = "";
+	}, 275)
+}
+
+
+function showSelectWindow(header, message, optionsArray, yesCallback) {
+	if(selectModelNode.style.visibility != "visible") {
+		var selectModalInput = document.getElementById("selectModalInput");
+		selectModalInput.classList.add("radio-group");
+		removeAllChildNodes(selectModalInput);
+		// Not currently a combo because heresphere doesnt support it.
+		optionsArray.forEach(x => {
+			var radio = document.createElement("input");
+			var label = document.createElement("label");
+			radio.type = "radio";
+			radio.id = x;
+			radio.name = "selectWindowGroup";
+			radio.value = x;
+			// radio.onclick = function() {
+			// 	yesCallback(this.value);
+			// }
+			if(optionsArray.indexOf(x) == 0)
+			{
+				radio.checked = true;
+			}
+			label.for = x;
+			label.innerText = x;
+			selectModalInput.appendChild(radio);
+			selectModalInput.appendChild(label);
+		});
+		var headerNode = document.getElementById("select-modal-title");
+		headerNode.innerText = header;
+		var selectModalLabel = document.getElementById("selectModalLabel");
+		selectModalLabel.innerHTML = message;
+		var confirmButton = document.getElementById("selectConfirmButton");
+		confirmButton.onclick = function(selectModalInput) { 
+			const group = document.getElementsByName("selectWindowGroup");
+			let selectedValue = "";
+			group.forEach(x => {
+				if(x.checked) {
+					selectedValue = x.value;
+					return;
+				}
+
+			})
+			yesCallback(selectedValue);
+		}.bind(selectModalInput, selectModalInput);
+		selectModelNode.style.visibility = "visible";
+		selectModelNode.style.opacity = 1;
+	} else {
+		systemError("Two select windows opened");
+	}
+}
+function closeSelectWindow() {
+	selectModelNode.style.visibility = "hidden";
+	selectModelNode.style.opacity = 0;
+	setTimeout(function() {
+		var confirmButton = document.getElementById("selectConfirmButton");
+		confirmButton.onclick = undefined;
+		var selectModalInput = document.getElementById("selectModalInput");
+		removeAllChildNodes(selectModalInput);
 	}, 275)
 }
 

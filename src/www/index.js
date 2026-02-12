@@ -324,7 +324,6 @@ function sendClean1024Process() {
 function tcodeDeviceConnectRetry() {
 	sendWebsocketMessage("connectOutputDevice", { deviceName: remoteUserSettings.connection.output.selectedDevice });
 }
-
 function sendTCode(tcode) {
 	sendWebsocketMessage("tcode", tcode);
 }
@@ -334,7 +333,6 @@ function sendTCodeRange(channelName, min, max) {
 function sendMediaAction(action) {
 	sendWebsocketMessage("mediaAction", action);
 }
-
 function sendInputDeviceConnectionChange(device, checked) {
 	sendWebsocketMessage("connectInputDevice", { deviceName: device, enabled: checked });
 }
@@ -366,6 +364,18 @@ function sendDeleteMediaItem(item) {
 }
 function sendUpdateMetadata(metadataKey) {
 	sendWebsocketMessage("processMetadata", metadataKey);
+}
+function setSelectedProfile(profileName) {
+	sendWebsocketMessage("changeChannelProfile", profileName);
+}
+function addChannelProfile(profileName) {
+	sendWebsocketMessage("addChannelProfile", profileName);
+}
+function deleteChannelProfile(profileName) {
+	sendWebsocketMessage("deleteChannelProfile", profileName);
+}
+function cloneChannelProfile(fromName, toName) {
+	sendWebsocketMessage("cloneChannelProfile", {fromName: fromName, toName: toName});
 }
 function sendDeviceHome() {
 	sendMediaAction(MediaActions.TCodeHomeAll);
@@ -1070,10 +1080,6 @@ function removeSystemTags(smartMode) {
 		systemTagsSelect.options.remove(systemTagsSelect.options.selectedIndex);
 	}
 	markXTPFormDirty();
-}
-
-function setSelectedProfile(profileName) {
-	sendWebsocketMessage("changeChannelProfile", profileName);
 }
 
 function getServerSessions() {
@@ -3124,9 +3130,9 @@ async function setupSliders() {
 }
 
 async function setupMotionModifiers() {
-	//var tab = document.getElementById("tabFunscript");
-	var tabFunscriptRandomMotion = document.getElementById("tabFunscriptRandomMotion");
-	removeAllChildNodes(tabFunscriptRandomMotion);
+	//var tab = document.getElementById("tabMotion");
+	var motionRandomContainer = document.getElementById("motionRandomContainer");
+	removeAllChildNodes(motionRandomContainer);
 
 	var formElementNode = document.createElement("div");
 	formElementNode.classList.add("formElement");
@@ -3141,7 +3147,7 @@ async function setupMotionModifiers() {
 	subtextNode.classList.add("tab-content-header-eyebrow");
 	subtextNode.innerText = "Add random motion to other channels"
 	//headerDivNode.appendChild(headerNode);
-	tabFunscriptRandomMotion.appendChild(subtextNode);
+	motionRandomContainer.appendChild(subtextNode);
 
 	var labelNode = document.createElement("label");
 	labelNode.innerText = "Enabled";
@@ -3190,7 +3196,7 @@ async function setupMotionModifiers() {
 	formElementNode.appendChild(sectionNode);
 
 	// tab.appendChild(headerDivNode);
-	tabFunscriptRandomMotion.appendChild(formElementNode);
+	motionRandomContainer.appendChild(formElementNode);
 
 	var availableChannels = remoteUserSettings.availableChannelsArray;
 	for (var i = 0; i < availableChannels.length; i++) {
@@ -3358,7 +3364,7 @@ async function setupMotionModifiers() {
 
 		formElementNode.appendChild(sectionNode);
 
-		tabFunscriptRandomMotion.appendChild(formElementNode);
+		motionRandomContainer.appendChild(formElementNode);
 	}
 
 	toggleMotionModifierState(remoteUserSettings.multiplierEnabled);
@@ -3372,9 +3378,9 @@ function toggleMotionModifierState(enabled) {
 }
 async function setUpInversionMotionModifier() {
 
-	//var tab = document.getElementById("tabFunscript");
-	var tabFunscriptInversion = document.getElementById("tabFunscriptInversion");
-	removeAllChildNodes(tabFunscriptInversion);
+	//var tab = document.getElementById("tabMotion");
+	var motionInversionContainer = document.getElementById("motionInversionContainer");
+	removeAllChildNodes(motionInversionContainer);
 
 	var formElementNode = document.createElement("div");
 	formElementNode.classList.add("formElement");
@@ -3386,7 +3392,7 @@ async function setUpInversionMotionModifier() {
 	subtextNode.innerText = "Invert motion of channels"
 	//headerDivNode.appendChild(subtextNode);
 
-	tabFunscriptInversion.appendChild(subtextNode);
+	motionInversionContainer.appendChild(subtextNode);
 
 
 	var availableChannels = remoteUserSettings.availableChannelsArray;
@@ -3431,7 +3437,7 @@ async function setUpInversionMotionModifier() {
 		sectionNode.appendChild(enabledValueNode);
 		formElementNode.appendChild(sectionNode);
 
-		tabFunscriptInversion.appendChild(formElementNode);
+		motionInversionContainer.appendChild(formElementNode);
 	}
 }
 
@@ -3566,6 +3572,53 @@ function onSerialPortChange(input) {
 	remoteUserSettings.connection.output.serialPort = input.value;
 	markXTPFormDirty();
 }
+
+function onAddChannelProfile() {
+	showGetTextWindow("Add new channel profile", "Enter the name of the new profile",
+		(name) => { 
+			addChannelProfile(name);
+			closeTextWindow();
+		}
+	);
+}
+
+function onDeleteChannelProfile() {
+	if(remoteUserSettings.allChannelProfileNames.length < 2) {
+		showAlertWindow("Error", "There must be at least 1 profile");
+		return;
+	}
+	showAlertWindow("Delete", `Are you sure you want to delete ${remoteUserSettings.selectedChannelProfile}?\nThis action cannot be undone!`,
+		() => { 
+			deleteChannelProfile(remoteUserSettings.selectedChannelProfile);
+			closeAlertWindow();
+		}
+	);
+}
+
+function onCopyToChannelProfile() {
+	showGetTextWindow("Copy to new channel profile", "Enter the name of the new profile",
+		(name) => { 
+			cloneChannelProfile(remoteUserSettings.selectedChannelProfile, name);
+			closeTextWindow();
+		}
+	);
+}
+
+function onCopyFromChannelProfile() {
+	if(remoteUserSettings.allChannelProfileNames.length < 2) {
+		showAlertWindow("Error", "There is only one profile");
+		return;
+	}
+	let otherProfiles = JSON.parse(JSON.stringify(remoteUserSettings.allChannelProfileNames));
+	otherProfiles.splice(remoteUserSettings.allChannelProfileNames.indexOf(remoteUserSettings.selectedChannelProfile), 1);
+	showSelectWindow("Copy values from", `Select a profile to copy from:`, otherProfiles,
+		(from) => { 
+			cloneChannelProfile(from, remoteUserSettings.selectedChannelProfile);
+			closeSelectWindow();
+		}
+	);
+}
+
 // function connectToTcodeDevice() {
 // 	webSocket = new WebSocket("ws://"+deviceAddress+"/ws");
 // 	webSocket.onopen = function (event) {

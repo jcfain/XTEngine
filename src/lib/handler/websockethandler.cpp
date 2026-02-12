@@ -159,6 +159,13 @@ void WebSocketHandler::processTextMessage(QString message)
         emit setChannelRange(obj["channelName"].toString(), obj["min"].toInt(), obj["max"].toInt());
     } else if (command == "changeChannelProfile") {
         emit changeChannelProfile(json["message"].toString());
+    } else if (command == "addChannelProfile") {
+        emit addChannelProfile(json["message"].toString());
+    } else if (command == "deleteChannelProfile") {
+        emit deleteChannelProfile(json["message"].toString());
+    } else if (command == "cloneChannelProfile") {
+        QJsonObject obj = json["message"].toObject();
+        emit cloneChannelProfile(obj["fromName"].toString(), obj["toName"].toString());
     } else if (command == "connectOutputDevice") {
         QJsonObject obj = json["message"].toObject();
         emit connectOutputDevice((ConnectionInterface)obj["deviceName"].toInt(), obj["enabled"].toBool());

@@ -39,9 +39,21 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::setChannelRange, this, [](QString channelName, int min, int max) {
         TCodeChannelLookup::setChannelRange(channelName, min, max);
     });
-    connect(_webSocketHandler, &WebSocketHandler::changeChannelProfile, this, [](QString profileName) {
-        if(TCodeChannelLookup::getSelectedChannelProfile() != profileName)
-            TCodeChannelLookup::setSelectedChannelProfile(profileName);
+    connect(_webSocketHandler, &WebSocketHandler::changeChannelProfile, this, [](QString name) {
+        if(TCodeChannelLookup::getSelectedChannelProfile() != name)
+            TCodeChannelLookup::setSelectedChannelProfile(name);
+    });
+    connect(_webSocketHandler, &WebSocketHandler::addChannelProfile, this, [](QString name) {
+        if(!TCodeChannelLookup::hasProfile(name))
+            TCodeChannelLookup::addChannelsProfile(name);
+    });
+    connect(_webSocketHandler, &WebSocketHandler::deleteChannelProfile, this, [](QString name) {
+        if(TCodeChannelLookup::hasProfile(name))
+            TCodeChannelLookup::deleteChannelsProfile(name);
+    });
+    connect(_webSocketHandler, &WebSocketHandler::cloneChannelProfile, this, [](QString fromName, QString toName) {
+        if(TCodeChannelLookup::hasProfile(fromName))
+            TCodeChannelLookup::copyChannelsProfile(toName, fromName);
     });
     connect(_webSocketHandler, &WebSocketHandler::newWebSocketConnected, this, &HttpHandler::on_webSocketClient_Connected);
     connect(_webSocketHandler, &WebSocketHandler::restartService, this, &HttpHandler::restartService);
