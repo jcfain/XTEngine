@@ -95,20 +95,31 @@ function closeTextWindow() {
 	}, 275)
 }
 
-
+/// optionsArray is either string[] or [{ value: any, label: string }]
 function showSelectWindow(header, message, optionsArray, yesCallback) {
 	if(selectModelNode.style.visibility != "visible") {
 		var selectModalInput = document.getElementById("selectModalInput");
-		selectModalInput.classList.add("radio-group");
+		selectModalInput.classList.add("radio-group--select-model");
 		removeAllChildNodes(selectModalInput);
+		let index = 0;
 		// Not currently a combo because heresphere doesnt support it.
 		optionsArray.forEach(x => {
+			let labelText;
+			let value;
+			if(typeof x === "object") {
+				labelText = x.label;
+				value = x.value;
+			} else if(typeof x === "string") {
+				labelText = x;
+				value = x;
+			}
 			var radio = document.createElement("input");
 			var label = document.createElement("label");
+			label.onclick = () => {radio.checked = true;} 
 			radio.type = "radio";
-			radio.id = x;
+			radio.id = index + "SelectInput";
 			radio.name = "selectWindowGroup";
-			radio.value = x;
+			radio.value = value;
 			// radio.onclick = function() {
 			// 	yesCallback(this.value);
 			// }
@@ -116,10 +127,13 @@ function showSelectWindow(header, message, optionsArray, yesCallback) {
 			{
 				radio.checked = true;
 			}
-			label.for = x;
-			label.innerText = x;
-			selectModalInput.appendChild(radio);
-			selectModalInput.appendChild(label);
+			label.for = radio.id;
+			label.innerText = labelText;
+			const divContainer = document.createElement("div");
+			divContainer.appendChild(radio);
+			divContainer.appendChild(label);
+			selectModalInput.appendChild(divContainer);
+			index++;
 		});
 		var headerNode = document.getElementById("select-modal-title");
 		headerNode.innerText = header;

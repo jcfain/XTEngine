@@ -213,6 +213,11 @@ select:disabled {
 .formElement .radio-group {
     text-align: start;
 }
+.formElement .radio-group--select-model {
+    text-align: start;
+    display: flex;
+    flex-flow: column;
+}
 
 .styled-radio {
     width: 20px;
@@ -738,10 +743,15 @@ section .range-values {
     display: flex;
     flex-wrap: nowrap;
     flex-grow: 1;
+    align-items: center;  
 }
 
 .form-group-control>* {
     /*    min-width: max-content;   */
+}
+.form-group-control--selectButton {
+    min-width: 50px;
+    max-width: 100px;
 }
 
 .modal {
@@ -832,6 +842,7 @@ section .range-values {
 
 .modal-body--alert {
     margin: 16px;
+    max-height: 300px;
 }
 
 .modal-footer {

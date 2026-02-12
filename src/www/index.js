@@ -3275,24 +3275,46 @@ async function setupMotionModifiers() {
 			markXTPFormDirty();
 		}.bind(linkToRelatedMFSNode, channelName);
 
+		var relatedChannelNode;
+		if(!userAgentIsHereSphere)
+		{
+			relatedChannelNode = document.createElement("select");
+			relatedChannelNode.setAttribute("name", "motionModifierInput");
 
-		var relatedChannelNode = document.createElement("select");
-		relatedChannelNode.setAttribute("name", "motionModifierInput");
+			availableChannels.forEach(element => {
+				if (element.channel !== channel.channel) {
+					var relatedChannelOptionNode = document.createElement("option");
+					relatedChannelOptionNode.innerHTML = element.friendlyName;
+					relatedChannelOptionNode.value = element.axisName;
+					relatedChannelNode.appendChild(relatedChannelOptionNode);
+				}
+			});
+			relatedChannelNode.value = channel.relatedChannel;
 
-		availableChannels.forEach(element => {
-			if (element.channel !== channel.channel) {
-				var relatedChannelOptionNode = document.createElement("option");
-				relatedChannelOptionNode.innerHTML = element.friendlyName;
-				relatedChannelOptionNode.value = element.axisName;
-				relatedChannelNode.appendChild(relatedChannelOptionNode);
-			}
-		});
-		relatedChannelNode.value = channel.relatedChannel;
+			relatedChannelNode.oninput = function (channelName, event) {
+				remoteUserSettings.availableChannels[channelName].relatedChannel = event.target.value;
+				markXTPFormDirty();
+			}.bind(relatedChannelNode, channelName);
+		} else {
+			relatedChannelNode = document.createElement("button");
+			relatedChannelNode.setAttribute("name", "motionModifierInput");
+			//relatedChannelNode.classList.add("form-group-control--selectButton");
+			//relatedChannelNode.style = "max-width: 100px; min-width: 24px; align-self: center;"
 
-		relatedChannelNode.oninput = function (channelName, event) {
-			remoteUserSettings.availableChannels[channelName].relatedChannel = event.target.value;
-			markXTPFormDirty();
-		}.bind(relatedChannelNode, channelName);
+			const relatedChannel = availableChannels.find(x => x.axisName == channel.relatedChannel);
+			relatedChannelNode.innerText = relatedChannel.friendlyName;
+
+			relatedChannelNode.onclick = function (channelName, event) {
+				var labelValueArray = availableChannels.map((x) => ({value: x.axisName, label: x.friendlyName}));
+				showSelectWindow("Link channel to", "Select channel", labelValueArray, (value) => {
+					let newRelatedChannel = availableChannels.find(x => x.axisName == value);
+					this.innerText = newRelatedChannel.friendlyName;
+					remoteUserSettings.availableChannels[channelName].relatedChannel = value;
+					closeSelectWindow();
+					onSaveToXTPClick();
+				});
+			}.bind(relatedChannelNode, channelName);
+		}
 
 		linkedEnabledValueNode.appendChild(linkToRelatedMFSNode);
 		linkedEnabledValueNode.appendChild(relatedChannelNode);
