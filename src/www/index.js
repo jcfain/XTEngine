@@ -917,35 +917,23 @@ function getExported() {
 	xhr.responseType = 'json';
 	xhr.onload = function (evnt, retry) {
 		var status = xhr.status;
-		if (status === 200) {
-			const filenames = xhr.response;
-			const tableNode = document.getElementById("exportedSettingFiles");
-			removeAllChildNodes(tableNode);
-			const header = document.createElement("thead");
+		const filenames = xhr.response;
+		const tableNode = document.getElementById("exportedSettingFiles");
+		removeAllChildNodes(tableNode);
+		const header = document.createElement("thead");
 
-			const filenameHeader = document.createElement("th");
-			filenameHeader.innerText = "File name";
-			header.appendChild(filenameHeader);
+		const filenameHeader = document.createElement("th");
+		filenameHeader.innerText = "File name";
+		header.appendChild(filenameHeader);
 
-			const deleteHeader = document.createElement("th");
-			deleteHeader.innerText = "Delete";
-			header.appendChild(deleteHeader);
+		const deleteHeader = document.createElement("th");
+		deleteHeader.innerText = "Delete";
+		header.appendChild(deleteHeader);
 
-			tableNode.appendChild(header);
+		tableNode.appendChild(header);
 
-			const body = document.createElement("tbody");
-			if(filenames.length == 0) {
-				const tr = document.createElement("tr");
-				const tdDownload = document.createElement("td");
-				const tdSpan = document.createElement("span");
-				tdSpan.innerText = "No backups exist"
-				tdSpan.classList.add("exported-download-link");
-				tdDownload.appendChild(tdSpan);
-				tr.appendChild(tdDownload);
-				const tdDelete = document.createElement("td");
-				tr.appendChild(tdDelete);
-				body.appendChild(tr);
-			} else {
+		const body = document.createElement("tbody");
+		if (status === 200 && filenames && filenames.length > 0) {
 				filenames.forEach(x => {
 					const tr = document.createElement("tr");
 
@@ -971,15 +959,23 @@ function getExported() {
 
 					body.appendChild(tr);
 				});
-			}
-			tableNode.appendChild(body);
+		} else {
+			const tr = document.createElement("tr");
+			const tdDownload = document.createElement("td");
+			const tdSpan = document.createElement("span");
+			tdSpan.innerHTML = status === 200 ? "No backups exist" : xhr.response.message;
+			tdSpan.setAttribute("title", xhr.response.message);
+			tdSpan.classList.add("exported-download-link");
+			tdDownload.appendChild(tdSpan);
+			tr.appendChild(tdDownload);
+			const tdDelete = document.createElement("td");
+			tr.appendChild(tdDelete);
+			body.appendChild(tr);
 		}
+		tableNode.appendChild(body);
 	}.bind(this);
-	xhr.onerror = function(evnt, retry) {
-	/* 	if(!retry)
-			systemError("Error getting settings: "+ xhr.responseText);
-		else */
-		//startServerConnectionRetry();
+	xhr.onerror = function() {
+		parseHttpError("Error getting exported settings file", xhr);
 	};
 	xhr.send();
 }

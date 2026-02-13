@@ -1262,10 +1262,19 @@ void HttpHandler::handleExportedList(const QHttpServerRequest &request, QHttpSer
     }
 
     QString settingsBackupDir = SettingsHandler::getSettingsBackupDirectory();
+    if(settingsBackupDir.isEmpty())
+    {
+        QJsonObject obj;
+        obj["message"] = "Export directory is empty.<br>Enter a valid directory<br>thats writable<br>before exporting";
+        responder.write(QJsonDocument(obj), QHttpServerResponse::StatusCode::PreconditionFailed);
+        return;
+    }
     QDir dir(settingsBackupDir);
     if(!dir.exists())
     {
-        responder.write(QHttpServerResponse::StatusCode::NotFound);
+        QJsonObject obj;
+        obj["message"] = "Specified directory: "+ settingsBackupDir + " does not exist";
+        responder.write(QJsonDocument(obj), QHttpServerResponse::StatusCode::PreconditionFailed);
         return;
     }
     QStringList mediaTypes("*.json");

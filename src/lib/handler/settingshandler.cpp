@@ -475,14 +475,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         locker.relock();
     }
 
-    QString defaultSettingsBackupDirectory = getSetting(SettingKeys::settingsBackupDirectory, settingsToLoadFrom).toString();
-    if(defaultSettingsBackupDirectory.isEmpty())
-    {
-        locker.unlock();
-        changeSetting(SettingKeys::settingsBackupDirectory, _applicationDirPath + QDir::separator() + "settings-backup");
-        locker.relock();
-    }
-
     bool useSystemMediaBackend = getSetting(SettingKeys::useSystemMediaBackend, settingsToLoadFrom).toBool();
     if(useSystemMediaBackend)
     {
@@ -1167,6 +1159,7 @@ bool SettingsHandler::Export(QString file, QSettings::Format format)
     {
         LogHandler::Error("Settigns Export: Invalid path: empty file file path");
         emit instance()->messageSend("Settigns Export: Invalid path: empty file file path", XLogLevel::Critical);
+        emit instance()->settingsExported("Settigns Export: Invalid path: empty file file path", file, false);
         return false;
     }
     // auto fileInfo = QFileInfo(file);
@@ -1176,6 +1169,7 @@ bool SettingsHandler::Export(QString file, QSettings::Format format)
     if(!fileTest.open(mode)) {
         LogHandler::Error("Settigns Export: Invalid path: not writable");
         emit instance()->messageSend("Settigns Export: Invalid path: not writable", XLogLevel::Critical);
+        emit instance()->settingsExported("Settigns Export: Invalid path: not writable", file, false);
         return false;
     }
     fileTest.close();
@@ -1213,6 +1207,13 @@ bool SettingsHandler::ExportQuick()
 {
     QString settingsBackupDirectory = getSetting(SettingKeys::settingsBackupDirectory).toString();
 
+    if(settingsBackupDirectory.isEmpty())
+    {
+        LogHandler::Error("Settigns Export: Invalid path: empty file file path");
+        emit instance()->messageSend("Settigns Export: Invalid path: empty file file path", XLogLevel::Critical);
+        emit instance()->settingsExported("Settigns Export: Invalid path: empty file file path", settingsBackupDirectory, false);
+        return false;
+    }
     QDir dir(settingsBackupDirectory);
     if(!dir.exists())
     {
