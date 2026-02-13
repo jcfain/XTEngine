@@ -731,9 +731,12 @@
 					</div> -->
 					<div class="tab-content">
 						<div id="systemInfoTab" class="tab-content-container">
-							<div class="tab-content-settings-section">
+							<div id="system" class="tab-content-settings-section">
 								<div>
-									<h3>Versions</h3>
+									<h3>System</h3>
+								</div>
+								<div style="width: 100%;">
+									<h4>Versions</h4>
 									<div>
 										<span>XTE: </span>
 										<span id="xteVersion"></span>
@@ -743,9 +746,28 @@
 										<span id="webVersion"></span>
 									</div>
 								</div>
-								<div>
-									<h3>Current browser information</h3>
+								<div style="width: 100%;">
+									<h4>Current browser information</h4>
 									<div id="browserInfo"></div>
+								</div>
+							</div>
+
+							<div id="settings" class="tab-content-settings-section">
+								<div>
+									<h3>Settings</h3>
+								</div>
+								<!-- <div class="formElement">
+									<label for="quickExportButton"></label>
+									<div class="form-buttons">
+										<button id="quickExportButton"  onclick="sendQuickExport()">Quick Export</button>
+									</div>
+								</div> -->
+								<div>
+									<div class="exported-header">
+										<h4>Exported settings</h4>
+										<button id="quickExportButton"  onclick="sendQuickExport()">Quick Export</button>
+									</div>
+									<table id="exportedSettingFiles" class="exported-table"></table>
 								</div>
 							</div>
 

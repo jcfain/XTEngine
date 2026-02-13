@@ -257,6 +257,7 @@ var filterInputContainer = document.getElementById('filterInputContainer');
 setupTextToSpeech();
 getServerSettings();
 getMediaActions();
+getExported();
 
 function debug(message) {
 	if (debugMode)
@@ -364,6 +365,10 @@ function sendDeleteMediaItem(item) {
 }
 function sendUpdateMetadata(metadataKey) {
 	sendWebsocketMessage("processMetadata", metadataKey);
+}
+function sendQuickExport() {
+	setSaveState(null, true);
+	sendWebsocketMessage("settingsQuickExport");
 }
 function setSelectedProfile(profileName) {
 	sendWebsocketMessage("changeChannelProfile", profileName);
@@ -494,6 +499,13 @@ function wsCallBackFunction(evt) {
 				break;
 			case "settingChange":
 				onSaveSuccess();
+				break;
+			case "settingsExported":
+				var obj = data["message"];
+				var message = obj["message"];
+				var path = obj["path"];
+				var success = obj["success"];
+				onSettingsExported(message, path, success);
 				break;
 			case "stopAllMedia":
 				stopVideo();
@@ -871,6 +883,105 @@ function checkPass() {
         xhr.send("{\"hashedPass\":\""+storedHash+"\", \"remember\":\""+!!storedHash+"\"}");
     } else
         alert("Invalid password");
+}
+function confirmDeleteExported (filename)
+{
+	showAlertWindow("Delete", "Are you sure you wish to delete the file:<br>"+ filename + "?", () => deleteExported(filename));
+}
+function deleteExported(filename) {
+	setSaveState(null, true);
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', "/exported", true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            var status = xhr.status;
+            if (status == 200) {
+				setSaveState(null, false);
+				getExported();
+            } else {
+				parseHttpError("Error deleting exported settings file", xhr);
+			}
+        }
+		closeAlertWindow();
+    }
+    xhr.onerror = function () {
+		parseHttpError("Error deleting exported settings file", xhr);
+    };
+    xhr.send(JSON.stringify({filename:filename}));
+}
+
+function getExported() {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', "/exported", true);
+	xhr.responseType = 'json';
+	xhr.onload = function (evnt, retry) {
+		var status = xhr.status;
+		if (status === 200) {
+			const filenames = xhr.response;
+			const tableNode = document.getElementById("exportedSettingFiles");
+			removeAllChildNodes(tableNode);
+			const header = document.createElement("thead");
+
+			const filenameHeader = document.createElement("th");
+			filenameHeader.innerText = "File name";
+			header.appendChild(filenameHeader);
+
+			const deleteHeader = document.createElement("th");
+			deleteHeader.innerText = "Delete";
+			header.appendChild(deleteHeader);
+
+			tableNode.appendChild(header);
+
+			const body = document.createElement("tbody");
+			if(filenames.length == 0) {
+				const tr = document.createElement("tr");
+				const tdDownload = document.createElement("td");
+				const tdSpan = document.createElement("span");
+				tdSpan.innerText = "No backups exist"
+				tdSpan.classList.add("exported-download-link");
+				tdDownload.appendChild(tdSpan);
+				tr.appendChild(tdDownload);
+				const tdDelete = document.createElement("td");
+				tr.appendChild(tdDelete);
+				body.appendChild(tr);
+			} else {
+				filenames.forEach(x => {
+					const tr = document.createElement("tr");
+
+					const tdDownload = document.createElement("td");
+					const tdSpan = document.createElement("span");
+					const downloadlink = document.createElement("a");
+					downloadlink.innerText = x;
+					downloadlink.href = "/exported/" + x;
+					downloadlink.setAttribute("download", x);
+					downloadlink.setAttribute("target", "_blank");
+					tdSpan.appendChild(downloadlink);
+					tdSpan.classList.add("exported-download-link");
+					tdSpan.setAttribute("title", "Download:\n"+x);
+					tdDownload.appendChild(tdSpan);
+					tr.appendChild(tdDownload);
+
+					const tdDelete = document.createElement("td");
+					const deleteButton = document.createElement("button");
+					deleteButton.innerText = "X";
+					deleteButton.onclick = () => confirmDeleteExported(x);
+					tdDelete.appendChild(deleteButton);
+					tr.appendChild(tdDelete);
+
+					body.appendChild(tr);
+				});
+			}
+			tableNode.appendChild(body);
+		}
+	}.bind(this);
+	xhr.onerror = function(evnt, retry) {
+	/* 	if(!retry)
+			systemError("Error getting settings: "+ xhr.responseText);
+		else */
+		//startServerConnectionRetry();
+	};
+	xhr.send();
 }
 
 function getServerSettings(retry) {
@@ -1597,6 +1708,14 @@ function saveFail(message) {
 	onSaveFail(null, null, message)
 }
 
+function onSettingsExported(message, path, success) {
+	if(!success) {
+		systemError("Failed to export settings: "+ message);
+		return;
+	}
+	setSaveState(null, false);
+	getExported();
+}
 function clearMediaList() {
 	var medialistNode = document.getElementById("mediaList");
 	removeAllChildNodes(medialistNode);

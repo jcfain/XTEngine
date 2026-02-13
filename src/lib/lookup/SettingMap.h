@@ -55,6 +55,8 @@ struct SettingMap {
  * @brief The SettingGroups class
  */
 struct SettingGroups {
+    static inline const QString system = "system";
+    static inline const QString settings = "settings";
     static inline const QString schedule = "schedule";
     static inline const QString metadata = "metadata";
     static inline const QString tcode = "tcode";
@@ -81,6 +83,7 @@ struct SettingKeys {
     static inline const QString globalOffset = "globalOffset";
     static inline const QString globalOffsetWeb = "globalOffsetWeb";
     static inline const QString viewedThreshold = "viewedThreshold";
+    static inline const QString settingsBackupDirectory = "settingsBackupDirectory";
     // static inline const QString selectedTCodeVersion = "selectedTCodeVersion";
     // static inline const QString selectedChannelProfile = "selectedChannelProfile";
     // static inline const QString selectedThumbsDir = "selectedThumbsDir";
@@ -176,8 +179,7 @@ public:
         {SettingProfile::System, SettingGroups::media, SettingKeys::globalOffset, FormControlTypes::Int, 0, "Global offset", "Offest specified in milliseconds", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::globalOffsetWeb, FormControlTypes::Int, 0, "Global offset (web)", "Offset for scripts played from web ONLY. Offest specified in milliseconds", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::viewedThreshold, FormControlTypes::Int, 90, "Auto mark viewed %", "When the current playing media reaches the percentage of time specified here\nThe metadata will automattically have the viewed tag appended and the unviewed tag removed.", false, false},
-
-
+        {SettingProfile::System, SettingGroups::settings, SettingKeys::settingsBackupDirectory, FormControlTypes::Text, "", "Quick export directory", "When a quick export happens, this is where the exported file will go.", false, false},
     };
     static inline QHash<QString, SettingMap> SettingsMap;
     // static inline QMap<SettingProfile, QMap<QString, QMap<QString, SettingMap>>> SettingsGroupMap;

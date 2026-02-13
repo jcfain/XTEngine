@@ -44,6 +44,7 @@ class XTENGINE_EXPORT SettingsHandler: public QObject
 signals:
     void settingChange(QString settingName, QVariant value);
     void settingsChanged(bool dirty);
+    void settingsExported(QString message, QString path, bool success);
     void messageSend(QString message, XLogLevel loglevel);
     void messageSendWait(QString message, XLogLevel loglevel, QFunctionPointer callback);
     void restartRequired(bool enabled);
@@ -75,6 +76,7 @@ public:
     static void Restart();
     static bool Import(QString file, QSettings::Format format);
     static bool Export(QString file, QSettings::Format format);
+    static bool ExportQuick();
     static QSettings* getSettings();
     static void copy(const QSettings* from, QSettings* into);
     static QVariant getSetting(const QString& settingName);
@@ -114,6 +116,7 @@ public:
     // static bool addToLibraryExclusions(QString values, QStringList& errors);
     // static void removeFromLibraryExclusions(QList<int> indexes);
 
+    static QString getSettingsBackupDirectory();
     static QString getSelectedThumbsDir();
     static void setSelectedThumbsDir(QString thumbDir);
     static void setSelectedThumbsDirDefault();

@@ -31,6 +31,13 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         obj["smartTags"] = smartTags;
         _webSocketHandler->sendCommand("tagsUpdate", obj);
     });
+    connect(SettingsHandler::instance(), &SettingsHandler::settingsExported, this, [this](QString message, QString path, bool success) {
+        QJsonObject obj;
+        obj["message"] = message;
+        obj["path"] = path;
+        obj["success"] = success;
+        _webSocketHandler->sendCommand("settingsExported", obj);
+    });
 
     connect(_webSocketHandler, &WebSocketHandler::clean1024, this, &HttpHandler::clean1024);
     connect(_webSocketHandler, &WebSocketHandler::connectOutputDevice, this, &HttpHandler::connectOutputDevice);
@@ -235,8 +242,10 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     _server->route("/", QHttpServerRequest::Method::Get,  this, &HttpHandler::handleRoot);
     _server->route("/auth", QHttpServerRequest::Method::Post, this, &HttpHandler::handleAuth);
     _server->route("/settings", QHttpServerRequest::Method::Get, this, &HttpHandler::handleSettings);
+    _server->route("/exported", QHttpServerRequest::Method::Get, this, &HttpHandler::handleExportedList);
     _server->route("^/media/(.*\\.(("+extensions+")$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleVideoStream);
     _server->route("^/media/(.*\\.(("+SettingsHandler::getSubtitleExtensions().join("|")+")$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleSubtitle);
+    _server->route("^/exported/(.*\\.((json)$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleDownloadExported);
     _server->route("^/media$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleVideoList);
     _server->route("^/thumb/.*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleThumbFile);
     _server->route("^/funscript/(.*\\.((funscript)$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleFunscriptFile);
@@ -252,6 +261,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     _server->route("^/xtpweb$",QHttpServerRequest::Method::Post, this, &HttpHandler::handleWebTimeUpdate);
     _server->route("^/heresphere$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleHereSphere);
     _server->route("^/expireSession$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleExpireSession);
+    _server->route("^/exported$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleDeleteExported);
 
     _server->route("/<arg>", QHttpServerRequest::Method::Get,  this, &HttpHandler::handleFile);
 
@@ -493,6 +503,7 @@ void HttpHandler::handleWebTimeUpdate(const QHttpServerRequest &request, QHttpSe
     emit xtpWebPacketReceive(body);
     responder.write(QHttpServerResponse::StatusCode::Ok);
 }
+
 void HttpHandler::handleAvailableSerialPorts(const QHttpServerRequest &request, QHttpServerResponder &responder) {
     if(!isAuthenticated(request)) {
         responder.write(QHttpServerResponse::StatusCode::Unauthorized);
@@ -736,24 +747,21 @@ void HttpHandler::handleMediaItemMetadataUpdate(const QHttpServerRequest &reques
     QJsonDocument doc = QJsonDocument::fromJson(body, &error);
     if (doc.isEmpty())
     {
-        LogHandler::Error("data: "+body);
+        LogHandler::Error("Error reading request body: " + body + " error: "+ error.errorString());
         responder.write(QHttpServerResponse::StatusCode::BadRequest);
         return ;
     }
-    else
+    auto metadata = LibraryListItemMetaData258::fromJson(doc.object());
+    auto libraryItem = _mediaLibraryHandler->findItemByNameNoExtension(metadata.key);
+    if(libraryItem)
     {
-        auto metadata = LibraryListItemMetaData258::fromJson(doc.object());
-        auto libraryItem = _mediaLibraryHandler->findItemByNameNoExtension(metadata.key);
-        if(libraryItem)
-        {
-            libraryItem->metadata = metadata;
-            SettingsHandler::updateLibraryListItemMetaData(*libraryItem);
-            emit updateMetadata(libraryItem->metadata);
-        } else {
-            SettingsHandler::setForceMetaDataFullProcess(true);
-            responder.write(createError("Invalid metadata item please process metadata<br> In System tab under settings."), QHttpServerResponse::StatusCode::Conflict);
-            return ;
-        }
+        libraryItem->metadata = metadata;
+        SettingsHandler::updateLibraryListItemMetaData(*libraryItem);
+        emit updateMetadata(libraryItem->metadata);
+    } else {
+        SettingsHandler::setForceMetaDataFullProcess(true);
+        responder.write(createError("Invalid metadata item please process metadata<br> In System tab under settings."), QHttpServerResponse::StatusCode::Conflict);
+        return ;
     }
     responder.write(QHttpServerResponse::StatusCode::Ok);
 }
@@ -1244,6 +1252,123 @@ QHttpServerResponse HttpHandler::handleSubtitle(const QHttpServerRequest &reques
     headers.append(QHttpHeaders::WellKnownHeader::ContentType, mimeType);
     headers.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(fileInfo.size()));
     return sendFile(libraryItem->metadata.subtitle, headers);
+}
+
+void HttpHandler::handleExportedList(const QHttpServerRequest &request, QHttpServerResponder &responder)
+{
+    if(!isAuthenticated(request)) {
+        responder.write(QHttpServerResponse::StatusCode::Forbidden);
+        return;
+    }
+
+    QString settingsBackupDir = SettingsHandler::getSettingsBackupDirectory();
+    QDir dir(settingsBackupDir);
+    if(!dir.exists())
+    {
+        responder.write(QHttpServerResponse::StatusCode::NotFound);
+        return;
+    }
+    QStringList mediaTypes("*.json");
+    QDirIterator backupDir(settingsBackupDir, mediaTypes, QDir::Files);
+
+    QJsonArray root;
+    while (backupDir.hasNext())
+    {
+        QFileInfo fileInfo(backupDir.next());
+        root << fileInfo.fileName();
+    }
+    QHttpHeaders headers;
+    responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
+}
+
+QHttpServerResponse HttpHandler::handleDownloadExported(const QHttpServerRequest &request)
+{
+    if(!isAuthenticated(request)) {
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::Forbidden);
+    }
+
+    QString settingsBackupDir = SettingsHandler::getSettingsBackupDirectory();
+    QDir dir(settingsBackupDir);
+    if(!dir.exists())
+    {
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::NotFound);
+    }
+
+    QString parameter = getURL(request);
+    //QString parameter = getURL(request);
+    QString apiStr("/exported/");
+    QString fileName = parameter.replace(parameter.indexOf(apiStr), apiStr.size(), "");
+
+    QFileInfo fileInfo(settingsBackupDir + QDir::separator() + fileName);
+    if(!fileInfo.exists())
+    {
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::NotFound);
+    }
+    QString filePath = fileInfo.absoluteFilePath();
+    QString downloadFilename = fileInfo.fileName();
+    QHttpHeaders headers;
+    headers.append(QHttpHeaders::WellKnownHeader::ContentDisposition, "attachment");
+    headers.append("filename", downloadFilename);
+    QString mimeType = mimeDatabase.mimeTypeForFile(filePath, QMimeDatabase::MatchExtension).name();
+    headers.append(QHttpHeaders::WellKnownHeader::ContentType, mimeType);
+    headers.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(fileInfo.size()));
+    return sendFile(filePath, headers);
+}
+
+void HttpHandler::handleDeleteExported(const QHttpServerRequest &request, QHttpServerResponder &responder)
+{
+    if(!isAuthenticated(request)) {
+        responder.write(QHttpServerResponse::StatusCode::Forbidden);
+        return;
+    }
+
+    QString settingsBackupDir = SettingsHandler::getSettingsBackupDirectory();
+    QDir dir(settingsBackupDir);
+    if(!dir.exists())
+    {
+        responder.write(QHttpServerResponse::StatusCode::NotFound);
+        return;
+    }
+
+
+    auto body = request.body();
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(body, &error);
+    if (doc.isEmpty())
+    {
+        LogHandler::Error("Error reading request body: " + body + " error: "+ error.errorString());
+        responder.write(QHttpServerResponse::StatusCode::BadRequest);
+        return ;
+    }
+
+    QString fileName = doc["filename"].toString();
+
+    if(fileName.isEmpty())
+    {
+        LogHandler::Error("File name was empty");
+        responder.write(QHttpServerResponse::StatusCode::BadRequest);
+        return;
+    }
+    QFile file (settingsBackupDir + QDir::separator() + fileName);
+    if(!file.exists())
+    {
+        responder.write(QHttpServerResponse::StatusCode::NotFound);
+        return;
+    }
+    if(!fileName.startsWith("xsettings"))
+    {
+        LogHandler::Error("File name to delete did not start with xsettings as required: " + fileName);
+        responder.write(QHttpServerResponse::StatusCode::Forbidden);
+        return;
+    }
+    if(!file.remove())
+    {
+        LogHandler::Error("Error deleting file: " + fileName + " error: "+ file.errorString());
+        responder.write(QHttpServerResponse::StatusCode::InternalServerError);
+        return;
+    }
+
+    responder.write(QHttpServerResponse::StatusCode::Ok);
 }
 
 QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerRequest &request)

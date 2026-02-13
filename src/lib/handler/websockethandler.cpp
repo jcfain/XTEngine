@@ -151,6 +151,8 @@ void WebSocketHandler::processTextMessage(QString message)
     if (command == "tcode") {
         QString commandMessage = json["message"].toString();
         emit tcode(commandMessage);
+    } else if (command == "settingsQuickExport") {
+        SettingsHandler::ExportQuick();
     } else if (command == "settingChange") {
         QJsonObject obj = json["message"].toObject();
         emit settingChange(obj["key"].toString(), obj["value"].toVariant());

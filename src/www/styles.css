@@ -1059,7 +1059,40 @@ section .range-values {
     right: 16%;
     color: black;
 } */
-
+.exported-download-link {
+    display: block;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    width: 310px;
+    text-wrap: nowrap;
+}
+.exported-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.exported-header > h4 {
+    margin: 8px;
+}
+.exported-table {
+    width: 100%; 
+    max-height: 200px;
+    border: 1px solid aliceblue;
+    border-radius: 16px;
+    padding: 8px;
+}
+.exported-table > tbody {
+    overflow-y: auto; 
+    display: block; 
+    height: 17em;
+}
+.exported-table tr,
+.exported-table > thead {
+    border-bottom: 1px solid aliceblue;
+    display: table;
+    width: 100%;
+}
 
 @keyframes loading-spinner {
     0% {

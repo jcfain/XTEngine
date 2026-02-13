@@ -475,6 +475,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         locker.relock();
     }
 
+    QString defaultSettingsBackupDirectory = getSetting(SettingKeys::settingsBackupDirectory, settingsToLoadFrom).toString();
+    if(defaultSettingsBackupDirectory.isEmpty())
+    {
+        locker.unlock();
+        changeSetting(SettingKeys::settingsBackupDirectory, _applicationDirPath + QDir::separator() + "settings-backup");
+        locker.relock();
+    }
 
     bool useSystemMediaBackend = getSetting(SettingKeys::useSystemMediaBackend, settingsToLoadFrom).toBool();
     if(useSystemMediaBackend)
@@ -518,32 +525,23 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _selectedNetworkDeviceType = (NetworkProtocol)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
     playerVolume = settingsToLoadFrom->value("playerVolume").toInt();
     serialPort = settingsToLoadFrom->value("serialPort").toString();
-    serverAddress = settingsToLoadFrom->value("serverAddress").toString();
-    serverAddress = serverAddress.isEmpty() ? "tcode.local" : serverAddress;
-    serverPort = settingsToLoadFrom->value("serverPort").toString();
-    serverPort = serverPort.isEmpty() ? "8000" : serverPort;
-    deoAddress = settingsToLoadFrom->value("deoAddress").toString();
-    deoAddress = deoAddress.isEmpty() ? "127.0.0.1" : deoAddress;
-    deoPort = settingsToLoadFrom->value("deoPort").toString();
-    deoPort = deoPort.isEmpty() ? "23554" : deoPort;
+    serverAddress = settingsToLoadFrom->value("serverAddress", "tcode.local").toString();
+    serverPort = settingsToLoadFrom->value("serverPort", "8000").toString();
+    deoAddress = settingsToLoadFrom->value("deoAddress", "127.0.0.1").toString();
+    deoPort = settingsToLoadFrom->value("deoPort", "23554").toString();
     deoEnabled = settingsToLoadFrom->value("deoEnabled").toBool();
 
-    whirligigAddress = settingsToLoadFrom->value("whirligigAddress").toString();
-    whirligigAddress = whirligigAddress.isEmpty() ? "127.0.0.1" : whirligigAddress;
-    whirligigPort = settingsToLoadFrom->value("whirligigPort").toString();
-    whirligigPort = whirligigPort.isEmpty() ? "2000" : whirligigPort;
+    whirligigAddress = settingsToLoadFrom->value("whirligigAddress", "127.0.0.1").toString();
+    whirligigPort = settingsToLoadFrom->value("whirligigPort", "2000").toString();
     whirligigEnabled = settingsToLoadFrom->value("whirligigEnabled").toBool();
 
     _xtpWebSyncEnabled = settingsToLoadFrom->value("xtpWebSyncEnabled").toBool();
 
     libraryView = settingsToLoadFrom->value("libraryView").toInt();
     _librarySortMode = settingsToLoadFrom->value("selectedLibrarySortMode").toInt();
-    thumbSize = settingsToLoadFrom->value("thumbSize").toInt();
-    thumbSize = thumbSize == 0 ? 150 : thumbSize;
-    thumbSizeList = settingsToLoadFrom->value("thumbSizeList").toInt();
-    thumbSizeList = thumbSizeList == 0 ? 50 : thumbSizeList;
-    videoIncrement = settingsToLoadFrom->value("videoIncrement").toInt();
-    videoIncrement = videoIncrement == 0 ? 10 : videoIncrement;
+    thumbSize = settingsToLoadFrom->value("thumbSize", 150).toInt();
+    thumbSizeList = settingsToLoadFrom->value("thumbSizeList", 50).toInt();
+    videoIncrement = settingsToLoadFrom->value("videoIncrement", 10).toInt();
     deoDnlaFunscriptLookup = settingsToLoadFrom->value("deoDnlaFunscriptLookup").toHash();
 
     _gamePadEnabled = settingsToLoadFrom->value("gamePadEnabled").toBool();
@@ -1202,8 +1200,32 @@ bool SettingsHandler::Export(QString file, QSettings::Format format)
     settingsExport.sync();
     if(!QFileInfo::exists(file))
     {
-        LogHandler::Error("Settigns Export: Exported file does not exist");
-        emit instance()->messageSend("Settigns Export: Exported file does not exist", XLogLevel::Critical);
+        LogHandler::Error("Settings Export: Exported file does not exist");
+        emit instance()->messageSend("Settings Export: Exported file does not exist", XLogLevel::Critical);
+        emit instance()->settingsExported("Settings Export: Exported file does not exist", file, false);
+        return false;
+    }
+    emit instance()->settingsExported("Settings Exported", file, true);
+    return true;
+}
+
+bool SettingsHandler::ExportQuick()
+{
+    QString settingsBackupDirectory = getSetting(SettingKeys::settingsBackupDirectory).toString();
+
+    QDir dir(settingsBackupDirectory);
+    if(!dir.exists())
+    {
+        if(!dir.mkdir(settingsBackupDirectory))
+        {
+            LogHandler::Error("Settings ExportQuick: Exported dir does not exist and could not be created");
+            emit instance()->messageSend("Settings ExportQuick: Exported dir does not exist and could not be created", XLogLevel::Critical);
+            emit instance()->settingsExported("Does not exist and could not create dir", settingsBackupDirectory, false);
+            return false;
+        }
+    }
+    QString backuppath = settingsBackupDirectory + QDir::separator() + "xsettings_" + XTEVersion + "_" + QDateTime::currentDateTime().toString("MM-dd-yyyy_hh-mm-ss-zzz") + ".json";
+    if(!Export(backuppath, JSONSettingsFormatter::JsonFormat)) {
         return false;
     }
     return true;
@@ -2260,6 +2282,11 @@ QHash<QString, QVariant> SettingsHandler::getDeoDnlaFunscripts()
 {
     QMutexLocker locker(&mutex);
     return deoDnlaFunscriptLookup;
+}
+
+QString SettingsHandler::getSettingsBackupDirectory()
+{
+    return getSetting(SettingKeys::settingsBackupDirectory).toString();
 }
 
 bool SettingsHandler::getGamepadEnabled()

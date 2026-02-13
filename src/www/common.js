@@ -33,11 +33,19 @@ function showAlertWindow(header, message, yesCallback) {
 		var confirmButton = document.getElementById("alertConfirmButton");
 		var closebutton = document.getElementById("alertCancelButton");
 		var headerNode = document.getElementById("alert-modal-title");
+		confirmButton.disabled = false;
+		closebutton.disabled = false;
+		headerNode.disabled = false;
 		headerNode.innerText = header;
 		var alertModalBody = document.getElementById("alertModalBody");
 		if(yesCallback) {
 			confirmButton.hidden = false;
-			confirmButton.onclick = yesCallback;
+			confirmButton.onclick = () => {
+				confirmButton.disabled = true;
+				closebutton.disabled = true;
+				headerNode.disabled = true;
+				yesCallback();
+			}
 			alertModalBody.innerHTML = message;
 			closebutton.innerText = "No";
 		} else {

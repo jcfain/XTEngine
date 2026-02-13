@@ -1373,7 +1373,7 @@ void MediaLibraryHandler::deleteItem(const QString &itemID, QStringList& errors)
     //         }
     //     }
     QList<ScriptInfo> scripts = item->metadata.scripts;
-    for(auto script : scripts)
+    for(const ScriptInfo &script : scripts)
     {
         if(QFileInfo::exists(script.path))
         {
