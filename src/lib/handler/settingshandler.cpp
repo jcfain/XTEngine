@@ -581,7 +581,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _gamepadSpeedStep = settingsToLoadFrom->value("gamepadSpeedStep", 500).toInt();
     _xRangeStep = settingsToLoadFrom->value("xRangeStep", 50).toInt();
     disableSpeechToText = settingsToLoadFrom->value("disableSpeechToText").toBool();
-    _disableVRScriptSelect = settingsToLoadFrom->value("disableVRScriptSelect").toBool();
+    _disableVRScriptSelect = settingsToLoadFrom->value("disableVRScriptSelect", true).toBool();
     _disableNoScriptFound = settingsToLoadFrom->value("disableNoScriptFound").toBool();
 
     _skipToMoneyShotPlaysFunscript = settingsToLoadFrom->value("skipToMoneyShotPlaysFunscript").toBool();
