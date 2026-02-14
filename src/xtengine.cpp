@@ -249,7 +249,7 @@ void XTEngine::onFunscriptSearchResult(QString mediaPath, QString funscriptPath,
 
 void XTEngine::skipToNextAction()
 {
-    if(SettingsHandler::getEnableHttpServer())
+    if(SettingsHandler::getEnableHttpServer() && _syncHandler->isPlayingVR())
     {
         qint64 nextActionMillis = _syncHandler->getFunscriptNext();
 
