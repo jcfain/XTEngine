@@ -41,76 +41,76 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     QStringList MFSTracks;
     QList<ScriptInfo> scripts;
 
-    // friend QDataStream & operator<<(QDataStream &dataStream, const LibraryListItemMetaData258 &object )
-    // {
-    //     dataStream << object.ID;
-    //     dataStream << object.key;
-    //     dataStream << object.libraryItemPath;
-    //     dataStream << object.watched;
-    //     dataStream << object.lastPlayPosition;
-    //     dataStream << object.lastLoopEnabled;
-    //     dataStream << object.lastLoopStart;
-    //     dataStream << object.lastLoopEnd;
-    //     dataStream << object.offset;
-    //     dataStream << object.moneyShotMillis;
-    //     dataStream << object.funscriptModifier;
-    //     dataStream << object.toolTip;
-    //     dataStream << object.subtitle;
-    //     dataStream << object.isMFS;
-    //     dataStream << object.isSFMA;
-    //     dataStream << object.hasAlternate;
-    //     dataStream << object.dateAdded;
-    //     dataStream << object.thumbExtractError;
-    //     foreach(auto bookmark, object.bookmarks )
-    //         dataStream << bookmark;
-    //     foreach(auto funscript, object.funscripts )
-    //         dataStream << funscript;
-    //     foreach(auto tag, object.tags )
-    //         dataStream << tag;
-    //     foreach(auto script, object.MFSScripts )
-    //         dataStream << script;
-    //     foreach(auto track, object.MFSTracks )
-    //         dataStream << track;
-    //     foreach(auto script, object.scripts )
-    //         dataStream << script;
+    friend QDataStream & operator<<(QDataStream &dataStream, const LibraryListItemMetaData258 &object )
+    {
+        dataStream << object.ID;
+        dataStream << object.key;
+        dataStream << object.libraryItemPath;
+        dataStream << object.watched;
+        dataStream << object.lastPlayPosition;
+        dataStream << object.lastLoopEnabled;
+        dataStream << object.lastLoopStart;
+        dataStream << object.lastLoopEnd;
+        dataStream << object.offset;
+        dataStream << object.moneyShotMillis;
+        dataStream << object.funscriptModifier;
+        dataStream << object.toolTip;
+        dataStream << object.subtitle;
+        dataStream << object.isMFS;
+        dataStream << object.isSFMA;
+        dataStream << object.hasAlternate;
+        dataStream << object.dateAdded;
+        dataStream << object.thumbExtractError;
+        foreach(auto bookmark, object.bookmarks )
+            dataStream << bookmark;
+        foreach(auto funscript, object.funscripts )
+            dataStream << funscript;
+        foreach(auto tag, object.tags )
+            dataStream << tag;
+        foreach(auto script, object.MFSScripts )
+            dataStream << script;
+        foreach(auto track, object.MFSTracks )
+            dataStream << track;
+        foreach(auto script, object.scripts )
+            dataStream << script;
 
-    //     return dataStream;
-    // }
+        return dataStream;
+    }
 
-    // friend QDataStream & operator>>(QDataStream &dataStream, LibraryListItemMetaData258 &object)
-    // {
-    //     dataStream >> object.ID;
-    //     dataStream >> object.key;
-    //     dataStream >> object.libraryItemPath;
-    //     dataStream >> object.watched;
-    //     dataStream >> object.lastPlayPosition;
-    //     dataStream >> object.lastLoopEnabled;
-    //     dataStream >> object.lastLoopStart;
-    //     dataStream >> object.lastLoopEnd;
-    //     dataStream >> object.offset;
-    //     dataStream >> object.moneyShotMillis;
-    //     dataStream >> object.funscriptModifier;
-    //     dataStream >> object.toolTip;
-    //     dataStream >> object.subtitle;
-    //     dataStream >> object.isMFS;
-    //     dataStream >> object.isSFMA;
-    //     dataStream >> object.hasAlternate;
-    //     dataStream >> object.dateAdded;
-    //     dataStream >> object.thumbExtractError;
-    //     foreach(auto bookmark, object.bookmarks )
-    //         dataStream >> bookmark;
-    //     foreach(auto funscript, object.funscripts )
-    //         dataStream >> funscript;
-    //     foreach(auto tag, object.tags )
-    //         dataStream >> tag;
-    //     foreach(auto script, object.MFSScripts )
-    //         dataStream >> script;
-    //     foreach(auto track, object.MFSTracks )
-    //         dataStream >> track;
-    //     foreach(auto script, object.scripts )
-    //         dataStream >> script;
-    //     return dataStream;
-    // }
+    friend QDataStream & operator>>(QDataStream &dataStream, LibraryListItemMetaData258 &object)
+    {
+        dataStream >> object.ID;
+        dataStream >> object.key;
+        dataStream >> object.libraryItemPath;
+        dataStream >> object.watched;
+        dataStream >> object.lastPlayPosition;
+        dataStream >> object.lastLoopEnabled;
+        dataStream >> object.lastLoopStart;
+        dataStream >> object.lastLoopEnd;
+        dataStream >> object.offset;
+        dataStream >> object.moneyShotMillis;
+        dataStream >> object.funscriptModifier;
+        dataStream >> object.toolTip;
+        dataStream >> object.subtitle;
+        dataStream >> object.isMFS;
+        dataStream >> object.isSFMA;
+        dataStream >> object.hasAlternate;
+        dataStream >> object.dateAdded;
+        dataStream >> object.thumbExtractError;
+        foreach(auto bookmark, object.bookmarks )
+            dataStream >> bookmark;
+        foreach(auto funscript, object.funscripts )
+            dataStream >> funscript;
+        foreach(auto tag, object.tags )
+            dataStream >> tag;
+        foreach(auto script, object.MFSScripts )
+            dataStream >> script;
+        foreach(auto track, object.MFSTracks )
+            dataStream >> track;
+        foreach(auto script, object.scripts )
+            dataStream >> script;
+        return dataStream;
+    }
     friend bool operator==(const LibraryListItemMetaData258 &p1, const LibraryListItemMetaData258 &p2)
     {
         return p1.libraryItemPath == p2.libraryItemPath;

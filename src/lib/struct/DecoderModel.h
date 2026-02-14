@@ -42,5 +42,5 @@ struct DecoderModel
         return QVariant::fromValue(obj);
     }
 };
-Q_DECLARE_METATYPE(DecoderModel);
+Q_DECLARE_METATYPE(DecoderModel)
 #endif // DECODERMODEL_H

@@ -1,0 +1,61 @@
+#ifndef LIBRARYLISTITEMMETADATA_H
+#define LIBRARYLISTITEMMETADATA_H
+#include <QString>
+#include <QMetaType>
+#include <QDate>
+#include <QVariant>
+#include <QDataStream>
+#include "Bookmark.h"
+#include "XTEngine_global.h"
+
+// This is a dead file not used any more except possible by exporting old data during migration
+
+struct XTENGINE_EXPORT LibraryListItemMetaData
+{
+    QString libraryItemPath;
+    qint64 lastPlayPosition;
+    bool lastLoopEnabled;
+    int lastLoopStart;
+    int lastLoopEnd;
+    qint64 moneyShotMillis;
+    QList<Bookmark> bookmarks;
+    QList<QString> funscripts;
+
+    friend QDataStream & operator<<(QDataStream &dataStream, const LibraryListItemMetaData &object )
+    {
+        dataStream << object.libraryItemPath;
+        dataStream << object.lastPlayPosition;
+        dataStream << object.lastLoopEnabled;
+        dataStream << object.lastLoopStart;
+        dataStream << object.lastLoopEnd;
+        dataStream << object.moneyShotMillis;
+        foreach(auto bookmark, object.bookmarks )
+            dataStream << bookmark;
+        foreach(auto funscript, object.funscripts )
+            dataStream << funscript;
+        return dataStream;
+    }
+
+    friend QDataStream & operator>>(QDataStream &dataStream, LibraryListItemMetaData &object)
+    {
+        dataStream >> object.libraryItemPath;
+        dataStream >> object.lastPlayPosition;
+        dataStream >> object.lastLoopEnabled;
+        dataStream >> object.lastLoopStart;
+        dataStream >> object.lastLoopEnd;
+        dataStream >> object.moneyShotMillis;
+        foreach(auto bookmark, object.bookmarks )
+            dataStream >> bookmark;
+        foreach(auto funscript, object.funscripts )
+            dataStream >> funscript;
+        return dataStream;
+    }
+    friend bool operator==(const LibraryListItemMetaData &p1, const LibraryListItemMetaData &p2)
+    {
+       return p1.libraryItemPath == p2.libraryItemPath;
+    }
+
+};
+
+Q_DECLARE_METATYPE(LibraryListItemMetaData)
+#endif // LIBRARYLISTITEMMETADATA_H

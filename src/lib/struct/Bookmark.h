@@ -10,20 +10,20 @@ struct Bookmark
     qint64 Time;
     QString ChannelProfile;
 
-    // friend QDataStream & operator<<(QDataStream &dataStream, const Bookmark &object )
-    // {
-    //     dataStream << object.Name;
-    //     dataStream << object.Time;
-    //     dataStream << object.ChannelProfile;
-    //     return dataStream;
-    // }
-    // friend QDataStream & operator>>(QDataStream &dataStream, Bookmark &object)
-    // {
-    //     dataStream >> object.Name;
-    //     dataStream >> object.Time;
-    //     dataStream >> object.ChannelProfile;
-    //     return dataStream;
-    // }
+    friend QDataStream & operator<<(QDataStream &dataStream, const Bookmark &object )
+    {
+        dataStream << object.Name;
+        dataStream << object.Time;
+        dataStream << object.ChannelProfile;
+        return dataStream;
+    }
+    friend QDataStream & operator>>(QDataStream &dataStream, Bookmark &object)
+    {
+        dataStream >> object.Name;
+        dataStream >> object.Time;
+        dataStream >> object.ChannelProfile;
+        return dataStream;
+    }
     QVariant toVariant()
     {
         return QVariant::fromValue(toJson());

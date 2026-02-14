@@ -509,11 +509,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         QString exportDirectory = settingsToLoadFrom->value(SettingKeys::settingsBackupDirectory, _applicationDirPath).toString();
         if(settingsVersion < XTEVersionNum)
         {
-            QFile file(settingsToLoadFrom->fileName());
+            // QFile file(settingsToLoadFrom->fileName());
+            // QFileInfo fileInfo(settingsToLoadFrom->fileName());
             QString versionString = settingsToLoadFrom->value("versionString", "").toString();
-            QFileInfo fileInfo(settingsToLoadFrom->fileName());
             if(!settingsExported)
-                settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
+                settingsExported = ExportQuick(exportDirectory, settingsToLoadFrom->format(), settingsToLoadFrom);
+                // Copying the file did not work on windows registry
+                //settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
             XMessage xmessage = {"Application updated from "+versionString+" to version "+ XTEVersion, XLogLevel::Information};
             addStartupMessage(xmessage, settingsToLoadFrom);
             LogHandler::Info(xmessage.message);
@@ -521,13 +523,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(settingsVersion < 0.4f)
         {
             locker.unlock();
-            QFile file(settingsToLoadFrom->fileName());
-            QString versionString = settingsToLoadFrom->value("versionString", "").toString();
-            QFileInfo fileInfo(settingsToLoadFrom->fileName());
+            // QFile file(settingsToLoadFrom->fileName());
+            // QFileInfo fileInfo(settingsToLoadFrom->fileName());
+            // QString versionString = settingsToLoadFrom->value("versionString", "").toString();
             if(!settingsExported)
-                settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
-                //settingsExported = ExportQuick(_applicationDirPath, settingsToLoadFrom->format(), settingsToLoadFrom);
-            QString messageString = "Versions less than 0.4b is no longer supported migrating data. Things may go wrong.\nA backup will be created in "+ _applicationDirPath + "\nIf you wish to keep your settings from the old version, run v0.4b before this version.\nOtherwise, it may be better to reset settings to default before using.";
+                settingsExported = ExportQuick(exportDirectory, settingsToLoadFrom->format(), settingsToLoadFrom);
+                // Copying the file did not work on windows registry
+                // settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
+            QString messageString = "Versions less than 0.4b is no longer supported migrating data. Things may go wrong.\nA backup will be created in "+ _applicationDirPath + " but this is not full proof. I am sorry if you lose data :( This was not an easy task.\nIf you wish to keep your settings from the old version, run v0.4b before this version.\nOtherwise, it may be better to reset settings to default before using.";
             XMessage message = {messageString, XLogLevel::Warning};
             addStartupMessage(message, settingsToLoadFrom);
             LogHandler::Warn(messageString);
@@ -536,12 +539,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         else if(settingsVersion > XTEVersionNum)
         {
             locker.unlock();
-            QFile file(settingsToLoadFrom->fileName());
-            QString versionString = settingsToLoadFrom->value("versionString", "").toString();
-            QFileInfo fileInfo(settingsToLoadFrom->fileName());
+            // QFile file(settingsToLoadFrom->fileName());
+            // QFileInfo fileInfo(settingsToLoadFrom->fileName());
+            // QString versionString = settingsToLoadFrom->value("versionString", "").toString();
             if(!settingsExported)
-                settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
-                //settingsExported = ExportQuick(_applicationDirPath, settingsToLoadFrom->format(), settingsToLoadFrom);
+                settingsExported = ExportQuick(exportDirectory, settingsToLoadFrom->format(), settingsToLoadFrom);
+            // Copying the file did not work on windows registry
+            // settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
             QString messageString = "This version "+ XTEVersion + " is less than the last used version "+QString::number(settingsVersion)+".\nThis can cause issues. A backup will be created in "+ _applicationDirPath;
             XMessage message = {messageString, XLogLevel::Warning};
             addStartupMessage(message, settingsToLoadFrom);
@@ -1192,7 +1196,9 @@ bool SettingsHandler::Export(QString file, QSettings::Format format, QSettings* 
     // }
     QSettings settingsExport(file, format);
     settingsExport.clear();
-    Save(settingsToExport);
+    // Commenting out because saving before the settings is loded overwrites whats in the file with the uninitialized values.
+    // This only happens when exporting at the start of loading to retain an older versions values..
+    // Save(settingsToExport);
     copy(settingsToExport, &settingsExport);
     settingsExport.sync();
     if(!QFileInfo::exists(file))
