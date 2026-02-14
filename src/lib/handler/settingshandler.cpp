@@ -1,11 +1,11 @@
 #include "settingshandler.h"
 
 #include "../tool/file-util.h"
-#include "../tool/qsettings_json.h"
+#include "../tool/migration.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.591b";
-const float SettingsHandler::XTEVersionNum = 0.591f;
+const QString SettingsHandler::XTEVersion = "0.592b";
+const float SettingsHandler::XTEVersionNum = 0.592f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -40,6 +40,39 @@ void SettingsHandler::addBookmark(LibraryListItem27& libraryListItem, QString na
 {
     libraryListItem.metadata.bookmarks.append({name, currentPosition});
     SettingsHandler::updateLibraryListItemMetaData(libraryListItem);
+}
+
+void SettingsHandler::systemReady()
+{
+    QList<XMessage> startupMessages;
+    QJsonArray startupMessagesObj = settings->value("startupMessages").toJsonArray();
+    foreach (auto obj, startupMessagesObj)
+    {
+        startupMessages.append(XMessage::fromJson(obj.toObject()));
+    }
+    if (!startupMessages.isEmpty())
+    {
+        QStringList mesages;
+        for (XMessage message : startupMessages)
+        {
+            mesages.append(message.message);
+        }
+        // TODO multiple messages arent supported at once in WebUI.
+        emit instance()->messageSend(mesages.join("\n"), XLogLevel::Information);
+        // Clear messages so the item doesnt show again.
+        settings->setValue("startupMessages", QJsonArray());
+        settings->sync();
+    }
+}
+
+void SettingsHandler::addStartupMessage(XMessage message, QSettings* settingsToSaveTo)
+{
+    if(!settingsToSaveTo)
+        settingsToSaveTo = settings;
+    QJsonArray startupMessagesObj = settingsToSaveTo->value("startupMessages").toJsonArray();
+    startupMessagesObj.append(message.toJson());
+    settingsToSaveTo->setValue("startupMessages", startupMessagesObj);
+    //settingsToSaveTo->sync();
 }
 
 QVariant SettingsHandler::getSetting(const QString& settingName)
@@ -401,8 +434,19 @@ QSettings* SettingsHandler::getSettings() {
 void SettingsHandler::copy(const QSettings* from, QSettings* into)
 {
     auto keys = from->allKeys();
-    foreach (auto key, keys) {
-        into->setValue(key, settings->value(key));
+    foreach (auto key, keys)
+    {
+        // if(key == "libraryListItemMetaDatas")
+        // {
+        //     QVariantHash hash = from->value(key).toHash();
+        //     foreach(auto hashkey, hash.keys())
+        //     {
+        //         LibraryListItemMetaData258 item = LibraryListItemMetaData258::fromVariant(hash[hashkey]);
+        //         LogHandler::Debug("key: "+hashkey);
+        //     }
+
+        // }
+        into->setValue(key, from->value(key));
     }
 }
 
@@ -451,8 +495,60 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         settingsToLoadFrom = settings;
     }
 
-    float currentVersion = settingsToLoadFrom->value("version").toFloat();
-    m_firstLoad = currentVersion == 0;
+    float settingsVersion = settingsToLoadFrom->value("version").toFloat();
+    m_firstLoad = settingsVersion == 0;
+    if(!m_firstLoad)
+    {
+        bool settingsExported = false;
+        if(settingsVersion < 0.592f)
+        {
+            // versionString is required by QuickExport executed below.
+            // Go ahead and set this so backups can occur if needed
+            Migration::MigrateTo592(settingsToLoadFrom);
+        }
+        QString exportDirectory = settingsToLoadFrom->value(SettingKeys::settingsBackupDirectory, _applicationDirPath).toString();
+        if(settingsVersion < XTEVersionNum)
+        {
+            QFile file(settingsToLoadFrom->fileName());
+            QString versionString = settingsToLoadFrom->value("versionString", "").toString();
+            QFileInfo fileInfo(settingsToLoadFrom->fileName());
+            if(!settingsExported)
+                settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
+            XMessage xmessage = {"Application updated from "+versionString+" to version "+ XTEVersion, XLogLevel::Information};
+            addStartupMessage(xmessage, settingsToLoadFrom);
+            LogHandler::Info(xmessage.message);
+        }
+        if(settingsVersion < 0.4f)
+        {
+            locker.unlock();
+            QFile file(settingsToLoadFrom->fileName());
+            QString versionString = settingsToLoadFrom->value("versionString", "").toString();
+            QFileInfo fileInfo(settingsToLoadFrom->fileName());
+            if(!settingsExported)
+                settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
+                //settingsExported = ExportQuick(_applicationDirPath, settingsToLoadFrom->format(), settingsToLoadFrom);
+            QString messageString = "Versions less than 0.4b is no longer supported migrating data. Things may go wrong.\nA backup will be created in "+ _applicationDirPath + "\nIf you wish to keep your settings from the old version, run v0.4b before this version.\nOtherwise, it may be better to reset settings to default before using.";
+            XMessage message = {messageString, XLogLevel::Warning};
+            addStartupMessage(message, settingsToLoadFrom);
+            LogHandler::Warn(messageString);
+            locker.relock();
+        }
+        else if(settingsVersion > XTEVersionNum)
+        {
+            locker.unlock();
+            QFile file(settingsToLoadFrom->fileName());
+            QString versionString = settingsToLoadFrom->value("versionString", "").toString();
+            QFileInfo fileInfo(settingsToLoadFrom->fileName());
+            if(!settingsExported)
+                settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
+                //settingsExported = ExportQuick(_applicationDirPath, settingsToLoadFrom->format(), settingsToLoadFrom);
+            QString messageString = "This version "+ XTEVersion + " is less than the last used version "+QString::number(settingsVersion)+".\nThis can cause issues. A backup will be created in "+ _applicationDirPath;
+            XMessage message = {messageString, XLogLevel::Warning};
+            addStartupMessage(message, settingsToLoadFrom);
+            LogHandler::Warn(messageString);
+            locker.relock();
+        }
+    }
 
     // if(XTEVersionNum > currentVersion)
     // {
@@ -651,124 +747,16 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     // m_scheduleLibraryLoadTime = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadTime, QTime(2,0)).toTime();
     // m_scheduleLibraryLoadFullProcess = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadFullProcess, true).toBool();
 
-    if(!m_firstLoad && currentVersion < 0.258f)
+    _libraryListItemMetaDatas.clear();
+    QVariantHash libraryListItemMetaDatas = settingsToLoadFrom->value("libraryListItemMetaDatas").toHash();
+    foreach(auto key, libraryListItemMetaDatas.keys())
     {
-        locker.unlock();
-        MigrateLibraryMetaDataTo258();
-    }
-    else
-    {
-        _libraryListItemMetaDatas.clear();
-        QVariantHash libraryListItemMetaDatas = settingsToLoadFrom->value("libraryListItemMetaDatas").toHash();
-        foreach(auto key, libraryListItemMetaDatas.keys())
-        {
-            _libraryListItemMetaDatas.insert(key, LibraryListItemMetaData258::fromVariant(libraryListItemMetaDatas[key]));
-        }
+        _libraryListItemMetaDatas.insert(key, LibraryListItemMetaData258::fromVariant(libraryListItemMetaDatas[key]));
     }
 
     if(!m_firstLoad)
     {
-        if(currentVersion < 0.2f)
-        {
-            setupGamepadButtonMap();
-        }
-        if(currentVersion < 0.23f)
-        {
-            locker.unlock();
-            MigrateTo23();
-            locker.relock();
-        }
-        if(currentVersion < 0.25f)
-        {
-            locker.unlock();
-            MigrateTo25();
-            locker.relock();
-        }
-        if(currentVersion < 0.252f)
-        {
-            locker.unlock();
-            MigrateTo252();
-            locker.relock();
-        }
-        if(currentVersion < 0.2581f)
-        {
-            locker.unlock();
-            TCodeChannelLookup::setAllProfileDefaults();
-            locker.relock();
-        }
-        if(currentVersion < 0.2615f)
-        {
-            locker.unlock();
-            MigratrTo2615();
-            locker.relock();
-        }
-        if(currentVersion < 0.263f)
-        {
-            locker.unlock();
-            MigrateTo263();
-            locker.relock();
-        }
-        if(currentVersion < 0.27f)
-        {
-            locker.unlock();
-            settings->setValue("version", 0.27f);
-            Save();
-            Load();
-            locker.relock();
-        }
-        if(currentVersion < 0.272f)
-        {
-            locker.unlock();
-            MigrateToQVariant(settingsToLoadFrom);
-            Save();
-            Load();
-            locker.relock();
-        }
-        if(currentVersion < 0.284f)
-        {
-            locker.unlock();
-            MigrateToQVariant2(settingsToLoadFrom);
-            Save();
-            Load();
-            locker.relock();
-        }
-        if(currentVersion < 0.286f) {
-            locker.unlock();
-            _httpThumbQuality = -1;
-            TCodeChannelLookup::setAllProfileDefaults();
-            Save();
-            Load();
-            locker.relock();
-        }
-        if(currentVersion < 0.32f) {
-            locker.unlock();
-            MigrateTo32a(settingsToLoadFrom);
-            Save();
-            Load();
-            locker.relock();
-        }
-        if(currentVersion < 0.324f) {
-            locker.unlock();
-            MigrateToQVariantChannelModel(settingsToLoadFrom);
-            Save();
-            Load();
-            locker.relock();
-        }
-        if(currentVersion < 0.333f) {
-            locker.unlock();
-            setupKeyboardKeyMap();
-            auto channel = TCodeChannelLookup::getChannel(TCodeChannelLookup::Stroke());
-            if(TCodeChannelLookup::getChannels().isEmpty() || !channel || channel->ChannelName.isEmpty()) {
-                TCodeChannelLookup::setAllProfileDefaults();
-                SaveChannelMap();
-            }
-            auto libraryExclusions = settingsToLoadFrom->value("libraryExclusions").value<QList<QString>>();
-            mediaLibrarySettings.set(LibraryType::EXCLUSION, QStringList(libraryExclusions));
-            Save();
-            Load();
-            locker.relock();
-        }
-        if(currentVersion < 0.41f) {
+        if(settingsVersion < 0.41f) {
             locker.unlock();
             auto library = settingsToLoadFrom->value("selectedLibrary").toString();
             mediaLibrarySettings.add(LibraryType::MAIN, library);
@@ -776,43 +764,43 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.414f) {
+        if(settingsVersion < 0.414f) {
             locker.unlock();
-            MigrateTo42(settingsToLoadFrom);
+            Migration::MigrateTo42(settingsToLoadFrom);
             Save();
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.426f) {
+        if(settingsVersion < 0.426f) {
             locker.unlock();
             _hashedPass = nullptr;
             Save();
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.451f) {
+        if(settingsVersion < 0.451f) {
             locker.unlock();
             SetTCodeCommandMapDefaults();
             Save();
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.454f) {
+        if(settingsVersion < 0.454f) {
             locker.unlock();
             SetSystemTagDefaults();
             Save();
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.459f) {
+        if(settingsVersion < 0.459f) {
             locker.unlock();
-            MigrateTo46(settingsToLoadFrom);
+            Migration::MigrateTo46(settingsToLoadFrom, _libraryListItemMetaDatas);
             setForceMetaDataFullProcess(true);
             Save();
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.465f) {
+        if(settingsVersion < 0.465f) {
             locker.unlock();
             m_xTags.addTag(XTags::ALTSCRIPT);
             setForceMetaDataFullProcess(true);
@@ -820,7 +808,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.469f) {
+        if(settingsVersion < 0.469f) {
             locker.unlock();
             bool disableHeartBeat = settingsToLoadFrom->value("disableHeartBeat", false).toBool();
             setDisableHeartBeat(disableHeartBeat);
@@ -829,13 +817,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();// No need to load as these are under the new settings system.
             locker.relock();
         }
-        if(currentVersion < 0.47f) {
+        if(settingsVersion < 0.47f) {
             locker.unlock();
             setForceMetaDataFullProcess(true);
             Save();
             locker.relock();
         }
-        if(currentVersion < 0.471f) {
+        if(settingsVersion < 0.471f) {
             locker.unlock();
             qint64 httpChunkSize = settingsToLoadFrom->value("httpChunkSize", 26214400).toLongLong();
             setHTTPChunkSize(httpChunkSize);
@@ -843,14 +831,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Save();
             locker.relock();
         }
-        if(currentVersion < 0.53f) {
+        if(settingsVersion < 0.53f) {
             locker.unlock();
-            MigrateTo52(settingsToLoadFrom);
+            Migration::MigrateTo52(settingsToLoadFrom);
             Save();
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.54f) {
+        if(settingsVersion < 0.54f) {
             locker.unlock();
             setForceMetaDataFullProcess(true);
             m_xTags.addTag(XTags::SFMA);
@@ -858,21 +846,21 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.56f) {
+        if(settingsVersion < 0.56f) {
             locker.unlock();
             mediaLibrarySettings.clear(LibraryType::FUNSCRIPT);
             Save();
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.57f) {
+        if(settingsVersion < 0.57f) {
             locker.unlock();
             setForceMetaDataFullProcess(true);
             Save();
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.59f) {
+        if(settingsVersion < 0.59f) {
             locker.unlock();
             int offSet = settingsToLoadFrom->value("offSet").toInt();
             settingsToLoadFrom->remove("offSet");
@@ -881,7 +869,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Load();
             locker.relock();
         }
-        if(currentVersion < 0.591f) {
+        if(settingsVersion < 0.591f) {
             locker.unlock();
             float viewedThreshold = settingsToLoadFrom->value("viewedThreshold", 0.9f).toFloat();
             settingsToLoadFrom->remove("viewedThreshold");
@@ -890,6 +878,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Load();
             locker.relock();
         }
+        if(settingsVersion < 0.592f) {
+            locker.unlock();
+            // Add new versionString into settings. This will happen in save if the current version is greater thanthe settings version.
+            Save();
+            Load();
+            locker.relock();
+        }
+
 
 
     }
@@ -905,10 +901,13 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         if(!settingsToSaveTo)
             settingsToSaveTo = settings;
 
-        float currentVersion = settingsToSaveTo->value("version").toFloat();
+        float settingsVersion = settingsToSaveTo->value("version").toFloat();
 
-        if(XTEVersionNum > currentVersion)
+        if(XTEVersionNum > settingsVersion)
+        {
             settingsToSaveTo->setValue("version", XTEVersionNum);
+            settingsToSaveTo->setValue("versionString", XTEVersion);
+        }
 
         mediaLibrarySettings.Save(settingsToSaveTo);
 
@@ -1153,8 +1152,12 @@ bool SettingsHandler::Import(QString file, QSettings::Format format)
     return true;
 }
 
-bool SettingsHandler::Export(QString file, QSettings::Format format)
+bool SettingsHandler::Export(QString file, QSettings::Format format, QSettings* settingsToExport)
 {
+    if(!settingsToExport)
+    {
+        settingsToExport = settings;
+    }
     if(file.isEmpty())
     {
         LogHandler::Error("Settigns Export: Invalid path: empty file file path");
@@ -1189,8 +1192,8 @@ bool SettingsHandler::Export(QString file, QSettings::Format format)
     // }
     QSettings settingsExport(file, format);
     settingsExport.clear();
-    Save();
-    copy(settings, &settingsExport);
+    Save(settingsToExport);
+    copy(settingsToExport, &settingsExport);
     settingsExport.sync();
     if(!QFileInfo::exists(file))
     {
@@ -1203,9 +1206,18 @@ bool SettingsHandler::Export(QString file, QSettings::Format format)
     return true;
 }
 
-bool SettingsHandler::ExportQuick()
+bool SettingsHandler::ExportQuick(QString file, QSettings::Format format, QSettings* settingsToExport)
 {
-    QString settingsBackupDirectory = getSetting(SettingKeys::settingsBackupDirectory).toString();
+    QString settingsBackupDirectory = file;
+    if(file.isEmpty())
+    {
+        settingsBackupDirectory = getSetting(SettingKeys::settingsBackupDirectory).toString();
+    }
+
+    if(!settingsToExport)
+    {
+        settingsToExport = settings;
+    }
 
     if(settingsBackupDirectory.isEmpty())
     {
@@ -1225,11 +1237,25 @@ bool SettingsHandler::ExportQuick()
             return false;
         }
     }
-    QString backuppath = settingsBackupDirectory + QDir::separator() + "xsettings_" + XTEVersion + "_" + QDateTime::currentDateTime().toString("MM-dd-yyyy_hh-mm-ss-zzz") + ".json";
-    if(!Export(backuppath, JSONSettingsFormatter::JsonFormat)) {
+
+    QString settingsVersion = settingsToExport->value("versionString").toString();
+
+    QString ext = format == JSONSettingsFormatter::JsonFormat ? ".json" : ".ini";
+    QString backuppath = settingsBackupDirectory + QDir::separator() + getExportFileName(settingsVersion) + ext;
+    if(!Export(backuppath, format, settingsToExport)) {
         return false;
     }
     return true;
+}
+
+QString SettingsHandler::getExportFileName(QString version)
+{
+    return getExportFileNamePrefix() + "_" + version + "_" + QDateTime::currentDateTime().toString("MM-dd-yyyy_hh-mm-ss-zzz");
+}
+
+QString SettingsHandler::getExportFileNamePrefix()
+{
+    return m_exportFileNamePrefix;
 }
 
 void SettingsHandler::settingsChangedEvent(bool dirty)
@@ -1552,230 +1578,6 @@ bool SettingsHandler::getUseDTRAndRTS()
     return getSetting(SettingKeys::useDTRAndRTS).toBool();
 }
 
-void SettingsHandler::MigrateTo23()
-{
-    settings->setValue("version", 0.23f);
-    TCodeChannelLookup::setProfileDefaults();
-    Save();
-    Load();
-    emit instance()->messageSend("Due to a standards update your RANGE settings\nhave been set to default for a new data structure.", XLogLevel::Information);
-}
-
-void SettingsHandler::MigrateTo25()
-{
-    settings->setValue("version", 0.25f);
-    Save();
-    Load();
-}
-
-void SettingsHandler::MigrateTo252()
-{
-    settings->setValue("version", 0.252f);
-    TCodeChannelLookup::setProfileDefaults();
-    Save();
-    Load();
-    emit instance()->messageSend("Due to a standards update your CHANNELS\nhave been set to default for a new data structure.\nPlease reset your Multiplier/Range settings before using.", XLogLevel::Information);
-}
-void SettingsHandler::MigrateLibraryMetaDataTo258()
-{
-    settings->setValue("version", 0.258f);
-    QVariantHash libraryListItemMetaDatas = settings->value("libraryListItemMetaDatas").toHash();
-    foreach(auto key, libraryListItemMetaDatas.keys())
-    {
-        LibraryListItemMetaData libraryListItemMetaData = libraryListItemMetaDatas[key].value<LibraryListItemMetaData>();
-        QFile file(libraryListItemMetaData.libraryItemPath);
-        if(file.exists())
-        {
-            LibraryListItemMetaData258 newMetadata;
-            newMetadata.defaultValues("", key, libraryListItemMetaData.libraryItemPath);
-            newMetadata.lastPlayPosition = libraryListItemMetaData.lastPlayPosition;
-            newMetadata.lastLoopEnabled = libraryListItemMetaData.lastLoopEnabled;
-            newMetadata.lastLoopStart = libraryListItemMetaData.lastLoopStart;
-            newMetadata.lastLoopEnd = libraryListItemMetaData.lastLoopEnd;
-            newMetadata.moneyShotMillis = libraryListItemMetaData.moneyShotMillis;
-            newMetadata.bookmarks = libraryListItemMetaData.bookmarks;
-            newMetadata.funscripts = libraryListItemMetaData.funscripts;
-            _libraryListItemMetaDatas.insert(key, newMetadata);
-        }
-    }
-    Save();
-    auto fromDir = _applicationDirPath + "/thumbs/";
-    QDir oldThumbPath(fromDir);
-    if(oldThumbPath.exists())
-    {
-        auto toDir = _appdataLocation + "/thumbs/";
-        QDirIterator it(fromDir, QDirIterator::Subdirectories);
-        QDir dir(fromDir);
-        const int absSourcePathLength = dir.absoluteFilePath(fromDir).length();
-
-        while (it.hasNext()){
-            it.next();
-            const auto fileInfo = it.fileInfo();
-            if(!fileInfo.isHidden()) { //filters dot and dotdot
-                const QString subPathStructure = fileInfo.absoluteFilePath().mid(absSourcePathLength);
-                const QString constructedAbsolutePath = toDir + subPathStructure;
-
-                if(fileInfo.isDir()){
-                    //Create directory in target folder
-                    dir.mkpath(constructedAbsolutePath);
-                } else if(fileInfo.isFile()) {
-                    //Copy File to target directory
-
-                    //Remove file at target location, if it exists, or QFile::copy will fail
-                    QFile::remove(constructedAbsolutePath);
-                    QFile::copy(fileInfo.absoluteFilePath(), constructedAbsolutePath);
-                }
-            }
-        }
-    }
-    Load();
-}
-void SettingsHandler::MigratrTo2615()
-{
-    settings->setValue("version", 0.2615f);
-    TCodeChannelLookup::setProfileDefaults();
-    Save();
-    Load();
-    emit instance()->messageSend("Due to a standards update your CHANNEL SETTINGS\nhave been set to default for a new data structure.\nPlease reset your RANGES and MULTIPLIERS settings before using.", XLogLevel::Information);
-}
-
-void SettingsHandler::MigrateTo263() {
-
-    settings->setValue("version", 0.263f);
-    auto currentChannels = TCodeChannelLookup::getChannels();
-    foreach(auto axis, currentChannels)
-    {
-        int max = TCodeChannelLookup::getChannel(axis)->UserMax;
-        int min = TCodeChannelLookup::getChannel(axis)->UserMin;
-        setChannelUserMid(axis, XMath::middle(min, max));
-    }
-    Save();
-    Load();
-}
-
-void SettingsHandler::MigrateToQVariant(QSettings* settingsToLoadFrom)
-{
-    _playlists.clear();
-    QVariantMap playlists = settingsToLoadFrom->value("playlists").toMap();
-    foreach(auto playlist, playlists.keys())
-    {
-        QList<LibraryListItem> list = playlists[playlist].value<QList<LibraryListItem>>();
-        QList<LibraryListItem27> list27;
-        foreach(auto item, list)
-            list27.append(item.toLibraryListItem27());
-        _playlists.insert(playlist, list27);
-    }
-
-    _libraryListItemMetaDatas.clear();
-    QVariantHash libraryListItemMetaDatas = settingsToLoadFrom->value("libraryListItemMetaDatas").toHash();
-    foreach(auto key, libraryListItemMetaDatas.keys())
-    {
-        _libraryListItemMetaDatas.insert(key, libraryListItemMetaDatas[key].value<LibraryListItemMetaData258>());
-        foreach(auto bookmark, libraryListItemMetaDatas[key].value<LibraryListItemMetaData>().bookmarks)
-            _libraryListItemMetaDatas[key].bookmarks.append(bookmark);
-        foreach(auto funscript, libraryListItemMetaDatas[key].value<LibraryListItemMetaData>().funscripts)
-            _libraryListItemMetaDatas[key].funscripts.append(funscript);
-    }
-}
-
-void SettingsHandler::MigrateToQVariant2(QSettings* settingsToLoadFrom)
-{
-    // CANT GET TO CONVERT PROBABLY CAUSE THE ENUM TYPES!!!!!!
-//    QVariantMap availableAxis = settingsToLoadFrom->value("availableAxis").toMap();
-//    _availableAxis.clear();
-//    _funscriptLoaded.clear();
-//    foreach(auto axis, availableAxis.keys())
-//    {
-//        _availableAxis.insert(axis, availableAxis[axis].value<ChannelModel>());
-//        _funscriptLoaded.insert(axis, false);
-//        if(!TCodeChannelLookup::ChannelExists(axis))
-//            TCodeChannelLookup::AddUserAxis(axis);
-//    }
-    QList<QVariant> decoderPriorityvarient = settingsToLoadFrom->value("decoderPriority").toList();
-    decoderPriority.clear();
-    foreach(auto varient, decoderPriorityvarient)
-    {
-        decoderPriority.append(varient.value<DecoderModel>());
-    }
-}
-
-void SettingsHandler::MigrateToQVariantChannelModel(QSettings* settingsToLoadFrom)
-{
-    QVariantMap availableAxis = settingsToLoadFrom->value("availableAxis").toMap();
-    auto availableChannels = TCodeChannelLookup::getChannels();
-    //TCodeChannelLookup::clearChannels();
-    _funscriptLoaded.clear();
-    QMap<QString, ChannelModel> availableChannelsTemp;
-    foreach(auto axis, availableAxis.keys())
-    {
-        availableChannelsTemp.insert(axis, availableAxis[axis].value<ChannelModel>());
-        _funscriptLoaded.insert(axis, false);
-    }
-    foreach(auto axis, availableChannelsTemp.keys())
-    {
-        TCodeChannelLookup::addChannel(axis, availableChannelsTemp[axis].toChannelModel33());
-        _funscriptLoaded.insert(axis, false);
-    }
-}
-
-void SettingsHandler::MigrateTo281()
-{
-
-}
-
-void SettingsHandler::MigrateTo32a(QSettings* settingsToLoadFrom)
-{
-    QVariantMap gamepadButtonMap = settingsToLoadFrom->value("gamepadButtonMap").toMap();
-    _gamepadButtonMap.clear();
-    foreach(auto button, gamepadButtonMap.keys())
-    {
-        _gamepadButtonMap.insert(button, QStringList(gamepadButtonMap[button].toString()));
-    }
-}
-
-void  SettingsHandler::MigrateTo42(QSettings* settingsToLoadFrom) {
-    QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
-    TCodeChannelLookup::clearChannelProfiles();
-    foreach(auto axis, availableChannelJson.keys())
-    {
-        TCodeChannelLookup::addChannel(axis, ChannelModel33::fromVariant(availableChannelJson.value(axis)), "Default");
-    }
-}
-
-void SettingsHandler::MigrateTo46(QSettings *settingsToLoadFrom)
-{
-    auto metaDatas = _libraryListItemMetaDatas;
-    auto metadataKeys = metaDatas.keys();
-    _libraryListItemMetaDatas.clear();
-    foreach (auto path, metadataKeys) {
-        QFileInfo fileInfo(path);
-        if(fileInfo.exists())
-        {
-            auto fileName = fileInfo.fileName();
-            int index = fileName.lastIndexOf(".");
-            if(index > -1)
-                fileName.remove(index, fileName.length());
-            _libraryListItemMetaDatas.insert(fileName, metaDatas.value(path));
-        }
-    }
-}
-
-void SettingsHandler::MigrateTo52(QSettings *settingsToLoadFrom)
-{
-    auto profilekeys = TCodeChannelLookup::getChannelProfiles();
-    foreach(auto profile, profilekeys)
-    {
-        auto channels = TCodeChannelLookup::getChannels(profile);
-        foreach(auto channelName, channels)
-        {
-            auto channel = TCodeChannelLookup::getChannel(channelName, profile);
-            LogHandler::Debug("Migrate channel from name: "+ QString::number((int)channel->track));
-            channel->track = TCodeChannelLookup::FromString(channelName);
-            LogHandler::Debug("to name: "+ QString::number((int)channel->track));
-        }
-    }
-}
-
 void SettingsHandler::changeSelectedTCodeVersion(TCodeVersion key)
 {
     if(TCodeChannelLookup::getSelectedTCodeVersion() != key)
@@ -1784,132 +1586,6 @@ void SettingsHandler::changeSelectedTCodeVersion(TCodeVersion key)
         settingsChangedEvent(true);
     }
 }
-
-//void SettingsHandler::migrateTCodeVersion()
-//{
-//    foreach(auto axis, _availableAxis.keys())
-//    {
-//        if(_selectedTCodeVersion == TCodeVersion::v3)
-//        {
-//            _availableAxis[axis].Max = 9999;
-//            _availableAxis[axis].Mid = _availableAxis[axis].Type == AxisType::Switch ? 0 : 5000;
-//            _availableAxis[axis].UserMax = XMath::constrain(XMath::mapRange(_availableAxis[axis].UserMax, 0, 999, 0, 9999), 0 ,9999);
-//            _availableAxis[axis].UserMin = XMath::constrain(XMath::mapRange(_availableAxis[axis].UserMin, 0, 999, 0, 9999), 0 ,9999);
-//            _availableAxis[axis].UserMid = XMath::constrain(XMath::mapRange(_availableAxis[axis].UserMid, 0, 999, 0, 9999), 0 ,9999);
-//        }
-//        else
-//        {
-//            _availableAxis[axis].Max = 999;
-//            _availableAxis[axis].Mid = _availableAxis[axis].Type == AxisType::Switch ? 0 : 500;
-//            _availableAxis[axis].UserMax = XMath::constrain(XMath::mapRange(_availableAxis[axis].UserMax, 0, 9999, 0, 999), 0 ,999);
-//            _availableAxis[axis].UserMin = XMath::constrain(XMath::mapRange(_availableAxis[axis].UserMin, 0, 9999, 0, 999), 0 ,999);
-//            _availableAxis[axis].UserMid = XMath::constrain(XMath::mapRange(_availableAxis[axis].UserMid, 0, 9999, 0, 999), 0 ,999);
-//        }
-//    }
-//    _liveXRangeMax = _availableAxis.value(TCodeChannelLookup::Stroke()).UserMax;
-//    _liveXRangeMin = _availableAxis.value(TCodeChannelLookup::Stroke()).UserMin;
-//    _liveXRangeMid = _availableAxis.value(TCodeChannelLookup::Stroke()).UserMid;
-
-////    ChannelModel suckMoreModel = { "Suck more", TCodeChannelLookup::SuckMore(), TCodeChannelLookup::Suck(), 0, 500, 999, 0, 500, 999, AxisDimension::None, AxisType::HalfRange, "suck", false, 2.50f, false, 1.0f, false, false, TCodeChannelLookup::StrokeUp() };
-////    ChannelModel suckLessModel = { "Suck less", TCodeChannelLookup::SuckLess(), TCodeChannelLookup::Suck(), 0, 500, 999, 0, 500, 999, AxisDimension::None, AxisType::HalfRange, "suck", false, 2.50f, false, 1.0f, false, false, TCodeChannelLookup::StrokeDown() };
-//    if(_selectedTCodeVersion == TCodeVersion::v3)
-//    {
-//        auto v2ChannelMap = TCodeChannelLookup::TCodeVersionMap.value(TCodeVersion::v2);
-
-//        auto lubeV2Channel = v2ChannelMap.value(AxisNames::Lube);
-//        if(_availableAxis.contains(lubeV2Channel))
-//        {
-//            _availableAxis.insert(TCodeChannelLookup::Lube(), _availableAxis.value(lubeV2Channel));
-//            _availableAxis[TCodeChannelLookup::Lube()].AxisName = TCodeChannelLookup::Lube();
-//            _availableAxis[TCodeChannelLookup::Lube()].Channel = TCodeChannelLookup::Lube();
-//            _availableAxis.remove(lubeV2Channel);
-//        }
-
-//        auto suckV2Channel = v2ChannelMap.value(AxisNames::Suck);
-//        if(_availableAxis.contains(suckV2Channel))
-//        {
-//            _availableAxis.insert(TCodeChannelLookup::Suck(), _availableAxis.value(suckV2Channel));
-//            _availableAxis[TCodeChannelLookup::Suck()].AxisName = TCodeChannelLookup::Suck();
-//            _availableAxis[TCodeChannelLookup::Suck()].Channel = TCodeChannelLookup::Suck();
-//            _availableAxis.remove(suckV2Channel);
-//        }
-
-//        auto suckMoreV2Channel = v2ChannelMap.value(AxisNames::SuckMore);
-//        if(_availableAxis.contains(suckMoreV2Channel))
-//        {
-//            _availableAxis.insert(TCodeChannelLookup::SuckMore(), _availableAxis.value(suckMoreV2Channel));
-//            _availableAxis[TCodeChannelLookup::SuckMore()].AxisName = TCodeChannelLookup::SuckMore();
-//            _availableAxis[TCodeChannelLookup::SuckMore()].Channel = TCodeChannelLookup::Suck();
-//            _availableAxis.remove(suckMoreV2Channel);
-//        }
-
-//        auto suckLessV2Channel = v2ChannelMap.value(AxisNames::SuckLess);
-//        if(_availableAxis.contains(suckLessV2Channel))
-//        {
-//            _availableAxis.insert(TCodeChannelLookup::SuckLess(), _availableAxis.value(suckLessV2Channel));
-//            _availableAxis[TCodeChannelLookup::SuckLess()].AxisName = TCodeChannelLookup::SuckLess();
-//            _availableAxis[TCodeChannelLookup::SuckLess()].Channel = TCodeChannelLookup::Suck();
-//            _availableAxis.remove(suckLessV2Channel);
-//        }
-
-//        ChannelModel suctionPositionModel = { "Suck manual", TCodeChannelLookup::SuckPosition(), TCodeChannelLookup::SuckPosition(), 0, 5000, 9999, 0, 5000, 9999, AxisDimension::None, AxisType::Range, "suckManual", false, 2.50f, false, 1.0f, false, false, TCodeChannelLookup::Stroke() };
-//        ChannelModel suctionMorePositionModel = { "Suck manual more ", TCodeChannelLookup::SuckMorePosition(), TCodeChannelLookup::SuckPosition(), 0, 5000, 9999, 0, 5000, 9999, AxisDimension::None, AxisType::HalfRange, "suckManual", false, 2.50f, false, 1.0f, false, false, TCodeChannelLookup::StrokeUp() };
-//        ChannelModel suctionLessPositionModel = { "Suck manual less ", TCodeChannelLookup::SuckLessPosition(), TCodeChannelLookup::SuckPosition(), 0, 5000, 9999, 0, 5000, 9999, AxisDimension::None, AxisType::HalfRange, "suckManual", false, 2.50f, false, 1.0f, false, false, TCodeChannelLookup::StrokeDown() };
-//       _availableAxis.insert(TCodeChannelLookup::SuckPosition(), suctionPositionModel);
-//       _availableAxis.insert(TCodeChannelLookup::SuckMorePosition(), suctionMorePositionModel);
-//       _availableAxis.insert(TCodeChannelLookup::SuckLessPosition(), suctionLessPositionModel);
-//    }
-//    else
-//    {
-//        auto v3ChannelMap = TCodeChannelLookup::TCodeVersionMap.value(TCodeVersion::v3);
-
-//        auto lubeV3Channel = v3ChannelMap.value(AxisNames::Lube);
-//        if(_availableAxis.contains(lubeV3Channel))
-//        {
-//            _availableAxis.insert(TCodeChannelLookup::Lube(), _availableAxis.value(lubeV3Channel));
-//            _availableAxis[TCodeChannelLookup::Lube()].AxisName = TCodeChannelLookup::Lube();
-//            _availableAxis[TCodeChannelLookup::Lube()].Channel = TCodeChannelLookup::Lube();
-//            _availableAxis.remove(lubeV3Channel);
-//        }
-
-//        auto suckV3Channel = v3ChannelMap.value(AxisNames::Suck);
-//        if(_availableAxis.contains(suckV3Channel))
-//        {
-//            _availableAxis.insert(TCodeChannelLookup::Suck(), _availableAxis.value(suckV3Channel));
-//            _availableAxis[TCodeChannelLookup::Suck()].AxisName = TCodeChannelLookup::Suck();
-//            _availableAxis[TCodeChannelLookup::Suck()].Channel = TCodeChannelLookup::Suck();
-//            _availableAxis.remove(suckV3Channel);
-//        }
-
-//        auto suckMoreV3Channel = v3ChannelMap.value(AxisNames::SuckMore);
-//        if(_availableAxis.contains(suckMoreV3Channel))
-//        {
-//            _availableAxis.insert(TCodeChannelLookup::SuckMore(), _availableAxis.value(suckMoreV3Channel));
-//            _availableAxis[TCodeChannelLookup::SuckMore()].AxisName = TCodeChannelLookup::SuckMore();
-//            _availableAxis[TCodeChannelLookup::SuckMore()].Channel = TCodeChannelLookup::Suck();
-//            _availableAxis.remove(suckMoreV3Channel);
-//        }
-
-//        auto suckLessV3Channel = v3ChannelMap.value(AxisNames::SuckLess);
-//        if(_availableAxis.contains(suckLessV3Channel))
-//        {
-//            _availableAxis.insert(TCodeChannelLookup::SuckLess(), _availableAxis.value(suckLessV3Channel));
-//            _availableAxis[TCodeChannelLookup::SuckLess()].AxisName = TCodeChannelLookup::SuckLess();
-//            _availableAxis[TCodeChannelLookup::SuckLess()].Channel = TCodeChannelLookup::Suck();
-//            _availableAxis.remove(suckLessV3Channel);
-//        }
-
-//        auto suckPositionV3Channel = v3ChannelMap.value(AxisNames::SuckPosition);
-//        _availableAxis.remove(suckPositionV3Channel);
-
-//        auto suckMorePositionV3Channel = v3ChannelMap.value(AxisNames::SuckMorePosition);
-//        _availableAxis.remove(suckMorePositionV3Channel);
-
-//        auto suckLessPositionV3Channel = v3ChannelMap.value(AxisNames::SuckLessPosition);
-//        _availableAxis.remove(suckLessPositionV3Channel);
-
-//    }
-//}
 
 bool SettingsHandler::getHideWelcomeScreen()
 {

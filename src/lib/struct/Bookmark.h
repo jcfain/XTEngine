@@ -2,24 +2,48 @@
 #define BOOKMARK_H
 
 #include <QString>
-#include <QDataStream>
+#include <QJsonObject>
 
 struct Bookmark
 {
     QString Name;
     qint64 Time;
+    QString ChannelProfile;
 
-    friend QDataStream & operator<<(QDataStream &dataStream, const Bookmark &object )
+    // friend QDataStream & operator<<(QDataStream &dataStream, const Bookmark &object )
+    // {
+    //     dataStream << object.Name;
+    //     dataStream << object.Time;
+    //     dataStream << object.ChannelProfile;
+    //     return dataStream;
+    // }
+    // friend QDataStream & operator>>(QDataStream &dataStream, Bookmark &object)
+    // {
+    //     dataStream >> object.Name;
+    //     dataStream >> object.Time;
+    //     dataStream >> object.ChannelProfile;
+    //     return dataStream;
+    // }
+    QVariant toVariant()
     {
-        dataStream << object.Name;
-        dataStream << object.Time;
-        return dataStream;
+        return QVariant::fromValue(toJson());
     }
-    friend QDataStream & operator>>(QDataStream &dataStream, Bookmark &object)
+
+    QJsonObject toJson()
     {
-        dataStream >> object.Name;
-        dataStream >> object.Time;
-        return dataStream;
+        QJsonObject obj;
+        obj["name"] = Name;
+        obj["time"] = QString::number(Time);
+        obj["channelProfile"] = ChannelProfile;
+        return obj;
+    }
+
+    static Bookmark fromJson(QJsonObject obj)
+    {
+        Bookmark item;
+        item.Name = obj["name"].toString();
+        item.Time = obj["time"].toString().toLongLong();
+        item.ChannelProfile = obj["channelProfile"].toString();
     }
 };
 

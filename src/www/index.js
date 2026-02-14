@@ -1,6 +1,12 @@
 const webVersion = "v0.591b";
 var debugMode = false;
 
+var XLogLevel = {
+    Information: 0,
+    Debuging: 1,
+    Warning: 2,
+    Critical: 3
+}
 var DeviceType = {
 	Serial: 0,
 	Network: 1,
@@ -293,6 +299,9 @@ function onOutputDeviceConnectionChange(input, device) {
 	sendMediaState();
 }
 
+function sendSystemReady() {
+	sendWebsocketMessage("systemReady");
+}
 function startMetadataProcess() {
 	showAlertWindow("Process metadata", "This will set metadata using the algrorith on first scan.<br>Adding smart tags and mfs tags based on the scan.<br>It will not change any user tags set by you.",sendMetadataProcess);
 }
@@ -459,6 +468,7 @@ function initWebSocket() {
 			debug("CONNECTED");
 			updateSettingsUI();
 			sendMediaState();
+			sendSystemReady();
 		};
 		websocket.onmessage = function (evt) {
 			wsCallBackFunction(evt);
@@ -485,17 +495,38 @@ function wsCallBackFunction(evt) {
 	try {
 		var data = JSON.parse(evt.data);
 		switch (data["command"]) {
+			case "messageSend": {
+					var obj = data["message"];
+					const message = obj["message"].replaceAll("\n", "<br>");
+					const level = obj["loglevel"]
+					switch(level) {
+						case XLogLevel.Debuging:
+							break
+						case XLogLevel.Critical:
+							systemError(message);
+							break
+						case XLogLevel.Information:
+							showAlertWindow("Message", message);
+							break
+						case XLogLevel.Warning:
+							systemWarning(message);
+							break
+						default:
+							break;
+					}
+				}
+				break;
 			case "userError":
-				userError(data["message"]);
+				userError(data["message"].replaceAll("\n", "<br>"));
 				break;
 			case "userWarning":
-				userWarning(data["message"]);
+				userWarning(data["message"].replaceAll("\n", "<br>"));
 				break;
 			case "systemError":
-				systemError(data["message"]);
+				systemError(data["message"].replaceAll("\n", "<br>"));
 				break;
 			case "systemWarning":
-				systemWarning(data["message"]);
+				systemWarning(data["message"].replaceAll("\n", "<br>"));
 				break;
 			case "settingChange":
 				onSaveSuccess();

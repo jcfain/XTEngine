@@ -38,6 +38,12 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         obj["success"] = success;
         _webSocketHandler->sendCommand("settingsExported", obj);
     });
+    connect(SettingsHandler::instance(), &SettingsHandler::messageSend, this, [this](QString message, XLogLevel loglevel) {
+        QJsonObject obj;
+        obj["message"] = message;
+        obj["loglevel"] = (int)loglevel;
+        _webSocketHandler->sendCommand("messageSend", obj);
+    });
 
     connect(_webSocketHandler, &WebSocketHandler::clean1024, this, &HttpHandler::clean1024);
     connect(_webSocketHandler, &WebSocketHandler::connectOutputDevice, this, &HttpHandler::connectOutputDevice);
@@ -1364,9 +1370,9 @@ void HttpHandler::handleDeleteExported(const QHttpServerRequest &request, QHttpS
         responder.write(QHttpServerResponse::StatusCode::NotFound);
         return;
     }
-    if(!fileName.startsWith("xsettings"))
+    if(!fileName.startsWith(SettingsHandler::getExportFileNamePrefix()))
     {
-        LogHandler::Error("File name to delete did not start with xsettings as required: " + fileName);
+        LogHandler::Error("File name to delete did not start with "+SettingsHandler::getExportFileNamePrefix()+" as required: " + fileName);
         responder.write(QHttpServerResponse::StatusCode::Forbidden);
         return;
     }

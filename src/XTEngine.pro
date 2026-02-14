@@ -61,6 +61,7 @@ SOURCES += \
     lib/tool/imagefactory.cpp \
     lib/tool/mediaformat.cpp \
     lib/tool/medialibrarycache.cpp \
+    lib/tool/migration.cpp \
     lib/tool/qsettings_json.cpp \
     lib/tool/simplecrypt.cpp \
     lib/tool/tcodefactory.cpp \
@@ -112,16 +113,13 @@ HEADERS += \
     lib/settings/medialibrarysettings.h \
     lib/settings/settingsbase.h \
     lib/struct/Bookmark.h \
-    lib/struct/ChannelModel.h \
     lib/struct/ChannelModel33.h \
     lib/struct/ConnectionChangedSignal.h \
     lib/struct/DecoderModel.h \
     lib/struct/Funscript.h \
     lib/struct/GamepadState.h \
     lib/struct/InputConnectionPacket.h \
-    lib/struct/LibraryListItem.h \
     lib/struct/LibraryListItem27.h \
-    lib/struct/LibraryListItemMetaData.h \
     lib/struct/LibraryListItemMetaData258.h \
     lib/struct/NetworkAddress.h \
     lib/struct/NetworkConnectionInfo.h \
@@ -130,6 +128,7 @@ HEADERS += \
     lib/struct/SerialComboboxItem.h \
     lib/struct/connection.h \
     lib/struct/device.h \
+    lib/struct/xmessage.h \
     lib/tool/array-util.h \
     lib/tool/boolinq.h \
     lib/tool/file-util.h \
@@ -138,6 +137,7 @@ HEADERS += \
     lib/tool/imagefactory.h \
     lib/tool/mediaformat.h \
     lib/tool/medialibrarycache.h \
+    lib/tool/migration.h \
     lib/tool/qsettings_json.h \
     lib/tool/simplecrypt.h \
     lib/tool/string-util.h \

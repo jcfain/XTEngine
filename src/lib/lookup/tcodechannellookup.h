@@ -8,7 +8,7 @@
 #include "Track.h"
 #include "TCodeVersion.h"
 #include <QHash>
-#include "../struct/ChannelModel.h"
+#include "../struct/ChannelModel33.h"
 #include "MediaActions.h"
 #include "XTEngine_global.h"
 

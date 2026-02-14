@@ -160,3 +160,8 @@ float XMath::roundTwoDecimal(float value)
 {
     return roundf(value * 100) / 100;
 }
+
+float XMath::roundThreeDecimal(float value)
+{
+    return roundf(value * 1000) / 1000;
+}

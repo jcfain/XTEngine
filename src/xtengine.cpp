@@ -20,7 +20,6 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     // qRegisterMetaTypeStreamOperators<ChannelName>("ChannelName");
     // qRegisterMetaTypeStreamOperators<DecoderModel>("DecoderModel");
     // qRegisterMetaTypeStreamOperators<XMediaStatus>("XMediaStatus");
-    qRegisterMetaType<LibraryListItem>();
     // qRegisterMetaTypeStreamOperators<LibraryListItem>("LibraryListItem");
     // qRegisterMetaTypeStreamOperators<QMap<QString, QList<LibraryListItem>>>("QMap<QString, QList<LibraryListItem>>");
     // qRegisterMetaTypeStreamOperators<QList<LibraryListItem>>("QList<LibraryListItem>");

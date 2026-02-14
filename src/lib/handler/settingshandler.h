@@ -24,16 +24,15 @@
 #include "../lookup/SettingMap.h"
 // #include "../tool/qsettings_json.hpp"
 #include "../tool/xmath.h"
-#include "../struct/ChannelModel.h"
 #include "../struct/ChannelModel33.h"
 #include "../struct/DecoderModel.h"
-#include "../struct/LibraryListItem.h"
 #include "../struct/LibraryListItem27.h"
-#include "../struct/LibraryListItemMetaData.h"
 #include "../struct/LibraryListItemMetaData258.h"
+#include "../struct/xmessage.h"
 #include "lib/lookup/TCodeCommand.h"
 #include "../lookup/xtags.h"
 #include "../struct/NetworkConnectionInfo.h"
+#include "../tool/qsettings_json.h"
 
 #define ORGANIZATION_NAME "cUrbSide prOd"
 #define APPLICATION_NAME "XTEngine"
@@ -55,6 +54,8 @@ public slots:
     static void changeSetting(QString settingName, QVariant value, bool needsRestart);
     void setMoneyShot(LibraryListItem27& selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
     void addBookmark(LibraryListItem27& LibraryListItem27, QString name, qint64 currentPosition);
+    static void systemReady();
+    static void addStartupMessage(XMessage message, QSettings* settingsToSaveTo = nullptr);
 
 public:
     static SettingsHandler* instance()
@@ -75,8 +76,10 @@ public:
     static void Quit(bool restart);
     static void Restart();
     static bool Import(QString file, QSettings::Format format);
-    static bool Export(QString file, QSettings::Format format);
-    static bool ExportQuick();
+    static bool Export(QString file, QSettings::Format format, QSettings* settingsToExport = nullptr);
+    static bool ExportQuick(QString file = nullptr, QSettings::Format format = JSONSettingsFormatter::JsonFormat, QSettings* settingsToExport = nullptr);
+    static QString getExportFileName(QString version);
+    static QString getExportFileNamePrefix();
     static QSettings* getSettings();
     static void copy(const QSettings* from, QSettings* into);
     static QVariant getSetting(const QString& settingName);
@@ -96,7 +99,6 @@ public:
     static int getTCodePadding();
 
     static void changeSelectedTCodeVersion(TCodeVersion key);
-    //static void migrateTCodeVersion();
     static QString getDeoDnlaFunscript(QString key);
     static QHash<QString, QVariant> getDeoDnlaFunscripts();
 
@@ -467,29 +469,12 @@ private:
     static void setupKeyboardKeyMap();
     // static void setupTCodeCommands();
     static void setupTCodeCommandMap();
-    static void MigrateTo23();
-    static void MigrateTo25();
-    static void MigrateTo252();
-    static void MigrateLibraryMetaDataTo258();
-    static void MigratrTo2615();
-    static void MigrateTo263();
-    static void MigrateToQVariant(QSettings* settingsToLoadFrom);
-    static void MigrateToQVariant2(QSettings* settingsToLoadFrom);
-    static void MigrateToQVariantChannelModel(QSettings* settingsToLoadFrom);
-    static void MigrateTo281();
-    static void DeMigrateLibraryMetaDataTo258();
-    static void MigrateTo32a(QSettings* settingsToLoadFrom);
-    static void MigrateTo42(QSettings* settingsToLoadFrom);
-    static void MigrateTo46(QSettings* settingsToLoadFrom);
-    static void MigrateTo52(QSettings* settingsToLoadFrom);
-
 
     static void SaveChannelMap(QSettings* settingsToSaveTo = 0);
     static void SaveTCodeCommandMap(QSettings* settingsToSaveTo = 0);
     // static void SaveTCodeCommands(QSettings* settingsToSaveTo = 0);
 
     static void storeMediaMetaDatas(QSettings* settingsToSaveTo = 0);
-
 
     static QString _appdataLocation;
     static GamepadAxisName gamepadAxisNames;
@@ -589,6 +574,7 @@ private:
     static QTimer m_settingsChangedNotificationDebounce;
     static QHash<QString, bool> _funscriptLoaded;
     static QSettings* settings;
+    static inline const QString m_exportFileNamePrefix = "xsettings";
     static QMutex mutex;
 };
 
