@@ -12,6 +12,8 @@ struct FunscriptAction {
     int speed;
     int lastPos;
     int lastSpeed;
+    int nextPos;
+    int nextSpeed;
 };
 
 struct FunscriptBookmark {
@@ -48,6 +50,9 @@ struct XFunscript {
     int lastActionPos = 0;
     int lastActionPosModified = 0;
     int lastActionInterval = 0;
+    int nextActionPos = 0;
+    int nextActionPosModified = 0;
+    int nextActionInterval = 0;
     qint64 min = -1;
     qint64 max = -1;
     QList<qint64> atList;

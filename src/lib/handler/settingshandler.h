@@ -202,8 +202,8 @@ public:
     static bool getLinkToRelatedAxisChecked(QString channel);
     static void setLinkToRelatedAxisChecked(QString channel, bool value);
     static void setLinkToRelatedAxis(QString channel, QString linkedChannel);
-    static void setDelayValue(QString channel, float value);
-    static float getDelayValue(QString channel);
+    static void setMotionModifierOffsetValue(QString channel, float value);
+    static float getMotionModifierOffsetValue(QString channel);
 
     static void setLibraryView(int value);
     static void setThumbSize(int value);

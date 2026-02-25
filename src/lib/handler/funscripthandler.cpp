@@ -385,19 +385,31 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
                 }
             }
         }
-        qreal speedmodifier = XMediaStateHandler::getPlaybackSpeed();
-        if(speedmodifier > 0 && speedmodifier != 1.0 && speedmodifier < 2.0)
+
+        calculateSpeedModifier(interval);
+
+        int nextIndex = funscript->settings.nextActionIndex + 1;
+        // int nextNextIndex = funscript->settings.nextActionIndex + 2;
+        if(nextIndex < atList.length())
         {
-            LogHandler::Debug("interval before: "+ QString::number(interval));
-            interval = round(speedmodifier < 1.0 ? interval / speedmodifier :
-                                  interval - ((interval * speedmodifier) - interval));
-            LogHandler::Debug("interval after: "+ QString::number(interval));
+            qint64 nextActionMillis = atList[nextIndex];
+            // qint64 nextNextActionMillis = atList[nextNextIndex];
+            funscript->settings.nextActionPos = funscript->actions.value(nextActionMillis);
+            funscript->settings.nextActionInterval = nextActionMillis - executionMillis;
+            calculateSpeedModifier(funscript->settings.nextActionInterval);
         }
-        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { funscript->settings.trackName, executionMillis, pos, interval, funscript->settings.lastActionPos, funscript->settings.lastActionInterval });
+        else
+        {
+            funscript->settings.nextActionPos = -1;
+            funscript->settings.nextActionInterval = -1;
+        }
+
+        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { funscript->settings.trackName, executionMillis, pos, interval, funscript->settings.lastActionPos, funscript->settings.lastActionInterval, funscript->settings.nextActionPos, funscript->settings.nextActionInterval });
         //LogHandler::Debug("nextAction.speed: "+ QString::number(nextAction->speed));
         funscript->settings.lastActionIndex = funscript->settings.nextActionIndex;
         funscript->settings.lastActionPos = funscript->actions.value(executionMillis);
         funscript->settings.lastActionInterval = interval;
+
         return nextAction;
     }
     return nullptr;
@@ -471,6 +483,18 @@ qint64 FunscriptHandler::findClosest(const qint64& value, const QList<qint64>& a
     }
     // lo == hi + 1
     return (a[lo] - value) < (value - a[hi]) ? a[lo] : a[hi];
+}
+
+void FunscriptHandler::calculateSpeedModifier(int& interval)
+{
+    qreal speedmodifier = XMediaStateHandler::getPlaybackSpeed();
+    if(speedmodifier > 0 && speedmodifier != 1.0 && speedmodifier < 2.0)
+    {
+        LogHandler::Debug("interval before: "+ QString::number(interval));
+        interval = round(speedmodifier < 1.0 ? interval / speedmodifier :
+                             interval - ((interval * speedmodifier) - interval));
+        LogHandler::Debug("interval after: "+ QString::number(interval));
+    }
 }
 
 

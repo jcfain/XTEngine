@@ -1918,20 +1918,20 @@ void SettingsHandler::setLinkToRelatedAxis(QString channel, QString linkedChanne
     }
 }
 
-void SettingsHandler::setDelayValue(QString channel, float value)
+void SettingsHandler::setMotionModifierOffsetValue(QString channel, float value)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel)) {
-        TCodeChannelLookup::getChannel(channel)->Delay = value;
+        TCodeChannelLookup::getChannel(channel)->Offset = value;
         settingsChangedEvent(true);
     }
 }
 
-float SettingsHandler::getDelayValue(QString channel)
+float SettingsHandler::getMotionModifierOffsetValue(QString channel)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel))
-        return TCodeChannelLookup::getChannel(channel)->Delay;
+        return TCodeChannelLookup::getChannel(channel)->Offset;
     return 0;
 }
 

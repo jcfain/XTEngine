@@ -19,7 +19,6 @@ public:
     TCodeHandler(QObject* parent = nullptr);
     ~TCodeHandler();
     QString funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAction>> actions);
-
     int calculateRange(const char* channel, int rawValue);
     QString getRunningHome();
     QString getAllHome();
@@ -28,6 +27,8 @@ public:
 
 private:
     QMutex mutex;
+    QString handleMotionModifier(std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions);
+    QString getMotionModifierTCode(ChannelModel33* channel, std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions);
     void getChannelHome(ChannelModel33* channel, QString &tcode);
     QMap<QString, int> channelValueTracker;
     QHash<Track, bool> multiplierEnabledTracker;

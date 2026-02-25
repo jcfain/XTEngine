@@ -83,6 +83,7 @@ private:
     void jsonToFunscript(const QJsonObject& json, QHash<qint64, int>& actions);
     void setFunscriptSettings(const Track& channelName, Funscript& funscript);
     qint64 findClosest(const qint64& value, const QList<qint64>& a);
+    void calculateSpeedModifier(int& interval);
 };
 
 #endif // FUNSCRIPTHANDLER_H

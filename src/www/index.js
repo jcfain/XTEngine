@@ -3318,14 +3318,14 @@ async function setupMotionModifiers() {
 	sectionNode.appendChild(multiplierEnabledNode);
 
 	const enabledHelptext = "The will toggle whether this channel is included in the random motion generation or not.";
-	const linkToHelptext = "This will match the values of the linked channel 1:1 with modifiers speed and delay applied.";
+	const linkToHelptext = "This will match the values of the linked channel 1:1 with modifiers speed and offset applied.";
 	const speedHelptext = "The percentage of the linked scripts time to modify the speed.\nIf the speed is 0.1, the speed will be 10% of the linked script or 90% slower.\nA value of 2 will be 200% faster.\nMinimum value is 0.01";
-	const delayHelpText = "The percentage of the linked scripts time to delay.\nIf the delay is 0.1 and the parent action interval is 300ms, the delay will be 30ms after the linked script event.\nCan be any value between 0.00 and 1.00";
+	const offsetHelpText = "The percentage of the linked scripts time to offset.\nIf the offset is 0.1 and the parent action interval is 300ms, the offset will be 30ms after the linked script event.\nCan be any value between -1.00 and 1.00";
 	var headers = [
 		//"Modifier", 
 		{text: "Link to script", helpText: linkToHelptext}, 
 		{text: "Speed", helpText: speedHelptext},  
-		{text: "Delay", helpText: delayHelpText}]
+		{text: "Offset", helpText: offsetHelpText}]
 	headers.forEach(element => {
 		var gridHeaderNode = document.createElement("div");
 		gridHeaderNode.classList.add("form-group-control");
@@ -3492,7 +3492,7 @@ async function setupMotionModifiers() {
 			if(!event.target.validity.valid)
 				return;
 			var value = parseFloat(event.target.value);
-			if (value) {
+			if (value != undefined && value != null) {
 				remoteUserSettings.availableChannels[channelName].damperValue = round(value, 2);
 				markXTPFormDirty();
 			}
@@ -3502,29 +3502,29 @@ async function setupMotionModifiers() {
 		damperEnabledValueNode.appendChild(damperValueNode);
 
 
-		var delayValueNode = document.createElement("input");
-		delayValueNode.setAttribute("name", "motionModifierInput");
-		delayValueNode.setAttribute("min", "0");
-		delayValueNode.setAttribute("max", "1");
-		delayValueNode.setAttribute("step", "0.01");
-		delayValueNode.setAttribute("title", delayHelpText);
-		delayValueNode.type = "number";
-		delayValueNode.value = round(channel.delay, 2);
+		var offsetValueNode = document.createElement("input");
+		offsetValueNode.setAttribute("name", "motionModifierInput");
+		offsetValueNode.setAttribute("min", "-1");
+		offsetValueNode.setAttribute("max", "1");
+		offsetValueNode.setAttribute("step", "0.01");
+		offsetValueNode.setAttribute("title", offsetHelpText);
+		offsetValueNode.type = "number";
+		offsetValueNode.value = round(channel.offset, 2);
 
-		delayValueNode.oninput = function (channelName, event) {
+		offsetValueNode.oninput = function (channelName, event) {
 			if(!event.target.validity.valid)
 				return;
 			var value = parseFloat(event.target.value);
-			if (value) {
-				remoteUserSettings.availableChannels[channelName].delay = value;
+			if (value != undefined && value != null) {
+				remoteUserSettings.availableChannels[channelName].offset = value;
 				markXTPFormDirty();
 			}
-		}.bind(delayValueNode, channelName);
+		}.bind(offsetValueNode, channelName);
 
 		damperEnabledValueNode.appendChild(damperEnabledNode);
 		damperEnabledValueNode.appendChild(damperValueNode);
 
-		damperEnabledValueNode.appendChild(delayValueNode);
+		damperEnabledValueNode.appendChild(offsetValueNode);
 
 		sectionNode.appendChild(enabledValueNode);
 		sectionNode.appendChild(linkedEnabledValueNode);
