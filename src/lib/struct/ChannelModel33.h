@@ -40,9 +40,9 @@ struct ChannelModel33
     ChannelType Type;
     QString trackName;
     bool MultiplierEnabled;
-    bool DamperEnabled;
-    bool DamperRandom;
-    float DamperValue;
+    bool SpeedEnabled;
+    bool SpeedRandom;
+    float SpeedValue;
     bool FunscriptInverted;
     bool GamepadInverted;
     bool LinkToRelatedMFS;
@@ -121,9 +121,9 @@ struct ChannelModel33
         newItem.Type = (ChannelType)obj["type"].toInt();
         newItem.trackName = obj["trackName"].toString();
         newItem.MultiplierEnabled = obj["multiplierEnabled"].toBool();
-        newItem.DamperEnabled = obj["damperEnabled"].toBool();
-        newItem.DamperRandom = obj["damperRandom"].toBool();
-        newItem.DamperValue = obj["damperValue"].toDouble();
+        newItem.SpeedEnabled = obj["speedEnabled"].toBool();
+        newItem.SpeedRandom = obj["speedRandom"].toBool();
+        newItem.SpeedValue = obj["speedValue"].toDouble();
         newItem.FunscriptInverted = obj["funscriptInverted"].toBool();
         newItem.GamepadInverted = obj["gamepadInverted"].toBool();
         newItem.LinkToRelatedMFS = obj["linkToRelatedMFS"].toBool();
@@ -154,9 +154,9 @@ struct ChannelModel33
         obj["type"] = (int)item.Type;
         obj["trackName"] = item.trackName;
         obj["multiplierEnabled"] = item.MultiplierEnabled;
-        obj["damperEnabled"] = item.DamperEnabled;
-        obj["speedRandom"] = item.DamperRandom;
-        obj["damperValue"] = item.DamperValue;
+        obj["speedEnabled"] = item.SpeedEnabled;
+        obj["speedRandom"] = item.SpeedRandom;
+        obj["speedValue"] = item.SpeedValue;
         obj["funscriptInverted"] = item.FunscriptInverted;
         obj["gamepadInverted"] = item.GamepadInverted;
         obj["linkToRelatedMFS"] = item.LinkToRelatedMFS;

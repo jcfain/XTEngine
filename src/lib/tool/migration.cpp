@@ -60,3 +60,34 @@ void Migration::MigrateTo592(QSettings *settingsToLoadFrom)
     settingsToLoadFrom->setValue("versionString", roundedString);
     // Do not sync at this point as things have not loaded.
 }
+
+void Migration::RenameChannelDamperToSpeed(QSettings *settingsToLoadFrom)
+{
+    QVariantMap availableChannelVariant = settingsToLoadFrom->value("availableChannels").toMap();
+    foreach(auto profile, availableChannelVariant.keys())
+    {
+        QVariantMap profileChannelsVariant = availableChannelVariant.value(profile).toMap();
+        foreach(auto tcodeChannelName, profileChannelsVariant.keys())
+        {
+            QVariant modelVariant = profileChannelsVariant.value(tcodeChannelName);
+            QJsonObject obj = modelVariant.toJsonObject();
+            if(tcodeChannelName == "R2")
+            {
+                LogHandler::Debug("break");
+            }
+            bool speedEnabled = obj["damperEnabled"].toBool();
+            bool speedRandom = obj["damperRandom"].toBool();
+            double speedValue = obj["damperValue"].toDouble();
+            double offset = obj["delay"].toDouble();
+            ChannelModel33 model = ChannelModel33::fromVariant(modelVariant);
+            model.SpeedEnabled = speedEnabled;
+            model.SpeedRandom = speedRandom;
+            model.SpeedValue = speedValue;
+            model.Offset = offset;
+            profileChannelsVariant.insert(tcodeChannelName, ChannelModel33::toVariant(model));
+        }
+        availableChannelVariant.insert(profile, profileChannelsVariant);
+    }
+    settingsToLoadFrom->setValue("availableChannels", availableChannelVariant);
+    // Do not sync at this point as things have not loaded.
+}

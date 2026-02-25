@@ -98,8 +98,8 @@ struct ChannelModel
         item.Type = Type;
         item.trackName = TrackName;
         item.MultiplierEnabled = MultiplierEnabled;
-        item.DamperEnabled = DamperEnabled;
-        item.DamperValue = DamperValue;
+        item.SpeedEnabled = DamperEnabled;
+        item.SpeedValue = DamperValue;
         item.FunscriptInverted = Inverted;
         item.GamepadInverted = false;
         item.LinkToRelatedMFS = LinkToRelatedMFS;

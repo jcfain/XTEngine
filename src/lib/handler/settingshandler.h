@@ -279,6 +279,7 @@ public:
     static void updatePlaylist(QString name, QList<LibraryListItem27> value);
     static void addNewPlaylist(QString name);
     static void deletePlaylist(QString name);
+    static void savePlaylists(QSettings* settingsToSaveTo = nullptr);
 
     static void clearFunscriptLoaded();
     static void setFunscriptLoaded(QString key, bool loaded);

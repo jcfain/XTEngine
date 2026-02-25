@@ -4,8 +4,8 @@
 #include "../tool/migration.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.592b";
-const float SettingsHandler::XTEVersionNum = 0.592f;
+const QString SettingsHandler::XTEVersion = "0.593b";
+const float SettingsHandler::XTEVersionNum = 0.593f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -53,7 +53,7 @@ void SettingsHandler::systemReady()
     if (!startupMessages.isEmpty())
     {
         QStringList mesages;
-        for (XMessage message : startupMessages)
+        for (const XMessage& message : startupMessages)
         {
             mesages.append(message.message);
         }
@@ -598,15 +598,19 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     //setenv("QT_ENABLE_EXPERIMENTAL_CODECS", "1", 1);
     mediaLibrarySettings.Load(settingsToLoadFrom);
 
+
+    if(settingsVersion < 0.593f) {
+        Migration::RenameChannelDamperToSpeed(settingsToLoadFrom);
+    }
     QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
     _funscriptLoaded.clear();
     foreach(auto profile, availableChannelJson.keys())
     {
         TCodeChannelLookup::setupChannelsProfile(profile, QMap<QString, ChannelModel33>());
-        foreach(auto axis, availableChannelJson.value(profile).toObject().keys())
+        foreach(auto tcodeChannelName, availableChannelJson.value(profile).toObject().keys())
         {
-            TCodeChannelLookup::addChannel(axis, ChannelModel33::fromVariant(availableChannelJson.value(profile).toObject().value(axis)), profile);
-            _funscriptLoaded.insert(axis, false);
+            TCodeChannelLookup::addChannel(tcodeChannelName, ChannelModel33::fromVariant(availableChannelJson.value(profile).toObject().value(tcodeChannelName)), profile);
+            _funscriptLoaded.insert(tcodeChannelName, false);
         }
     }
 
@@ -714,13 +718,18 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _playlists.clear();
     foreach(auto playlist, playlists.keys())
     {
-        QVariant variant = playlists.value(playlist);
+        QVariant variant = QVariant::fromValue(playlists.value(playlist));
+        if (!variant.canConvert<QVariantList>())
+            continue;
+
         QSequentialIterable playlistArray = variant.value<QSequentialIterable>();
 
         QList<LibraryListItem27> items;
         int idTracker = 1;
-        foreach(QVariant item, playlistArray)
+        foreach(const QVariant& item, playlistArray)
         {
+            if(!item.isValid())
+                continue;
             auto itemTyped = LibraryListItem27::fromVariant(item);
             itemTyped.ID = QString::number(idTracker);
             items.append(itemTyped);
@@ -889,9 +898,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Load();
             locker.relock();
         }
-
-
-
     }
     settingsChangedEvent(false);
 }
@@ -993,19 +999,8 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("disableVRScriptSelect", _disableVRScriptSelect);
         settingsToSaveTo->setValue("disableNoScriptFound", _disableNoScriptFound);
 
+        savePlaylists(settingsToSaveTo);
 
-        QVariantMap playlists;
-        foreach(auto playlist, _playlists.keys())
-        {
-            QList<LibraryListItem27> playlistItems = _playlists[playlist];
-            QVariantList variantList;
-            foreach(auto playlistItem, playlistItems)
-            {
-                variantList.append(LibraryListItem27::toVariant(playlistItem));
-            }
-            playlists.insert(playlist, variantList);
-        }
-        settingsToSaveTo->setValue("playlists", playlists);
         settingsToSaveTo->setValue("userData", _hashedPass);
         settingsToSaveTo->setValue("userWebData", _hashedWebPass);
 
@@ -1276,15 +1271,13 @@ bool SettingsHandler::getSettingsChanged()
 
 void SettingsHandler::PersistSelectSettings()
 {
-    QVariantMap playlists;
-    foreach(auto playlist, _playlists.keys())
-    {
-        playlists.insert(playlist, QVariant::fromValue(_playlists[playlist]));
-    }
-    settings->setValue("playlists", playlists);
+    if(_playlists.count() > 0)
+        savePlaylists();
 
     if(deoDnlaFunscriptLookup.count() > 0)
         settings->setValue("deoDnlaFunscriptLookup", deoDnlaFunscriptLookup);
+
+    storeMediaMetaDatas();
 
     Sync();
 }
@@ -1309,14 +1302,14 @@ void SettingsHandler::SaveChannelMap(QSettings* settingsToSaveTo)
     QVariantMap availableChannelVariant;
     QList<QString> availableChannelProfiles = TCodeChannelLookup::getChannelProfiles();
     foreach(auto channelProfileName, availableChannelProfiles) {
-        QVariantMap availableChannelProfileVarient;
+        QVariantMap availableChannelProfileVariant;
         auto channels = TCodeChannelLookup::getChannels(channelProfileName);
         foreach(auto channel, channels) {
             auto variant = ChannelModel33::toVariant(*TCodeChannelLookup::getChannel(channel, channelProfileName));
-            availableChannelProfileVarient.insert(channel, variant);
+            availableChannelProfileVariant.insert(channel, variant);
         }
         if(!availableChannelVariant.contains(channelProfileName))
-            availableChannelVariant.insert(channelProfileName, availableChannelProfileVarient);
+            availableChannelVariant.insert(channelProfileName, availableChannelProfileVariant);
     }
     settingsToSaveTo->setValue("availableChannels", availableChannelVariant);
 }
@@ -1865,14 +1858,14 @@ float SettingsHandler::getSpeedValue(QString channel)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel))
-        return TCodeChannelLookup::getChannel(channel)->DamperValue;
+        return TCodeChannelLookup::getChannel(channel)->SpeedValue;
     return 0.0;
 }
 void SettingsHandler::setSpeedValue(QString channel, float value)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel)) {
-        TCodeChannelLookup::getChannel(channel)->DamperValue = value;
+        TCodeChannelLookup::getChannel(channel)->SpeedValue = value;
         settingsChangedEvent(true);
     }
 }
@@ -1881,14 +1874,14 @@ bool SettingsHandler::getSpeedChecked(QString channel)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel))
-        return TCodeChannelLookup::getChannel(channel)->DamperEnabled;
+        return TCodeChannelLookup::getChannel(channel)->SpeedEnabled;
     return false;
 }
 void SettingsHandler::setSpeedChecked(QString channel, bool value)
 {
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel)) {
-        TCodeChannelLookup::getChannel(channel)->DamperEnabled = value;
+        TCodeChannelLookup::getChannel(channel)->SpeedEnabled = value;
         settingsChangedEvent(true);
     }
 }
@@ -2527,6 +2520,24 @@ void SettingsHandler::deletePlaylist(QString name)
 {
     _playlists.remove(name);
     settingsChangedEvent(true);
+}
+
+void SettingsHandler::savePlaylists(QSettings *settingsToSaveTo)
+{
+    if(!settingsToSaveTo)
+        settingsToSaveTo = settings;
+    QVariantMap playlists;
+    foreach(auto playlist, _playlists.keys())
+    {
+        QList<LibraryListItem27> playlistItems = _playlists[playlist];
+        QVariantList variantList;
+        foreach(auto playlistItem, playlistItems)
+        {
+            variantList.append(LibraryListItem27::toVariant(playlistItem));
+        }
+        playlists.insert(playlist, variantList);
+    }
+    settingsToSaveTo->setValue("playlists", playlists);
 }
 
 QString SettingsHandler::GetHashedPass()

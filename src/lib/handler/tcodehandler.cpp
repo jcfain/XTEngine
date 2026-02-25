@@ -220,9 +220,9 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
     tcodeTemp += QString::number(range).rightJustified(SettingsHandler::getTCodePadding(), '0');
     tcodeTemp += channel->LinkToRelatedMFS ? "I" : "S";
     // tcodeTemp channelDistancePercentage = channelDistance/100.0f;
-    if (channel->DamperEnabled && channel->DamperValue > 0.0)
+    if (channel->SpeedEnabled && channel->SpeedValue > 0.0)
     {
-        float speedModifierValue = channel->DamperRandom ? XMath::random(0.1f, channel->DamperValue) : channel->DamperValue;
+        float speedModifierValue = channel->SpeedRandom ? XMath::random(0.1f, channel->SpeedValue) : channel->SpeedValue;
         speed = qRound(channel->LinkToRelatedMFS ? speed/speedModifierValue : speed * speedModifierValue);
         tcodeTemp += QString::number(speed);
     }

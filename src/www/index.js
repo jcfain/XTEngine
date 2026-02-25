@@ -3361,8 +3361,8 @@ async function setupMotionModifiers() {
 		formElementNode.appendChild(labelNode);
 
 
-		/* 	value["damperEnabled"] = availableChannels->value(channel).DamperEnabled;
-			value["damperValue"] = availableChannels->value(channel).DamperValue;
+		/* 	value["speedEnabled"] = availableChannels->value(channel).speedEnabled;
+			value["speedValue"] = availableChannels->value(channel).speedValue;
 			value["dimension"] = (int)availableChannels->value(channel).Dimension;
 			value["friendlyName"] = availableChannels->value(channel).FriendlyName;
 			value["linkToRelatedMFS"] = availableChannels->value(channel).LinkToRelatedMFS;
@@ -3466,40 +3466,40 @@ async function setupMotionModifiers() {
 		linkedEnabledValueNode.appendChild(relatedChannelNode);
 		linkedEnabledValueNode.setAttribute("title", linkToHelptext);
 
-		var damperEnabledValueNode = document.createElement("div");
-		damperEnabledValueNode.classList.add("form-group-control");
+		var speedEnabledValueNode = document.createElement("div");
+		speedEnabledValueNode.classList.add("form-group-control");
 
-		var damperEnabledNode = document.createElement("input");
-		damperEnabledNode.setAttribute("name", "motionModifierInput");
-		damperEnabledNode.type = "checkbox";
-		damperEnabledNode.checked = channel.damperEnabled;
-		damperEnabledNode.setAttribute("title", speedHelptext);
+		var speedEnabledNode = document.createElement("input");
+		speedEnabledNode.setAttribute("name", "motionModifierInput");
+		speedEnabledNode.type = "checkbox";
+		speedEnabledNode.checked = channel.speedEnabled;
+		speedEnabledNode.setAttribute("title", speedHelptext);
 
-		damperEnabledNode.oninput = function (channelName, event) {
-			remoteUserSettings.availableChannels[channelName].damperEnabled = event.target.checked;
+		speedEnabledNode.oninput = function (channelName, event) {
+			remoteUserSettings.availableChannels[channelName].speedEnabled = event.target.checked;
 			markXTPFormDirty();
-		}.bind(damperEnabledNode, channelName);
+		}.bind(speedEnabledNode, channelName);
 
-		var damperValueNode = document.createElement("input");
-		damperValueNode.setAttribute("name", "motionModifierInput");
-		damperValueNode.setAttribute("min", "0.01");
-		damperValueNode.setAttribute("step", "0.01");
-		damperValueNode.setAttribute("title", speedHelptext);
-		damperValueNode.type = "number";
-		damperValueNode.value = round(channel.damperValue, 2);
+		var speedValueNode = document.createElement("input");
+		speedValueNode.setAttribute("name", "motionModifierInput");
+		speedValueNode.setAttribute("min", "0.01");
+		speedValueNode.setAttribute("step", "0.01");
+		speedValueNode.setAttribute("title", speedHelptext);
+		speedValueNode.type = "number";
+		speedValueNode.value = round(channel.speedValue, 2);
 
-		damperValueNode.oninput = function (channelName, event) {
+		speedValueNode.oninput = function (channelName, event) {
 			if(!event.target.validity.valid)
 				return;
 			var value = parseFloat(event.target.value);
 			if (value != undefined && value != null) {
-				remoteUserSettings.availableChannels[channelName].damperValue = round(value, 2);
+				remoteUserSettings.availableChannels[channelName].speedValue = round(value, 2);
 				markXTPFormDirty();
 			}
-		}.bind(damperValueNode, channelName);
+		}.bind(speedValueNode, channelName);
 
-		damperEnabledValueNode.appendChild(damperEnabledNode);
-		damperEnabledValueNode.appendChild(damperValueNode);
+		speedEnabledValueNode.appendChild(speedEnabledNode);
+		speedEnabledValueNode.appendChild(speedValueNode);
 
 
 		var offsetValueNode = document.createElement("input");
@@ -3521,14 +3521,14 @@ async function setupMotionModifiers() {
 			}
 		}.bind(offsetValueNode, channelName);
 
-		damperEnabledValueNode.appendChild(damperEnabledNode);
-		damperEnabledValueNode.appendChild(damperValueNode);
+		speedEnabledValueNode.appendChild(speedEnabledNode);
+		speedEnabledValueNode.appendChild(speedValueNode);
 
-		damperEnabledValueNode.appendChild(offsetValueNode);
+		speedEnabledValueNode.appendChild(offsetValueNode);
 
 		sectionNode.appendChild(enabledValueNode);
 		sectionNode.appendChild(linkedEnabledValueNode);
-		sectionNode.appendChild(damperEnabledValueNode);
+		sectionNode.appendChild(speedEnabledValueNode);
 
 		formElementNode.appendChild(sectionNode);
 
