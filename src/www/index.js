@@ -1930,9 +1930,9 @@ function loadMedia(mediaList) {
 		var contextMenuItem = createContextMenuItem("Set moneyshot at current", setMoneyShotCurrentPosClick(obj, contextMenu));
 		contextMenuItem.classList.add("setMoneyShotAtCurrent", "disabled");
 		contextMenu.appendChild(contextMenuItem);
-		var updateMetadataMenuItem = createContextMenuItem("Update metadata", updateItemMetadata(obj, contextMenu));
+		var updateMetadataMenuItem = createContextMenuItem("Process metadata", updateItemMetadata(obj, contextMenu));
 		contextMenu.appendChild(updateMetadataMenuItem);
-		var contextMenuItem = createContextMenuItem("Edit metadata", mediaSettingsClick(obj, contextMenu));
+		var contextMenuItem = createContextMenuItem("Properties", mediaSettingsClick(obj, contextMenu));
 		contextMenu.appendChild(contextMenuItem);
 		var contextMenuItem = createContextMenuItem("Alternate scripts", showAlternateScripts(obj, contextMenu));
 		contextMenuItem.classList.add("showAlternateScripts", "disabled");
