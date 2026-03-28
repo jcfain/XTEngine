@@ -1,5 +1,6 @@
 #include "funscriptsearch.h"
 #include <QUrl>
+#include <QDir>
 
 #include "../handler/settingshandler.h"
 #include "../handler/loghandler.h"
@@ -124,9 +125,68 @@ QString FunscriptSearch::searchForFunscript(const QString& mediaPath, const QStr
         {
             LogHandler::Debug("searchForFunscript script found in path of media");
             funscriptPath = libraryScriptPath;
+            break;
         }
     }
+    if(funscriptPath.isEmpty())
+    {
+        funscriptPath = searchForFunscriptLoose(mediaPath, pathToSearch, extensions);
+    }
     return funscriptPath;
+}
+
+QString FunscriptSearch::searchForFunscriptLoose(const QString& mediaPath, const QString& pathToSearch, const QStringList& extensions)
+{
+    if(pathToSearch.isEmpty() || !QFileInfo::exists(pathToSearch))
+        return nullptr;
+
+    QDir dir(pathToSearch);
+    if(!dir.exists())
+        return nullptr;
+
+    const QString mediaNameNoExtension = XFileUtil::getNameNoExtension(mediaPath);
+    const QStringList mfsExtensions = TCodeChannelLookup::getValidMFSExtensions();
+    QStringList candidates;
+
+    const QFileInfoList files = dir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot, QDir::Name | QDir::IgnoreCase);
+    foreach(const QFileInfo& fileInfo, files)
+    {
+        const QString fileName = fileInfo.fileName();
+        if(!fileName.startsWith(mediaNameNoExtension, Qt::CaseInsensitive))
+            continue;
+
+        foreach(const QString& extension, extensions)
+        {
+            if(!fileName.endsWith(extension, Qt::CaseInsensitive))
+                continue;
+
+            // When searching for base funscripts, skip MFS channel files like ".sway.funscript".
+            if(extension.compare(".funscript", Qt::CaseInsensitive) == 0)
+            {
+                bool isMFS = false;
+                foreach(const QString& mfsExtension, mfsExtensions)
+                {
+                    if(fileName.endsWith(mfsExtension, Qt::CaseInsensitive))
+                    {
+                        isMFS = true;
+                        break;
+                    }
+                }
+                if(isMFS)
+                    continue;
+            }
+
+            candidates << fileInfo.absoluteFilePath();
+            break;
+        }
+    }
+
+    if(!candidates.isEmpty())
+    {
+        LogHandler::Debug("searchForFunscript loose found: " + candidates.first());
+        return candidates.first();
+    }
+    return nullptr;
 }
 
 QString FunscriptSearch::searchForFunscriptHttp(const QString& mediaPath, const QString& pathToSearch, const QStringList& extensions)

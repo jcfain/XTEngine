@@ -1706,6 +1706,24 @@ bool MediaLibraryHandler::discoverMultiAxis(LibraryListItem27 &item) {
             item.metadata.MFSTracks << track.track;
         }
     }
+    auto mergedTracks = FunscriptHandler::getMergedAxesTracks(path);
+    if(!mergedTracks.empty())
+    {
+        if(!item.metadata.isMFS)
+        {
+            item.metadata.isMFS = true;
+            auto header = QString(item.metadata.toolTip.isEmpty() ? "" : "\n") + "MFS tracks:";
+            item.metadata.toolTip += header;
+        }
+        foreach(auto track, mergedTracks)
+        {
+            if(item.metadata.MFSTracks.contains(track.track, Qt::CaseInsensitive))
+                continue;
+            item.metadata.toolTip += "\n";
+            item.metadata.toolTip += track.track;
+            item.metadata.MFSTracks << track.track;
+        }
+    }
     QString pathNoExtension = XFileUtil::getPathNoExtension(path);
     foreach(auto scriptExtension, funscripts)
     {

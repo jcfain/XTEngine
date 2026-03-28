@@ -147,6 +147,28 @@ void FunscriptHandler::jsonToFunscript(QJsonObject json)
 {
     m_funscripts.clear();
     SettingsHandler::clearFunscriptLoaded();
+    auto loadMergedTrack = [this, &json](const QString& axisID, const QJsonObject& trackJson) {
+        if(axisID.isEmpty())
+            return;
+
+        auto track = TCodeChannelLookup::FromString(axisID.toUpper());
+        if(track == Track::None)
+            return;
+
+        ChannelModel33* channel = TCodeChannelLookup::getChannel(track);
+        if(!channel || channel->Type == ChannelType::HalfOscillate)
+            return;
+
+        Funscript funscript;
+        jsonToFunscript(trackJson, funscript);
+        if (json.contains("inverted") && json["inverted"].isBool())
+        {
+            funscript.inverted = json["inverted"].toBool();
+        }
+        setFunscriptSettings(track, funscript);
+        m_funscripts.insert(track, funscript);
+        SettingsHandler::setFunscriptLoaded(TCodeChannelLookup::ToString(track), true);
+    };
     if (json.contains(m_sfmaJSONObjectName) && json[m_sfmaJSONObjectName].isObject())
     {
         auto jsonTracks = json[m_sfmaJSONObjectName].toObject();
@@ -167,6 +189,49 @@ void FunscriptHandler::jsonToFunscript(QJsonObject json)
                 m_funscripts.insert(channel->track, funscript);
                 SettingsHandler::setFunscriptLoaded(channelName, true);
             }
+        }
+    }
+    if (json.contains(m_mergedAxesJSONArrayName) && json[m_mergedAxesJSONArrayName].isArray())
+    {
+        auto jsonAxes = json[m_mergedAxesJSONArrayName].toArray();
+        foreach(const auto& axisValue, jsonAxes)
+        {
+            if(!axisValue.isObject())
+                continue;
+            auto axisObject = axisValue.toObject();
+            auto axisID = axisObject["id"].toString();
+            loadMergedTrack(axisID, axisObject);
+        }
+    }
+    if (json.contains("actions") && json["actions"].isObject())
+    {
+        auto jsonActionsObject = json["actions"].toObject();
+        foreach(const auto& axisID, jsonActionsObject.keys())
+        {
+            if(!jsonActionsObject[axisID].isArray())
+                continue;
+            QJsonObject trackJson;
+            trackJson["actions"] = jsonActionsObject[axisID].toArray();
+            loadMergedTrack(axisID, trackJson);
+        }
+    }
+    foreach(const auto& key, json.keys())
+    {
+        if(key == "actions" || key == "axes" || key == "channels" || key == "metadata" || key == "version" || key == "inverted")
+            continue;
+
+        const auto& value = json[key];
+        if(value.isObject())
+        {
+            auto trackObj = value.toObject();
+            if(trackObj.contains("actions") && trackObj["actions"].isArray())
+                loadMergedTrack(key, trackObj);
+        }
+        else if(value.isArray())
+        {
+            QJsonObject trackJson;
+            trackJson["actions"] = value.toArray();
+            loadMergedTrack(key, trackJson);
         }
     }
     if(!m_funscripts.contains(Track::Stroke))
@@ -611,6 +676,77 @@ bool FunscriptHandler::isMFS(QString libraryItemMediaPath)
         }
     }
     return false;
+}
+
+bool FunscriptHandler::isMergedAxes(QString libraryItemMediaPath)
+{
+    return !getMergedAxesTracks(libraryItemMediaPath).isEmpty();
+}
+
+QList<ScriptInfo> FunscriptHandler::getMergedAxesTracks(QString libraryItemMediaPath)
+{
+    QList<ScriptInfo> scriptInfos;
+    QString scriptPath = XFileUtil::getPathNoExtension(libraryItemMediaPath) + ".funscript";
+    QByteArray bytes = readFile(scriptPath);
+    if(bytes.isEmpty())
+        return scriptInfos;
+
+    QJsonObject json = readJson(bytes);
+    if(json.isEmpty())
+        return scriptInfos;
+
+    auto addTrack = [&scriptInfos, &scriptPath](const QString& axisID) {
+        if(axisID.isEmpty())
+            return;
+        auto track = TCodeChannelLookup::FromString(axisID.toUpper());
+        if(track == Track::None || track == Track::Stroke)
+            return;
+        ChannelModel33* channel = TCodeChannelLookup::getChannel(track);
+        if(!channel || channel->Type == ChannelType::HalfOscillate)
+            return;
+        const QString trackName = channel->trackName.isEmpty() ? axisID.toLower() : channel->trackName;
+        scriptInfos.append({trackName, trackName, scriptPath, trackName, ScriptType::MAIN, ScriptContainerType::MFS, ""});
+    };
+
+    if(json.contains(m_mergedAxesJSONArrayName) && json[m_mergedAxesJSONArrayName].isArray())
+    {
+        auto axes = json[m_mergedAxesJSONArrayName].toArray();
+        foreach(const auto& axisValue, axes)
+        {
+            if(!axisValue.isObject())
+                continue;
+            auto axisObject = axisValue.toObject();
+            if(axisObject.contains("actions") && axisObject["actions"].isArray())
+                addTrack(axisObject["id"].toString());
+        }
+    }
+
+    if(json.contains("actions") && json["actions"].isObject())
+    {
+        auto actionObject = json["actions"].toObject();
+        foreach(const auto& key, actionObject.keys())
+        {
+            if(actionObject[key].isArray())
+                addTrack(key);
+        }
+    }
+
+    foreach(const auto& key, json.keys())
+    {
+        if(key == "actions" || key == "axes" || key == "channels" || key == "metadata" || key == "version" || key == "inverted")
+            continue;
+        const auto& value = json[key];
+        if(value.isArray())
+            addTrack(key);
+        else if(value.isObject())
+        {
+            auto obj = value.toObject();
+            if(obj.contains("actions") && obj["actions"].isArray())
+                addTrack(key);
+        }
+    }
+
+    return scriptInfos;
 }
 
 ///

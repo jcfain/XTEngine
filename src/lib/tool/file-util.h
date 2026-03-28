@@ -58,7 +58,8 @@ public:
                     //QString separator = getSeperator(directory.filePath());
                     QString fileName = directory.fileName();
                     foreach (QString extension, extensions) {
-                        if (fileName.contains(nameNoExtension + extension)) {
+                        if (fileName.startsWith(nameNoExtension, Qt::CaseInsensitive) &&
+                            fileName.endsWith(extension, Qt::CaseInsensitive)) {
                             funscriptPath = directory.filePath();
                             LogHandler::Debug("searchForFileRecursive File found: "+funscriptPath);
                             return funscriptPath;

@@ -60,12 +60,15 @@ public:
     static QList<ScriptInfo> getSFMATracks(QString libraryItemMediaPath);
     static bool isMFS(QString libraryItemMediaPath);
     static QList<ScriptInfo> getMFSTracks(QString libraryItemMediaPath);
+    static bool isMergedAxes(QString libraryItemMediaPath);
+    static QList<ScriptInfo> getMergedAxesTracks(QString libraryItemMediaPath);
 
 
 private:
     static inline QMutex mutex;
     static inline QHash<Track, Funscript> m_funscripts;
     static inline const QString m_sfmaJSONObjectName = "channels";
+    static inline const QString m_mergedAxesJSONArrayName = "axes";
     bool m_loaded = false;
     bool _firstActionExecuted;
     static inline int m_offset;

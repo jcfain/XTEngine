@@ -26,6 +26,7 @@ private:
 
     QString searchForFunscript(const QString& mediaPath, const QStringList& pathsToSearch, const QStringList& extensions = QStringList() << ".funscript");
     QString searchForFunscript(const QString& mediaPath, const QString& pathToSearch, const QStringList& extensions = QStringList() << ".funscript");
+    QString searchForFunscriptLoose(const QString& mediaPath, const QString& pathToSearch, const QStringList& extensions = QStringList() << ".funscript");
     QString searchForFunscriptHttp(const QString& mediaPath, const QString& pathToSearch, const QStringList& extensions = QStringList() << ".funscript");
     QString searchForFunscriptMFS(const QString& mediaPath, const QStringList& pathsToSearch);
     QString searchForFunscriptMFSDeep(const QString& mediaPath, const QStringList& pathsToSearch);
