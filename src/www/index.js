@@ -1,4 +1,4 @@
-const webVersion = "v0.592b";
+const webVersion = "v0.593b";
 var debugMode = false;
 
 var XLogLevel = {
