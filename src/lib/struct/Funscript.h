@@ -14,6 +14,7 @@ struct FunscriptAction {
     int lastSpeed;
     int nextPos;
     int nextSpeed;
+    qint64 index;
 };
 
 struct FunscriptBookmark {

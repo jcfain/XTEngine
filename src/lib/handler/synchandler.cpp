@@ -542,7 +542,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
         emit syncEnd();
     });
 }
-
+qint64 actionIndexTracker = 0;
 QString SyncHandler::buildChannelActions(qint64 time, int offset)
 {
     QMap<QString, std::shared_ptr<FunscriptAction>> actions;
@@ -555,6 +555,11 @@ QString SyncHandler::buildChannelActions(qint64 time, int offset)
             auto channel = TCodeChannelLookup::ToString(track);
             actions.insert(channel, action);
             emit channelPositionChange(channel, action->pos, action->speed, ChannelTimeType::Interval);
+            actionIndexTracker++;
+            // if(actionIndexTracker != action->index)
+            // {
+            //     LogHandler::Debug(tr("Received Funscript action: ") + channel + ", index: "+QString::number(action->index));
+            // }
         }
     }
     return _tcodeHandler->funscriptToTCode(actions);
