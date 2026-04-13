@@ -563,6 +563,13 @@
 								onclick="onClickLazyLoadCheckbox(this)" />
 						</div>
 						<div class="formElement">
+							<label title="If checked, tcode commands will be hidden from the footer"
+								for="hideTcodeCommandCheckbox">Hide tcode commands
+							</label>
+							<input id="hideTcodeCommandCheckbox" type="checkbox"
+								onclick="onHideTcodeCommandClicked(this.checked)" />
+						</div>
+						<div class="formElement">
 							<label title="If checked, a voice will play with certain actions"
 								for="enableTextToSpeech">Voice enabled
 							</label>
@@ -1021,7 +1028,7 @@
 	</div>
 	<div class="footer">
 		<div class="footerSection headerActionSection toolBar">
-			<div class="toolBarGroup toolBarGroupStart">
+			<div class="toolBarGroup toolBarGroupStart actionButtons">
 				<button title="TCode device status\n(Click to connect)" name="deviceStatusRetryButton" class="icon-button icon-button--group device-status-retry-button"
 					onclick="tcodeDeviceConnectRetry()">
 					<img name="connectionStatusIconImage" class="buttonImage" src="://images/icons/reload.svg" />

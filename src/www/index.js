@@ -95,6 +95,7 @@ var NetworkProtocol = {
 
 
 var MediaActions = {};
+var TCodeCommands = [];
 
 var mediaLoading = false;
 var debounceTracker = {};// Use to create timeout handles on the fly.
@@ -205,6 +206,8 @@ var selectedSyncConnectionGlobal = JSON.parse(window.localStorage.getItem("selec
 var selectedOutputConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedOutputConnection"));
 var disableLazyLoad = JSON.parse(window.localStorage.getItem("disableLazyLoad"));
 toggleLazyLoad(disableLazyLoad, false);
+var hideTCodecommandButtons = JSON.parse(window.localStorage.getItem("hideTCodecommandButtons"));
+document.getElementById("hideTcodeCommandCheckbox").checked = hideTCodecommandButtons;
 /* 	if(!thumbSizeGlobal && window.devicePixelRatio == 2.75) {
 		thumbSizeGlobal = 400;
 	} */
@@ -263,6 +266,7 @@ var filterInputContainer = document.getElementById('filterInputContainer');
 setupTextToSpeech();
 getServerSettings();
 getMediaActions();
+getTCodeCommand();
 getExported();
 
 function debug(message) {
@@ -1076,6 +1080,25 @@ function getMediaActions() {
 	xhr.send();
 }
 
+function getTCodeCommand() {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', "/tcodeCommands", true);
+	xhr.responseType = 'json';
+	xhr.onload = function (evnt) {
+		var status = xhr.status;
+		if (status === 200) {
+			TCodeCommands = xhr.response;
+			setupTCodeCommands(TCodeCommands.commands);
+		} else {
+			parseHttpError("Error getting tcode commands", xhr);
+		}
+	}.bind(this);
+	xhr.onerror = function(evnt) {
+		parseHttpError("Error getting tcode commands", xhr);
+	};
+	xhr.send();
+}
+
 function getServerChannels() {
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', "/channels", true);
@@ -1218,6 +1241,38 @@ function removeSystemTags(smartMode) {
 		systemTagsSelect.options.remove(systemTagsSelect.options.selectedIndex);
 	}
 	markXTPFormDirty();
+}
+
+function setupTCodeCommands(commands)
+{
+	if(!commands)
+		commands = TCodeCommands;
+	if(!commands || commands.length == 0)
+		return;
+	const actionButtonsDivNodes = document.getElementsByClassName("actionButtons");
+	commands.forEach(x => {
+		const button = document.createElement("button");
+		button.innerText = x;
+		button.onclick = function () { sendTCode(x); };
+		button.style = "align-self: center;"
+		button.hidden = hideTCodecommandButtons;
+		button.name = "tcodeCommandButton";
+		button.title = x;
+		for(let i=0; i < actionButtonsDivNodes.length; i++)
+		{
+			actionButtonsDivNodes[i].appendChild(button)
+		}
+	});
+}
+
+function onHideTcodeCommandClicked(checked)
+{
+	const tcodeCommandButton = document.getElementsByName("tcodeCommandButton");
+	for(let i=0; i < tcodeCommandButton.length; i++)
+	{
+		tcodeCommandButton[i].hidden = checked;
+	}
+	window.localStorage.setItem("hideTCodecommandButtons", checked);
 }
 
 function getServerSessions() {

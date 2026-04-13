@@ -64,6 +64,7 @@ public:
     void handleChannels(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleAvailableSerialPorts(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleMediaActions(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleTCodeCommands(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleSettingsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleMediaItemMetadataUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
     QHttpServerResponse handleSubtitle(const QHttpServerRequest &req);

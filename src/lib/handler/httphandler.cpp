@@ -259,6 +259,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     _server->route("^/channels$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleChannels);
     _server->route("^/availableSerialPorts$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleAvailableSerialPorts);
     _server->route("^/mediaActions$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleMediaActions);
+    _server->route("^/tcodeCommands$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleTCodeCommands);
     _server->route("^/logout$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleLogout);
     _server->route("^/activeSessions$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleActiveSessions);
     _server->route("^/settings$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleSettingsUpdate);
@@ -533,6 +534,19 @@ void HttpHandler::handleMediaActions(const QHttpServerRequest &request, QHttpSer
     {
         root[action] = action;
     }
+    QHttpHeaders headers;
+    responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
+}
+
+void HttpHandler::handleTCodeCommands(const QHttpServerRequest &req, QHttpServerResponder &responder)
+{
+    if(!isAuthenticated(req)) {
+        responder.write(QHttpServerResponse::StatusCode::Unauthorized);
+        return;
+    }
+    QJsonObject root;
+    QStringList commands = SettingsHandler::getCustomTCodeCommands();
+    root["commands"] = QJsonArray::fromStringList(commands);
     QHttpHeaders headers;
     responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
 }
