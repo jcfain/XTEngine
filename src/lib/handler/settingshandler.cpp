@@ -4,8 +4,8 @@
 #include "../tool/migration.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.594b";
-const float SettingsHandler::XTEVersionNum = 0.594f;
+const QString SettingsHandler::XTEVersion = "0.595b";
+const float SettingsHandler::XTEVersionNum = 0.595f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -741,9 +741,15 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _hashedPass = settingsToLoadFrom->value("userData").toString();
     _hashedWebPass = settingsToLoadFrom->value("userWebData").toString();
 
-    m_customTCodeCommands = settingsToLoadFrom->value("customTCodeCommands").toStringList();
-    foreach(auto command, m_customTCodeCommands) {
-        MediaActions::AddOtherAction(command, "TCode command: " + command, ActionType::TCODE);
+    QList<QVariant> customTCodeCommandsvarient = settingsToLoadFrom->value("customTCodeCommands").toList();
+    m_customTCodeCommands.clear();
+    foreach(auto varient, customTCodeCommandsvarient)
+    {
+        m_customTCodeCommands.append(TCodeCommand::fromJson(varient.toJsonObject()));
+    }
+    foreach(auto command, m_customTCodeCommands)
+    {
+        MediaActions::AddOtherAction(command.command, "TCode command: " + command.name, ActionType::TCODE);
     }
 
 
@@ -898,6 +904,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Load();
             locker.relock();
         }
+        if(settingsVersion < 0.595f) {
+            locker.unlock();
+            Migration::MigrateTo595(settingsToLoadFrom, m_customTCodeCommands);
+            Save();
+            Load();
+            locker.relock();
+        }
+
     }
     settingsChangedEvent(false);
 }
@@ -1028,7 +1042,12 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("channelPulseEnabled", _channelPulseEnabled);
         settingsToSaveTo->setValue("channelPulseFrequency", _channelPulseFrequency);
 
-        settingsToSaveTo->setValue("customTCodeCommands", m_customTCodeCommands);
+        QList<QVariant> tcodeCommandVarient;
+        foreach(auto command, m_customTCodeCommands)
+        {
+            tcodeCommandVarient.append(command.toVariant());
+        }
+        settingsToSaveTo->setValue("customTCodeCommands", tcodeCommandVarient);
 
         // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadEnabled, m_scheduleLibraryLoadEnabled);
         // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadTime, m_scheduleLibraryLoadTime);
@@ -1670,31 +1689,66 @@ NetworkProtocol SettingsHandler::getSelectedNetworkProtocol() {
     return _selectedNetworkDeviceType;
 }
 
-QStringList SettingsHandler::getCustomTCodeCommands()
+QList<TCodeCommand> SettingsHandler::getCustomTCodeCommands()
 {
     return m_customTCodeCommands;
 }
 
-void SettingsHandler::addCustomTCodeCommand(QString command)
+TCodeCommand* SettingsHandler::getCustomTCodeCommand(const QString& name)
 {
-    if(!m_customTCodeCommands.contains(command)) {
+    TCodeCommand* value = ArrayUtil::FindByValue<TCodeCommand>(m_customTCodeCommands, [name](const TCodeCommand& tcommand) {
+        return tcommand.name == name;
+    });
+    if(!value)
+        emit SettingsHandler::instance()->messageSend("Command: "+name + " doesnt exist!", XLogLevel::Critical);
+    return value;
+}
+
+void SettingsHandler::addCustomTCodeCommand(const TCodeCommand& command)
+{
+    if(!m_customTCodeCommands.contains(command))
+    {
         m_customTCodeCommands.append(command);
         settingsChangedEvent(true);
     }
+    else
+    {
+        emit SettingsHandler::instance()->messageSend("Command: "+command.name + " already exists!", XLogLevel::Critical);
+    }
 }
 
-void SettingsHandler::removeCustomTCodeCommand(QString command)
+void SettingsHandler::removeCustomTCodeCommand(const TCodeCommand& command)
 {
     m_customTCodeCommands.removeAll(command);
     settingsChangedEvent(true);
 }
 
-void SettingsHandler::editCustomTCodeCommand(QString command, QString newCommand)
+void SettingsHandler::removeCustomTCodeCommand(const QString &name)
 {
-    if(m_customTCodeCommands.contains(command)) {
+    TCodeCommand* command = getCustomTCodeCommand(name);
+    m_customTCodeCommands.removeAll(*command);
+    settingsChangedEvent(true);
+}
+
+void SettingsHandler::editCustomTCodeCommand(const TCodeCommand& command, const TCodeCommand& newCommand)
+{
+    if(m_customTCodeCommands.contains(command))
+    {
         m_customTCodeCommands.replace(m_customTCodeCommands.indexOf(command), newCommand);
         settingsChangedEvent(true);
     }
+    else
+    {
+        emit SettingsHandler::instance()->messageSend("Command: "+command.name + " didnt exist!", XLogLevel::Critical);
+    }
+}
+
+void SettingsHandler::editCustomTCodeCommand(const QString& name, const TCodeCommand& newCommand)
+{
+    TCodeCommand* command = getCustomTCodeCommand(name);
+    if(!command)
+        return;
+    editCustomTCodeCommand(*command, newCommand);
 }
 
 QString SettingsHandler::getSerialPort()
@@ -2998,7 +3052,7 @@ int SettingsHandler::_selectedOutputConnection;
 NetworkProtocol SettingsHandler::_selectedNetworkDeviceType;
 int SettingsHandler::_librarySortMode;
 int SettingsHandler::playerVolume;
-QStringList SettingsHandler::m_customTCodeCommands;
+QList<TCodeCommand> SettingsHandler::m_customTCodeCommands;
 
 int SettingsHandler::libraryView = LibraryView::Thumb;
 int SettingsHandler::thumbSize = 175;

@@ -129,6 +129,7 @@ HEADERS += \
     lib/struct/OutputConnectionPacket.h \
     lib/struct/ScriptInfo.h \
     lib/struct/SerialComboboxItem.h \
+    lib/struct/TCodeCommand.h \
     lib/struct/connection.h \
     lib/struct/device.h \
     lib/struct/xmessage.h \

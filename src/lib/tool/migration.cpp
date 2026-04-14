@@ -61,6 +61,22 @@ void Migration::MigrateTo592(QSettings *settingsToLoadFrom)
     // Do not sync at this point as things have not loaded.
 }
 
+void Migration::MigrateTo595(QSettings *settingsToLoadFrom, QList<TCodeCommand>& list)
+{
+    list.clear();
+    QStringList tcodeCommands = settingsToLoadFrom->value("customTCodeCommands").toStringList();
+    foreach(QString command, tcodeCommands)
+    {
+        list.append({command, command});
+    }
+    QList<QVariant> tcodeCommandVarient;
+    foreach(auto command, list)
+    {
+        tcodeCommandVarient.append(command.toVariant());
+    }
+    settingsToLoadFrom->setValue("customTCodeCommands", tcodeCommandVarient);
+}
+
 void Migration::RenameChannelDamperToSpeed(QSettings *settingsToLoadFrom)
 {
     QVariantMap availableChannelVariant = settingsToLoadFrom->value("availableChannels").toMap();

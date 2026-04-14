@@ -1,4 +1,4 @@
-const webVersion = "v0.593b";
+const webVersion = "v0.595b";
 var debugMode = false;
 
 var XLogLevel = {
@@ -1252,12 +1252,12 @@ function setupTCodeCommands(commands)
 	const actionButtonsDivNodes = document.getElementsByClassName("actionButtons");
 	commands.forEach(x => {
 		const button = document.createElement("button");
-		button.innerText = x;
-		button.onclick = function () { sendTCode(x); };
+		button.innerText = x["name"];
+		button.onclick = function () { sendTCode(x["command"]); };
 		button.style = "align-self: center;"
-		button.hidden = hideTCodecommandButtons;
+		button.hidden = hideTCodecommandButtons || x["hidden"];
 		button.name = "tcodeCommandButton";
-		button.title = x;
+		button.title = x["command"];
 		for(let i=0; i < actionButtonsDivNodes.length; i++)
 		{
 			actionButtonsDivNodes[i].appendChild(button)

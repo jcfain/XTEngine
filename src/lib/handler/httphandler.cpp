@@ -545,8 +545,13 @@ void HttpHandler::handleTCodeCommands(const QHttpServerRequest &req, QHttpServer
         return;
     }
     QJsonObject root;
-    QStringList commands = SettingsHandler::getCustomTCodeCommands();
-    root["commands"] = QJsonArray::fromStringList(commands);
+    QList<TCodeCommand> commands = SettingsHandler::getCustomTCodeCommands();
+    QJsonArray commandsArray;
+    foreach (TCodeCommand command, commands)
+    {
+        commandsArray.append(command.toJson());
+    }
+    root["commands"] = commandsArray;
     QHttpHeaders headers;
     responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
 }

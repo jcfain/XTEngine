@@ -32,6 +32,8 @@
 #include "lib/lookup/TCodeCommand.h"
 #include "../lookup/xtags.h"
 #include "../struct/NetworkConnectionInfo.h"
+#include "../struct/TCodeCommand.h"
+#include "../tool/array-util.h"
 #include "../tool/qsettings_json.h"
 
 #define ORGANIZATION_NAME "cUrbSide prOd"
@@ -130,10 +132,13 @@ public:
     static void setSelectedInputConnection(ConnectionInterface deviceName);
     static void setSelectedNetworkProtocol(NetworkProtocol value);
     static NetworkProtocol getSelectedNetworkProtocol();
-    static QStringList getCustomTCodeCommands();
-    static void addCustomTCodeCommand(QString command);
-    static void removeCustomTCodeCommand(QString command);
-    static void editCustomTCodeCommand(QString command, QString newCommand);
+    static QList<TCodeCommand> getCustomTCodeCommands();
+    static TCodeCommand* getCustomTCodeCommand(const QString& name);
+    static void addCustomTCodeCommand(const TCodeCommand& command);
+    static void removeCustomTCodeCommand(const TCodeCommand& command);
+    static void removeCustomTCodeCommand(const QString& name);
+    static void editCustomTCodeCommand(const TCodeCommand& command, const TCodeCommand& newCommand);
+    static void editCustomTCodeCommand(const QString& name, const TCodeCommand& newCommand);
 
     static void setSerialPort(QString value);
     static void setServerAddress(QString value);
@@ -501,7 +506,7 @@ private:
     static bool whirligigEnabled;
     static bool _xtpWebSyncEnabled;
     static int playerVolume;
-    static QStringList m_customTCodeCommands;
+    static QList<TCodeCommand> m_customTCodeCommands;
 
     static bool _gamePadEnabled;
     static QMap<QString, QStringList> _gamepadButtonMap;
