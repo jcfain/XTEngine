@@ -315,5 +315,12 @@ Settings = {
         }
 
         settingChange(key, valueMutable);
+    },
+    onSaveSuccess(key, value) {
+        switch(key) {
+            case "settingsBackupDirectory":
+                getExported();
+                break;
+        }
     }
 }

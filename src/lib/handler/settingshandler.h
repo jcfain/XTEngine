@@ -46,6 +46,7 @@ signals:
     void settingChange(QString settingName, QVariant value);
     void settingsChanged(bool dirty);
     void settingsExported(QString message, QString path, bool success);
+    void settingsImported(QString message, QString path, bool success);
     void messageSend(QString message, XLogLevel loglevel);
     void messageSendWait(QString message, XLogLevel loglevel, QFunctionPointer callback);
     void restartRequired(bool enabled);
@@ -78,6 +79,7 @@ public:
     static void Quit(bool restart);
     static void Restart();
     static bool Import(QString file, QSettings::Format format);
+    static bool ImportQuick(QString file, QSettings::Format format = JSONSettingsFormatter::JsonFormat);
     static bool Export(QString file, QSettings::Format format, QSettings* settingsToExport = nullptr);
     static bool ExportQuick(QString file = nullptr, QSettings::Format format = JSONSettingsFormatter::JsonFormat, QSettings* settingsToExport = nullptr);
     static QString getExportFileName(QString version);

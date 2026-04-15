@@ -1147,14 +1147,16 @@ bool SettingsHandler::Import(QString file, QSettings::Format format)
 {
     if(file.isEmpty())
     {
-        LogHandler::Error("Settigns Import: Invalid file: empty file path");
-        emit instance()->messageSend("Settigns Import: Invalid file: empty file path", XLogLevel::Critical);
+        LogHandler::Error("Settings Import: Invalid file: empty file path");
+        emit instance()->messageSend("Settings Import: Invalid file: empty file path", XLogLevel::Critical);
+        emit instance()->settingsImported("Settings Import: Invalid file: empty file path", file, false);
         return false;
     }
     if(!QFileInfo::exists(file))
     {
-        LogHandler::Error("Settigns Import: Invalid file: does not exist.");
-        emit instance()->messageSend("Settigns Import: Invalid file: does not exist.", XLogLevel::Critical);
+        LogHandler::Error("Settings Import: Invalid file: does not exist.");
+        emit instance()->messageSend("Settings Import: Invalid file: does not exist.", XLogLevel::Critical);
+        emit instance()->settingsImported("Settings Import: Invalid file: does not exist.", file, false);
         return false;
     }
     // TODO validate contents format?
@@ -1164,10 +1166,48 @@ bool SettingsHandler::Import(QString file, QSettings::Format format)
     //     return false;
     // }
     QSettings settingsImport(file, format);
+    if(settingsImport.status() != QSettings::Status::NoError)
+    {
+        LogHandler::Error("Settings Import: Status error: "+ QString::number(settingsImport.status()));
+        emit instance()->messageSend("Settings Import: Status error: "+ QString::number(settingsImport.status()), XLogLevel::Critical);
+        emit instance()->settingsImported("Settings Import: Status error: "+ QString::number(settingsImport.status()), file, false);
+        return false;
+    }
+    // float settingsVersion = settingsImport->value("version").toFloat(-1.0f);
+    // if(settingsVersion < 0 || settingsVersion < XTEVersionNum)
+    // {
+    //     LogHandler::Error("Settings Import: Cannot import: "+ QString::number(settingsImport.status()));
+    //     emit instance()->messageSend("Settings Import: Status error: "+ QString::number(settingsImport.status()), XLogLevel::Critical);
+    //     emit instance()->settingsImported("Settings Import: Status error: "+ QString::number(settingsImport.status()), file, false);
+    //     return false;
+    // }
     settings->clear();
     copy(&settingsImport, settings);
     settings->sync();
+    emit instance()->settingsImported("Settings Imported", file, true);
     return true;
+}
+
+bool SettingsHandler::ImportQuick(QString file, QSettings::Format format)
+{
+    QString settingsBackupDirectory = getSetting(SettingKeys::settingsBackupDirectory).toString();
+
+    if(settingsBackupDirectory.isEmpty())
+    {
+        LogHandler::Error("Settings Import: Invalid backup directory: empty file path");
+        emit instance()->messageSend("Settings Import: Invalid backup directory: empty file path", XLogLevel::Critical);
+        emit instance()->settingsExported("Settings Import: Invalid backup directory: empty file path", settingsBackupDirectory, false);
+        return false;
+    }
+    if(!QFile::exists(settingsBackupDirectory))
+    {
+        LogHandler::Error("Settings Import: Invalid backup directory: does not exist");
+        emit instance()->messageSend("Settings Import: Invalid backup directory: does not exist", XLogLevel::Critical);
+        emit instance()->settingsExported("Settings Import: Invalid backup directory: does not exist", settingsBackupDirectory, false);
+        return false;
+    }
+    QString restorepath = settingsBackupDirectory + QDir::separator() + file;
+    return Import(restorepath, format);
 }
 
 bool SettingsHandler::Export(QString file, QSettings::Format format, QSettings* settingsToExport)
@@ -1178,9 +1218,9 @@ bool SettingsHandler::Export(QString file, QSettings::Format format, QSettings* 
     }
     if(file.isEmpty())
     {
-        LogHandler::Error("Settigns Export: Invalid path: empty file file path");
-        emit instance()->messageSend("Settigns Export: Invalid path: empty file file path", XLogLevel::Critical);
-        emit instance()->settingsExported("Settigns Export: Invalid path: empty file file path", file, false);
+        LogHandler::Error("Settings Export: Invalid path: empty file file path");
+        emit instance()->messageSend("Settings Export: Invalid path: empty file file path", XLogLevel::Critical);
+        emit instance()->settingsExported("Settings Export: Invalid path: empty file file path", file, false);
         return false;
     }
     // auto fileInfo = QFileInfo(file);
@@ -1188,17 +1228,17 @@ bool SettingsHandler::Export(QString file, QSettings::Format format, QSettings* 
     QFile::OpenMode mode;
     mode.setFlag(QFile::OpenModeFlag::WriteOnly);
     if(!fileTest.open(mode)) {
-        LogHandler::Error("Settigns Export: Invalid path: not writable");
-        emit instance()->messageSend("Settigns Export: Invalid path: not writable", XLogLevel::Critical);
-        emit instance()->settingsExported("Settigns Export: Invalid path: not writable", file, false);
+        LogHandler::Error("Settings Export: Invalid path: not writable");
+        emit instance()->messageSend("Settings Export: Invalid path: not writable", XLogLevel::Critical);
+        emit instance()->settingsExported("Settings Export: Invalid path: not writable", file, false);
         return false;
     }
     fileTest.close();
     // // auto dirFilter = fileInfo.absoluteDir();
     // // if(!dirFilter.filter().testFlag(QDir::Filter::Writable))
     // // {
-    // //     LogHandler::Error("Settigns Export: Invalid path: not writable");
-    // //     emit instance()->messageSend("Settigns Export: Invalid path: not writable", XLogLevel::Critical);
+    // //     LogHandler::Error("Settings Export: Invalid path: not writable");
+    // //     emit instance()->messageSend("Settings Export: Invalid path: not writable", XLogLevel::Critical);
     // //     return false;
     // // }
     // if(fileInfo.isDir()) {
@@ -1241,9 +1281,9 @@ bool SettingsHandler::ExportQuick(QString file, QSettings::Format format, QSetti
 
     if(settingsBackupDirectory.isEmpty())
     {
-        LogHandler::Error("Settigns Export: Invalid path: empty file file path");
-        emit instance()->messageSend("Settigns Export: Invalid path: empty file file path", XLogLevel::Critical);
-        emit instance()->settingsExported("Settigns Export: Invalid path: empty file file path", settingsBackupDirectory, false);
+        LogHandler::Error("Settings Export: Invalid path: empty file path");
+        emit instance()->messageSend("Settings Export: Invalid path: empty file path", XLogLevel::Critical);
+        emit instance()->settingsExported("Settings Export: Invalid path: empty file path", settingsBackupDirectory, false);
         return false;
     }
     QDir dir(settingsBackupDirectory);

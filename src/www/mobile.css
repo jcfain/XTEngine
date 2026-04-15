@@ -19,11 +19,11 @@
         max-width: 100%;
     }
     
-    .media-filter-input {
+    .side-action-filter-input-modal {
         width: 50vw;
         right: 25vw;
     }
-    .media-tag-filter-input {}
+    .side-action-tag-filter-modal {}
     .tab-content-body-column-section {
         flex-basis: 100%;
     }

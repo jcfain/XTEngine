@@ -67,7 +67,7 @@
 </deo-video> -->
 	<!-- 		<div class="toolBar">
 				<div class="toolBarGroup">
-					<input id="filterInput" class="media-filter-input" placeholder="Filter" oninput="filter(this.value)" />
+					<input id="filterInput" class="side-action-filter-input" placeholder="Filter" oninput="filter(this.value)" />
 				</div>
 			</div> -->
 	<div id="body-container" class="body-container">
@@ -375,26 +375,37 @@
 			<button id="refreshButton" title="Refresh the media from XTP" class="refresh-media-button icon-button" onclick="getServerLibrary()">
 				<img class="buttonImage" src="://images/icons/reload.svg"/>
 			</button> -->
-			<button id="searchButton" title="Search media" class="search-media-button icon-button" onclick="onToggleFilterInput(this)">
-				<img class="buttonImage" src="://images/icons/search.svg"/>
-			</button> 
-			<button id="tagButton" title="Filter tags" class="tag-media-button icon-button" onclick="onToggleTagInput(this)">
-				<img class="buttonImage" src="://images/icons/tag.svg"/>
-			</button> 
-			<button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button" onclick="toggleShufflePlay()">
-				<img class="buttonImage" src="://images/icons/shuffle.svg" />
-			</button> 
-			<button id="randomizeButton" title="Randomize media playlist" class="hidden random-media-button icon-button" onclick="sortChange('random')">
-				<img class="buttonImage" src="://images/icons/reload.svg" />
-			</button> 
-			<div id="filterInputContainer" class="media-filter-input-container hidden">
-				<input id="filterInput" class="media-filter-input" placeholder="Filter" oninput="debounceFilter()" />
-				<button class="media-filter-clear-button icon-button icon-button--small" onclick="clearFilterinput()">
+			<div class="side-actions">
+				<div class="side-actions-container">
+					<button id="searchButton" title="Search media" class="search-media-button icon-button icon-button--group--vertical" onclick="onToggleFilterInput(this)">
+						<img class="buttonImage" src="://images/icons/search.svg"/>
+					</button> 
+					<button id="tagButton" title="Filter tags" class="tag-media-button icon-button icon-button--group--vertical" onclick="onToggleTagInput(this)">
+						<img class="buttonImage" src="://images/icons/tag.svg"/>
+					</button> 
+					<button  title="TCode actions" name="tcodeActionsButton" class="tcode-actions-button icon-button icon-button--group--vertical" onclick="onToggleTCodeActionsMain(this)">
+						<img name="tcodeActionsImage" class="buttonImage" src="://images/icons/tcode.svg" />
+					</button>
+					<button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button icon-button--group--vertical" onclick="toggleShufflePlay()">
+						<img class="buttonImage" src="://images/icons/shuffle.svg" />
+					</button> 
+					<button id="randomizeButton" title="Randomize media playlist" class="hidden random-media-button icon-button icon-button--group--vertical" onclick="sortChange('random')">
+						<img class="buttonImage" src="://images/icons/reload.svg" />
+					</button> 
+				</div>
+			</div>
+			<div id="filterInputContainer" class="side-action-filter-input-modal hidden">
+				<input id="filterInput" class="side-action-filter-input" placeholder="Filter" oninput="debounceFilter()" />
+				<button class="side-action-filter-clear-button icon-button icon-button--small" onclick="clearFilterinput()">
 					<image class="buttonImage" src="://images/icons/x.svg" />
 				</button>
 			</div>
-			<!-- <select id="tagFilterSelect" class="media-tag-filter-input hidden" multiple oninput="filterByTag(this.value)"></select>  -->
-			<div id="tagFilterOptions" class="media-tag-filter-input hidden"></div>
+			<!-- <select id="tagFilterSelect" class="side-action-tag-filter-modal hidden" multiple oninput="filterByTag(this.value)"></select>  -->
+			<div id="tagFilterOptions" class="side-action-tag-filter-modal hidden"></div>
+			<div id="tcodeActionsMain" class="side-action-tcode-action-modal hidden">
+				<h3>TCode actions</h3>
+				<div id="actionButtons" class="side-action-tcode-action-container"></div>
+			</div>
 			<div id="scriptStatusModal" class="script-status-model hidden">
 				<div name="noScriptInput" style="align-self: center;">No script input</div>
 				<div name="scriptStatusContainer"  class="script-status-container"></div>
@@ -561,13 +572,6 @@
 							</label>
 							<input id="disableLazyLoadCheckbox" type="checkbox"
 								onclick="onClickLazyLoadCheckbox(this)" />
-						</div>
-						<div class="formElement">
-							<label title="If checked, tcode commands will be hidden from the footer"
-								for="hideTcodeCommandCheckbox">Hide tcode commands
-							</label>
-							<input id="hideTcodeCommandCheckbox" type="checkbox"
-								onclick="onHideTcodeCommandClicked(this.checked)" />
 						</div>
 						<div class="formElement">
 							<label title="If checked, a voice will play with certain actions"
@@ -1028,7 +1032,7 @@
 	</div>
 	<div class="footer">
 		<div class="footerSection headerActionSection toolBar">
-			<div class="toolBarGroup toolBarGroupStart actionButtons">
+			<div class="toolBarGroup toolBarGroupStart">
 				<button title="TCode device status\n(Click to connect)" name="deviceStatusRetryButton" class="icon-button icon-button--group device-status-retry-button"
 					onclick="tcodeDeviceConnectRetry()">
 					<img name="connectionStatusIconImage" class="buttonImage" src="://images/icons/reload.svg" />

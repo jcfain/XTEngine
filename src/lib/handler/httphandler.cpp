@@ -38,6 +38,20 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         obj["success"] = success;
         _webSocketHandler->sendCommand("settingsExported", obj);
     });
+    connect(SettingsHandler::instance(), &SettingsHandler::settingsImported, this, [this](QString message, QString path, bool success) {
+        QJsonObject obj;
+        obj["message"] = message;
+        obj["path"] = path;
+        obj["success"] = success;
+        _webSocketHandler->sendCommand("settingsImported", obj);
+        if(success)
+        {
+            QTimer::singleShot(500, [this]() {
+                SettingsHandler::setSaveOnExit(false);
+                SettingsHandler::Restart();
+            });
+        }
+    });
     connect(SettingsHandler::instance(), &SettingsHandler::messageSend, this, [this](QString message, XLogLevel loglevel) {
         QJsonObject obj;
         obj["message"] = message;

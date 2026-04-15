@@ -98,6 +98,7 @@ var MediaActions = {};
 var TCodeCommands = [];
 
 var mediaLoading = false;
+var refreshPageOnReconnect = false;
 var debounceTracker = {};// Use to create timeout handles on the fly.
 var settingChangeDebounce;
 var wsUri;
@@ -206,8 +207,6 @@ var selectedSyncConnectionGlobal = JSON.parse(window.localStorage.getItem("selec
 var selectedOutputConnectionGlobal = JSON.parse(window.localStorage.getItem("selectedOutputConnection"));
 var disableLazyLoad = JSON.parse(window.localStorage.getItem("disableLazyLoad"));
 toggleLazyLoad(disableLazyLoad, false);
-var hideTCodecommandButtons = JSON.parse(window.localStorage.getItem("hideTCodecommandButtons"));
-document.getElementById("hideTcodeCommandCheckbox").checked = hideTCodecommandButtons;
 /* 	if(!thumbSizeGlobal && window.devicePixelRatio == 2.75) {
 		thumbSizeGlobal = 400;
 	} */
@@ -265,9 +264,6 @@ var filterInputContainer = document.getElementById('filterInputContainer');
 
 setupTextToSpeech();
 getServerSettings();
-getMediaActions();
-getTCodeCommand();
-getExported();
 
 function debug(message) {
 	if (debugMode)
@@ -382,6 +378,10 @@ function sendUpdateMetadata(metadataKey) {
 function sendQuickExport() {
 	setSaveState(null, true);
 	sendWebsocketMessage("settingsQuickExport");
+}
+function sendQuickImport(filename) {
+	setSaveState(null, true);
+	sendWebsocketMessage("settingsQuickImport", {filename: filename});
 }
 function setSelectedProfile(profileName) {
 	sendWebsocketMessage("changeChannelProfile", profileName);
@@ -533,7 +533,11 @@ function wsCallBackFunction(evt) {
 				systemWarning(data["message"].replaceAll("\n", "<br>"));
 				break;
 			case "settingChange":
+				var obj = data["message"];
+				var key = obj["key"];
+				var value = obj["value"];
 				onSaveSuccess();
+				Settings.onSaveSuccess(key, value);
 				break;
 			case "settingsExported":
 				var obj = data["message"];
@@ -541,6 +545,13 @@ function wsCallBackFunction(evt) {
 				var path = obj["path"];
 				var success = obj["success"];
 				onSettingsExported(message, path, success);
+				break;
+			case "settingsImported":
+				var obj = data["message"];
+				var message = obj["message"];
+				var path = obj["path"];
+				var success = obj["success"];
+				onSettingsImported(message, path, success);
 				break;
 			case "stopAllMedia":
 				stopVideo();
@@ -919,9 +930,13 @@ function checkPass() {
     } else
         alert("Invalid password");
 }
-function confirmDeleteExported (filename)
+function confirmDeleteExported(filename)
 {
 	showAlertWindow("Delete", "Are you sure you wish to delete the file:<br>"+ filename + "?", () => deleteExported(filename));
+}
+function confirmImportExported(filename)
+{
+	showAlertWindow("Restore", "Are you sure you wish to restore all settings to the file:<br>"+ filename + "?<br>The application will automatically restart after a successful import.", () => restoreExported(filename));
 }
 function deleteExported(filename) {
 	setSaveState(null, true);
@@ -945,7 +960,11 @@ function deleteExported(filename) {
     };
     xhr.send(JSON.stringify({filename:filename}));
 }
-
+function restoreExported(filename)
+{
+	sendQuickImport(filename);
+	closeAlertWindow();
+}
 function getExported() {
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', "/exported", true);
@@ -985,6 +1004,13 @@ function getExported() {
 					tdDownload.appendChild(tdSpan);
 					tr.appendChild(tdDownload);
 
+					const tdImport = document.createElement("td");
+					const importButton = document.createElement("button");
+					importButton.innerText = "R";
+					importButton.onclick = () => confirmImportExported(x);
+					tdImport.appendChild(importButton);
+					tr.appendChild(tdImport);
+
 					const tdDelete = document.createElement("td");
 					const deleteButton = document.createElement("button");
 					deleteButton.innerText = "X";
@@ -1022,6 +1048,14 @@ function getServerSettings(retry) {
 	xhr.onload = function (evnt, retry) {
 		var status = xhr.status;
 		if (status === 200) {
+			// if(refreshPageOnReconnect) {
+			// 	//setSaveState(null, false);
+			// 	window.location.reload();
+			// 	return;
+			// }
+			getMediaActions();
+			getTCodeCommand();
+			getExported();
 			remoteUserSettings = xhr.response;
 
 			document.getElementById("xteVersion").innerText = remoteUserSettings["xteVersion"];
@@ -1146,7 +1180,7 @@ function setupSystemTags() {
 	optionsContainer.appendChild(ornode);
 	tagsFIlterNode.appendChild(optionsContainer);
 	const containter = document.createElement("div");
-	containter.classList.add("media-tag-filter-container")
+	containter.classList.add("side-action-tag-filter-container")
 	tagsFIlterNode.appendChild(containter);
 	tags.forEach((x, i) => {
 		containter.appendChild(createCheckBoxDiv(x+tagCheckboxesName+i, tagCheckboxesName, x, x, onFilterByTagClicked));
@@ -1245,17 +1279,30 @@ function removeSystemTags(smartMode) {
 
 function setupTCodeCommands(commands)
 {
+	const actionButtonsDivNodes = document.getElementsByClassName("side-action-tcode-action-container");
+	for(let i=0; i < actionButtonsDivNodes.length; i++)
+	{
+		removeAllChildNodes(actionButtonsDivNodes[i])
+	}
 	if(!commands)
 		commands = TCodeCommands;
 	if(!commands || commands.length == 0)
+	{
+		const infoDiv = document.createElement("div");
+		infoDiv.innerHTML = "No TCode commands found.<br>Visit the settings to add some."
+		for(let i=0; i < actionButtonsDivNodes.length; i++)
+		{
+			actionButtonsDivNodes[i].appendChild(infoDiv)
+		}
 		return;
-	const actionButtonsDivNodes = document.getElementsByClassName("actionButtons");
+	}
 	commands.forEach(x => {
 		const button = document.createElement("button");
 		button.innerText = x["name"];
 		button.onclick = function () { sendTCode(x["command"]); };
-		button.style = "align-self: center;"
-		button.hidden = hideTCodecommandButtons || x["hidden"];
+		//button.style = "align-self: center;"
+		button.classList.add("side-action-tcode-action-button")
+		button.hidden = x["hidden"];
 		button.name = "tcodeCommandButton";
 		button.title = x["command"];
 		for(let i=0; i < actionButtonsDivNodes.length; i++)
@@ -1263,16 +1310,6 @@ function setupTCodeCommands(commands)
 			actionButtonsDivNodes[i].appendChild(button)
 		}
 	});
-}
-
-function onHideTcodeCommandClicked(checked)
-{
-	const tcodeCommandButton = document.getElementsByName("tcodeCommandButton");
-	for(let i=0; i < tcodeCommandButton.length; i++)
-	{
-		tcodeCommandButton[i].hidden = checked;
-	}
-	window.localStorage.setItem("hideTCodecommandButtons", checked);
 }
 
 function getServerSessions() {
@@ -1797,6 +1834,14 @@ function onSettingsExported(message, path, success) {
 	}
 	setSaveState(null, false);
 	getExported();
+}
+function onSettingsImported(message, path, success) {
+	if(!success) {
+		systemError("Failed to import settings: "+ message);
+		return;
+	}
+	refreshPageOnReconnect = true;
+	setSaveState(null, false);
 }
 function clearMediaList() {
 	var medialistNode = document.getElementById("mediaList");
@@ -2785,6 +2830,12 @@ function onToggleTagInput(tagButton) {
 	var tagFilterOptions = document.getElementById('tagFilterOptions');
 	tagFilterOptions.classList.toggle('hidden');
 	tagButton.classList.toggle('icon-button-down');
+}
+
+function onToggleTCodeActionsMain(button) {
+	var node = document.getElementById('tcodeActionsMain');
+	node.classList.toggle('hidden');
+	button.classList.toggle('icon-button-down');
 }
 
 function setupAlternateScripts(mediaItem) {

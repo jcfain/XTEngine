@@ -58,7 +58,8 @@ int WebSocketHandler::getServerPort()
 void WebSocketHandler::onSettingChange(QString setting, QVariant value)
 {
     QJsonObject obj;
-    obj[setting] = QJsonValue::fromVariant(value);
+    obj["key"] = setting;
+    obj["value"] = QJsonValue::fromVariant(value);
     sendCommand("settingChange", obj);
 }
 
@@ -155,6 +156,11 @@ void WebSocketHandler::processTextMessage(QString message)
         SettingsHandler::systemReady();
     } else if (command == "settingsQuickExport") {
         SettingsHandler::ExportQuick();
+    } else if (command == "settingsQuickImport") {
+        QJsonObject obj = json["message"].toObject();
+        QString file = obj["filename"].toString();
+        QSettings::Format format = file.endsWith("ini") ? QSettings::Format::IniFormat : JSONSettingsFormatter::JsonFormat;
+        SettingsHandler::ImportQuick(file, format);
     } else if (command == "settingChange") {
         QJsonObject obj = json["message"].toObject();
         emit settingChange(obj["key"].toString(), obj["value"].toVariant());
