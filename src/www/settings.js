@@ -26,6 +26,15 @@ Settings = {
         let h2 = document.createElement('h3');
         h2.innerText = capitalizeFirstLetter(group);
         div.appendChild(h2);
+        let body = document.createElement("div");
+        body.id = group+"Body";
+        body.classList.add("tab-content-settings-section-body");
+        div.appendChild(body);
+        let footer = document.createElement("div");
+        footer.classList.add("tab-content-settings-section-footer");
+        footer.id = group+"Footer";
+        div.appendChild(body);
+        
         return div;
     },
     createFormControl(labelText, description, type, id, value, requiresRestart) {
@@ -277,7 +286,8 @@ Settings = {
                 return;
         }
         const formControl = this.createFormControl(setting.label, setting.description, setting.type, setting.key, setting.value, setting.requiresRestart);
-        groupElement.appendChild(formControl.div);
+        const groupBodyElement = document.getElementById(setting.group+"Body");
+        groupBodyElement.appendChild(formControl.div);
         this.setSpecialProperties(setting.key, setting.value, formControl);
     },
     setSpecialProperties(key, value, formControl) {

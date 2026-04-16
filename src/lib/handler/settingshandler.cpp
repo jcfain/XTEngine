@@ -1734,6 +1734,15 @@ QList<TCodeCommand> SettingsHandler::getCustomTCodeCommands()
     return m_customTCodeCommands;
 }
 
+void SettingsHandler::setCustomTCodeCommands(const QList<TCodeCommand> &commands)
+{
+    m_customTCodeCommands.clear();
+    foreach (const TCodeCommand& command, commands)
+    {
+        addCustomTCodeCommand(command);
+    }
+}
+
 TCodeCommand* SettingsHandler::getCustomTCodeCommand(const QString& name)
 {
     TCodeCommand* value = ArrayUtil::FindByValue<TCodeCommand>(m_customTCodeCommands, [name](const TCodeCommand& tcommand) {

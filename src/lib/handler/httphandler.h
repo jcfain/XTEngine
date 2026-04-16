@@ -67,6 +67,7 @@ public:
     void handleTCodeCommands(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleSettingsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleMediaItemMetadataUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleTCodeCommandsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
     QHttpServerResponse handleSubtitle(const QHttpServerRequest &req);
     void handleExportedList(const QHttpServerRequest &req, QHttpServerResponder &responder);
     QHttpServerResponse handleDownloadExported(const QHttpServerRequest &req);

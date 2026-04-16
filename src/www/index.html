@@ -384,7 +384,7 @@
 						<img class="buttonImage" src="://images/icons/tag.svg"/>
 					</button> 
 					<button  title="TCode actions" name="tcodeActionsButton" class="tcode-actions-button icon-button icon-button--group--vertical" onclick="onToggleTCodeActionsMain(this)">
-						<img name="tcodeActionsImage" class="buttonImage" src="://images/icons/tcode.svg" />
+						<img class="buttonImage" src="://images/icons/tcode.svg" />
 					</button>
 					<button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button icon-button--group--vertical" onclick="toggleShufflePlay()">
 						<img class="buttonImage" src="://images/icons/shuffle.svg" />
@@ -746,20 +746,24 @@
 								<div>
 									<h3>System</h3>
 								</div>
-								<div style="width: 100%;">
-									<h4>Versions</h4>
+								<div class="tab-content-settings-section-body">
 									<div>
-										<span>XTE: </span>
-										<span id="xteVersion"></span>
+										<h4>Versions</h4>
+										<div>
+											<span>XTE: </span>
+											<span id="xteVersion"></span>
+										</div>
+										<div>
+											<span>XTP Web: </span>
+											<span id="webVersion"></span>
+										</div>
 									</div>
 									<div>
-										<span>XTP Web: </span>
-										<span id="webVersion"></span>
+										<h4>Current browser information</h4>
+										<div id="browserInfo"></div>
 									</div>
 								</div>
-								<div style="width: 100%;">
-									<h4>Current browser information</h4>
-									<div id="browserInfo"></div>
+								<div id="settingsFooter" class="tab-content-settings-section-footer">
 								</div>
 							</div>
 
@@ -767,24 +771,20 @@
 								<div>
 									<h3>Settings</h3>
 								</div>
-								<!-- <div class="formElement">
-									<label for="quickExportButton"></label>
-									<div class="form-buttons">
-										<button id="quickExportButton"  onclick="sendQuickExport()">Quick Export</button>
-									</div>
-								</div> -->
-								<div>
+								<div id="settingsBody" class="tab-content-settings-section-body">
 									<div class="exported-header">
 										<h4>Exported settings</h4>
 										<button id="quickExportButton"  onclick="sendQuickExport()">Quick Export</button>
 									</div>
 									<table id="exportedSettingFiles" class="exported-table"></table>
 								</div>
+								<div id="settingsFooter" class="tab-content-settings-section-footer">
+								</div>
 							</div>
 
 							<div class="tab-content-settings-section">
 								<h3>Media Library</h3>
-								<div id="systemTags" class="system-tags">
+								<div id="systemTagsBody" class="system-tags tab-content-settings-section-body">
 									<div id="userTags" class="system-tags-section">
 										<h4 id="userTagsHeader">System tags</h4>
 										<div>
@@ -802,10 +802,21 @@
 										<button id="removeSmartTagButton" disabled="true" class="system-tags-section-button" onclick="removeSystemTags(true)">Remove</button>
 									</div>
 								</div>
-								<button id="startMetadataProcessButton" style="margin-top:8px" onclick="startMetadataProcess()">Process metadata</button>
-								<button id="startMetadataCleanProcessButton" style="margin-top:8px" onclick="startMetadataCleanProcess()">Clean metadata</button>
-								<button id="cleanupThumbsButton" style="margin-top:8px" onclick="startThumbCleanupProcess()">Clean up thumbs</button>
+								<div id="systemTagsFooter" class="tab-content-settings-section-footer">
+									<button id="startMetadataProcessButton" style="height: unset;" onclick="startMetadataProcess()">Process metadata</button>
+									<button id="startMetadataCleanProcessButton" style="height: unset;" onclick="startMetadataCleanProcess()">Clean metadata</button>
+									<button id="cleanupThumbsButton" style="height: unset;" onclick="startThumbCleanupProcess()">Clean up thumbs</button>
+								</div>
 								<!-- <button id="clean1024" style="margin-top:8px" onclick="startClean1024Process()">Reset metadata offset 1024</button> -->
+							</div>
+							<div class="tab-content-settings-section">
+								<h3>TCode commands</h3>
+								<div id="tcodeCommandsSetupBody" class="tab-content-settings-section-body"></div>
+								<div id="tcodeCommandsSetupFooter" class="tab-content-settings-section-footer">
+									<button id="addTCodeCommandButton" style="margin-top:8px" onclick="addTCodeCommand()">Add</button>
+									<button id="saveTCodeCommandsButton" style="margin-top:8px" onclick="saveTCodeCommands()" disabled>Save</button>
+									<button id="cancelTCodeCommandsButton" style="margin-top:8px" onclick="cancelTCodeCommands()">Cancel</button>
+								</div>
 							</div>
 							<!-- <div class="formElement">
 								<label for="processMetadataOnStart">Process all metadata on start</label>
@@ -858,7 +869,7 @@
 							</div> -->
 
 						</div>
-						<div id="sessionInfo" class="session-info ">
+						<div id="sessionInfo" class="session-info tab-content-settings-section--wide">
 							<h3>Authorized browser sessions</h3>
 							<table id="sessionInfoTable" 
 									class="session-info-table">

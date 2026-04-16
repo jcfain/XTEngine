@@ -16,8 +16,11 @@
         text-align: start;
     }
     .tab-content-settings-section {
-        max-width: 100%;
+        width: 90%;
     }
+    /* .exported-download-link {
+        width: 314px;
+    } */
     
     .side-action-filter-input-modal {
         width: 50vw;

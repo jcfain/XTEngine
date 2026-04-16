@@ -244,3 +244,28 @@ function round(value, precision) {
 function capitalizeFirstLetter(val) {
     return String(val).charAt(0).toUpperCase() + String(val).slice(1);
 }
+
+function IsDirty(form) {
+    for (var i=0; i<form.elements.length; i++) {
+        var field = form.elements[i];
+        switch (field.type) {
+            case "select-multiple":
+            case "select-one":
+                var options = field.options;
+                for (var j=0; j<options.length; j++) {
+                    if(options[j].selected != options[j].defaultSelected) return true;
+                }
+                break;
+            case "text":
+            case "file":
+            case "password":
+                if (field.value != field.defaultValue) return true;
+                break;
+            case "checkbox":
+            case "radio":
+                if (field.checked != field.defaultChecked) return true;
+                break;
+        }
+    }
+    return false;
+}

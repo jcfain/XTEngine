@@ -962,18 +962,37 @@ section .range-values {
 }
 
 .tab-content-settings-section {
-    display: flex;
-    flex-flow: row wrap;
-    max-width: 350px;  
+     display: flex;
+    flex-flow: column;
+    width: 340px;  
     border-width: 2px;
     border-color: white;
     border-style: solid;
-    border-radius: 25px;  
+    border-radius: 25px;
     margin: 8px;
-    padding: 8px;
+    padding: 12px;
     justify-content: center;
-    align-content: flex-start;  
-    flex-grow: 1;
+    align-items: center;
+}
+
+.tab-content-settings-section-body {  
+    width: 100%;
+    overflow: auto;
+    max-height: 370px;
+    flex-grow: 1;  
+    flex-basis: 90%;
+}
+.tab-content-settings-section-footer {  
+    flex-shrink: 1;  
+    flex-basis: 10%;  
+    display: flex;
+    align-items: center;
+    flex-flow: row;
+    padding: 8px;
+}
+
+.tab-content-settings-section--wide {
+    width: min-content;
 }
 
 .sync-device-status {
@@ -1082,7 +1101,7 @@ section .range-values {
     display: block;
     text-overflow: ellipsis;
     overflow: hidden;
-    width: 280px;
+    width: 254px;
     text-wrap: nowrap;
 }
 .exported-header {
@@ -1095,22 +1114,31 @@ section .range-values {
     margin: 8px;
 }
 .exported-table {
-    width: 100%; 
+    /* width: 100%; 
     max-height: 200px;
     border: 1px solid aliceblue;
     border-radius: 16px;
-    padding: 8px;
+    padding: 8px; */
+    border-collapse: collapse;
 }
 .exported-table > tbody {
-    overflow-y: auto; 
+    /* overflow-y: auto; 
     display: block; 
-    height: 17em;
+    height: 15em; */
 }
 .exported-table tr,
 .exported-table > thead {
     border-bottom: 1px solid aliceblue;
-    display: table;
-    width: 100%;
+    /* display: table;
+    width: 100%; */
+}
+.exported-table td:not(:last-child) {
+    border-right: 1px solid aliceblue;
+}
+
+.tcodeCommandsSetupTable td {
+  text-align: center;
+  padding: 4px;
 }
 
 @keyframes loading-spinner {

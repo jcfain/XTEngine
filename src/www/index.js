@@ -96,6 +96,7 @@ var NetworkProtocol = {
 
 var MediaActions = {};
 var TCodeCommands = [];
+var tcodeCommandRows = -1;
 
 var mediaLoading = false;
 var refreshPageOnReconnect = false;
@@ -980,8 +981,12 @@ function getExported() {
 		filenameHeader.innerText = "File name";
 		header.appendChild(filenameHeader);
 
+		const restoreHeader = document.createElement("th");
+		restoreHeader.innerText = "";
+		header.appendChild(restoreHeader);
+
 		const deleteHeader = document.createElement("th");
-		deleteHeader.innerText = "Delete";
+		deleteHeader.innerText = "";
 		header.appendChild(deleteHeader);
 
 		tableNode.appendChild(header);
@@ -1006,7 +1011,7 @@ function getExported() {
 
 					const tdImport = document.createElement("td");
 					const importButton = document.createElement("button");
-					importButton.innerText = "R";
+					importButton.innerText = "Restore";
 					importButton.onclick = () => confirmImportExported(x);
 					tdImport.appendChild(importButton);
 					tr.appendChild(tdImport);
@@ -1121,7 +1126,7 @@ function getTCodeCommand() {
 	xhr.onload = function (evnt) {
 		var status = xhr.status;
 		if (status === 200) {
-			TCodeCommands = xhr.response;
+			TCodeCommands = xhr.response.commands;
 			setupTCodeCommands(TCodeCommands.commands);
 		} else {
 			parseHttpError("Error getting tcode commands", xhr);
@@ -1286,7 +1291,7 @@ function setupTCodeCommands(commands)
 	}
 	if(!commands)
 		commands = TCodeCommands;
-	if(!commands || commands.length == 0)
+	if(!commands || commands.length == 0) 
 	{
 		const infoDiv = document.createElement("div");
 		infoDiv.innerHTML = "No TCode commands found.<br>Visit the settings to add some."
@@ -1294,22 +1299,256 @@ function setupTCodeCommands(commands)
 		{
 			actionButtonsDivNodes[i].appendChild(infoDiv)
 		}
+	} 
+	else 
+	{
+		commands.forEach(x => 
+			{
+			const button = document.createElement("button");
+			button.innerText = x["name"];
+			button.onclick = function () { sendTCode(x["command"]); };
+			//button.style = "align-self: center;"
+			button.classList.add("side-action-tcode-action-button")
+			button.hidden = x["hidden"];
+			button.name = "tcodeCommandButton";
+			button.title = x["command"];
+			for(let i=0; i < actionButtonsDivNodes.length; i++)
+			{
+				actionButtonsDivNodes[i].appendChild(button)
+			}
+		});
+	}
+
+	// Setup
+	markTCodeCommandFormClean();
+	const setupNode = document.getElementById("tcodeCommandsSetupBody");
+	removeAllChildNodes(setupNode);
+	tcodeCommandRows = -1;
+	const setupForm = document.createElement("form");
+	setupForm.id = "tcodeCommandsSetupForm";
+	const table = document.createElement("table");
+	table.classList.add("tcodeCommandsSetupTable");
+	const thead = document.createElement("thead");
+	const thName = document.createElement("th");
+	thName.innerText = "Name";
+	thead.appendChild(thName);
+	const thCommand = document.createElement("th");
+	thCommand.innerText = "Command";
+	thead.appendChild(thCommand);
+	const thhidden = document.createElement("th");
+	thhidden.innerText = "Hidden";
+	thead.appendChild(thhidden);
+	const thDelete = document.createElement("th");
+	thDelete.innerText = "";
+	thead.appendChild(thDelete);
+	table.appendChild(thead);
+	const tbody = document.createElement("tbody");
+	tbody.id = "tcodeCommandsSetupTableBody";
+	table.appendChild(tbody);
+	setupForm.appendChild(table)
+	setupNode.appendChild(setupForm);
+	setupTCodeCommandsSetup(commands);
+}
+
+function setupTCodeCommandsSetup(commands)
+{
+	const tbody = document.getElementById("tcodeCommandsSetupTableBody");
+	if(!commands)
+		commands = TCodeCommands;
+	if(!commands || commands.length == 0)
+	{
+		addNoTCodeCommandsFoundRow();
 		return;
 	}
 	commands.forEach(x => {
-		const button = document.createElement("button");
-		button.innerText = x["name"];
-		button.onclick = function () { sendTCode(x["command"]); };
-		//button.style = "align-self: center;"
-		button.classList.add("side-action-tcode-action-button")
-		button.hidden = x["hidden"];
-		button.name = "tcodeCommandButton";
-		button.title = x["command"];
-		for(let i=0; i < actionButtonsDivNodes.length; i++)
-		{
-			actionButtonsDivNodes[i].appendChild(button)
-		}
+		const tr = getTCodeCommandTableRow(x);
+		tbody.appendChild(tr);
 	});
+}
+
+function addNoTCodeCommandsFoundRow()
+{
+	const existing = document.getElementById("noTCodeCommandsInSetup");
+	if(existing)
+		return;
+	const tbody = document.getElementById("tcodeCommandsSetupTableBody");
+	const tr = document.createElement("tr");
+	tr.id = "noTCodeCommandsInSetup"
+	const tdName = document.createElement("td");
+	tdName.innerHTML = "No TCode commands found.";
+	tr.appendChild(tdName);
+	tbody.appendChild(tr);
+}
+
+function removeNoTCodeCommandsFoundRow()
+{
+	const existing = document.getElementById("noTCodeCommandsInSetup");
+	if(!existing)
+		return;
+	existing.remove();
+}
+
+function getTCodeCommandTableRow(command)
+{
+	tcodeCommandRows++;
+	const rowID = tcodeCommandRows;
+	if(!command) {
+		command = {name: "new"+rowID, command: "", hidden: false};
+		TCodeCommands.push(command);
+	}
+	const tr = document.createElement("tr");
+	tr.id = "tcodeCommandRow"+rowID;
+	tr.setAttribute("name", "tcodeCommandRow");
+	const tdName = document.createElement("td");
+	const inputName = document.createElement("input");
+	inputName.required = true;
+	inputName.value = command["name"];
+	inputName.id = "tcodeCommandNameInput"+rowID
+	inputName.name = "tcodeCommandNameInput"
+	inputName.oninput = function () {
+		if(debounceTracker[inputName.id])
+			clearTimeout(debounceTracker[inputName.id]);
+		debounceTracker[inputName.id] = setTimeout(function () {
+			let index = TCodeCommands.findIndex(x => x.name == command["name"]);
+			if(index > -1) {
+				const tcodeCommandNameInputs = document.getElementsByName("tcodeCommandNameInput");
+				const duplicateIndex = [...tcodeCommandNameInputs].findIndex(node => node.id != inputName.id && node.value.length && node.value == inputName.value);
+				if(duplicateIndex > -1)
+				{
+					const error = `Name: ${inputName.value} already exists!`;
+					userError(error);
+					inputName.setCustomValidity(error);
+					return;
+				}
+				else {
+					inputName.setCustomValidity("");
+				}
+				TCodeCommands[index].name = inputName.value;
+				checkTCodeCommandSetupFormDirty();
+			} else {
+				systemError(`There was an error. Command not found ${command["name"]}. Try refreshing the page.`)
+			}
+			debounceTracker[inputName.id] = null;
+		}, 500);
+	};
+	tdName.appendChild(inputName);
+	tr.appendChild(tdName);
+
+	const tdCommand = document.createElement("td");
+	const inputCommand = document.createElement("input");
+	inputCommand.required = true;
+	inputCommand.value = command["command"];
+	inputCommand.id = "inputTCodeCommandCommand"+rowID
+	inputCommand.oninput = function () {
+		if(debounceTracker[inputCommand.id])
+			clearTimeout(debounceTracker[inputCommand.id]);
+		debounceTracker[inputCommand.id] = setTimeout(function () {
+			const index = TCodeCommands.findIndex(x => x.name == command["name"]);
+			if(index > -1) {
+				TCodeCommands[index].command = inputCommand.value;
+				checkTCodeCommandSetupFormDirty();
+			} else {
+				systemError(`There was an error. Command not found ${command["name"]}. Try refreshing the page.`)
+			}
+			debounceTracker[inputCommand.id] = null;
+		}, 500);
+	};
+	tdCommand.appendChild(inputCommand);
+	tr.appendChild(tdCommand);
+
+	const tdhidden = document.createElement("td");
+	const hiddenCheck = document.createElement("input");
+	hiddenCheck.type = "checkbox";
+	hiddenCheck.checked = command["hidden"];
+	hiddenCheck.onclick = function() {
+		if(!command["name"].length)
+			return;
+		const index = TCodeCommands.findIndex(x => x.name == command["name"]);
+		if(index > -1) {
+			TCodeCommands[index].hidden = hiddenCheck.checked;
+			checkTCodeCommandSetupFormDirty();
+		} else {
+			systemError(`There was an error. Command not found ${command["name"]}. Try refreshing the page.`)
+		}
+	};
+	tdhidden.appendChild(hiddenCheck);
+	tr.appendChild(tdhidden);
+	
+	const tdDelete = document.createElement("td");
+	const buttonDelete = document.createElement("button");
+	buttonDelete.innerText = "X";
+	buttonDelete.type = "button";
+	buttonDelete.onclick = function() {
+		if(!inputName.value.length)
+		{
+			tr.remove();
+			const rows = document.getElementsByName("tcodeCommandRow");
+			if(!rows?.length) {
+				addNoTCodeCommandsFoundRow();
+			}
+			return;
+		}
+		showAlertWindow("Delete?", `Are you sure you wish to delete the command: ${command["name"]}?`, function() {
+			const index = TCodeCommands.findIndex(x => x.name == command["name"]);
+			closeAlertWindow();
+			if(index > -1) {
+				TCodeCommands.splice(index, 1);
+				tr.remove();
+				const rows = document.getElementsByName("tcodeCommandRow");
+				if(!rows?.length) {
+					addNoTCodeCommandsFoundRow();
+				}
+				checkTCodeCommandSetupFormDirty(true);
+			} else {
+				systemError(`There was an error. Command not found ${command["name"]}. Try refreshing the page.`)
+			}
+		});
+	};
+	tdDelete.appendChild(buttonDelete);
+	tr.appendChild(tdDelete);
+	return tr;
+}
+function addTCodeCommand() {
+	removeNoTCodeCommandsFoundRow();
+	const tbody = document.getElementById("tcodeCommandsSetupTableBody");
+	const tr = getTCodeCommandTableRow();
+	tbody.appendChild(tr);
+	tr.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
+	checkTCodeCommandSetupFormDirty(true);
+}
+function saveTCodeCommands() {
+	const form = document.getElementById("tcodeCommandsSetupForm");
+	if(!form.checkValidity())
+	{
+		userError("Cannot save, the form is invalid.");
+		return;
+	}
+	postTCodeCommands(TCodeCommands);
+}
+function cancelTCodeCommands() {
+	showAlertWindow("Reset?", `Are you sure you wish to reset all current tcode command changes?`, function() {
+		getTCodeCommand();
+		closeAlertWindow();
+	});
+}
+function checkTCodeCommandSetupFormDirty(forceEnable = false) {
+	const saveTCodeCommandsButton = document.getElementById("saveTCodeCommandsButton");
+	const cancelTCodeCommandsButton = document.getElementById("cancelTCodeCommandsButton");
+	if(forceEnable) {
+		saveTCodeCommandsButton.disabled = false;
+		cancelTCodeCommandsButton.disabled = false;
+		return;
+	}
+	const form = document.getElementById("tcodeCommandsSetupForm");
+	saveTCodeCommandsButton.disabled = !IsDirty(form);
+	cancelTCodeCommandsButton.disabled = !IsDirty(form);
+}
+
+function markTCodeCommandFormClean() {
+	const saveTCodeCommandsButton = document.getElementById("saveTCodeCommandsButton");
+	saveTCodeCommandsButton.disabled = true;
+	const cancelTCodeCommandsButton = document.getElementById("cancelTCodeCommandsButton");
+	cancelTCodeCommandsButton.disabled = true;
 }
 
 function getServerSessions() {
@@ -1796,6 +2035,27 @@ function postMediaItemMetaData(metaData) {
 		onSaveFail(xhr, metaDataSaveStateNode);
 	};
 	xhr.send(JSON.stringify(metaData));
+}
+
+function postTCodeCommands(commands) {
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', "/tcodeCommands", true);
+	xhr.setRequestHeader('Content-Type', 'application/json');
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			var status = xhr.status;
+			if (status !== 200)
+				onSaveFail(xhr, null, "Error saving tcode commands");
+			else {
+				onSaveSuccess();
+				getTCodeCommand();
+			}
+		}
+	}
+	xhr.onerror = function () {
+		onSaveFail(xhr, null, "Error saving tcode commands");
+	};
+	xhr.send(JSON.stringify(commands));
 }
 
 function postMediaState(mediaState) {

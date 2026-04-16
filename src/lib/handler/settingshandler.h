@@ -135,6 +135,7 @@ public:
     static void setSelectedNetworkProtocol(NetworkProtocol value);
     static NetworkProtocol getSelectedNetworkProtocol();
     static QList<TCodeCommand> getCustomTCodeCommands();
+    static void setCustomTCodeCommands(const QList<TCodeCommand>& commands);
     static TCodeCommand* getCustomTCodeCommand(const QString& name);
     static void addCustomTCodeCommand(const TCodeCommand& command);
     static void removeCustomTCodeCommand(const TCodeCommand& command);

@@ -278,6 +278,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     _server->route("^/activeSessions$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleActiveSessions);
     _server->route("^/settings$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleSettingsUpdate);
     _server->route("^/mediaItemMetadata$", QHttpServerRequest::Method::Post,  this, &HttpHandler::handleMediaItemMetadataUpdate);
+    _server->route("^/tcodeCommands$", QHttpServerRequest::Method::Post,  this, &HttpHandler::handleTCodeCommandsUpdate);
     // _server->route("POST", "^/channels$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleChannelsUpdate);
     _server->route("^/xtpweb$",QHttpServerRequest::Method::Post, this, &HttpHandler::handleWebTimeUpdate);
     _server->route("^/heresphere$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleHereSphere);
@@ -802,6 +803,32 @@ void HttpHandler::handleMediaItemMetadataUpdate(const QHttpServerRequest &reques
         responder.write(createError("Invalid metadata item please process metadata<br> In System tab under settings."), QHttpServerResponse::StatusCode::Conflict);
         return ;
     }
+    responder.write(QHttpServerResponse::StatusCode::Ok);
+}
+
+void HttpHandler::handleTCodeCommandsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder)
+{
+    if(!isAuthenticated(req)) {
+        responder.write(QHttpServerResponse::StatusCode::Unauthorized);
+        return;
+    }
+
+    auto body = req.body();
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(body, &error);
+    if (doc.isEmpty())
+    {
+        LogHandler::Error("Error reading request body: " + body + " error: "+ error.errorString());
+        responder.write(QHttpServerResponse::StatusCode::BadRequest);
+        return ;
+    }
+    QJsonArray commandsJson = doc.array();
+    QList<TCodeCommand> commands;
+    foreach (QJsonValueConstRef obj, commandsJson)
+    {
+        commands.append(TCodeCommand::fromJson(obj.toObject()));
+    }
+    SettingsHandler::setCustomTCodeCommands(commands);
     responder.write(QHttpServerResponse::StatusCode::Ok);
 }
 
