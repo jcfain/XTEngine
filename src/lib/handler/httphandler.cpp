@@ -803,6 +803,8 @@ void HttpHandler::handleMediaItemMetadataUpdate(const QHttpServerRequest &reques
         responder.write(createError("Invalid metadata item please process metadata<br> In System tab under settings."), QHttpServerResponse::StatusCode::Conflict);
         return ;
     }
+
+    SettingsHandler::Save();
     responder.write(QHttpServerResponse::StatusCode::Ok);
 }
 
@@ -829,6 +831,7 @@ void HttpHandler::handleTCodeCommandsUpdate(const QHttpServerRequest &req, QHttp
         commands.append(TCodeCommand::fromJson(obj.toObject()));
     }
     SettingsHandler::setCustomTCodeCommands(commands);
+    SettingsHandler::Save();
     responder.write(QHttpServerResponse::StatusCode::Ok);
 }
 

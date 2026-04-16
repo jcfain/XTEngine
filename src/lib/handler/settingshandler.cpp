@@ -741,9 +741,9 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _hashedPass = settingsToLoadFrom->value("userData").toString();
     _hashedWebPass = settingsToLoadFrom->value("userWebData").toString();
 
-    QList<QVariant> customTCodeCommandsvarient = settingsToLoadFrom->value("customTCodeCommands").toList();
+    QList<QVariant> customTCodeCommandsVariant = settingsToLoadFrom->value("customTCodeCommands").toList();
     m_customTCodeCommands.clear();
-    foreach(auto varient, customTCodeCommandsvarient)
+    foreach(auto varient, customTCodeCommandsVariant)
     {
         m_customTCodeCommands.append(TCodeCommand::fromJson(varient.toJsonObject()));
     }
@@ -1042,12 +1042,12 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("channelPulseEnabled", _channelPulseEnabled);
         settingsToSaveTo->setValue("channelPulseFrequency", _channelPulseFrequency);
 
-        QList<QVariant> tcodeCommandVarient;
+        QList<QVariant> tcodeCommandVariant;
         foreach(auto command, m_customTCodeCommands)
         {
-            tcodeCommandVarient.append(command.toVariant());
+            tcodeCommandVariant.append(command.toVariant());
         }
-        settingsToSaveTo->setValue("customTCodeCommands", tcodeCommandVarient);
+        settingsToSaveTo->setValue("customTCodeCommands", tcodeCommandVariant);
 
         // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadEnabled, m_scheduleLibraryLoadEnabled);
         // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadTime, m_scheduleLibraryLoadTime);
