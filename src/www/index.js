@@ -972,7 +972,12 @@ function getExported() {
 	xhr.responseType = 'json';
 	xhr.onload = function (evnt, retry) {
 		var status = xhr.status;
-		const filenames = xhr.response;
+		const files = xhr.response;
+		const filesSorted = files.sort((a,b) => {
+    		// return (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0);//ASC
+    		return (a.date > b.date) ? -1 : ((a.date < b.date) ? 1 : 0);//DSC
+		});
+		const filenames = filesSorted.map(x => x.name);
 		const tableNode = document.getElementById("exportedSettingFiles");
 		removeAllChildNodes(tableNode);
 		const header = document.createElement("thead");

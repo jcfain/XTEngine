@@ -1346,6 +1346,7 @@ void HttpHandler::handleExportedList(const QHttpServerRequest &request, QHttpSer
         responder.write(QJsonDocument(obj), QHttpServerResponse::StatusCode::PreconditionFailed);
         return;
     }
+    // dir.setSorting(QDir::SortFlag::DirsFirst | QDir::SortFlag::Time);
     QStringList mediaTypes("*.json");
     QDirIterator backupDir(settingsBackupDir, mediaTypes, QDir::Files);
 
@@ -1353,7 +1354,10 @@ void HttpHandler::handleExportedList(const QHttpServerRequest &request, QHttpSer
     while (backupDir.hasNext())
     {
         QFileInfo fileInfo(backupDir.next());
-        root << fileInfo.fileName();
+        QJsonObject obj;
+        obj["name"] = fileInfo.fileName();
+        obj["date"] = fileInfo.birthTime().toString(Qt::DateFormat::ISODate);
+        root << obj;
     }
     QHttpHeaders headers;
     responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
