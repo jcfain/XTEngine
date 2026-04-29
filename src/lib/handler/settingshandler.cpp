@@ -791,12 +791,14 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
     if(!m_firstLoad)
     {
+        bool migrated = false;
         if(settingsVersion < 0.41f) {
             locker.unlock();
             auto library = settingsToLoadFrom->value("selectedLibrary").toString();
             mediaLibrarySettings->add(LibraryType::MAIN, library);
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.414f) {
@@ -804,6 +806,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Migration::MigrateTo42(settingsToLoadFrom);
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.426f) {
@@ -811,6 +814,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             _hashedPass = nullptr;
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.451f) {
@@ -818,6 +822,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             SetTCodeCommandMapDefaults();
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.454f) {
@@ -825,6 +830,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             SetSystemTagDefaults();
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.459f) {
@@ -833,6 +839,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setForceMetaDataFullProcess(true);
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.465f) {
@@ -841,6 +848,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setForceMetaDataFullProcess(true);
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.469f) {
@@ -851,11 +859,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setDisableTCodeValidation(disableTCodeValidation);
             Save();// No need to load as these are under the new settings system.
             locker.relock();
+            migrated = true;
         }
         if(settingsVersion < 0.47f) {
             locker.unlock();
             setForceMetaDataFullProcess(true);
             Save();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.471f) {
@@ -864,6 +874,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setHTTPChunkSize(httpChunkSize);
             settingsToLoadFrom->remove("httpChunkSize");
             Save();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.53f) {
@@ -871,6 +882,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             Migration::MigrateTo52(settingsToLoadFrom);
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.54f) {
@@ -879,6 +891,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             m_xTags.addTag(XTags::SFMA);
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.56f) {
@@ -886,6 +899,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             mediaLibrarySettings->clear(LibraryType::FUNSCRIPT);
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.57f) {
@@ -893,6 +907,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setForceMetaDataFullProcess(true);
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.59f) {
@@ -902,6 +917,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setGlobalOffSet(offSet);
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.591f) {
@@ -911,6 +927,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             setViewedThreshold(viewedThreshold * 100);
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.592f) {
@@ -918,11 +935,20 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             // Add new versionString into settings. This will happen in save if the current version is greater thanthe settings version.
             Save();
             Load();
+            migrated = true;
             locker.relock();
         }
         if(settingsVersion < 0.595f) {
             locker.unlock();
             Migration::MigrateTo595(settingsToLoadFrom, m_customTCodeCommands);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        if(!migrated && settingsVersion < XTEVersionNum)
+        {
+            locker.unlock();
             Save();
             Load();
             locker.relock();
