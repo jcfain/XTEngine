@@ -4,8 +4,8 @@
 #include "../tool/migration.h"
 
 
-const QString SettingsHandler::XTEVersion = "0.595b";
-const float SettingsHandler::XTEVersionNum = 0.595f;
+const QString SettingsHandler::XTEVersion = "0.6b";
+const float SettingsHandler::XTEVersionNum = 0.6f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
