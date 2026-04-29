@@ -10,11 +10,9 @@ const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2
 
 SettingsHandler::SettingsHandler(){
     m_settingsChangedNotificationDebounce.setSingleShot(true);
-    connect(&mediaLibrarySettings, &MediaLibrarySettings::settingsChangedEvent, this, &SettingsHandler::settingsChangedEvent);
 }
 SettingsHandler::~SettingsHandler()
 {
-    delete settings;
     if(m_syncFuture.isRunning())
         m_syncFuture.waitForFinished();
 }
@@ -450,9 +448,9 @@ void SettingsHandler::copy(const QSettings* from, QSettings* into)
     }
 }
 
-void SettingsHandler::Load(QSettings* settingsToLoadFrom)
+
+void SettingsHandler::init(QObject* parent)
 {
-    QMutexLocker locker(&mutex);
     QString appPath = QString(qgetenv("APPIMAGE"));
     if(!appPath.isEmpty())
     {
@@ -473,28 +471,46 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     QDir dir(_appdataLocation);
     if (!dir.exists())
         dir.mkpath(_appdataLocation);
-    if(!settingsToLoadFrom)
+    if(!settings)
     {
         if(QFile::exists(_applicationDirPath + "/settings.json"))
         {
             m_isPortable = true;
             LogHandler::Debug("Found local json. Loading settings from it: "+_applicationDirPath + "/settings.json");
-            settings = new QSettings(_applicationDirPath + "/settings.json", JSONSettingsFormatter::JsonFormat);
+            settings = new QSettings(_applicationDirPath + "/settings.json", JSONSettingsFormatter::JsonFormat, parent);
         }
         else if(QFile::exists(_applicationDirPath + "/settings.ini"))
         {
             m_isPortable = true;
             LogHandler::Debug("Found local ini. Loading settings from it: "+_applicationDirPath + "/settings.ini");
-            settings = new QSettings(_applicationDirPath + "/settings.ini", QSettings::Format::IniFormat);
+            settings = new QSettings(_applicationDirPath + "/settings.ini", QSettings::Format::IniFormat, parent);
         }
         else
         {
             LogHandler::Debug("Local file not found. Loading settings native location");
-            settings = new QSettings(ORGANIZATION_NAME, APPLICATION_NAME);
+            settings = new QSettings(ORGANIZATION_NAME, APPLICATION_NAME, parent);
         }
+    }
+    if(!mediaLibrarySettings)
+    {
+        mediaLibrarySettings = new MediaLibrarySettings(parent);
+        connect(mediaLibrarySettings, &MediaLibrarySettings::settingsChangedEvent, settings, &SettingsHandler::settingsChangedEvent);
+    }
+    m_initialized = true;
+}
+
+void SettingsHandler::Load(QSettings* settingsToLoadFrom)
+{
+    QMutexLocker locker(&mutex);
+    if(!m_initialized)
+    {
+        LogHandler::Error("Settings Load called without initialization! Call init before load.");
+        init();
+    }
+    if(!settingsToLoadFrom)
+    {
         settingsToLoadFrom = settings;
     }
-
     float settingsVersion = settingsToLoadFrom->value("version").toFloat();
     m_firstLoad = settingsVersion == 0;
     if(!m_firstLoad)
@@ -596,7 +612,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     }
     // Unsure about this...
     //setenv("QT_ENABLE_EXPERIMENTAL_CODECS", "1", 1);
-    mediaLibrarySettings.Load(settingsToLoadFrom);
+    mediaLibrarySettings->Load(settingsToLoadFrom);
 
 
     if(settingsVersion < 0.593f) {
@@ -778,7 +794,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(settingsVersion < 0.41f) {
             locker.unlock();
             auto library = settingsToLoadFrom->value("selectedLibrary").toString();
-            mediaLibrarySettings.add(LibraryType::MAIN, library);
+            mediaLibrarySettings->add(LibraryType::MAIN, library);
             Save();
             Load();
             locker.relock();
@@ -867,7 +883,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         }
         if(settingsVersion < 0.56f) {
             locker.unlock();
-            mediaLibrarySettings.clear(LibraryType::FUNSCRIPT);
+            mediaLibrarySettings->clear(LibraryType::FUNSCRIPT);
             Save();
             Load();
             locker.relock();
@@ -933,7 +949,7 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
             settingsToSaveTo->setValue("versionString", XTEVersion);
         }
 
-        mediaLibrarySettings.Save(settingsToSaveTo);
+        mediaLibrarySettings->Save(settingsToSaveTo);
 
         //TODO: move to TCodeChannelLookup
         settingsToSaveTo->setValue("selectedTCodeVersion", ((int)TCodeChannelLookup::getSelectedTCodeVersion()));

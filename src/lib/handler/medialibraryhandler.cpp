@@ -87,8 +87,8 @@ void MediaLibraryHandler::loadLibraryAsync()
     LogHandler::Debug("loadLibraryAsync");
     onPrepareLibraryLoad();
     LogHandler::Debug("loadLibraryAsync after stop");
-    QStringList library = SettingsHandler::mediaLibrarySettings.get(LibraryType::MAIN);
-    QStringList vrLibrary = SettingsHandler::mediaLibrarySettings.get(LibraryType::VR);
+    QStringList library = SettingsHandler::mediaLibrarySettings->get(LibraryType::MAIN);
+    QStringList vrLibrary = SettingsHandler::mediaLibrarySettings->get(LibraryType::VR);
     if(library.isEmpty() && vrLibrary.isEmpty())
     {
         emit libraryLoadingStatus("No media folder specified");
@@ -147,9 +147,9 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
     mediaTypes.append(videoTypes);
     mediaTypes.append(audioTypes);
 
-    QStringList vrLibrary = SettingsHandler::mediaLibrarySettings.get(LibraryType::VR);
-    QStringList excludedLibraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::EXCLUSION);
-    QStringList funscriptLibraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::FUNSCRIPT);
+    QStringList vrLibrary = SettingsHandler::mediaLibrarySettings->get(LibraryType::VR);
+    QStringList excludedLibraryPaths = SettingsHandler::mediaLibrarySettings->get(LibraryType::EXCLUSION);
+    QStringList funscriptLibraryPaths = SettingsHandler::mediaLibrarySettings->get(LibraryType::FUNSCRIPT);
     bool hasVRLibrary = false;
 
     FunscriptSearch funscriptSearch;

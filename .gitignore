@@ -36,3 +36,4 @@ src/www/.vscode/settings.json
 /src/build
 /build
 .DS_Store
+/src/.qtc_clangd

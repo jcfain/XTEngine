@@ -45,6 +45,7 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     qRegisterMetaType<QList<ScriptInfo>>("QList<ScriptInfo>");
 
     XSettingsMap::init();
+    SettingsHandler::init(this);
     SettingsHandler::Load();
     _tcodeFactory = new TCodeFactory(0.0, 1.0, this);
     _connectionHandler = new ConnectionHandler(this);

@@ -140,8 +140,8 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb);
             return;
         }
-        auto selectLibraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::MAIN);
-        selectLibraryPaths.append(SettingsHandler::mediaLibrarySettings.get(LibraryType::VR));
+        auto selectLibraryPaths = SettingsHandler::mediaLibrarySettings->get(LibraryType::MAIN);
+        selectLibraryPaths.append(SettingsHandler::mediaLibrarySettings->get(LibraryType::VR));
         foreach (auto path, selectLibraryPaths) {
             if(thumbFile.startsWith(path)) {
                 relativeThumb = thumbFile.replace(path, "");

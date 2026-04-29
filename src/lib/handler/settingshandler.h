@@ -69,6 +69,7 @@ public:
 
     static void setSaveOnExit(bool enabled);
     static bool getFirstLoad();
+    static void init(QObject* parent = nullptr);
     static void Load(QSettings* settingsToLoadFrom = 0);
     static void Save(QSettings* settingsToSaveTo = 0);
     static void Sync(QSettings* settingsToSaveTo = 0);
@@ -96,7 +97,7 @@ public:
     static const float XTEVersionNum;
     static bool getSettingsChanged();
 
-    static inline MediaLibrarySettings mediaLibrarySettings;
+    static inline MediaLibrarySettings* mediaLibrarySettings = 0;
 
     static bool getHideWelcomeScreen();
     static void setHideWelcomeScreen(bool value);
@@ -585,6 +586,7 @@ private:
     static QSettings* settings;
     static inline const QString m_exportFileNamePrefix = "xsettings";
     static QMutex mutex;
+    static inline bool m_initialized = false;
 };
 
 #endif // SETTINGSHANDLER_H

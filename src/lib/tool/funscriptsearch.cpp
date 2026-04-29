@@ -9,9 +9,9 @@ FunscriptSearch::FunscriptSearch(QObject *parent) : QObject(parent) {}
 
 void FunscriptSearch::searchForFunscript(const QString& mediaPath, const qint64& mediaDuration, const QStringList& extensions)
 {
-    QStringList pathsToSearch = SettingsHandler::mediaLibrarySettings.get(LibraryType::MAIN);
-    QStringList vrLibraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::VR);
-    QStringList funscriptLibraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::FUNSCRIPT);
+    QStringList pathsToSearch = SettingsHandler::mediaLibrarySettings->get(LibraryType::MAIN);
+    QStringList vrLibraryPaths = SettingsHandler::mediaLibrarySettings->get(LibraryType::VR);
+    QStringList funscriptLibraryPaths = SettingsHandler::mediaLibrarySettings->get(LibraryType::FUNSCRIPT);
     foreach(QString libraryPath, vrLibraryPaths)
     {
         pathsToSearch << libraryPath;
