@@ -23,6 +23,7 @@ public:
     static float calculateSpeed(qint64 timeStart, int posStart, qint64 timeEnd, int posEnd);
     static QString calculateMD5(QString path);
     static float roundTwoDecimal(float value);
+    static float roundThreeDecimal(float value);
 };
 
 #endif // XMATH_H

@@ -44,6 +44,7 @@ public:
     explicit ConnectionHandler(QObject *parent = nullptr);
     void init();
     void sendTCode(QString tcode);
+    void delayTCode(QString tcode, int delayMS);
     void stopOutputConnection();
 
     bool isOutputConnected();

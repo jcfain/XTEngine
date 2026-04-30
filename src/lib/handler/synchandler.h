@@ -56,7 +56,7 @@ private slots:
     void funscriptSearchFinish(QString mediaPath, QString funscriptPath, qint64 mediaDuration);
 
 public:
-    SyncHandler(QObject *parent = nullptr);
+    SyncHandler(TCodeHandler* tcodeHandler, QObject *parent = nullptr);
     ~SyncHandler();
     void togglePause();
     void setPause(bool paused);
@@ -123,7 +123,7 @@ private:
     // FunscriptHandler* createFunscriptHandler(QString channel, QString funscript);
     // FunscriptHandler* createFunscriptHandler(QString channel, QByteArray funscript);
 
-    QString buildChannelActions(qint64 time);
+    QString buildChannelActions(qint64 time, int offset = 0);
 
     void sendPulse(qint64 currentMsecs, qint64 &nextPulseTime);
 

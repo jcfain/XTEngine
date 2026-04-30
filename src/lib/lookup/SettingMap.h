@@ -22,7 +22,8 @@ enum class FormControlTypes {
     Checkbox,
     DateTime,
     Date,
-    Time
+    Time,
+    Long
 };
 
 struct SettingMap {
@@ -54,6 +55,8 @@ struct SettingMap {
  * @brief The SettingGroups class
  */
 struct SettingGroups {
+    static inline const QString system = "system";
+    static inline const QString settings = "settings";
     static inline const QString schedule = "schedule";
     static inline const QString metadata = "metadata";
     static inline const QString tcode = "tcode";
@@ -77,7 +80,72 @@ struct SettingKeys {
     static inline const QString disableAutoThumbGeneration = "disableAutoThumbGeneration";
     static inline const QString enableMediaManagement = "enableMediaManagement";
     static inline const QString useSystemMediaBackend = "useSystemMediaBackend";
+    static inline const QString globalOffset = "globalOffset";
+    static inline const QString globalOffsetWeb = "globalOffsetWeb";
+    static inline const QString viewedThreshold = "viewedThreshold";
+    static inline const QString settingsBackupDirectory = "settingsBackupDirectory";
+    // static inline const QString selectedTCodeVersion = "selectedTCodeVersion";
+    // static inline const QString selectedChannelProfile = "selectedChannelProfile";
+    // static inline const QString selectedThumbsDir = "selectedThumbsDir";
+    // static inline const QString useMediaDirForThumbs = "useMediaDirForThumbs";
+    // static inline const QString selectedDevice = "selectedDevice";
+    // static inline const QString selectedNetworkDeviceType = "selectedNetworkDeviceType";
+    // static inline const QString serialPort = "serialPort";
+    // static inline const QString serverAddress = "serverAddress";
+    // static inline const QString serverPort = "serverPort";
+    // static inline const QString deoAddress = "deoAddress";
+    // static inline const QString deoPort = "deoPort";
+    // static inline const QString deoEnabled = "deoEnabled";
+    // static inline const QString whirligigAddress = "whirligigAddress";
+    // static inline const QString whirligigPort = "whirligigPort";
+    // static inline const QString whirligigEnabled = "whirligigEnabled";
+    // static inline const QString xtpWebSyncEnabled = "xtpWebSyncEnabled";
+    // static inline const QString libraryView = "libraryView";
+    // static inline const QString selectedLibrarySortMode = "selectedLibrarySortMode";
+    // static inline const QString thumbSize = "thumbSize";
+    // static inline const QString thumbSizeList = "thumbSizeList";
+    // static inline const QString videoIncrement = "videoIncrement";
+    // static inline const QString deoDnlaFunscriptLookup = "deoDnlaFunscriptLookup";
+    // static inline const QString gamePadEnabled = "gamePadEnabled";
+    // static inline const QString multiplierEnabled = "multiplierEnabled";
+    // static inline const QString decoderPriority = "decoderPriority";// Array QtAV only?
+    // static inline const QString selectedVideoRenderer = "selectedVideoRenderer";// QtAV only?
+    // static inline const QString gamepadSpeed = "gamepadSpeed";
+    // static inline const QString gamepadSpeedStep = "gamepadSpeedStep";
+    // static inline const QString strokeRangeStep = "strokeRangeStep"; // rename xRangeStep
+    // static inline const QString disableSpeechToText = "disableSpeechToText";
+    // static inline const QString disableVRScriptSelect = "disableVRScriptSelect";
+    // static inline const QString disableNoScriptFound = "disableNoScriptFound";
+    // static inline const QString userData = "userData";
+    // static inline const QString userWebData = "userWebData";
+    // static inline const QString skipToMoneyShotPlaysFunscript = "skipToMoneyShotPlaysFunscript";
+    // static inline const QString skipToMoneyShotFunscript = "skipToMoneyShotFunscript";
+    // static inline const QString skipToMoneyShotSkipsVideo = "skipToMoneyShotSkipsVideo";
+    // static inline const QString skipToMoneyShotStandAloneLoop = "skipToMoneyShotStandAloneLoop";
+    // static inline const QString hideStandAloneFunscriptsInLibrary = "hideStandAloneFunscriptsInLibrary";
+    // static inline const QString showVRInLibraryView = "showVRInLibraryView";
+    // static inline const QString skipPlayingSTandAloneFunscriptsInLibrary = "skipPlayingSTandAloneFunscriptsInLibrary";
+    // static inline const QString enableHttpServer = "enableHttpServer";
+    // static inline const QString httpServerRoot = "httpServerRoot";
+    // static inline const QString httpPort = "httpPort";
+    // static inline const QString webSocketPort = "webSocketPort";
+    // static inline const QString httpThumbQuality = "httpThumbQuality";
+    // static inline const QString funscriptModifierStep = "funscriptModifierStep";
+    // static inline const QString funscriptOffsetStep = "funscriptOffsetStep";
+    // static inline const QString channelPulseAmount = "channelPulseAmount";
+    // static inline const QString channelPulseEnabled = "channelPulseEnabled";
+    // static inline const QString channelPulseFrequency = "channelPulseFrequency";
+    // static inline const QString customTCodeCommands = "customTCodeCommands"; // Array
+    // static inline const QString tags = "tags"; // Array
+    // static inline const QString smartTags = "smartTags"; // Array
+    // static inline const QString playlists = "playlists"; // Not trivial
+    // static inline const QString tcodeCommandMap = "tcodeCommandMap"; // Not trivial
+    // static inline const QString gamepadButtonMap = "gamepadButtonMap";// Not trivial
 
+    // XTPlayer only /////////////////////
+    // static inline const QString playerVolume = "playerVolume";
+    // static inline const QString hideWelcomeScreen = "hideWelcomeScreen";
+    // static inline const QString keyboardKeyMap = "keyboardKeyMap";
 };
 
 class XSettingsMap {
@@ -101,14 +169,17 @@ public:
         {SettingProfile::System, SettingGroups::metadata, SettingKeys::processMetadataOnStart, FormControlTypes::Checkbox, false, "Process metadata on start", "Process the metadata when the application starts up.", false, false},
         {SettingProfile::System, SettingGroups::metadata, SettingKeys::forceMetaDataFullProcess, FormControlTypes::Checkbox, false, "Force metadata process after next restart", "Force the metadata process on next start.", true, false},
         {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableUDPHeartBeat, FormControlTypes::Checkbox, true, "Disable UDP heartbeat", "Disable periodic UDP ping.", false, false},
-        {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableTCodeValidation, FormControlTypes::Checkbox, false, "Disable TCode validation", "Disable the D1 validation when connecting to a tcode device.", false, false},
+        {SettingProfile::System, SettingGroups::tcode, SettingKeys::disableTCodeValidation, FormControlTypes::Checkbox, true, "Disable TCode validation", "Disable the D1 validation when connecting to a tcode device.", false, false},
         {SettingProfile::System, SettingGroups::serial, SettingKeys::useDTRAndRTS, FormControlTypes::Checkbox, false, "Disable serial RTS/DTS", "Disable serial RTS/DTS when connecting via serial.", false, false},
         {SettingProfile::System, SettingGroups::web, SettingKeys::httpChunkSizeMB, FormControlTypes::Double, 26.214400, "Media streaming chunk size", "The chunk sise the web browser should ask for when steaming media.", true, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::playbackRateStep, FormControlTypes::Double, 0.01, "Playback rate step", "The amount to change the playback rate by when using gamepad or input scroller.", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::disableAutoThumbGeneration, FormControlTypes::Checkbox, false, "Disable automatic thumb generation", "If checked, when a new media item has been found, no thumb will be automattically generated. Manual generation will still be attemped..", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::enableMediaManagement, FormControlTypes::Checkbox, false, "Enable media management", "If checked, certain media management options like delete will become available", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::useSystemMediaBackend, FormControlTypes::Checkbox, false, "Use the media backend of the OS", "If checked, XTP will use the OS media backend. Requires restart...", false, true},
-
+        {SettingProfile::System, SettingGroups::media, SettingKeys::globalOffset, FormControlTypes::Int, 0, "Global offset", "Offest specified in milliseconds", false, false},
+        {SettingProfile::System, SettingGroups::media, SettingKeys::globalOffsetWeb, FormControlTypes::Int, 0, "Global offset (web)", "Offset for scripts played from web ONLY. Offest specified in milliseconds", false, false},
+        {SettingProfile::System, SettingGroups::media, SettingKeys::viewedThreshold, FormControlTypes::Int, 90, "Auto mark viewed %", "When the current playing media reaches the percentage of time specified here\nThe metadata will automattically have the viewed tag appended and the unviewed tag removed.", false, false},
+        {SettingProfile::System, SettingGroups::settings, SettingKeys::settingsBackupDirectory, FormControlTypes::Text, "", "Quick export directory", "When a quick export happens, this is where the exported file will go.", false, false},
     };
     static inline QHash<QString, SettingMap> SettingsMap;
     // static inline QMap<SettingProfile, QMap<QString, QMap<QString, SettingMap>>> SettingsGroupMap;

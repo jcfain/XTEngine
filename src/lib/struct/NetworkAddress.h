@@ -9,11 +9,11 @@ struct NetworkAddress
     QString address;
     int port;
 
-    static QJsonObject toJson(const NetworkAddress item)
+    QJsonObject toJson()
     {
         QJsonObject obj;
-        obj["address"] = item.address;
-        obj["port"] = item.port;
+        obj["address"] = address;
+        obj["port"] = port;
         return obj;
     }
     static NetworkAddress fromJson(const QJsonObject obj) {
@@ -22,9 +22,9 @@ struct NetworkAddress
         newItem.port = obj["port"].toInt();
         return newItem;
     }
-    static QVariant toVariant(const NetworkAddress item)
+    QVariant toVariant()
     {
-        return QVariant::fromValue(toJson(item));
+        return QVariant::fromValue(toJson());
     }
 
 };

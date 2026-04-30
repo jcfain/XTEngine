@@ -24,16 +24,17 @@
 #include "../lookup/SettingMap.h"
 // #include "../tool/qsettings_json.hpp"
 #include "../tool/xmath.h"
-#include "../struct/ChannelModel.h"
 #include "../struct/ChannelModel33.h"
 #include "../struct/DecoderModel.h"
-#include "../struct/LibraryListItem.h"
 #include "../struct/LibraryListItem27.h"
-#include "../struct/LibraryListItemMetaData.h"
 #include "../struct/LibraryListItemMetaData258.h"
+#include "../struct/xmessage.h"
 #include "lib/lookup/TCodeCommand.h"
 #include "../lookup/xtags.h"
 #include "../struct/NetworkConnectionInfo.h"
+#include "../struct/TCodeCommand.h"
+#include "../tool/array-util.h"
+#include "../tool/qsettings_json.h"
 
 #define ORGANIZATION_NAME "cUrbSide prOd"
 #define APPLICATION_NAME "XTEngine"
@@ -44,6 +45,8 @@ class XTENGINE_EXPORT SettingsHandler: public QObject
 signals:
     void settingChange(QString settingName, QVariant value);
     void settingsChanged(bool dirty);
+    void settingsExported(QString message, QString path, bool success);
+    void settingsImported(QString message, QString path, bool success);
     void messageSend(QString message, XLogLevel loglevel);
     void messageSendWait(QString message, XLogLevel loglevel, QFunctionPointer callback);
     void restartRequired(bool enabled);
@@ -54,6 +57,8 @@ public slots:
     static void changeSetting(QString settingName, QVariant value, bool needsRestart);
     void setMoneyShot(LibraryListItem27& selectedLibraryListItem27, qint64 currentPosition, bool userSet = true);
     void addBookmark(LibraryListItem27& LibraryListItem27, QString name, qint64 currentPosition);
+    static void systemReady();
+    static void addStartupMessage(XMessage message, QSettings* settingsToSaveTo = nullptr);
 
 public:
     static SettingsHandler* instance()
@@ -64,6 +69,7 @@ public:
 
     static void setSaveOnExit(bool enabled);
     static bool getFirstLoad();
+    static void init(QObject* parent = nullptr);
     static void Load(QSettings* settingsToLoadFrom = 0);
     static void Save(QSettings* settingsToSaveTo = 0);
     static void Sync(QSettings* settingsToSaveTo = 0);
@@ -74,7 +80,11 @@ public:
     static void Quit(bool restart);
     static void Restart();
     static bool Import(QString file, QSettings::Format format);
-    static bool Export(QString file, QSettings::Format format);
+    static bool ImportQuick(QString file, QSettings::Format format = JSONSettingsFormatter::JsonFormat);
+    static bool Export(QString file, QSettings::Format format, QSettings* settingsToExport = nullptr);
+    static bool ExportQuick(QString file = nullptr, QSettings::Format format = JSONSettingsFormatter::JsonFormat, QSettings* settingsToExport = nullptr);
+    static QString getExportFileName(QString version);
+    static QString getExportFileNamePrefix();
     static QSettings* getSettings();
     static void copy(const QSettings* from, QSettings* into);
     static QVariant getSetting(const QString& settingName);
@@ -87,14 +97,13 @@ public:
     static const float XTEVersionNum;
     static bool getSettingsChanged();
 
-    static inline MediaLibrarySettings mediaLibrarySettings;
+    static inline MediaLibrarySettings* mediaLibrarySettings = 0;
 
     static bool getHideWelcomeScreen();
     static void setHideWelcomeScreen(bool value);
     static int getTCodePadding();
 
     static void changeSelectedTCodeVersion(TCodeVersion key);
-    //static void migrateTCodeVersion();
     static QString getDeoDnlaFunscript(QString key);
     static QHash<QString, QVariant> getDeoDnlaFunscripts();
 
@@ -114,6 +123,7 @@ public:
     // static bool addToLibraryExclusions(QString values, QStringList& errors);
     // static void removeFromLibraryExclusions(QList<int> indexes);
 
+    static QString getSettingsBackupDirectory();
     static QString getSelectedThumbsDir();
     static void setSelectedThumbsDir(QString thumbDir);
     static void setSelectedThumbsDirDefault();
@@ -125,10 +135,14 @@ public:
     static void setSelectedInputConnection(ConnectionInterface deviceName);
     static void setSelectedNetworkProtocol(NetworkProtocol value);
     static NetworkProtocol getSelectedNetworkProtocol();
-    static QStringList getCustomTCodeCommands();
-    static void addCustomTCodeCommand(QString command);
-    static void removeCustomTCodeCommand(QString command);
-    static void editCustomTCodeCommand(QString command, QString newCommand);
+    static QList<TCodeCommand> getCustomTCodeCommands();
+    static void setCustomTCodeCommands(const QList<TCodeCommand>& commands);
+    static TCodeCommand* getCustomTCodeCommand(const QString& name);
+    static void addCustomTCodeCommand(const TCodeCommand& command);
+    static void removeCustomTCodeCommand(const TCodeCommand& command);
+    static void removeCustomTCodeCommand(const QString& name);
+    static void editCustomTCodeCommand(const TCodeCommand& command, const TCodeCommand& newCommand);
+    static void editCustomTCodeCommand(const QString& name, const TCodeCommand& newCommand);
 
     static void setSerialPort(QString value);
     static void setServerAddress(QString value);
@@ -138,7 +152,6 @@ public:
     static QString getServerPort();
 
     static int getPlayerVolume();
-    static int getoffSet();
     static bool getDisableTCodeValidation();
     static void setDisableTCodeValidation(bool value);
 
@@ -177,7 +190,11 @@ public:
     static void setWhirligigPort(QString value);
 
     static void setPlayerVolume(int value);
-    static void setoffSet(int value);
+
+    static int getGlobalOffSet();
+    static void setGlobalOffSet(int value);
+    static int getGlobalOffSetWeb();
+    static void setGlobalOffSetWeb(int value);
 
     static bool getMultiplierChecked(QString channel);
     static void setMultiplierChecked(QString channel, bool value);
@@ -187,13 +204,15 @@ public:
     static bool getChannelGamepadInverse(QString channel);
     static void setChannelGamepadInverse(QString channel, bool value);
 
-    static float getDamperValue(QString channel);
-    static void setDamperValue(QString channel, float value);
-    static bool getDamperChecked(QString channel);
-    static void setDamperChecked(QString channel, bool value);
+    static float getSpeedValue(QString channel);
+    static void setSpeedValue(QString channel, float value);
+    static bool getSpeedChecked(QString channel);
+    static void setSpeedChecked(QString channel, bool value);
     static bool getLinkToRelatedAxisChecked(QString channel);
     static void setLinkToRelatedAxisChecked(QString channel, bool value);
     static void setLinkToRelatedAxis(QString channel, QString linkedChannel);
+    static void setMotionModifierOffsetValue(QString channel, float value);
+    static float getMotionModifierOffsetValue(QString channel);
 
     static void setLibraryView(int value);
     static void setThumbSize(int value);
@@ -269,6 +288,7 @@ public:
     static void updatePlaylist(QString name, QList<LibraryListItem27> value);
     static void addNewPlaylist(QString name);
     static void deletePlaylist(QString name);
+    static void savePlaylists(QSettings* settingsToSaveTo = nullptr);
 
     static void clearFunscriptLoaded();
     static void setFunscriptLoaded(QString key, bool loaded);
@@ -353,46 +373,57 @@ public:
     static bool getUseDTRAndRTS();
 
 
-    static const QStringList getVideoExtensions()
+    static const QStringList& getVideoExtensions()
     {
-        return QStringList()
-                << "mp4"
-                << "avi"
-                << "mpg"
-                << "wmv"
-                << "mkv"
-                << "webm"
-                << "mp2"
-                << "mpeg"
-                << "mpv"
-                << "ogg"
-                << "m4p"
-                << "m4v"
-                << "mov"
-                << "qt"
-                << "flv"
-                << "swf"
-                << "avchd";
+        static QStringList ext = QStringList()
+                                 << "mp4"
+                                 << "avi"
+                                 << "mpg"
+                                 << "wmv"
+                                 << "mkv"
+                                 << "webm"
+                                 << "mp2"
+                                 << "mpeg"
+                                 << "mpv"
+                                 << "ogg"
+                                 << "m4p"
+                                 << "m4v"
+                                 << "mov"
+                                 << "qt"
+                                 << "flv"
+                                 << "swf"
+                                 << "avchd";
+        return ext;
     }
-    static const QStringList getAudioExtensions()
+    static const QStringList& getAudioExtensions()
     {
-        return QStringList()
-                << "m4a"
-                << "mp3"
-                << "aac"
-                << "flac"
-                << "wav"
-                << "wma";
+        static QStringList ext = QStringList()
+                                 << "m4a"
+                                 << "mp3"
+                                 << "aac"
+                                 << "flac"
+                                 << "wav"
+                                 << "wma";
+        return ext;
     }
-    static const QStringList getSubtitleExtensions()
+    static const QStringList& getSubtitleExtensions()
     {
-        return QStringList()
-               << "vtt"
-               << "srt";
+        static QStringList ext = QStringList()
+                                 << "vtt"
+                                 << "srt";
+        return ext;
     }
-    static const QStringList getImageExtensions()
+    static const QStringList& getImageExtensions()
     {
-        return QStringList() << "jpg" << "jpeg" << "png" << "jfif" << "webp" << "gif";
+        static QStringList ext = QStringList()
+                                 << "jpg"
+                                 << "jpeg"
+                                 << "png"
+                                 << "jfif"
+                                 << "webp"
+                                 << "gif"
+                                 << "avif";
+        return ext;
     }
 
     static const QString getThumbFormatExtension() {
@@ -413,8 +444,8 @@ public:
     static void addUserSmartTag(QString tag);
     static bool hasSmartTag(QString tag);
 
-    static float getViewedThreshold();
-    static void setViewedThreshold(float value);
+    static int getViewedThreshold();
+    static void setViewedThreshold(int value);
 
     static bool scheduleLibraryLoadEnabled();
     static void setScheduleLibraryLoadEnabled(bool value);
@@ -448,29 +479,12 @@ private:
     static void setupKeyboardKeyMap();
     // static void setupTCodeCommands();
     static void setupTCodeCommandMap();
-    static void MigrateTo23();
-    static void MigrateTo25();
-    static void MigrateTo252();
-    static void MigrateLibraryMetaDataTo258();
-    static void MigratrTo2615();
-    static void MigrateTo263();
-    static void MigrateToQVariant(QSettings* settingsToLoadFrom);
-    static void MigrateToQVariant2(QSettings* settingsToLoadFrom);
-    static void MigrateToQVariantChannelModel(QSettings* settingsToLoadFrom);
-    static void MigrateTo281();
-    static void DeMigrateLibraryMetaDataTo258();
-    static void MigrateTo32a(QSettings* settingsToLoadFrom);
-    static void MigrateTo42(QSettings* settingsToLoadFrom);
-    static void MigrateTo46(QSettings* settingsToLoadFrom);
-    static void MigrateTo52(QSettings* settingsToLoadFrom);
-
 
     static void SaveChannelMap(QSettings* settingsToSaveTo = 0);
     static void SaveTCodeCommandMap(QSettings* settingsToSaveTo = 0);
     // static void SaveTCodeCommands(QSettings* settingsToSaveTo = 0);
 
     static void storeMediaMetaDatas(QSettings* settingsToSaveTo = 0);
-
 
     static QString _appdataLocation;
     static GamepadAxisName gamepadAxisNames;
@@ -496,8 +510,7 @@ private:
     static bool whirligigEnabled;
     static bool _xtpWebSyncEnabled;
     static int playerVolume;
-    static int offSet;
-    static QStringList m_customTCodeCommands;
+    static QList<TCodeCommand> m_customTCodeCommands;
 
     static bool _gamePadEnabled;
     static QMap<QString, QStringList> _gamepadButtonMap;
@@ -513,7 +526,6 @@ private:
     static int _gamepadSpeedStep;
     static int _liveGamepadSpeed;
     static bool _liveGamepadConnected;
-    static int _liveOffset;
     static bool m_smartOffsetEnabled;
     static int m_smartOffset;
 
@@ -563,8 +575,6 @@ private:
     static qint64 _channelPulseFrequency;
     static int _channelPulseAmount;
 
-    static float m_viewedThreshold;
-
     // static bool m_scheduleLibraryLoadEnabled;
     // static QTime m_scheduleLibraryLoadTime;
     // static bool m_scheduleLibraryLoadFullProcess;
@@ -574,7 +584,9 @@ private:
     static QTimer m_settingsChangedNotificationDebounce;
     static QHash<QString, bool> _funscriptLoaded;
     static QSettings* settings;
+    static inline const QString m_exportFileNamePrefix = "xsettings";
     static QMutex mutex;
+    static inline bool m_initialized = false;
 };
 
 #endif // SETTINGSHANDLER_H

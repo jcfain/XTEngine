@@ -19,7 +19,7 @@ private:
     int calculateTcodeRange(double value, ChannelModel33* channel);
     int calculateGamepadSpeed(double gpIn);
 
-    QHash<QString, double>* _addedAxis = new QHash<QString, double>();
+    QHash<QString, double> _addedAxis;
     double _input_start = 0.0;
     double _input_end = 1.0;
 };

@@ -1,6 +1,12 @@
-const webVersion = "v0.55b";
+const webVersion = "v0.6b";
 var debugMode = false;
 
+var XLogLevel = {
+    Information: 0,
+    Debuging: 1,
+    Warning: 2,
+    Critical: 3
+}
 var DeviceType = {
 	Serial: 0,
 	Network: 1,
@@ -82,10 +88,18 @@ var ThumbState = {
     Ready: 3,
     Unknown: 4
 }
+var NetworkProtocol = {
+    UDP: 0,
+    WEBSOCKET: 1
+};
+
 
 var MediaActions = {};
+var TCodeCommands = [];
+var tcodeCommandRows = -1;
 
 var mediaLoading = false;
+var refreshPageOnReconnect = false;
 var debounceTracker = {};// Use to create timeout handles on the fly.
 var settingChangeDebounce;
 var wsUri;
@@ -236,6 +250,7 @@ var progressLabelNode = document.getElementById("statusOutputLabel");
 
 var filterInput = document.getElementById('filterInput');
 filterInput.value = userFilterCriteria;
+var filterInputContainer = document.getElementById('filterInputContainer');
 
 /* 	
 	deoVideoNode = document.getElementById("deoVideoPlayer");
@@ -250,7 +265,6 @@ filterInput.value = userFilterCriteria;
 
 setupTextToSpeech();
 getServerSettings();
-getMediaActions();
 
 function debug(message) {
 	if (debugMode)
@@ -286,6 +300,9 @@ function onOutputDeviceConnectionChange(input, device) {
 	sendMediaState();
 }
 
+function sendSystemReady() {
+	sendWebsocketMessage("systemReady");
+}
 function startMetadataProcess() {
 	showAlertWindow("Process metadata", "This will set metadata using the algrorith on first scan.<br>Adding smart tags and mfs tags based on the scan.<br>It will not change any user tags set by you.",sendMetadataProcess);
 }
@@ -318,7 +335,6 @@ function sendClean1024Process() {
 function tcodeDeviceConnectRetry() {
 	sendWebsocketMessage("connectOutputDevice", { deviceName: remoteUserSettings.connection.output.selectedDevice });
 }
-
 function sendTCode(tcode) {
 	sendWebsocketMessage("tcode", tcode);
 }
@@ -328,7 +344,6 @@ function sendTCodeRange(channelName, min, max) {
 function sendMediaAction(action) {
 	sendWebsocketMessage("mediaAction", action);
 }
-
 function sendInputDeviceConnectionChange(device, checked) {
 	sendWebsocketMessage("connectInputDevice", { deviceName: device, enabled: checked });
 }
@@ -360,6 +375,26 @@ function sendDeleteMediaItem(item) {
 }
 function sendUpdateMetadata(metadataKey) {
 	sendWebsocketMessage("processMetadata", metadataKey);
+}
+function sendQuickExport() {
+	setSaveState(null, true);
+	sendWebsocketMessage("settingsQuickExport");
+}
+function sendQuickImport(filename) {
+	setSaveState(null, true);
+	sendWebsocketMessage("settingsQuickImport", {filename: filename});
+}
+function setSelectedProfile(profileName) {
+	sendWebsocketMessage("changeChannelProfile", profileName);
+}
+function addChannelProfile(profileName) {
+	sendWebsocketMessage("addChannelProfile", profileName);
+}
+function deleteChannelProfile(profileName) {
+	sendWebsocketMessage("deleteChannelProfile", profileName);
+}
+function cloneChannelProfile(fromName, toName) {
+	sendWebsocketMessage("cloneChannelProfile", {fromName: fromName, toName: toName});
 }
 function sendDeviceHome() {
 	sendMediaAction(MediaActions.TCodeHomeAll);
@@ -438,6 +473,7 @@ function initWebSocket() {
 			debug("CONNECTED");
 			updateSettingsUI();
 			sendMediaState();
+			sendSystemReady();
 		};
 		websocket.onmessage = function (evt) {
 			wsCallBackFunction(evt);
@@ -464,20 +500,60 @@ function wsCallBackFunction(evt) {
 	try {
 		var data = JSON.parse(evt.data);
 		switch (data["command"]) {
+			case "messageSend": {
+					var obj = data["message"];
+					const message = obj["message"].replaceAll("\n", "<br>");
+					const level = obj["loglevel"]
+					switch(level) {
+						case XLogLevel.Debuging:
+							break
+						case XLogLevel.Critical:
+							systemError(message);
+							break
+						case XLogLevel.Information:
+							showAlertWindow("Message", message);
+							break
+						case XLogLevel.Warning:
+							systemWarning(message);
+							break
+						default:
+							break;
+					}
+				}
+				break;
 			case "userError":
-				userError(data["message"]);
+				userError(data["message"].replaceAll("\n", "<br>"));
 				break;
 			case "userWarning":
-				userWarning(data["message"]);
+				userWarning(data["message"].replaceAll("\n", "<br>"));
 				break;
 			case "systemError":
-				systemError(data["message"]);
+				systemError(data["message"].replaceAll("\n", "<br>"));
 				break;
 			case "systemWarning":
-				systemWarning(data["message"]);
+				systemWarning(data["message"].replaceAll("\n", "<br>"));
 				break;
 			case "settingChange":
+				var obj = data["message"];
+				var key = obj["key"];
+				var value = obj["value"];
 				onSaveSuccess();
+				Settings.onSaveSuccess(key, value);
+				break;
+			case "settingsExported":
+				var obj = data["message"];
+				var message = obj["message"];
+				var path = obj["path"];
+				var success = obj["success"];
+				onSettingsExported(message, path, success);
+				break;
+			case "settingsImported":
+				var obj = data["message"];
+				var message = obj["message"];
+				var path = obj["path"];
+				var success = obj["success"];
+				onSettingsImported(message, path, success);
+				break;
 			case "stopAllMedia":
 				stopVideo();
 				break;
@@ -618,7 +694,7 @@ function setStatusOutput(message, percentage) {
 	}
 	// !message ? progressNode.classList.add("hidden-visibility") : progressNode.classList.remove("hidden-visibility");
 	// !message ? progressLabelNode.classList.add("hidden-visibility") : progressLabelNode.classList.remove("hidden-visibility");
-	progressLabelNode.innerText = (!message ? "" : message) + (percentage > -1 ? ": "+percentage+"%" : "");
+	progressLabelNode.innerText = (!message ? "" : message) + (percentage > -1 ? ": "+round(percentage, 2)+"%" : "");
 	progressNode.value = (percentage > -1 ? percentage : 0);
 }
 function setMediaLoading() {
@@ -855,6 +931,125 @@ function checkPass() {
     } else
         alert("Invalid password");
 }
+function confirmDeleteExported(filename)
+{
+	showAlertWindow("Delete", "Are you sure you wish to delete the file:<br>"+ filename + "?", () => deleteExported(filename));
+}
+function confirmImportExported(filename)
+{
+	showAlertWindow("Restore", "Are you sure you wish to restore all settings to the file:<br>"+ filename + "?<br>The application will automatically restart after a successful import.", () => restoreExported(filename));
+}
+function deleteExported(filename) {
+	setSaveState(null, true);
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', "/exported", true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            var status = xhr.status;
+            if (status == 200) {
+				setSaveState(null, false);
+				getExported();
+            } else {
+				parseHttpError("Error deleting exported settings file", xhr);
+			}
+        }
+		closeAlertWindow();
+    }
+    xhr.onerror = function () {
+		parseHttpError("Error deleting exported settings file", xhr);
+    };
+    xhr.send(JSON.stringify({filename:filename}));
+}
+function restoreExported(filename)
+{
+	sendQuickImport(filename);
+	closeAlertWindow();
+}
+function getExported() {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', "/exported", true);
+	xhr.responseType = 'json';
+	xhr.onload = function (evnt, retry) {
+		var status = xhr.status;
+		const files = xhr.response;
+		const filesSorted = files.sort((a,b) => {
+    		// return (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0);//ASC
+    		return (a.date > b.date) ? -1 : ((a.date < b.date) ? 1 : 0);//DSC
+		});
+		const filenames = filesSorted.map(x => x.name);
+		const tableNode = document.getElementById("exportedSettingFiles");
+		removeAllChildNodes(tableNode);
+		const header = document.createElement("thead");
+
+		const filenameHeader = document.createElement("th");
+		filenameHeader.innerText = "File name";
+		header.appendChild(filenameHeader);
+
+		const restoreHeader = document.createElement("th");
+		restoreHeader.innerText = "";
+		header.appendChild(restoreHeader);
+
+		const deleteHeader = document.createElement("th");
+		deleteHeader.innerText = "";
+		header.appendChild(deleteHeader);
+
+		tableNode.appendChild(header);
+
+		const body = document.createElement("tbody");
+		if (status === 200 && filenames && filenames.length > 0) {
+				filenames.forEach(x => {
+					const tr = document.createElement("tr");
+
+					const tdDownload = document.createElement("td");
+					const tdSpan = document.createElement("span");
+					const downloadlink = document.createElement("a");
+					downloadlink.innerText = x;
+					downloadlink.href = "/exported/" + x;
+					downloadlink.setAttribute("download", x);
+					downloadlink.setAttribute("target", "_blank");
+					tdSpan.appendChild(downloadlink);
+					tdSpan.classList.add("exported-download-link");
+					tdSpan.setAttribute("title", "Download:\n"+x);
+					tdDownload.appendChild(tdSpan);
+					tr.appendChild(tdDownload);
+
+					const tdImport = document.createElement("td");
+					const importButton = document.createElement("button");
+					importButton.innerText = "Restore";
+					importButton.onclick = () => confirmImportExported(x);
+					tdImport.appendChild(importButton);
+					tr.appendChild(tdImport);
+
+					const tdDelete = document.createElement("td");
+					const deleteButton = document.createElement("button");
+					deleteButton.innerText = "X";
+					deleteButton.onclick = () => confirmDeleteExported(x);
+					tdDelete.appendChild(deleteButton);
+					tr.appendChild(tdDelete);
+
+					body.appendChild(tr);
+				});
+		} else {
+			const tr = document.createElement("tr");
+			const tdDownload = document.createElement("td");
+			const tdSpan = document.createElement("span");
+			tdSpan.innerHTML = status === 200 ? "No backups exist" : xhr.response.message;
+			tdSpan.setAttribute("title", xhr.response.message);
+			tdSpan.classList.add("exported-download-link");
+			tdDownload.appendChild(tdSpan);
+			tr.appendChild(tdDownload);
+			const tdDelete = document.createElement("td");
+			tr.appendChild(tdDelete);
+			body.appendChild(tr);
+		}
+		tableNode.appendChild(body);
+	}.bind(this);
+	xhr.onerror = function() {
+		parseHttpError("Error getting exported settings file", xhr);
+	};
+	xhr.send();
+}
 
 function getServerSettings(retry) {
 	var xhr = new XMLHttpRequest();
@@ -863,6 +1058,14 @@ function getServerSettings(retry) {
 	xhr.onload = function (evnt, retry) {
 		var status = xhr.status;
 		if (status === 200) {
+			// if(refreshPageOnReconnect) {
+			// 	//setSaveState(null, false);
+			// 	window.location.reload();
+			// 	return;
+			// }
+			getMediaActions();
+			getTCodeCommand();
+			getExported();
 			remoteUserSettings = xhr.response;
 
 			document.getElementById("xteVersion").innerText = remoteUserSettings["xteVersion"];
@@ -921,6 +1124,25 @@ function getMediaActions() {
 	xhr.send();
 }
 
+function getTCodeCommand() {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', "/tcodeCommands", true);
+	xhr.responseType = 'json';
+	xhr.onload = function (evnt) {
+		var status = xhr.status;
+		if (status === 200) {
+			TCodeCommands = xhr.response.commands;
+			setupTCodeCommands(TCodeCommands.commands);
+		} else {
+			parseHttpError("Error getting tcode commands", xhr);
+		}
+	}.bind(this);
+	xhr.onerror = function(evnt) {
+		parseHttpError("Error getting tcode commands", xhr);
+	};
+	xhr.send();
+}
+
 function getServerChannels() {
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', "/channels", true);
@@ -962,8 +1184,13 @@ function setupSystemTags() {
 	const tagsFIlterNode = document.getElementById("tagFilterOptions");
 	removeAllChildNodes(tagsFIlterNode);
 	removeAllChildNodes(metaDataTagsNode);
+	const optionsContainer = document.createElement("div");
+	const ornode = createCheckBoxDiv("tagFilterORChk", "OR", false, "OR", onFilterByTagClicked);
+	ornode.setAttribute("title", "If checked, the selected tags will be inclusive.")
+	optionsContainer.appendChild(ornode);
+	tagsFIlterNode.appendChild(optionsContainer);
 	const containter = document.createElement("div");
-	containter.classList.add("media-tag-filter-container")
+	containter.classList.add("side-action-tag-filter-container")
 	tagsFIlterNode.appendChild(containter);
 	tags.forEach((x, i) => {
 		containter.appendChild(createCheckBoxDiv(x+tagCheckboxesName+i, tagCheckboxesName, x, x, onFilterByTagClicked));
@@ -1060,8 +1287,273 @@ function removeSystemTags(smartMode) {
 	markXTPFormDirty();
 }
 
-function setSelectedProfile(profileName) {
-	sendWebsocketMessage("changeChannelProfile", profileName);
+function setupTCodeCommands(commands)
+{
+	const actionButtonsDivNodes = document.getElementsByClassName("side-action-tcode-action-container");
+	for(let i=0; i < actionButtonsDivNodes.length; i++)
+	{
+		removeAllChildNodes(actionButtonsDivNodes[i])
+	}
+	if(!commands)
+		commands = TCodeCommands;
+	if(!commands || commands.length == 0) 
+	{
+		const infoDiv = document.createElement("div");
+		infoDiv.innerHTML = "No TCode commands found.<br>Visit the settings to add some."
+		for(let i=0; i < actionButtonsDivNodes.length; i++)
+		{
+			actionButtonsDivNodes[i].appendChild(infoDiv)
+		}
+	} 
+	else 
+	{
+		commands.forEach(x => 
+			{
+			const button = document.createElement("button");
+			button.innerText = x["name"];
+			button.onclick = function () { sendTCode(x["command"]); };
+			//button.style = "align-self: center;"
+			button.classList.add("side-action-tcode-action-button")
+			button.hidden = x["hidden"];
+			button.name = "tcodeCommandButton";
+			button.title = x["command"];
+			for(let i=0; i < actionButtonsDivNodes.length; i++)
+			{
+				actionButtonsDivNodes[i].appendChild(button)
+			}
+		});
+	}
+
+	// Setup
+	markTCodeCommandFormClean();
+	const setupNode = document.getElementById("tcodeCommandsSetupBody");
+	removeAllChildNodes(setupNode);
+	tcodeCommandRows = -1;
+	const setupForm = document.createElement("form");
+	setupForm.id = "tcodeCommandsSetupForm";
+	const table = document.createElement("table");
+	table.classList.add("tcodeCommandsSetupTable");
+	const thead = document.createElement("thead");
+	const thName = document.createElement("th");
+	thName.innerText = "Name";
+	thead.appendChild(thName);
+	const thCommand = document.createElement("th");
+	thCommand.innerText = "Command";
+	thead.appendChild(thCommand);
+	const thhidden = document.createElement("th");
+	thhidden.innerText = "Hidden";
+	thead.appendChild(thhidden);
+	const thDelete = document.createElement("th");
+	thDelete.innerText = "";
+	thead.appendChild(thDelete);
+	table.appendChild(thead);
+	const tbody = document.createElement("tbody");
+	tbody.id = "tcodeCommandsSetupTableBody";
+	table.appendChild(tbody);
+	setupForm.appendChild(table)
+	setupNode.appendChild(setupForm);
+	setupTCodeCommandsSetup(commands);
+}
+
+function setupTCodeCommandsSetup(commands)
+{
+	const tbody = document.getElementById("tcodeCommandsSetupTableBody");
+	if(!commands)
+		commands = TCodeCommands;
+	if(!commands || commands.length == 0)
+	{
+		addNoTCodeCommandsFoundRow();
+		return;
+	}
+	commands.forEach(x => {
+		const tr = getTCodeCommandTableRow(x);
+		tbody.appendChild(tr);
+	});
+}
+
+function addNoTCodeCommandsFoundRow()
+{
+	const existing = document.getElementById("noTCodeCommandsInSetup");
+	if(existing)
+		return;
+	const tbody = document.getElementById("tcodeCommandsSetupTableBody");
+	const tr = document.createElement("tr");
+	tr.id = "noTCodeCommandsInSetup"
+	const tdName = document.createElement("td");
+	tdName.innerHTML = "No TCode commands found.";
+	tr.appendChild(tdName);
+	tbody.appendChild(tr);
+}
+
+function removeNoTCodeCommandsFoundRow()
+{
+	const existing = document.getElementById("noTCodeCommandsInSetup");
+	if(!existing)
+		return;
+	existing.remove();
+}
+
+function getTCodeCommandTableRow(command)
+{
+	tcodeCommandRows++;
+	const rowID = tcodeCommandRows;
+	if(!command) {
+		command = {name: "new"+rowID, command: "", hidden: false};
+		TCodeCommands.push(command);
+	}
+	const tr = document.createElement("tr");
+	tr.id = "tcodeCommandRow"+rowID;
+	tr.setAttribute("name", "tcodeCommandRow");
+	const tdName = document.createElement("td");
+	const inputName = document.createElement("input");
+	inputName.required = true;
+	inputName.value = command["name"];
+	inputName.id = "tcodeCommandNameInput"+rowID
+	inputName.name = "tcodeCommandNameInput"
+	inputName.oninput = function () {
+		if(debounceTracker[inputName.id])
+			clearTimeout(debounceTracker[inputName.id]);
+		debounceTracker[inputName.id] = setTimeout(function () {
+			let index = TCodeCommands.findIndex(x => x.name == command["name"]);
+			if(index > -1) {
+				const tcodeCommandNameInputs = document.getElementsByName("tcodeCommandNameInput");
+				const duplicateIndex = [...tcodeCommandNameInputs].findIndex(node => node.id != inputName.id && node.value.length && node.value == inputName.value);
+				if(duplicateIndex > -1)
+				{
+					const error = `Name: ${inputName.value} already exists!`;
+					userError(error);
+					inputName.setCustomValidity(error);
+					return;
+				}
+				else {
+					inputName.setCustomValidity("");
+				}
+				TCodeCommands[index].name = inputName.value;
+				checkTCodeCommandSetupFormDirty();
+			} else {
+				systemError(`There was an error. Command not found ${command["name"]}. Try refreshing the page.`)
+			}
+			debounceTracker[inputName.id] = null;
+		}, 500);
+	};
+	tdName.appendChild(inputName);
+	tr.appendChild(tdName);
+
+	const tdCommand = document.createElement("td");
+	const inputCommand = document.createElement("input");
+	inputCommand.required = true;
+	inputCommand.value = command["command"];
+	inputCommand.id = "inputTCodeCommandCommand"+rowID
+	inputCommand.oninput = function () {
+		if(debounceTracker[inputCommand.id])
+			clearTimeout(debounceTracker[inputCommand.id]);
+		debounceTracker[inputCommand.id] = setTimeout(function () {
+			const index = TCodeCommands.findIndex(x => x.name == command["name"]);
+			if(index > -1) {
+				TCodeCommands[index].command = inputCommand.value;
+				checkTCodeCommandSetupFormDirty();
+			} else {
+				systemError(`There was an error. Command not found ${command["name"]}. Try refreshing the page.`)
+			}
+			debounceTracker[inputCommand.id] = null;
+		}, 500);
+	};
+	tdCommand.appendChild(inputCommand);
+	tr.appendChild(tdCommand);
+
+	const tdhidden = document.createElement("td");
+	const hiddenCheck = document.createElement("input");
+	hiddenCheck.type = "checkbox";
+	hiddenCheck.checked = command["hidden"];
+	hiddenCheck.onclick = function() {
+		if(!command["name"].length)
+			return;
+		const index = TCodeCommands.findIndex(x => x.name == command["name"]);
+		if(index > -1) {
+			TCodeCommands[index].hidden = hiddenCheck.checked;
+			checkTCodeCommandSetupFormDirty();
+		} else {
+			systemError(`There was an error. Command not found ${command["name"]}. Try refreshing the page.`)
+		}
+	};
+	tdhidden.appendChild(hiddenCheck);
+	tr.appendChild(tdhidden);
+	
+	const tdDelete = document.createElement("td");
+	const buttonDelete = document.createElement("button");
+	buttonDelete.innerText = "X";
+	buttonDelete.type = "button";
+	buttonDelete.onclick = function() {
+		if(!inputName.value.length)
+		{
+			tr.remove();
+			const rows = document.getElementsByName("tcodeCommandRow");
+			if(!rows?.length) {
+				addNoTCodeCommandsFoundRow();
+			}
+			return;
+		}
+		showAlertWindow("Delete?", `Are you sure you wish to delete the command: ${command["name"]}?`, function() {
+			const index = TCodeCommands.findIndex(x => x.name == command["name"]);
+			closeAlertWindow();
+			if(index > -1) {
+				TCodeCommands.splice(index, 1);
+				tr.remove();
+				const rows = document.getElementsByName("tcodeCommandRow");
+				if(!rows?.length) {
+					addNoTCodeCommandsFoundRow();
+				}
+				checkTCodeCommandSetupFormDirty(true);
+			} else {
+				systemError(`There was an error. Command not found ${command["name"]}. Try refreshing the page.`)
+			}
+		});
+	};
+	tdDelete.appendChild(buttonDelete);
+	tr.appendChild(tdDelete);
+	return tr;
+}
+function addTCodeCommand() {
+	removeNoTCodeCommandsFoundRow();
+	const tbody = document.getElementById("tcodeCommandsSetupTableBody");
+	const tr = getTCodeCommandTableRow();
+	tbody.appendChild(tr);
+	tr.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
+	checkTCodeCommandSetupFormDirty(true);
+}
+function saveTCodeCommands() {
+	const form = document.getElementById("tcodeCommandsSetupForm");
+	if(!form.checkValidity())
+	{
+		userError("Cannot save, the form is invalid.");
+		return;
+	}
+	postTCodeCommands(TCodeCommands);
+}
+function cancelTCodeCommands() {
+	showAlertWindow("Reset?", `Are you sure you wish to reset all current tcode command changes?`, function() {
+		getTCodeCommand();
+		closeAlertWindow();
+	});
+}
+function checkTCodeCommandSetupFormDirty(forceEnable = false) {
+	const saveTCodeCommandsButton = document.getElementById("saveTCodeCommandsButton");
+	const cancelTCodeCommandsButton = document.getElementById("cancelTCodeCommandsButton");
+	if(forceEnable) {
+		saveTCodeCommandsButton.disabled = false;
+		cancelTCodeCommandsButton.disabled = false;
+		return;
+	}
+	const form = document.getElementById("tcodeCommandsSetupForm");
+	saveTCodeCommandsButton.disabled = !IsDirty(form);
+	cancelTCodeCommandsButton.disabled = !IsDirty(form);
+}
+
+function markTCodeCommandFormClean() {
+	const saveTCodeCommandsButton = document.getElementById("saveTCodeCommandsButton");
+	saveTCodeCommandsButton.disabled = true;
+	const cancelTCodeCommandsButton = document.getElementById("cancelTCodeCommandsButton");
+	cancelTCodeCommandsButton.disabled = true;
 }
 
 function getServerSessions() {
@@ -1550,6 +2042,27 @@ function postMediaItemMetaData(metaData) {
 	xhr.send(JSON.stringify(metaData));
 }
 
+function postTCodeCommands(commands) {
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', "/tcodeCommands", true);
+	xhr.setRequestHeader('Content-Type', 'application/json');
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			var status = xhr.status;
+			if (status !== 200)
+				onSaveFail(xhr, null, "Error saving tcode commands");
+			else {
+				onSaveSuccess();
+				getTCodeCommand();
+			}
+		}
+	}
+	xhr.onerror = function () {
+		onSaveFail(xhr, null, "Error saving tcode commands");
+	};
+	xhr.send(JSON.stringify(commands));
+}
+
 function postMediaState(mediaState) {
 	if(!xtpConnected)
 		return;
@@ -1570,11 +2083,31 @@ function postMediaState(mediaState) {
 function onSaveSuccess(node) {
 	setSaveState(node, false);
 }
-function onSaveFail(xhr, node) {
-	parseHttpError("Save fail", xhr);
-	setSaveState(node, false, statusTest);
+function onSaveFail(xhr, node, message) {
+	if(xhr)
+		parseHttpError("Save fail", xhr);
+	setSaveState(node, false, message);
+}
+function saveFail(message) {
+	onSaveFail(null, null, message)
 }
 
+function onSettingsExported(message, path, success) {
+	if(!success) {
+		systemError("Failed to export settings: "+ message);
+		return;
+	}
+	setSaveState(null, false);
+	getExported();
+}
+function onSettingsImported(message, path, success) {
+	if(!success) {
+		systemError("Failed to import settings: "+ message);
+		return;
+	}
+	refreshPageOnReconnect = true;
+	setSaveState(null, false);
+}
 function clearMediaList() {
 	var medialistNode = document.getElementById("mediaList");
 	removeAllChildNodes(medialistNode);
@@ -1762,9 +2295,9 @@ function loadMedia(mediaList) {
 		var contextMenuItem = createContextMenuItem("Set moneyshot at current", setMoneyShotCurrentPosClick(obj, contextMenu));
 		contextMenuItem.classList.add("setMoneyShotAtCurrent", "disabled");
 		contextMenu.appendChild(contextMenuItem);
-		var updateMetadataMenuItem = createContextMenuItem("Update metadata", updateItemMetadata(obj, contextMenu));
+		var updateMetadataMenuItem = createContextMenuItem("Process metadata", updateItemMetadata(obj, contextMenu));
 		contextMenu.appendChild(updateMetadataMenuItem);
-		var contextMenuItem = createContextMenuItem("Edit metadata", mediaSettingsClick(obj, contextMenu));
+		var contextMenuItem = createContextMenuItem("Properties", mediaSettingsClick(obj, contextMenu));
 		contextMenu.appendChild(contextMenuItem);
 		var contextMenuItem = createContextMenuItem("Alternate scripts", showAlternateScripts(obj, contextMenu));
 		contextMenuItem.classList.add("showAlternateScripts", "disabled");
@@ -2121,8 +2654,13 @@ function getDisplayedMediaList(showValue, userClick) {
 	return filteredMediaScoped
 }
 
+function clearFilterinput() {
+	filterInput.value = "";
+	filter();
+}
+
 function filter() {
-	const currentCriteria = document.getElementById("filterInput").value;
+	const currentCriteria = filterInput.value;
 	userFilterCriteria = currentCriteria;
 	filterInput.enabled = false;
 	var mediaItems = document.getElementsByClassName("media-item");
@@ -2170,24 +2708,28 @@ function filterByTag(filterCriteria) {
 	var tagsFilterOptions = document.getElementsByName(tagCheckboxesName);
 	tagsFilterOptions.forEach(x => x.enabled = false);
 	var mediaItems = document.getElementsByClassName("media-item");
+	var orNode = document.getElementById("tagFilterORChk");
 	for (var item of mediaItems) {
 		const libraryItem = mediaListDisplayed.find(x => x.id === item.id);
 
-		item.hidden = isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags) || isFiltered(userFilterCriteria, item.textContent);
+		item.hidden = isTagFiltered(userTagFilterCriteria, libraryItem.metaData.tags, orNode.checked) || isFiltered(userFilterCriteria, item.textContent);
 	};
 	tagsFilterOptions.forEach(x => x.enabled = true);
 }
 
-function isTagFiltered(selectedTags, mediaTags) {
+function isTagFiltered(selectedTags, mediaTags, orMode) {
 	if (!selectedTags || !selectedTags.length || !mediaTags || !mediaTags.length)
 		return false;
 	else {
-		  for(let i=0; i<selectedTags.length; i++) {
-			if(!mediaTags.includes(selectedTags[i]))
+		for(let i=0; i<selectedTags.length; i++) {
+			if(orMode) {
+				if (mediaTags.includes(selectedTags[i]))
+					return false;
+			} else if(!mediaTags.includes(selectedTags[i]))
 				return true;
-		  }
-		return false;
+		}
 	}
+	return orMode;
 }
 /* 
 function onClickUseDeoWebCheckbox(checkbox)
@@ -2545,7 +3087,7 @@ function onSkipToMoneyShot() {
 }
 
 function onToggleFilterInput(searchButton) {
-	filterInput.classList.toggle('hidden');
+	filterInputContainer.classList.toggle('hidden');
 	searchButton.classList.toggle('icon-button-down');
 }
 
@@ -2553,6 +3095,12 @@ function onToggleTagInput(tagButton) {
 	var tagFilterOptions = document.getElementById('tagFilterOptions');
 	tagFilterOptions.classList.toggle('hidden');
 	tagButton.classList.toggle('icon-button-down');
+}
+
+function onToggleTCodeActionsMain(button) {
+	var node = document.getElementById('tcodeActionsMain');
+	node.classList.toggle('hidden');
+	button.classList.toggle('icon-button-down');
 }
 
 function setupAlternateScripts(mediaItem) {
@@ -3099,9 +3647,9 @@ async function setupSliders() {
 }
 
 async function setupMotionModifiers() {
-	//var tab = document.getElementById("tabFunscript");
-	var tabFunscriptRandomMotion = document.getElementById("tabFunscriptRandomMotion");
-	removeAllChildNodes(tabFunscriptRandomMotion);
+	//var tab = document.getElementById("tabMotion");
+	var motionRandomContainer = document.getElementById("motionRandomContainer");
+	removeAllChildNodes(motionRandomContainer);
 
 	var formElementNode = document.createElement("div");
 	formElementNode.classList.add("formElement");
@@ -3116,7 +3664,7 @@ async function setupMotionModifiers() {
 	subtextNode.classList.add("tab-content-header-eyebrow");
 	subtextNode.innerText = "Add random motion to other channels"
 	//headerDivNode.appendChild(headerNode);
-	tabFunscriptRandomMotion.appendChild(subtextNode);
+	motionRandomContainer.appendChild(subtextNode);
 
 	var labelNode = document.createElement("label");
 	labelNode.innerText = "Enabled";
@@ -3130,6 +3678,7 @@ async function setupMotionModifiers() {
 	multiplierEnabledNode.id = "multiplierEnabled";
 	multiplierEnabledNode.type = "checkbox";
 	multiplierEnabledNode.checked = remoteUserSettings.multiplierEnabled;
+	multiplierEnabledNode.setAttribute("title", "Global random motion toggle.")
 
 	multiplierEnabledNode.oninput = function (event) {
 		remoteUserSettings.multiplierEnabled = event.target.checked;
@@ -3139,16 +3688,22 @@ async function setupMotionModifiers() {
 
 	sectionNode.appendChild(multiplierEnabledNode);
 
+	const enabledHelptext = "The will toggle whether this channel is included in the random motion generation or not.";
+	const linkToHelptext = "This will match the values of the linked channel 1:1 with modifiers speed and offset applied.";
+	const speedHelptext = "The percentage of the linked scripts time to modify the speed.\nIf the speed is 0.1, the speed will be 10% of the linked script or 90% slower.\nA value of 2 will be 200% faster.\nMinimum value is 0.01";
+	const offsetHelpText = "The percentage of the linked scripts time to offset.\nIf the offset is 0.1 and the parent action interval is 300ms, the offset will be 30ms after the linked script event.\nCan be any value between -1.00 and 1.00";
 	var headers = [
 		//"Modifier", 
-		"Link to script", 
-		"Speed"]
+		{text: "Link to script", helpText: linkToHelptext}, 
+		{text: "Speed", helpText: speedHelptext},  
+		{text: "Offset", helpText: offsetHelpText}]
 	headers.forEach(element => {
 		var gridHeaderNode = document.createElement("div");
 		gridHeaderNode.classList.add("form-group-control");
 		gridHeaderNode.classList.add("form-group-control-header");
 		var gridHeaderContentNode = document.createElement("span");
-		gridHeaderContentNode.innerText = element;
+		gridHeaderContentNode.innerText = element.text;
+		gridHeaderContentNode.setAttribute("title", element.helpText)
 		gridHeaderNode.appendChild(gridHeaderContentNode);
 		sectionNode.appendChild(gridHeaderNode);
 	});
@@ -3158,7 +3713,7 @@ async function setupMotionModifiers() {
 	formElementNode.appendChild(sectionNode);
 
 	// tab.appendChild(headerDivNode);
-	tabFunscriptRandomMotion.appendChild(formElementNode);
+	motionRandomContainer.appendChild(formElementNode);
 
 	var availableChannels = remoteUserSettings.availableChannelsArray;
 	for (var i = 0; i < availableChannels.length; i++) {
@@ -3177,8 +3732,8 @@ async function setupMotionModifiers() {
 		formElementNode.appendChild(labelNode);
 
 
-		/* 	value["damperEnabled"] = availableChannels->value(channel).DamperEnabled;
-			value["damperValue"] = availableChannels->value(channel).DamperValue;
+		/* 	value["speedEnabled"] = availableChannels->value(channel).speedEnabled;
+			value["speedValue"] = availableChannels->value(channel).speedValue;
 			value["dimension"] = (int)availableChannels->value(channel).Dimension;
 			value["friendlyName"] = availableChannels->value(channel).FriendlyName;
 			value["linkToRelatedMFS"] = availableChannels->value(channel).LinkToRelatedMFS;
@@ -3201,6 +3756,7 @@ async function setupMotionModifiers() {
 		multiplierEnabledNode.setAttribute("name", "motionModifierInput");
 		multiplierEnabledNode.type = "checkbox";
 		multiplierEnabledNode.checked = channel.multiplierEnabled;
+		multiplierEnabledNode.setAttribute("title", enabledHelptext);
 
 		multiplierEnabledNode.oninput = function (channelName, event) {
 			remoteUserSettings.availableChannels[channelName].multiplierEnabled = event.target.checked;
@@ -3228,6 +3784,7 @@ async function setupMotionModifiers() {
 		var linkToRelatedMFSNode = document.createElement("input");
 		linkToRelatedMFSNode.setAttribute("name", "motionModifierInput");
 		linkToRelatedMFSNode.type = "checkbox";
+		linkToRelatedMFSNode.setAttribute("title", linkToHelptext)
 		linkToRelatedMFSNode.checked = channel.linkToRelatedMFS;
 
 		linkToRelatedMFSNode.oninput = function (channelName, event) {
@@ -3235,63 +3792,118 @@ async function setupMotionModifiers() {
 			markXTPFormDirty();
 		}.bind(linkToRelatedMFSNode, channelName);
 
+		var relatedChannelNode;
+		if(!userAgentIsHereSphere)
+		{
+			relatedChannelNode = document.createElement("select");
+			relatedChannelNode.setAttribute("name", "motionModifierInput");
 
-		var relatedChannelNode = document.createElement("select");
-		relatedChannelNode.setAttribute("name", "motionModifierInput");
+			availableChannels.forEach(element => {
+				if (element.channel !== channel.channel) {
+					var relatedChannelOptionNode = document.createElement("option");
+					relatedChannelOptionNode.innerHTML = element.friendlyName;
+					relatedChannelOptionNode.value = element.axisName;
+					relatedChannelNode.appendChild(relatedChannelOptionNode);
+				}
+			});
+			relatedChannelNode.value = channel.relatedChannel;
 
-		availableChannels.forEach(element => {
-			if (element.channel !== channel.channel) {
-				var relatedChannelOptionNode = document.createElement("option");
-				relatedChannelOptionNode.innerHTML = element.friendlyName;
-				relatedChannelOptionNode.value = element.axisName;
-				relatedChannelNode.appendChild(relatedChannelOptionNode);
-			}
-		});
-		relatedChannelNode.value = channel.relatedChannel;
+			relatedChannelNode.oninput = function (channelName, event) {
+				remoteUserSettings.availableChannels[channelName].relatedChannel = event.target.value;
+				markXTPFormDirty();
+			}.bind(relatedChannelNode, channelName);
+		} else {
+			relatedChannelNode = document.createElement("button");
+			relatedChannelNode.setAttribute("name", "motionModifierInput");
+			//relatedChannelNode.classList.add("form-group-control--selectButton");
+			//relatedChannelNode.style = "max-width: 100px; min-width: 24px; align-self: center;"
 
-		relatedChannelNode.oninput = function (channelName, event) {
-			remoteUserSettings.availableChannels[channelName].relatedChannel = event.target.value;
-			markXTPFormDirty();
-		}.bind(relatedChannelNode, channelName);
+			const relatedChannel = availableChannels.find(x => x.axisName == channel.relatedChannel);
+			relatedChannelNode.innerText = relatedChannel.friendlyName;
+
+			relatedChannelNode.onclick = function (channelName, event) {
+				var labelValueArray = availableChannels.map((x) => ({value: x.axisName, label: x.friendlyName}));
+				showSelectWindow("Link channel to", "Select channel", labelValueArray, (value) => {
+					let newRelatedChannel = availableChannels.find(x => x.axisName == value);
+					this.innerText = newRelatedChannel.friendlyName;
+					remoteUserSettings.availableChannels[channelName].relatedChannel = value;
+					closeSelectWindow();
+					onSaveToXTPClick();
+				});
+			}.bind(relatedChannelNode, channelName);
+		}
 
 		linkedEnabledValueNode.appendChild(linkToRelatedMFSNode);
 		linkedEnabledValueNode.appendChild(relatedChannelNode);
+		linkedEnabledValueNode.setAttribute("title", linkToHelptext);
 
-		var damperEnabledValueNode = document.createElement("div");
-		damperEnabledValueNode.classList.add("form-group-control");
+		var speedEnabledValueNode = document.createElement("div");
+		speedEnabledValueNode.classList.add("form-group-control");
 
-		var damperEnabledNode = document.createElement("input");
-		damperEnabledNode.setAttribute("name", "motionModifierInput");
-		damperEnabledNode.type = "checkbox";
-		damperEnabledNode.checked = channel.damperEnabled;
+		var speedEnabledNode = document.createElement("input");
+		speedEnabledNode.setAttribute("name", "motionModifierInput");
+		speedEnabledNode.type = "checkbox";
+		speedEnabledNode.checked = channel.speedEnabled;
+		speedEnabledNode.setAttribute("title", speedHelptext);
 
-		damperEnabledNode.oninput = function (channelName, event) {
-			remoteUserSettings.availableChannels[channelName].damperEnabled = event.target.checked;
+		speedEnabledNode.oninput = function (channelName, event) {
+			remoteUserSettings.availableChannels[channelName].speedEnabled = event.target.checked;
 			markXTPFormDirty();
-		}.bind(damperEnabledNode, channelName);
+		}.bind(speedEnabledNode, channelName);
 
-		var damperValueNode = document.createElement("input");
-		damperValueNode.setAttribute("name", "motionModifierInput");
-		damperValueNode.value = channel.damperValue;
+		var speedValueNode = document.createElement("input");
+		speedValueNode.setAttribute("name", "motionModifierInput");
+		speedValueNode.setAttribute("min", "0.01");
+		speedValueNode.setAttribute("step", "0.01");
+		speedValueNode.setAttribute("title", speedHelptext);
+		speedValueNode.type = "number";
+		speedValueNode.value = round(channel.speedValue, 2);
 
-		damperValueNode.oninput = function (channelName, event) {
+		speedValueNode.oninput = function (channelName, event) {
+			if(!event.target.validity.valid)
+				return;
 			var value = parseFloat(event.target.value);
-			if (value) {
-				remoteUserSettings.availableChannels[channelName].damperValue = value;
+			if (value != undefined && value != null) {
+				remoteUserSettings.availableChannels[channelName].speedValue = round(value, 2);
 				markXTPFormDirty();
 			}
-		}.bind(damperValueNode, channelName);
+		}.bind(speedValueNode, channelName);
 
-		damperEnabledValueNode.appendChild(damperEnabledNode);
-		damperEnabledValueNode.appendChild(damperValueNode);
+		speedEnabledValueNode.appendChild(speedEnabledNode);
+		speedEnabledValueNode.appendChild(speedValueNode);
+
+
+		var offsetValueNode = document.createElement("input");
+		offsetValueNode.setAttribute("name", "motionModifierInput");
+		offsetValueNode.setAttribute("min", "-1");
+		offsetValueNode.setAttribute("max", "1");
+		offsetValueNode.setAttribute("step", "0.01");
+		offsetValueNode.setAttribute("title", offsetHelpText);
+		offsetValueNode.type = "number";
+		offsetValueNode.value = round(channel.offset, 2);
+
+		offsetValueNode.oninput = function (channelName, event) {
+			if(!event.target.validity.valid)
+				return;
+			var value = parseFloat(event.target.value);
+			if (value != undefined && value != null) {
+				remoteUserSettings.availableChannels[channelName].offset = value;
+				markXTPFormDirty();
+			}
+		}.bind(offsetValueNode, channelName);
+
+		speedEnabledValueNode.appendChild(speedEnabledNode);
+		speedEnabledValueNode.appendChild(speedValueNode);
+
+		speedEnabledValueNode.appendChild(offsetValueNode);
 
 		sectionNode.appendChild(enabledValueNode);
 		sectionNode.appendChild(linkedEnabledValueNode);
-		sectionNode.appendChild(damperEnabledValueNode);
+		sectionNode.appendChild(speedEnabledValueNode);
 
 		formElementNode.appendChild(sectionNode);
 
-		tabFunscriptRandomMotion.appendChild(formElementNode);
+		motionRandomContainer.appendChild(formElementNode);
 	}
 
 	toggleMotionModifierState(remoteUserSettings.multiplierEnabled);
@@ -3305,9 +3917,9 @@ function toggleMotionModifierState(enabled) {
 }
 async function setUpInversionMotionModifier() {
 
-	//var tab = document.getElementById("tabFunscript");
-	var tabFunscriptInversion = document.getElementById("tabFunscriptInversion");
-	removeAllChildNodes(tabFunscriptInversion);
+	//var tab = document.getElementById("tabMotion");
+	var motionInversionContainer = document.getElementById("motionInversionContainer");
+	removeAllChildNodes(motionInversionContainer);
 
 	var formElementNode = document.createElement("div");
 	formElementNode.classList.add("formElement");
@@ -3319,7 +3931,7 @@ async function setUpInversionMotionModifier() {
 	subtextNode.innerText = "Invert motion of channels"
 	//headerDivNode.appendChild(subtextNode);
 
-	tabFunscriptInversion.appendChild(subtextNode);
+	motionInversionContainer.appendChild(subtextNode);
 
 
 	var availableChannels = remoteUserSettings.availableChannelsArray;
@@ -3364,7 +3976,7 @@ async function setUpInversionMotionModifier() {
 		sectionNode.appendChild(enabledValueNode);
 		formElementNode.appendChild(sectionNode);
 
-		tabFunscriptInversion.appendChild(formElementNode);
+		motionInversionContainer.appendChild(formElementNode);
 	}
 }
 
@@ -3427,6 +4039,7 @@ function setupConnectionsTab() {
 	
 	document.getElementById("networkAddress").value = remoteUserSettings.connection.output.networkAddress
 	document.getElementById("networkPort").value = remoteUserSettings.connection.output.networkPort
+	document.getElementById("networkProtocolWebsocket").checked = remoteUserSettings.connection.output.networkProtocol == NetworkProtocol.WEBSOCKET;
 	document.getElementById("serialPort").value = remoteUserSettings.connection.output.serialPort
 }
 
@@ -3489,10 +4102,62 @@ function onNetworkPortChange(input) {
 	remoteUserSettings.connection.output.networkPort = input.value.trim();
 	markXTPFormDirty();
 }
+function onNetworkWebsocketChange(input) {
+	remoteUserSettings.connection.output.networkProtocol = input.checked ? NetworkProtocol.WEBSOCKET : NetworkProtocol.UDP;
+	markXTPFormDirty();
+}
+
 function onSerialPortChange(input) {
 	remoteUserSettings.connection.output.serialPort = input.value;
 	markXTPFormDirty();
 }
+
+function onAddChannelProfile() {
+	showGetTextWindow("Add new channel profile", "Enter the name of the new profile",
+		(name) => { 
+			addChannelProfile(name);
+			closeTextWindow();
+		}
+	);
+}
+
+function onDeleteChannelProfile() {
+	if(remoteUserSettings.allChannelProfileNames.length < 2) {
+		showAlertWindow("Error", "There must be at least 1 profile");
+		return;
+	}
+	showAlertWindow("Delete", `Are you sure you want to delete ${remoteUserSettings.selectedChannelProfile}?\nThis action cannot be undone!`,
+		() => { 
+			deleteChannelProfile(remoteUserSettings.selectedChannelProfile);
+			closeAlertWindow();
+		}
+	);
+}
+
+function onCopyToChannelProfile() {
+	showGetTextWindow("Copy to new channel profile", "Enter the name of the new profile",
+		(name) => { 
+			cloneChannelProfile(remoteUserSettings.selectedChannelProfile, name);
+			closeTextWindow();
+		}
+	);
+}
+
+function onCopyFromChannelProfile() {
+	if(remoteUserSettings.allChannelProfileNames.length < 2) {
+		showAlertWindow("Error", "There is only one profile");
+		return;
+	}
+	let otherProfiles = JSON.parse(JSON.stringify(remoteUserSettings.allChannelProfileNames));
+	otherProfiles.splice(remoteUserSettings.allChannelProfileNames.indexOf(remoteUserSettings.selectedChannelProfile), 1);
+	showSelectWindow("Copy values from", `Select a profile to copy from:`, otherProfiles,
+		(from) => { 
+			cloneChannelProfile(from, remoteUserSettings.selectedChannelProfile);
+			closeSelectWindow();
+		}
+	);
+}
+
 // function connectToTcodeDevice() {
 // 	webSocket = new WebSocket("ws://"+deviceAddress+"/ws");
 // 	webSocket.onopen = function (event) {

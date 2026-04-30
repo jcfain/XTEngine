@@ -118,5 +118,5 @@ struct ScriptInfo {
     }
 };
 
-Q_DECLARE_METATYPE(ScriptInfo);
+Q_DECLARE_METATYPE(ScriptInfo)
 #endif // SCRIPTINFO_H

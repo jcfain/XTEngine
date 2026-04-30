@@ -58,7 +58,8 @@ int WebSocketHandler::getServerPort()
 void WebSocketHandler::onSettingChange(QString setting, QVariant value)
 {
     QJsonObject obj;
-    obj[setting] = QJsonValue::fromVariant(value);
+    obj["key"] = setting;
+    obj["value"] = QJsonValue::fromVariant(value);
     sendCommand("settingChange", obj);
 }
 
@@ -151,6 +152,15 @@ void WebSocketHandler::processTextMessage(QString message)
     if (command == "tcode") {
         QString commandMessage = json["message"].toString();
         emit tcode(commandMessage);
+    } else if (command == "systemReady") {
+        SettingsHandler::systemReady();
+    } else if (command == "settingsQuickExport") {
+        SettingsHandler::ExportQuick();
+    } else if (command == "settingsQuickImport") {
+        QJsonObject obj = json["message"].toObject();
+        QString file = obj["filename"].toString();
+        QSettings::Format format = file.endsWith("ini") ? QSettings::Format::IniFormat : JSONSettingsFormatter::JsonFormat;
+        SettingsHandler::ImportQuick(file, format);
     } else if (command == "settingChange") {
         QJsonObject obj = json["message"].toObject();
         emit settingChange(obj["key"].toString(), obj["value"].toVariant());
@@ -159,6 +169,13 @@ void WebSocketHandler::processTextMessage(QString message)
         emit setChannelRange(obj["channelName"].toString(), obj["min"].toInt(), obj["max"].toInt());
     } else if (command == "changeChannelProfile") {
         emit changeChannelProfile(json["message"].toString());
+    } else if (command == "addChannelProfile") {
+        emit addChannelProfile(json["message"].toString());
+    } else if (command == "deleteChannelProfile") {
+        emit deleteChannelProfile(json["message"].toString());
+    } else if (command == "cloneChannelProfile") {
+        QJsonObject obj = json["message"].toObject();
+        emit cloneChannelProfile(obj["fromName"].toString(), obj["toName"].toString());
     } else if (command == "connectOutputDevice") {
         QJsonObject obj = json["message"].toObject();
         emit connectOutputDevice((ConnectionInterface)obj["deviceName"].toInt(), obj["enabled"].toBool());

@@ -10,16 +10,10 @@
 /// \param parent
 ///
 ThumbExtractor::ThumbExtractor(QObject *parent)
-    : QObject{parent}
+    : QObject{parent},
+    m_mediaPlayer(0)
 {
-    m_mediaPlayer = new QMediaPlayer(this);
-    m_mediaPlayer->setVideoSink(&m_videoSink);
-    connect(m_mediaPlayer, &QMediaPlayer::errorOccurred, this, &ThumbExtractor::on_mediaError);
-    connect(this, &ThumbExtractor::startPlaying, m_mediaPlayer, &QMediaPlayer::play);
-    connect(this, &ThumbExtractor::stopPlaying, m_mediaPlayer, &QMediaPlayer::stop);
-    connect(this, &ThumbExtractor::pausePlaying, m_mediaPlayer, &QMediaPlayer::pause);
-    connect(this, &ThumbExtractor::setPosition, m_mediaPlayer, &QMediaPlayer::setPosition);
-    connect(&m_videoSink, &QVideoSink::videoFrameChanged, this, &ThumbExtractor::videoFrameChanged);
+    createMediaPlayer();
     m_debouncer.setSingleShot(true);
     connect(&m_debouncer, &QTimer::timeout, this, [this]() {
         QThreadPool::globalInstance()->start([this](){
@@ -108,12 +102,16 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
             }
             QThread::msleep(100);
         }
-        if(!m_mediaPlayer->hasVideo())
-        {
-            m_lastError = "No video";
-            return QImage();
-        }
     }
+    if(!m_mediaPlayer->hasVideo())
+    {
+        m_lastError = "No video";
+        return QImage();
+    }
+    // This didnt work on the orangepi5 but did on main pc...
+    // if(!m_mediaFormat->isCodecSupported(m_lastError)) {
+    //     return QImage();
+    // }
     LogHandler::Debug("[ThumbExtractor::extract] Loaded media mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
     currentTime = QTime::currentTime().msecsSinceStartOfDay();
     // Do not start/stop QMediaPlayer in a non GUI thread.
@@ -122,7 +120,7 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
     {
         while(m_lastDuration <= 0)
         {
-            // LogHandler::Debug("[XVideoPreview::extractSync] mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
+            // LogHandler::Debug("[ThumbExtractor::extractSync] mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
             if(mediaHasError())
             {
                 stopAndWait();
@@ -176,7 +174,7 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
         }
         if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
         {
-            LogHandler::Debug("[XVideoPreview::extractSync] Timeout mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
+            LogHandler::Debug("[ThumbExtractor::extractSync] Timeout mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
             m_lastError = "Image extraction timeout";
             m_extracting = false;
             stopAndWait();
@@ -188,7 +186,7 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
 //    disconnect(&m_videoSink, &QVideoSink::videoFrameChanged, this, &ThumbExtractor::videoFrameChanged);
     if(!stopAndWait() || m_lastImage.isNull())
     {
-        LogHandler::Debug("[XVideoPreview::extractSync] Race condition: " + QString::number(m_mediaPlayer->mediaStatus()));
+        LogHandler::Debug("[ThumbExtractor::extractSync] Race condition: " + QString::number(m_mediaPlayer->mediaStatus()));
         return QImage();
     }
     return m_lastImage.copy();
@@ -206,6 +204,24 @@ void ThumbExtractor::reset()
     m_lastError = "";
     stopAndWait();
     m_mediaPlayer->setSource(QUrl());
+    // createMediaPlayer(); Doesnt seem to help much with memory
+}
+
+void ThumbExtractor::createMediaPlayer()
+{
+    if(m_mediaPlayer)
+    {
+        delete m_mediaPlayer;
+    }
+    m_mediaPlayer = new QMediaPlayer(this);
+    m_mediaPlayer->setVideoSink(&m_videoSink);
+    connect(m_mediaPlayer, &QMediaPlayer::errorOccurred, this, &ThumbExtractor::on_mediaError);
+    connect(this, &ThumbExtractor::startPlaying, m_mediaPlayer, &QMediaPlayer::play);
+    connect(this, &ThumbExtractor::stopPlaying, m_mediaPlayer, &QMediaPlayer::stop);
+    connect(this, &ThumbExtractor::pausePlaying, m_mediaPlayer, &QMediaPlayer::pause);
+    connect(this, &ThumbExtractor::setPosition, m_mediaPlayer, &QMediaPlayer::setPosition);
+    connect(&m_videoSink, &QVideoSink::videoFrameChanged, this, &ThumbExtractor::videoFrameChanged);
+    m_mediaFormat = new MediaFormat(m_mediaPlayer, m_mediaPlayer);
 }
 
 bool ThumbExtractor::stopAndWait()
@@ -216,7 +232,7 @@ bool ThumbExtractor::stopAndWait()
     {
         if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= 2000)
         {
-            LogHandler::Debug("[XVideoPreview::extractSync] Timeout media stop: " + QString::number(m_mediaPlayer->playbackState()));
+            LogHandler::Debug("[ThumbExtractor::extractSync] Timeout media stop: " + QString::number(m_mediaPlayer->playbackState()));
             m_lastError = "Timed out waiting for media to stop";
             return false;
         }

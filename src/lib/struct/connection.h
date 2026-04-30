@@ -39,7 +39,7 @@ class NetworkConnection: public Connection
     {
         QJsonObject obj = Connection::toJson();
         obj["protocol"] = (int)protocol;
-        obj["addresss"] = NetworkAddress::toJson(addresss);
+        obj["addresss"] = addresss.toJson();
         return obj;
     }
     void fromJson(const QJsonObject obj) override

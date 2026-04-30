@@ -12,6 +12,7 @@
 #include "../lookup/ChannelDimension.h"
 
 
+// This is a dead file not used any more except possible by exporting old data during migration
 struct ChannelModel
 {
     QString FriendlyName;
@@ -97,8 +98,8 @@ struct ChannelModel
         item.Type = Type;
         item.trackName = TrackName;
         item.MultiplierEnabled = MultiplierEnabled;
-        item.DamperEnabled = DamperEnabled;
-        item.DamperValue = DamperValue;
+        item.SpeedEnabled = DamperEnabled;
+        item.SpeedValue = DamperValue;
         item.FunscriptInverted = Inverted;
         item.GamepadInverted = false;
         item.LinkToRelatedMFS = LinkToRelatedMFS;

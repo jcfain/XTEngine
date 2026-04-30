@@ -78,7 +78,7 @@ void OutputSerialConnectionHandler::init(const QString &portNameOrFriendlyName, 
     if(SettingsHandler::getUseDTRAndRTS())
     {
         LogHandler::Debug("setRequestToSend");
-         m_serial->setRequestToSend(true);
+        m_serial->setRequestToSend(true);
         LogHandler::Debug("setDataTerminalReady");
         m_serial->setDataTerminalReady(true);
     }

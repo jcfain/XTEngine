@@ -3,7 +3,7 @@
 
 #include <QtCore/qglobal.h>
 
-#if defined(XTENGINE_LIBRARY)
+#ifdef XTENGINE_LIBRARY
 #  define XTENGINE_EXPORT Q_DECL_EXPORT
 #else
 #  define XTENGINE_EXPORT Q_DECL_IMPORT

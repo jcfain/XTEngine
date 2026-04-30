@@ -31,6 +31,33 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         obj["smartTags"] = smartTags;
         _webSocketHandler->sendCommand("tagsUpdate", obj);
     });
+    connect(SettingsHandler::instance(), &SettingsHandler::settingsExported, this, [this](QString message, QString path, bool success) {
+        QJsonObject obj;
+        obj["message"] = message;
+        obj["path"] = path;
+        obj["success"] = success;
+        _webSocketHandler->sendCommand("settingsExported", obj);
+    });
+    connect(SettingsHandler::instance(), &SettingsHandler::settingsImported, this, [this](QString message, QString path, bool success) {
+        QJsonObject obj;
+        obj["message"] = message;
+        obj["path"] = path;
+        obj["success"] = success;
+        _webSocketHandler->sendCommand("settingsImported", obj);
+        if(success)
+        {
+            QTimer::singleShot(500, [this]() {
+                SettingsHandler::setSaveOnExit(false);
+                SettingsHandler::Restart();
+            });
+        }
+    });
+    connect(SettingsHandler::instance(), &SettingsHandler::messageSend, this, [this](QString message, XLogLevel loglevel) {
+        QJsonObject obj;
+        obj["message"] = message;
+        obj["loglevel"] = (int)loglevel;
+        _webSocketHandler->sendCommand("messageSend", obj);
+    });
 
     connect(_webSocketHandler, &WebSocketHandler::clean1024, this, &HttpHandler::clean1024);
     connect(_webSocketHandler, &WebSocketHandler::connectOutputDevice, this, &HttpHandler::connectOutputDevice);
@@ -39,9 +66,21 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::setChannelRange, this, [](QString channelName, int min, int max) {
         TCodeChannelLookup::setChannelRange(channelName, min, max);
     });
-    connect(_webSocketHandler, &WebSocketHandler::changeChannelProfile, this, [](QString profileName) {
-        if(TCodeChannelLookup::getSelectedChannelProfile() != profileName)
-            TCodeChannelLookup::setSelectedChannelProfile(profileName);
+    connect(_webSocketHandler, &WebSocketHandler::changeChannelProfile, this, [](QString name) {
+        if(TCodeChannelLookup::getSelectedChannelProfile() != name)
+            TCodeChannelLookup::setSelectedChannelProfile(name);
+    });
+    connect(_webSocketHandler, &WebSocketHandler::addChannelProfile, this, [](QString name) {
+        if(!TCodeChannelLookup::hasProfile(name))
+            TCodeChannelLookup::addChannelsProfile(name);
+    });
+    connect(_webSocketHandler, &WebSocketHandler::deleteChannelProfile, this, [](QString name) {
+        if(TCodeChannelLookup::hasProfile(name))
+            TCodeChannelLookup::deleteChannelsProfile(name);
+    });
+    connect(_webSocketHandler, &WebSocketHandler::cloneChannelProfile, this, [](QString fromName, QString toName) {
+        if(TCodeChannelLookup::hasProfile(fromName))
+            TCodeChannelLookup::copyChannelsProfile(toName, fromName);
     });
     connect(_webSocketHandler, &WebSocketHandler::newWebSocketConnected, this, &HttpHandler::on_webSocketClient_Connected);
     connect(_webSocketHandler, &WebSocketHandler::restartService, this, &HttpHandler::restartService);
@@ -101,8 +140,8 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb);
             return;
         }
-        auto selectLibraryPaths = SettingsHandler::mediaLibrarySettings.get(LibraryType::MAIN);
-        selectLibraryPaths.append(SettingsHandler::mediaLibrarySettings.get(LibraryType::VR));
+        auto selectLibraryPaths = SettingsHandler::mediaLibrarySettings->get(LibraryType::MAIN);
+        selectLibraryPaths.append(SettingsHandler::mediaLibrarySettings->get(LibraryType::VR));
         foreach (auto path, selectLibraryPaths) {
             if(thumbFile.startsWith(path)) {
                 relativeThumb = thumbFile.replace(path, "");
@@ -223,8 +262,10 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     _server->route("/", QHttpServerRequest::Method::Get,  this, &HttpHandler::handleRoot);
     _server->route("/auth", QHttpServerRequest::Method::Post, this, &HttpHandler::handleAuth);
     _server->route("/settings", QHttpServerRequest::Method::Get, this, &HttpHandler::handleSettings);
+    _server->route("/exported", QHttpServerRequest::Method::Get, this, &HttpHandler::handleExportedList);
     _server->route("^/media/(.*\\.(("+extensions+")$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleVideoStream);
     _server->route("^/media/(.*\\.(("+SettingsHandler::getSubtitleExtensions().join("|")+")$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleSubtitle);
+    _server->route("^/exported/(.*\\.((json)$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleDownloadExported);
     _server->route("^/media$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleVideoList);
     _server->route("^/thumb/.*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleThumbFile);
     _server->route("^/funscript/(.*\\.((funscript)$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleFunscriptFile);
@@ -232,14 +273,17 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     _server->route("^/channels$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleChannels);
     _server->route("^/availableSerialPorts$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleAvailableSerialPorts);
     _server->route("^/mediaActions$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleMediaActions);
+    _server->route("^/tcodeCommands$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleTCodeCommands);
     _server->route("^/logout$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleLogout);
     _server->route("^/activeSessions$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleActiveSessions);
     _server->route("^/settings$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleSettingsUpdate);
     _server->route("^/mediaItemMetadata$", QHttpServerRequest::Method::Post,  this, &HttpHandler::handleMediaItemMetadataUpdate);
+    _server->route("^/tcodeCommands$", QHttpServerRequest::Method::Post,  this, &HttpHandler::handleTCodeCommandsUpdate);
     // _server->route("POST", "^/channels$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleChannelsUpdate);
     _server->route("^/xtpweb$",QHttpServerRequest::Method::Post, this, &HttpHandler::handleWebTimeUpdate);
     _server->route("^/heresphere$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleHereSphere);
     _server->route("^/expireSession$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleExpireSession);
+    _server->route("^/exported$", QHttpServerRequest::Method::Post, this, &HttpHandler::handleDeleteExported);
 
     _server->route("/<arg>", QHttpServerRequest::Method::Get,  this, &HttpHandler::handleFile);
 
@@ -481,6 +525,7 @@ void HttpHandler::handleWebTimeUpdate(const QHttpServerRequest &request, QHttpSe
     emit xtpWebPacketReceive(body);
     responder.write(QHttpServerResponse::StatusCode::Ok);
 }
+
 void HttpHandler::handleAvailableSerialPorts(const QHttpServerRequest &request, QHttpServerResponder &responder) {
     if(!isAuthenticated(request)) {
         responder.write(QHttpServerResponse::StatusCode::Unauthorized);
@@ -504,6 +549,24 @@ void HttpHandler::handleMediaActions(const QHttpServerRequest &request, QHttpSer
     {
         root[action] = action;
     }
+    QHttpHeaders headers;
+    responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
+}
+
+void HttpHandler::handleTCodeCommands(const QHttpServerRequest &req, QHttpServerResponder &responder)
+{
+    if(!isAuthenticated(req)) {
+        responder.write(QHttpServerResponse::StatusCode::Unauthorized);
+        return;
+    }
+    QJsonObject root;
+    QList<TCodeCommand> commands = SettingsHandler::getCustomTCodeCommands();
+    QJsonArray commandsArray;
+    foreach (TCodeCommand command, commands)
+    {
+        commandsArray.append(command.toJson());
+    }
+    root["commands"] = commandsArray;
     QHttpHeaders headers;
     responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
 }
@@ -550,6 +613,8 @@ void HttpHandler::handleSettings(const QHttpServerRequest &request, QHttpServerR
     connectionOutputSettingsJson["selectedDevice"] = SettingsHandler::getSelectedOutputDevice();
     connectionOutputSettingsJson["networkAddress"] = SettingsHandler::getServerAddress();
     connectionOutputSettingsJson["networkPort"] = SettingsHandler::getServerPort();
+    connectionOutputSettingsJson["networkProtocol"] = (int)SettingsHandler::getSelectedNetworkProtocol();
+
     connectionOutputSettingsJson["serialPort"] = SettingsHandler::getSerialPort();
     connectionSettingsJson["output"] = connectionOutputSettingsJson;
 
@@ -650,10 +715,14 @@ void HttpHandler::handleSettingsUpdate(const QHttpServerRequest &request, QHttpS
         ConnectionInterface selectedOutputDevice = (ConnectionInterface)output["selectedDevice"].toInt();
         QString networkAddress = output["networkAddress"].toString();
         QString networkPort = output["networkPort"].toString();
-        if(!networkAddress.isEmpty() && (networkAddress != SettingsHandler::getServerAddress() || networkPort != SettingsHandler::getServerPort()))
+        NetworkProtocol networkProtocol = static_cast<NetworkProtocol>(output["networkProtocol"].toInt());
+        if(!networkAddress.isEmpty() && (networkAddress != SettingsHandler::getServerAddress()
+                                          || networkPort != SettingsHandler::getServerPort()
+                                          || networkProtocol != SettingsHandler::getSelectedNetworkProtocol()))
         {
             SettingsHandler::setServerAddress(networkAddress);
             SettingsHandler::setServerPort(networkPort);
+            SettingsHandler::setSelectedNetworkProtocol(networkProtocol);
             if(selectedOutputDevice == ConnectionInterface::Network)
                 emit connectOutputDevice(ConnectionInterface::Network, true);
         }
@@ -718,25 +787,51 @@ void HttpHandler::handleMediaItemMetadataUpdate(const QHttpServerRequest &reques
     QJsonDocument doc = QJsonDocument::fromJson(body, &error);
     if (doc.isEmpty())
     {
-        LogHandler::Error("data: "+body);
+        LogHandler::Error("Error reading request body: " + body + " error: "+ error.errorString());
         responder.write(QHttpServerResponse::StatusCode::BadRequest);
         return ;
     }
-    else
+    auto metadata = LibraryListItemMetaData258::fromJson(doc.object());
+    auto libraryItem = _mediaLibraryHandler->findItemByNameNoExtension(metadata.key);
+    if(libraryItem)
     {
-        auto metadata = LibraryListItemMetaData258::fromJson(doc.object());
-        auto libraryItem = _mediaLibraryHandler->findItemByNameNoExtension(metadata.key);
-        if(libraryItem)
-        {
-            libraryItem->metadata = metadata;
-            SettingsHandler::updateLibraryListItemMetaData(*libraryItem);
-            emit updateMetadata(libraryItem->metadata);
-        } else {
-            SettingsHandler::setForceMetaDataFullProcess(true);
-            responder.write(createError("Invalid metadata item please process metadata<br> In System tab under settings."), QHttpServerResponse::StatusCode::Conflict);
-            return ;
-        }
+        libraryItem->metadata = metadata;
+        SettingsHandler::updateLibraryListItemMetaData(*libraryItem);
+        emit updateMetadata(libraryItem->metadata);
+    } else {
+        SettingsHandler::setForceMetaDataFullProcess(true);
+        responder.write(createError("Invalid metadata item please process metadata<br> In System tab under settings."), QHttpServerResponse::StatusCode::Conflict);
+        return ;
     }
+
+    SettingsHandler::Save();
+    responder.write(QHttpServerResponse::StatusCode::Ok);
+}
+
+void HttpHandler::handleTCodeCommandsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder)
+{
+    if(!isAuthenticated(req)) {
+        responder.write(QHttpServerResponse::StatusCode::Unauthorized);
+        return;
+    }
+
+    auto body = req.body();
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(body, &error);
+    if (doc.isEmpty())
+    {
+        LogHandler::Error("Error reading request body: " + body + " error: "+ error.errorString());
+        responder.write(QHttpServerResponse::StatusCode::BadRequest);
+        return ;
+    }
+    QJsonArray commandsJson = doc.array();
+    QList<TCodeCommand> commands;
+    foreach (QJsonValueConstRef obj, commandsJson)
+    {
+        commands.append(TCodeCommand::fromJson(obj.toObject()));
+    }
+    SettingsHandler::setCustomTCodeCommands(commands);
+    SettingsHandler::Save();
     responder.write(QHttpServerResponse::StatusCode::Ok);
 }
 
@@ -1226,6 +1321,136 @@ QHttpServerResponse HttpHandler::handleSubtitle(const QHttpServerRequest &reques
     headers.append(QHttpHeaders::WellKnownHeader::ContentType, mimeType);
     headers.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(fileInfo.size()));
     return sendFile(libraryItem->metadata.subtitle, headers);
+}
+
+void HttpHandler::handleExportedList(const QHttpServerRequest &request, QHttpServerResponder &responder)
+{
+    if(!isAuthenticated(request)) {
+        responder.write(QHttpServerResponse::StatusCode::Forbidden);
+        return;
+    }
+
+    QString settingsBackupDir = SettingsHandler::getSettingsBackupDirectory();
+    if(settingsBackupDir.isEmpty())
+    {
+        QJsonObject obj;
+        obj["message"] = "Export directory is empty.<br>Enter a valid directory<br>thats writable<br>before exporting";
+        responder.write(QJsonDocument(obj), QHttpServerResponse::StatusCode::PreconditionFailed);
+        return;
+    }
+    QDir dir(settingsBackupDir);
+    if(!dir.exists())
+    {
+        QJsonObject obj;
+        obj["message"] = "Specified directory: "+ settingsBackupDir + " does not exist";
+        responder.write(QJsonDocument(obj), QHttpServerResponse::StatusCode::PreconditionFailed);
+        return;
+    }
+    // dir.setSorting(QDir::SortFlag::DirsFirst | QDir::SortFlag::Time);
+    QStringList mediaTypes("*.json");
+    QDirIterator backupDir(settingsBackupDir, mediaTypes, QDir::Files);
+
+    QJsonArray root;
+    while (backupDir.hasNext())
+    {
+        QFileInfo fileInfo(backupDir.next());
+        QJsonObject obj;
+        obj["name"] = fileInfo.fileName();
+        obj["date"] = fileInfo.birthTime().toString(Qt::DateFormat::ISODate);
+        root << obj;
+    }
+    QHttpHeaders headers;
+    responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
+}
+
+QHttpServerResponse HttpHandler::handleDownloadExported(const QHttpServerRequest &request)
+{
+    if(!isAuthenticated(request)) {
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::Forbidden);
+    }
+
+    QString settingsBackupDir = SettingsHandler::getSettingsBackupDirectory();
+    QDir dir(settingsBackupDir);
+    if(!dir.exists())
+    {
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::NotFound);
+    }
+
+    QString parameter = getURL(request);
+    //QString parameter = getURL(request);
+    QString apiStr("/exported/");
+    QString fileName = parameter.replace(parameter.indexOf(apiStr), apiStr.size(), "");
+
+    QFileInfo fileInfo(settingsBackupDir + QDir::separator() + fileName);
+    if(!fileInfo.exists())
+    {
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::NotFound);
+    }
+    QString filePath = fileInfo.absoluteFilePath();
+    QString downloadFilename = fileInfo.fileName();
+    QHttpHeaders headers;
+    headers.append(QHttpHeaders::WellKnownHeader::ContentDisposition, "attachment");
+    headers.append("filename", downloadFilename);
+    QString mimeType = mimeDatabase.mimeTypeForFile(filePath, QMimeDatabase::MatchExtension).name();
+    headers.append(QHttpHeaders::WellKnownHeader::ContentType, mimeType);
+    headers.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(fileInfo.size()));
+    return sendFile(filePath, headers);
+}
+
+void HttpHandler::handleDeleteExported(const QHttpServerRequest &request, QHttpServerResponder &responder)
+{
+    if(!isAuthenticated(request)) {
+        responder.write(QHttpServerResponse::StatusCode::Forbidden);
+        return;
+    }
+
+    QString settingsBackupDir = SettingsHandler::getSettingsBackupDirectory();
+    QDir dir(settingsBackupDir);
+    if(!dir.exists())
+    {
+        responder.write(QHttpServerResponse::StatusCode::NotFound);
+        return;
+    }
+
+
+    auto body = request.body();
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(body, &error);
+    if (doc.isEmpty())
+    {
+        LogHandler::Error("Error reading request body: " + body + " error: "+ error.errorString());
+        responder.write(QHttpServerResponse::StatusCode::BadRequest);
+        return ;
+    }
+
+    QString fileName = doc["filename"].toString();
+
+    if(fileName.isEmpty())
+    {
+        LogHandler::Error("File name was empty");
+        responder.write(QHttpServerResponse::StatusCode::BadRequest);
+        return;
+    }
+    QFile file (settingsBackupDir + QDir::separator() + fileName);
+    if(!file.exists())
+    {
+        responder.write(QHttpServerResponse::StatusCode::NotFound);
+        return;
+    }
+    if(!fileName.startsWith(SettingsHandler::getExportFileNamePrefix()))
+    {
+        LogHandler::Error("File name to delete did not start with "+SettingsHandler::getExportFileNamePrefix()+" as required: " + fileName);
+        responder.write(QHttpServerResponse::StatusCode::Forbidden);
+        return;
+    }
+    if(!file.remove())
+    {
+        LogHandler::Error("Error deleting file: " + fileName + " error: "+ file.errorString());
+        responder.write(QHttpServerResponse::StatusCode::InternalServerError);
+        return;
+    }
+
+    responder.write(QHttpServerResponse::StatusCode::Ok);
 }
 
 QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerRequest &request)

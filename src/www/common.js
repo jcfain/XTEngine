@@ -1,6 +1,7 @@
 
 var alertModelNode = document.getElementById("alertModal");
 var textModelNode = document.getElementById("textModal");
+var selectModelNode = document.getElementById("selectModal");
 
 function userError(message) {
 	showAlertWindow("Error", message);
@@ -32,11 +33,19 @@ function showAlertWindow(header, message, yesCallback) {
 		var confirmButton = document.getElementById("alertConfirmButton");
 		var closebutton = document.getElementById("alertCancelButton");
 		var headerNode = document.getElementById("alert-modal-title");
+		confirmButton.disabled = false;
+		closebutton.disabled = false;
+		headerNode.disabled = false;
 		headerNode.innerText = header;
 		var alertModalBody = document.getElementById("alertModalBody");
 		if(yesCallback) {
 			confirmButton.hidden = false;
-			confirmButton.onclick = yesCallback;
+			confirmButton.onclick = () => {
+				confirmButton.disabled = true;
+				closebutton.disabled = true;
+				headerNode.disabled = true;
+				yesCallback();
+			}
 			alertModalBody.innerHTML = message;
 			closebutton.innerText = "No";
 		} else {
@@ -91,6 +100,80 @@ function closeTextWindow() {
 		confirmButton.onclick = undefined;
 		var textModalInput = document.getElementById("textModalInput");
 		textModalInput.value = "";
+	}, 275)
+}
+
+/// optionsArray is either string[] or [{ value: any, label: string }]
+function showSelectWindow(header, message, optionsArray, yesCallback) {
+	if(selectModelNode.style.visibility != "visible") {
+		var selectModalInput = document.getElementById("selectModalInput");
+		selectModalInput.classList.add("radio-group--select-model");
+		removeAllChildNodes(selectModalInput);
+		let index = 0;
+		// Not currently a combo because heresphere doesnt support it.
+		optionsArray.forEach(x => {
+			let labelText;
+			let value;
+			if(typeof x === "object") {
+				labelText = x.label;
+				value = x.value;
+			} else if(typeof x === "string") {
+				labelText = x;
+				value = x;
+			}
+			var radio = document.createElement("input");
+			var label = document.createElement("label");
+			label.onclick = () => {radio.checked = true;} 
+			radio.type = "radio";
+			radio.id = index + "SelectInput";
+			radio.name = "selectWindowGroup";
+			radio.value = value;
+			// radio.onclick = function() {
+			// 	yesCallback(this.value);
+			// }
+			if(optionsArray.indexOf(x) == 0)
+			{
+				radio.checked = true;
+			}
+			label.for = radio.id;
+			label.innerText = labelText;
+			const divContainer = document.createElement("div");
+			divContainer.appendChild(radio);
+			divContainer.appendChild(label);
+			selectModalInput.appendChild(divContainer);
+			index++;
+		});
+		var headerNode = document.getElementById("select-modal-title");
+		headerNode.innerText = header;
+		var selectModalLabel = document.getElementById("selectModalLabel");
+		selectModalLabel.innerHTML = message;
+		var confirmButton = document.getElementById("selectConfirmButton");
+		confirmButton.onclick = function(selectModalInput) { 
+			const group = document.getElementsByName("selectWindowGroup");
+			let selectedValue = "";
+			group.forEach(x => {
+				if(x.checked) {
+					selectedValue = x.value;
+					return;
+				}
+
+			})
+			yesCallback(selectedValue);
+		}.bind(selectModalInput, selectModalInput);
+		selectModelNode.style.visibility = "visible";
+		selectModelNode.style.opacity = 1;
+	} else {
+		systemError("Two select windows opened");
+	}
+}
+function closeSelectWindow() {
+	selectModelNode.style.visibility = "hidden";
+	selectModelNode.style.opacity = 0;
+	setTimeout(function() {
+		var confirmButton = document.getElementById("selectConfirmButton");
+		confirmButton.onclick = undefined;
+		var selectModalInput = document.getElementById("selectModalInput");
+		removeAllChildNodes(selectModalInput);
 	}, 275)
 }
 
@@ -160,4 +243,29 @@ function round(value, precision) {
 
 function capitalizeFirstLetter(val) {
     return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
+
+function IsDirty(form) {
+    for (var i=0; i<form.elements.length; i++) {
+        var field = form.elements[i];
+        switch (field.type) {
+            case "select-multiple":
+            case "select-one":
+                var options = field.options;
+                for (var j=0; j<options.length; j++) {
+                    if(options[j].selected != options[j].defaultSelected) return true;
+                }
+                break;
+            case "text":
+            case "file":
+            case "password":
+                if (field.value != field.defaultValue) return true;
+                break;
+            case "checkbox":
+            case "radio":
+                if (field.checked != field.defaultChecked) return true;
+                break;
+        }
+    }
+    return false;
 }

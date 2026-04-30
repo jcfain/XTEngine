@@ -9,6 +9,7 @@
 #include "LibraryListItem27.h"
 #include "XTEngine_global.h"
 
+// This is a dead file not used any more except possible by exporting old data during migration
 struct XTENGINE_EXPORT LibraryListItem
 {
     LibraryListItemType type;

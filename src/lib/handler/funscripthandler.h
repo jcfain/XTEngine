@@ -38,7 +38,7 @@ public:
     qint64 getMin(const Track& channelName) const;
     qint64 getMax(const Track& channelName) const;
     qint64 getNext(const Track& channelName) const;
-    std::shared_ptr<FunscriptAction> getPosition(const Track& channelName, const qint64& at);
+    std::shared_ptr<FunscriptAction> getPosition(const Track& channelName, const qint64& at, const int offset = 0);
 
     void play(QString funscript);
     void stop();
@@ -53,7 +53,11 @@ public:
     static void resetModifier();
     static void resetModifier(const Track& channelName);
     static int getOffSet();
-    static void setOffset(int value);
+    static int getScriptOffSet();
+    static void setScriptOffset(int value);
+    static void setGlobalOffset(int value);
+    static void setGlobalOffsetWeb(int value);
+    static int getGlobalOffsetWeb();
     static void resetOffset(int value);
 
     static bool isSFMA(QString libraryItemMediaPath);
@@ -69,6 +73,8 @@ private:
     bool m_loaded = false;
     bool _firstActionExecuted;
     static inline int m_offset;
+    static inline int m_globalOffset;
+    static inline int m_globalOffsetWeb;
     static QByteArray readFile(QString file);
     static QJsonObject readJson(QByteArray data);
     void jsonToFunscript(QJsonObject json);
@@ -77,6 +83,7 @@ private:
     void jsonToFunscript(const QJsonObject& json, QHash<qint64, int>& actions);
     void setFunscriptSettings(const Track& channelName, Funscript& funscript);
     qint64 findClosest(const qint64& value, const QList<qint64>& a);
+    void calculateSpeedModifier(int& interval);
 };
 
 #endif // FUNSCRIPTHANDLER_H

@@ -64,9 +64,14 @@ public:
     void handleChannels(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleAvailableSerialPorts(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleMediaActions(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleTCodeCommands(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleSettingsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleMediaItemMetadataUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleTCodeCommandsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
     QHttpServerResponse handleSubtitle(const QHttpServerRequest &req);
+    void handleExportedList(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    QHttpServerResponse handleDownloadExported(const QHttpServerRequest &req);
+
 
     void handleChannelsUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleDeviceConnected(const QHttpServerRequest &req, QHttpServerResponder &responder);
@@ -75,6 +80,7 @@ public:
     void handleDeo(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleHereSphere(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleWebTimeUpdate(const QHttpServerRequest &req, QHttpServerResponder &responder);
+    void handleDeleteExported(const QHttpServerRequest &req, QHttpServerResponder &responder);
 
 
     void sendWebSocketTextMessage(QString command, QString message = nullptr);

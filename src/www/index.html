@@ -67,7 +67,7 @@
 </deo-video> -->
 	<!-- 		<div class="toolBar">
 				<div class="toolBarGroup">
-					<input id="filterInput" class="media-filter-input" placeholder="Filter" oninput="filter(this.value)" />
+					<input id="filterInput" class="side-action-filter-input" placeholder="Filter" oninput="filter(this.value)" />
 				</div>
 			</div> -->
 	<div id="body-container" class="body-container">
@@ -177,7 +177,7 @@
 								<use href="#pip"></use>
 							</svg>
 						</button> -->
-						<input id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0" step="0.01" value="1.0" onchange="setPlayRate(this.value)" />
+						<input id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0.00" value="1.00" onchange="setPlayRate(this.value)" />
 						<button data-title="Alternate scripts" class="video-control video-control-main" id="alternate-scripts-button" onclick="openAlternateScriptsModal()">
 							<svg class="player-button-icon">
 								<use href="#funscript"></use>
@@ -322,7 +322,7 @@
 									<label title="Change the moneyshot for the current media item"
 										for="moneyShotMillis">Moneyshot (ms)
 									</label>
-									<input id="moneyShotMillis" type="number" step="1000" oninput="metaDataChange()" />
+									<input id="moneyShotMillis" type="number" step="1000" min="-1" oninput="metaDataChange()" />
 								</div>
 								<div class="formElement">
 									<label>
@@ -334,7 +334,7 @@
 									</div>
 								</div>
 							</div>
-							<div id="metadataTags" class="modal-section modal-section--metadata-tags">
+							<div class="modal-section modal-section--metadata-tags">
 								<h3>Tags</h3>
 								<div id="metaDataTags" class="media-tag-metadata-container"></div>
 							</div>
@@ -354,7 +354,13 @@
 							</button>
 						</div>
 						<div class="modal-footer-content">
-							<span id="metaDataSaveState" class="save-status"></span>
+							<span id="metaDataSaveState" class="save-status">
+								<div>
+									<svg class="player-button-icon">
+										<use href="#info"></use>
+									</svg>
+								</div>
+							</span>
 							<button id="saveMediaItemMetaDataButton" disabled="true"
 								onclick="saveMetaData()">
 								Save
@@ -369,21 +375,37 @@
 			<button id="refreshButton" title="Refresh the media from XTP" class="refresh-media-button icon-button" onclick="getServerLibrary()">
 				<img class="buttonImage" src="://images/icons/reload.svg"/>
 			</button> -->
-			<button id="searchButton" title="Search media" class="search-media-button icon-button" onclick="onToggleFilterInput(this)">
-				<img class="buttonImage" src="://images/icons/search.svg"/>
-			</button> 
-			<button id="tagButton" title="Filter tags" class="tag-media-button icon-button" onclick="onToggleTagInput(this)">
-				<img class="buttonImage" src="://images/icons/tag.svg"/>
-			</button> 
-			<button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button" onclick="toggleShufflePlay()">
-				<img class="buttonImage" src="://images/icons/shuffle.svg" />
-			</button> 
-			<button id="randomizeButton" title="Randomize media playlist" class="hidden random-media-button icon-button" onclick="sortChange('random')">
-				<img class="buttonImage" src="://images/icons/reload.svg" />
-			</button> 
-			<input id="filterInput" class="media-filter-input hidden" placeholder="Filter" oninput="debounceFilter()" />
-			<!-- <select id="tagFilterSelect" class="media-tag-filter-input hidden" multiple oninput="filterByTag(this.value)"></select>  -->
-			<div id="tagFilterOptions" class="media-tag-filter-input hidden"></div>
+			<div class="side-actions">
+				<div class="side-actions-container">
+					<button id="searchButton" title="Search media" class="search-media-button icon-button icon-button--group--vertical" onclick="onToggleFilterInput(this)">
+						<img class="buttonImage" src="://images/icons/search.svg"/>
+					</button> 
+					<button id="tagButton" title="Filter tags" class="tag-media-button icon-button icon-button--group--vertical" onclick="onToggleTagInput(this)">
+						<img class="buttonImage" src="://images/icons/tag.svg"/>
+					</button> 
+					<button  title="TCode actions" name="tcodeActionsButton" class="tcode-actions-button icon-button icon-button--group--vertical" onclick="onToggleTCodeActionsMain(this)">
+						<img class="buttonImage" src="://images/icons/tcode.svg" />
+					</button>
+					<button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button icon-button--group--vertical" onclick="toggleShufflePlay()">
+						<img class="buttonImage" src="://images/icons/shuffle.svg" />
+					</button> 
+					<button id="randomizeButton" title="Randomize media playlist" class="hidden random-media-button icon-button icon-button--group--vertical" onclick="sortChange('random')">
+						<img class="buttonImage" src="://images/icons/reload.svg" />
+					</button> 
+				</div>
+			</div>
+			<div id="filterInputContainer" class="side-action-filter-input-modal hidden">
+				<input id="filterInput" class="side-action-filter-input" placeholder="Filter" oninput="debounceFilter()" />
+				<button class="side-action-filter-clear-button icon-button icon-button--small" onclick="clearFilterinput()">
+					<image class="buttonImage" src="://images/icons/x.svg" />
+				</button>
+			</div>
+			<!-- <select id="tagFilterSelect" class="side-action-tag-filter-modal hidden" multiple oninput="filterByTag(this.value)"></select>  -->
+			<div id="tagFilterOptions" class="side-action-tag-filter-modal hidden"></div>
+			<div id="tcodeActionsMain" class="side-action-tcode-action-modal hidden">
+				<h3>TCode actions</h3>
+				<div id="actionButtons" class="side-action-tcode-action-container"></div>
+			</div>
 			<div id="scriptStatusModal" class="script-status-model hidden">
 				<div name="noScriptInput" style="align-self: center;">No script input</div>
 				<div name="scriptStatusContainer"  class="script-status-container"></div>
@@ -417,9 +439,8 @@
 				<div class="tab-row">
 					<button id="tabLocalTab" class="tab-section-tab" onclick="tabClick(this, 0)">Local</button>
 					<button id="tabConnectionsTab" class="tab-section-tab" onclick="tabClick(this, 1)">Connections</button>
-					<button id="tabTCodeTab" class="tab-section-tab" onclick="tabClick(this, 2)">TCode</button>
-					<button id="tabFunscriptTab" class="tab-section-tab" onclick="tabClick(this, 3)">Funscript</button>
-					<button id="tabBrowserInfoTab" class="tab-section-tab" onclick="tabClick(this, 4)">System</button>
+					<button id="tabMotionTab" class="tab-section-tab" onclick="tabClick(this, 2)">Motion</button>
+					<button id="tabSystemTab" class="tab-section-tab" onclick="tabClick(this, 3)">System</button>
 				</div>
 				<section id="settingsTabs" class="tab-section">
 					<div id="tabLocal" class="tab-content">
@@ -620,6 +641,11 @@
 									<span class="sync-device-input-label">Port</span> 
 									<input class="sync-device-port" id="networkPort" onchange="onNetworkPortChange(this)"></input>
 								</div>
+								<div class="form-group-control">
+									<span class="sync-device-input-label">Use websocket</span> 
+									<!-- <label for="networkWebsocket">Use websocket</label> -->
+									<input id="networkProtocolWebsocket" type="checkbox" onclick="onNetworkWebsocketChange(this)" />
+								</div>
 							</section>
 						</div>
 						<h3>Input connections</h3>
@@ -666,11 +692,34 @@
 							</section>
 						</div>
 					</div>
-					<div id="tabTCode" class="tab-content">
+					<div id="tabChannel" class="tab-content">
+						<div class="tab-content-header">
+							<div class="tab-content-header-main">Channel Profile</div>
+						</div>
 						<div class="formElement">
-							<label for="profileNamesDiv">Profile</label>
+							<label for="addnewProfileButton"></label>
+							<div class="form-buttons">
+								<button id="addnewProfileButton" onclick="onAddChannelProfile()">
+									Add new profile
+								</button>
+								<button id="deleteProfileButton" onclick="onDeleteChannelProfile()">
+									Delete current profile
+								</button>
+								<button id="copyToProfileButton" onclick="onCopyToChannelProfile()">
+									Copy profile to new
+								</button>
+								<button id="copyFromProfileButton" onclick="onCopyFromChannelProfile()">
+									Copy profile to current
+								</button>
+							</div>
+						</div>
+						<div class="formElement">
+							<label for="profileNamesDiv">Current Profile</label>
 							<!-- <select name="profileNamesSelect" id="profileNamesSelect" onchange="setSelectedProfile(this.value)"></select>  -->
 							<div id="profileNamesDiv" class="radio-group"></div>
+						</div>
+						<div class="tab-content-header">
+							<div class="tab-content-header-main">Range Limits</div>
 						</div>
 						<div id="tcodeRanges"></div>
 						<div class="formElement">
@@ -681,39 +730,76 @@
 								</button>
 							</div>
 						</div>
-					</div>
-					<div id="tabFunscript" class="tab-content">
 						<div class="tab-content-header">
-							<div class="tab-content-header-main">Motion modifier</div>
+							<div class="tab-content-header-main">Motion Modifier</div>
 						</div>
-						<div id="tabFunscriptBody" class="tab-content-body-column">
-							<div id="tabFunscriptRandomMotion" class="tab-content-body-column-section--large tab-content-body-column-section"></div>
-							<div id="tabFunscriptInversion" class="tab-content-body-column-section--small tab-content-body-column-section"></div>
+						<div id="tabMotionBody" class="tab-content-body-column">
+							<div id="motionRandomContainer" class="tab-content-body-column-section--large tab-content-body-column-section"></div>
+							<div id="motionInversionContainer" class="tab-content-body-column-section--small tab-content-body-column-section"></div>
 						</div>
 					</div>
+					<!-- <div id="tabMotion" class="tab-content">
+					</div> -->
 					<div class="tab-content">
 						<div id="systemInfoTab" class="tab-content-container">
-							<div class="tab-content-settings-section">
+							<div id="system" class="tab-content-settings-section">
 								<div>
-									<h3>Versions</h3>
+									<h3>System</h3>
+								</div>
+								<div class="tab-content-settings-section-body">
 									<div>
-										<span>XTE: </span>
-										<span id="xteVersion"></span>
+										<h4>Versions</h4>
+										<div>
+											<span>XTE: </span>
+											<span id="xteVersion"></span>
+										</div>
+										<div>
+											<span>XTP Web: </span>
+											<span id="webVersion"></span>
+										</div>
 									</div>
 									<div>
-										<span>XTP Web: </span>
-										<span id="webVersion"></span>
+										<h4>Current browser information</h4>
+										<div id="browserInfo"></div>
 									</div>
 								</div>
+								<div id="settingsFooter" class="tab-content-settings-section-footer">
+								</div>
+							</div>
+
+							<div id="settings" class="tab-content-settings-section">
 								<div>
-									<h3>Current browser information</h3>
-									<div id="browserInfo"></div>
+									<h3>Settings</h3>
+								</div>
+								<div id="settingsBody" class="tab-content-settings-section-body">
+									<!-- <div class="exported-header">
+										<h4>Exported settings</h4>
+										<button id="quickExportButton"  onclick="sendQuickExport()">Quick Export</button>
+									</div>
+									<table id="exportedSettingFiles" class="exported-table"></table> -->
+								</div>
+								<div id="settingsFooter" class="tab-content-settings-section-footer">
+								</div>
+							</div>
+
+							<div id="backupRestore" class="tab-content-settings-section">
+								<div>
+									<h3>Backup/Restore</h3>
+								</div>
+								<div id="settingsBody" class="tab-content-settings-section-body">
+									<!-- <div class="exported-header">
+										<h4>Exported settings</h4>
+									</div> -->
+									<table id="exportedSettingFiles" class="exported-table"></table>
+								</div>
+								<div id="settingsFooter" class="tab-content-settings-section-footer">
+										<button id="quickExportButton"  onclick="sendQuickExport()">Quick Export</button>
 								</div>
 							</div>
 
 							<div class="tab-content-settings-section">
 								<h3>Media Library</h3>
-								<div id="systemTags" class="system-tags">
+								<div id="systemTagsBody" class="system-tags tab-content-settings-section-body">
 									<div id="userTags" class="system-tags-section">
 										<h4 id="userTagsHeader">System tags</h4>
 										<div>
@@ -731,10 +817,21 @@
 										<button id="removeSmartTagButton" disabled="true" class="system-tags-section-button" onclick="removeSystemTags(true)">Remove</button>
 									</div>
 								</div>
-								<button id="startMetadataProcessButton" style="margin-top:8px" onclick="startMetadataProcess()">Process metadata</button>
-								<button id="startMetadataCleanProcessButton" style="margin-top:8px" onclick="startMetadataCleanProcess()">Clean metadata</button>
-								<button id="cleanupThumbsButton" style="margin-top:8px" onclick="startThumbCleanupProcess()">Clean up thumbs</button>
-								<button id="clean1024" style="margin-top:8px" onclick="startClean1024Process()">Reset metadata offset 1024</button>
+								<div id="systemTagsFooter" class="tab-content-settings-section-footer">
+									<button id="startMetadataProcessButton" style="height: unset;" onclick="startMetadataProcess()">Process metadata</button>
+									<button id="startMetadataCleanProcessButton" style="height: unset;" onclick="startMetadataCleanProcess()">Clean metadata</button>
+									<button id="cleanupThumbsButton" style="height: unset;" onclick="startThumbCleanupProcess()">Clean up thumbs</button>
+								</div>
+								<!-- <button id="clean1024" style="margin-top:8px" onclick="startClean1024Process()">Reset metadata offset 1024</button> -->
+							</div>
+							<div class="tab-content-settings-section">
+								<h3>TCode commands</h3>
+								<div id="tcodeCommandsSetupBody" class="tab-content-settings-section-body"></div>
+								<div id="tcodeCommandsSetupFooter" class="tab-content-settings-section-footer">
+									<button id="addTCodeCommandButton" style="margin-top:8px" onclick="addTCodeCommand()">Add</button>
+									<button id="saveTCodeCommandsButton" style="margin-top:8px" onclick="saveTCodeCommands()" disabled>Save</button>
+									<button id="cancelTCodeCommandsButton" style="margin-top:8px" onclick="cancelTCodeCommands()">Cancel</button>
+								</div>
 							</div>
 							<!-- <div class="formElement">
 								<label for="processMetadataOnStart">Process all metadata on start</label>
@@ -787,7 +884,7 @@
 							</div> -->
 
 						</div>
-						<div id="sessionInfo" class="session-info ">
+						<div id="sessionInfo" class="session-info tab-content-settings-section--wide">
 							<h3>Authorized browser sessions</h3>
 							<table id="sessionInfoTable" 
 									class="session-info-table">
@@ -847,7 +944,13 @@
 				</div>
 				<div class="modal-footer-content">
 					<span id="mediaReloadRequired" class="hidden">Full metadata process required AFTER save</span>
-					<span id="saveState" class="save-status"></span>
+					<span id="saveState" class="save-status">
+						<!-- <div> -->
+							<svg class="player-button-icon">
+								<use href="#info"></use>
+							</svg>
+						<!-- </div> -->
+					</span>
 					<span class="restart-required">Restart required</span>
 					<button id="defaultSettingsButton"
 						title="This will only reset the local browser settings to default. Your settings stored on the XTP machine will remain."
@@ -925,6 +1028,34 @@
 			</div>
 		</div>
 	</div>
+	<div id="selectModal" class="modal modal--text">
+		<div class="modal-content modal-content--text">
+			<div class="modal-header">
+				<span id="select-modal-title" class="modal-title"></span>
+				<button class="close-modal icon-button" onclick="closeSelectWindow()">
+					<image class="buttonImage" src="://images/icons/x.svg" />
+				</button>
+			</div>
+			<div id="selectModalBody" class="modal-body modal-body--alert">
+				<div class="formElement">
+					<label id="selectModalLabel" for="textModalInput">Select value</label>
+					<!-- <select id="selectModalInput"></select> -->
+					<div id="selectModalInput"></div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<div class="modal-footer-content"> </div>
+				<div class="modal-footer-content">
+					<button id="selectConfirmButton">
+						Ok
+					</button>
+					<button id="selectCancelButton" onclick="closeSelectWindow()">
+						cancel
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div class="footer">
 		<div class="footerSection headerActionSection toolBar">
 			<div class="toolBarGroup toolBarGroupStart">
@@ -987,6 +1118,11 @@
 
 		<symbol id="fullscreen" viewBox="0 0 24 24">
 			<path d="M14.016 5.016h4.969v4.969h-1.969v-3h-3v-1.969zM17.016 17.016v-3h1.969v4.969h-4.969v-1.969h3zM5.016 9.984v-4.969h4.969v1.969h-3v3h-1.969zM6.984 14.016v3h3v1.969h-4.969v-4.969h1.969z">
+			</path>
+		</symbol>
+
+		<symbol id="info" viewBox="0 0 24 24">
+			<path d="M 24 4 C 12.972066 4 4 12.972074 4 24 C 4 35.027926 12.972066 44 24 44 C 35.027934 44 44 35.027926 44 24 C 44 12.972074 35.027934 4 24 4 z M 24 7 C 33.406615 7 41 14.593391 41 24 C 41 33.406609 33.406615 41 24 41 C 14.593385 41 7 33.406609 7 24 C 7 14.593391 14.593385 7 24 7 z M 24 14 A 2 2 0 0 0 24 18 A 2 2 0 0 0 24 14 z M 23.976562 20.978516 A 1.50015 1.50015 0 0 0 22.5 22.5 L 22.5 33.5 A 1.50015 1.50015 0 1 0 25.5 33.5 L 25.5 22.5 A 1.50015 1.50015 0 0 0 23.976562 20.978516 z">	
 			</path>
 		</symbol>
 

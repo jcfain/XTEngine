@@ -8,6 +8,8 @@
 #include "Bookmark.h"
 #include "XTEngine_global.h"
 
+// This is a dead file not used any more except possible by exporting old data during migration
+
 struct XTENGINE_EXPORT LibraryListItemMetaData
 {
     QString libraryItemPath;
@@ -55,6 +57,5 @@ struct XTENGINE_EXPORT LibraryListItemMetaData
 
 };
 
-Q_DECLARE_METATYPE(LibraryListItemMetaData);
-Q_DECLARE_METATYPE(Bookmark);
+Q_DECLARE_METATYPE(LibraryListItemMetaData)
 #endif // LIBRARYLISTITEMMETADATA_H

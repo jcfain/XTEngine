@@ -120,25 +120,6 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     {
         QJsonObject obj = item.toJsonObject();
         return fromJson(obj);
-//        newItem.libraryItemPath = obj["libraryItemPath"].toString();
-//        newItem.lastPlayPosition = obj["lastPlayPosition"].toString().toLongLong();
-//        newItem.lastLoopEnabled = obj["lastLoopEnabled"].toBool();
-//        newItem.lastLoopStart = obj["lastLoopStart"].toString().toLongLong();
-//        newItem.lastLoopEnd = obj["lastLoopEnd"].toString().toLongLong();
-//        newItem.offset = obj["offset"].toInt();
-//        newItem.moneyShotMillis = obj["moneyShotMillis"].toString().toLongLong();
-//        foreach(auto bookmark, obj["bookmarks"].toArray())
-//        {
-//            Bookmark bookMark;
-//            bookMark.Name = bookmark["Name"].toString();
-//            bookMark.Time = bookmark["Time"].toString().toLongLong();
-//            newItem.bookmarks.append(bookMark);
-//        }
-//        foreach(auto funscript, obj["funscripts"].toArray())
-//        {
-//            newItem.funscripts.append(funscript.toString());
-//        }
-//        return newItem;
     }
 
     static QVariant toVariant(LibraryListItemMetaData258 item)
@@ -171,10 +152,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
 
         QJsonArray bookmarks;
         foreach(Bookmark bookmark, item.bookmarks) {
-            QJsonObject bookmarkObj;
-            bookmarkObj["Name"] = bookmark.Name;
-            bookmarkObj["Time"] = QString::number(bookmark.Time);
-            bookmarks.append(bookmarkObj);
+            bookmarks.append(bookmark.toJson());
         }
         obj["bookmarks"] = bookmarks;
         QJsonArray funscripts;
@@ -228,10 +206,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         foreach(auto jasonValueConstObj, obj["bookmarks"].toArray())
         {
             QJsonObject obj = jasonValueConstObj.toObject();
-            Bookmark bookmark;
-            bookmark.Name = obj["Name"].toString();
-            bookmark.Time = obj["Time"].toString().toLongLong();
-            newItem.bookmarks.append(bookmark);
+            newItem.bookmarks.append(Bookmark::fromJson(obj));
         }
         foreach(auto funscript, obj["funscripts"].toArray())
         {
@@ -316,5 +291,5 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     }
 };
 
-Q_DECLARE_METATYPE(LibraryListItemMetaData258);
+Q_DECLARE_METATYPE(LibraryListItemMetaData258)
 #endif // LIBRARYLISTITEMMETADATA_H

@@ -3,6 +3,9 @@
 #include "lib/handler/xmediastatehandler.h"
 #include "lib/struct/ScriptInfo.h"
 #include "lib/lookup/SettingMap.h"
+#include "lib/struct/LibraryListItem.h"
+#include "lib/struct/ChannelModel.h"
+#include "lib/struct/LibraryListItemMetaData.h"
 
 XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
 {
@@ -20,8 +23,8 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     // qRegisterMetaTypeStreamOperators<ChannelName>("ChannelName");
     // qRegisterMetaTypeStreamOperators<DecoderModel>("DecoderModel");
     // qRegisterMetaTypeStreamOperators<XMediaStatus>("XMediaStatus");
-    qRegisterMetaType<LibraryListItem>();
     // qRegisterMetaTypeStreamOperators<LibraryListItem>("LibraryListItem");
+    //qRegisterMetaType<LibraryListItem>();
     // qRegisterMetaTypeStreamOperators<QMap<QString, QList<LibraryListItem>>>("QMap<QString, QList<LibraryListItem>>");
     // qRegisterMetaTypeStreamOperators<QList<LibraryListItem>>("QList<LibraryListItem>");
     qRegisterMetaType<LibraryListItem27>();
@@ -30,18 +33,25 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     // qRegisterMetaTypeStreamOperators<QList<LibraryListItem27>>("QList<LibraryListItem27>");
     // qRegisterMetaTypeStreamOperators<TCodeVersion>("TCodeVersion");
     // qRegisterMetaTypeStreamOperators<LibraryListItemMetaData>("LibraryListItemMetaData");
-    // qRegisterMetaTypeStreamOperators<LibraryListItemMetaData258>("LibraryListItemMetaData258");
+    qRegisterMetaType<LibraryListItemMetaData>("LibraryListItemMetaData");
+    qRegisterMetaType<LibraryListItemMetaData258>("LibraryListItemMetaData258");
     // qRegisterMetaTypeStreamOperators<Bookmark>("Bookmark");
     qRegisterMetaType<QVector<int> >("QVector<int>");
+    qRegisterMetaType<QList<LibraryListItem>>("QList<LibraryListItem>");
+    qRegisterMetaType<QList<DecoderModel>>("DecoderModel");
+    qRegisterMetaType<QList<ChannelModel>>("ChannelModel");
 
     qRegisterMetaType<ScriptInfo>("ScriptInfo");
     qRegisterMetaType<QList<ScriptInfo>>("QList<ScriptInfo>");
 
     XSettingsMap::init();
+    SettingsHandler::init(this);
     SettingsHandler::Load();
     _tcodeFactory = new TCodeFactory(0.0, 1.0, this);
+    _connectionHandler = new ConnectionHandler(this);
     _tcodeHandler = new TCodeHandler(this);
-    _syncHandler = new SyncHandler(this);
+    connect(_tcodeHandler, &TCodeHandler::delayTCode, _connectionHandler, &ConnectionHandler::delayTCode, Qt::QueuedConnection);
+    _syncHandler = new SyncHandler(_tcodeHandler, this);
     _settingsActionHandler = new SettingsActionHandler(_syncHandler, this);
     connect(_settingsActionHandler, &SettingsActionHandler::actionExecuted, this, [this](QString action, QString actionExecuted) {
         if (action == actions.SkipToMoneyShot)
@@ -62,7 +72,6 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     // connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, [this](){
     //     emit stopAllMedia();
     // });
-    _connectionHandler = new ConnectionHandler(this);
     m_heatmap = new HeatMap(this);
     connect(m_heatmap, &HeatMap::maxHeat, this, [](qint64 maxHeatAt) {
         if(maxHeatAt > 0) {
@@ -126,6 +135,14 @@ void XTEngine::init()
         else if(key == SettingKeys::scheduleLibraryLoadEnabled)
         {
             scheduleLibraryLoadEnableChange(value.toBool());
+        }
+        else if(key == SettingKeys::globalOffset)
+        {
+            FunscriptHandler::setGlobalOffset(value.toInt());
+        }
+        else if(key == SettingKeys::globalOffsetWeb)
+        {
+            FunscriptHandler::setGlobalOffsetWeb(value.toInt());
         }
     });
     
