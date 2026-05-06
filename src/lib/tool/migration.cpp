@@ -77,6 +77,20 @@ void Migration::MigrateTo595(QSettings *settingsToLoadFrom, QList<TCodeCommand>&
     settingsToLoadFrom->setValue("customTCodeCommands", tcodeCommandVarient);
 }
 
+void Migration::MigrateTo61(QSettings *settingsToLoadFrom, int& major, int& minor, int& rev, QString& phase)
+{
+    float settingsVersion = settingsToLoadFrom->value("version").toFloat();
+    if(settingsVersion == 0)
+        return; // This is a true first load fresh install.
+    QString versionString = settingsToLoadFrom->value("versionString", "").toString();
+    major = 0;
+    minor = settingsVersion * 10;
+    rev = settingsVersion * 1000 - (minor * 100);
+    phase = versionString.isEmpty() ? "b" :// Sorry...
+                versionString.contains("b") ? "b" :
+                versionString.contains("a") ? "a" : "";
+}
+
 void Migration::RenameChannelDamperToSpeed(QSettings *settingsToLoadFrom)
 {
     QVariantMap availableChannelVariant = settingsToLoadFrom->value("availableChannels").toMap();

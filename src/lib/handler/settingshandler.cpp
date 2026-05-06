@@ -3,9 +3,11 @@
 #include "../tool/file-util.h"
 #include "../tool/migration.h"
 
-
-const QString SettingsHandler::XTEVersion = "0.6b";
-const float SettingsHandler::XTEVersionNum = 0.6f;
+const int SettingsHandler::XTEVersionMajor = VERSION_MAJOR;
+const int SettingsHandler::XTEVersionMinor = VERSION_MINOR;
+const int SettingsHandler::XTEVersionRevision = VERSION_REVISION;
+const QString SettingsHandler::XTEVersionPhase = STRINGIFY(VERSION_PHASE);
+const QString SettingsHandler::XTEVersion = VERSION_STRING;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
 
 SettingsHandler::SettingsHandler(){
@@ -15,6 +17,743 @@ SettingsHandler::~SettingsHandler()
 {
     if(m_syncFuture.isRunning())
         m_syncFuture.waitForFinished();
+}
+
+void SettingsHandler::init(QObject* parent)
+{
+    QString appPath = QString(qgetenv("APPIMAGE"));
+    if(!appPath.isEmpty())
+    {
+        m_isAppImage = true;
+        LogHandler::Debug("Is appimage "+appPath);
+        _applicationDirPath = QFileInfo(appPath).absolutePath();
+        m_appimageMountDir = QString(qgetenv("APPDIR"));;
+        LogHandler::Debug("AppImage mount point "+m_appimageMountDir);
+    }
+    else
+    {
+        _applicationDirPath = QCoreApplication::applicationDirPath();
+    }
+    LogHandler::Debug("Application path: "+_applicationDirPath);
+    _appdataLocation = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    if(_appdataLocation.isEmpty())
+        _appdataLocation = _applicationDirPath;
+    QDir dir(_appdataLocation);
+    if (!dir.exists())
+        dir.mkpath(_appdataLocation);
+    if(!settings)
+    {
+        if(QFile::exists(_applicationDirPath + "/settings.json"))
+        {
+            m_isPortable = true;
+            LogHandler::Debug("Found local json. Loading settings from it: "+_applicationDirPath + "/settings.json");
+            settings = new QSettings(_applicationDirPath + "/settings.json", JSONSettingsFormatter::JsonFormat, parent);
+        }
+        else if(QFile::exists(_applicationDirPath + "/settings.ini"))
+        {
+            m_isPortable = true;
+            LogHandler::Debug("Found local ini. Loading settings from it: "+_applicationDirPath + "/settings.ini");
+            settings = new QSettings(_applicationDirPath + "/settings.ini", QSettings::Format::IniFormat, parent);
+        }
+        else
+        {
+            LogHandler::Debug("Local file not found. Loading settings native location");
+            settings = new QSettings(ORGANIZATION_NAME, APPLICATION_NAME, parent);
+        }
+    }
+    if(!mediaLibrarySettings)
+    {
+        mediaLibrarySettings = new MediaLibrarySettings(parent);
+        connect(mediaLibrarySettings, &MediaLibrarySettings::settingsChangedEvent, settings, &SettingsHandler::settingsChangedEvent);
+    }
+    m_initialized = true;
+}
+
+void SettingsHandler::Load(QSettings* settingsToLoadFrom)
+{
+    QMutexLocker locker(&mutex);
+    if(!m_initialized)
+    {
+        LogHandler::Error("Settings Load called without initialization! Call init before load.");
+        init();
+    }
+    if(!settingsToLoadFrom)
+    {
+        settingsToLoadFrom = settings;
+    }
+    int settingsVersionMajor = settingsToLoadFrom->value("versionMajor").toInt();
+    int settingsVersionMinor = settingsToLoadFrom->value("versionMinor").toInt();
+    int settingsVersionRevision = settingsToLoadFrom->value("versionRevision").toInt();
+    QString settingsVersionPhase = settingsToLoadFrom->value("versionPhase", "").toString();
+    m_firstLoad = versionEqual(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 0, 0, "");
+    if(m_firstLoad)
+    {
+        // Check migration to new versioning scheme introduced in 0.6.1
+        Migration::MigrateTo61(settingsToLoadFrom, settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase);
+        m_firstLoad = versionEqual(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 0, 0, "");
+    }
+    if(!m_firstLoad)
+    {
+        bool settingsExported = false;
+        //if(settingsVersion < 0.592f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 92, "b"))
+        {
+            // versionString is required by QuickExport executed below.
+            // Go ahead and set this so backups can occur if needed
+            Migration::MigrateTo592(settingsToLoadFrom);
+        }
+        QString exportDirectory = settingsToLoadFrom->value(SettingKeys::settingsBackupDirectory, _applicationDirPath).toString();
+        //if(settingsVersion < XTEVersionNum)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase))
+        {
+            // QFile file(settingsToLoadFrom->fileName());
+            // QFileInfo fileInfo(settingsToLoadFrom->fileName());
+            QString versionString = settingsToLoadFrom->value("versionString", "").toString();
+            if(!settingsExported)
+                settingsExported = ExportQuick(exportDirectory, settingsToLoadFrom->format(), settingsToLoadFrom);
+            // Copying the file did not work on windows registry
+            //settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
+            XMessage xmessage = {"Application updated from "+versionString+" to version "+ XTEVersion, XLogLevel::Information};
+            addStartupMessage(xmessage, settingsToLoadFrom);
+            LogHandler::Info(xmessage.message);
+        }
+        //if(settingsVersion < 0.4f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 0, "b"))
+        {
+            locker.unlock();
+            // QFile file(settingsToLoadFrom->fileName());
+            // QFileInfo fileInfo(settingsToLoadFrom->fileName());
+            // QString versionString = settingsToLoadFrom->value("versionString", "").toString();
+            if(!settingsExported)
+                settingsExported = ExportQuick(exportDirectory, settingsToLoadFrom->format(), settingsToLoadFrom);
+            // Copying the file did not work on windows registry
+            // settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
+            QString messageString = "Versions less than 0.4b is no longer supported migrating data. Things may go wrong.\nA backup will be created in "+ _applicationDirPath + " but this is not full proof. I am sorry if you lose data :( This was not an easy task.\nIf you wish to keep your settings from the old version, run v0.4b before this version.\nOtherwise, it may be better to reset settings to default before using.";
+            XMessage message = {messageString, XLogLevel::Warning};
+            addStartupMessage(message, settingsToLoadFrom);
+            LogHandler::Warn(messageString);
+            locker.relock();
+        }
+        //else if(settingsVersion > XTEVersionNum)
+        else if(versionGreater(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase))
+        {
+            locker.unlock();
+            // QFile file(settingsToLoadFrom->fileName());
+            // QFileInfo fileInfo(settingsToLoadFrom->fileName());
+            QString versionString = settingsToLoadFrom->value("versionString", "").toString();
+            if(!settingsExported)
+                settingsExported = ExportQuick(exportDirectory, settingsToLoadFrom->format(), settingsToLoadFrom);
+            // Copying the file did not work on windows registry
+            // settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
+            QString messageString = "This version "+ XTEVersion + " is less than the last used version "+versionString+".\nThis can cause issues. A backup will be created in "+ _applicationDirPath;
+            XMessage message = {messageString, XLogLevel::Warning};
+            addStartupMessage(message, settingsToLoadFrom);
+            LogHandler::Warn(messageString);
+            locker.relock();
+        }
+    }
+
+    // if(XTEVersionNum > currentVersion)
+    // {
+    //     emit instance()->messageSendWait(
+    //         "This appears to be an older version of XTP. If you continue you may overwrite settings of the newer version of XTP. Coninue?",
+    //         XLogLevel::Warning,
+    //         [currentVersion]() {
+
+    //         });
+    //     return; // TODO: how to get a response?
+    // }
+
+    TCodeChannelLookup::load(settingsToLoadFrom, m_firstLoad);
+
+    if (m_firstLoad)
+    {
+        locker.unlock();
+        SetMapDefaults();
+        SetSystemTagDefaults();
+        locker.relock();
+    }
+
+    bool useSystemMediaBackend = getSetting(SettingKeys::useSystemMediaBackend, settingsToLoadFrom).toBool();
+    if(useSystemMediaBackend)
+    {
+        // https://doc.qt.io/qt-6/qtmultimedia-index.html#changing-backends
+#if defined(Q_OS_WIN)
+        const char* backend = "windows";
+        LogHandler::Info("Load Settings: OS is Windows");
+        putenv(const_cast<char *>("QT_MEDIA_BACKEND=windows"));
+#elif defined(Q_OS_LINUX)
+        const char* backend = "gstreamer";
+        LogHandler::Info("Load Settings: OS is Linux");
+        setenv("QT_MEDIA_BACKEND", backend, 1);
+#else // defined(Q_OS_MAC) MAC_OS, IOS or ANDROID
+        LogHandler::Info("Load Settings: OS is Other");
+        const char* backend = "darwin";
+        setenv("QT_MEDIA_BACKEND", backend, 1);
+#endif
+        LogHandler::Info("Using media backend: "+QString(backend));
+    }
+    // Unsure about this...
+    //setenv("QT_ENABLE_EXPERIMENTAL_CODECS", "1", 1);
+    mediaLibrarySettings->Load(settingsToLoadFrom);
+
+
+    //if(settingsVersion < 0.593f)
+    if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 93, "b"))
+    {
+        Migration::RenameChannelDamperToSpeed(settingsToLoadFrom);
+    }
+    QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
+    _funscriptLoaded.clear();
+    foreach(auto profile, availableChannelJson.keys())
+    {
+        TCodeChannelLookup::setupChannelsProfile(profile, QMap<QString, ChannelModel33>());
+        foreach(auto tcodeChannelName, availableChannelJson.value(profile).toObject().keys())
+        {
+            TCodeChannelLookup::addChannel(tcodeChannelName, ChannelModel33::fromVariant(availableChannelJson.value(profile).toObject().value(tcodeChannelName)), profile);
+            _funscriptLoaded.insert(tcodeChannelName, false);
+        }
+    }
+
+    _selectedThumbsDir = settingsToLoadFrom->value("selectedThumbsDir").toString();
+    _useMediaDirForThumbs = settingsToLoadFrom->value("useMediaDirForThumbs").toBool();
+    _hideWelcomeScreen = settingsToLoadFrom->value("hideWelcomeScreen").toBool();
+    _selectedOutputConnection = settingsToLoadFrom->value("selectedDevice").toInt();
+    _selectedNetworkDeviceType = (NetworkProtocol)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
+    playerVolume = settingsToLoadFrom->value("playerVolume").toInt();
+    serialPort = settingsToLoadFrom->value("serialPort").toString();
+    serverAddress = settingsToLoadFrom->value("serverAddress", "tcode.local").toString();
+    serverPort = settingsToLoadFrom->value("serverPort", "8000").toString();
+    deoAddress = settingsToLoadFrom->value("deoAddress", "127.0.0.1").toString();
+    deoPort = settingsToLoadFrom->value("deoPort", "23554").toString();
+    deoEnabled = settingsToLoadFrom->value("deoEnabled").toBool();
+
+    whirligigAddress = settingsToLoadFrom->value("whirligigAddress", "127.0.0.1").toString();
+    whirligigPort = settingsToLoadFrom->value("whirligigPort", "2000").toString();
+    whirligigEnabled = settingsToLoadFrom->value("whirligigEnabled").toBool();
+
+    _xtpWebSyncEnabled = settingsToLoadFrom->value("xtpWebSyncEnabled").toBool();
+
+    libraryView = settingsToLoadFrom->value("libraryView").toInt();
+    _librarySortMode = settingsToLoadFrom->value("selectedLibrarySortMode").toInt();
+    thumbSize = settingsToLoadFrom->value("thumbSize", 150).toInt();
+    thumbSizeList = settingsToLoadFrom->value("thumbSizeList", 50).toInt();
+    videoIncrement = settingsToLoadFrom->value("videoIncrement", 10).toInt();
+    deoDnlaFunscriptLookup = settingsToLoadFrom->value("deoDnlaFunscriptLookup").toHash();
+
+    _gamePadEnabled = settingsToLoadFrom->value("gamePadEnabled").toBool();
+    _multiplierEnabled = settingsToLoadFrom->value("multiplierEnabled").toBool();
+    _liveMultiplierEnabled = _multiplierEnabled;
+
+    QVariantMap gamepadButtonMap = settingsToLoadFrom->value("gamepadButtonMap").toMap();
+    _gamepadButtonMap.clear();
+    foreach(auto button, gamepadButtonMap.keys())
+    {
+        _gamepadButtonMap.insert(button, gamepadButtonMap[button].toStringList());
+    }
+    QVariantMap keyboardKeyMap = settingsToLoadFrom->value("keyboardKeyMap").toMap();
+    _keyboardKeyMap.clear();
+    foreach(auto key, keyboardKeyMap.keys())
+    {
+        _keyboardKeyMap.insert(key, keyboardKeyMap[key].toStringList());
+    }
+    QVariantMap tcodeCommandMap = settingsToLoadFrom->value("tcodeCommandMap").toMap();
+    m_tcodeCommandMap.clear();
+    foreach(auto key, tcodeCommandMap.keys())
+    {
+        m_tcodeCommandMap.insert(key, tcodeCommandMap[key].toStringList());
+    }
+
+    // QVariantList tcodeCommands = settingsToLoadFrom->value("tcodeCommands").toList();
+    // m_tcodeCommands.clear();
+    // foreach(auto value, tcodeCommands)
+    // {
+    //     auto command = TCodeCommand::fromVariant(value);
+    //     m_tcodeCommands.insert(command.id, command);
+    // }
+
+    _gamepadSpeed = settingsToLoadFrom->value("gamepadSpeed", 1000).toInt();
+    _gamepadSpeedStep = settingsToLoadFrom->value("gamepadSpeedStep", 500).toInt();
+    _xRangeStep = settingsToLoadFrom->value("xRangeStep", 50).toInt();
+    disableSpeechToText = settingsToLoadFrom->value("disableSpeechToText").toBool();
+    _disableVRScriptSelect = settingsToLoadFrom->value("disableVRScriptSelect", true).toBool();
+    _disableNoScriptFound = settingsToLoadFrom->value("disableNoScriptFound").toBool();
+
+    _skipToMoneyShotPlaysFunscript = settingsToLoadFrom->value("skipToMoneyShotPlaysFunscript").toBool();
+    _skipToMoneyShotFunscript = settingsToLoadFrom->value("skipToMoneyShotFunscript").toString();
+    _skipToMoneyShotSkipsVideo = settingsToLoadFrom->value("skipToMoneyShotSkipsVideo").toBool();
+    _skipToMoneyShotStandAloneLoop = settingsToLoadFrom->value("skipToMoneyShotStandAloneLoop").toBool();
+
+    _hideStandAloneFunscriptsInLibrary = settingsToLoadFrom->value("hideStandAloneFunscriptsInLibrary").toBool();
+    _showVRInLibraryView = settingsToLoadFrom->value("showVRInLibraryView").toBool();
+    _skipPlayingSTandAloneFunscriptsInLibrary = settingsToLoadFrom->value("skipPlayingSTandAloneFunscriptsInLibrary").toBool();
+
+    _enableHttpServer = settingsToLoadFrom->value("enableHttpServer").toBool();
+    _httpServerRoot = settingsToLoadFrom->value("httpServerRoot").toString();
+    if(_httpServerRoot.isEmpty() || !QDir(_httpServerRoot).exists())
+    {
+        setHttpServerRootDefault();
+    }
+    _httpPort = settingsToLoadFrom->value("httpPort", 80).toInt();
+    _webSocketPort = settingsToLoadFrom->value("webSocketPort").toInt();
+    _httpThumbQuality = settingsToLoadFrom->value("httpThumbQuality", -1).toInt();
+
+    _funscriptOffsetStep = settingsToLoadFrom->value("funscriptOffsetStep", 100).toInt();
+    _funscriptModifierStep = settingsToLoadFrom->value("funscriptModifierStep", 5).toInt();
+
+    _channelPulseAmount = settingsToLoadFrom->value("channelPulseAmount").toInt();
+    _channelPulseEnabled = settingsToLoadFrom->value("channelPulseEnabled").toBool();
+    _channelPulseFrequency = settingsToLoadFrom->value("channelPulseFrequency").toInt();
+
+    QList<QVariant> decoderPriorityvarient = settingsToLoadFrom->value("decoderPriority").toList();
+    decoderPriority.clear();
+    foreach(auto varient, decoderPriorityvarient)
+    {
+        decoderPriority.append(DecoderModel::fromVariant(varient));
+    }
+
+    _selectedVideoRenderer = (XVideoRenderer)settingsToLoadFrom->value("selectedVideoRenderer").toInt();
+
+
+    QVariantMap playlists = settingsToLoadFrom->value("playlists").toMap();
+    _playlists.clear();
+    foreach(auto playlist, playlists.keys())
+    {
+        QVariant variant = QVariant::fromValue(playlists.value(playlist));
+        if (!variant.canConvert<QVariantList>())
+            continue;
+
+        QSequentialIterable playlistArray = variant.value<QSequentialIterable>();
+
+        QList<LibraryListItem27> items;
+        int idTracker = 1;
+        foreach(const QVariant& item, playlistArray)
+        {
+            if(!item.isValid())
+                continue;
+            auto itemTyped = LibraryListItem27::fromVariant(item);
+            itemTyped.ID = QString::number(idTracker);
+            items.append(itemTyped);
+            idTracker++;
+        }
+        _playlists.insert(playlist, items);
+    }
+
+    _hashedPass = settingsToLoadFrom->value("userData").toString();
+    _hashedWebPass = settingsToLoadFrom->value("userWebData").toString();
+
+    QList<QVariant> customTCodeCommandsVariant = settingsToLoadFrom->value("customTCodeCommands").toList();
+    m_customTCodeCommands.clear();
+    foreach(auto varient, customTCodeCommandsVariant)
+    {
+        m_customTCodeCommands.append(TCodeCommand::fromJson(varient.toJsonObject()));
+    }
+    foreach(auto command, m_customTCodeCommands)
+    {
+        MediaActions::AddOtherAction(command.command, "TCode command: " + command.name, ActionType::TCODE);
+    }
+
+
+    QStringList tags = settingsToLoadFrom->value("tags").toStringList();
+    foreach (auto tag, tags) {
+        m_xTags.addTag(tag);
+    }
+    QStringList smartTags = settingsToLoadFrom->value("smartTags").toStringList();
+    foreach (auto tag, smartTags) {
+        m_xTags.addSmartTag(tag);
+    }
+
+    // m_scheduleLibraryLoadEnabled = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadEnabled, false).toBool();
+    // m_scheduleLibraryLoadTime = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadTime, QTime(2,0)).toTime();
+    // m_scheduleLibraryLoadFullProcess = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadFullProcess, true).toBool();
+
+    _libraryListItemMetaDatas.clear();
+    QVariantHash libraryListItemMetaDatas = settingsToLoadFrom->value("libraryListItemMetaDatas").toHash();
+    foreach(auto key, libraryListItemMetaDatas.keys())
+    {
+        _libraryListItemMetaDatas.insert(key, LibraryListItemMetaData258::fromVariant(libraryListItemMetaDatas[key]));
+    }
+
+    if(!m_firstLoad)
+    {
+        bool migrated = false;
+        // if(settingsVersion < 0.41f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 10, "b"))
+        {
+            locker.unlock();
+            auto library = settingsToLoadFrom->value("selectedLibrary").toString();
+            mediaLibrarySettings->add(LibraryType::MAIN, library);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.414f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 14, "b"))
+        {
+            locker.unlock();
+            Migration::MigrateTo42(settingsToLoadFrom);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.426f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 26, "b"))
+        {
+            locker.unlock();
+            _hashedPass = nullptr;
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.451f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 51, "b"))
+        {
+            locker.unlock();
+            SetTCodeCommandMapDefaults();
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.454f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 54, "b"))
+        {
+            locker.unlock();
+            SetSystemTagDefaults();
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.459f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 59, "b"))
+        {
+            locker.unlock();
+            Migration::MigrateTo46(settingsToLoadFrom, _libraryListItemMetaDatas);
+            setForceMetaDataFullProcess(true);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.465f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 65, "b"))
+        {
+            locker.unlock();
+            m_xTags.addTag(XTags::ALTSCRIPT);
+            setForceMetaDataFullProcess(true);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.469f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 69, "b"))
+        {
+            locker.unlock();
+            bool disableHeartBeat = settingsToLoadFrom->value("disableHeartBeat", false).toBool();
+            setDisableHeartBeat(disableHeartBeat);
+            bool disableTCodeValidation = settingsToLoadFrom->value("disableSerialTCodeValidation").toBool();
+            setDisableTCodeValidation(disableTCodeValidation);
+            Save();// No need to load as these are under the new settings system.
+            locker.relock();
+            migrated = true;
+        }
+        //if(settingsVersion < 0.47f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 70, "b"))
+        {
+            locker.unlock();
+            setForceMetaDataFullProcess(true);
+            Save();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.471f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 71, "b"))
+        {
+            locker.unlock();
+            qint64 httpChunkSize = settingsToLoadFrom->value("httpChunkSize", 26214400).toLongLong();
+            setHTTPChunkSize(httpChunkSize);
+            settingsToLoadFrom->remove("httpChunkSize");
+            Save();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.53f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 30, "b"))
+        {
+            locker.unlock();
+            Migration::MigrateTo52(settingsToLoadFrom);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.54f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 40, "b"))
+        {
+            locker.unlock();
+            setForceMetaDataFullProcess(true);
+            m_xTags.addTag(XTags::SFMA);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.56f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 60, "b"))
+        {
+            locker.unlock();
+            mediaLibrarySettings->clear(LibraryType::FUNSCRIPT);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.57f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 70, "b"))
+        {
+            locker.unlock();
+            setForceMetaDataFullProcess(true);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.59f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 90, "b"))
+        {
+            locker.unlock();
+            int offSet = settingsToLoadFrom->value("offSet").toInt();
+            settingsToLoadFrom->remove("offSet");
+            setGlobalOffSet(offSet);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.591f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 91, "b"))
+        {
+            locker.unlock();
+            float viewedThreshold = settingsToLoadFrom->value("viewedThreshold", 0.9f).toFloat();
+            settingsToLoadFrom->remove("viewedThreshold");
+            setViewedThreshold(viewedThreshold * 100);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.592f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 92, "b"))
+        {
+            locker.unlock();
+            // Add new versionString into settings. This will happen in save if the current version is greater thanthe settings version.
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        //if(settingsVersion < 0.595f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 95, "b"))
+        {
+            locker.unlock();
+            Migration::MigrateTo595(settingsToLoadFrom, m_customTCodeCommands);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        if(!migrated && versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase))
+        {
+            locker.unlock();
+            Save();
+            Load();
+            locker.relock();
+        }
+
+    }
+    settingsChangedEvent(false);
+}
+
+void SettingsHandler::Save(QSettings* settingsToSaveTo)
+{
+    QMutexLocker locker(&mutex);
+    if (_saveOnExit)
+    {
+        LogHandler::Debug("Saving XTE settings");
+        if(!settingsToSaveTo)
+            settingsToSaveTo = settings;
+
+        int settingsVersionMajor = settingsToSaveTo->value("versionMajor").toInt();
+        int settingsVersionMinor = settingsToSaveTo->value("versionMinor").toInt();
+        int settingsVersionRevision = settingsToSaveTo->value("versionRevision").toInt();
+        QString settingsVersionPhase = settingsToSaveTo->value("versionPhase", "").toString();
+
+        // if(XTEVersionNum > settingsVersion)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase))
+        {
+            settingsToSaveTo->setValue("versionMajor", XTEVersionMajor);
+            settingsToSaveTo->setValue("versionMinor", XTEVersionMinor);
+            settingsToSaveTo->setValue("versionRevision", XTEVersionRevision);
+            settingsToSaveTo->setValue("versionPhase", XTEVersionPhase);
+            settingsToSaveTo->setValue("versionString", VERSION_STRING);
+        }
+
+        mediaLibrarySettings->Save(settingsToSaveTo);
+
+        //TODO: move to TCodeChannelLookup
+        settingsToSaveTo->setValue("selectedTCodeVersion", ((int)TCodeChannelLookup::getSelectedTCodeVersion()));
+        settingsToSaveTo->setValue("selectedChannelProfile", TCodeChannelLookup::getSelectedChannelProfile());
+
+        settingsToSaveTo->setValue("playerVolume", playerVolume);
+
+        settingsToSaveTo->setValue("hideWelcomeScreen", ((int)_hideWelcomeScreen));
+        settingsToSaveTo->setValue("selectedThumbsDir", _selectedThumbsDir);
+        settingsToSaveTo->setValue("useMediaDirForThumbs", _useMediaDirForThumbs);
+        settingsToSaveTo->setValue("selectedDevice", _selectedOutputConnection);
+        settingsToSaveTo->setValue("selectedNetworkDeviceType", (int)_selectedNetworkDeviceType);
+        settingsToSaveTo->setValue("serialPort", serialPort);
+        settingsToSaveTo->setValue("serverAddress", serverAddress);
+        settingsToSaveTo->setValue("serverPort", serverPort);
+        settingsToSaveTo->setValue("deoAddress", deoAddress);
+        settingsToSaveTo->setValue("deoPort", deoPort);
+        settingsToSaveTo->setValue("deoEnabled", deoEnabled);
+        settingsToSaveTo->setValue("whirligigAddress", whirligigAddress);
+        settingsToSaveTo->setValue("whirligigPort", whirligigPort);
+        settingsToSaveTo->setValue("whirligigEnabled", whirligigEnabled);
+        settingsToSaveTo->setValue("xtpWebSyncEnabled", _xtpWebSyncEnabled);
+
+
+        settingsToSaveTo->setValue("libraryView", libraryView);
+        settingsToSaveTo->setValue("selectedLibrarySortMode", _librarySortMode);
+
+        settingsToSaveTo->setValue("thumbSize", thumbSize);
+        settingsToSaveTo->setValue("thumbSizeList", thumbSizeList);
+        settingsToSaveTo->setValue("videoIncrement", videoIncrement);
+
+        settingsToSaveTo->setValue("deoDnlaFunscriptLookup", deoDnlaFunscriptLookup);
+
+        settingsToSaveTo->setValue("gamePadEnabled", _gamePadEnabled);
+        settingsToSaveTo->setValue("multiplierEnabled", _multiplierEnabled);
+
+        QList<QVariant> decoderVarient;
+        foreach(auto decoder, decoderPriority)
+        {
+            decoderVarient.append(DecoderModel::toVariant(decoder));
+        }
+        settingsToSaveTo->setValue("decoderPriority", decoderVarient);
+
+        settingsToSaveTo->setValue("selectedVideoRenderer", (int)_selectedVideoRenderer);
+
+        SaveChannelMap(settingsToSaveTo);
+
+        QVariantMap gamepadMap;
+        foreach(auto button, _gamepadButtonMap.keys())
+        {
+            gamepadMap.insert(button, QVariant::fromValue(_gamepadButtonMap[button]));
+        }
+        settingsToSaveTo->setValue("gamepadButtonMap", gamepadMap);
+
+        QVariantMap keyboardKeyMap;
+        foreach(auto key, _keyboardKeyMap.keys())
+        {
+            keyboardKeyMap.insert(key, QVariant::fromValue(_keyboardKeyMap[key]));
+        }
+        settingsToSaveTo->setValue("keyboardKeyMap", keyboardKeyMap);
+
+        // QVariantList tcodeCommands;
+        // foreach (auto value, m_tcodeCommands) {
+        //     tcodeCommands.append(TCodeCommand::toVariant(value));
+        // }
+        settings->remove("tcodeCommands");
+
+        SaveTCodeCommandMap(settingsToSaveTo);
+        //SaveTCodeCommands(settingsToSaveTo);
+
+        settingsToSaveTo->setValue("gamepadSpeed", _gamepadSpeed);
+        settingsToSaveTo->setValue("gamepadSpeedStep", _gamepadSpeedStep);
+        settingsToSaveTo->setValue("xRangeStep", _xRangeStep);
+        ;
+
+        settingsToSaveTo->setValue("disableSpeechToText", disableSpeechToText);
+        settingsToSaveTo->setValue("disableVRScriptSelect", _disableVRScriptSelect);
+        settingsToSaveTo->setValue("disableNoScriptFound", _disableNoScriptFound);
+
+        savePlaylists(settingsToSaveTo);
+
+        settingsToSaveTo->setValue("userData", _hashedPass);
+        settingsToSaveTo->setValue("userWebData", _hashedWebPass);
+
+        storeMediaMetaDatas(settingsToSaveTo);
+
+        settingsToSaveTo->setValue("skipToMoneyShotPlaysFunscript", _skipToMoneyShotPlaysFunscript);
+        settingsToSaveTo->setValue("skipToMoneyShotFunscript", _skipToMoneyShotFunscript);
+        settingsToSaveTo->setValue("skipToMoneyShotSkipsVideo", _skipToMoneyShotSkipsVideo);
+        settingsToSaveTo->setValue("skipToMoneyShotStandAloneLoop", _skipToMoneyShotStandAloneLoop);
+
+        settingsToSaveTo->setValue("hideStandAloneFunscriptsInLibrary", _hideStandAloneFunscriptsInLibrary);
+        settingsToSaveTo->setValue("showVRInLibraryView", _showVRInLibraryView);
+        settingsToSaveTo->setValue("skipPlayingSTandAloneFunscriptsInLibrary", _skipPlayingSTandAloneFunscriptsInLibrary);
+
+        settingsToSaveTo->setValue("enableHttpServer", _enableHttpServer);
+        settingsToSaveTo->setValue("httpServerRoot", _httpServerRoot);
+        settingsToSaveTo->setValue("httpPort", _httpPort);
+        settingsToSaveTo->setValue("webSocketPort", _webSocketPort);
+        settingsToSaveTo->setValue("httpThumbQuality", _httpThumbQuality);
+
+        settingsToSaveTo->setValue("funscriptModifierStep", _funscriptModifierStep);
+        settingsToSaveTo->setValue("funscriptOffsetStep", _funscriptOffsetStep);
+
+        settingsToSaveTo->setValue("channelPulseAmount", _channelPulseAmount);
+        settingsToSaveTo->setValue("channelPulseEnabled", _channelPulseEnabled);
+        settingsToSaveTo->setValue("channelPulseFrequency", _channelPulseFrequency);
+
+        QList<QVariant> tcodeCommandVariant;
+        foreach(auto command, m_customTCodeCommands)
+        {
+            tcodeCommandVariant.append(command.toVariant());
+        }
+        settingsToSaveTo->setValue("customTCodeCommands", tcodeCommandVariant);
+
+        // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadEnabled, m_scheduleLibraryLoadEnabled);
+        // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadTime, m_scheduleLibraryLoadTime);
+        // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadFullProcess, m_scheduleLibraryLoadFullProcess);
+
+        QVariantList tagsList;
+        foreach(auto tag, m_xTags.getUserTags())
+        {
+            tagsList.append(tag);
+        }
+        settingsToSaveTo->setValue("tags", tagsList);
+
+        QVariantList smartTagsList;
+        foreach(auto tag, m_xTags.getUserSmartags())
+        {
+            smartTagsList.append(tag);
+        }
+        settingsToSaveTo->setValue("smartTags", smartTagsList);
+
+        Sync(settingsToSaveTo);
+
+        settingsChangedEvent(false);
+        LogHandler::Debug("Save complete");
+    }
+
+}
+
+void SettingsHandler::Sync(QSettings* settingsToSaveTo)
+{
+    if(!settingsToSaveTo)
+        settingsToSaveTo = settings;
+    m_syncFuture = QtConcurrent::run([settingsToSaveTo]() {
+        QMutexLocker locker(&mutex);
+        settingsToSaveTo->sync();
+        LogHandler::Debug("Settings sync complete");
+    });
 }
 
 void SettingsHandler::setSaveOnExit(bool enabled)
@@ -71,6 +810,58 @@ void SettingsHandler::addStartupMessage(XMessage message, QSettings* settingsToS
     startupMessagesObj.append(message.toJson());
     settingsToSaveTo->setValue("startupMessages", startupMessagesObj);
     //settingsToSaveTo->sync();
+}
+
+bool SettingsHandler::versionEqual(int major, int minor, int rev, QString phase)
+{
+    return versionEqual(major, minor, rev, phase, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, XTEVersionPhase);
+}
+
+bool SettingsHandler::versionGreater(int major, int minor, int rev, QString phase)
+{
+    return versionGreater(major, minor, rev, phase, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, XTEVersionPhase);
+}
+
+bool SettingsHandler::versionLess(int major, int minor, int rev, QString phase)
+{
+    return versionLess(major, minor, rev, phase, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, XTEVersionPhase);
+}
+
+bool SettingsHandler::versionEqual(int major1, int minor1, int rev1, QString phase1, int major2, int minor2, int rev2, QString phase2)
+{
+    return major1 == major2 && minor1 == minor2 && rev1 == rev2 && phase1 == phase2;
+}
+
+bool SettingsHandler::versionGreater(int major1, int minor1, int rev1, QString phase1, int major2, int minor2, int rev2, QString phase2)
+{
+    if(versionEqual(major1, minor1, rev1, phase1, major2, minor2, rev2, phase2))
+        return false;
+    bool phasechanged = phase1 != phase2;
+    bool phaseUpgraded = false;
+    if(phasechanged)
+    {
+        phaseUpgraded = phase1 == 'a' && phase2 == 'b' || phase1 == 'a' && phase2.isEmpty() || phase1 == 'b' && phase2.isEmpty();
+    }
+    return major1 > major2 ||
+        (major1 == major2 && minor1 > minor2) ||
+        (major1 == major2 && minor1 == minor2 && rev1 > rev2) ||
+        phaseUpgraded;
+}
+
+bool SettingsHandler::versionLess(int major1, int minor1, int rev1, QString phase1, int major2, int minor2, int rev2, QString phase2)
+{
+    if(versionEqual(major1, minor1, rev1, phase1, major2, minor2, rev2, phase2))
+        return false;
+    bool phasechanged = phase1 != phase2;
+    bool phaseDowngraded = false;
+    if(phasechanged)
+    {
+        phaseDowngraded = (phase1 == 'b' && phase2 == 'a') || (phase1.isEmpty() && phase2 == 'a') || (phase1.isEmpty() && phase2 == 'b');
+    }
+    return major1 < major2 ||
+           (major1 == major2 && minor1 < minor2) ||
+           (major1 == major2 && minor1 == minor2 && rev1 < rev2) ||
+            phaseDowngraded;
 }
 
 QVariant SettingsHandler::getSetting(const QString& settingName)
@@ -446,686 +1237,6 @@ void SettingsHandler::copy(const QSettings* from, QSettings* into)
         // }
         into->setValue(key, from->value(key));
     }
-}
-
-
-void SettingsHandler::init(QObject* parent)
-{
-    QString appPath = QString(qgetenv("APPIMAGE"));
-    if(!appPath.isEmpty())
-    {
-        m_isAppImage = true;
-        LogHandler::Debug("Is appimage "+appPath);
-        _applicationDirPath = QFileInfo(appPath).absolutePath();
-        m_appimageMountDir = QString(qgetenv("APPDIR"));;
-        LogHandler::Debug("AppImage mount point "+m_appimageMountDir);
-    }
-    else
-    {
-        _applicationDirPath = QCoreApplication::applicationDirPath();
-    }
-    LogHandler::Debug("Application path: "+_applicationDirPath);
-    _appdataLocation = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
-    if(_appdataLocation.isEmpty())
-        _appdataLocation = _applicationDirPath;
-    QDir dir(_appdataLocation);
-    if (!dir.exists())
-        dir.mkpath(_appdataLocation);
-    if(!settings)
-    {
-        if(QFile::exists(_applicationDirPath + "/settings.json"))
-        {
-            m_isPortable = true;
-            LogHandler::Debug("Found local json. Loading settings from it: "+_applicationDirPath + "/settings.json");
-            settings = new QSettings(_applicationDirPath + "/settings.json", JSONSettingsFormatter::JsonFormat, parent);
-        }
-        else if(QFile::exists(_applicationDirPath + "/settings.ini"))
-        {
-            m_isPortable = true;
-            LogHandler::Debug("Found local ini. Loading settings from it: "+_applicationDirPath + "/settings.ini");
-            settings = new QSettings(_applicationDirPath + "/settings.ini", QSettings::Format::IniFormat, parent);
-        }
-        else
-        {
-            LogHandler::Debug("Local file not found. Loading settings native location");
-            settings = new QSettings(ORGANIZATION_NAME, APPLICATION_NAME, parent);
-        }
-    }
-    if(!mediaLibrarySettings)
-    {
-        mediaLibrarySettings = new MediaLibrarySettings(parent);
-        connect(mediaLibrarySettings, &MediaLibrarySettings::settingsChangedEvent, settings, &SettingsHandler::settingsChangedEvent);
-    }
-    m_initialized = true;
-}
-
-void SettingsHandler::Load(QSettings* settingsToLoadFrom)
-{
-    QMutexLocker locker(&mutex);
-    if(!m_initialized)
-    {
-        LogHandler::Error("Settings Load called without initialization! Call init before load.");
-        init();
-    }
-    if(!settingsToLoadFrom)
-    {
-        settingsToLoadFrom = settings;
-    }
-    float settingsVersion = settingsToLoadFrom->value("version").toFloat();
-    m_firstLoad = settingsVersion == 0;
-    if(!m_firstLoad)
-    {
-        bool settingsExported = false;
-        if(settingsVersion < 0.592f)
-        {
-            // versionString is required by QuickExport executed below.
-            // Go ahead and set this so backups can occur if needed
-            Migration::MigrateTo592(settingsToLoadFrom);
-        }
-        QString exportDirectory = settingsToLoadFrom->value(SettingKeys::settingsBackupDirectory, _applicationDirPath).toString();
-        if(settingsVersion < XTEVersionNum)
-        {
-            // QFile file(settingsToLoadFrom->fileName());
-            // QFileInfo fileInfo(settingsToLoadFrom->fileName());
-            QString versionString = settingsToLoadFrom->value("versionString", "").toString();
-            if(!settingsExported)
-                settingsExported = ExportQuick(exportDirectory, settingsToLoadFrom->format(), settingsToLoadFrom);
-                // Copying the file did not work on windows registry
-                //settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
-            XMessage xmessage = {"Application updated from "+versionString+" to version "+ XTEVersion, XLogLevel::Information};
-            addStartupMessage(xmessage, settingsToLoadFrom);
-            LogHandler::Info(xmessage.message);
-        }
-        if(settingsVersion < 0.4f)
-        {
-            locker.unlock();
-            // QFile file(settingsToLoadFrom->fileName());
-            // QFileInfo fileInfo(settingsToLoadFrom->fileName());
-            // QString versionString = settingsToLoadFrom->value("versionString", "").toString();
-            if(!settingsExported)
-                settingsExported = ExportQuick(exportDirectory, settingsToLoadFrom->format(), settingsToLoadFrom);
-                // Copying the file did not work on windows registry
-                // settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
-            QString messageString = "Versions less than 0.4b is no longer supported migrating data. Things may go wrong.\nA backup will be created in "+ _applicationDirPath + " but this is not full proof. I am sorry if you lose data :( This was not an easy task.\nIf you wish to keep your settings from the old version, run v0.4b before this version.\nOtherwise, it may be better to reset settings to default before using.";
-            XMessage message = {messageString, XLogLevel::Warning};
-            addStartupMessage(message, settingsToLoadFrom);
-            LogHandler::Warn(messageString);
-            locker.relock();
-        }
-        else if(settingsVersion > XTEVersionNum)
-        {
-            locker.unlock();
-            // QFile file(settingsToLoadFrom->fileName());
-            // QFileInfo fileInfo(settingsToLoadFrom->fileName());
-            // QString versionString = settingsToLoadFrom->value("versionString", "").toString();
-            if(!settingsExported)
-                settingsExported = ExportQuick(exportDirectory, settingsToLoadFrom->format(), settingsToLoadFrom);
-            // Copying the file did not work on windows registry
-            // settingsExported = file.copy(exportDirectory + QDir::separator() + getExportFileName(versionString) + "." + fileInfo.completeSuffix());
-            QString messageString = "This version "+ XTEVersion + " is less than the last used version "+QString::number(settingsVersion)+".\nThis can cause issues. A backup will be created in "+ _applicationDirPath;
-            XMessage message = {messageString, XLogLevel::Warning};
-            addStartupMessage(message, settingsToLoadFrom);
-            LogHandler::Warn(messageString);
-            locker.relock();
-        }
-    }
-
-    // if(XTEVersionNum > currentVersion)
-    // {
-    //     emit instance()->messageSendWait(
-    //         "This appears to be an older version of XTP. If you continue you may overwrite settings of the newer version of XTP. Coninue?",
-    //         XLogLevel::Warning,
-    //         [currentVersion]() {
-
-    //         });
-    //     return; // TODO: how to get a response?
-    // }
-
-    TCodeChannelLookup::load(settingsToLoadFrom, m_firstLoad);
-
-    if (m_firstLoad)
-    {
-        locker.unlock();
-        SetMapDefaults();
-        SetSystemTagDefaults();
-        locker.relock();
-    }
-
-    bool useSystemMediaBackend = getSetting(SettingKeys::useSystemMediaBackend, settingsToLoadFrom).toBool();
-    if(useSystemMediaBackend)
-    {
-        // https://doc.qt.io/qt-6/qtmultimedia-index.html#changing-backends
-#if defined(Q_OS_WIN)
-        const char* backend = "windows";
-        LogHandler::Info("Load Settings: OS is Windows");
-        putenv(const_cast<char *>("QT_MEDIA_BACKEND=windows"));
-#elif defined(Q_OS_LINUX)
-        const char* backend = "gstreamer";
-        LogHandler::Info("Load Settings: OS is Linux");
-        setenv("QT_MEDIA_BACKEND", backend, 1);
-#else // defined(Q_OS_MAC) MAC_OS, IOS or ANDROID
-        LogHandler::Info("Load Settings: OS is Other");
-        const char* backend = "darwin";
-        setenv("QT_MEDIA_BACKEND", backend, 1);
-#endif
-        LogHandler::Info("Using media backend: "+QString(backend));
-    }
-    // Unsure about this...
-    //setenv("QT_ENABLE_EXPERIMENTAL_CODECS", "1", 1);
-    mediaLibrarySettings->Load(settingsToLoadFrom);
-
-
-    if(settingsVersion < 0.593f) {
-        Migration::RenameChannelDamperToSpeed(settingsToLoadFrom);
-    }
-    QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
-    _funscriptLoaded.clear();
-    foreach(auto profile, availableChannelJson.keys())
-    {
-        TCodeChannelLookup::setupChannelsProfile(profile, QMap<QString, ChannelModel33>());
-        foreach(auto tcodeChannelName, availableChannelJson.value(profile).toObject().keys())
-        {
-            TCodeChannelLookup::addChannel(tcodeChannelName, ChannelModel33::fromVariant(availableChannelJson.value(profile).toObject().value(tcodeChannelName)), profile);
-            _funscriptLoaded.insert(tcodeChannelName, false);
-        }
-    }
-
-    _selectedThumbsDir = settingsToLoadFrom->value("selectedThumbsDir").toString();
-    _useMediaDirForThumbs = settingsToLoadFrom->value("useMediaDirForThumbs").toBool();
-    _hideWelcomeScreen = settingsToLoadFrom->value("hideWelcomeScreen").toBool();
-    _selectedOutputConnection = settingsToLoadFrom->value("selectedDevice").toInt();
-    _selectedNetworkDeviceType = (NetworkProtocol)settingsToLoadFrom->value("selectedNetworkDeviceType").toInt();
-    playerVolume = settingsToLoadFrom->value("playerVolume").toInt();
-    serialPort = settingsToLoadFrom->value("serialPort").toString();
-    serverAddress = settingsToLoadFrom->value("serverAddress", "tcode.local").toString();
-    serverPort = settingsToLoadFrom->value("serverPort", "8000").toString();
-    deoAddress = settingsToLoadFrom->value("deoAddress", "127.0.0.1").toString();
-    deoPort = settingsToLoadFrom->value("deoPort", "23554").toString();
-    deoEnabled = settingsToLoadFrom->value("deoEnabled").toBool();
-
-    whirligigAddress = settingsToLoadFrom->value("whirligigAddress", "127.0.0.1").toString();
-    whirligigPort = settingsToLoadFrom->value("whirligigPort", "2000").toString();
-    whirligigEnabled = settingsToLoadFrom->value("whirligigEnabled").toBool();
-
-    _xtpWebSyncEnabled = settingsToLoadFrom->value("xtpWebSyncEnabled").toBool();
-
-    libraryView = settingsToLoadFrom->value("libraryView").toInt();
-    _librarySortMode = settingsToLoadFrom->value("selectedLibrarySortMode").toInt();
-    thumbSize = settingsToLoadFrom->value("thumbSize", 150).toInt();
-    thumbSizeList = settingsToLoadFrom->value("thumbSizeList", 50).toInt();
-    videoIncrement = settingsToLoadFrom->value("videoIncrement", 10).toInt();
-    deoDnlaFunscriptLookup = settingsToLoadFrom->value("deoDnlaFunscriptLookup").toHash();
-
-    _gamePadEnabled = settingsToLoadFrom->value("gamePadEnabled").toBool();
-    _multiplierEnabled = settingsToLoadFrom->value("multiplierEnabled").toBool();
-    _liveMultiplierEnabled = _multiplierEnabled;
-
-    QVariantMap gamepadButtonMap = settingsToLoadFrom->value("gamepadButtonMap").toMap();
-    _gamepadButtonMap.clear();
-    foreach(auto button, gamepadButtonMap.keys())
-    {
-        _gamepadButtonMap.insert(button, gamepadButtonMap[button].toStringList());
-    }
-    QVariantMap keyboardKeyMap = settingsToLoadFrom->value("keyboardKeyMap").toMap();
-    _keyboardKeyMap.clear();
-    foreach(auto key, keyboardKeyMap.keys())
-    {
-        _keyboardKeyMap.insert(key, keyboardKeyMap[key].toStringList());
-    }
-    QVariantMap tcodeCommandMap = settingsToLoadFrom->value("tcodeCommandMap").toMap();
-    m_tcodeCommandMap.clear();
-    foreach(auto key, tcodeCommandMap.keys())
-    {
-        m_tcodeCommandMap.insert(key, tcodeCommandMap[key].toStringList());
-    }
-
-    // QVariantList tcodeCommands = settingsToLoadFrom->value("tcodeCommands").toList();
-    // m_tcodeCommands.clear();
-    // foreach(auto value, tcodeCommands)
-    // {
-    //     auto command = TCodeCommand::fromVariant(value);
-    //     m_tcodeCommands.insert(command.id, command);
-    // }
-
-    _gamepadSpeed = settingsToLoadFrom->value("gamepadSpeed", 1000).toInt();
-    _gamepadSpeedStep = settingsToLoadFrom->value("gamepadSpeedStep", 500).toInt();
-    _xRangeStep = settingsToLoadFrom->value("xRangeStep", 50).toInt();
-    disableSpeechToText = settingsToLoadFrom->value("disableSpeechToText").toBool();
-    _disableVRScriptSelect = settingsToLoadFrom->value("disableVRScriptSelect", true).toBool();
-    _disableNoScriptFound = settingsToLoadFrom->value("disableNoScriptFound").toBool();
-
-    _skipToMoneyShotPlaysFunscript = settingsToLoadFrom->value("skipToMoneyShotPlaysFunscript").toBool();
-    _skipToMoneyShotFunscript = settingsToLoadFrom->value("skipToMoneyShotFunscript").toString();
-    _skipToMoneyShotSkipsVideo = settingsToLoadFrom->value("skipToMoneyShotSkipsVideo").toBool();
-    _skipToMoneyShotStandAloneLoop = settingsToLoadFrom->value("skipToMoneyShotStandAloneLoop").toBool();
-
-    _hideStandAloneFunscriptsInLibrary = settingsToLoadFrom->value("hideStandAloneFunscriptsInLibrary").toBool();
-    _showVRInLibraryView = settingsToLoadFrom->value("showVRInLibraryView").toBool();
-    _skipPlayingSTandAloneFunscriptsInLibrary = settingsToLoadFrom->value("skipPlayingSTandAloneFunscriptsInLibrary").toBool();
-
-    _enableHttpServer = settingsToLoadFrom->value("enableHttpServer").toBool();
-    _httpServerRoot = settingsToLoadFrom->value("httpServerRoot").toString();
-    if(_httpServerRoot.isEmpty() || !QDir(_httpServerRoot).exists())
-    {
-        setHttpServerRootDefault();
-    }
-    _httpPort = settingsToLoadFrom->value("httpPort", 80).toInt();
-    _webSocketPort = settingsToLoadFrom->value("webSocketPort").toInt();
-    _httpThumbQuality = settingsToLoadFrom->value("httpThumbQuality", -1).toInt();
-
-    _funscriptOffsetStep = settingsToLoadFrom->value("funscriptOffsetStep", 100).toInt();
-    _funscriptModifierStep = settingsToLoadFrom->value("funscriptModifierStep", 5).toInt();
-
-    _channelPulseAmount = settingsToLoadFrom->value("channelPulseAmount").toInt();
-    _channelPulseEnabled = settingsToLoadFrom->value("channelPulseEnabled").toBool();
-    _channelPulseFrequency = settingsToLoadFrom->value("channelPulseFrequency").toInt();
-
-    QList<QVariant> decoderPriorityvarient = settingsToLoadFrom->value("decoderPriority").toList();
-    decoderPriority.clear();
-    foreach(auto varient, decoderPriorityvarient)
-    {
-        decoderPriority.append(DecoderModel::fromVariant(varient));
-    }
-
-    _selectedVideoRenderer = (XVideoRenderer)settingsToLoadFrom->value("selectedVideoRenderer").toInt();
-
-
-    QVariantMap playlists = settingsToLoadFrom->value("playlists").toMap();
-    _playlists.clear();
-    foreach(auto playlist, playlists.keys())
-    {
-        QVariant variant = QVariant::fromValue(playlists.value(playlist));
-        if (!variant.canConvert<QVariantList>())
-            continue;
-
-        QSequentialIterable playlistArray = variant.value<QSequentialIterable>();
-
-        QList<LibraryListItem27> items;
-        int idTracker = 1;
-        foreach(const QVariant& item, playlistArray)
-        {
-            if(!item.isValid())
-                continue;
-            auto itemTyped = LibraryListItem27::fromVariant(item);
-            itemTyped.ID = QString::number(idTracker);
-            items.append(itemTyped);
-            idTracker++;
-        }
-        _playlists.insert(playlist, items);
-    }
-
-    _hashedPass = settingsToLoadFrom->value("userData").toString();
-    _hashedWebPass = settingsToLoadFrom->value("userWebData").toString();
-
-    QList<QVariant> customTCodeCommandsVariant = settingsToLoadFrom->value("customTCodeCommands").toList();
-    m_customTCodeCommands.clear();
-    foreach(auto varient, customTCodeCommandsVariant)
-    {
-        m_customTCodeCommands.append(TCodeCommand::fromJson(varient.toJsonObject()));
-    }
-    foreach(auto command, m_customTCodeCommands)
-    {
-        MediaActions::AddOtherAction(command.command, "TCode command: " + command.name, ActionType::TCODE);
-    }
-
-
-    QStringList tags = settingsToLoadFrom->value("tags").toStringList();
-    foreach (auto tag, tags) {
-        m_xTags.addTag(tag);
-    }
-    QStringList smartTags = settingsToLoadFrom->value("smartTags").toStringList();
-    foreach (auto tag, smartTags) {
-        m_xTags.addSmartTag(tag);
-    }
-
-    // m_scheduleLibraryLoadEnabled = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadEnabled, false).toBool();
-    // m_scheduleLibraryLoadTime = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadTime, QTime(2,0)).toTime();
-    // m_scheduleLibraryLoadFullProcess = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadFullProcess, true).toBool();
-
-    _libraryListItemMetaDatas.clear();
-    QVariantHash libraryListItemMetaDatas = settingsToLoadFrom->value("libraryListItemMetaDatas").toHash();
-    foreach(auto key, libraryListItemMetaDatas.keys())
-    {
-        _libraryListItemMetaDatas.insert(key, LibraryListItemMetaData258::fromVariant(libraryListItemMetaDatas[key]));
-    }
-
-    if(!m_firstLoad)
-    {
-        bool migrated = false;
-        if(settingsVersion < 0.41f) {
-            locker.unlock();
-            auto library = settingsToLoadFrom->value("selectedLibrary").toString();
-            mediaLibrarySettings->add(LibraryType::MAIN, library);
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.414f) {
-            locker.unlock();
-            Migration::MigrateTo42(settingsToLoadFrom);
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.426f) {
-            locker.unlock();
-            _hashedPass = nullptr;
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.451f) {
-            locker.unlock();
-            SetTCodeCommandMapDefaults();
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.454f) {
-            locker.unlock();
-            SetSystemTagDefaults();
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.459f) {
-            locker.unlock();
-            Migration::MigrateTo46(settingsToLoadFrom, _libraryListItemMetaDatas);
-            setForceMetaDataFullProcess(true);
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.465f) {
-            locker.unlock();
-            m_xTags.addTag(XTags::ALTSCRIPT);
-            setForceMetaDataFullProcess(true);
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.469f) {
-            locker.unlock();
-            bool disableHeartBeat = settingsToLoadFrom->value("disableHeartBeat", false).toBool();
-            setDisableHeartBeat(disableHeartBeat);
-            bool disableTCodeValidation = settingsToLoadFrom->value("disableSerialTCodeValidation").toBool();
-            setDisableTCodeValidation(disableTCodeValidation);
-            Save();// No need to load as these are under the new settings system.
-            locker.relock();
-            migrated = true;
-        }
-        if(settingsVersion < 0.47f) {
-            locker.unlock();
-            setForceMetaDataFullProcess(true);
-            Save();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.471f) {
-            locker.unlock();
-            qint64 httpChunkSize = settingsToLoadFrom->value("httpChunkSize", 26214400).toLongLong();
-            setHTTPChunkSize(httpChunkSize);
-            settingsToLoadFrom->remove("httpChunkSize");
-            Save();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.53f) {
-            locker.unlock();
-            Migration::MigrateTo52(settingsToLoadFrom);
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.54f) {
-            locker.unlock();
-            setForceMetaDataFullProcess(true);
-            m_xTags.addTag(XTags::SFMA);
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.56f) {
-            locker.unlock();
-            mediaLibrarySettings->clear(LibraryType::FUNSCRIPT);
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.57f) {
-            locker.unlock();
-            setForceMetaDataFullProcess(true);
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.59f) {
-            locker.unlock();
-            int offSet = settingsToLoadFrom->value("offSet").toInt();
-            settingsToLoadFrom->remove("offSet");
-            setGlobalOffSet(offSet);
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.591f) {
-            locker.unlock();
-            float viewedThreshold = settingsToLoadFrom->value("viewedThreshold", 0.9f).toFloat();
-            settingsToLoadFrom->remove("viewedThreshold");
-            setViewedThreshold(viewedThreshold * 100);
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.592f) {
-            locker.unlock();
-            // Add new versionString into settings. This will happen in save if the current version is greater thanthe settings version.
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(settingsVersion < 0.595f) {
-            locker.unlock();
-            Migration::MigrateTo595(settingsToLoadFrom, m_customTCodeCommands);
-            Save();
-            Load();
-            migrated = true;
-            locker.relock();
-        }
-        if(!migrated && settingsVersion < XTEVersionNum)
-        {
-            locker.unlock();
-            Save();
-            Load();
-            locker.relock();
-        }
-
-    }
-    settingsChangedEvent(false);
-}
-
-void SettingsHandler::Save(QSettings* settingsToSaveTo)
-{
-    QMutexLocker locker(&mutex);
-    if (_saveOnExit)
-    {
-        LogHandler::Debug("Saving XTE settings");
-        if(!settingsToSaveTo)
-            settingsToSaveTo = settings;
-
-        float settingsVersion = settingsToSaveTo->value("version").toFloat();
-
-        if(XTEVersionNum > settingsVersion)
-        {
-            settingsToSaveTo->setValue("version", XTEVersionNum);
-            settingsToSaveTo->setValue("versionString", XTEVersion);
-        }
-
-        mediaLibrarySettings->Save(settingsToSaveTo);
-
-        //TODO: move to TCodeChannelLookup
-        settingsToSaveTo->setValue("selectedTCodeVersion", ((int)TCodeChannelLookup::getSelectedTCodeVersion()));
-        settingsToSaveTo->setValue("selectedChannelProfile", TCodeChannelLookup::getSelectedChannelProfile());
-
-        settingsToSaveTo->setValue("playerVolume", playerVolume);
-
-        settingsToSaveTo->setValue("hideWelcomeScreen", ((int)_hideWelcomeScreen));
-        settingsToSaveTo->setValue("selectedThumbsDir", _selectedThumbsDir);
-        settingsToSaveTo->setValue("useMediaDirForThumbs", _useMediaDirForThumbs);
-        settingsToSaveTo->setValue("selectedDevice", _selectedOutputConnection);
-        settingsToSaveTo->setValue("selectedNetworkDeviceType", (int)_selectedNetworkDeviceType);
-        settingsToSaveTo->setValue("serialPort", serialPort);
-        settingsToSaveTo->setValue("serverAddress", serverAddress);
-        settingsToSaveTo->setValue("serverPort", serverPort);
-        settingsToSaveTo->setValue("deoAddress", deoAddress);
-        settingsToSaveTo->setValue("deoPort", deoPort);
-        settingsToSaveTo->setValue("deoEnabled", deoEnabled);
-        settingsToSaveTo->setValue("whirligigAddress", whirligigAddress);
-        settingsToSaveTo->setValue("whirligigPort", whirligigPort);
-        settingsToSaveTo->setValue("whirligigEnabled", whirligigEnabled);
-        settingsToSaveTo->setValue("xtpWebSyncEnabled", _xtpWebSyncEnabled);
-
-
-        settingsToSaveTo->setValue("libraryView", libraryView);
-        settingsToSaveTo->setValue("selectedLibrarySortMode", _librarySortMode);
-
-        settingsToSaveTo->setValue("thumbSize", thumbSize);
-        settingsToSaveTo->setValue("thumbSizeList", thumbSizeList);
-        settingsToSaveTo->setValue("videoIncrement", videoIncrement);
-
-        settingsToSaveTo->setValue("deoDnlaFunscriptLookup", deoDnlaFunscriptLookup);
-
-        settingsToSaveTo->setValue("gamePadEnabled", _gamePadEnabled);
-        settingsToSaveTo->setValue("multiplierEnabled", _multiplierEnabled);
-
-        QList<QVariant> decoderVarient;
-        foreach(auto decoder, decoderPriority)
-        {
-            decoderVarient.append(DecoderModel::toVariant(decoder));
-        }
-        settingsToSaveTo->setValue("decoderPriority", decoderVarient);
-
-        settingsToSaveTo->setValue("selectedVideoRenderer", (int)_selectedVideoRenderer);
-
-        SaveChannelMap(settingsToSaveTo);
-
-        QVariantMap gamepadMap;
-        foreach(auto button, _gamepadButtonMap.keys())
-        {
-            gamepadMap.insert(button, QVariant::fromValue(_gamepadButtonMap[button]));
-        }
-        settingsToSaveTo->setValue("gamepadButtonMap", gamepadMap);
-
-        QVariantMap keyboardKeyMap;
-        foreach(auto key, _keyboardKeyMap.keys())
-        {
-            keyboardKeyMap.insert(key, QVariant::fromValue(_keyboardKeyMap[key]));
-        }
-        settingsToSaveTo->setValue("keyboardKeyMap", keyboardKeyMap);
-
-        // QVariantList tcodeCommands;
-        // foreach (auto value, m_tcodeCommands) {
-        //     tcodeCommands.append(TCodeCommand::toVariant(value));
-        // }
-        settings->remove("tcodeCommands");
-
-        SaveTCodeCommandMap(settingsToSaveTo);
-        //SaveTCodeCommands(settingsToSaveTo);
-
-        settingsToSaveTo->setValue("gamepadSpeed", _gamepadSpeed);
-        settingsToSaveTo->setValue("gamepadSpeedStep", _gamepadSpeedStep);
-        settingsToSaveTo->setValue("xRangeStep", _xRangeStep);
-        ;
-
-        settingsToSaveTo->setValue("disableSpeechToText", disableSpeechToText);
-        settingsToSaveTo->setValue("disableVRScriptSelect", _disableVRScriptSelect);
-        settingsToSaveTo->setValue("disableNoScriptFound", _disableNoScriptFound);
-
-        savePlaylists(settingsToSaveTo);
-
-        settingsToSaveTo->setValue("userData", _hashedPass);
-        settingsToSaveTo->setValue("userWebData", _hashedWebPass);
-
-        storeMediaMetaDatas(settingsToSaveTo);
-
-        settingsToSaveTo->setValue("skipToMoneyShotPlaysFunscript", _skipToMoneyShotPlaysFunscript);
-        settingsToSaveTo->setValue("skipToMoneyShotFunscript", _skipToMoneyShotFunscript);
-        settingsToSaveTo->setValue("skipToMoneyShotSkipsVideo", _skipToMoneyShotSkipsVideo);
-        settingsToSaveTo->setValue("skipToMoneyShotStandAloneLoop", _skipToMoneyShotStandAloneLoop);
-
-        settingsToSaveTo->setValue("hideStandAloneFunscriptsInLibrary", _hideStandAloneFunscriptsInLibrary);
-        settingsToSaveTo->setValue("showVRInLibraryView", _showVRInLibraryView);
-        settingsToSaveTo->setValue("skipPlayingSTandAloneFunscriptsInLibrary", _skipPlayingSTandAloneFunscriptsInLibrary);
-
-        settingsToSaveTo->setValue("enableHttpServer", _enableHttpServer);
-        settingsToSaveTo->setValue("httpServerRoot", _httpServerRoot);
-        settingsToSaveTo->setValue("httpPort", _httpPort);
-        settingsToSaveTo->setValue("webSocketPort", _webSocketPort);
-        settingsToSaveTo->setValue("httpThumbQuality", _httpThumbQuality);
-
-        settingsToSaveTo->setValue("funscriptModifierStep", _funscriptModifierStep);
-        settingsToSaveTo->setValue("funscriptOffsetStep", _funscriptOffsetStep);
-
-        settingsToSaveTo->setValue("channelPulseAmount", _channelPulseAmount);
-        settingsToSaveTo->setValue("channelPulseEnabled", _channelPulseEnabled);
-        settingsToSaveTo->setValue("channelPulseFrequency", _channelPulseFrequency);
-
-        QList<QVariant> tcodeCommandVariant;
-        foreach(auto command, m_customTCodeCommands)
-        {
-            tcodeCommandVariant.append(command.toVariant());
-        }
-        settingsToSaveTo->setValue("customTCodeCommands", tcodeCommandVariant);
-
-        // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadEnabled, m_scheduleLibraryLoadEnabled);
-        // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadTime, m_scheduleLibraryLoadTime);
-        // settingsToSaveTo->setValue(SettingKeys::scheduleLibraryLoadFullProcess, m_scheduleLibraryLoadFullProcess);
-
-        QVariantList tagsList;
-        foreach(auto tag, m_xTags.getUserTags())
-        {
-            tagsList.append(tag);
-        }
-        settingsToSaveTo->setValue("tags", tagsList);
-
-        QVariantList smartTagsList;
-        foreach(auto tag, m_xTags.getUserSmartags())
-        {
-            smartTagsList.append(tag);
-        }
-        settingsToSaveTo->setValue("smartTags", smartTagsList);
-
-        Sync(settingsToSaveTo);
-
-        settingsChangedEvent(false);
-        LogHandler::Debug("Save complete");
-    }
-
-}
-
-void SettingsHandler::Sync(QSettings* settingsToSaveTo)
-{
-    if(!settingsToSaveTo)
-        settingsToSaveTo = settings;
-    m_syncFuture = QtConcurrent::run([settingsToSaveTo]() {
-        QMutexLocker locker(&mutex);
-        settingsToSaveTo->sync();
-        LogHandler::Debug("Settings sync complete");
-    });
 }
 
 void SettingsHandler::SaveLinkedFunscripts(QSettings* settingsToSaveTo)

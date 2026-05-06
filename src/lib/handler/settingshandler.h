@@ -39,6 +39,12 @@
 #define ORGANIZATION_NAME "cUrbSide prOd"
 #define APPLICATION_NAME "XTEngine"
 
+#define _STRINGIFY(x) #x
+#define STRINGIFY(x) _STRINGIFY(x)
+
+#define VERSION_STR(A,B,C,D) STRINGIFY(A) "." STRINGIFY(B) "." STRINGIFY(C) STRINGIFY(D)
+#define VERSION_STRING VERSION_STR(VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_PHASE)
+
 class XTENGINE_EXPORT SettingsHandler: public QObject
 {
     Q_OBJECT
@@ -94,7 +100,10 @@ public:
     static QString getSettingPath(const QString &settingName);
     static const QString XTEVersion;
     static const QString XTEVersionTimeStamp;
-    static const float XTEVersionNum;
+    static const int XTEVersionMajor;
+    static const int XTEVersionMinor;
+    static const int XTEVersionRevision;
+    static const QString XTEVersionPhase;
     static bool getSettingsChanged();
 
     static inline MediaLibrarySettings* mediaLibrarySettings = 0;
@@ -485,6 +494,13 @@ private:
     // static void SaveTCodeCommands(QSettings* settingsToSaveTo = 0);
 
     static void storeMediaMetaDatas(QSettings* settingsToSaveTo = 0);
+
+    static bool versionEqual(int major, int minor, int rev, QString phase);
+    static bool versionGreater(int major, int minor, int rev, QString phase);
+    static bool versionLess(int major, int minor, int rev, QString phase);
+    static bool versionEqual(int major1, int minor1, int rev1, QString phase1, int major2, int minor2, int rev2, QString phase2);
+    static bool versionGreater(int major1, int minor1, int rev1, QString phase1, int major2, int minor2, int rev2, QString phase2);
+    static bool versionLess(int major1, int minor1, int rev1, QString phase1, int major2, int minor2, int rev2, QString phase2);
 
     static QString _appdataLocation;
     static GamepadAxisName gamepadAxisNames;
