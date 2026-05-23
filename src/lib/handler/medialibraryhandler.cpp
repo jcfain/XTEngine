@@ -677,7 +677,7 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
         if(item.type != LibraryListItemType::PlaylistInternal)
         {
             auto isMFS = item.metadata.isMFS;
-            auto isSFMA = item.metadata.isMFS;
+            auto isSFMA = item.metadata.isSFMA;
             if(discoverMultiAxis(item))
             {
                 if((isMFS != item.metadata.isMFS) || (isSFMA != item.metadata.isSFMA))
@@ -1690,6 +1690,7 @@ bool MediaLibraryHandler::discoverMultiAxis(LibraryListItem27 &item) {
     LogHandler::Debug("Discover MFS: "+item.ID);
     QStringList funscripts = TCodeChannelLookup::getValidMFSExtensions();
     item.metadata.isMFS = false;
+    item.metadata.isSFMA = false;
     item.metadata.toolTip.clear();
     item.metadata.MFSScripts.clear();
     item.metadata.MFSTracks.clear();

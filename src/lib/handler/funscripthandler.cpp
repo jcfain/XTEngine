@@ -169,6 +169,33 @@ void FunscriptHandler::jsonToFunscript(QJsonObject json)
             }
         }
     }
+
+    // Parse "axes" format (array of {id, actions} objects)
+    if(json.contains(m_axesJSONObjectName) && json[m_axesJSONObjectName].isArray())
+    {
+        auto jsonAxes = json[m_axesJSONObjectName].toArray();
+        for(auto val : jsonAxes)
+        {
+            QJsonObject axisObj = val.toObject();
+            if(axisObj.contains("id") && axisObj.contains("actions"))
+            {
+                Track track = trackFromTCodeChannel(axisObj["id"].toString());
+                if(track != Track::None && track != Track::Stroke)
+                {
+                    ChannelModel33* channel = TCodeChannelLookup::getChannel(TCodeChannelLookup::ToString(track));
+                    if(channel && channel->Type != ChannelType::HalfOscillate)
+                    {
+                        Funscript funscript;
+                        jsonToFunscript(axisObj, funscript);
+                        setFunscriptSettings(track, funscript);
+                        m_funscripts.insert(track, funscript);
+                        SettingsHandler::setFunscriptLoaded(TCodeChannelLookup::ToString(track), true);
+                    }
+                }
+            }
+        }
+    }
+
     if(!m_funscripts.contains(Track::Stroke))
     {
         Funscript funscript;
@@ -630,9 +657,11 @@ QList<ScriptInfo> FunscriptHandler::getSFMATracks(QString libraryItemMediaPath)
         return scriptInfos;
 
     // scriptInfos.append({"Default", libraryItemMediaPathNoExt, scriptPath, TCodeChannelLookup::ToString(Track::Stroke), ScriptType::MAIN, ScriptContainerType::BASE, "" });
-    if(!json[m_sfmaJSONObjectName].isNull())
+    QString libraryItemMediaNameNoExt = XFileUtil::getNameNoExtension(libraryItemMediaPath);
+
+    // Check "channels" format (object with track name keys)
+    if(!json[m_sfmaJSONObjectName].isNull() && json[m_sfmaJSONObjectName].isObject())
     {
-        QString libraryItemMediaNameNoExt = XFileUtil::getNameNoExtension(libraryItemMediaPath);
         auto jsonTracks = json[m_sfmaJSONObjectName].toObject();
         auto channels = TCodeChannelLookup::getChannels();
         foreach(QString channelName, channels)
@@ -645,7 +674,50 @@ QList<ScriptInfo> FunscriptHandler::getSFMATracks(QString libraryItemMediaPath)
             }
         }
     }
+
+    // Check "axes" format (array of {id, actions} objects)
+    if(json.contains(m_axesJSONObjectName) && json[m_axesJSONObjectName].isArray())
+    {
+        auto jsonAxes = json[m_axesJSONObjectName].toArray();
+        for(auto val : jsonAxes)
+        {
+            QJsonObject axisObj = val.toObject();
+            if(axisObj.contains("id") && axisObj.contains("actions"))
+            {
+                Track track = trackFromTCodeChannel(axisObj["id"].toString());
+                if(track != Track::None && track != Track::Stroke)
+                {
+                    ChannelModel33* channel = TCodeChannelLookup::getChannel(TCodeChannelLookup::ToString(track));
+                    if(channel && channel->Type != ChannelType::HalfOscillate)
+                        scriptInfos.append({libraryItemMediaNameNoExt, libraryItemMediaNameNoExt, scriptPath, channel->trackName.isEmpty() ? axisObj["id"].toString() : channel->trackName, ScriptType::MAIN, ScriptContainerType::SFMA, "" });
+                }
+            }
+        }
+    }
+
     return scriptInfos;
+}
+
+Track FunscriptHandler::trackFromTCodeChannel(const QString& tcodeChannel)
+{
+    // Strip modifier suffix (+/-) to get base channel name
+    QString base = tcodeChannel;
+    if(base.endsWith('+') || base.endsWith('-'))
+        base.chop(1);
+
+    // Search the TCode version map for the matching Track
+    auto values = TCodeChannelLookup::GetSelectedVersionMap().values();
+    auto keys = TCodeChannelLookup::GetSelectedVersionMap().keys();
+    for(int i = 0; i < keys.length(); i++)
+    {
+        QString val = values[i];
+        // Strip modifiers from map value too for comparison
+        if(val.endsWith('+') || val.endsWith('-'))
+            val.chop(1);
+        if(val == base)
+            return keys[i];
+    }
+    return Track::None;
 }
 
 bool FunscriptHandler::isSFMA(QString libraryItemMediaPath)
@@ -655,19 +727,40 @@ bool FunscriptHandler::isSFMA(QString libraryItemMediaPath)
     if(bytes.isEmpty())
         return false;
     QJsonObject json = readJson(bytes);
-    if(json.isEmpty() || json[m_sfmaJSONObjectName].isNull())
+    if(json.isEmpty())
         return false;
 
-    auto jsonTracks = json[m_sfmaJSONObjectName].toObject();
-    auto channels = TCodeChannelLookup::getChannels();
-    foreach(QString channelName, channels)
+    // Check "channels" format
+    if(!json[m_sfmaJSONObjectName].isNull() && json[m_sfmaJSONObjectName].isObject())
     {
-        ChannelModel33* channel = TCodeChannelLookup::getChannel(channelName);
-        if(channel->Type == ChannelType::HalfOscillate || channel->track == Track::Stroke)
-            continue;
-        if(jsonTracks.contains(channel->trackName))
-            return true;
+        auto jsonTracks = json[m_sfmaJSONObjectName].toObject();
+        auto channels = TCodeChannelLookup::getChannels();
+        foreach(QString channelName, channels)
+        {
+            ChannelModel33* channel = TCodeChannelLookup::getChannel(channelName);
+            if(channel->Type == ChannelType::HalfOscillate || channel->track == Track::Stroke)
+                continue;
+            if(jsonTracks.contains(channel->trackName))
+                return true;
+        }
     }
+
+    // Check "axes" format
+    if(json.contains(m_axesJSONObjectName) && json[m_axesJSONObjectName].isArray())
+    {
+        auto jsonAxes = json[m_axesJSONObjectName].toArray();
+        for(auto val : jsonAxes)
+        {
+            QJsonObject axisObj = val.toObject();
+            if(axisObj.contains("id") && axisObj.contains("actions"))
+            {
+                Track track = trackFromTCodeChannel(axisObj["id"].toString());
+                if(track != Track::None && track != Track::Stroke)
+                    return true;
+            }
+        }
+    }
+
     return false;
 }
 
