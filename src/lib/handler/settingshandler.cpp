@@ -4,6 +4,8 @@
 #include "../tool/migration.h"
 
 
+MediaLibrarySettings* SettingsHandler::mediaLibrarySettings = nullptr;
+
 const QString SettingsHandler::XTEVersion = "0.6b";
 const float SettingsHandler::XTEVersionNum = 0.6f;
 const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);

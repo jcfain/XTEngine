@@ -97,7 +97,7 @@ public:
     static const float XTEVersionNum;
     static bool getSettingsChanged();
 
-    static inline MediaLibrarySettings* mediaLibrarySettings = 0;
+    static MediaLibrarySettings* mediaLibrarySettings;
 
     static bool getHideWelcomeScreen();
     static void setHideWelcomeScreen(bool value);
