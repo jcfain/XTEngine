@@ -71,7 +71,15 @@ void OutputWebsocketConnectionHandler::onClosed() {
 void OutputWebsocketConnectionHandler::onTextMessageReceived(QString response)
 {
     QJsonDocument doc = QJsonDocument::fromJson(response.toUtf8());
-    processDeviceInput(doc["command"].toString());
+    if(!doc.isNull())
+    {
+        QString command = doc["command"].toString();
+        // Older firmware versions (< 0.52) send in the command without message
+        if(doc["message"].isUndefined())
+            processDeviceInput(command);
+        else if(command == "tcode")
+            processDeviceInput(doc["message"].toString());
+    }
     // QString version = "V?";
     // bool validated = false;
     // if(response.contains(TCodeChannelLookup::getTCodeVersionName(TCodeVersion::v2)))
