@@ -931,10 +931,10 @@ section .range-values {
     flex-basis: 40%;
 }
 .tab-content-body-column-section--small { 
-    flex-basis: 15%;
+    flex-basis: 10%;
 }
 .tab-content-body-column-section--large { 
-    flex-basis: 75%;
+    flex-basis: 70%;
 }
 
 .tab-content-header {

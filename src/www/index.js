@@ -3908,6 +3908,7 @@ async function setupMotionModifiers() {
 
 	toggleMotionModifierState(remoteUserSettings.multiplierEnabled);
 	setUpInversionMotionModifier();
+	setUpInversionGradientModifier();
 }
 function toggleMotionModifierState(enabled) {
 	var motionModifierElements = document.getElementsByName("motionModifierInput");
@@ -3928,7 +3929,7 @@ async function setUpInversionMotionModifier() {
 	// headerDivNode.classList.add("tab-content-header");
 	var subtextNode = document.createElement("div");
 	subtextNode.classList.add("tab-content-header-eyebrow");
-	subtextNode.innerText = "Invert motion of channels"
+	subtextNode.innerText = "Invert"
 	//headerDivNode.appendChild(subtextNode);
 
 	motionInversionContainer.appendChild(subtextNode);
@@ -3977,6 +3978,63 @@ async function setUpInversionMotionModifier() {
 		formElementNode.appendChild(sectionNode);
 
 		motionInversionContainer.appendChild(formElementNode);
+	}
+}
+
+function setUpInversionGradientModifier() {
+	var motionGradientContainer = document.getElementById("motionGradientContainer");
+	removeAllChildNodes(motionGradientContainer);
+
+	var formElementNode = document.createElement("div");
+	formElementNode.classList.add("formElement");
+
+	var subtextNode = document.createElement("div");
+	subtextNode.classList.add("tab-content-header-eyebrow");
+	subtextNode.innerText = "Gradient"
+
+	motionGradientContainer.appendChild(subtextNode);
+
+
+	var availableChannels = remoteUserSettings.availableChannelsArray;
+	for (var i = 0; i < availableChannels.length; i++) {
+
+		var channel = availableChannels[i];
+		if(channel.type == ChannelType.HalfOscillate)
+			continue;
+		var channelName = channel.channel;
+
+		var formElementNode = document.createElement("div");
+		formElementNode.classList.add("formElement", "formElement--label-large");
+		
+
+		var labelNode = document.createElement("label");
+		labelNode.innerText = channel.friendlyName;
+		labelNode.for = channel.channel + "Gradient";
+		formElementNode.appendChild(labelNode);
+
+		var sectionNode = document.createElement("section");
+		sectionNode.setAttribute("name", "motionModifierInvertedSection");
+		sectionNode.classList.add("form-group-section");
+		sectionNode.id = channel.channel + "Gradient";
+
+		var enabledValueNode = document.createElement("div");
+		enabledValueNode.classList.add("form-group-control");
+
+		var gradientEnabledNode = document.createElement("input");
+		gradientEnabledNode.setAttribute("name", "motionModifierInputGradient");
+		gradientEnabledNode.type = "checkbox";
+		gradientEnabledNode.checked = channel.gradient;
+
+		gradientEnabledNode.oninput = function (channelName, event) {
+			remoteUserSettings.availableChannels[channelName].gradient = event.target.checked;
+			markXTPFormDirty();
+		}.bind(gradientEnabledNode, channelName);
+
+		enabledValueNode.appendChild(gradientEnabledNode);
+		sectionNode.appendChild(enabledValueNode);
+		formElementNode.appendChild(sectionNode);
+
+		motionGradientContainer.appendChild(formElementNode);
 	}
 }
 
