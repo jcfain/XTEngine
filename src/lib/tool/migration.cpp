@@ -93,6 +93,7 @@ void Migration::MigrateTo61(QSettings *settingsToLoadFrom, int& major, int& mino
 
 void Migration::MigrateTo62(QSettings *settingsToLoadFrom)
 {
+    TCodeChannelLookup::changeSelectedTCodeVersion(TCodeVersion::v4);
     QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
     foreach(auto profile, availableChannelJson.keys())
     {

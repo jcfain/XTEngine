@@ -2,7 +2,7 @@
 #include "../tool/xmath.h"
 
 const QMap<TCodeVersion, QString> TCodeChannelLookup::SupportedTCodeVersions = {
-    {TCodeVersion::v2, "TCode v0.2"},
+    // {TCodeVersion::v2, "TCode v0.2"},
     {TCodeVersion::v3, "TCode v0.3"},
     {TCodeVersion::v4, "TCode v0.4"}
 };
@@ -40,6 +40,8 @@ void TCodeChannelLookup::load(QSettings* settingsToLoadFrom, bool firstLoad) {
 }
 
 void TCodeChannelLookup::setSelectedTCodeVersion(TCodeVersion version) {
+    if(version < TCodeVersion::v3)// v2 is deprecated
+        version = TCodeVersion::v4;
     m_selectedTCodeVersion = version;
     m_selectedTCodeVersionMap = TCodeVersionMap.value(version);
 }
