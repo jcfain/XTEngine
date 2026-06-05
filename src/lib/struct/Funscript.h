@@ -10,10 +10,13 @@ struct FunscriptAction {
     qint64 at;
     int pos;
     int speed;
+    int gradient;
     int lastPos;
     int lastSpeed;
     int nextPos;
     int nextSpeed;
+    int lastGradient;
+    int nextGradient;
     qint64 index;
 };
 
@@ -51,9 +54,11 @@ struct XFunscript {
     int lastActionPos = 0;
     int lastActionPosModified = 0;
     int lastActionInterval = 0;
+    int lastActionGradient = 0;
     int nextActionPos = 0;
     int nextActionPosModified = 0;
     int nextActionInterval = 0;
+    int nextActionGradient = 0;
     qint64 min = -1;
     qint64 max = -1;
     QList<qint64> atList;

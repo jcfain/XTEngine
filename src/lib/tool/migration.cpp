@@ -91,6 +91,24 @@ void Migration::MigrateTo61(QSettings *settingsToLoadFrom, int& major, int& mino
                 versionString.contains("a") ? "a" : "";
 }
 
+void Migration::MigrateTo62(QSettings *settingsToLoadFrom)
+{
+    QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
+    foreach(auto profile, availableChannelJson.keys())
+    {
+        TCodeChannelLookup::setupChannelsProfile(profile, QMap<QString, ChannelModel33>());
+        foreach(auto tcodeChannelName, availableChannelJson.value(profile).toObject().keys())
+        {
+            auto channel = TCodeChannelLookup::getChannel(tcodeChannelName, profile);
+            if(!channel)
+                continue;
+            channel->Gradient = true;
+        }
+    }
+
+    // settingsToLoadFrom->setValue("availableChannels", availableChannelJson);
+}
+
 void Migration::RenameChannelDamperToSpeed(QSettings *settingsToLoadFrom)
 {
     QVariantMap availableChannelVariant = settingsToLoadFrom->value("availableChannels").toMap();

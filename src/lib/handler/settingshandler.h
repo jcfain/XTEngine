@@ -210,6 +210,8 @@ public:
 
     static bool getChannelFunscriptInverseChecked(QString channel);
     static void setChannelFunscriptInverseChecked(QString channel, bool value);
+    static bool getChannelFunscriptGradientChecked(QString channel);
+    static void setChannelFunscriptGradientChecked(QString channel, bool value);
     static bool getChannelGamepadInverse(QString channel);
     static void setChannelGamepadInverse(QString channel, bool value);
 

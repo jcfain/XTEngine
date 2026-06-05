@@ -84,6 +84,7 @@ struct SettingKeys {
     static inline const QString globalOffsetWeb = "globalOffsetWeb";
     static inline const QString viewedThreshold = "viewedThreshold";
     static inline const QString settingsBackupDirectory = "settingsBackupDirectory";
+    static inline const QString tcodeGradientEnabled = "tcodeGradientEnabled";
     // static inline const QString selectedTCodeVersion = "selectedTCodeVersion";
     // static inline const QString selectedChannelProfile = "selectedChannelProfile";
     // static inline const QString selectedThumbsDir = "selectedThumbsDir";

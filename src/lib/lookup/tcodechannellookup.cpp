@@ -17,7 +17,7 @@ void TCodeChannelLookup::profileChanged() {
 
 void TCodeChannelLookup::load(QSettings* settingsToLoadFrom, bool firstLoad) {
     if (firstLoad) {
-        setSelectedTCodeVersion(TCodeVersion::v3);
+        setSelectedTCodeVersion(TCodeVersion::v4);
         setAllProfileDefaults();
     } else {
         auto selectedTCodeVersion = (TCodeVersion)(settingsToLoadFrom->value("selectedTCodeVersion").toInt());
@@ -503,6 +503,7 @@ ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, T
     TCodeChannelLookup::setSelectedTCodeVersion(m_selectedTCodeVersion);
     int max = m_selectedTCodeVersion == TCodeVersion::v2 ? 999 : 9999;
     int mid = m_selectedTCodeVersion == TCodeVersion::v2 ? 500 : 5000;
+    bool gradient = m_selectedTCodeVersion >= TCodeVersion::v4 ? true : false;
     return
         {
             friendlyName,
@@ -526,7 +527,8 @@ ChannelModel33 TCodeChannelLookup::setupAvailableChannel(QString friendlyName, T
             false, //GamepadInverted
             false, //LinkToRelatedMFS
             relatedChannel,
-            0
+            0, // Offset,
+            gradient, // Gradient
         };
 }
 
@@ -689,6 +691,38 @@ QHash<TCodeVersion, QMap<Track, QString>> TCodeChannelLookup::TCodeVersionMap =
     },
     {
         TCodeVersion::v3,
+        {
+            {Track::None, NA},
+            {Track::Stroke, L0},
+            {Track::StrokeUp, L0 + PositiveModifier},
+            {Track::StrokeDown, L0 + NegativeModifier},
+            {Track::Roll, R1},
+            {Track::RollRight, R1 + PositiveModifier},
+            {Track::RollLeft, R1 + NegativeModifier},
+            {Track::Pitch, R2},
+            {Track::PitchForward, R2 + PositiveModifier},
+            {Track::PitchBack, R2 + NegativeModifier},
+            {Track::Twist, R0},
+            {Track::TwistClockwise, R0 + PositiveModifier},
+            {Track::TwistCounterClockwise, R0 + NegativeModifier},
+            {Track::Surge, L1},
+            {Track::SurgeForward, L1 + PositiveModifier},
+            {Track::SurgeBack, L1 + NegativeModifier},
+            {Track::Sway, L2},
+            {Track::SwayLeft, L2 + PositiveModifier},
+            {Track::SwayRight, L2 + NegativeModifier},
+            {Track::Vib, V0},
+            {Track::Suck, A1},
+            {Track::SuckMore, A1 + NegativeModifier},
+            {Track::SuckLess, A1 + PositiveModifier},
+            {Track::SuckPosition, A0},
+            {Track::SuckMorePosition, A0 + NegativeModifier},
+            {Track::SuckLessPosition, A0 + PositiveModifier},
+            {Track::Lube, A2}
+        }
+    },
+    {
+        TCodeVersion::v4,// Same as V3...TODO: this needs fixing
         {
             {Track::None, NA},
             {Track::Stroke, L0},

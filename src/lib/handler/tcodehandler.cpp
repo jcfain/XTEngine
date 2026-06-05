@@ -55,6 +55,11 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
           tcode += "I";
           tcode += QString::number(axisAction->speed);
         }
+        if(channelModel->Gradient && axisAction->gradient > -1)
+        {
+            tcode += "G";
+            tcode += QString::number(axisAction->gradient);
+        }
     }
     if(!mainAction && !actions.empty())
     {
@@ -122,13 +127,15 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
     auto relatedChannel = channel->RelatedChannel;
     auto modifier = TCodeChannelLookup::removeModifier(relatedChannel);
     std::shared_ptr<FunscriptAction> linkedAction = 0;
+    int gcode = mainAction ? mainAction->gradient : 0;
     if (channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(relatedChannel))
     {
         if(actions.contains(relatedChannel))
         {
             linkedAction = actions.value(relatedChannel);
-            value = channel->Offset < 0 ? actions.value(relatedChannel)->nextPos : actions.value(relatedChannel)->pos;
-            speed = channel->Offset < 0 ? actions.value(relatedChannel)->nextSpeed : actions.value(relatedChannel)->speed;
+            value = channel->Offset < 0 ? linkedAction->nextPos : linkedAction->pos;
+            speed = channel->Offset < 0 ? linkedAction->nextSpeed : linkedAction->speed;
+            gcode = channel->Offset < 0 ? linkedAction->nextGradient : linkedAction->gradient;
             if(value < 0)
                 return QString();// -1 = No next pos from funscriptHandler
             if(!modifier.isEmpty())
@@ -245,6 +252,12 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
         emit delayTCode(tcodeTemp, delayMS);
         return QString();
     }
+    if(channel->Gradient && gcode > -1)
+    {
+        tcodeTemp += "G";
+        tcodeTemp += QString::number(gcode);
+    }
+
     return tcodeTemp;
 }
 

@@ -320,12 +320,12 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
     if(closestMillis == -1)
         return nullptr;
     qint64 closestIndex = atList.indexOf(closestMillis);
-    qint64 nextAction = closestIndex + 1;
+    qint64 nextActionIndex = closestIndex + 1;
     // We are still moving to the next funcript point.
-    if(funscript->settings.lastActionIndex == nextAction)
+    if(funscript->settings.lastActionIndex == nextActionIndex)
         return nullptr;
     // We are at the end of the funscript points.
-    if(nextAction >= atList.length())
+    if(nextActionIndex >= atList.length())
         return nullptr;
     //LogHandler::Debug("millis: "+ QString::number(millis));
     //LogHandler::Debug("closestMillis: "+ QString::number(closestMillis));
@@ -340,8 +340,8 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
         //     LogHandler::Warn("Potential action skip nextActionIndex: "+ QString::number(funscript->settings.nextActionIndex) + ", closestIndex: "+ QString::number(closestIndex));
         //     LogHandler::Warn("at: " + QString::number(closestMillis) + ", pos: "+QString::number(funscript->actions.value(closestMillis)));
         // }
-        qint64 currentIndex = nextAction;
-        qint64 nextMillis = atList[nextAction];
+        qint64 currentIndex = nextActionIndex;
+        qint64 nextMillis = atList[nextActionIndex];
         int interval = funscript->settings.lastActionIndex == -1 ? closestMillis : nextMillis - closestMillis;
         if(!_firstActionExecuted)
         {
@@ -409,7 +409,6 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
                 }
             }
         }
-
         calculateSpeedModifier(interval);
 
         int nextIndex = currentIndex + 1;
@@ -421,18 +420,54 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
             funscript->settings.nextActionPos = funscript->actions.value(nextActionMillis);
             funscript->settings.nextActionInterval = nextActionMillis - currentMillis;
             calculateSpeedModifier(funscript->settings.nextActionInterval);
+
+            int nextNextIndex = nextIndex +1;
+            if(nextNextIndex < atList.length()) {
+                qint64 nextNextActionMillis = atList[nextIndex +1];
+                int nextNextActionPos = funscript->actions.value(nextNextActionMillis);
+                int nextActionPos = funscript->settings.nextActionPos;
+                int nextNextActionInterval = nextNextActionMillis - nextActionMillis;
+                funscript->settings.nextActionGradient =
+                    XMath::calculateGradient(currentPos, nextActionPos, nextNextActionPos, interval, nextNextActionInterval);
+                // funscript->settings.nextActionGradient =
+                //     (nextNextActionPos-currentPos)*(nextNextActionPos-nextActionPos) < 0 ? 0 :
+                //         (nextNextActionPos - currentPos/(nextNextActionInterval - interval));
+            }
         }
         else
         {
             funscript->settings.nextActionPos = -1;
             funscript->settings.nextActionInterval = -1;
+            funscript->settings.nextActionGradient = -1;
         }
 
-        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { funscript->settings.trackName, currentMillis, currentPos, interval, funscript->settings.lastActionPos, funscript->settings.lastActionInterval, funscript->settings.nextActionPos, funscript->settings.nextActionInterval, currentIndex });
+        bool isTCode4 = true;
+        int gradient = 0;
+        if(isTCode4 && funscript->settings.nextActionPos > -1)
+        {
+            int nextActionPos = funscript->settings.nextActionPos;
+            int lastActionPos = funscript->settings.lastActionPos;
+            int nextActionInterval = funscript->settings.nextActionInterval;
+            int lastActionInterval = funscript->settings.lastActionInterval;
+            // If we consider points A, B, C in sequence and we are assigning a G value to the instruction to move to point B the value should be determined as follows:
+
+            // If the position difference (B-A)*(C-B)=<0 the G value should be 0, because this is a local maximum or minimum.
+
+            // Otherwise the gradient value should be the gradient of the line A->C.
+            // TCode uses funny units for speed and gradient. A gradient of 1000 goes the full axis length in 1 second. I think funscript uses 100 for total axis distance.
+            // So take 10*(position C - position A)/(time C - time A), in funscript units.
+            gradient = XMath::calculateGradient(lastActionPos, currentPos, nextActionPos, lastActionInterval, nextActionInterval);
+            // gradient = (currentPos-lastActionPos)*(nextActionPos-currentPos) < 0 ? 0 :
+            //                (nextActionPos - lastActionPos/(nextActionInterval - lastActionInterval));
+        }
+
+
+        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { funscript->settings.trackName, currentMillis, currentPos, interval, gradient, funscript->settings.lastActionPos, funscript->settings.lastActionInterval, funscript->settings.lastActionGradient, funscript->settings.nextActionPos, funscript->settings.nextActionInterval, funscript->settings.nextActionGradient, currentIndex });
         //LogHandler::Debug("nextAction.speed: "+ QString::number(nextAction->speed));
         funscript->settings.lastActionIndex = currentIndex;
         funscript->settings.lastActionPos = funscript->actions.value(currentMillis);
         funscript->settings.lastActionInterval = interval;
+        funscript->settings.lastActionGradient = gradient;
         funscript->settings.nextActionIndex = currentIndex + 1;
 
         return nextAction;

@@ -165,3 +165,22 @@ float XMath::roundThreeDecimal(float value)
 {
     return roundf(value * 1000) / 1000;
 }
+
+int XMath::calculateGradient(int previousPos, int currentPos, int nextPos,
+                             int previousInterval, int nextInterval)
+{
+    if((currentPos-previousPos)*(nextPos-currentPos) < 0)
+        return 0;
+    // Sometimes this return 0 causing the division below to break the machine?
+    double difference = (double)nextPos - (double)previousPos;
+    if(!difference)
+        return 0;
+    double differenceTime = (double)nextInterval + (double)previousInterval;
+    if(!differenceTime)
+        return 0;
+    // Sometimes this returns -1 if no abs?
+    int gradient = round(abs((10*difference)/differenceTime));
+    if(gradient < 0)
+        return 0;
+    return gradient;
+}

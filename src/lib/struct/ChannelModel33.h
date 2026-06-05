@@ -48,6 +48,7 @@ struct ChannelModel33
     bool LinkToRelatedMFS;
     QString RelatedChannel;
     float Offset;
+    bool Gradient;
 
 //    friend QDataStream & operator<<( QDataStream &dataStream, const ChannelModel33 &object )
 //    {
@@ -129,6 +130,7 @@ struct ChannelModel33
         newItem.LinkToRelatedMFS = obj["linkToRelatedMFS"].toBool();
         newItem.RelatedChannel = obj["relatedChannel"].toString();
         newItem.Offset = obj["offset"].toDouble();
+        newItem.Gradient = obj["gradient"].toBool();
         return newItem;
     }
 
@@ -162,6 +164,7 @@ struct ChannelModel33
         obj["linkToRelatedMFS"] = item.LinkToRelatedMFS;
         obj["relatedChannel"] = item.RelatedChannel;
         obj["offset"] = item.Offset;
+        obj["gradient"] = item.Gradient;
         return obj;
     }
 };

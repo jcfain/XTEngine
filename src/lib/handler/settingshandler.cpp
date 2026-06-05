@@ -567,6 +567,15 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             migrated = true;
             locker.relock();
         }
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 6, 2, "b"))
+        {
+            locker.unlock();
+            Migration::MigrateTo62(settingsToLoadFrom);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
         if(!migrated && versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase))
         {
             locker.unlock();
@@ -1810,7 +1819,7 @@ void SettingsHandler::setHideWelcomeScreen(bool value)
 
 int SettingsHandler::getTCodePadding()
 {
-    return TCodeChannelLookup::getSelectedTCodeVersion() == TCodeVersion::v3 ? 4 : 3;
+    return TCodeChannelLookup::getSelectedTCodeVersion() >= TCodeVersion::v3 ? 4 : 3;
 }
 
 QString SettingsHandler::getSelectedThumbsDir()
@@ -2106,6 +2115,23 @@ void SettingsHandler::setChannelFunscriptInverseChecked(QString channel, bool va
     QMutexLocker locker(&mutex);
     if(TCodeChannelLookup::hasChannel(channel)) {
         TCodeChannelLookup::getChannel(channel)->FunscriptInverted = value;
+        settingsChangedEvent(true);
+    }
+}
+
+bool SettingsHandler::getChannelFunscriptGradientChecked(QString channel)
+{
+    QMutexLocker locker(&mutex);
+    if(TCodeChannelLookup::hasChannel(channel))
+        return TCodeChannelLookup::getChannel(channel)->Gradient;
+    return false;
+}
+
+void SettingsHandler::setChannelFunscriptGradientChecked(QString channel, bool value)
+{
+    QMutexLocker locker(&mutex);
+    if(TCodeChannelLookup::hasChannel(channel)) {
+        TCodeChannelLookup::getChannel(channel)->Gradient = value;
         settingsChangedEvent(true);
     }
 }
