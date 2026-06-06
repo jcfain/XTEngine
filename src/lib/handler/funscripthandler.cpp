@@ -587,7 +587,7 @@ void FunscriptHandler::futureActions(const Funscript* funscript, const int &dest
         future.posA = actionsList.value(future.atA);
     }
     int atBIndex = destinationIndex +1;
-    if(atBIndex > -1)
+    if(atBIndex > -1) // destinationIndex could be less than -1? Just in case...
     {
         if(destinationEnd(funscript, atBIndex))
             return;
