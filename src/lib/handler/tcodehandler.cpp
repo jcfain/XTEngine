@@ -55,7 +55,7 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
           tcode += "I";
           tcode += QString::number(axisAction->speed);
         }
-        if(channelModel->Gradient && axisAction->gradient > -1)
+        if(channelModel->Gradient)
         {
             tcode += "G";
             tcode += QString::number(axisAction->gradient);
@@ -252,7 +252,7 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
         emit delayTCode(tcodeTemp, delayMS);
         return QString();
     }
-    if(channel->Gradient && gcode > -1)
+    if(channel->Gradient)
     {
         tcodeTemp += "G";
         tcodeTemp += QString::number(gcode);

@@ -73,5 +73,14 @@ struct Funscript {
     XFunscript settings;
 };
 
+struct FunscriptFuture {
+    int posA = -1;
+    int atA = -1;
+    int posB = -1;
+    int atB = -1;
+    int posC = -1;
+    int atC = -1;
+};
+
 
 #endif // FUNSCRIPTSTRUCT_H

@@ -325,7 +325,7 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
     if(funscript->settings.lastActionIndex == nextActionIndex)
         return nullptr;
     // We are at the end of the funscript points.
-    if(nextActionIndex >= atList.length())
+    if(destinationEnd(funscript, nextActionIndex))
         return nullptr;
     //LogHandler::Debug("millis: "+ QString::number(millis));
     //LogHandler::Debug("closestMillis: "+ QString::number(closestMillis));
@@ -340,16 +340,19 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
         //     LogHandler::Warn("Potential action skip nextActionIndex: "+ QString::number(funscript->settings.nextActionIndex) + ", closestIndex: "+ QString::number(closestIndex));
         //     LogHandler::Warn("at: " + QString::number(closestMillis) + ", pos: "+QString::number(funscript->actions.value(closestMillis)));
         // }
-        qint64 currentIndex = nextActionIndex;
-        qint64 nextMillis = atList[nextActionIndex];
-        int interval = funscript->settings.lastActionIndex == -1 ? closestMillis : nextMillis - closestMillis;
+        qint64 currentDestinationIndex = nextActionIndex;
+        qint64 nextDestinationIndex = destinationEnd(funscript, currentDestinationIndex + 1) ? -1 : currentDestinationIndex + 1;
+        // qint64 nextMillis = nextIndex > -1 ? atList[nextIndex] : -1;
+        qint64 currentDestinationMillis = funscript->settings.lastActionIndex == -1 ? closestMillis : atList[currentDestinationIndex];
+        int currentDestinationInterval = currentDestinationMillis == closestMillis ? closestMillis : currentDestinationMillis - closestMillis;
+        int currentDestinationPos = funscript->actions.value(currentDestinationMillis);
         if(!_firstActionExecuted)
         {
             _firstActionExecuted = true;
-            if(interval < 500)
-                interval = 500;
-            else if(interval > 5000)
-                interval = 5000;
+            if(currentDestinationInterval < 500)
+                currentDestinationInterval = 500;
+            else if(currentDestinationInterval > 5000)
+                currentDestinationInterval = 5000;
         }
         //LogHandler::Debug("offSet: "+ QString::number(SettingsHandler::getoffSet()));
         //LogHandler::Debug("speed: "+ QString::number(speed));
@@ -359,28 +362,26 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
 //        LogHandler::Debug("lastActionIndex: "+ QString::number(lastActionIndex));
 //        LogHandler::Debug("nextActionIndex: "+ QString::number(nextActionIndex));
         //LogHandler::Debug("nextActionPos: "+ QString::number(funscript->actions.value(nextMillis)));
-        qint64 currentMillis = funscript->settings.lastActionIndex == -1 ? closestMillis : nextMillis;
-        int currentPos = funscript->actions.value(currentMillis);
         if(funscript->settings.lastActionIndex > -1 && funscript->settings.modifier != 1)
         {
-            if(currentPos == funscript->settings.lastActionPos && funscript->settings.lastActionPosModified)
+            if(currentDestinationPos == funscript->settings.lastActionPos && funscript->settings.lastActionPosModified)
             {
-                currentPos = funscript->settings.lastActionPosModified;
+                currentDestinationPos = funscript->settings.lastActionPosModified;
                 if(funscript->settings.channel == Track::Stroke)
-                    LogHandler::Debug(funscript->settings.trackName + " Modified pos unchanged: "+QString::number(currentPos));
+                    LogHandler::Debug(funscript->settings.trackName + " Modified pos unchanged: "+QString::number(currentDestinationPos));
             }
             else
             {
-                int ogPos = currentPos;
-                double distance = currentPos - funscript->settings.lastActionPos;
+                int ogPos = currentDestinationPos;
+                double distance = currentDestinationPos - funscript->settings.lastActionPos;
                 double amplitude = distance / 2.0;
                 if(funscript->settings.modifier > 1)
                 {
-                    currentPos = qRound(currentPos + (amplitude * (funscript->settings.modifier - 1)));
+                    currentDestinationPos = qRound(currentDestinationPos + (amplitude * (funscript->settings.modifier - 1)));
                 }
                 else if(funscript->settings.modifier > 0)
                 {
-                    currentPos = qRound(currentPos - (amplitude * (1 - funscript->settings.modifier)));
+                    currentDestinationPos = qRound(currentDestinationPos - (amplitude * (1 - funscript->settings.modifier)));
                 }
                 // double modifier = funscript->settings.modifier;
                 // if(modifier > 1 )
@@ -396,8 +397,8 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
                 // {
                 //     pos = qRound(pos - (modifier * 100));// Subtract % from the top end (current position)
                 // }
-                currentPos = XMath::constrain(currentPos, 0, 100);
-                funscript->settings.lastActionPosModified = currentPos;
+                currentDestinationPos = XMath::constrain(currentDestinationPos, 0, 100);
+                funscript->settings.lastActionPosModified = currentDestinationPos;
                 if(funscript->settings.channel == Track::Stroke)
                 {
                     LogHandler::Debug(funscript->settings.trackName + " Modifier: "+QString::number(funscript->settings.modifier));
@@ -405,70 +406,82 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
                     LogHandler::Debug(funscript->settings.trackName + " pos: "+QString::number(ogPos));
                     LogHandler::Debug(funscript->settings.trackName + " distance: "+QString::number(distance));
                     // LogHandler::Debug(funscript->settings.trackName + " amplitude: "+QString::number(amplitude));
-                    LogHandler::Debug(funscript->settings.trackName + " Modified pos: "+QString::number(currentPos));
+                    LogHandler::Debug(funscript->settings.trackName + " Modified pos: "+QString::number(currentDestinationPos));
                 }
             }
         }
-        calculateSpeedModifier(interval);
+        calculateSpeedModifier(currentDestinationInterval);
 
-        int nextIndex = currentIndex + 1;
         // int nextNextIndex = funscript->settings.nextActionIndex + 2;
-        if(nextIndex < atList.length())
+        if(nextDestinationIndex > -1)
         {
-            qint64 nextActionMillis = atList[nextIndex];
+            qint64 nextActionMillis = atList[nextDestinationIndex];
             // qint64 nextNextActionMillis = atList[nextNextIndex];
             funscript->settings.nextActionPos = funscript->actions.value(nextActionMillis);
-            funscript->settings.nextActionInterval = nextActionMillis - currentMillis;
+            funscript->settings.nextActionInterval = nextActionMillis - currentDestinationMillis;
             calculateSpeedModifier(funscript->settings.nextActionInterval);
 
-            int nextNextIndex = nextIndex +1;
-            if(nextNextIndex < atList.length()) {
-                qint64 nextNextActionMillis = atList[nextIndex +1];
-                int nextNextActionPos = funscript->actions.value(nextNextActionMillis);
-                int nextActionPos = funscript->settings.nextActionPos;
-                int nextNextActionInterval = nextNextActionMillis - nextActionMillis;
-                funscript->settings.nextActionGradient =
-                    XMath::calculateGradient(currentPos, nextActionPos, nextNextActionPos, interval, nextNextActionInterval);
-                // funscript->settings.nextActionGradient =
-                //     (nextNextActionPos-currentPos)*(nextNextActionPos-nextActionPos) < 0 ? 0 :
-                //         (nextNextActionPos - currentPos/(nextNextActionInterval - interval));
-            }
+            FunscriptFuture future;
+            futureActions(funscript, nextDestinationIndex, future);
+            funscript->settings.nextActionGradient =
+                calculateGradient(future.posA, future.posB, future.posC, future.atA, future.atC);
+
+            // int nextNextIndex = nextDestinationIndex +1;
+            // if(!destinationEnd(nextNextIndex))
+            // {
+            //     int nextNextNextIndex = nextDestinationIndex +2;
+            //     qint64 nextNextNextActionMillis = destinationEnd(nextNextNextIndex) ? -1 : atList[nextNextNextIndex];
+            //     int nextNextNextActionPos = nextNextNextActionMillis > -1 ? funscript->actions.value(nextNextActionMillis) : -1;
+
+            //     qint64 nextNextActionMillis = atList[nextDestinationIndex +1];
+            //     int nextNextActionPos = funscript->actions.value(nextNextActionMillis);
+            //     int nextActionPos = funscript->settings.nextActionPos;
+            //     // int nextNextActionInterval = nextNextActionMillis - nextActionMillis;
+            //     funscript->settings.nextActionGradient =
+            //         XMath::calculateGradient(nextActionPos, nextNextActionPos, nextNextNextActionPos, nextActionMillis, nextNextNextActionMillis);
+            //     // funscript->settings.nextActionGradient =
+            //     //     (nextNextActionPos-currentPos)*(nextNextActionPos-nextActionPos) < 0 ? 0 :
+            //     //         (nextNextActionPos - currentPos/(nextNextActionInterval - interval));
+            // }
         }
         else
         {
             funscript->settings.nextActionPos = -1;
             funscript->settings.nextActionInterval = -1;
-            funscript->settings.nextActionGradient = -1;
+            funscript->settings.nextActionGradient = 0;
         }
 
+        // Calculate the gradient
         bool isTCode4 = true;
-        int gradient = 0;
-        if(isTCode4 && funscript->settings.nextActionPos > -1)
+        int currentDestinationGradient = 0;
+        if(isTCode4)// Not used as im not sure its nessesary.
         {
-            int nextActionPos = funscript->settings.nextActionPos;
-            int lastActionPos = funscript->settings.lastActionPos;
-            int nextActionInterval = funscript->settings.nextActionInterval;
-            int lastActionInterval = funscript->settings.lastActionInterval;
-            // If we consider points A, B, C in sequence and we are assigning a G value to the instruction to move to point B the value should be determined as follows:
-
-            // If the position difference (B-A)*(C-B)=<0 the G value should be 0, because this is a local maximum or minimum.
-
-            // Otherwise the gradient value should be the gradient of the line A->C.
-            // TCode uses funny units for speed and gradient. A gradient of 1000 goes the full axis length in 1 second. I think funscript uses 100 for total axis distance.
-            // So take 10*(position C - position A)/(time C - time A), in funscript units.
-            gradient = XMath::calculateGradient(lastActionPos, currentPos, nextActionPos, lastActionInterval, nextActionInterval);
-            // gradient = (currentPos-lastActionPos)*(nextActionPos-currentPos) < 0 ? 0 :
-            //                (nextActionPos - lastActionPos/(nextActionInterval - lastActionInterval));
+            FunscriptFuture future;
+            futureActions(funscript, currentDestinationIndex, future);
+            currentDestinationGradient = calculateGradient(future.posA, future.posB, future.posC, future.atA, future.atC);
         }
 
 
-        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction { funscript->settings.trackName, currentMillis, currentPos, interval, gradient, funscript->settings.lastActionPos, funscript->settings.lastActionInterval, funscript->settings.lastActionGradient, funscript->settings.nextActionPos, funscript->settings.nextActionInterval, funscript->settings.nextActionGradient, currentIndex });
+        std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction {
+            funscript->settings.trackName,
+            currentDestinationMillis,
+            currentDestinationPos,
+            currentDestinationInterval,
+            currentDestinationGradient,
+            funscript->settings.lastActionPos,
+            funscript->settings.lastActionInterval,
+            funscript->settings.lastActionGradient,
+            funscript->settings.nextActionPos,
+            funscript->settings.nextActionInterval,
+            funscript->settings.nextActionGradient,
+            currentDestinationIndex
+        });
         //LogHandler::Debug("nextAction.speed: "+ QString::number(nextAction->speed));
-        funscript->settings.lastActionIndex = currentIndex;
-        funscript->settings.lastActionPos = funscript->actions.value(currentMillis);
-        funscript->settings.lastActionInterval = interval;
-        funscript->settings.lastActionGradient = gradient;
-        funscript->settings.nextActionIndex = currentIndex + 1;
+        funscript->settings.lastActionIndex = currentDestinationIndex;
+        funscript->settings.lastActionPos = funscript->actions.value(currentDestinationMillis);
+        funscript->settings.lastActionInterval = currentDestinationInterval;
+        funscript->settings.lastActionGradient = currentDestinationGradient;
+        funscript->settings.nextActionIndex = nextDestinationIndex;
 
         return nextAction;
     }
@@ -557,6 +570,64 @@ void FunscriptHandler::calculateSpeedModifier(int& interval)
     }
 }
 
+void FunscriptHandler::futureActions(const Funscript* funscript, const int &destinationIndex, FunscriptFuture& future)
+{
+    future.posA = -1;
+    future.atA = -1;
+    future.posB = -1;
+    future.atB = -1;
+    future.posC = -1;
+    auto atList = funscript->settings.atList;
+    auto actionsList = funscript->actions;
+    if(destinationIndex > -1)
+    {
+        if(destinationEnd(funscript, destinationIndex))
+            return;
+        future.atA = atList.value(destinationIndex);
+        future.posA = actionsList.value(future.atA);
+    }
+    int atBIndex = destinationIndex +1;
+    if(atBIndex > -1)
+    {
+        if(destinationEnd(funscript, atBIndex))
+            return;
+        future.atB = atList.value(atBIndex);
+        future.posB = actionsList.value(future.atB);
+    }
+
+    int atCIndex = atBIndex +1;
+    if(atCIndex > -1)
+    {
+        if(destinationEnd(funscript, atCIndex))
+            return;
+        future.atC = atList.value(atCIndex);
+        future.posC = actionsList.value(future.atC);
+    }
+}
+
+bool FunscriptHandler::destinationEnd(const Funscript* funscript, const int& destinationIndex)
+{
+    return destinationIndex >= funscript->settings.atList.length();
+}
+
+int FunscriptHandler::calculateGradient(int posA, int posB, int posC, qint64 atA, qint64 atC)
+{
+    if((posB-posA)*(posC-posB) < 0)
+        return 0;
+    // Sometimes this return 0 causing the division below to break the machine?
+    double differencePos = (double)posC - (double)posA;
+    if(!differencePos)
+        return 0;
+    if(atC == -1 || atA == -1)// How to handle the end/beginning of the funscript?
+        return 0;
+    double differenceAt = (double)atC - (double)atA;
+    if(!differenceAt)
+        return 0;
+    double gradient = (10*differencePos)/differenceAt;
+    if(gradient != 0)
+        LogHandler::Debug("Gradient not 0: "+QString::number(gradient));// Rarely is anything above 1 or -1?
+    return gradient;
+}
 
 //static
 

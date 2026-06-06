@@ -24,7 +24,6 @@ public:
     static QString calculateMD5(QString path);
     static float roundTwoDecimal(float value);
     static float roundThreeDecimal(float value);
-    static int calculateGradient(int previous, int current, int next, int previousTime, int nextTime);
 };
 
 #endif // XMATH_H

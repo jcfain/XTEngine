@@ -84,6 +84,22 @@ private:
     void setFunscriptSettings(const Track& channelName, Funscript& funscript);
     qint64 findClosest(const qint64& value, const QList<qint64>& a);
     void calculateSpeedModifier(int& interval);
+
+    ///
+    /// \brief destinationEnd Checks if the index extends beyong the action list.
+    /// \param index
+    /// \return
+    ///
+    bool destinationEnd(const Funscript* funscript, const int& index);
+    ///
+    /// \brief futureActions Takes in an index and finds the next two actions starting at that index.
+    /// Sets value to -1 that extend beyond the action list.
+    /// \param destinationIndex
+    /// \param future
+    ///
+    void futureActions(const Funscript* funscript, const int &destinationIndex, FunscriptFuture& future);
+
+    int calculateGradient(int previous, int current, int next, qint64 previousAt, qint64 nextAt);
 };
 
 #endif // FUNSCRIPTHANDLER_H
