@@ -463,18 +463,18 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
 
 
         std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction {
-            funscript->settings.trackName,
-            currentDestinationMillis,
-            currentDestinationPos,
-            currentDestinationInterval,
-            currentDestinationGradient,
-            funscript->settings.lastActionPos,
-            funscript->settings.lastActionInterval,
-            funscript->settings.lastActionGradient,
-            funscript->settings.nextActionPos,
-            funscript->settings.nextActionInterval,
-            funscript->settings.nextActionGradient,
-            currentDestinationIndex
+            funscript->settings.trackName, // channel
+            currentDestinationMillis, // at
+            currentDestinationPos, // pos
+            currentDestinationInterval, // speed
+            currentDestinationGradient, // gradient
+            funscript->settings.lastActionPos, // lastPos
+            funscript->settings.lastActionInterval, // lastSpeed
+            funscript->settings.nextActionPos, // nextPos
+            funscript->settings.nextActionInterval, // nextSpeed
+            funscript->settings.lastActionGradient, // lastGradient
+            funscript->settings.nextActionGradient, // nextGradient
+            currentDestinationIndex // index
         });
         //LogHandler::Debug("nextAction.speed: "+ QString::number(nextAction->speed));
         funscript->settings.lastActionIndex = currentDestinationIndex;
