@@ -49,7 +49,7 @@ void TCodeChannelLookup::setSelectedTCodeVersion(TCodeVersion version) {
 void TCodeChannelLookup::changeSelectedTCodeVersion(TCodeVersion version) {
     if(m_selectedTCodeVersion != version) {
         m_selectedTCodeVersion = version;
-        m_selectedTCodeVersionMap = TCodeVersionMap.value(version);
+        // m_selectedTCodeVersionMap = TCodeVersionMap.value(version);
         emit instance()->tcodeVersionChanged();
     }
 }

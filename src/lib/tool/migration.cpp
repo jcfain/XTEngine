@@ -94,20 +94,18 @@ void Migration::MigrateTo61(QSettings *settingsToLoadFrom, int& major, int& mino
 void Migration::MigrateTo62(QSettings *settingsToLoadFrom)
 {
     TCodeChannelLookup::changeSelectedTCodeVersion(TCodeVersion::v4);
-    QJsonObject availableChannelJson = settingsToLoadFrom->value("availableChannels").toJsonObject();
-    foreach(auto profile, availableChannelJson.keys())
+    auto channelProfiles = TCodeChannelLookup::getChannelProfiles();
+    foreach(auto profile, channelProfiles)
     {
-        TCodeChannelLookup::setupChannelsProfile(profile, QMap<QString, ChannelModel33>());
-        foreach(auto tcodeChannelName, availableChannelJson.value(profile).toObject().keys())
+        auto channels = TCodeChannelLookup::getChannels(profile);
+        foreach(auto channel, channels)
         {
-            auto channel = TCodeChannelLookup::getChannel(tcodeChannelName, profile);
-            if(!channel)
+            auto channelObj = TCodeChannelLookup::getChannel(channel, profile);
+            if(!channelObj)
                 continue;
-            channel->Gradient = true;
+            channelObj->Gradient = true;
         }
     }
-
-    // settingsToLoadFrom->setValue("availableChannels", availableChannelJson);
 }
 
 void Migration::RenameChannelDamperToSpeed(QSettings *settingsToLoadFrom)
