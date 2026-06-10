@@ -73,7 +73,7 @@ struct Funscript {
     XFunscript settings;
 };
 
-struct FunscriptFuture {
+struct FunscriptActionSequence {
     int posA = -1;
     int atA = -1;
     int posB = -1;

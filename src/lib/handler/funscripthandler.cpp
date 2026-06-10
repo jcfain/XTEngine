@@ -412,37 +412,17 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
         }
         calculateSpeedModifier(currentDestinationInterval);
 
-        // int nextNextIndex = funscript->settings.nextActionIndex + 2;
         if(nextDestinationIndex > -1)
         {
             qint64 nextActionMillis = atList[nextDestinationIndex];
-            // qint64 nextNextActionMillis = atList[nextNextIndex];
             funscript->settings.nextActionPos = funscript->actions.value(nextActionMillis);
             funscript->settings.nextActionInterval = nextActionMillis - currentDestinationMillis;
             calculateSpeedModifier(funscript->settings.nextActionInterval);
 
-            FunscriptFuture future;
-            futureActions(funscript, nextDestinationIndex, future);
+            FunscriptActionSequence seq;
+            actionSequence(funscript, nextDestinationIndex, seq);
             funscript->settings.nextActionGradient =
-                calculateGradient(future.posA, future.posB, future.posC, future.atA, future.atC);
-
-            // int nextNextIndex = nextDestinationIndex +1;
-            // if(!destinationEnd(nextNextIndex))
-            // {
-            //     int nextNextNextIndex = nextDestinationIndex +2;
-            //     qint64 nextNextNextActionMillis = destinationEnd(nextNextNextIndex) ? -1 : atList[nextNextNextIndex];
-            //     int nextNextNextActionPos = nextNextNextActionMillis > -1 ? funscript->actions.value(nextNextActionMillis) : -1;
-
-            //     qint64 nextNextActionMillis = atList[nextDestinationIndex +1];
-            //     int nextNextActionPos = funscript->actions.value(nextNextActionMillis);
-            //     int nextActionPos = funscript->settings.nextActionPos;
-            //     // int nextNextActionInterval = nextNextActionMillis - nextActionMillis;
-            //     funscript->settings.nextActionGradient =
-            //         XMath::calculateGradient(nextActionPos, nextNextActionPos, nextNextNextActionPos, nextActionMillis, nextNextNextActionMillis);
-            //     // funscript->settings.nextActionGradient =
-            //     //     (nextNextActionPos-currentPos)*(nextNextActionPos-nextActionPos) < 0 ? 0 :
-            //     //         (nextNextActionPos - currentPos/(nextNextActionInterval - interval));
-            // }
+                calculateGradient(seq.posA, seq.posB, seq.posC, seq.atA, seq.atC);
         }
         else
         {
@@ -456,9 +436,9 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
         int currentDestinationGradient = 0;
         if(isTCode4)// Not used as im not sure its nessesary.
         {
-            FunscriptFuture future;
-            futureActions(funscript, currentDestinationIndex, future);
-            currentDestinationGradient = calculateGradient(future.posA, future.posB, future.posC, future.atA, future.atC);
+            FunscriptActionSequence seq;
+            actionSequence(funscript, currentDestinationIndex, seq);
+            currentDestinationGradient = calculateGradient(seq.posA, seq.posB, seq.posC, seq.atA, seq.atC);
         }
 
 
@@ -570,7 +550,13 @@ void FunscriptHandler::calculateSpeedModifier(int& interval)
     }
 }
 
-void FunscriptHandler::futureActions(const Funscript* funscript, const int &destinationIndex, FunscriptFuture& future)
+///
+/// \brief FunscriptHandler::actionSequence Gets the previous, current and next pos and at
+/// \param funscript
+/// \param destinationIndex
+/// \param future
+///
+void FunscriptHandler::actionSequence(const Funscript* funscript, const int &destinationIndex, FunscriptActionSequence& future)
 {
     future.posA = -1;
     future.atA = -1;
@@ -579,14 +565,15 @@ void FunscriptHandler::futureActions(const Funscript* funscript, const int &dest
     future.posC = -1;
     auto atList = funscript->settings.atList;
     auto actionsList = funscript->actions;
-    if(destinationIndex > -1)
+    int atAIndex = destinationIndex - 1;
+    if(atAIndex > -1)
     {
-        if(destinationEnd(funscript, destinationIndex))
+        if(destinationEnd(funscript, atAIndex))
             return;
-        future.atA = atList.value(destinationIndex);
+        future.atA = atList.value(atAIndex);
         future.posA = actionsList.value(future.atA);
     }
-    int atBIndex = destinationIndex +1;
+    int atBIndex = atAIndex + 1;
     if(atBIndex > -1) // destinationIndex could be less than -1? Just in case...
     {
         if(destinationEnd(funscript, atBIndex))
@@ -595,7 +582,7 @@ void FunscriptHandler::futureActions(const Funscript* funscript, const int &dest
         future.posB = actionsList.value(future.atB);
     }
 
-    int atCIndex = atBIndex +1;
+    int atCIndex = atBIndex + 1;
     if(atCIndex > -1)
     {
         if(destinationEnd(funscript, atCIndex))
@@ -605,6 +592,11 @@ void FunscriptHandler::futureActions(const Funscript* funscript, const int &dest
     }
 }
 
+///
+/// \brief FunscriptHandler::destinationEnd Checks if the index extends beyong the action list.
+/// \param index
+/// \return
+///
 bool FunscriptHandler::destinationEnd(const Funscript* funscript, const int& destinationIndex)
 {
     return destinationIndex >= funscript->settings.atList.length();
@@ -614,19 +606,16 @@ int FunscriptHandler::calculateGradient(int posA, int posB, int posC, qint64 atA
 {
     if((posB-posA)*(posC-posB) < 0)
         return 0;
-    // Sometimes this return 0 causing the division below to break the machine?
+    // Guard aginst dividing by 0
     double differencePos = (double)posC - (double)posA;
     if(!differencePos)
         return 0;
-    if(atC == -1 || atA == -1)// How to handle the end/beginning of the funscript?
+    if(atC == -1 || atA == -1)// -1 means we are at the end or begining
         return 0;
-    double differenceAt = (double)atC - (double)atA;
+    double differenceAt = ((double)atC - (double)atA)/1000;
     if(!differenceAt)
         return 0;
-    double gradient = (10*differencePos)/differenceAt;
-    if(gradient != 0)
-        LogHandler::Debug("Gradient not 0: "+QString::number(gradient));// Rarely is anything above 1 or -1?
-    return gradient;
+    return (10*differencePos)/differenceAt;
 }
 
 //static
