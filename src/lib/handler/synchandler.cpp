@@ -385,8 +385,10 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
     LogHandler::Debug("syncFunscript start thread");
     _funscriptMediaFuture = QtConcurrent::run([this, getMediaPosition]()
     {
-        std::shared_ptr<FunscriptAction> actionPosition;
         QElapsedTimer mSecTimer;
+        qint64 executionTimeNS = 1000000;
+        double timeTracker = 0;
+        qint64 lastTime = 0;
         qint64 nextPulseTime = SettingsHandler::getLubePulseFrequency();
         qint64 timer1 = 0;
         qint64 timer2 = 0;
@@ -394,21 +396,25 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
         emit syncStart();
         while (!_funscriptMediaFuture.isCanceled() && _isOtherMediaPlaying)
         {
-            if (timer2 - timer1 >= 1)
+            double elapsedNS = timer2 - timer1;
+            if (elapsedNS >= executionTimeNS)
             {
                 timer1 = timer2;
                 if(!isPaused())
                 {
-                    qint64 currentTime = getMediaPosition();//_videoHandler->position();
-                    // foreach(auto funscriptHandlerOther, _funscriptHandlers)
-                    // {
-                    //     auto action = funscriptHandlerOther->getPosition(currentTime);
-                    //     if(action != nullptr)
-                    //     {
-                    //         actions.insert(funscriptHandlerOther->channel(), action);
-                    //         emit channelPositionChange(funscriptHandlerOther->channel(), action->pos, action->speed, ChannelTimeType::Interval);
-                    //     }
-                    // }
+                    qint64 currentTime = getMediaPosition();
+                    if(currentTime != lastTime)
+                    {
+                        lastTime = currentTime;
+                        timeTracker = lastTime;
+                    }
+                    else
+                    {
+                        timeTracker += elapsedNS/1000000;
+                        // LogHandler::Debug("timeTracker: " + QString::number(timeTracker));
+                        currentTime = timeTracker;
+                    }
+                    // LogHandler::Debug("currentTime: "+QString::number(currentTime));
                     QString tcode = buildChannelActions(currentTime);
                     if(_funscriptMediaFuture.isCanceled())
                         break;
@@ -422,8 +428,7 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
                     QThread::msleep(100);
                 }
             }
-            QThread::usleep(1);
-            timer2 = (round(mSecTimer.nsecsElapsed() / 1000000));
+            timer2 = mSecTimer.nsecsElapsed();
         }
         _currentLocalVideoTime = 0;
         emit sendTCode("DSTOP");

@@ -291,6 +291,7 @@ const QList<Track> FunscriptHandler::getLoaded()
     return m_funscripts.keys();
 }
 
+// int m_totalActionsExecuted = 0;
 int lastOffset = -1;
 ///
 /// \brief FunscriptHandler::getPosition
@@ -335,6 +336,19 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
 //    LogHandler::Debug("nextMillis: "+ QString::number(nextMillis));
     if (millis >= closestMillis || funscript->settings.lastActionIndex == -1)
     {
+        // m_totalActionsExecuted++;
+        // if(funscript->settings.lastActionIndex > -1)
+        // {
+        //     int actionIndexCounter = nextActionIndex - funscript->settings.lastActionIndex;
+        //     if(actionIndexCounter > 1)
+        //         LogHandler::Debug("Action skipped");
+        //     else
+        //     {
+        //         LogHandler::Debug("Executing: " + QString::number(nextActionIndex) + " Total executed: "+QString::number(m_totalActionsExecuted));
+        //         // LogHandler::Debug("Difference from last: " + QString::number(actionIndexCounter));
+        //     }
+
+        // }
         // if(nextAction != funscript->settings.nextActionIndex)
         // {
         //     LogHandler::Warn("Potential action skip nextActionIndex: "+ QString::number(funscript->settings.nextActionIndex) + ", closestIndex: "+ QString::number(closestIndex));

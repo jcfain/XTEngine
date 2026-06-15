@@ -50,7 +50,7 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     _tcodeFactory = new TCodeFactory(0.0, 1.0, this);
     _connectionHandler = new ConnectionHandler(this);
     _tcodeHandler = new TCodeHandler(this);
-    connect(_tcodeHandler, &TCodeHandler::delayTCode, _connectionHandler, &ConnectionHandler::delayTCode, Qt::QueuedConnection);
+    connect(_tcodeHandler, &TCodeHandler::delayTCode, _connectionHandler, &ConnectionHandler::delayTCode);
     _syncHandler = new SyncHandler(_tcodeHandler, this);
     _settingsActionHandler = new SettingsActionHandler(_syncHandler, this);
     connect(_settingsActionHandler, &SettingsActionHandler::actionExecuted, this, [this](QString action, QString actionExecuted) {
@@ -110,10 +110,10 @@ void XTEngine::init()
         connect(this, &XTEngine::stopAllMedia, _httpHandler, &HttpHandler::stopAllMedia);
         connect(_connectionHandler, &ConnectionHandler::connectionChange, _httpHandler, &HttpHandler::on_DeviceConnection_StateChange);
         connect(_httpHandler, &HttpHandler::settingChange, qOverload<QString, QVariant>(SettingsHandler::changeSetting));
-        connect(syncHandler(), &SyncHandler::channelPositionChange, _httpHandler, &HttpHandler::channelPositionChange, Qt::QueuedConnection);
-        connect(syncHandler(), &SyncHandler::togglePaused, _httpHandler, &HttpHandler::scriptTogglePaused, Qt::QueuedConnection);
-        connect(_httpHandler, &HttpHandler::mediaAction, settingsActionHandler(), &SettingsActionHandler::media_action, Qt::QueuedConnection);
-        connect(settingsActionHandler(), &SettingsActionHandler::actionExecuted, httpHandler(), &HttpHandler::actionExecuted, Qt::QueuedConnection);
+        connect(syncHandler(), &SyncHandler::channelPositionChange, _httpHandler, &HttpHandler::channelPositionChange);
+        connect(syncHandler(), &SyncHandler::togglePaused, _httpHandler, &HttpHandler::scriptTogglePaused);
+        connect(_httpHandler, &HttpHandler::mediaAction, settingsActionHandler(), &SettingsActionHandler::media_action);
+        connect(settingsActionHandler(), &SettingsActionHandler::actionExecuted, httpHandler(), &HttpHandler::actionExecuted);
         connect(_httpHandler, &HttpHandler::swapScript, _syncHandler, QOverload<const ScriptInfo&>::of(&SyncHandler::swap));
         connect(_httpHandler, &HttpHandler::updateMetadata, _syncHandler, &SyncHandler::updateMetadata);
         connect(SettingsHandler::instance(), &SettingsHandler::settingChange, _httpHandler, &HttpHandler::onSettingChange);
@@ -179,7 +179,7 @@ void XTEngine::init()
         }
     });
 
-    connect(_syncHandler, &SyncHandler::sendTCode, _connectionHandler, &ConnectionHandler::sendTCode, Qt::QueuedConnection);
+    connect(_syncHandler, &SyncHandler::sendTCode, _connectionHandler, &ConnectionHandler::sendTCode);
     connect(_syncHandler, &SyncHandler::funscriptLoaded, this, [this](QString funscriptPath) {
         // Generate first load moneyshot based off heatmap if not already set.
         auto funscript = _syncHandler->getFunscript();
