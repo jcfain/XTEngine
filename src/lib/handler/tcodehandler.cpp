@@ -24,6 +24,7 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
     QMutexLocker locker(&mutex);
     QString tcode = nullptr;
     std::shared_ptr<FunscriptAction> mainAction = 0;
+    int mainActionGradient = 0;
     QList<QString> tcodeChannelNames = actions.keys();
 
     foreach(auto tcodeChannelName, tcodeChannelNames)
@@ -36,10 +37,6 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
         if((channelModel->ChannelName == TCodeChannelLookup::Suck() || channelModel->ChannelName == TCodeChannelLookup::SuckPosition()) && (tcode.contains(TCodeChannelLookup::Suck()) || tcode.contains(TCodeChannelLookup::SuckPosition())))
             continue;
         std::shared_ptr<FunscriptAction> axisAction = actions.value(tcodeChannelName);
-        if (channelModel->Channel == TCodeChannelLookup::Stroke())
-        {
-            mainAction = axisAction;
-        }
         int position = axisAction->pos;
         //LogHandler::Debug("Channel: "+ axisModel->FriendlyName + " pos: " + QString::number(position) + ", at: " + QString::number(axisAction->at));
         if (channelModel->FunscriptInverted)
@@ -49,16 +46,27 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
         if(!tcode.isEmpty())
             tcode += " ";
         tcode += tcodeChannelName;
-        tcode += QString::number(calculateRange(tcodeChannelName.toUtf8(), position)).rightJustified(SettingsHandler::getTCodePadding(), '0');
-        if (axisAction->speed > 0)
+        QByteArray channelNameUtf8 = tcodeChannelName.toUtf8();
+        int currentDestinationTCode = calculateRange(channelNameUtf8, position);
+        tcode += QString::number(currentDestinationTCode).rightJustified(SettingsHandler::getTCodePadding(), '0');
+        if (axisAction->interval > 0)
         {
           tcode += "I";
-          tcode += QString::number(axisAction->speed);
+          tcode += QString::number(axisAction->interval);
         }
+        int gradient = 0;
         if(channelModel->Gradient)
         {
             tcode += "G";
-            tcode += QString::number(axisAction->gradient);
+            int previousDestinationTCode = calculateRange(channelNameUtf8, axisAction->currentSequence.lastPos);
+            int nextDestinationTCode = calculateRange(channelNameUtf8, axisAction->currentSequence.nextPos);
+            gradient = calculateGradient(previousDestinationTCode, currentDestinationTCode, nextDestinationTCode, axisAction->currentSequence.lastAt, axisAction->currentSequence.nextAt);
+            tcode += QString::number(gradient);
+        }
+        if (channelModel->Channel == TCodeChannelLookup::Stroke())
+        {
+            mainAction = axisAction;
+            mainActionGradient = gradient;
         }
     }
     if(!mainAction && !actions.empty())
@@ -67,12 +75,12 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
     }
     if(!tcode.isEmpty())
         tcode += " ";
-    tcode += handleMotionModifier(mainAction, actions);
+    tcode += handleMotionModifier(mainAction, mainActionGradient, actions);
     // LogHandler::Debug("funscriptToTCode: "+tcode);
     return tcode;
 }
 
-QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions)
+QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> mainAction, int mainActionGradient, QMap<QString, std::shared_ptr<FunscriptAction>> actions)
 {
     QString tcode;
     if(SettingsHandler::getMultiplierEnabled())
@@ -94,7 +102,7 @@ QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> main
             if (channel->MultiplierEnabled)
             {
                 multiplierEnabledTracker[channel->track] = true;
-                QString tcodeTemp = getMotionModifierTCode(channel, mainAction, actions);
+                QString tcodeTemp = getMotionModifierTCode(channel, mainAction, mainActionGradient, actions);
                 if(!tcodeTemp.isEmpty())
                 {
                     if(!tcode.isEmpty())
@@ -112,7 +120,7 @@ QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> main
     return tcode;
 }
 
-QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions)
+QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::shared_ptr<FunscriptAction> mainAction, int mainActionGradient, QMap<QString, std::shared_ptr<FunscriptAction>> actions)
 {
     // // Establish link to related channel to axis that are NOT stroke.
     // if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && actions.contains(channel->RelatedChannel)))
@@ -122,20 +130,26 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
     // if(mainAction == nullptr)
     //     continue;
     int value = -1;
-    int speed = 0;
+    int interval = 0;
     // int channelDistance = 100;
     auto relatedChannel = channel->RelatedChannel;
     auto modifier = TCodeChannelLookup::removeModifier(relatedChannel);
     std::shared_ptr<FunscriptAction> linkedAction = 0;
-    int gcode = mainAction ? mainAction->gradient : 0;
+    int gcode = mainAction ? mainActionGradient : 0;
+    QByteArray channelNameUtf8 = channel->Channel.toUtf8();
     if (channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(relatedChannel))
     {
         if(actions.contains(relatedChannel))
         {
             linkedAction = actions.value(relatedChannel);
-            value = channel->Offset < 0 ? linkedAction->nextPos : linkedAction->pos;
-            speed = channel->Offset < 0 ? linkedAction->nextSpeed : linkedAction->speed;
-            gcode = channel->Offset < 0 ? linkedAction->nextGradient : linkedAction->gradient;
+            auto actionSequence = channel->Offset < 0 ? &linkedAction->nextSequence : &linkedAction->currentSequence;
+            value = actionSequence->currentPos;
+            interval = actionSequence->currentInterval;
+            int seqA = calculateRange(channelNameUtf8, actionSequence->lastPos);
+            int seqB = calculateRange(channelNameUtf8, actionSequence->currentPos);
+            int seqC = calculateRange(channelNameUtf8, actionSequence->nextPos);
+            gcode = calculateGradient(seqA, seqB, seqC, actionSequence->lastAt, actionSequence->nextAt);
+
             if(value < 0)
                 return QString();// -1 = No next pos from funscriptHandler
             if(!modifier.isEmpty())
@@ -186,7 +200,7 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
         //     min = 50;// + (qRound(strokeDistance / 2.0f) - 1);
         // }
         value = XMath::random(min, max);
-        speed = mainAction && mainAction->speed > 0 ? mainAction->speed : XMath::random(250, 1500);
+        interval = mainAction && mainAction->interval > 0 ? mainAction->interval : XMath::random(250, 1500);
         // LogHandler::Debug("Channel: "+ axis);
         // LogHandler::Debug("Value: "+ QString::number(value));
         // if(lastPos > -1) {
@@ -215,7 +229,7 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
     }
     QString tcodeTemp = "";
     tcodeTemp += channel->Channel;
-    int range = calculateRange(channel->Channel.toUtf8(), value);
+    int range = calculateRange(channelNameUtf8, value);
     if(range < 0)
     {
         LogHandler::Warn("Value cant be less than zero: "+ QString::number(range) +" originalValue: " + QString::number(value));
@@ -230,34 +244,34 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
     if (channel->SpeedEnabled && channel->SpeedValue > 0.0)
     {
         float speedModifierValue = channel->SpeedRandom ? XMath::random(0.1f, channel->SpeedValue) : channel->SpeedValue;
-        speed = qRound(channel->LinkToRelatedMFS ? speed/speedModifierValue : speed * speedModifierValue);
-        tcodeTemp += QString::number(speed);
+        interval = qRound(channel->LinkToRelatedMFS ? interval/speedModifierValue : interval * speedModifierValue);
+        tcodeTemp += QString::number(interval);
     }
     else
     {
-        tcodeTemp += QString::number(speed);
+        tcodeTemp += QString::number(interval);
     }
 
-    if(channel->Offset > 0)
-    {
-        int delayMS = channel->Offset * speed;
-        emit delayTCode(tcodeTemp, delayMS);
-        return QString();
-    }
-    else if (channel->Offset < 0)
-    {
-        int currentSpeed = linkedAction ? linkedAction->speed : mainAction->speed;
-        int percentageMS = abs(channel->Offset * currentSpeed);
-        int delayMS = abs(percentageMS - currentSpeed);
-        emit delayTCode(tcodeTemp, delayMS);
-        return QString();
-    }
     if(channel->Gradient)
     {
         tcodeTemp += "G";
         tcodeTemp += QString::number(gcode);
     }
 
+    if(channel->Offset > 0)
+    {
+        int delayMS = channel->Offset * interval;
+        emit delayTCode(tcodeTemp, delayMS);
+        return QString();
+    }
+    else if (channel->Offset < 0)
+    {
+        int currentInterval = linkedAction ? linkedAction->interval : mainAction->interval;
+        int percentageMS = abs(channel->Offset * currentInterval);
+        int delayMS = abs(percentageMS - currentInterval);
+        emit delayTCode(tcodeTemp, delayMS);
+        return QString();
+    }
     return tcodeTemp;
 }
 
@@ -342,4 +356,21 @@ void TCodeHandler::getChannelHome(ChannelModel33* channel, QString &tcode)
 int TCodeHandler::getDistance(int current, int last)
 {
     return current >= last ? current - last : last - current;
+}
+
+int TCodeHandler::calculateGradient(int lastPos, int currentPos, int nextPos, qint64 lastAtMilli, qint64 nextAtMilli)
+{
+    if((currentPos-lastPos)*(nextPos-currentPos) < 0)
+        return 0;
+    // Guard aginst dividing by 0
+    double differencePos = (double)nextPos - (double)lastPos;
+    if(!differencePos)
+        return 0;
+    if(nextAtMilli == -1 || lastAtMilli == -1)// -1 means we are at the end or begining
+        return 0;
+    double differenceAtSec = ((double)nextAtMilli - (double)lastAtMilli)/1000;
+    if(!differenceAtSec)
+        return 0;
+    // LogHandler::Debug("TCodeHandler::calculateGradient: lastPos: "+ QString::number(lastPos) +" currentPos: "+ QString::number(currentPos) +" nextPos: "+ QString::number(nextPos) +" lastAtMilli: "+ QString::number(lastAtMilli) +" nextAtMilli: "+ QString::number(nextAtMilli)+" differenceAtSec: "+ QString::number(differenceAtSec)+" differencePos/differenceAtSec: "+ QString::number((differencePos/10)/differenceAtSec));
+    return (differencePos/10)/differenceAtSec;
 }

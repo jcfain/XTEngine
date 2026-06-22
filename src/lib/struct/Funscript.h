@@ -5,18 +5,31 @@
 #include <QHash>
 #include "../lookup/Track.h"
 
+struct FunscriptActionSequence {
+    int lastPos = -1;
+    int lastAt = -1;
+    int lastInterval = -1;
+    int currentPos = -1;
+    int currentAt = -1;
+    int currentInterval = -1;
+    int nextPos = -1;
+    int nextAt = -1;
+    int nextInterval = -1;
+};
+
 struct FunscriptAction {
     QString channel;
     qint64 at;
     int pos;
-    int speed;
-    int gradient;
-    int lastPos;
-    int lastSpeed;
-    int nextPos;
-    int nextSpeed;
-    int lastGradient;
-    int nextGradient;
+    int interval;
+    // int lastPos;
+    // qint64 lastAt;
+    // int lastSpeed;
+    // int nextPos;
+    // qint64 nextAt;
+    // int nextSpeed;
+    FunscriptActionSequence currentSequence;
+    FunscriptActionSequence nextSequence;
     qint64 index;
 };
 
@@ -52,13 +65,13 @@ struct XFunscript {
     qint64 lastActionIndex = -1;
     qint64 nextActionIndex = 0;
     int lastActionPos = 0;
+    qint64 lastActionAt = 0;
     int lastActionPosModified = 0;
     int lastActionInterval = 0;
-    int lastActionGradient = 0;
     int nextActionPos = 0;
+    qint64 nextActionAt = 0;
     int nextActionPosModified = 0;
     int nextActionInterval = 0;
-    int nextActionGradient = 0;
     qint64 min = -1;
     qint64 max = -1;
     QList<qint64> atList;
@@ -71,15 +84,6 @@ struct Funscript {
     QHash<qint64, int> actions;
     FunscriptMetadata metadata;
     XFunscript settings;
-};
-
-struct FunscriptActionSequence {
-    int posA = -1;
-    int atA = -1;
-    int posB = -1;
-    int atB = -1;
-    int posC = -1;
-    int atC = -1;
 };
 
 

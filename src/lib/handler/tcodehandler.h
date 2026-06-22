@@ -27,12 +27,13 @@ public:
 
 private:
     QMutex mutex;
-    QString handleMotionModifier(std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions);
-    QString getMotionModifierTCode(ChannelModel33* channel, std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions);
+    QString handleMotionModifier(std::shared_ptr<FunscriptAction> mainAction, int mainActionGradient, QMap<QString, std::shared_ptr<FunscriptAction>> actions);
+    QString getMotionModifierTCode(ChannelModel33* channel, std::shared_ptr<FunscriptAction> mainAction, int mainActionGradient, QMap<QString, std::shared_ptr<FunscriptAction>> actions);
     void getChannelHome(ChannelModel33* channel, QString &tcode);
     QMap<QString, int> channelValueTracker;
     QHash<Track, bool> multiplierEnabledTracker;
     int getDistance(int current, int last);
+    int calculateGradient(int previous, int current, int next, qint64 previousAt, qint64 nextAt);
 };
 
 #endif // TCODEHANDLER_H

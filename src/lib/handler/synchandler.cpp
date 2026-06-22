@@ -559,7 +559,7 @@ QString SyncHandler::buildChannelActions(qint64 time, int offset)
         {
             auto channel = TCodeChannelLookup::ToString(track);
             actions.insert(channel, action);
-            emit channelPositionChange(channel, action->pos, action->speed, ChannelTimeType::Interval);
+            emit channelPositionChange(channel, action->pos, action->interval, ChannelTimeType::Interval);
             actionIndexTracker++;
             // if(actionIndexTracker != action->index)
             // {

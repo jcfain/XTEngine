@@ -88,7 +88,7 @@ private:
     bool destinationEnd(const Funscript* funscript, const int& index);
     void actionSequence(const Funscript* funscript, const int &destinationIndex, FunscriptActionSequence& future);
 
-    int calculateGradient(int previous, int current, int next, qint64 previousAt, qint64 nextAt);
+    // int calculateGradient(int previous, int current, int next, qint64 previousAt, qint64 nextAt);
 };
 
 #endif // FUNSCRIPTHANDLER_H
