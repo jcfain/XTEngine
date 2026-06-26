@@ -42,9 +42,9 @@ void XMediaStateHandler::setPlaying(const LibraryListItem27* playingItem, bool i
 
 LibraryListItem27* XMediaStateHandler::getPlaying()
 {
-    if(!m_libraryHandler)
+    if(!m_libraryHandler || m_playingItem.ID.isEmpty())
         return 0;
-    return m_playingItem.ID.isEmpty() ? 0 : m_libraryHandler->findItemByID(m_playingItem.ID);
+    return m_libraryHandler->findItemByID(m_playingItem.ID);
 }
 
 QString XMediaStateHandler::getPlayingID()

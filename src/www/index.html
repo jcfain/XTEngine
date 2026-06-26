@@ -177,7 +177,7 @@
 								<use href="#pip"></use>
 							</svg>
 						</button> -->
-						<input id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0.00" value="1.00" onchange="setPlayRate(this.value)" />
+						<input id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0.00" value="1.00" step="0.01" onchange="setPlayRate(this.value)" />
 						<button data-title="Alternate scripts" class="video-control video-control-main" id="alternate-scripts-button" onclick="openAlternateScriptsModal()">
 							<svg class="player-button-icon">
 								<use href="#funscript"></use>
@@ -1080,10 +1080,17 @@
 			</div>
 		</div>
 	</div>
-
-	<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<!-- <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd">
+		<path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402m5.726-20.583c-2.203 0-4.446 1.042-5.726 3.238-1.285-2.206-3.522-3.248-5.719-3.248-3.183 0-6.281 2.187-6.281 6.191 0 4.661 5.571 9.429 12 15.809 6.43-6.38 12-11.148 12-15.809 0-4.011-3.095-6.181-6.274-6.181"/>
+	</svg> -->
+	<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill-rule="evenodd" clip-rule="evenodd">
 		<defs>
 		</defs>
+		<symbol id="heart" viewBox="0 0 24 24">
+			<!-- <path fill-rule="evenodd" fill="rgb(0%, 0%, 0%)" fill-opacity="1" d="M 1133.289062 511.320312 C 618.332031 509.621094 162.609375 1032.890625 372.984375 1654.179688 C 615.015625 2268.519531 1285.769531 2803.085938 1875 3238.683594 C 2464.230469 2803.085938 3134.980469 2268.519531 3377.019531 1654.179688 C 3587.390625 1032.890625 3131.671875 509.621094 2616.710938 511.320312 C 2356.199219 512.179688 2087.269531 652.390625 1875 977.21875 C 1662.730469 652.390625 1393.808594 512.179688 1133.289062 511.320312 Z M 1133.289062 511.320312 "/> -->
+			<!-- <path d="M 2866.488281 972.351562 C 2710.058594 167.71875 1729.558594 154.269531 1487.78125 906.46875 C 1246.011719 154.28125 265.480469 167.71875 109.074219 972.351562 C -32.855469 1702.371094 1487.78125 2854.109375 1487.78125 2854.109375 C 1487.78125 2854.109375 3008.410156 1702.371094 2866.488281 972.351562 Z M 2866.488281 972.351562 "/> -->
+			<path fill-rule="evenodd" clip-rule="evenodd" d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402m5.726-20.583c-2.203 0-4.446 1.042-5.726 3.238-1.285-2.206-3.522-3.248-5.719-3.248-3.183 0-6.281 2.187-6.281 6.191 0 4.661 5.571 9.429 12 15.809 6.43-6.38 12-11.148 12-15.809 0-4.011-3.095-6.181-6.274-6.181"/>
+		</symbol>
 		<symbol id="pause" viewBox="0 0 24 24">
 			<path d="M14.016 5.016h3.984v13.969h-3.984v-13.969zM6 18.984v-13.969h3.984v13.969h-3.984z"></path>
 		</symbol>

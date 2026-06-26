@@ -33,6 +33,7 @@ signals:
     void startMetadataProcess();
     void processMetadata(QString itemID);
     void mediaAction(QString action);
+    void playMedia(QString id);
     void swapScript(ScriptInfo value);
     void clean1024();
     void deleteMediaItem(QString itemID);

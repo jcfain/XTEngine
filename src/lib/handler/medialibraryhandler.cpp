@@ -1401,6 +1401,8 @@ void MediaLibraryHandler::deleteItem(const QString &itemID, QStringList& errors)
 }
 void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
 {
+    if(libraryListItem.libraryPath.contains("ZTX Laboratory V1"))
+        LogHandler::Debug("");
     assignID(libraryListItem);
     setThumbPath(libraryListItem);
     if(SettingsHandler::hasLibraryListItemMetaData(libraryListItem)) {
@@ -1925,8 +1927,9 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
     item.metadata.scripts = funscriptsWithMedia;
 }
 
-QList<ScriptInfo> MediaLibraryHandler::filterAlternateFunscriptsForMediaItem(QList<ScriptInfo> scriptInfos)
+QList<ScriptInfo> MediaLibraryHandler::filterAlternateFunscriptsForMediaItem(const LibraryListItem27* item)
 {
+    const QList<ScriptInfo>& scriptInfos = item->metadata.scripts;
     QList<ScriptInfo> scriptInfosRet;
     foreach(auto scriptInfo, scriptInfos)
     {

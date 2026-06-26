@@ -220,7 +220,7 @@ void XTEngine::onFunscriptSearchResult(QString mediaPath, QString funscriptPath,
     if(funscriptPath.isEmpty())
     {
         LogHandler::Warn("Funscript path was empty when starting sync");
-        error = true;
+        // error = true;
     }
     if(mediaPath.isEmpty())
     {

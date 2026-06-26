@@ -124,8 +124,27 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     });
     connect(_webSocketHandler, &WebSocketHandler::mediaAction, this, &HttpHandler::mediaAction);
     connect(_webSocketHandler, &WebSocketHandler::swapScript, this, &HttpHandler::swapScript);
-
-
+    connect(_webSocketHandler, &WebSocketHandler::playMedia, this, [this](QString id) {
+        if(id.isEmpty())
+        {
+            QString error = "Failed to set playing item because media item ID was empty.";
+            LogHandler::Error(error);
+            _webSocketHandler->sendError(error);
+            return;
+        }
+        auto itemRef = _mediaLibraryHandler->findItemByID(id);
+        if(!itemRef) {
+            // QString error = "No external item found in media library for ID. Setting up temporary item for: "+id;
+            // LogHandler::Error(error);
+            // _webSocketHandler->sendError(error);
+            // _mediaLibraryHandler->setupTempExternalItem(mediaPath, funscriptPath, mediaDuration);
+            // itemRef = _mediaLibraryHandler->findItemByName(fileName);
+            // XMediaStateHandler::setPlaying(itemRef);
+            XMediaStateHandler::stop();// TODO: what to do when item is not found?
+        } else {
+            XMediaStateHandler::setPlaying(itemRef);
+        }
+    });
 
     connect(_webSocketHandler, &WebSocketHandler::settingChange, this, &HttpHandler::settingChange);
     connect(_mediaLibraryHandler, &MediaLibraryHandler::libraryLoading, this, &HttpHandler::onSetLibraryLoading);

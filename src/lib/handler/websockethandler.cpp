@@ -154,6 +154,10 @@ void WebSocketHandler::processTextMessage(QString message)
         emit tcode(commandMessage);
     } else if (command == "systemReady") {
         SettingsHandler::systemReady();
+    } else if (command == "playMedia") {
+        QJsonObject obj = json["message"].toObject();
+        QString id = obj["id"].toString();
+        emit playMedia(id);
     } else if (command == "settingsQuickExport") {
         SettingsHandler::ExportQuick();
     } else if (command == "settingsQuickImport") {

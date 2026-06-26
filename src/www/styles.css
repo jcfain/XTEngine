@@ -381,18 +381,44 @@ input:hover:not(.range-input) {
     cursor: not-allowed;
 }
 
+.media-item-header {
+    display: flex;
+    justify-content: space-between;
+    position: absolute;
+    background: transparent;
+    border: none;
+    border-radius: 20px;  
+    height: 15%;
+    width: 100%;
+}
+.media-item-header-start {
+    display: flex;
+    align-items: flex-start;
+    align-self: center;
+    flex-basis: 50%;
+    justify-content: flex-start;
+}
+.media-item-header-end {
+    display: flex;
+    align-items: flex-end;
+    align-self: center;
+    flex-basis: 50%;
+    justify-content: flex-end;
+    padding-right: 16px;
+}
+.media-item-header-end-item {
+    margin-right: 4px;
+}
+
 .media-thumb-nail {
     object-fit: contain;
 }
 
 .media-context {
-    position: absolute;
+    /* position: absolute; */
     background: transparent;
     border: none;
     border-radius: 20px;
-}
-.media-context-heresphere {
-    position: relative;
 }
 .media-context:hover {
     background-color: rgb(107 111 143 / 36%);
@@ -448,9 +474,11 @@ input:hover:not(.range-input) {
     cursor: not-allowed;
 }
 
-.media-cc {
-    position: absolute;
-    background-color: rgba(255, 255, 255, 0.5);
+.media-item-info-icon {  
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.85);
     border-radius: 25px;
     /* position: absolute;
     left: calc(100% - 23px);
@@ -551,6 +579,19 @@ input:hover:not(.range-input) {
 .media-item-sfma-noscript.media-item-playing {
     color: cornflowerblue;
     box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
+}
+
+.media-item-alt-noscript:not(.media-item-playing):hover {
+    color: darkcyan;
+    box-shadow: -1px 1px 5px 0px yellow, 1px -1px 5px 0px orange, 1px 1px 5px 0px red, -1px -1px 5px 0px yellow;
+}
+
+.media-item-alt-noscript:not(.media-item-playing) a {
+    color: darkcyan;
+}
+
+.media-item-alt-noscript:not(.media-context):not(.media-item-playing):hover a {
+    color: darkcyan;
 }
 
 .media-item-playing {
