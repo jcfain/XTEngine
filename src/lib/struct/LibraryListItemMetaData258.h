@@ -25,6 +25,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     int offset;
     qint64 moneyShotMillis;
     double funscriptModifier;
+    float rating;
     //Live values
     QString toolTip;
     QString subtitle;
@@ -54,6 +55,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream << object.offset;
         dataStream << object.moneyShotMillis;
         dataStream << object.funscriptModifier;
+        dataStream << object.rating;
         dataStream << object.toolTip;
         dataStream << object.subtitle;
         dataStream << object.isMFS;
@@ -90,6 +92,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         dataStream >> object.offset;
         dataStream >> object.moneyShotMillis;
         dataStream >> object.funscriptModifier;
+        dataStream >> object.rating;
         dataStream >> object.toolTip;
         dataStream >> object.subtitle;
         dataStream >> object.isMFS;
@@ -142,6 +145,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         obj["moneyShotMillis"] = QString::number(item.moneyShotMillis);
         obj["moneyShotSecs"] = item.moneyShotMillis / 1000;
         obj["funscriptModifier"] = item.funscriptModifier;
+        obj["rating"] = item.rating;
         obj["toolTip"] = item.toolTip;
         obj["subtitle"] = item.subtitle;
         obj["isMFS"] = item.isMFS;
@@ -196,6 +200,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         newItem.offset = obj["offset"].toInt(0);
         newItem.moneyShotMillis = obj["moneyShotMillis"].toString("-1").toLongLong();
         newItem.funscriptModifier = obj["funscriptModifier"].toDouble(100.0);
+        newItem.rating = obj["rating"].toDouble(-1.0);
         newItem.toolTip = obj["toolTip"].toString();
         newItem.subtitle = obj["subtitle"].toString();
         newItem.isMFS = obj["isMFS"].toBool();
@@ -249,6 +254,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         offset = newItem.offset;
         moneyShotMillis = newItem.moneyShotMillis;
         funscriptModifier = newItem.funscriptModifier;
+        rating = newItem.rating;
         toolTip = newItem.toolTip;
         subtitle = newItem.subtitle;
         isMFS = newItem.isMFS;

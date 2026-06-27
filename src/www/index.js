@@ -1,4 +1,4 @@
-const webVersion = "v0.6.2b";
+const webVersion = "v0.6.3b";
 var debugMode = false;
 
 var XLogLevel = {
@@ -2139,14 +2139,13 @@ function loadMedia(mediaList) {
 	};
 
 	var toggleFavorite = function (favIcon, mediaItem) {
-		const favIndex = mediaItem["metaData"].tags.findIndex(x => x === "fav");
+		const favIndex = mediaItem["metaData"].tags.findIndex(x => x === "favorite");
 		const isFav = favIndex > -1;
-		favIcon.style.fill = isFav ? "white" : "red";
-		favIcon.style.stroke = isFav ? "white" : "red"
+		favIcon.style.fill = isFav ? "transparent" : "crimson";
 		if(isFav) {
 			mediaItem.metaData.tags.splice(favIndex, 1);
 		} else {
-			mediaItem.metaData.tags.push("fav");
+			mediaItem.metaData.tags.push("favorite");
 		}
 		postMediaItemMetaData(mediaItem["metaData"]);
 	};
@@ -2342,30 +2341,6 @@ function loadMedia(mediaList) {
 		//anode.style.height = height;
 		anode.onclick = createClickHandler(obj);
 
-		var faveButton = document.createElement("button");
-		faveButton.id = obj.id + "InfoButton";
-		faveButton.classList.add("media-context");
-		faveButton.style.width = widthInt * mediaItemHeaderMultiplier + "px";
-		faveButton.style.height = widthInt * mediaItemHeaderMultiplier + "px";
-		faveButton.dataset.title = "Tag fav";
-		// var favSVG = document.createElement("svg");
-		var favSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-		var favIcon = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-		favSVG.appendChild(favIcon);
-		favSVG.style.width = widthInt * mediaItemHeaderIconMultiplier + "px";;
-		favSVG.style.height = widthInt * mediaItemHeaderIconMultiplier + "px";
-		// favIcon.setAttribute("href", "://images/icons/heart.svg");
-		favIcon.setAttribute("href", "#heart");
-		// favIcon.style.width = widthInt * 0.10 + "px";;
-		// favIcon.style.height = widthInt * 0.10 + "px";
-		//icon.appendChild(iconUse);
-		faveButton.onclick = toggleFavorite.bind(this, favSVG, obj);
-		// toggleFavorite(favIcon, obj);
-		const isFav = obj.metaData.tags.findIndex(x => x === "fav") > -1;
-		favSVG.style.fill = isFav ? "red" : "white";
-		favSVG.style.stroke = isFav ? "red" : "white"
-		faveButton.appendChild(favSVG);
-		headerStart.appendChild(faveButton);
 
 		var image = document.createElement("img");
 		
@@ -2410,6 +2385,25 @@ function loadMedia(mediaList) {
 		}
 		updateAlternate(obj);
 
+		// Keep at after tool bar end actions above for right alignment
+		var faveButton = document.createElement("button");
+		faveButton.id = obj.id + "InfoButton";
+		faveButton.classList.add("media-context");
+		faveButton.style.width = widthInt * mediaItemHeaderMultiplier + "px";
+		faveButton.style.height = widthInt * mediaItemHeaderMultiplier + "px";
+		faveButton.dataset.title = "Tag favorite";
+		var favSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		var favIcon = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+		favSVG.appendChild(favIcon);
+		favSVG.style.width = widthInt * mediaItemHeaderIconMultiplier + "px";;
+		favSVG.style.height = widthInt * mediaItemHeaderIconMultiplier + "px";
+		favIcon.setAttribute("href", "#heart");
+		faveButton.onclick = toggleFavorite.bind(this, favSVG, obj);
+		const isFav = obj.metaData.tags.findIndex(x => x === "favorite") > -1;
+		favSVG.style.fill = isFav ? "crimson" : "transparent";
+		favSVG.style.stroke = "white"
+		faveButton.appendChild(favSVG);
+		headerEnd.appendChild(faveButton);
 	}
 	if(!disableLazyLoad)
 		setupLazyLoad();

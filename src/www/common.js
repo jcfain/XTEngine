@@ -57,7 +57,13 @@ function showAlertWindow(header, message, yesCallback) {
 		alertModelNode.style.visibility = "visible";
 		alertModelNode.style.opacity = 1;
 	} else {
-		systemError("Two alert windows opened");
+		var confirmButton = document.getElementById("alertConfirmButton");
+		if(!yesCallback && confirmButton.hidden) {
+			var alertModalBody = document.getElementById("alertModalBody");
+			alertModalBody.innerHTML += "<br>" + header + ": "+ message;
+		} else {
+			systemError("Alert window already opened with attempted callback");
+		}
 	}
 }
 	

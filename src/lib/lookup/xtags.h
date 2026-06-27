@@ -6,6 +6,7 @@
 
 class XTags {
 public:
+    const static inline QString FAVORITE = "favorite";
     const static inline QString MFS = "mfs";
     const static inline QString SFMA = "sfma";
     const static inline QString VR = "vr";
@@ -24,24 +25,42 @@ public:
     const static inline QString MUSIC = "music";
     const static inline QString POV = "pov";
     const static inline QString JOI = "joi";
+    bool isProtected(QString value) {
+        return value == FAVORITE || value == UNVIEWED || value == VIEWED;
+    }
     QStringList getBuiltInTags() {
         return m_builtin;
     }
     QStringList getBuiltInSmartTags() {
         return m_builtInSmartTags;
     }
-    void addTag(const QString& tag) {
-        if(m_userTags.contains(tag))
+    void prependTag(const QString& tag) {
+        if(hasTag(tag))
+            return;
+        m_userTags.prepend(tag);
+    }
+    void appendTag(const QString& tag) {
+        if(hasTag(tag))
             return;
         m_userTags.append(tag);
     }
     bool hasTag(const QString& tag) {
         return m_userTags.contains(tag);
     }
+    ///
+    /// \brief removeTag Removes a tag without regarding protected status.
+    /// In most cases its better to call SettingsHandler::remove...Tag instead of this directly
+    /// \param tag
+    ///
     void removeTag(const QString& tag) {
         m_userTags.removeAll(tag);
     }
-    void addSmartTag(const QString& tag) {
+    void prependSmartTag(const QString& tag) {
+        if(m_userSmartTags.contains(tag))
+            return;
+        m_userSmartTags.prepend(tag);
+    }
+    void appendSmartTag(const QString& tag) {
         if(m_userSmartTags.contains(tag))
             return;
         m_userSmartTags.append(tag);
@@ -49,6 +68,11 @@ public:
     bool hasSmartTag(const QString& tag) {
         return m_userSmartTags.contains(tag);
     }
+    ///
+    /// \brief removeSmartTagRemoves a tag without regarding protected status.
+    /// In most cases its better to call SettingsHandler::remove...Tag instead of this directly
+    /// \param tag
+    ///
     void removeSmartTag(const QString& tag) {
         m_userSmartTags.removeAll(tag);
     }
@@ -59,10 +83,14 @@ public:
         return m_userTags;
     }
     void clearUserTags() {
-        m_userTags.clear();
+        m_userTags.removeIf([this](const QString& item) {
+            return !isProtected(item);
+        });
     }
     void clearUserSmartTags() {
-        m_userSmartTags.clear();
+        m_userSmartTags.removeIf([this](const QString& item) {
+            return !isProtected(item);
+        });
     }
     QStringList getTags() {
         QStringList allTags;
@@ -80,6 +108,7 @@ public:
     }
 private:
     const QStringList m_builtin = {
+        FAVORITE,
         MFS,
         VR,
         VIDEO_2D,

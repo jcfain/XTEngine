@@ -448,10 +448,10 @@ public:
     static QStringList getTags();
     static QStringList getUserTags();
     static QStringList getUserSmartTags();
-    static void removeUserTag(QString tag);
+    static bool removeUserTag(QString tag);
     static void addUserTag(QString tag);
     static bool hasTag(QString tag);
-    static void removeUserSmartTag(QString tag);
+    static bool removeUserSmartTag(QString tag);
     static void addUserSmartTag(QString tag);
     static bool hasSmartTag(QString tag);
 

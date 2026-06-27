@@ -108,6 +108,19 @@ void Migration::MigrateTo62(QSettings *settingsToLoadFrom)
     }
 }
 
+void Migration::MigrateTo63(QSettings *settingsToLoadFromm, XTags& xtags)
+{
+    if(xtags.hasTag(XTags::VIEWED))
+        xtags.removeTag(XTags::VIEWED);
+    xtags.prependTag(XTags::VIEWED);
+    if(xtags.hasTag(XTags::UNVIEWED))
+        xtags.removeTag(XTags::UNVIEWED);
+    xtags.prependTag(XTags::UNVIEWED);
+    if(xtags.hasTag(XTags::FAVORITE))
+        xtags.removeTag(XTags::FAVORITE);
+    xtags.prependTag(XTags::FAVORITE);
+}
+
 void Migration::RenameChannelDamperToSpeed(QSettings *settingsToLoadFrom)
 {
     QVariantMap availableChannelVariant = settingsToLoadFrom->value("availableChannels").toMap();

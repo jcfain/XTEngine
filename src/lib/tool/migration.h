@@ -3,6 +3,7 @@
 #include <QSettings>
 #include "../struct/LibraryListItemMetaData258.h"
 #include "../struct/TCodeCommand.h"
+#include "../lookup/xtags.h"
 
 class Migration
 {
@@ -14,6 +15,7 @@ public:
     static void MigrateTo595(QSettings* settingsToLoadFrom, QList<TCodeCommand>& list);
     static void MigrateTo61(QSettings* settingsToLoadFromm, int& major, int& minor, int& rev, QString& phase);
     static void MigrateTo62(QSettings* settingsToLoadFromm);
+    static void MigrateTo63(QSettings* settingsToLoadFromm, XTags& xtags);
 
     static void RenameChannelDamperToSpeed(QSettings* settingsToLoadFrom);
 };

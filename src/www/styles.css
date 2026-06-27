@@ -400,11 +400,11 @@ input:hover:not(.range-input) {
 }
 .media-item-header-end {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     align-self: center;
     flex-basis: 50%;
     justify-content: flex-end;
-    padding-right: 16px;
+    /* padding-right: 16px; */
 }
 .media-item-header-end-item {
     margin-right: 4px;
@@ -622,10 +622,12 @@ input:hover:not(.range-input) {
     z-index: 10;
     width: fit-content;
     background-color: transparent;
+    pointer-events: none;
 }
 .side-actions-container {
     display: flex;
-    flex-flow: column;
+    flex-flow: column;  
+    pointer-events: all;
 }
 
 .side-action-filter-input-modal {

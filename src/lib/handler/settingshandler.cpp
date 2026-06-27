@@ -356,11 +356,11 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
     QStringList tags = settingsToLoadFrom->value("tags").toStringList();
     foreach (auto tag, tags) {
-        m_xTags.addTag(tag);
+        m_xTags.appendTag(tag);
     }
     QStringList smartTags = settingsToLoadFrom->value("smartTags").toStringList();
     foreach (auto tag, smartTags) {
-        m_xTags.addSmartTag(tag);
+        m_xTags.appendSmartTag(tag);
     }
 
     // m_scheduleLibraryLoadEnabled = settingsToLoadFrom->value(SettingKeys::scheduleLibraryLoadEnabled, false).toBool();
@@ -443,7 +443,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 4, 65, "b"))
         {
             locker.unlock();
-            m_xTags.addTag(XTags::ALTSCRIPT);
+            m_xTags.appendTag(XTags::ALTSCRIPT);
             setForceMetaDataFullProcess(true);
             Save();
             Load();
@@ -497,7 +497,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         {
             locker.unlock();
             setForceMetaDataFullProcess(true);
-            m_xTags.addTag(XTags::SFMA);
+            m_xTags.appendTag(XTags::SFMA);
             Save();
             Load();
             migrated = true;
@@ -571,6 +571,15 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         {
             locker.unlock();
             Migration::MigrateTo62(settingsToLoadFrom);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 6, 3, "b"))
+        {
+            locker.unlock();
+            Migration::MigrateTo63(settingsToLoadFrom, m_xTags);
             Save();
             Load();
             migrated = true;
@@ -1646,10 +1655,14 @@ QStringList SettingsHandler::getUserTags()
 {
     return m_xTags.getUserTags();
 }
-void SettingsHandler::removeUserTag(QString tag)
+bool SettingsHandler::removeUserTag(QString tag)
 {
     if(tag.isEmpty())
-        return;
+        return false;
+    if(m_xTags.isProtected(tag)) {
+        emit instance()->messageSend("Tag: '"+ tag + "' is protected and cannot be removed.", XLogLevel::Critical);
+        return false;
+    }
     m_xTags.removeTag(tag);
     if(!m_settingsChangedNotificationDebounce.isActive()) {
         m_settingsChangedNotificationDebounce.callOnTimeout(
@@ -1657,13 +1670,14 @@ void SettingsHandler::removeUserTag(QString tag)
             );
     }
     m_settingsChangedNotificationDebounce.start(500);
+    return true;
 }
 
 void SettingsHandler::addUserTag(QString tag)
 {
     if(tag.isEmpty())
         return;
-    m_xTags.addTag(tag);
+    m_xTags.appendTag(tag);
     if(!m_settingsChangedNotificationDebounce.isActive()) {
         m_settingsChangedNotificationDebounce.callOnTimeout(
             [] () {emit instance()->tagsChanged();}
@@ -1677,8 +1691,14 @@ bool SettingsHandler::hasTag(QString tag)
     return m_xTags.hasTag(tag);
 }
 
-void SettingsHandler::removeUserSmartTag(QString tag)
+bool SettingsHandler::removeUserSmartTag(QString tag)
 {
+    if(tag.isEmpty())
+        return false;
+    if(m_xTags.isProtected(tag)) {
+        emit instance()->messageSend("Smart Tag: '"+ tag + "' is protected and cannot be removed.", XLogLevel::Critical);
+        return false;
+    }
     m_xTags.removeSmartTag(tag);
     if(!m_settingsChangedNotificationDebounce.isActive()) {
         m_settingsChangedNotificationDebounce.callOnTimeout(
@@ -1686,11 +1706,12 @@ void SettingsHandler::removeUserSmartTag(QString tag)
             );
     }
     m_settingsChangedNotificationDebounce.start(500);
+    return true;
 }
 
 void SettingsHandler::addUserSmartTag(QString tag)
 {
-    m_xTags.addSmartTag(tag);
+    m_xTags.appendSmartTag(tag);
     if(!m_settingsChangedNotificationDebounce.isActive()) {
         m_settingsChangedNotificationDebounce.callOnTimeout(
             [] () {emit instance()->tagsChanged();}
@@ -1758,7 +1779,7 @@ void SettingsHandler::SetSmartTagDefaults()
 {
     m_xTags.clearUserSmartTags();
     foreach (auto tag, m_xTags.getBuiltInSmartTags()) {
-        m_xTags.addSmartTag(tag);
+        m_xTags.appendSmartTag(tag);
     }
     emit instance()->tagsChanged();
 }
@@ -1767,7 +1788,7 @@ void SettingsHandler::SetUserTagDefaults()
 {
     m_xTags.clearUserTags();
     foreach (auto tag, m_xTags.getBuiltInTags()) {
-        m_xTags.addTag(tag);
+        m_xTags.appendTag(tag);
     }
     emit instance()->tagsChanged();
 }
