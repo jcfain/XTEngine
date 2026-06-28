@@ -1,4 +1,5 @@
 const webVersion = "v0.6.3b";
+const debugMode = false;
 
 var XLogLevel = {
     Information: 0,
