@@ -410,6 +410,17 @@ input:hover:not(.range-input) {
     margin-right: 4px;
 }
 
+.media-item-info-icon {  
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 25px;
+}
+.media-item-info-icon--margin {
+    margin-left: 4px;
+}
+
 .media-thumb-nail {
     object-fit: contain;
 }
@@ -472,17 +483,6 @@ input:hover:not(.range-input) {
 .media-context-menu-item.disabled:hover {
     background-color: gray;
     cursor: not-allowed;
-}
-
-.media-item-info-icon {  
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: rgba(255, 255, 255, 0.85);
-    border-radius: 25px;
-    /* position: absolute;
-    left: calc(100% - 23px);
-    top: calc(100% - 23px); */
 }
 
 .media-link {

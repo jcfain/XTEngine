@@ -2521,6 +2521,7 @@ function updateAlternate(libraryItem, mediaItemHeaderInfo) {
 		icon.style.width = widthInt * mediaItemHeaderIconMultiplier + "px";;
 		icon.style.height = widthInt * mediaItemHeaderIconMultiplier + "px";
 		icon.classList.add("media-item-info-icon");
+		icon.classList.add("media-item-info-icon--margin");
 		icon.style.color = "green";
 		icon.innerText = altScripts.length;
 		//icon.appendChild(iconUse);
@@ -2539,8 +2540,9 @@ function updateMediaItemHeader(libraryItem) {
 }
 
 function updateFavorite(libraryItem, svg) {
-	if(!svg)
+	if(!svg) {
 		svg = document.getElementById(libraryItem.id + "InfoFavoriteIcon");
+	}
 	const favIndex = libraryItem.metaData.tags && libraryItem["metaData"].tags.findIndex(x => x === "favorite");
 	svg.style.fill = favIndex > -1 ? "crimson" : "transparent";
 	svg.style.stroke = favIndex > -1 ? "crimson" : "grey";
@@ -2548,11 +2550,11 @@ function updateFavorite(libraryItem, svg) {
 }
 
 function updateViewed(libraryItem, mediaItemHeaderInfo) {
-	var svg = document.getElementById(libraryItem.id+ "IconViewed")
+	var svg = document.getElementById(libraryItem.id+ "IconViewedSVG")
 	if(!svg) {
 		// icon = document.createElement("div");
 		var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-		svg.id = libraryItem.id + "InfoFavoriteIcon";
+		svg.id = libraryItem.id + "IconViewedSVG";
 		var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
 		use.setAttribute("href", "#check");
 		svg.appendChild(use);
@@ -2560,6 +2562,7 @@ function updateViewed(libraryItem, mediaItemHeaderInfo) {
 		svg.style.height = widthInt * mediaItemHeaderIconMultiplier + "px";
 		svg.id = libraryItem.id+ "IconViewed";
 		svg.title = "Viewed"
+		svg.classList.add("media-item-info-icon--margin");
 		// svg.style.fill = "green";
 		// svg.style.stroke = "green";
 		// icon.appendChild(svg);
@@ -2599,8 +2602,8 @@ function updateSubTitle(libraryItem, mediaNode, contextMenu) {
 		widthInt = thumbSizeGlobal + (thumbSizeGlobal * mediaItemHeaderMultiplier);
 		icon.style.width = widthInt * mediaItemHeaderIconMultiplier + "px";;
 		icon.style.height = widthInt * mediaItemHeaderIconMultiplier + "px";
-		icon.classList.add("media-item-header-end-item");
 		icon.classList.add("media-item-info-icon");
+		icon.classList.add("media-item-info-icon--margin");
 		//icon.appendChild(iconUse);
 		mediaItemHeaderInfo.appendChild(icon);
 	}
