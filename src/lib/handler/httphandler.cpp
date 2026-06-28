@@ -124,6 +124,9 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     });
     connect(_webSocketHandler, &WebSocketHandler::mediaAction, this, &HttpHandler::mediaAction);
     connect(_webSocketHandler, &WebSocketHandler::swapScript, this, &HttpHandler::swapScript);
+    connect(_webSocketHandler, &WebSocketHandler::stopMedia, this, [this]() {
+        XMediaStateHandler::stop();
+    });
     connect(_webSocketHandler, &WebSocketHandler::playMedia, this, [this](QString id) {
         if(id.isEmpty())
         {

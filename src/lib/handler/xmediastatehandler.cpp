@@ -58,20 +58,21 @@ void XMediaStateHandler::stop()
     m_playbackSpeed = 1.0;
 }
 
-void XMediaStateHandler::updateDuration(qint64 currentPos, qint64 duration)
+void XMediaStateHandler::updateDuration(QString mediaPath, qint64 currentPos, qint64 duration)
 {
     auto mediaItem = getPlaying();
     if(!mediaItem)
         return;
     // const qint64 timeLeft = duration - currentPos;
     const qint64 viewedThreshold = duration * (SettingsHandler::getViewedThreshold() / (float)100);
-    if(duration > 0 && currentPos > -1 && currentPos > viewedThreshold)
+    if(mediaItem->path == mediaPath, duration > 0 && currentPos > -1 && currentPos > viewedThreshold)
     {
         if(!mediaItem->metadata.tags.contains(SettingsHandler::getXTags().VIEWED))
         {
             mediaItem->metadata.tags.removeAll(SettingsHandler::getXTags().UNVIEWED);
             mediaItem->metadata.tags.append(SettingsHandler::getXTags().VIEWED);
             SettingsHandler::updateLibraryListItemMetaData(*mediaItem);
+            m_libraryHandler->updateItem(*mediaItem, {Qt::DecorationRole});
         }
     }
 }

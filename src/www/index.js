@@ -1,5 +1,4 @@
 const webVersion = "v0.6.3b";
-var debugMode = false;
 
 var XLogLevel = {
     Information: 0,
@@ -110,7 +109,7 @@ var userAgent;
 var remoteUserSettings;
 var mediaListGlobal = [];
 var mediaListDisplayed = [];
-var selectedMediaItemMetaData = null;
+var selectedMediaItemForMetaData = null;
 var selectedMediaItemAltScript = null;
 var selectedMediaItemAltScriptCount = 0;
 var playingmediaItem;
@@ -406,6 +405,9 @@ function togglePauseAllDeviceActions() {
 }
 function sendPlayMedia(obj) {
 	sendWebsocketMessage("playMedia", {id: obj.id});
+}
+function sendStopMedia() {
+	sendWebsocketMessage("stopMedia");
 }
 function sendSwapScript(scriptInfo) {
 	sendWebsocketMessage("swapScript", scriptInfo);
@@ -2025,8 +2027,8 @@ function validateMetadata(metaData) {
 	}
 }
 
-function postMediaItemMetaData(metaData) {
-	validateMetadata(metaData);
+function postMediaItemMetaData(libraryItem) {
+	validateMetadata(libraryItem.metaData);
 	var xhr = new XMLHttpRequest();
 	xhr.open('POST', "/mediaItemMetadata", true);
 	xhr.setRequestHeader('Content-Type', 'application/json');
@@ -2039,12 +2041,14 @@ function postMediaItemMetaData(metaData) {
 				onSaveSuccess(metaDataSaveStateNode);
 				document.getElementById("saveMediaItemMetaDataButton").disabled = true;
 			}
+			updateMediaItemHeader(libraryItem);
 		}
 	}
 	xhr.onerror = function () {
 		onSaveFail(xhr, metaDataSaveStateNode);
+		updateMediaItemHeader(libraryItem);
 	};
-	xhr.send(JSON.stringify(metaData));
+	xhr.send(JSON.stringify(libraryItem.metaData));
 }
 
 function postTCodeCommands(commands) {
@@ -2138,16 +2142,15 @@ function loadMedia(mediaList) {
 		}
 	};
 
-	var toggleFavorite = function (favIcon, mediaItem) {
-		const favIndex = mediaItem["metaData"].tags.findIndex(x => x === "favorite");
-		const isFav = favIndex > -1;
-		favIcon.style.fill = isFav ? "transparent" : "crimson";
+	var toggleFavorite = function (mediaItem, favSVG) {
+		let favIndex = updateFavorite(mediaItem, favSVG);
+		let isFav = favIndex > -1;
 		if(isFav) {
 			mediaItem.metaData.tags.splice(favIndex, 1);
 		} else {
 			mediaItem.metaData.tags.push("favorite");
 		}
-		postMediaItemMetaData(mediaItem["metaData"]);
+		postMediaItemMetaData(mediaItem);
 	};
 
 	var toggleContext = function (contextMenu, mediaItem) {
@@ -2221,7 +2224,7 @@ function loadMedia(mediaList) {
 	var setMoneyShotCurrentPosClick = function (mediaItem, contextMenu) {
 		return function () {
 			mediaItem["metaData"]["moneyShotMillis"] = Math.round(videoNode.currentTime * 1000).toString();
-			postMediaItemMetaData(mediaItem["metaData"]);
+			postMediaItemMetaData(mediaItem);
 			contextMenu.classList.add("hidden");
 		}
 	};
@@ -2383,25 +2386,25 @@ function loadMedia(mediaList) {
 		if(obj.subtitle) {// Must be after divnode has been appended
 			updateSubTitle(obj, divnode, contextMenu);
 		}
-		updateAlternate(obj);
+		updateAlternate(obj, headerEnd);
+		updateViewed(obj, headerEnd)
 
 		// Keep at after tool bar end actions above for right alignment
 		var faveButton = document.createElement("button");
-		faveButton.id = obj.id + "InfoButton";
+		faveButton.id = obj.id + "InfoFavoriteButton";
 		faveButton.classList.add("media-context");
 		faveButton.style.width = widthInt * mediaItemHeaderMultiplier + "px";
 		faveButton.style.height = widthInt * mediaItemHeaderMultiplier + "px";
 		faveButton.dataset.title = "Tag favorite";
 		var favSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		favSVG.id = obj.id + "InfoFavoriteIcon";
 		var favIcon = document.createElementNS('http://www.w3.org/2000/svg', 'use');
 		favSVG.appendChild(favIcon);
 		favSVG.style.width = widthInt * mediaItemHeaderIconMultiplier + "px";;
 		favSVG.style.height = widthInt * mediaItemHeaderIconMultiplier + "px";
 		favIcon.setAttribute("href", "#heart");
-		faveButton.onclick = toggleFavorite.bind(this, favSVG, obj);
-		const isFav = obj.metaData.tags.findIndex(x => x === "favorite") > -1;
-		favSVG.style.fill = isFav ? "crimson" : "transparent";
-		favSVG.style.stroke = "white"
+		faveButton.onclick = toggleFavorite.bind(this, obj, favSVG);
+		updateFavorite(obj, favSVG);
 		faveButton.appendChild(favSVG);
 		headerEnd.appendChild(faveButton);
 	}
@@ -2470,6 +2473,7 @@ function setupLazyLoad() {
 function updateItem(libraryItem, roles)
 {
 	var mediaNode;
+	updateMediaItemHeader(libraryItem);
 	if(roles.findIndex(x => x == Roles.DisplayRole) > -1) {
 		mediaNode = updateScriptStatus(libraryItem);
 	}
@@ -2482,12 +2486,12 @@ function updateItem(libraryItem, roles)
 	var index = mediaListGlobal.findIndex(x => x.id == libraryItem.id);
 	if(index > -1) {
 		mediaListGlobal[index] = JSON.parse(JSON.stringify(libraryItem));
-	}
-	if(selectedMediaItem.id == libraryItem.id) {
-		selectedMediaItem = mediaListGlobal[index];
-	}
-	if(selectedMediaItemMetaData && selectedMediaItemMetaData.key == libraryItem.metaData.key) {
-		selectedMediaItemMetaData = libraryItem.metaData;
+		if(playingmediaItem && playingmediaItem.id == libraryItem.id) {
+			playingmediaItem = mediaListGlobal[index];
+		}
+		if(selectedMediaItemForMetaData && selectedMediaItemForMetaData.id == libraryItem.id) {
+			selectedMediaItemForMetaData = mediaListGlobal[index];
+		}
 	}
 }
 function addItem(libraryItem)
@@ -2503,16 +2507,14 @@ function deleteItem(itemID) {
 	showChange(showGlobal);
 }
 
-function updateAlternate(libraryItem) {
-
-	var mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
-	var altIcon = document.getElementById(libraryItem.id+ "IconAlt")
-	if(altIcon)
-		mediaItemHeaderInfo.removeChild(altIcon);
-	if(libraryItem.metaData.hasAlternate) {
+function updateAlternate(libraryItem, mediaItemHeaderInfo) {
+	if(!mediaItemHeaderInfo)
+		mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
+	var icon = document.getElementById(libraryItem.id+ "IconAlt")
+	if(!icon) {
 		const altScripts = filterAltScripts(libraryItem);
-		var icon = document.createElement("div");
-		icon.id = libraryItem.id+ "ccIconImg";
+		icon = document.createElement("div");
+		icon.id = libraryItem.id+ "IconAlt";
 		icon.title = "Alternate script count"
 		// icon.src = "://images/icons/cc.svg";
 		widthInt = thumbSizeGlobal + (thumbSizeGlobal * mediaItemHeaderMultiplier);
@@ -2523,6 +2525,53 @@ function updateAlternate(libraryItem) {
 		icon.innerText = altScripts.length;
 		//icon.appendChild(iconUse);
 		mediaItemHeaderInfo.appendChild(icon);
+	}
+	
+	if(libraryItem.metaData.hasAlternate) {
+		icon.classList.remove("hidden");
+	} else {
+		icon.classList.add("hidden");
+	}
+}
+function updateMediaItemHeader(libraryItem) {
+	updateFavorite(libraryItem);
+	updateViewed(libraryItem);
+}
+
+function updateFavorite(libraryItem, svg) {
+	if(!svg)
+		svg = document.getElementById(libraryItem.id + "InfoFavoriteIcon");
+	const favIndex = libraryItem.metaData.tags && libraryItem["metaData"].tags.findIndex(x => x === "favorite");
+	svg.style.fill = favIndex > -1 ? "crimson" : "transparent";
+	svg.style.stroke = favIndex > -1 ? "crimson" : "grey";
+	return favIndex;
+}
+
+function updateViewed(libraryItem, mediaItemHeaderInfo) {
+	var svg = document.getElementById(libraryItem.id+ "IconViewed")
+	if(!svg) {
+		// icon = document.createElement("div");
+		var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		svg.id = libraryItem.id + "InfoFavoriteIcon";
+		var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+		use.setAttribute("href", "#check");
+		svg.appendChild(use);
+		svg.style.width = widthInt * mediaItemHeaderIconMultiplier + "px";;
+		svg.style.height = widthInt * mediaItemHeaderIconMultiplier + "px";
+		svg.id = libraryItem.id+ "IconViewed";
+		svg.title = "Viewed"
+		// svg.style.fill = "green";
+		// svg.style.stroke = "green";
+		// icon.appendChild(svg);
+		if(!mediaItemHeaderInfo)
+			mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
+		mediaItemHeaderInfo.appendChild(svg);
+	}
+	const isViewed = libraryItem.metaData.tags && libraryItem.metaData.tags.findIndex(x => x == "viewed") > -1;
+	if(isViewed) {
+		svg.classList.remove("hidden");
+	} else {
+		svg.classList.add("hidden");
 	}
 }
 
@@ -2541,16 +2590,9 @@ function updateSubTitle(libraryItem, mediaNode, contextMenu) {
 	// var contextButton = document.getElementById(libraryItem.id + "InfoButton");
 	var mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
 	
-	var ccIcon = document.getElementById(libraryItem.id+ "ccIconImg")
-	if(ccIcon)
-		mediaItemHeaderInfo.removeChild(ccIcon);
-
-	var contextMenuItems = contextMenu.getElementsByClassName("downloadSubtitle");
-	if(contextMenuItems.length)
-		contextMenu.removeChild(contextMenuItems[0]);
-	
-	if(libraryItem.subtitle) {
-		var icon = document.createElement("img");
+	var icon = document.getElementById(libraryItem.id+ "ccIconImg")
+	if(!icon) {
+		icon = document.createElement("img");
 		icon.id = libraryItem.id+ "ccIconImg";
 		icon.title = "This item has subtitles available"
 		icon.src = "://images/icons/cc.svg";
@@ -2561,7 +2603,18 @@ function updateSubTitle(libraryItem, mediaNode, contextMenu) {
 		icon.classList.add("media-item-info-icon");
 		//icon.appendChild(iconUse);
 		mediaItemHeaderInfo.appendChild(icon);
-		
+	}
+	if(libraryItem.subtitle) {
+		icon.classList.remove("hidden");
+	} else {
+		icon.classList.add("hidden");
+	}
+
+	var contextMenuItems = contextMenu.getElementsByClassName("downloadSubtitle");
+	if(contextMenuItems.length)
+		contextMenu.removeChild(contextMenuItems[0]);
+	
+	if(libraryItem.subtitle) {
 		var subtitle_path =  "/media" + libraryItem.subtitleRelative;
 		const ext = libraryItem.subtitleRelative.substring(libraryItem.subtitleRelative.lastIndexOf("."), libraryItem.subtitleRelative.length);
 		const link = document.createElement("a");
@@ -3053,10 +3106,13 @@ function getNextShuffleMediaItem() {
 	return currentDisplayedMedia[randomIndex];
 }
 function playVideo(obj) {
+	stopTimeSync();
 	if (playingmediaItem) {
 		if (playingmediaItem.id === obj.id)
 			return;
 		clearPlayingMediaItem();
+		sendStopMedia();
+		sendMediaState();
 	}
 	const index = mediaListGlobal.findIndex(x => x.id==obj.id);
 	if(index == -1) {
@@ -3064,12 +3120,11 @@ function playVideo(obj) {
 		return;
 	}
 	const selectedMediaItem = mediaListGlobal[index];
-	if(selectedMediaItem.type == MediaType.ExternalType) {
+	if(selectedMediaItem && selectedMediaItem.type == MediaType.ExternalType) {
 		showAlertWindow("Error", "Cannot play external media items from this interface.<br>You can only modify media metadata.<br>Start the media item from the original location.");
 		return;
 	}
 	setPlayingMediaItem(selectedMediaItem);
-	sendMediaState();
 	if(obj["subtitle"]) {
 		if(!externalStreaming) {
 			if(obj["subtitle"].endsWith("vtt")) { // Only vtt is supported by html video element
@@ -3121,6 +3176,7 @@ function stopVideoClick() {
 	stopVideo();
 }
 function stopVideo() {
+	sendStopMedia();
 	hideVideo();
 	videoNode.pause();
 	removeVideoSource();
@@ -3332,6 +3388,7 @@ function sendMediaState() {
 	//console.log("sendMediaState")
 	if (selectedInputDevice == DeviceType.XTPWeb) {
 		if (playingmediaItem) {
+			debug("[sendMediaState] XTPWeb playingmediaItem: time:"+ videoNode.currentTime);
 			postMediaState({
 				"path": playingmediaItem.path,
 				"playing": playingmediaItem.playing,
@@ -3340,6 +3397,7 @@ function sendMediaState() {
 				"playbackSpeed": videoNode.playbackRate
 			});
 		} else {
+			debug("[sendMediaState] XTPWeb playingmediaItem: null: time: 0");
 			postMediaState({
 				"path": undefined,
 				"playing": false,
@@ -3393,7 +3451,8 @@ function openMetaDataModal(mediaItem) {
 			return;
 		mediaItem = playingmediaItem;
 	}
-	selectedMediaItemMetaData = mediaItem["metaData"];
+	selectedMediaItemForMetaData = mediaItem;
+	const selectedMediaItemMetaData = selectedMediaItemForMetaData["metaData"];
 	document.getElementById("mediaOffset").value = selectedMediaItemMetaData["offset"];
 	document.getElementById("moneyShotMillis").value = selectedMediaItemMetaData["moneyShotMillis"];
 	document.getElementById("funscriptModifier").value = selectedMediaItemMetaData["funscriptModifier"];
@@ -3472,11 +3531,16 @@ function closeAlternateScriptsModal() {
 	alternateScriptsModal.style.visibility = "hidden";
 	alternateScriptsModal.style.opacity = 0;
 }
-function saveMetaData() {
-	selectedMediaItemMetaData["offset"] = parseInt(document.getElementById("mediaOffset").value);
-	selectedMediaItemMetaData["moneyShotMillis"] = parseInt(document.getElementById("moneyShotMillis").value);
-	selectedMediaItemMetaData["funscriptModifier"] = parseInt(document.getElementById("funscriptModifier").value);
-	postMediaItemMetaData(selectedMediaItemMetaData);
+function saveMetaData(mediaItem) {
+	if(!mediaItem) {
+		if(!selectedMediaItemForMetaData)
+			return;
+		mediaItem = selectedMediaItemForMetaData;
+	}
+	mediaItem.metaData["offset"] = parseInt(document.getElementById("mediaOffset").value);
+	mediaItem.metaData["moneyShotMillis"] = parseInt(document.getElementById("moneyShotMillis").value);
+	mediaItem.metaData["funscriptModifier"] = parseInt(document.getElementById("funscriptModifier").value);
+	postMediaItemMetaData(mediaItem);
 }
 
 function metaDataChange() {
@@ -3506,7 +3570,8 @@ function resetMoneyShot() {
 var onMetadataTagCheckboxClicked = function (tagCheckbox) {
 	return function () {
 		let tagsChanged = false;
-		if(tagCheckbox && selectedMediaItemMetaData) {
+		if(tagCheckbox && selectedMediaItemForMetaData) {
+			const selectedMediaItemMetaData = selectedMediaItemForMetaData["metaData"];
 			const index = selectedMediaItemMetaData.tags.findIndex(x => x == tagCheckbox.value);
 			if(tagCheckbox.checked && index == -1) {
 				selectedMediaItemMetaData.tags.push(tagCheckbox.value);

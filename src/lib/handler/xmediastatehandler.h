@@ -23,7 +23,7 @@ public:
     static LibraryListItem27* getPlaying();
     static QString getPlayingID();
     static void stop();
-    static void updateDuration(qint64 currentPos, qint64 duration);
+    static void updateDuration(QString mediaPath, qint64 currentPos, qint64 duration);
     static void setPlaybackSpeed(qreal speed);
     static qreal getPlaybackSpeed();
 

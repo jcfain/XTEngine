@@ -153,7 +153,7 @@ void XTEngine::init()
             LogHandler::Warn("Waiting for media paths to load to search for funscripts....");
     });
     connect(_connectionHandler, &ConnectionHandler::inputMessageReceived, this, [](InputConnectionPacket packet) {
-        XMediaStateHandler::updateDuration(packet.currentTime, packet.duration);
+        XMediaStateHandler::updateDuration(packet.path, packet.currentTime, packet.duration);
     });
     connect(_connectionHandler, &ConnectionHandler::action, _settingsActionHandler, &SettingsActionHandler::media_action);
     connect(_connectionHandler, &ConnectionHandler::inputConnectionChange, this, [this](ConnectionChangedSignal event) {

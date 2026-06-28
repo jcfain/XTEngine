@@ -9,7 +9,6 @@ videoNode.addEventListener("waiting", onVideoStall);
 videoNode.addEventListener("pause", onVideoPause);
 videoNode.addEventListener("volumechange", onVolumeChange);
 videoNode.addEventListener("ended", onVideoEnd);
-videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
 
 var controlsHideDebounce;
 var controlsVisible = false;
@@ -72,6 +71,13 @@ if (videoWorks) {
 
 // Add functions here
 
+function stopTimeSync() {
+	videoNode.removeEventListener("timeupdate", onVideoTimeUpdate);
+}
+function startTimeSync() {
+	videoNode.addEventListener("timeupdate", onVideoTimeUpdate);
+}
+
 function setupVideoSource(url) {
 	removeVideoSource();
 	let videoSourceNode = document.createElement("source");
@@ -81,6 +87,7 @@ function setupVideoSource(url) {
 	videoSourceNode.src = url;
 }
 function removeVideoSource() {
+	stopTimeSync();
 	let videoSourceNode = document.getElementById("videoSourceNode");
 	if(videoSourceNode) {
 		//videoSourceNode.removeAttribute('src');
@@ -151,6 +158,7 @@ function initializeVideo() {
 	const time = formatTime(videoDuration);
 	duration.innerText = `${time.hours}:${time.minutes}:${time.seconds}`;
 	duration.setAttribute('datetime', `${time.hours}h ${time.minutes}m ${time.seconds}s`);
+	startTimeSync();
 }
 
 // updateTimeElapsed indicates how far through the video

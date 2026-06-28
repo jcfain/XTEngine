@@ -1401,8 +1401,6 @@ void MediaLibraryHandler::deleteItem(const QString &itemID, QStringList& errors)
 }
 void MediaLibraryHandler::setLiveProperties(LibraryListItem27 &libraryListItem)
 {
-    if(libraryListItem.libraryPath.contains("ZTX Laboratory V1"))
-        LogHandler::Debug("");
     assignID(libraryListItem);
     setThumbPath(libraryListItem);
     if(SettingsHandler::hasLibraryListItemMetaData(libraryListItem)) {
