@@ -451,6 +451,10 @@
 							<input id="externalStreamingCheckbox" type="checkbox"
 								onclick="onClickExternalStreamingCheckbox(this)" />
 						</div>
+						<div class="formElement hidden" id="externalPlayerHelp" style="color: white; text-align: left;"  >
+							<label></label>
+							<p>For <span style="color: yellow;">External player</span>, make sure to select the correct player sync option on the <span style="color: yellow;">Connections</span>&nbsptab under <span style="color: yellow;">Input connections</span>.</p>
+						</div>
 						<div class="formElement">
 							<label for="show">
 								<span class="formLabel">Show</span>
@@ -678,7 +682,7 @@
 							</section>
 						</div>
 						<div class="formElement">
-							<label for="connectionXTPWeb">XTP Web</label>
+							<label for="connectionXTPWeb">XTP Web (internal web player)</label>
 							<section class="form-group-section form-group-section-connection">
 								<input id="connectionXTPWeb" type="radio" class="styled-radio" name="inputConnection" onclick="onInputDeviceConnectionChange(this, 5)" />
 								<img id="xtpWebStatus" alt="Disconnected" class="sync-device-status icon-small" title="Disconnected" src="://images/icons/x.svg" style="background-color: crimson;" />

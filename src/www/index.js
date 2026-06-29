@@ -2923,6 +2923,10 @@ function toggleExternalStreaming(value, userClicked) {
 	if (value) {
 		stopVideo();
 	}
+	if(value)
+		document.getElementById("externalPlayerHelp").classList.remove("hidden");
+	else
+		document.getElementById("externalPlayerHelp").classList.add("hidden");
 }
 function setupTextToSpeech() {
 	if (typeof speechSynthesis === 'undefined') {
