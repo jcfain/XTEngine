@@ -58,9 +58,9 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
         if(channelModel->Gradient)
         {
             tcode += "G";
-            int previousDestinationTCode = calculateRange(channelNameUtf8, axisAction->currentSequence.lastPos);
-            int nextDestinationTCode = calculateRange(channelNameUtf8, axisAction->currentSequence.nextPos);
-            gradient = calculateGradient(previousDestinationTCode, currentDestinationTCode, nextDestinationTCode, axisAction->currentSequence.lastAt, axisAction->currentSequence.nextAt);
+            int previousDestinationTCode = calculateRange(channelNameUtf8, axisAction->currentSequence.lastDestinationPos);
+            int nextDestinationTCode = calculateRange(channelNameUtf8, axisAction->currentSequence.nextDestinationPos);
+            gradient = calculateGradient(previousDestinationTCode, currentDestinationTCode, nextDestinationTCode, axisAction->currentSequence.lastDestinationAt, axisAction->currentSequence.nextDestinationAt);
             tcode += QString::number(gradient);
         }
         if (channelModel->Channel == TCodeChannelLookup::Stroke())
@@ -130,45 +130,57 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
     // if(mainAction == nullptr)
     //     continue;
     int value = -1;
-    int interval = 0;
+    int interval = mainAction ? mainAction->interval : 0;
+    int gcode = mainAction ? mainActionGradient : 0;
+    QString modifierSymbol = "I";
     // int channelDistance = 100;
     auto relatedChannel = channel->RelatedChannel;
     auto modifier = TCodeChannelLookup::removeModifier(relatedChannel);
     std::shared_ptr<FunscriptAction> linkedAction = 0;
-    int gcode = mainAction ? mainActionGradient : 0;
     QByteArray channelNameUtf8 = channel->Channel.toUtf8();
     if (channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(relatedChannel))
     {
         if(actions.contains(relatedChannel))
         {
             linkedAction = actions.value(relatedChannel);
-            auto actionSequence = channel->Offset < 0 ? &linkedAction->nextSequence : &linkedAction->currentSequence;
-            value = actionSequence->currentPos;
-            interval = actionSequence->currentInterval;
-            int seqA = calculateRange(channelNameUtf8, actionSequence->lastPos);
-            int seqB = calculateRange(channelNameUtf8, actionSequence->currentPos);
-            int seqC = calculateRange(channelNameUtf8, actionSequence->nextPos);
-            gcode = calculateGradient(seqA, seqB, seqC, actionSequence->lastAt, actionSequence->nextAt);
-
+            FunscriptActionSequence* linkedActionSequence = channel->Offset < 0 ? &linkedAction->nextSequence : &linkedAction->currentSequence;
+            value = linkedActionSequence->currentDestinationPos;
+            interval = linkedActionSequence->currentDestinationInterval;
             if(value < 0)
                 return QString();// -1 = No next pos from funscriptHandler
             if(!modifier.isEmpty())
             {
-                // auto relatedTrack = TCodeChannelLookup::getChannel(TCodeChannelLookup::FromString(relatedChannel));
                 if(modifier == TCodeChannelLookup::PositiveModifier)
                 {
                     if(value >= 50)
                         value = XMath::mapRange(value, 0, 100, 50, 100);
                     else
                         value = 50;
+                    if (channel->FunscriptInverted)
+                    {
+                        //LogHandler::Debug("inverted: "+ QString::number(value));
+                        value = XMath::reverseNumber(value, 50, 100);
+                    }
                 }
                 else
                 {
                     if(value < 50)
-                        value = XMath::mapRange(value, 0, 100, 0, 50);
+                        value = XMath::mapRange(value, 0, 100, 0, 49);
                     else
-                        value = 50;
+                        value = 49;
+                    if (channel->FunscriptInverted)
+                    {
+                        //LogHandler::Debug("inverted: "+ QString::number(value));
+                        value = XMath::reverseNumber(value, 0, 49);
+                    }
                 }
+            }
+            else// Im not sure how to handle modifier links in sequence. Would need to setup a seq. tracker for linked/random motion I think.
+            {
+                int seqA = calculateRange(channelNameUtf8, linkedActionSequence->lastDestinationPos);
+                int seqB = calculateRange(channelNameUtf8, linkedActionSequence->currentDestinationPos);
+                int seqC = calculateRange(channelNameUtf8, linkedActionSequence->nextDestinationPos);
+                gcode = calculateGradient(seqA, seqB, seqC, linkedActionSequence->lastDestinationAt, linkedActionSequence->nextDestinationAt);
             }
         } else
             return QString();
@@ -200,7 +212,6 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
         //     min = 50;// + (qRound(strokeDistance / 2.0f) - 1);
         // }
         value = XMath::random(min, max);
-        interval = mainAction && mainAction->interval > 0 ? mainAction->interval : XMath::random(250, 1500);
         // LogHandler::Debug("Channel: "+ axis);
         // LogHandler::Debug("Value: "+ QString::number(value));
         // if(lastPos > -1) {
@@ -222,7 +233,7 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
         value = 100;
     }
     //LogHandler::Debug("Multiplier: "+ channel->FriendlyName + " pos: " + QString::number(value) + ", at: " + QString::number(currentAction->at));
-    if (channel->FunscriptInverted && channel->LinkToRelatedMFS)
+    if (channel->FunscriptInverted && channel->LinkToRelatedMFS && modifier.isEmpty())
     {
         //LogHandler::Debug("inverted: "+ QString::number(value));
         value = XMath::reverseNumber(value, 0, 100);
@@ -239,18 +250,19 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
     //     LogHandler::Warn("Value cant be greater than 9999: "+ QString::number(range) +" originalValue: " + QString::number(value));
     // }
     tcodeTemp += QString::number(range).rightJustified(SettingsHandler::getTCodePadding(), '0');
-    tcodeTemp += channel->LinkToRelatedMFS ? "I" : "S";
+    if(interval <= 0)
+    {
+        interval = XMath::random(250, 1500);
+        modifierSymbol = "S";
+    }
+    tcodeTemp += modifierSymbol;
     // tcodeTemp channelDistancePercentage = channelDistance/100.0f;
     if (channel->SpeedEnabled && channel->SpeedValue > 0.0)
     {
         float speedModifierValue = channel->SpeedRandom ? XMath::random(0.1f, channel->SpeedValue) : channel->SpeedValue;
-        interval = qRound(channel->LinkToRelatedMFS ? interval/speedModifierValue : interval * speedModifierValue);
-        tcodeTemp += QString::number(interval);
+        interval = qRound(interval * speedModifierValue);
     }
-    else
-    {
-        tcodeTemp += QString::number(interval);
-    }
+    tcodeTemp += QString::number(interval);
 
     if(channel->Gradient)
     {
@@ -260,13 +272,17 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
 
     if(channel->Offset > 0)
     {
+        // Delay the CURRENT destination
         int delayMS = channel->Offset * interval;
         emit delayTCode(tcodeTemp, delayMS);
         return QString();
     }
     else if (channel->Offset < 0)
     {
-        int currentInterval = linkedAction ? linkedAction->interval : mainAction->interval;
+        // Delay the NEXT destination (chosen in linked action section above) based of the current destination interval.
+        int currentInterval = linkedAction ? linkedAction->interval : mainAction ? mainAction->interval : -1;
+        if(currentInterval < 0)
+            return QString();// This should never happen because the first action is always chosen.
         int percentageMS = abs(channel->Offset * currentInterval);
         int delayMS = abs(percentageMS - currentInterval);
         emit delayTCode(tcodeTemp, delayMS);

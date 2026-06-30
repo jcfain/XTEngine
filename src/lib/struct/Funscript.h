@@ -6,15 +6,15 @@
 #include "../lookup/Track.h"
 
 struct FunscriptActionSequence {
-    int lastPos = -1;
-    int lastAt = -1;
-    int lastInterval = -1;
-    int currentPos = -1;
-    int currentAt = -1;
-    int currentInterval = -1;
-    int nextPos = -1;
-    int nextAt = -1;
-    int nextInterval = -1;
+    int lastDestinationPos = -1;
+    int lastDestinationAt = -1;
+    int lastDestinationInterval = -1;
+    int currentDestinationPos = -1;
+    int currentDestinationAt = -1;
+    int currentDestinationInterval = -1;
+    int nextDestinationPos = -1;
+    int nextDestinationAt = -1;
+    int nextDestinationInterval = -1;
 };
 
 struct FunscriptAction {

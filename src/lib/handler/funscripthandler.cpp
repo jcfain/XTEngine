@@ -431,9 +431,9 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
         if(nextDestinationIndex > -1)
         {
             actionSequence(funscript, nextDestinationIndex, nextDestinationSequence);
-            funscript->settings.nextActionPos = nextDestinationSequence.currentPos;
-            funscript->settings.nextActionAt = nextDestinationSequence.currentAt;
-            funscript->settings.nextActionInterval = nextDestinationSequence.nextAt - nextDestinationSequence.currentAt;
+            funscript->settings.nextActionPos = nextDestinationSequence.currentDestinationPos;
+            funscript->settings.nextActionAt = nextDestinationSequence.currentDestinationAt;
+            funscript->settings.nextActionInterval = nextDestinationSequence.nextDestinationAt - nextDestinationSequence.currentDestinationAt;
             calculateSpeedModifier(funscript->settings.nextActionInterval);
         }
         else
@@ -569,15 +569,15 @@ void FunscriptHandler::calculateSpeedModifier(int& interval)
 ///
 void FunscriptHandler::actionSequence(const Funscript* funscript, const int &destinationIndex, FunscriptActionSequence& seq)
 {
-    seq.lastPos = -1;
-    seq.lastAt = -1;
-    seq.lastInterval = -1;
-    seq.currentPos = -1;
-    seq.currentAt = -1;
-    seq.currentInterval = -1;
-    seq.nextPos = -1;
-    seq.nextAt = -1;
-    seq.nextInterval = -1;
+    seq.lastDestinationPos = -1;
+    seq.lastDestinationAt = -1;
+    seq.lastDestinationInterval = -1;
+    seq.currentDestinationPos = -1;
+    seq.currentDestinationAt = -1;
+    seq.currentDestinationInterval = -1;
+    seq.nextDestinationPos = -1;
+    seq.nextDestinationAt = -1;
+    seq.nextDestinationInterval = -1;
     auto atList = funscript->settings.atList;
     auto actionsList = funscript->actions;
     int atAIndex = destinationIndex - 1;
@@ -585,17 +585,23 @@ void FunscriptHandler::actionSequence(const Funscript* funscript, const int &des
     {
         if(destinationEnd(funscript, atAIndex))
             return;
-        seq.lastAt = atList.value(atAIndex);
-        seq.lastPos = actionsList.value(seq.lastAt);
+        seq.lastDestinationAt = atList.value(atAIndex);
+        seq.lastDestinationPos = actionsList.value(seq.lastDestinationAt);
+        int atZIndex = atAIndex - 1;
+        if(atZIndex > -1)
+        {
+            qint64 lastlastDestinationAt = atList.value(atZIndex);
+            seq.lastDestinationInterval = seq.lastDestinationAt - lastlastDestinationAt;
+        }
     }
     int atBIndex = atAIndex + 1;
     if(atBIndex > -1) // destinationIndex could be less than -1? Just in case...
     {
         if(destinationEnd(funscript, atBIndex))
             return;
-        seq.currentAt = atList.value(atBIndex);
-        seq.currentPos = actionsList.value(seq.currentAt);
-        seq.lastInterval = seq.lastAt > -1 ? seq.currentAt - seq.lastAt : -1;
+        seq.currentDestinationAt = atList.value(atBIndex);
+        seq.currentDestinationPos = actionsList.value(seq.currentDestinationAt);
+        seq.currentDestinationInterval = seq.lastDestinationAt > -1 ? seq.currentDestinationAt - seq.lastDestinationAt : -1;
     }
 
     int atCIndex = atBIndex + 1;
@@ -603,17 +609,9 @@ void FunscriptHandler::actionSequence(const Funscript* funscript, const int &des
     {
         if(destinationEnd(funscript, atCIndex))
             return;
-        seq.nextAt = atList.value(atCIndex);
-        seq.nextPos = actionsList.value(seq.nextAt);
-        seq.currentInterval = seq.currentAt > -1 ? seq.nextAt - seq.currentAt : -1;
-    }
-    int atDIndex = atCIndex + 1;
-    if(atDIndex > -1)
-    {
-        if(destinationEnd(funscript, atDIndex))
-            return;
-        qint64 nextnextAt = atList.value(atDIndex);
-        seq.nextInterval = seq.nextAt > -1 ? nextnextAt - seq.nextAt : -1;
+        seq.nextDestinationAt = atList.value(atCIndex);
+        seq.nextDestinationPos = actionsList.value(seq.nextDestinationAt);
+        seq.nextDestinationInterval = seq.currentDestinationAt > -1 ? seq.nextDestinationAt - seq.currentDestinationAt : -1;
     }
 }
 
