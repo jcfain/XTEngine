@@ -135,6 +135,8 @@ void Migration::RenameChannelDamperToSpeed(QSettings *settingsToLoadFrom)
             {
                 LogHandler::Debug("break");
             }
+            if(!obj.contains("damperEnabled"))
+                continue;
             bool speedEnabled = obj["damperEnabled"].toBool();
             bool speedRandom = obj["damperRandom"].toBool();
             double speedValue = obj["damperValue"].toDouble();

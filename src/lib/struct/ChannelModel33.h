@@ -124,7 +124,7 @@ struct ChannelModel33
         newItem.MultiplierEnabled = obj["multiplierEnabled"].toBool();
         newItem.SpeedEnabled = obj["speedEnabled"].toBool();
         newItem.SpeedRandom = obj["speedRandom"].toBool();
-        newItem.SpeedValue = obj["speedValue"].toDouble();
+        newItem.SpeedValue = obj["speedValue"].toDouble(1.0f);
         newItem.FunscriptInverted = obj["funscriptInverted"].toBool();
         newItem.GamepadInverted = obj["gamepadInverted"].toBool();
         newItem.LinkToRelatedMFS = obj["linkToRelatedMFS"].toBool();

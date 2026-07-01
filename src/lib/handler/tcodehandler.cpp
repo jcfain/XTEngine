@@ -122,16 +122,9 @@ QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> main
 
 QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::shared_ptr<FunscriptAction> mainAction, int mainActionGradient, QMap<QString, std::shared_ptr<FunscriptAction>> actions)
 {
-    // // Establish link to related channel to axis that are NOT stroke.
-    // if ((channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && actions.contains(channel->RelatedChannel)))
-    //     mainAction = actions.value(channel->RelatedChannel);
-    // else if(channel->LinkToRelatedMFS && SettingsHandler::getFunscriptLoaded(channel->RelatedChannel) && !actions.contains(channel->RelatedChannel) && channel->RelatedChannel != TCodeChannelLookup::Stroke())
-    //     continue;
-    // if(mainAction == nullptr)
-    //     continue;
     int value = -1;
-    int interval = mainAction ? mainAction->interval : 0;
-    int gcode = mainAction ? mainActionGradient : 0;
+    int interval = -1;
+    qint64 gcode = INT64_MAX;
     QString modifierSymbol = "I";
     // int channelDistance = 100;
     auto relatedChannel = channel->RelatedChannel;
@@ -158,7 +151,6 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
                         value = 50;
                     if (channel->FunscriptInverted)
                     {
-                        //LogHandler::Debug("inverted: "+ QString::number(value));
                         value = XMath::reverseNumber(value, 50, 100);
                     }
                 }
@@ -170,10 +162,10 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
                         value = 49;
                     if (channel->FunscriptInverted)
                     {
-                        //LogHandler::Debug("inverted: "+ QString::number(value));
                         value = XMath::reverseNumber(value, 0, 49);
                     }
                 }
+                gcode = INT64_MAX;
             }
             else// Im not sure how to handle modifier links in sequence. Would need to setup a seq. tracker for linked/random motion I think.
             {
@@ -184,40 +176,27 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
             }
         } else
             return QString();
-        //                        LogHandler::Debug("Channel: "+ axis);
-        //                        LogHandler::Debug("FriendlyName: "+ channel->FriendlyName);
-        //                        LogHandler::Debug("RelatedChannel: "+ channel->RelatedChannel);
-        //                        LogHandler::Debug("RelatedChannel FriendlyName: "+ SettingsHandler::getAxis(channel->RelatedChannel).FriendlyName);
-        //                        LogHandler::Debug("LinkToRelatedMFS value: "+ QString::number(value));
-        //                        LogHandler::Debug("currentAction->pos: "+ QString::number(currentAction->pos));
-        //                        LogHandler::Debug("action->pos: "+ QString::number(action->pos));
     }
-    else
+    else// Choose random values
     {
+        if(mainAction)// This should always be true as there should at least be one action in the list.
+        {
+            FunscriptActionSequence* mainActionSequence = channel->Offset < 0 ? &mainAction->nextSequence : &mainAction->currentSequence;
+            interval = channel->Offset < 0 ? mainActionSequence->currentDestinationInterval : mainActionSequence->currentDestinationInterval;
+        }
         int min = 0;
         int max = 100;
         int lastPos = channelValueTracker.contains(channel->Channel) ? channelValueTracker[channel->Channel] : -1;
-        //int userMid = TCodeChannelLookup::getChannel(axis)->UserMid;
 
-        bool opposite = XMath::random(0, 100) > 50;
+        bool opposite = XMath::random(0, 100) > 50;// DONT ALWAYS osscillate.
         if(lastPos > -1)
         {
             min = lastPos < 50 && opposite ? 50 : 0;
             max = lastPos > 50 && opposite ? 50 : 100;
+            if(channel->Gradient)
+                gcode = opposite ? 0 : INT64_MAX;// TODO, track sequence for calculating gradient if possible
         }
-
-        // if((channelValueTracker.contains(axis) && channelValueTracker[axis] > 50)) {
-        //     max = 50;// - (qRound(strokeDistance / 2.0f) + 1);
-        // } else {
-        //     min = 50;// + (qRound(strokeDistance / 2.0f) - 1);
-        // }
         value = XMath::random(min, max);
-        // LogHandler::Debug("Channel: "+ axis);
-        // LogHandler::Debug("Value: "+ QString::number(value));
-        // if(lastPos > -1) {
-        //     channelDistance = getDistance(value, lastPos);
-        //     LogHandler::Debug("Last value: "+ QString::number(channelValueTracker[axis]));
-        // }
         channelValueTracker[channel->Channel] = value;
     }
     //lowMin + (highMin-lowMin)*level,lowMax + (highMax-lowMax)*level
@@ -232,10 +211,8 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
         LogHandler::Warn("Value was greater than 100: "+ QString::number(value));
         value = 100;
     }
-    //LogHandler::Debug("Multiplier: "+ channel->FriendlyName + " pos: " + QString::number(value) + ", at: " + QString::number(currentAction->at));
-    if (channel->FunscriptInverted && channel->LinkToRelatedMFS && modifier.isEmpty())
+    if (channel->FunscriptInverted && channel->LinkToRelatedMFS && modifier.isEmpty())// Modifier needs to be +/- mid point. Handled above
     {
-        //LogHandler::Debug("inverted: "+ QString::number(value));
         value = XMath::reverseNumber(value, 0, 100);
     }
     QString tcodeTemp = "";
@@ -255,16 +232,17 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
         interval = XMath::random(250, 1500);
         modifierSymbol = "S";
     }
-    tcodeTemp += modifierSymbol;
     // tcodeTemp channelDistancePercentage = channelDistance/100.0f;
     if (channel->SpeedEnabled && channel->SpeedValue > 0.0)
     {
         float speedModifierValue = channel->SpeedRandom ? XMath::random(0.1f, channel->SpeedValue) : channel->SpeedValue;
-        interval = qRound(interval * speedModifierValue);
+        interval = qRound(channel->LinkToRelatedMFS ? interval/speedModifierValue : interval * speedModifierValue);
+        modifierSymbol = "S";
     }
+    tcodeTemp += modifierSymbol;
     tcodeTemp += QString::number(interval);
 
-    if(channel->Gradient)
+    if(channel->Gradient && gcode < INT64_MAX)
     {
         tcodeTemp += "G";
         tcodeTemp += QString::number(gcode);

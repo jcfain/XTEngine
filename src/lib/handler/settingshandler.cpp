@@ -199,7 +199,7 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
 
 
     //if(settingsVersion < 0.593f)
-    if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 93, "b"))
+    if(!m_firstLoad && versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 5, 93, "b"))
     {
         Migration::RenameChannelDamperToSpeed(settingsToLoadFrom);
     }
@@ -2160,8 +2160,10 @@ void SettingsHandler::setChannelFunscriptGradientChecked(QString channel, bool v
 float SettingsHandler::getSpeedValue(QString channel)
 {
     QMutexLocker locker(&mutex);
-    if(TCodeChannelLookup::hasChannel(channel))
-        return TCodeChannelLookup::getChannel(channel)->SpeedValue;
+    if(TCodeChannelLookup::hasChannel(channel)) {
+        auto channelObj = TCodeChannelLookup::getChannel(channel);
+        return channelObj->SpeedValue;
+    }
     return 0.0;
 }
 void SettingsHandler::setSpeedValue(QString channel, float value)
