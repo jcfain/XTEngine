@@ -324,6 +324,7 @@ void SyncHandler::playStandAlone() {
         emit funscriptEnded();
         emit funscriptStandaloneDurationChanged(0);
         emit sendTCode("DSTOP");
+        _tcodeHandler->clearDelayedActions();
         LogHandler::Debug("exit play Funscript stand alone thread");
         emit syncEnd();
     });
@@ -378,13 +379,16 @@ qint64 SyncHandler::getFunscriptMax()
     return otherMax;
 }
 
-void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPosition)
+void SyncHandler::syncOtherMediaFunscript(std::function<InputConnectionPacket()> getCurrentPacket)
 {
     stopAll();
     QMutexLocker locker(&_mutex);
-    LogHandler::Debug("syncFunscript start thread");
-    _funscriptMediaFuture = QtConcurrent::run([this, getMediaPosition]()
+    LogHandler::Debug("syncOtherMediaFunscript start thread");
+    _funscriptMediaFuture = QtConcurrent::run([this](std::function<InputConnectionPacket()> getCurrentPacket)
     {
+        InputConnectionPacket currentPacket;
+        bool lastStatePlaying = false;
+        double lastPlaybackSpeed = 1.0;
         QElapsedTimer mSecTimer;
         qint64 executionTimeNS = 1000000;
         double timeTracker = 0;
@@ -400,9 +404,20 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
             if (elapsedNS >= executionTimeNS)
             {
                 timer1 = timer2;
-                if(!isPaused())
+                currentPacket = getCurrentPacket();
+                if(lastStatePlaying && !currentPacket.playing) {
+                    emit sendTCode("DSTOP");
+                }
+                lastStatePlaying = currentPacket.playing;
+                if(currentPacket.playbackSpeed > 0 && lastPlaybackSpeed != currentPacket.playbackSpeed) {
+                    XMediaStateHandler::setPlaybackSpeed(currentPacket.playbackSpeed);
+                    lastPlaybackSpeed = currentPacket.playbackSpeed;
+                    LogHandler::Debug("syncOtherMediaFunscript: change playback rate: " + QString::number(currentPacket.playbackSpeed));
+                }
+                //timer.start();
+                if(currentPacket.playing && !isPaused() && isLoaded() && !currentPacket.path.isEmpty() && currentPacket.duration > 0)
                 {
-                    qint64 currentTime = getMediaPosition();
+                    qint64 currentTime = currentPacket.currentTime;
                     if(currentTime != lastTime)
                     {
                         lastTime = currentTime;
@@ -415,7 +430,7 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
                         currentTime = timeTracker;
                     }
                     // LogHandler::Debug("currentTime: "+QString::number(currentTime));
-                    QString tcode = buildChannelActions(currentTime);
+                    QString tcode = buildChannelActions(currentTime, FunscriptHandler::getScriptOffSet());
                     if(_funscriptMediaFuture.isCanceled())
                         break;
                     if(!tcode.isEmpty() && !isPaused())
@@ -432,9 +447,10 @@ void SyncHandler::syncOtherMediaFunscript(std::function<qint64()> getMediaPositi
         }
         _currentLocalVideoTime = 0;
         emit sendTCode("DSTOP");
+        _tcodeHandler->clearDelayedActions();
         LogHandler::Debug("exit syncFunscript");
         emit syncEnd();
-    });
+    }, getCurrentPacket);
 }
 
 void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
@@ -541,6 +557,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
 
         QMutexLocker locker(&_mutex);
         emit sendTCode("DSTOP");
+        _tcodeHandler->clearDelayedActions();
         //emit funscriptVREnded(videoPath, funscript, duration);
         LogHandler::Debug("exit syncInputDeviceFunscript");
         XMediaStateHandler::setPlaybackSpeed(1.0);
@@ -567,7 +584,9 @@ QString SyncHandler::buildChannelActions(qint64 time, int offset)
             // }
         }
     }
-    return _tcodeHandler->funscriptToTCode(actions);
+    QString tcode =  _tcodeHandler->funscriptToTCode(actions, time);
+    tcode += _tcodeHandler->getDelayedActions(time);
+    return tcode;
 }
 
 // Private

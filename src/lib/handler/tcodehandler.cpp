@@ -17,7 +17,7 @@ TCodeHandler::~TCodeHandler() {
 
 }
 
-QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAction>> actions)
+QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAction>> actions, qint64 referenceTime)
 {
     if(actions.isEmpty())
         return nullptr;
@@ -75,12 +75,12 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
     }
     if(!tcode.isEmpty())
         tcode += " ";
-    tcode += handleMotionModifier(mainAction, actions);
+    tcode += handleMotionModifier(mainAction, actions, referenceTime);
     // LogHandler::Debug("funscriptToTCode: "+tcode);
     return tcode;
 }
 
-QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions)
+QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions, qint64 referenceTime)
 {
     QString tcode;
     if(SettingsHandler::getMultiplierEnabled())
@@ -102,7 +102,7 @@ QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> main
             if (channel->MultiplierEnabled)
             {
                 multiplierEnabledTracker[channel->track] = true;
-                QString tcodeTemp = getMotionModifierTCode(channel, mainAction, actions);
+                QString tcodeTemp = getMotionModifierTCode(channel, mainAction, actions, referenceTime);
                 if(!tcodeTemp.isEmpty())
                 {
                     if(!tcode.isEmpty())
@@ -120,7 +120,7 @@ QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> main
     return tcode;
 }
 
-QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions)
+QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions, qint64 referenceTime)
 {
     int value = -1;
     int interval = -1;
@@ -179,6 +179,7 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
     }
     else// Choose random values
     {
+        modifierSymbol = "S";
         if(mainAction)// This should always be true as there should at least be one action in the list.
         {
             FunscriptActionSequence* mainActionSequence = channel->Offset < 0 ? &mainAction->nextSequence : &mainAction->currentSequence;
@@ -230,14 +231,13 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
     if(interval <= 0)
     {
         interval = XMath::random(250, 1500);
-        modifierSymbol = "S";
     }
     // tcodeTemp channelDistancePercentage = channelDistance/100.0f;
     if (channel->SpeedEnabled && channel->SpeedValue > 0.0)
     {
         float speedModifierValue = channel->SpeedRandom ? XMath::random(0.1f, channel->SpeedValue) : channel->SpeedValue;
+        // interval = qRound(channel->LinkToRelatedMFS ? interval/speedModifierValue : interval * speedModifierValue);
         interval = qRound(channel->LinkToRelatedMFS ? interval/speedModifierValue : interval * speedModifierValue);
-        modifierSymbol = "S";
     }
     tcodeTemp += modifierSymbol;
     tcodeTemp += QString::number(interval);
@@ -253,6 +253,16 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
         // Delay the CURRENT destination
         int delayMS = channel->Offset * interval;
         emit delayTCode(tcodeTemp, delayMS);
+        // qint64 currentAt = linkedAction ? linkedAction->at : mainAction ? mainAction->at : -1;
+        // if(currentAt > -1)
+        //     m_delayedFunscriptActions.append({(currentAt - interval) + delayMS, tcodeTemp});
+        // LogHandler::Debug("channel->Offset > 0 index:------------------------------------------------------------------ "+QString::number(m_delayedFunscriptActions.length() - 1));
+        // LogHandler::Debug("currentAt: "+QString::number(currentAt));
+        // LogHandler::Debug("reference: "+QString::number(referenceTime));
+        // LogHandler::Debug("channel->Offset > 0: tcodeTemp: "+tcodeTemp);
+        // LogHandler::Debug("channel->Offset > 0: currentAt - interval: "+QString::number(currentAt)+" + "+QString::number(interval) + " = "+QString::number(currentAt - interval));
+        // LogHandler::Debug("channel->Offset > 0: '' + delayMS: "+QString::number((currentAt - interval) + delayMS));
+        // LogHandler::Debug("channel->Offset > 0 return:------------------------------------------------------------------");
         return QString();
     }
     else if (channel->Offset < 0) // Lower values = execute next action early
@@ -263,6 +273,11 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
             return QString();// This should never happen because the first action is always chosen.
         int percentageMS = abs(channel->Offset * currentInterval);
         int delayMS = abs(percentageMS - currentInterval);
+        // qint64 currentAt = linkedAction ? linkedAction->at : mainAction ? mainAction->at : -1;
+        // if(currentAt > -1)
+        //     m_delayedFunscriptActions.append({(currentAt - interval) + delayMS, tcodeTemp});
+        // LogHandler::Debug("channel->Offset < 0: tcodeTemp: "+tcodeTemp);
+        // LogHandler::Debug("channel->Offset < 0: currentAt + delayMS "+QString::number(currentAt)+" + "+QString::number(delayMS) + " = "+QString::number(currentAt + delayMS));
         emit delayTCode(tcodeTemp, delayMS);
         return QString();
     }
@@ -332,6 +347,50 @@ QString TCodeHandler::getChannelHome(QString channel)
     auto channelModel = TCodeChannelLookup::getChannel(channel);
     getChannelHome(channelModel, tcode);
     return tcode;
+}
+
+///
+/// \brief TCodeHandler::getDelayedActions Commented out be cause async emmiter still works, Just cant stop it easily.
+/// tbf, this cant be stopped very easy either
+/// \param at
+/// \return
+///
+QString TCodeHandler::getDelayedActions(qint64 referenceTime)
+{
+    // if(m_delayedFunscriptActions.empty())
+        return "";
+    // if(abs(referenceTime - m_lastTimeTracker) >= 1000)
+    //     m_delayedFunscriptActions.clear();
+    // m_lastTimeTracker = referenceTime;
+    // QString tcode = "";
+    // QList<int> toDelete;
+    // // LogHandler::Debug("at: "+QString::number(at));
+    // for(int i=0; i < m_delayedFunscriptActions.length(); i++)
+    // {
+    //     // LogHandler::Debug("m_delayedFunscriptActions[i].at: "+QString::number(m_delayedFunscriptActions[i].at));
+    //     if(referenceTime >= m_delayedFunscriptActions[i].at)
+    //     {
+    //         tcode += m_delayedFunscriptActions[i].tcode;
+    //         if(i < m_delayedFunscriptActions.length() - 1)
+    //             tcode += " ";
+    //         toDelete.append(i);
+    //         LogHandler::Debug("getDelayedActions: index:------------------------------------------------------------------ "+QString::number(i));
+    //         LogHandler::Debug("getDelayedActions: tcode: "+tcode);
+    //         LogHandler::Debug("getDelayedActions: referenceTime >= at: "+QString::number(referenceTime)+" >= "+QString::number(m_delayedFunscriptActions[i].at));
+    //         LogHandler::Debug("getDelayedActions: return:------------------------------------------------------------------");
+    //     }
+    // }
+    // for(int i=0; i < toDelete.length(); i++)
+    // {
+    //     m_delayedFunscriptActions.removeAt(toDelete[i]);
+    // }
+    // // LogHandler::Debug("tcode: "+tcode);
+    // return tcode;
+}
+
+void TCodeHandler::clearDelayedActions()
+{
+    // m_delayedFunscriptActions.clear();
 }
 
 void TCodeHandler::getChannelHome(ChannelModel33* channel, QString &tcode)

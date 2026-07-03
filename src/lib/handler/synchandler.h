@@ -65,7 +65,7 @@ public:
     void skipToMoneyShot();
     void setStandAloneLoop(bool enabled);
     void syncInputDeviceFunscript(const LibraryListItem27 &libraryItem);
-    void syncOtherMediaFunscript(std::function<qint64()> getMediaPosition);
+    void syncOtherMediaFunscript(std::function<InputConnectionPacket()> getCurrentPacket);
     void setFunscriptTime(qint64 secs);
     qint64 getFunscriptTime();
     qint64 getFunscriptMin();

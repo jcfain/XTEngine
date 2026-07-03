@@ -321,20 +321,16 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
     if(closestMillis == -1)
         return nullptr;
     qint64 closestIndex = atList.indexOf(closestMillis);
-    qint64 nextActionIndex = closestIndex + 1;
     // We are still moving to the next funcript point.
-    if(funscript->settings.lastActionIndex == nextActionIndex)
+    if(funscript->settings.lastActionIndex == closestIndex +1)
         return nullptr;
     // We are at the end of the funscript points.
-    if(destinationEnd(funscript, nextActionIndex))
-        return nullptr;
-    //LogHandler::Debug("millis: "+ QString::number(millis));
-    //LogHandler::Debug("closestMillis: "+ QString::number(closestMillis));
-    //LogHandler::Debug("lastActionIndex: "+ QString::number(lastActionIndex));
+    // if(destinationEnd(funscript, nextDestinationIndex))
+    //     return nullptr;
     //LogHandler::Debug("nextAction: "+ QString::number(nextAction));
     //LogHandler::Debug("nextActionIndex: "+ QString::number(nextActionIndex));
 //    LogHandler::Debug("nextMillis: "+ QString::number(nextMillis));
-    if (millis >= closestMillis || funscript->settings.lastActionIndex == -1)
+    if (millis >= closestMillis || !_firstActionExecuted)
     {
         // m_totalActionsExecuted++;
         // if(funscript->settings.lastActionIndex > -1)
@@ -354,28 +350,31 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
         //     LogHandler::Warn("Potential action skip nextActionIndex: "+ QString::number(funscript->settings.nextActionIndex) + ", closestIndex: "+ QString::number(closestIndex));
         //     LogHandler::Warn("at: " + QString::number(closestMillis) + ", pos: "+QString::number(funscript->actions.value(closestMillis)));
         // }
-        qint64 currentDestinationIndex = nextActionIndex;
-        qint64 nextDestinationIndex = destinationEnd(funscript, currentDestinationIndex + 1) ? -1 : currentDestinationIndex + 1;
-        // qint64 nextMillis = nextIndex > -1 ? atList[nextIndex] : -1;
-        qint64 currentDestinationMillis = funscript->settings.lastActionIndex == -1 ? closestMillis : atList[currentDestinationIndex];
-        int currentDestinationInterval = currentDestinationMillis == closestMillis ? closestMillis : currentDestinationMillis - closestMillis;
-        int currentDestinationPos = funscript->actions.value(currentDestinationMillis);
-        if(!_firstActionExecuted)
-        {
-            _firstActionExecuted = true;
-            if(currentDestinationInterval < 500)
-                currentDestinationInterval = 500;
-            else if(currentDestinationInterval > 5000)
-                currentDestinationInterval = 5000;
-        }
-        //LogHandler::Debug("offSet: "+ QString::number(SettingsHandler::getoffSet()));
-        //LogHandler::Debug("speed: "+ QString::number(speed));
-        //LogHandler::Debug("millis: "+ QString::number(millis));
-//        LogHandler::Debug("closestMillis: "+ QString::number(closestMillis));
-//        LogHandler::Debug("nextMillis: "+ QString::number(nextMillis));
-//        LogHandler::Debug("lastActionIndex: "+ QString::number(lastActionIndex));
-//        LogHandler::Debug("nextActionIndex: "+ QString::number(nextActionIndex));
-        //LogHandler::Debug("nextActionPos: "+ QString::number(funscript->actions.value(nextMillis)));
+        // LogHandler::Debug("millis: "+ QString::number(millis));
+        // LogHandler::Debug("closestMillis: "+ QString::number(closestMillis));
+        // LogHandler::Debug("closestIndex: "+ QString::number(closestIndex));
+        // LogHandler::Debug("lastActionIndex: "+ QString::number(funscript->settings.lastActionIndex));
+        // LogHandler::Debug("lastActionAt: "+ QString::number(funscript->settings.lastActionAt));
+
+
+        qint64 currentDestinationIndex = _firstActionExecuted ? closestIndex +1 : closestIndex;
+        qint64 nextIndex = destinationEnd(funscript, currentDestinationIndex + 1) ? -1 : currentDestinationIndex + 1;
+        if(nextIndex == -1)
+            return nullptr;
+        FunscriptActionSequence currentDestinationSequence;
+        actionSequence(funscript, currentDestinationIndex, currentDestinationSequence);
+        qint64 currentDestinationMillis = _firstActionExecuted ? atList[nextIndex] : XMath::constrain(closestMillis, 1000, 2500);
+        int currentDestinationPos = currentDestinationSequence.currentDestinationPos;
+        int currentDestinationInterval = _firstActionExecuted ? currentDestinationSequence.currentDestinationInterval : closestMillis;
+        funscript->settings.nextActionPos = currentDestinationSequence.nextDestinationPos;
+        funscript->settings.nextActionAt = currentDestinationSequence.nextDestinationAt;
+        funscript->settings.nextActionInterval = currentDestinationSequence.nextDestinationInterval;
+
+        // LogHandler::Debug("currentDestinationIndex: "+ QString::number(currentDestinationIndex));
+        // LogHandler::Debug("nextDestinationIndex: "+ QString::number(nextIndex));
+        // LogHandler::Debug("currentDestinationInterval: "+ QString::number(currentDestinationInterval));
+        // LogHandler::Debug("currentDestinationPos: "+ QString::number(currentDestinationPos));
+
         if(funscript->settings.lastActionIndex > -1 && funscript->settings.modifier != 1)
         {
             if(currentDestinationPos == funscript->settings.lastActionPos && funscript->settings.lastActionPosModified)
@@ -427,31 +426,12 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
         calculateSpeedModifier(currentDestinationInterval);
 
         FunscriptActionSequence nextDestinationSequence;
-        funscript->settings.nextActionIndex = nextDestinationIndex;
-        if(nextDestinationIndex > -1)
+        funscript->settings.nextActionIndex = nextIndex;
+        if(nextIndex > -1)
         {
-            actionSequence(funscript, nextDestinationIndex, nextDestinationSequence);
-            funscript->settings.nextActionPos = nextDestinationSequence.currentDestinationPos;
-            funscript->settings.nextActionAt = nextDestinationSequence.currentDestinationAt;
-            funscript->settings.nextActionInterval = nextDestinationSequence.nextDestinationAt - nextDestinationSequence.currentDestinationAt;
+            actionSequence(funscript, nextIndex, nextDestinationSequence);
             calculateSpeedModifier(funscript->settings.nextActionInterval);
         }
-        else
-        {
-            funscript->settings.nextActionPos = -1;
-            funscript->settings.nextActionAt = -1;
-            funscript->settings.nextActionInterval = -1;
-        }
-
-        // bool isTCode4 = true;
-        // if(isTCode4)// Not used as im not sure its nessesary.
-        // {
-            // Calculate the gradient
-            FunscriptActionSequence currentDestinationSequence;
-            actionSequence(funscript, currentDestinationIndex, currentDestinationSequence);
-            // currentDestinationGradient = calculateGradient(seq.posA, seq.posB, seq.posC, seq.atA, seq.atC);
-        // }
-
 
         std::shared_ptr<FunscriptAction> nextAction(new FunscriptAction {
             funscript->settings.trackName, // channel
@@ -460,19 +440,18 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
             currentDestinationInterval, // interval
             currentDestinationSequence, // currentSequence
             nextDestinationSequence, // nextSequence
-            // funscript->settings.lastActionPos, // lastPos
-            // funscript->settings.lastActionAt, // lastAt
-            // funscript->settings.lastActionInterval, // lastSpeed
-            // funscript->settings.nextActionPos, // nextPos
-            // funscript->settings.nextActionAt, // nextAt
-            // funscript->settings.nextActionInterval, // nextSpeed
             currentDestinationIndex // index
         });
         //LogHandler::Debug("nextAction.speed: "+ QString::number(nextAction->speed));
-        funscript->settings.lastActionIndex = currentDestinationIndex;
-        funscript->settings.lastActionPos = currentDestinationPos;
-        funscript->settings.lastActionInterval = currentDestinationInterval;
-        funscript->settings.lastActionAt = currentDestinationMillis;
+        if(_firstActionExecuted)
+        {
+            funscript->settings.lastActionIndex = currentDestinationIndex;
+            funscript->settings.lastActionPos = currentDestinationPos;
+            funscript->settings.lastActionInterval = currentDestinationInterval;
+            funscript->settings.lastActionAt = currentDestinationMillis;
+        }
+
+        _firstActionExecuted = true;
 
         return nextAction;
     }
