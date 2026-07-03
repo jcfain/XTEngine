@@ -75,12 +75,12 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
     }
     if(!tcode.isEmpty())
         tcode += " ";
-    tcode += handleMotionModifier(mainAction, mainActionGradient, actions);
+    tcode += handleMotionModifier(mainAction, actions);
     // LogHandler::Debug("funscriptToTCode: "+tcode);
     return tcode;
 }
 
-QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> mainAction, int mainActionGradient, QMap<QString, std::shared_ptr<FunscriptAction>> actions)
+QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions)
 {
     QString tcode;
     if(SettingsHandler::getMultiplierEnabled())
@@ -102,7 +102,7 @@ QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> main
             if (channel->MultiplierEnabled)
             {
                 multiplierEnabledTracker[channel->track] = true;
-                QString tcodeTemp = getMotionModifierTCode(channel, mainAction, mainActionGradient, actions);
+                QString tcodeTemp = getMotionModifierTCode(channel, mainAction, actions);
                 if(!tcodeTemp.isEmpty())
                 {
                     if(!tcode.isEmpty())
@@ -120,7 +120,7 @@ QString TCodeHandler::handleMotionModifier(std::shared_ptr<FunscriptAction> main
     return tcode;
 }
 
-QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::shared_ptr<FunscriptAction> mainAction, int mainActionGradient, QMap<QString, std::shared_ptr<FunscriptAction>> actions)
+QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::shared_ptr<FunscriptAction> mainAction, QMap<QString, std::shared_ptr<FunscriptAction>> actions)
 {
     int value = -1;
     int interval = -1;
@@ -248,14 +248,14 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
         tcodeTemp += QString::number(gcode);
     }
 
-    if(channel->Offset > 0)
+    if(channel->Offset > 0) // Higher values = delay current action
     {
         // Delay the CURRENT destination
         int delayMS = channel->Offset * interval;
         emit delayTCode(tcodeTemp, delayMS);
         return QString();
     }
-    else if (channel->Offset < 0)
+    else if (channel->Offset < 0) // Lower values = execute next action early
     {
         // Delay the NEXT destination (chosen in linked action section above) based of the current destination interval.
         int currentInterval = linkedAction ? linkedAction->interval : mainAction ? mainAction->interval : -1;
