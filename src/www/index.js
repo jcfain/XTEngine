@@ -3852,13 +3852,16 @@ async function setupMotionModifiers() {
 
 	const enabledHelptext = "The will toggle whether this channel is included in the random motion generation or not.";
 	const linkToHelptext = "This will match the values of the linked channel 1:1 with modifiers speed and offset applied.";
+	const linkInvertedHelpText = "Inverts the selected linked channel if exists";
 	const speedHelptext = "The percentage of the linked scripts time to modify the speed.\nIf the speed is 0.1, the speed will be 10% of the linked script or 90% slower.\nA value of 2 will be 200% faster.\nMinimum value is 0.01";
 	const offsetHelpText = "The percentage of the linked scripts time to offset.\nIf the offset is 0.1 and the parent action interval is 300ms, the offset will be 30ms after the linked script event.\nCan be any value between -1.00 and 1.00";
 	var headers = [
 		//"Modifier", 
 		{text: "Link to script", helpText: linkToHelptext}, 
+		{text: "Link inverted", helpText: linkInvertedHelpText}, 
 		{text: "Speed", helpText: speedHelptext},  
-		{text: "Offset", helpText: offsetHelpText}]
+		{text: "Offset", helpText: offsetHelpText}
+	]
 	headers.forEach(element => {
 		var gridHeaderNode = document.createElement("div");
 		gridHeaderNode.classList.add("form-group-control");
@@ -3995,8 +3998,20 @@ async function setupMotionModifiers() {
 			}.bind(relatedChannelNode, channelName);
 		}
 
+		var linkedInvertedNode = document.createElement("input");
+		linkedInvertedNode.setAttribute("name", "motionModifierInput");
+		linkedInvertedNode.type = "checkbox";
+		linkedInvertedNode.setAttribute("title", linkInvertedHelpText)
+		linkedInvertedNode.checked = channel.linkedInverted;
+
+		linkedInvertedNode.oninput = function (channelName, event) {
+			remoteUserSettings.availableChannels[channelName].linkedInverted = event.target.checked;
+			markXTPFormDirty();
+		}.bind(linkedInvertedNode, channelName);
+
 		linkedEnabledValueNode.appendChild(linkToRelatedMFSNode);
 		linkedEnabledValueNode.appendChild(relatedChannelNode);
+		linkedEnabledValueNode.appendChild(linkedInvertedNode);
 		linkedEnabledValueNode.setAttribute("title", linkToHelptext);
 
 		var speedEnabledValueNode = document.createElement("div");
@@ -4091,7 +4106,7 @@ async function setUpInversionMotionModifier() {
 	// headerDivNode.classList.add("tab-content-header");
 	var subtextNode = document.createElement("div");
 	subtextNode.classList.add("tab-content-header-eyebrow");
-	subtextNode.innerText = "Invert"
+	subtextNode.innerText = "Invert funscript"
 	//headerDivNode.appendChild(subtextNode);
 
 	motionInversionContainer.appendChild(subtextNode);

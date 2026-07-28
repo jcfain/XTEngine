@@ -2207,6 +2207,23 @@ void SettingsHandler::setLinkToRelatedAxisChecked(QString channel, bool value)
     }
 }
 
+bool SettingsHandler::getLinkToRelatedInvertedChecked(QString channel)
+{
+    QMutexLocker locker(&mutex);
+    if(TCodeChannelLookup::hasChannel(channel))
+        return TCodeChannelLookup::getChannel(channel)->LinkedInverted;
+    return false;
+}
+
+void SettingsHandler::setLinkToRelatedInvertedChecked(QString channel, bool value)
+{
+    QMutexLocker locker(&mutex);
+    if(TCodeChannelLookup::hasChannel(channel)) {
+        TCodeChannelLookup::getChannel(channel)->LinkedInverted = value;
+        settingsChangedEvent(true);
+    }
+}
+
 void SettingsHandler::setLinkToRelatedAxis(QString channel, QString linkedChannel)
 {
     QMutexLocker locker(&mutex);
