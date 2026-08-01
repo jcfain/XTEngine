@@ -981,11 +981,6 @@ function getExported() {
 	xhr.onload = function (evnt, retry) {
 		var status = xhr.status;
 		const files = xhr.response;
-		const filesSorted = files.sort((a,b) => {
-    		// return (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0);//ASC
-    		return (a.date > b.date) ? -1 : ((a.date < b.date) ? 1 : 0);//DSC
-		});
-		const filenames = filesSorted.map(x => x.name);
 		const tableNode = document.getElementById("exportedSettingFiles");
 		removeAllChildNodes(tableNode);
 		const header = document.createElement("thead");
@@ -1005,7 +1000,12 @@ function getExported() {
 		tableNode.appendChild(header);
 
 		const body = document.createElement("tbody");
-		if (status === 200 && filenames && filenames.length > 0) {
+		if (status === 200 && filenames && Array.isArray(filenames) && filenames.length > 0) {
+			const filesSorted = files.sort((a,b) => {
+				// return (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0);//ASC
+				return (a.date > b.date) ? -1 : ((a.date < b.date) ? 1 : 0);//DSC
+			});
+			const filenames = filesSorted.map(x => x.name);
 				filenames.forEach(x => {
 					const tr = document.createElement("tr");
 
@@ -2405,7 +2405,7 @@ function loadMedia(mediaList) {
 		favSVG.style.height = widthInt * mediaItemHeaderIconMultiplier + "px";
 		favIcon.setAttribute("href", "#heart");
 		faveButton.onclick = toggleFavorite.bind(this, obj, favSVG);
-		updateFavorite(obj, favSVG);
+		updateFavorite(obj, headerEnd, favSVG);
 		faveButton.appendChild(favSVG);
 		headerEnd.appendChild(faveButton);
 	}
@@ -2511,6 +2511,8 @@ function deleteItem(itemID) {
 function updateAlternate(libraryItem, mediaItemHeaderInfo) {
 	if(!mediaItemHeaderInfo)
 		mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
+	if(!mediaItemHeaderInfo)
+		return;
 	var icon = document.getElementById(libraryItem.id+ "IconAlt")
 	if(!icon) {
 		const altScripts = filterAltScripts(libraryItem);
@@ -2535,12 +2537,20 @@ function updateAlternate(libraryItem, mediaItemHeaderInfo) {
 		icon.classList.add("hidden");
 	}
 }
-function updateMediaItemHeader(libraryItem) {
-	updateFavorite(libraryItem);
-	updateViewed(libraryItem);
+function updateMediaItemHeader(libraryItem, mediaItemHeaderInfo) {
+	if(!mediaItemHeaderInfo)
+		mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
+	if(!mediaItemHeaderInfo)
+		return;
+	updateFavorite(libraryItem, mediaItemHeaderInfo);
+	updateViewed(libraryItem, mediaItemHeaderInfo);
 }
 
-function updateFavorite(libraryItem, svg) {
+function updateFavorite(libraryItem, mediaItemHeaderInfo, svg) {
+	if(!mediaItemHeaderInfo)
+		mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
+	if(!mediaItemHeaderInfo)
+		return;
 	if(!svg) {
 		svg = document.getElementById(libraryItem.id + "InfoFavoriteIcon");
 	}
@@ -2551,6 +2561,10 @@ function updateFavorite(libraryItem, svg) {
 }
 
 function updateViewed(libraryItem, mediaItemHeaderInfo) {
+	if(!mediaItemHeaderInfo)
+		mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
+	if(!mediaItemHeaderInfo)
+		return;
 	var svg = document.getElementById(libraryItem.id+ "IconViewedSVG")
 	if(!svg) {
 		// icon = document.createElement("div");
