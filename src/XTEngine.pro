@@ -232,7 +232,8 @@ unix:mac {
 #https://stackoverflow.com/questions/12977739/qt-creator-or-qmake-on-macosx-build-library-as-so-not-dylib
 #QMAKE_LFLAGS_PLUGIN -= -dynamiclib
 #QMAKE_LFLAGS_PLUGIN += -bundle
-
+#LIBS += -L$$PWD/../../qtgamepadlegacy/build/Qt_6_11_0_for_macOS-Minimum-Size-Release -lqtgamepadlegacy
+#INCLUDEPATH += $$PWD/../../qtgamepadlegacy/build/Qt_6_11_0_for_macOS-Minimum-Size-Release/include
 QMAKE_APPLE_DEVICE_ARCHS = x86_64 x86_64h# arm64
 CONFIG += shared
     #QMAKE_PREFIX_SHLIB = so
