@@ -3,10 +3,15 @@
 
 #include <QtCore/qglobal.h>
 
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 6
+#define VERSION_REVISION 5
+#define VERSION_PHASE b
+
 #ifdef XTENGINE_LIBRARY
-#  define XTENGINE_EXPORT Q_DECL_EXPORT
+#define XTENGINE_EXPORT Q_DECL_EXPORT
 #else
-#  define XTENGINE_EXPORT Q_DECL_IMPORT
+#define XTENGINE_EXPORT Q_DECL_IMPORT
 #endif
 
 #endif // XTENGINE_GLOBAL_H

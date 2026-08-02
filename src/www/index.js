@@ -1,4 +1,4 @@
-const webVersion = "v0.6.4b";
+const webVersion = "v0.6.5b";
 const debugMode = false;
 
 var XLogLevel = {
@@ -981,11 +981,6 @@ function getExported() {
 	xhr.onload = function (evnt, retry) {
 		var status = xhr.status;
 		const files = xhr.response;
-		const filesSorted = files.sort((a,b) => {
-    		// return (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0);//ASC
-    		return (a.date > b.date) ? -1 : ((a.date < b.date) ? 1 : 0);//DSC
-		});
-		const filenames = filesSorted.map(x => x.name);
 		const tableNode = document.getElementById("exportedSettingFiles");
 		removeAllChildNodes(tableNode);
 		const header = document.createElement("thead");
@@ -1005,7 +1000,12 @@ function getExported() {
 		tableNode.appendChild(header);
 
 		const body = document.createElement("tbody");
-		if (status === 200 && filenames && filenames.length > 0) {
+		if (status === 200 && filenames && Array.isArray(filenames) && filenames.length > 0) {
+			const filesSorted = files.sort((a,b) => {
+				// return (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0);//ASC
+				return (a.date > b.date) ? -1 : ((a.date < b.date) ? 1 : 0);//DSC
+			});
+			const filenames = filesSorted.map(x => x.name);
 				filenames.forEach(x => {
 					const tr = document.createElement("tr");
 
@@ -2405,7 +2405,7 @@ function loadMedia(mediaList) {
 		favSVG.style.height = widthInt * mediaItemHeaderIconMultiplier + "px";
 		favIcon.setAttribute("href", "#heart");
 		faveButton.onclick = toggleFavorite.bind(this, obj, favSVG);
-		updateFavorite(obj, favSVG);
+		updateFavorite(obj, headerEnd, favSVG);
 		faveButton.appendChild(favSVG);
 		headerEnd.appendChild(faveButton);
 	}
@@ -2511,6 +2511,8 @@ function deleteItem(itemID) {
 function updateAlternate(libraryItem, mediaItemHeaderInfo) {
 	if(!mediaItemHeaderInfo)
 		mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
+	if(!mediaItemHeaderInfo)
+		return;
 	var icon = document.getElementById(libraryItem.id+ "IconAlt")
 	if(!icon) {
 		const altScripts = filterAltScripts(libraryItem);
@@ -2535,12 +2537,20 @@ function updateAlternate(libraryItem, mediaItemHeaderInfo) {
 		icon.classList.add("hidden");
 	}
 }
-function updateMediaItemHeader(libraryItem) {
-	updateFavorite(libraryItem);
-	updateViewed(libraryItem);
+function updateMediaItemHeader(libraryItem, mediaItemHeaderInfo) {
+	if(!mediaItemHeaderInfo)
+		mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
+	if(!mediaItemHeaderInfo)
+		return;
+	updateFavorite(libraryItem, mediaItemHeaderInfo);
+	updateViewed(libraryItem, mediaItemHeaderInfo);
 }
 
-function updateFavorite(libraryItem, svg) {
+function updateFavorite(libraryItem, mediaItemHeaderInfo, svg) {
+	if(!mediaItemHeaderInfo)
+		mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
+	if(!mediaItemHeaderInfo)
+		return;
 	if(!svg) {
 		svg = document.getElementById(libraryItem.id + "InfoFavoriteIcon");
 	}
@@ -2551,6 +2561,10 @@ function updateFavorite(libraryItem, svg) {
 }
 
 function updateViewed(libraryItem, mediaItemHeaderInfo) {
+	if(!mediaItemHeaderInfo)
+		mediaItemHeaderInfo = document.getElementById(libraryItem.id + "MediaItemHeaderInfo");
+	if(!mediaItemHeaderInfo)
+		return;
 	var svg = document.getElementById(libraryItem.id+ "IconViewedSVG")
 	if(!svg) {
 		// icon = document.createElement("div");
@@ -3852,13 +3866,16 @@ async function setupMotionModifiers() {
 
 	const enabledHelptext = "The will toggle whether this channel is included in the random motion generation or not.";
 	const linkToHelptext = "This will match the values of the linked channel 1:1 with modifiers speed and offset applied.";
+	const linkInvertedHelpText = "Inverts the selected linked channel if exists";
 	const speedHelptext = "The percentage of the linked scripts time to modify the speed.\nIf the speed is 0.1, the speed will be 10% of the linked script or 90% slower.\nA value of 2 will be 200% faster.\nMinimum value is 0.01";
 	const offsetHelpText = "The percentage of the linked scripts time to offset.\nIf the offset is 0.1 and the parent action interval is 300ms, the offset will be 30ms after the linked script event.\nCan be any value between -1.00 and 1.00";
 	var headers = [
 		//"Modifier", 
 		{text: "Link to script", helpText: linkToHelptext}, 
+		{text: "Link inverted", helpText: linkInvertedHelpText}, 
 		{text: "Speed", helpText: speedHelptext},  
-		{text: "Offset", helpText: offsetHelpText}]
+		{text: "Offset", helpText: offsetHelpText}
+	]
 	headers.forEach(element => {
 		var gridHeaderNode = document.createElement("div");
 		gridHeaderNode.classList.add("form-group-control");
@@ -3995,8 +4012,20 @@ async function setupMotionModifiers() {
 			}.bind(relatedChannelNode, channelName);
 		}
 
+		var linkedInvertedNode = document.createElement("input");
+		linkedInvertedNode.setAttribute("name", "motionModifierInput");
+		linkedInvertedNode.type = "checkbox";
+		linkedInvertedNode.setAttribute("title", linkInvertedHelpText)
+		linkedInvertedNode.checked = channel.linkedInverted;
+
+		linkedInvertedNode.oninput = function (channelName, event) {
+			remoteUserSettings.availableChannels[channelName].linkedInverted = event.target.checked;
+			markXTPFormDirty();
+		}.bind(linkedInvertedNode, channelName);
+
 		linkedEnabledValueNode.appendChild(linkToRelatedMFSNode);
 		linkedEnabledValueNode.appendChild(relatedChannelNode);
+		linkedEnabledValueNode.appendChild(linkedInvertedNode);
 		linkedEnabledValueNode.setAttribute("title", linkToHelptext);
 
 		var speedEnabledValueNode = document.createElement("div");
@@ -4091,7 +4120,7 @@ async function setUpInversionMotionModifier() {
 	// headerDivNode.classList.add("tab-content-header");
 	var subtextNode = document.createElement("div");
 	subtextNode.classList.add("tab-content-header-eyebrow");
-	subtextNode.innerText = "Invert"
+	subtextNode.innerText = "Invert funscript"
 	//headerDivNode.appendChild(subtextNode);
 
 	motionInversionContainer.appendChild(subtextNode);

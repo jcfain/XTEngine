@@ -49,6 +49,7 @@ struct ChannelModel33
     QString RelatedChannel;
     float Offset;
     bool Gradient;
+    bool LinkedInverted;
 
 //    friend QDataStream & operator<<( QDataStream &dataStream, const ChannelModel33 &object )
 //    {
@@ -131,6 +132,7 @@ struct ChannelModel33
         newItem.RelatedChannel = obj["relatedChannel"].toString();
         newItem.Offset = obj["offset"].toDouble();
         newItem.Gradient = obj["gradient"].toBool();
+        newItem.LinkedInverted = obj["linkedInverted"].toBool();
         return newItem;
     }
 
@@ -165,6 +167,7 @@ struct ChannelModel33
         obj["relatedChannel"] = item.RelatedChannel;
         obj["offset"] = item.Offset;
         obj["gradient"] = item.Gradient;
+        obj["linkedInverted"] = item.LinkedInverted;
         return obj;
     }
 };

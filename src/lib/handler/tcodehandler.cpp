@@ -149,7 +149,7 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
                         value = XMath::mapRange(value, 0, 100, 50, 100);
                     else
                         value = 50;
-                    if (channel->FunscriptInverted)
+                    if (channel->LinkedInverted)
                     {
                         value = XMath::reverseNumber(value, 50, 100);
                     }
@@ -160,7 +160,7 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
                         value = XMath::mapRange(value, 0, 100, 0, 49);
                     else
                         value = 49;
-                    if (channel->FunscriptInverted)
+                    if (channel->LinkedInverted)
                     {
                         value = XMath::reverseNumber(value, 0, 49);
                     }
@@ -212,7 +212,7 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
         LogHandler::Warn("Value was greater than 100: "+ QString::number(value));
         value = 100;
     }
-    if (channel->FunscriptInverted && channel->LinkToRelatedMFS && modifier.isEmpty())// Modifier needs to be +/- mid point. Handled above
+    if (channel->LinkedInverted && channel->LinkToRelatedMFS && modifier.isEmpty())// Modifier needs to be +/- mid point. Handled above
     {
         value = XMath::reverseNumber(value, 0, 100);
     }
