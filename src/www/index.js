@@ -1,4 +1,4 @@
-const webVersion = "v0.6.5b";
+const webVersion = "v0.6.6b";
 const debugMode = false;
 
 var XLogLevel = {
@@ -1000,7 +1000,7 @@ function getExported() {
 		tableNode.appendChild(header);
 
 		const body = document.createElement("tbody");
-		if (status === 200 && filenames && Array.isArray(filenames) && filenames.length > 0) {
+		if (status === 200 && files && Array.isArray(files) && files.length > 0) {
 			const filesSorted = files.sort((a,b) => {
 				// return (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0);//ASC
 				return (a.date > b.date) ? -1 : ((a.date < b.date) ? 1 : 0);//DSC
