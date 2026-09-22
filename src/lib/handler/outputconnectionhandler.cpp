@@ -8,7 +8,7 @@ void OutputConnectionHandler::dispose() {
     tryConnectStop();
     setConnected(false);
     emit connectionChange({ConnectionDirection::Output, m_deviceName,
-                           ConnectionStatus::Disconnected, "Disconnected"});
+                           ConnectionStatus::Disconnected, tr("Disconnected")});
 }
 ConnectionInterface OutputConnectionHandler::name() { return m_deviceName; }
 bool OutputConnectionHandler::isConnected() {
@@ -40,12 +40,12 @@ void OutputConnectionHandler::tryConnectDevice(unsigned long waitTimeout) {
             if (!m_stop && timeouttracker > maxTries) {
                 setConnected(false);
                 emit connectionChange({ConnectionDirection::Output, m_deviceName,
-                                       ConnectionStatus::Error, "Timed out"});
+                                       ConnectionStatus::Error, tr("Timed out")});
             }
         } else {
             emit connectionChange({ConnectionDirection::Output, m_deviceName,
                                    ConnectionStatus::Connected,
-                                   "Connected: No Validate"});
+                                   tr("Connected: No Validate")});
             m_stop = true;
             setConnected(true);
         }
@@ -91,7 +91,7 @@ void OutputConnectionHandler::processDeviceInput(QString buffer) {
         } else {
             emit connectionChange({ConnectionDirection::Output, m_deviceName,
                                    ConnectionStatus::Connected,
-                                   "Connected: No Validate"});
+                                   tr("Connected: No Validate")});
             setConnected(true);
         }
     } else {

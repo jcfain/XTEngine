@@ -204,12 +204,12 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
     //LogHandler::Debug("randSine: "+ QString::number(value));
     if (value < 0)
     {
-        LogHandler::Warn("Value was less than zero: "+ QString::number(value));
+        LogHandler::Warn(tr("Value was less than zero: ")+ QString::number(value));
         value = 0;
     }
     if (value > 100)
     {
-        LogHandler::Warn("Value was greater than 100: "+ QString::number(value));
+        LogHandler::Warn(tr("Value was greater than 100: ")+ QString::number(value));
         value = 100;
     }
     if (channel->LinkedInverted && channel->LinkToRelatedMFS && modifier.isEmpty())// Modifier needs to be +/- mid point. Handled above
@@ -221,7 +221,7 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
     int range = calculateRange(channelNameUtf8, value);
     if(range < 0)
     {
-        LogHandler::Warn("Value cant be less than zero: "+ QString::number(range) +" originalValue: " + QString::number(value));
+        LogHandler::Warn(tr("Value cant be less than zero: ")+ QString::number(range) +tr(" originalValue: ") + QString::number(value));
         range = 0;
     }
     // if(range > 9999) {

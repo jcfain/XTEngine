@@ -134,10 +134,10 @@ bool MediaLibrarySettings::isLibraryChildOrEqual(const LibraryType& type, const 
 
 bool MediaLibrarySettings::mediaContains(const QString &value, QStringList& errorMessages)
 {
-    isLibraryParentChildOrEqual(LibraryType::MAIN, value, "main media library", errorMessages);
-    isLibraryParentChildOrEqual(LibraryType::VR, value, "VR media library", errorMessages);
+    isLibraryParentChildOrEqual(LibraryType::MAIN, value, tr("main media library"), errorMessages);
+    isLibraryParentChildOrEqual(LibraryType::VR, value, tr("VR media library"), errorMessages);
     // isLibraryParentChildOrEqual(LibraryType::FUNSCRIPT, value, "funscript library", errorMessages); // Funscripts are just for searching. They are not loaded into library.
-    isLibraryChildOrEqual(LibraryType::EXCLUSION, "library exclusions", value, errorMessages);// Media dirs can be a parent of an exclusion
+    isLibraryChildOrEqual(LibraryType::EXCLUSION, tr("library exclusions"), value, errorMessages);// Media dirs can be a parent of an exclusion
     return !errorMessages.isEmpty();
 }
 
@@ -145,11 +145,11 @@ bool MediaLibrarySettings::exclusionContains(const QString& value, QStringList& 
 {
     bool hasDuplicate = false;
     bool isChild = false;
-    if(XFileUtil::isDirParentChildOrEqual(m_libraryExclusions, value, "library exclusions", errorMessages))
+    if(XFileUtil::isDirParentChildOrEqual(m_libraryExclusions, value, tr("library exclusions"), errorMessages))
         hasDuplicate = true;
     foreach (auto originalPath, *getLibraryPaths(LibraryType::MAIN)) {
         if(originalPath==value) {
-            errorMessages << "Directory '"+value+"' is already in the main library list!";
+            errorMessages << tr("Directory '")+value+tr("' is already in the main library list!");
             hasDuplicate = true;
         } else if(value.startsWith(originalPath)) {
             isChild = true;
@@ -157,14 +157,14 @@ bool MediaLibrarySettings::exclusionContains(const QString& value, QStringList& 
     }
     foreach (auto originalPath, *getLibraryPaths(LibraryType::VR)) {
         if(originalPath==value) {
-            errorMessages << "Directory '"+value+"' is in the vr library list!";
+            errorMessages << tr("Directory '")+value+tr("' is in the vr library list!");
             hasDuplicate = true;
         } else if(value.startsWith(originalPath)) {
             isChild = true;
         }
     }
     if(!isChild) {
-        errorMessages << "Directory '"+value+"' is NOT a child of any of the select libraries!";
+        errorMessages << tr("Directory '")+value+tr("' is NOT a child of any of the select libraries!");
         return true;
     }
     if(hasDuplicate) {

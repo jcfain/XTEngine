@@ -26,7 +26,7 @@ OutputUdpConnectionHandler::~OutputUdpConnectionHandler() {}
 
 void OutputUdpConnectionHandler::init(NetworkAddress address, int waitTimeout)
 {
-    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Connecting, "Connecting..."});
+    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Connecting, tr("Connecting...")});
     _address = address;
 
     m_hostAddress = QHostAddress(_address.address);
@@ -45,7 +45,7 @@ void OutputUdpConnectionHandler::init(NetworkAddress address, int waitTimeout)
         if (!info.addresses().isEmpty()) {
             m_hostAddress = QHostAddress(info.addresses().constFirst());
         } else {
-            emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Error, "No IP for: " + _address.address + " found"});
+            emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Error, tr("No IP for: ") + _address.address + tr(" found")});
             return;
         }
         LogHandler::Debug("IP resolved: "+m_hostAddress.toString());

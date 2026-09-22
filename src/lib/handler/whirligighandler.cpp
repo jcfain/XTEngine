@@ -22,7 +22,7 @@ void InputWhirligigConnectionHandler::init(NetworkAddress address, int waitTimeo
 {
     qRegisterMetaType<ConnectionChangedSignal>();
     qRegisterMetaType<InputConnectionPacket>();
-    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Connecting, "Waiting..."});
+    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Connecting, tr("Waiting...")});
     _waitTimeout = waitTimeout;
     _address = address;
 
@@ -63,7 +63,7 @@ void InputWhirligigConnectionHandler::dispose()
     LogHandler::Debug("Whirligig: dispose");
     _isConnected = false;
     _isPlaying = false;
-    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Disconnected, tr("Disconnected")});
     if (tcpSocket != nullptr)
     {
         disconnect(tcpSocket, &QTcpSocket::stateChanged, this, &InputWhirligigConnectionHandler::onSocketStateChange);
@@ -194,7 +194,7 @@ void InputWhirligigConnectionHandler::onSocketStateChange (QAbstractSocket::Sock
             //_mutex.unlock();
             //connect(keepAliveTimer, &QTimer::timeout, this, &WhirligigHandler::sendKeepAlive);
             //keepAliveTimer->start(1000);
-            emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Connected, "Connected"});
+            emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Connected, tr("Connected")});
             break;
         }
         case QAbstractSocket::SocketState::UnconnectedState:
@@ -216,14 +216,14 @@ void InputWhirligigConnectionHandler::onSocketStateChange (QAbstractSocket::Sock
             else
             {
                 LogHandler::Debug("Whirligig disconnected");
-                emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Disconnected, "Disconnected"});
+                emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Disconnected, tr("Disconnected")});
             }
             break;
         }
         case QAbstractSocket::SocketState::ConnectingState:
         {
             LogHandler::Debug("Whirligig connecting");
-            emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Connecting, "Waiting..."});
+            emit connectionChange({ConnectionDirection::Input, ConnectionInterface::Whirligig, ConnectionStatus::Connecting, tr("Waiting...")});
             break;
         }
         case QAbstractSocket::SocketState::BoundState:

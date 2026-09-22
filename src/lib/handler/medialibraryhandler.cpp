@@ -65,7 +65,7 @@ void MediaLibraryHandler::stopLibraryLoading()
         _loadingLibraryFuture.cancel();
         _loadingLibraryFuture.waitForFinished();
 //        Caused crash on deconstruct. Only place it is used is http handler and stop is called on deconstruct. Not sure this is needed here anyways.
-//        emit libraryLoadingStatus("Loading media stopped");
+//        emit libraryLoadingStatus(tr("Loading media stopped"));
     }
 }
 
@@ -91,7 +91,7 @@ void MediaLibraryHandler::loadLibraryAsync()
     QStringList vrLibrary = SettingsHandler::mediaLibrarySettings->get(LibraryType::VR);
     if(library.isEmpty() && vrLibrary.isEmpty())
     {
-        emit libraryLoadingStatus("No media folder specified");
+        emit libraryLoadingStatus(tr("No media folder specified"));
         LogHandler::Debug("libraryStopped No media folder specified");
         emit libraryStopped();
         return;
@@ -185,7 +185,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
         if(itr != paths.end())
             continue;
 
-        emit libraryLoadingStatus((vrMode ? "Loading VR media" : "Loading media") + (paths.length() > 1 ? " " + QString::number(paths.indexOf(path) + 1)+"..." : "..."));
+        emit libraryLoadingStatus((vrMode ? tr("Loading VR media") : tr("Loading media")) + (paths.length() > 1 ? " " + QString::number(paths.indexOf(path) + 1)+"..." : "..."));
 
         QDirIterator library(path, mediaTypes, QDir::Files, QDirIterator::Subdirectories);
 
@@ -280,7 +280,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 
     if(!vrMode)
     {
-        emit libraryLoadingStatus("Searching for lone funscripts...");
+        emit libraryLoadingStatus(tr("Searching for lone funscripts..."));
         foreach (QString path, paths)
         {
             QStringList funscriptTypes = QStringList()

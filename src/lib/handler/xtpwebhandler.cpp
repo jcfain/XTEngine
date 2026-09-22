@@ -26,7 +26,7 @@ void InputXTPWebConnectionHandler::init()
 {
     qRegisterMetaType<ConnectionChangedSignal>();
     qRegisterMetaType<InputConnectionPacket>();
-    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::XTPWeb, ConnectionStatus::Connecting, "Waiting..."});
+    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::XTPWeb, ConnectionStatus::Connecting, tr("Waiting...")});
 
     if (_currentPacket)
         delete _currentPacket;
@@ -53,7 +53,7 @@ void InputXTPWebConnectionHandler::dispose()
 {
     LogHandler::Debug("XTP Web: dispose");
     _isConnected = false;
-    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::XTPWeb, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({ConnectionDirection::Input, ConnectionInterface::XTPWeb, ConnectionStatus::Disconnected, tr("Disconnected")});
 //    if(_httpHandler)
 //        disconnect(_httpHandler, &HttpHandler::readyRead, this, &XTPWebHandler::readData);
 }
@@ -66,7 +66,7 @@ void InputXTPWebConnectionHandler::readData(QByteArray data)
     if(!_isConnected)
     {
         _isConnected = true;
-        emit connectionChange({ConnectionDirection::Input, ConnectionInterface::XTPWeb, ConnectionStatus::Connected, "Connected"});
+        emit connectionChange({ConnectionDirection::Input, ConnectionInterface::XTPWeb, ConnectionStatus::Connected, tr("Connected")});
     }
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(data, &error);

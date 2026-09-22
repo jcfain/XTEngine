@@ -20,7 +20,7 @@ void OutputWebsocketConnectionHandler::init(NetworkAddress address, int waitTime
     if(_isListening || isConnected()) {
         m_webSocket.close();
     }
-    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Connecting, "Connecting..."});
+    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Connecting, tr("Connecting...")});
     connect(&m_webSocket, &QWebSocket::connected, this, &OutputWebsocketConnectionHandler::onConnected);
     connect(&m_webSocket, &QWebSocket::disconnected, this, &OutputWebsocketConnectionHandler::onClosed);
     connect(&m_webSocket, &QWebSocket::stateChanged, this, &OutputWebsocketConnectionHandler::onSocketStateChange);
@@ -32,7 +32,7 @@ void OutputWebsocketConnectionHandler::init(NetworkAddress address, int waitTime
 void OutputWebsocketConnectionHandler::onConnected() {
     connect(&m_webSocket, &QWebSocket::textMessageReceived, this, &OutputWebsocketConnectionHandler::onTextMessageReceived);
     if(SettingsHandler::getDisableTCodeValidation()) {
-        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Connected, "Connected: No validate"});
+        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Connected, tr("Connected: No validate")});
         setConnected(true);
     } else {
         emit sendHandShake();
@@ -42,7 +42,7 @@ void OutputWebsocketConnectionHandler::onConnected() {
 
 void OutputWebsocketConnectionHandler::onClosed() {
     disconnect(&m_webSocket, nullptr, nullptr, nullptr);
-    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Disconnected, "Disconnected"});
+    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Disconnected, tr("Disconnected")});
     setConnected(false);
 }
 
@@ -94,12 +94,12 @@ void OutputWebsocketConnectionHandler::onTextMessageReceived(QString response)
     // }
     // if (validated)
     // {
-    //     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, "Connected: "+version});
+    //     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Connected, tr("Connected: ")+version});
     //     _isConnected = true;
     // }
     // else
     // {
-    //     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, "No " + TCodeChannelLookup::getSelectedTCodeVersionName()});
+    //     emit connectionChange({DeviceType::Output, DeviceName::Network, ConnectionStatus::Error, tr("No ") + TCodeChannelLookup::getSelectedTCodeVersionName()});
     //     dispose();
     // }
 }
@@ -140,7 +140,7 @@ void OutputWebsocketConnectionHandler::onSocketStateChange (QAbstractSocket::Soc
 //            connect(keepAliveTimer, &QTimer::timeout, this, &WebsocketDeviceHandler::sendKeepAlive);
 //            keepAliveTimer->start(1000);
 //            connect(m_webSocket, &Qm_webSocket::readyRead, this, &WebsocketDeviceHandler::readData);
-//            emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Connected, "Connected"});
+//            emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Connected, tr("Connected")});
             break;
         }
         case QAbstractSocket::SocketState::UnconnectedState:
@@ -168,14 +168,14 @@ void OutputWebsocketConnectionHandler::onSocketStateChange (QAbstractSocket::Soc
 //            else
 //            {
                 LogHandler::Debug("Websocket disconnected");
-                //emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Disconnected, "Disconnected"});
+                //emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Disconnected, tr("Disconnected")});
 //            }
             break;
         }
         case QAbstractSocket::SocketState::ConnectingState:
         {
             LogHandler::Debug("Websocket connecting");
-            //emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Connecting, "Waiting..."});
+            //emit connectionChange({DeviceType::Input, DeviceName::Deo, ConnectionStatus::Connecting, tr("Waiting...")});
             break;
         }
         case QAbstractSocket::SocketState::BoundState:

@@ -35,16 +35,16 @@ void OutputSerialConnectionHandler::init(const QString &portNameOrFriendlyName, 
     }
     if(_portName.isEmpty() && available.count() > 0)
     {
-        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Disconnected,  portNameOrFriendlyName.isEmpty() ? "No existing ports found with Arduino, CP210x or ch340 in the name. Select a port from the settings menu.": portNameOrFriendlyName+ " not found in available ports. Select a new port from the settings menu."});
+        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Disconnected,  portNameOrFriendlyName.isEmpty() ? tr("No existing ports found with Arduino, CP210x or ch340 in the name. Select a port from the settings menu."): portNameOrFriendlyName+ tr(" not found in available ports. Select a new port from the settings menu.")});
         return;
     }
     else if(_portName.isEmpty() || available.length() == 0)
     {
         //LogHandler::Dialog("No portname specified", XLogLevel::Critical);
-        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Disconnected, "No COM"});
+        emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Disconnected, tr("No COM")});
         return;
     }
-    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Connecting, "Connecting..."});
+    emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Connecting, tr("Connecting...")});
 
 
     LogHandler::Debug("Connecting to: "+ _portName);

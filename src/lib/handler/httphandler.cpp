@@ -117,9 +117,9 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             if(item) {
                 _mediaLibraryHandler->processMetadata(*item);
             } else
-                _webSocketHandler->sendError("Unknown library item");
+                _webSocketHandler->sendError(tr("Unknown library item"));
         } else {
-            _webSocketHandler->sendUserWarning("Please wait for metadata process to complete!");
+            _webSocketHandler->sendUserWarning(tr("Please wait for metadata process to complete!"));
         }
     });
     connect(_webSocketHandler, &WebSocketHandler::mediaAction, this, &HttpHandler::mediaAction);
@@ -130,7 +130,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::playMedia, this, [this](QString id) {
         if(id.isEmpty())
         {
-            QString error = "Failed to set playing item because media item ID was empty.";
+            QString error = tr("Failed to set playing item because media item ID was empty.");
             LogHandler::Error(error);
             _webSocketHandler->sendError(error);
             return;
@@ -198,7 +198,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         QStringList errors;
         _mediaLibraryHandler->deleteItem(itemID, errors);
         if(!errors.empty()) {
-            QString errorString = "There was errors when deleteing the media item.<br>";
+            QString errorString = tr("There was errors when deleteing the media item.<br>");
             errorString += errors.join("<br>");
             _webSocketHandler->sendError(errorString);
         }
@@ -341,7 +341,7 @@ void  HttpHandler::handleRoot(const QHttpServerRequest &request, QHttpServerResp
     m_hostAddress = "http://" + request.headers().value("Host", "") + "/";
     if(!hashedWebPass.isEmpty() && !isAuthenticated(request))
     {
-        LogHandler::Debug("Sending root auth-min.html");
+        LogHandler::Debug(tr("Sending root auth-min.html"));
         if(!QFileInfo::exists(root+"/auth-min.html"))
         {
             LogHandler::Debug("file does not exist: "+root+"/auth-min.html");
@@ -355,7 +355,7 @@ void  HttpHandler::handleRoot(const QHttpServerRequest &request, QHttpServerResp
     }
     else
     {
-        LogHandler::Debug("Sending root index-min.html");
+        LogHandler::Debug(tr("Sending root index-min.html"));
         if(!QFileInfo::exists(root+"/index-min.html"))
         {
             LogHandler::Debug("file does not exist: "+root+"/index-min.html");
@@ -436,8 +436,8 @@ void HttpHandler::handleAuth(const QHttpServerRequest &request, QHttpServerRespo
     QJsonDocument doc = QJsonDocument::fromJson(body, &error);
     if (doc.isEmpty())
     {
-        LogHandler::Error("XTP Web json response error: "+error.errorString());
-        LogHandler::Error("data: "+body);
+        LogHandler::Error(tr("XTP Web json response error: ")+error.errorString());
+        LogHandler::Error(tr("data: ")+body);
         responder.write(QHttpServerResponse::StatusCode::BadRequest);
     }
     else
@@ -800,7 +800,7 @@ void HttpHandler::handleMediaItemMetadataUpdate(const QHttpServerRequest &reques
         return;
     }
     if(_mediaLibraryHandler->metadataProcessing()) {
-        _webSocketHandler->sendUserWarning("Please wait for metadata process to complete!");
+        _webSocketHandler->sendUserWarning(tr("Please wait for metadata process to complete!"));
         responder.write(QHttpServerResponse::StatusCode::Processing);
     }
 
@@ -809,7 +809,7 @@ void HttpHandler::handleMediaItemMetadataUpdate(const QHttpServerRequest &reques
     QJsonDocument doc = QJsonDocument::fromJson(body, &error);
     if (doc.isEmpty())
     {
-        LogHandler::Error("Error reading request body: " + body + " error: "+ error.errorString());
+        LogHandler::Error(tr("Error reading request body: ") + body + tr(" error: ")+ error.errorString());
         responder.write(QHttpServerResponse::StatusCode::BadRequest);
         return ;
     }
@@ -822,7 +822,7 @@ void HttpHandler::handleMediaItemMetadataUpdate(const QHttpServerRequest &reques
         emit updateMetadata(libraryItem->metadata);
     } else {
         SettingsHandler::setForceMetaDataFullProcess(true);
-        responder.write(createError("Invalid metadata item please process metadata<br> In System tab under settings."), QHttpServerResponse::StatusCode::Conflict);
+        responder.write(createError(tr("Invalid metadata item please process metadata<br> In System tab under settings.")), QHttpServerResponse::StatusCode::Conflict);
         return ;
     }
 
@@ -842,7 +842,7 @@ void HttpHandler::handleTCodeCommandsUpdate(const QHttpServerRequest &req, QHttp
     QJsonDocument doc = QJsonDocument::fromJson(body, &error);
     if (doc.isEmpty())
     {
-        LogHandler::Error("Error reading request body: " + body + " error: "+ error.errorString());
+        LogHandler::Error(tr("Error reading request body: ") + body + tr(" error: ")+ error.errorString());
         responder.write(QHttpServerResponse::StatusCode::BadRequest);
         return ;
     }
@@ -1356,7 +1356,7 @@ void HttpHandler::handleExportedList(const QHttpServerRequest &request, QHttpSer
     if(settingsBackupDir.isEmpty())
     {
         QJsonObject obj;
-        obj["message"] = "Export directory is empty.<br>Enter a valid directory<br>thats writable<br>before exporting";
+        obj["message"] = tr("Export directory is empty.<br>Enter a valid directory<br>thats writable<br>before exporting");
         responder.write(QJsonDocument(obj), QHttpServerResponse::StatusCode::PreconditionFailed);
         return;
     }
@@ -1364,7 +1364,7 @@ void HttpHandler::handleExportedList(const QHttpServerRequest &request, QHttpSer
     if(!dir.exists())
     {
         QJsonObject obj;
-        obj["message"] = "Specified directory: "+ settingsBackupDir + " does not exist";
+        obj["message"] = tr("Specified directory: ")+ settingsBackupDir + tr(" does not exist");
         responder.write(QJsonDocument(obj), QHttpServerResponse::StatusCode::PreconditionFailed);
         return;
     }

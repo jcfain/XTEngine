@@ -449,42 +449,42 @@ QMap<QString, ChannelModel33> TCodeChannelLookup::getDefaultChannelProfile() {
     QMap<QString, ChannelModel33> defaultChannelProfile = {
         {TCodeChannelLookup::None(),  setupAvailableChannel(TCodeChannelLookup::None(), Track::None, TCodeChannelLookup::None(), TCodeChannelLookup::None(), ChannelDimension::None, ChannelType::None, "", "") },
 
-        {TCodeChannelLookup::Stroke(), setupAvailableChannel("Stroke", Track::Stroke, TCodeChannelLookup::Stroke(), TCodeChannelLookup::Stroke(), ChannelDimension::Heave, ChannelType::Oscillate, "", TCodeChannelLookup::Twist())  },
-        {TCodeChannelLookup::StrokeUp(), setupAvailableChannel("Stroke Up", Track::StrokeUp, TCodeChannelLookup::StrokeUp(), TCodeChannelLookup::Stroke(), ChannelDimension::Heave, ChannelType::HalfOscillate, "", TCodeChannelLookup::TwistClockwise()) },
-        {TCodeChannelLookup::StrokeDown(), setupAvailableChannel("Stroke Down", Track::StrokeDown, TCodeChannelLookup::StrokeDown(), TCodeChannelLookup::Stroke(), ChannelDimension::Heave, ChannelType::HalfOscillate, "", TCodeChannelLookup::TwistCounterClockwise()) },
+        {TCodeChannelLookup::Stroke(), setupAvailableChannel(tr("Stroke"), Track::Stroke, TCodeChannelLookup::Stroke(), TCodeChannelLookup::Stroke(), ChannelDimension::Heave, ChannelType::Oscillate, "", TCodeChannelLookup::Twist())  },
+        {TCodeChannelLookup::StrokeUp(), setupAvailableChannel(tr("Stroke Up"), Track::StrokeUp, TCodeChannelLookup::StrokeUp(), TCodeChannelLookup::Stroke(), ChannelDimension::Heave, ChannelType::HalfOscillate, "", TCodeChannelLookup::TwistClockwise()) },
+        {TCodeChannelLookup::StrokeDown(), setupAvailableChannel(tr("Stroke Down"), Track::StrokeDown, TCodeChannelLookup::StrokeDown(), TCodeChannelLookup::Stroke(), ChannelDimension::Heave, ChannelType::HalfOscillate, "", TCodeChannelLookup::TwistCounterClockwise()) },
 
-        {TCodeChannelLookup::Sway(), setupAvailableChannel("Sway", Track::Sway, TCodeChannelLookup::Sway(), TCodeChannelLookup::Sway(), ChannelDimension::Sway, ChannelType::Oscillate, "sway", TCodeChannelLookup::Roll()) },
-        {TCodeChannelLookup::SwayLeft(), setupAvailableChannel("Sway Left", Track::SwayLeft, TCodeChannelLookup::SwayLeft(), TCodeChannelLookup::Sway(), ChannelDimension::Sway, ChannelType::HalfOscillate, "", TCodeChannelLookup::RollLeft()) },
-        {TCodeChannelLookup::SwayRight(), setupAvailableChannel("Sway Right", Track::SwayRight, TCodeChannelLookup::SwayRight(), TCodeChannelLookup::Sway(), ChannelDimension::Sway, ChannelType::HalfOscillate, "", TCodeChannelLookup::RollRight()) },
+        {TCodeChannelLookup::Sway(), setupAvailableChannel(tr("Sway"), Track::Sway, TCodeChannelLookup::Sway(), TCodeChannelLookup::Sway(), ChannelDimension::Sway, ChannelType::Oscillate, "sway", TCodeChannelLookup::Roll()) },
+        {TCodeChannelLookup::SwayLeft(), setupAvailableChannel(tr("Sway Left"), Track::SwayLeft, TCodeChannelLookup::SwayLeft(), TCodeChannelLookup::Sway(), ChannelDimension::Sway, ChannelType::HalfOscillate, "", TCodeChannelLookup::RollLeft()) },
+        {TCodeChannelLookup::SwayRight(), setupAvailableChannel(tr("Sway Right"), Track::SwayRight, TCodeChannelLookup::SwayRight(), TCodeChannelLookup::Sway(), ChannelDimension::Sway, ChannelType::HalfOscillate, "", TCodeChannelLookup::RollRight()) },
 
-        {TCodeChannelLookup::Surge(), setupAvailableChannel("Surge", Track::Surge, TCodeChannelLookup::Surge(), TCodeChannelLookup::Surge(), ChannelDimension::Surge, ChannelType::Oscillate, "surge", TCodeChannelLookup::Pitch()) },
-        {TCodeChannelLookup::SurgeBack(), setupAvailableChannel("Surge Back", Track::SurgeBack, TCodeChannelLookup::SurgeBack(), TCodeChannelLookup::Surge(), ChannelDimension::Surge, ChannelType::HalfOscillate, "", TCodeChannelLookup::PitchBack()) },
-        {TCodeChannelLookup::SurgeForward(), setupAvailableChannel("Surge Forward", Track::SurgeForward, TCodeChannelLookup::SurgeForward(), TCodeChannelLookup::Surge(), ChannelDimension::Surge, ChannelType::HalfOscillate, "", TCodeChannelLookup::PitchForward()) },
+        {TCodeChannelLookup::Surge(), setupAvailableChannel(tr("Surge"), Track::Surge, TCodeChannelLookup::Surge(), TCodeChannelLookup::Surge(), ChannelDimension::Surge, ChannelType::Oscillate, "surge", TCodeChannelLookup::Pitch()) },
+        {TCodeChannelLookup::SurgeBack(), setupAvailableChannel(tr("Surge Back"), Track::SurgeBack, TCodeChannelLookup::SurgeBack(), TCodeChannelLookup::Surge(), ChannelDimension::Surge, ChannelType::HalfOscillate, "", TCodeChannelLookup::PitchBack()) },
+        {TCodeChannelLookup::SurgeForward(), setupAvailableChannel(tr("Surge Forward"), Track::SurgeForward, TCodeChannelLookup::SurgeForward(), TCodeChannelLookup::Surge(), ChannelDimension::Surge, ChannelType::HalfOscillate, "", TCodeChannelLookup::PitchForward()) },
 
-        {TCodeChannelLookup::Pitch(), setupAvailableChannel("Pitch", Track::Pitch, TCodeChannelLookup::Pitch(), TCodeChannelLookup::Pitch(), ChannelDimension::Pitch, ChannelType::Oscillate, "pitch", TCodeChannelLookup::Surge()) },
-        {TCodeChannelLookup::PitchBack(), setupAvailableChannel("Pitch Back", Track::PitchBack, TCodeChannelLookup::PitchBack(), TCodeChannelLookup::Pitch(), ChannelDimension::Pitch, ChannelType::HalfOscillate, "", TCodeChannelLookup::SurgeBack()) },
-        {TCodeChannelLookup::PitchForward(), setupAvailableChannel("Pitch Forward", Track::PitchForward, TCodeChannelLookup::PitchForward(), TCodeChannelLookup::Pitch(), ChannelDimension::Pitch, ChannelType::HalfOscillate, "", TCodeChannelLookup::SurgeForward()) },
+        {TCodeChannelLookup::Pitch(), setupAvailableChannel(tr("Pitch"), Track::Pitch, TCodeChannelLookup::Pitch(), TCodeChannelLookup::Pitch(), ChannelDimension::Pitch, ChannelType::Oscillate, "pitch", TCodeChannelLookup::Surge()) },
+        {TCodeChannelLookup::PitchBack(), setupAvailableChannel(tr("Pitch Back"), Track::PitchBack, TCodeChannelLookup::PitchBack(), TCodeChannelLookup::Pitch(), ChannelDimension::Pitch, ChannelType::HalfOscillate, "", TCodeChannelLookup::SurgeBack()) },
+        {TCodeChannelLookup::PitchForward(), setupAvailableChannel(tr("Pitch Forward"), Track::PitchForward, TCodeChannelLookup::PitchForward(), TCodeChannelLookup::Pitch(), ChannelDimension::Pitch, ChannelType::HalfOscillate, "", TCodeChannelLookup::SurgeForward()) },
 
-        {TCodeChannelLookup::Roll(), setupAvailableChannel("Roll", Track::Roll, TCodeChannelLookup::Roll(), TCodeChannelLookup::Roll(), ChannelDimension::Roll, ChannelType::Oscillate, "roll", TCodeChannelLookup::Sway()) },
-        {TCodeChannelLookup::RollLeft(), setupAvailableChannel("Roll Left", Track::RollLeft, TCodeChannelLookup::RollLeft(), TCodeChannelLookup::Roll(), ChannelDimension::Roll, ChannelType::HalfOscillate, "", TCodeChannelLookup::SwayLeft()) },
-        {TCodeChannelLookup::RollRight(), setupAvailableChannel("Roll Right", Track::RollRight, TCodeChannelLookup::RollRight(), TCodeChannelLookup::Roll(), ChannelDimension::Roll, ChannelType::HalfOscillate, "", TCodeChannelLookup::SwayRight()) },
+        {TCodeChannelLookup::Roll(), setupAvailableChannel(tr("Roll"), Track::Roll, TCodeChannelLookup::Roll(), TCodeChannelLookup::Roll(), ChannelDimension::Roll, ChannelType::Oscillate, "roll", TCodeChannelLookup::Sway()) },
+        {TCodeChannelLookup::RollLeft(), setupAvailableChannel(tr("Roll Left"), Track::RollLeft, TCodeChannelLookup::RollLeft(), TCodeChannelLookup::Roll(), ChannelDimension::Roll, ChannelType::HalfOscillate, "", TCodeChannelLookup::SwayLeft()) },
+        {TCodeChannelLookup::RollRight(), setupAvailableChannel(tr("Roll Right"), Track::RollRight, TCodeChannelLookup::RollRight(), TCodeChannelLookup::Roll(), ChannelDimension::Roll, ChannelType::HalfOscillate, "", TCodeChannelLookup::SwayRight()) },
 
-        {TCodeChannelLookup::Twist(), setupAvailableChannel("Twist", Track::Twist, TCodeChannelLookup::Twist(), TCodeChannelLookup::Twist(), ChannelDimension::Yaw, ChannelType::Oscillate, "twist", TCodeChannelLookup::Stroke()) },
-        {TCodeChannelLookup::TwistClockwise(), setupAvailableChannel("Twist (CW)", Track::TwistClockwise, TCodeChannelLookup::TwistClockwise(), TCodeChannelLookup::Twist(), ChannelDimension::Yaw, ChannelType::HalfOscillate, "", TCodeChannelLookup::StrokeUp()) },
-        {TCodeChannelLookup::TwistCounterClockwise(), setupAvailableChannel("Twist (CCW)", Track::TwistCounterClockwise, TCodeChannelLookup::TwistCounterClockwise(), TCodeChannelLookup::Twist(), ChannelDimension::Yaw, ChannelType::HalfOscillate, "", TCodeChannelLookup::StrokeDown()) },
+        {TCodeChannelLookup::Twist(), setupAvailableChannel(tr("Twist"), Track::Twist, TCodeChannelLookup::Twist(), TCodeChannelLookup::Twist(), ChannelDimension::Yaw, ChannelType::Oscillate, "twist", TCodeChannelLookup::Stroke()) },
+        {TCodeChannelLookup::TwistClockwise(), setupAvailableChannel(tr("Twist (CW)"), Track::TwistClockwise, TCodeChannelLookup::TwistClockwise(), TCodeChannelLookup::Twist(), ChannelDimension::Yaw, ChannelType::HalfOscillate, "", TCodeChannelLookup::StrokeUp()) },
+        {TCodeChannelLookup::TwistCounterClockwise(), setupAvailableChannel(tr("Twist (CCW)"), Track::TwistCounterClockwise, TCodeChannelLookup::TwistCounterClockwise(), TCodeChannelLookup::Twist(), ChannelDimension::Yaw, ChannelType::HalfOscillate, "", TCodeChannelLookup::StrokeDown()) },
 
-        {TCodeChannelLookup::Suck(), setupAvailableChannel("Suck", Track::Suck, TCodeChannelLookup::Suck(), TCodeChannelLookup::Suck(), ChannelDimension::None, ChannelType::Oscillate, "suck", TCodeChannelLookup::Stroke()) },
-        {TCodeChannelLookup::SuckMore(), setupAvailableChannel("Suck more", Track::SuckMore, TCodeChannelLookup::SuckMore(), TCodeChannelLookup::Suck(), ChannelDimension::None, ChannelType::HalfOscillate, "suck", TCodeChannelLookup::StrokeUp()) },
-        {TCodeChannelLookup::SuckLess(), setupAvailableChannel("Suck less", Track::SuckLess, TCodeChannelLookup::SuckLess(), TCodeChannelLookup::Suck(), ChannelDimension::None, ChannelType::HalfOscillate, "suck", TCodeChannelLookup::StrokeDown()) },
+        {TCodeChannelLookup::Suck(), setupAvailableChannel(tr("Suck"), Track::Suck, TCodeChannelLookup::Suck(), TCodeChannelLookup::Suck(), ChannelDimension::None, ChannelType::Oscillate, "suck", TCodeChannelLookup::Stroke()) },
+        {TCodeChannelLookup::SuckMore(), setupAvailableChannel(tr("Suck more"), Track::SuckMore, TCodeChannelLookup::SuckMore(), TCodeChannelLookup::Suck(), ChannelDimension::None, ChannelType::HalfOscillate, "suck", TCodeChannelLookup::StrokeUp()) },
+        {TCodeChannelLookup::SuckLess(), setupAvailableChannel(tr("Suck less"), Track::SuckLess, TCodeChannelLookup::SuckLess(), TCodeChannelLookup::Suck(), ChannelDimension::None, ChannelType::HalfOscillate, "suck", TCodeChannelLookup::StrokeDown()) },
 
-        {TCodeChannelLookup::Vib(), setupAvailableChannel("Vib", Track::Vib, TCodeChannelLookup::Vib(), TCodeChannelLookup::Vib(), ChannelDimension::None, ChannelType::Ramp, "vib", TCodeChannelLookup::Stroke()) },
-        {TCodeChannelLookup::Lube(), setupAvailableChannel("Lube", Track::Lube, TCodeChannelLookup::Lube(), TCodeChannelLookup::Lube(), ChannelDimension::None, ChannelType::Ramp, "lube", TCodeChannelLookup::Stroke()) }
+        {TCodeChannelLookup::Vib(), setupAvailableChannel(tr("Vib"), Track::Vib, TCodeChannelLookup::Vib(), TCodeChannelLookup::Vib(), ChannelDimension::None, ChannelType::Ramp, "vib", TCodeChannelLookup::Stroke()) },
+        {TCodeChannelLookup::Lube(), setupAvailableChannel(tr("Lube"), Track::Lube, TCodeChannelLookup::Lube(), TCodeChannelLookup::Lube(), ChannelDimension::None, ChannelType::Ramp, "lube", TCodeChannelLookup::Stroke()) }
     };
     if(m_selectedTCodeVersion == TCodeVersion::v3)
     {
-       defaultChannelProfile.insert(TCodeChannelLookup::SuckPosition(), setupAvailableChannel("Suck manual", Track::SuckPosition, TCodeChannelLookup::SuckPosition(), TCodeChannelLookup::SuckPosition(), ChannelDimension::None, ChannelType::Oscillate, "suckManual", TCodeChannelLookup::Stroke()));
-       defaultChannelProfile.insert(TCodeChannelLookup::SuckMorePosition(), setupAvailableChannel("Suck manual more", Track::SuckMorePosition, TCodeChannelLookup::SuckMorePosition(), TCodeChannelLookup::SuckPosition(), ChannelDimension::None, ChannelType::HalfOscillate, "suckManual", TCodeChannelLookup::StrokeUp()));
-       defaultChannelProfile.insert(TCodeChannelLookup::SuckLessPosition(), setupAvailableChannel("Suck manual less", Track::SuckLessPosition, TCodeChannelLookup::SuckLessPosition(), TCodeChannelLookup::SuckPosition(), ChannelDimension::None, ChannelType::HalfOscillate, "suckManual", TCodeChannelLookup::StrokeDown()));
+       defaultChannelProfile.insert(TCodeChannelLookup::SuckPosition(), setupAvailableChannel(tr("Suck manual"), Track::SuckPosition, TCodeChannelLookup::SuckPosition(), TCodeChannelLookup::SuckPosition(), ChannelDimension::None, ChannelType::Oscillate, "suckManual", TCodeChannelLookup::Stroke()));
+       defaultChannelProfile.insert(TCodeChannelLookup::SuckMorePosition(), setupAvailableChannel(tr("Suck manual more"), Track::SuckMorePosition, TCodeChannelLookup::SuckMorePosition(), TCodeChannelLookup::SuckPosition(), ChannelDimension::None, ChannelType::HalfOscillate, "suckManual", TCodeChannelLookup::StrokeUp()));
+       defaultChannelProfile.insert(TCodeChannelLookup::SuckLessPosition(), setupAvailableChannel(tr("Suck manual less"), Track::SuckLessPosition, TCodeChannelLookup::SuckLessPosition(), TCodeChannelLookup::SuckPosition(), ChannelDimension::None, ChannelType::HalfOscillate, "suckManual", TCodeChannelLookup::StrokeDown()));
     }
     else
     {
@@ -637,7 +637,7 @@ ChannelModel33* TCodeChannelLookup::m_defaultChannel = new ChannelModel33();
 TCodeVersion TCodeChannelLookup::m_selectedTCodeVersion;
 QMap<QString, QMap<QString, ChannelModel33>> TCodeChannelLookup::m_availableChanels;
 QStringList TCodeChannelLookup::m_validMFSExtensions;
-QString TCodeChannelLookup::m_selectedChannelProfile = "Default";
+QString TCodeChannelLookup::m_selectedChannelProfile = tr("Default");
 QTimer TCodeChannelLookup::m_debounceTimer;
 int TCodeChannelLookup::_liveXRangeMax;
 int TCodeChannelLookup::_liveXRangeMid;
@@ -646,7 +646,7 @@ int TCodeChannelLookup::_liveXRangeMin;
 int TCodeChannelLookup::m_channelCount = (int)Track::TRACKS_LENGTH;
 QString TCodeChannelLookup::PositiveModifier = "+";
 QString TCodeChannelLookup::NegativeModifier = "-";
-QString TCodeChannelLookup::NA = "None";
+QString TCodeChannelLookup::NA = tr("None");
 QString TCodeChannelLookup::L0 = "L0";
 QString TCodeChannelLookup::L2 = "L2";
 QString TCodeChannelLookup::L1 = "L1";

@@ -233,7 +233,7 @@ bool ThumbExtractor::stopAndWait()
         if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= 2000)
         {
             LogHandler::Debug("[ThumbExtractor::extractSync] Timeout media stop: " + QString::number(m_mediaPlayer->playbackState()));
-            m_lastError = "Timed out waiting for media to stop";
+            m_lastError = tr("Timed out waiting for media to stop");
             return false;
         }
         QThread::msleep(100);
