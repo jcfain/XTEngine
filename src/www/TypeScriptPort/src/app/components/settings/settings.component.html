@@ -1,0 +1,22 @@
+<div class="settings-container" [class.hidden]="!isOpen">
+  <div class="settings-header">
+    <h2>Settings</h2>
+    <button class="close-btn" (click)="onToggle()">&times;</button>
+  </div>
+  <div class="settings-body">
+    <div *ngFor="let group of groups" class="settings-group">
+      <h3>{{ capitalizeFirstLetter(group.name) }}</h3>
+      <div class="settings-group-body">
+        <div *ngFor="let setting of group.settings" class="formElement">
+          <label [attr.for]="setting.key" [title]="setting.description">{{ setting.label }}</label>
+          <input *ngIf="getControlType(setting.type) !== 'select' && getControlType(setting.type) !== 'checkbox'"
+                 [id]="setting.key"
+                 [type]="getControlType(setting.type)"
+                 [ngModel]="setting.value"
+                 (ngModelChange)="onValueChange(setting, $event)"
+                 [title]="setting.description" />
+          <input *ngIf="getControlType(setting.type) === 'checkbox'"
+                 [id]="setting.key"
+                 type="checkbox"
+                 [ngModel]="setting.value"
+                 (ngModelChange)="onValueChange(setting, $event)"

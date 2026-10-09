@@ -1,0 +1,52 @@
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: #16213e;
+  color: #e0e0e0;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.version {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status {
+  color: #e74c3c;
+  font-size: 0.85rem;
+}
+
+.status.connected {
+  color: #2ecc71;
+}
+
+.header-btn {
+  background: none;
+  border: 1px solid #333;
+  color: #aaa;
+  font-size: 1.1rem;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.header-btn:hover {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.app-main {
+  padding: 20px;
+}

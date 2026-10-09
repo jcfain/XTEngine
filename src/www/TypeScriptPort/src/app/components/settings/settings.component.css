@@ -1,0 +1,95 @@
+.settings-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  height: 100vh;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  z-index: 2000;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-container.hidden {
+  display: none;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #333;
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 8px;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+.settings-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 20px;
+}
+
+.settings-group {
+  margin-bottom: 25px;
+}
+
+.settings-group h3 {
+  color: #888;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 5px;
+}
+
+.formElement {
+  margin-bottom: 15px;
+}
+
+.formElement label {
+  display: block;
+  color: #aaa;
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+}
+
+.formElement input,
+.formElement select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #16213e;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.formElement input:focus,
+.formElement select:focus {
+  outline: none;
+  border-color: #533483;
+}
+
+.formElement input[type="checkbox"] {
+  width: auto;
+}

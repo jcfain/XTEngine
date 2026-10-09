@@ -1,0 +1,15 @@
+<div class="app-header">
+  <h1>{{ title }} <span class="version">{{ webVersion }}</span></h1>
+  <div class="header-controls">
+    <span class="status" [class.connected]="isConnected()">{{ statusText() }}</span>
+    <button class="header-btn" (click)="toggleScriptStatus()" title="Script Status">&#9881;</button>
+    <button class="header-btn" (click)="toggleSettings()" title="Settings">&#9881;</button>
+  </div>
+</div>
+
+<main class="app-main">
+  <app-video-player></app-video-player>
+</main>
+
+<app-settings [class.open]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
+<app-script-status [class.open]="scriptStatusOpen"></app-script-status>

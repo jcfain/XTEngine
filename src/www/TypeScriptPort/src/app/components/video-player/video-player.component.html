@@ -1,0 +1,43 @@
+<div id="video-container" class="video-container" (mouseenter)="showControls()" (mouseleave)="hideControls()">
+  <video #videoNode class="video" playsinline>
+    <source id="videoSourceNode" />
+  </video>
+
+  <div class="loading-animation" [class.hidden]="!loading">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="top-controls" [class.hide]="!controlsVisible">
+    <span class="time-elapsed">{{ currentTime }}</span>
+    <span class="video-name"></span>
+  </div>
+
+  <div class="bottom-controls" [class.hide]="!controlsVisible">
+    <div class="progress-bar-container">
+      <input type="range" class="progress-bar" [value]="progress" (input)="onSeek($event)" min="0" max="100" step="0.1" />
+    </div>
+    <div class="controls-row">
+      <div class="left-controls">
+        <button class="control-btn" (click)="togglePlay()" [title]="isPlaying ? 'Pause (k)' : 'Play (k)'">
+          <span *ngIf="isPlaying">&#10074;&#10074;</span>
+          <span *ngIf="!isPlaying">&#9654;</span>
+        </button>
+        <button class="control-btn" (click)="volumeDown()" title="Volume Down">&#128263;</button>
+        <input type="range" class="volume-slider" [value]="volume" (input)="onVolumeSliderInput($event)" min="0" max="1" step="0.05" />
+        <button class="control-btn" (click)="volumeUp()" title="Volume Up">&#128266;</button>
+        <button class="control-btn" (click)="toggleMute()" title="Mute (m)">
+          <span *ngIf="volume === 0">&#128263;</span>
+          <span *ngIf="volume > 0 && volume <= 0.5">&#128264;</span>
+          <span *ngIf="volume > 0.5">&#128266;</span>
+        </button>
+      </div>
+      <div class="right-controls">
+        <span class="duration">{{ duration }}</span>
+        <button class="control-btn" (click)="toggleFullScreen()" [title]="isFullScreen ? 'Exit full screen (f)' : 'Full screen (f)'">
+          <span *ngIf="isFullScreen">&#1053;</span>
+          <span *ngIf="!isFullScreen">&#1052;</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
