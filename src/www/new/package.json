@@ -25,5 +25,10 @@
         "@angular-devkit/build-angular": "^17.0.0",
         "@angular/cli": "^17.0.0",
         "typescript": "~5.2.2"
+    },
+    "allowScripts": {
+        "esbuild@0.20.1": true,
+        "esbuild@0.21.5": true,
+        "nice-napi@1.0.2": true
     }
 }

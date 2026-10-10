@@ -39,3 +39,4 @@ src/www/.vscode/settings.json
 /src/.qtc_clangd
 /src/www/new/node_modules
 src/www/new/package-lock.json
+/src/www/new/.angular

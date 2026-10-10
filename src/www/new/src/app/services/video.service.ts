@@ -77,10 +77,10 @@ export class VideoService {
     if (this.videoNode) {
       this.videoNode.muted = !this.videoNode.muted;
       if (this.videoNode.muted) {
-        this.videoNode.dataset.volume = String(this.videoNode.volume);
+        this.videoNode.dataset['volume'] = String(this.videoNode.volume);
         this.videoNode.volume = 0;
       } else {
-        this.videoNode.volume = parseFloat(this.videoNode.dataset.volume || '0.5');
+        this.videoNode.volume = parseFloat(this.videoNode.dataset['volume'] || '0.5');
       }
     }
   }

@@ -234,9 +234,9 @@ export class AppStateService {
         case 'name-desc':
           return b.name.localeCompare(a.name);
         case 'date':
-          return (b.dateAdded || 0) - (a.dateAdded || 0);
+          return (b.metaData.dateAdded?.getTime() || 0) - (a.metaData.dateAdded?.getTime() || 0);
         case 'date-desc':
-          return (a.dateAdded || 0) - (b.dateAdded || 0);
+          return (a.metaData.dateAdded?.getTime() || 0) - (b.metaData.dateAdded?.getTime() || 0);
         default:
           return a.name.localeCompare(b.name);
       }

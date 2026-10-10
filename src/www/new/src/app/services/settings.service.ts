@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Setting, AllSettings, FormControlType, SettingProfile } from '../models/interfaces';
+import { Setting, AllSettings } from '../models/interfaces';
+import { FormControlType, SettingProfile } from '../models/enums';
 import { WebsocketService } from './websocket.service';
 
 @Injectable({

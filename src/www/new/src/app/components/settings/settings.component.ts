@@ -2,7 +2,8 @@ import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
-import { Setting, FormControlType } from '../../models/interfaces';
+import { Setting } from '../../models/interfaces';
+import { FormControlType } from '../../models/enums';
 import { capitalizeFirstLetter } from '../../utils/utils';
 
 interface SettingGroup {

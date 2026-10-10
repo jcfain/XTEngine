@@ -21,7 +21,7 @@ export class ServerService {
   }
 
   initServerSettings(): void {
-    this.http.get<any>('/settings').subscribe({
+    this.getServerSettings().subscribe({
       next: (response) => {
         this.appState.setRemoteUserSettings(response);
         this.settingsService.load(response);

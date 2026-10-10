@@ -22,6 +22,18 @@ export enum ConnectionStatus {
     Error = 3
 }
 
+export enum ConnectionInterface
+{
+    Serial,
+    Network,
+    HereSphere,
+    Whirligig,
+    Gamepad,
+    XTPWeb,
+    BLE,
+    None
+};
+
 export enum ChannelType {
     None = 0,
     Oscillate = 1,
@@ -106,3 +118,35 @@ export enum FormControlType {
     Date = 7,
     Time = 8
 }
+
+export enum Track
+{
+    None,
+    Stroke,
+    StrokeUp,
+    StrokeDown,
+    Sway,
+    SwayLeft,
+    SwayRight,
+    Surge,
+    SurgeBack,
+    SurgeForward,
+    Twist,
+    TwistClockwise,
+    TwistCounterClockwise,
+    Roll,
+    RollLeft,
+    RollRight,
+    Pitch,
+    PitchForward,
+    PitchBack,
+    Vib,
+    Lube,
+    Suck,
+    SuckMore,
+    SuckLess,
+    SuckPosition,
+    SuckMorePosition,
+    SuckLessPosition,
+    TRACKS_LENGTH
+};
