@@ -20,3 +20,16 @@
                  type="checkbox"
                  [ngModel]="setting.value"
                  (ngModelChange)="onValueChange(setting, $event)"
+                 [title]="setting.description" />
+          <select *ngIf="getControlType(setting.type) === 'select'"
+                  [id]="setting.key"
+                  [ngModel]="setting.value"
+                  (ngModelChange)="onValueChange(setting, $event)"
+                  [title]="setting.description">
+            <option *ngFor="let option of setting.value" [value]="option.value">{{ option.key }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
