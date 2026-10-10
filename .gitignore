@@ -37,3 +37,5 @@ src/www/.vscode/settings.json
 /build
 .DS_Store
 /src/.qtc_clangd
+/src/www/new/node_modules
+src/www/new/package-lock.json

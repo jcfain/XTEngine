@@ -1,4 +1,4 @@
-# TypeScriptPort
+# XTP Web
 
 An Angular + TypeScript application for porting the raw JavaScript XTP web app.
 
@@ -22,7 +22,7 @@ Then open http://localhost:4200
 npm run build
 ```
 
-Output goes to `dist/typescript-port/browser/`
+Output goes to `dist/xtp-web/browser/`
 
 ## Watch Mode
 
@@ -33,7 +33,7 @@ npm run watch
 ## Project Structure
 
 ```
-TypeScriptPort/
+XTP Web/
 ├── src/
 │   ├── app/
 │   │   ├── app.component.ts      # Root component

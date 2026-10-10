@@ -3,7 +3,7 @@
     "version": 1,
     "newProjectRoot": "projects",
     "projects": {
-        "typescript-port": {
+        "xtp-web": {
             "projectType": "application",
             "root": "",
             "sourceRoot": "src",
@@ -12,7 +12,7 @@
                 "build": {
                     "builder": "@angular-devkit/build-angular:application",
                     "options": {
-                        "outputPath": "dist/typescript-port",
+                        "outputPath": "dist/xtp-web",
                         "index": "src/index.html",
                         "browser": "src/main.ts",
                         "polyfills": [
@@ -51,10 +51,10 @@
                     "builder": "@angular-devkit/build-angular:dev-server",
                     "configurations": {
                         "production": {
-                            "buildTarget": "typescript-port:build:production"
+                            "buildTarget": "xtp-web:build:production"
                         },
                         "development": {
-                            "buildTarget": "typescript-port:build:development"
+                            "buildTarget": "xtp-web:build:development"
                         }
                     },
                     "defaultConfiguration": "development"
