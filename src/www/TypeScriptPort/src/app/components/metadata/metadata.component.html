@@ -1,0 +1,62 @@
+<div class="metadata-modal" [class.open]="isOpen">
+  <div class="metadata-header">
+    <h3>Metadata</h3>
+    <button class="close-btn" (click)="closeModal()">&times;</button>
+  </div>
+
+  <div class="metadata-body" *ngIf="mediaItem">
+    <div class="metadata-info">
+      <p><strong>Name:</strong> {{ mediaItem.name }}</p>
+      <p><strong>Path:</strong> {{ libraryItemPath }}</p>
+      <p><strong>Date Added:</strong> {{ dateAdded }}</p>
+      <p><strong>Modified:</strong> {{ modifiedDate }}</p>
+      <p *ngIf="getScripts().length">
+        <strong>Scripts:</strong><br>
+        <span *ngFor="let script of getScripts()">{{ script }}<br></span>
+      </p>
+    </div>
+
+    <div class="metadata-fields">
+      <div class="field-group">
+        <label>Offset (ms)</label>
+        <div class="field-row">
+          <button (click)="addToOffset(-100)">-100</button>
+          <input type="number" [(ngModel)]="offset" (ngModelChange)="onValueChange()" />
+          <button (click)="addToOffset(100)">+100</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Money Shot (ms)</label>
+        <div class="field-row">
+          <input type="number" [(ngModel)]="moneyShotMillis" (ngModelChange)="onValueChange()" />
+          <button (click)="resetMoneyShot()">Reset</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Funscript Modifier</label>
+        <div class="field-row">
+          <button (click)="addToModifier(-1)">-1</button>
+          <input type="number" [(ngModel)]="funscriptModifier" (ngModelChange)="onValueChange()" />
+          <button (click)="addToModifier(1)">+1</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="metadata-tags" *ngIf="allTags.length">
+      <h4>Tags</h4>
+      <div class="tag-grid">
+        <label *ngFor="let tag of allTags" class="tag-checkbox">
+          <input type="checkbox" [checked]="hasTag(tag)" (change)="toggleTag(tag)" />
+          {{ tag }}
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="metadata-footer">
+    <button (click)="closeModal()">Cancel</button>
+    <button class="save-btn" (click)="save()" [disabled]="!isDirty">Save</button>
+  </div>
+</div>

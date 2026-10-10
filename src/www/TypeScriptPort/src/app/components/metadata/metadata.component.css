@@ -1,0 +1,156 @@
+.metadata-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 3000;
+  justify-content: center;
+  align-items: center;
+}
+
+.metadata-modal.open {
+  display: flex;
+}
+
+.metadata-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #333;
+}
+
+.metadata-header h3 {
+  margin: 0;
+  color: #e0e0e0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+.metadata-body {
+  padding: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+  color: #e0e0e0;
+}
+
+.metadata-info p {
+  margin: 5px 0;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.metadata-info strong {
+  color: #e0e0e0;
+}
+
+.metadata-fields {
+  margin-top: 20px;
+}
+
+.field-group {
+  margin-bottom: 15px;
+}
+
+.field-group label {
+  display: block;
+  color: #888;
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-row input {
+  width: 120px;
+  padding: 8px 10px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #16213e;
+  color: #e0e0e0;
+}
+
+.field-row button {
+  background: #16213e;
+  border: 1px solid #333;
+  color: #e0e0e0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.field-row button:hover {
+  background: #533483;
+}
+
+.metadata-tags {
+  margin-top: 20px;
+}
+
+.metadata-tags h4 {
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.tag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 5px;
+}
+
+.tag-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #aaa;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.metadata-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 15px 20px;
+  border-top: 1px solid #333;
+}
+
+.metadata-footer button {
+  padding: 8px 16px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #16213e;
+  color: #e0e0e0;
+}
+
+.metadata-footer .save-btn {
+  background: #533483;
+  border-color: #533483;
+}
+
+.metadata-footer .save-btn:hover:not(:disabled) {
+  background: #6a44a8;
+}
+
+.metadata-footer .save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

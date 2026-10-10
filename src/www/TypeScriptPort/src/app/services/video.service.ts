@@ -13,10 +13,10 @@ export class VideoService {
   isPlaying$: Observable<boolean> = this.isPlayingSubject.asObservable();
 
   private isFullScreenSubject = new BehaviorSubject<boolean>(false);
-  isFullScreen$: Observable<boolean> = this.isFullScreen$.asObservable();
+  isFullScreen$: Observable<boolean> = this.isFullScreenSubject.asObservable();
 
   private controlsVisibleSubject = new BehaviorSubject<boolean>(false);
-  controlsVisible$: Observable<boolean> = this.controlsVisible$.asObservable();
+  controlsVisible$: Observable<boolean> = this.controlsVisibleSubject.asObservable();
 
   private videoNode: HTMLVideoElement | null = null;
   private controlsHideDebounce: any;
@@ -77,7 +77,7 @@ export class VideoService {
     if (this.videoNode) {
       this.videoNode.muted = !this.videoNode.muted;
       if (this.videoNode.muted) {
-        this.videoNode.dataset.volume = this.videoNode.volume;
+        this.videoNode.dataset.volume = String(this.videoNode.volume);
         this.videoNode.volume = 0;
       } else {
         this.videoNode.volume = parseFloat(this.videoNode.dataset.volume || '0.5');
@@ -111,7 +111,6 @@ export class VideoService {
   toggleFullScreen(): void {
     const videoContainer = document.getElementById('video-container');
     if (!videoContainer) return;
-
     if (document.fullscreenElement) {
       document.exitFullscreen();
     } else {
@@ -187,5 +186,78 @@ export class VideoService {
       minutes: minutes < 10 ? '0' + minutes : String(minutes),
       seconds: seconds < 10 ? '0' + seconds : String(seconds),
     };
+  }
+
+  setVideoSource(url: string): void {
+    this.removeVideoSource();
+    if (this.videoNode) {
+      const source = document.createElement('source');
+      source.id = 'videoSourceNode';
+      source.src = url;
+      this.videoNode.appendChild(source);
+    }
+  }
+
+  removeVideoSource(): void {
+    if (this.videoNode) {
+      const source = this.videoNode.querySelector('source');
+      if (source) {
+        this.videoNode.removeChild(source);
+      }
+    }
+  }
+
+  setVideoTitle(title: string): void {
+    if (this.videoNode) {
+      this.videoNode.setAttribute('title', title);
+    }
+  }
+
+  clearTitle(): void {
+    if (this.videoNode) {
+      this.videoNode.removeAttribute('title');
+    }
+  }
+
+  setPoster(poster: string): void {
+    if (this.videoNode) {
+      this.videoNode.setAttribute('poster', poster);
+    }
+  }
+
+  clearPoster(): void {
+    if (this.videoNode) {
+      this.videoNode.removeAttribute('poster');
+    }
+  }
+
+  loadVideo(): void {
+    if (this.videoNode) {
+      this.videoNode.load();
+    }
+  }
+
+  pause(): void {
+    if (this.videoNode) {
+      this.videoNode.pause();
+    }
+  }
+
+  hideVideo(): void {
+    if (this.videoNode) {
+      this.videoNode.classList.remove('video-shown', 'video-shown-embeded');
+    }
+  }
+
+  showVideo(): void {
+    if (this.videoNode) {
+      this.videoNode.classList.add('video-shown', 'video-shown-embeded');
+    }
+  }
+
+  skipTo(timeInSeconds: number): void {
+    if (this.videoNode) {
+      this.videoNode.currentTime = timeInSeconds;
+    }
   }
 }

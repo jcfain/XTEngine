@@ -1,0 +1,128 @@
+.media-list-container {
+  padding: 10px 20px;
+}
+
+.media-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  align-items: center;
+}
+
+.filter-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #16213e;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: #533483;
+}
+
+.media-toolbar select {
+  padding: 8px 12px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #16213e;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--thumb-size, 200px), 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.media-item {
+  cursor: pointer;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #16213e;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.media-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.media-item.playing {
+  outline: 2px solid #533483;
+}
+
+.media-thumb {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  overflow: hidden;
+}
+
+.media-thumb img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.media-item:hover .media-overlay {
+  opacity: 1;
+}
+
+.play-icon {
+  color: #fff;
+  font-size: 2rem;
+}
+
+.media-name {
+  padding: 8px 10px;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.media-controls button {
+  background: #16213e;
+  border: 1px solid #333;
+  color: #e0e0e0;
+  font-size: 1.1rem;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.media-controls button:hover {
+  background: #533483;
+}

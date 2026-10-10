@@ -9,7 +9,17 @@
 
 <main class="app-main">
   <app-video-player></app-video-player>
+  <div class="app-content">
+    <div class="sidebar">
+      <app-tcode-commands></app-tcode-commands>
+      <app-connections></app-connections>
+    </div>
+    <div class="main-content">
+      <app-media-list></app-media-list>
+    </div>
+  </div>
 </main>
 
-<app-settings [class.open]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
+<app-settings [isOpen]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
 <app-script-status [class.open]="scriptStatusOpen"></app-script-status>
+<app-metadata [isOpen]="metadataOpen" (close)="metadataOpen = false"></app-metadata>

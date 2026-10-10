@@ -50,3 +50,19 @@
 .app-main {
   padding: 20px;
 }
+
+.app-content {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+}
