@@ -19,13 +19,13 @@ export class MediaService {
   ) {}
 
   getMediaList(): Observable<any> {
-    return this.http.get<any>('/mediaList');
+    return this.http.get<any>('/media');
   }
 
   loadMediaList(): void {
-    this.http.get<any>('/mediaList').subscribe({
+    this.http.get<any>('/media').subscribe({
       next: (response) => {
-        const items: MediaItem[] = response.items || [];
+        const items: MediaItem[] = Array.isArray(response) ? response : (response.items || []);
         this.appState.setMediaList(items);
       },
       error: (err) => {
