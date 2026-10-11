@@ -1,7 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 20px;
-  background-color: #f5f5f5;
+    background-color: black;
+    color: white;
+    font-family: 'sans-serif', "serif", "Lucida Sans Regular", 'Times New Roman', "Times", "DejaVu Serif", "Verdana";
+    margin: 0;
 }

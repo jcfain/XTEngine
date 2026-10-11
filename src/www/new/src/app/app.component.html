@@ -1,24 +1,24 @@
-<div class="app-header">
-  <h1>{{ title }} <span class="version">{{ webVersion }}</span></h1>
-  <div class="header-controls">
-    <span class="status" [class.connected]="isConnected()">{{ statusText() }}</span>
-    <button class="header-btn" (click)="toggleScriptStatus()" title="Script Status">&#9881;</button>
-    <button class="header-btn" (click)="toggleSettings()" title="Settings">&#9881;</button>
-  </div>
-</div>
 
-<main class="app-main">
-  <app-video-player></app-video-player>
-  <div class="app-content">
-    <div class="sidebar">
+<div class="app-content">
+  <div class="app-header">
+    <h1>{{ title }} <span class="version">{{ webVersion }}</span></h1>
+    <div class="header-controls">
+      <span class="status" [class.connected]="isConnected()">{{ statusText() }}</span>
+      <button class="header-btn" (click)="toggleScriptStatus()" title="Script Status">&#9881;</button>
+      <button class="header-btn" (click)="toggleSettings()" title="Settings">&#9881;</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <app-video-player></app-video-player>
+    <app-media-toolbar></app-media-toolbar>
+    <!-- <div class="sidebar">
       <app-tcode-commands></app-tcode-commands>
       <app-connections></app-connections>
-    </div>
-    <div class="main-content">
-      <app-media-list></app-media-list>
-    </div>
+    </div> -->
+    <app-media-list></app-media-list>
   </div>
-</main>
+</div>
 
 <app-settings [isOpen]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
 <app-script-status [class.open]="scriptStatusOpen"></app-script-status>

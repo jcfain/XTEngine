@@ -171,7 +171,7 @@ export interface DeviceState {
 
 export interface WebSocketMessage {
     command: string;
-    [key: string]: any;
+    message?: any;
 }
 
 export interface ChannelStatus {

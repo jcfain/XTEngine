@@ -92,8 +92,8 @@ export class AppStateService {
   // External streaming
   externalStreaming: boolean = JSON.parse(window.localStorage.getItem('externalStreaming') || 'false');
 
-  // Disable lazy load
-  disableLazyLoad: boolean = JSON.parse(window.localStorage.getItem('disableLazyLoad') || 'false');
+  // Disable the builtin browser lazy load
+  disableBrowserLazyLoad: boolean = JSON.parse(window.localStorage.getItem('disableLazyLoad') || 'false');
 
   get xtpConnected(): boolean { return this.xtpConnectedSubject.value; }
   get mediaList(): MediaItem[] { return this.mediaListSubject.value; }

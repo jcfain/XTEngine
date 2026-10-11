@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { VideoService } from '../../services/video.service';
+import { MediaService } from '../../services/media.service';
+import { MediaItem } from '../../models/interfaces';
 
 @Component({
   selector: 'app-video-player',
@@ -25,7 +27,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private subscriptions: Subscription[] = [];
 
-  constructor(private videoService: VideoService) {}
+  constructor(
+    private videoService: VideoService,
+    private mediaService: MediaService
+  ) {}
 
   ngOnInit(): void {
     this.subscriptions.push(
@@ -57,6 +62,26 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.subscriptions.forEach(s => s.unsubscribe());
     this.videoService.setVideoNode(null);
     document.removeEventListener('fullscreenchange', () => this.videoService.onFullScreenChange());
+  }
+
+  onPlayNext(): void {
+    this.mediaService.playNextVideo();
+  }
+
+  onPlayPrevious(): void {
+    this.mediaService.playPreviousVideo();
+  }
+
+  onStop(): void {
+    this.mediaService.stopVideo();
+  }
+
+  onSkipToMoneyShot(): void {
+    this.mediaService.skipToMoneyShot();
+  }
+
+  onSkipToNextAction(): void {
+    this.mediaService.skipToNextAction();
   }
 
   onLoadedMetadata(): void {

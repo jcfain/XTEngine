@@ -1,5 +1,5 @@
 <div id="video-container" class="video-container" (mouseenter)="showControls()" (mouseleave)="hideControls()">
-  <video #videoNode class="video" playsinline>
+  <video #videoNode [class]="'video' + isPlaying ? '' : ' hidden'" playsinline autoplay controls >
     <source id="videoSourceNode" />
   </video>
 
@@ -30,6 +30,13 @@
           <span *ngIf="volume > 0 && volume <= 0.5">&#128264;</span>
           <span *ngIf="volume > 0.5">&#128266;</span>
         </button>
+      </div>
+      <div class="media-controls">
+        <button (click)="onPlayPrevious()" title="Previous">&#9664;&#9664;</button>
+        <button (click)="onStop()" title="Stop">&#9632;</button>
+        <button (click)="onPlayNext()" title="Next">&#9654;&#9654;</button>
+        <button (click)="onSkipToMoneyShot()" title="Money Shot">&#9733;</button>
+        <button (click)="onSkipToNextAction()" title="Next Action">&#9654;</button>
       </div>
       <div class="right-controls">
         <span class="duration">{{ duration }}</span>

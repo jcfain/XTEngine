@@ -1,38 +1,22 @@
 <div class="media-list-container">
-  <div class="media-toolbar">
-    <div class="filter-section">
-      <input type="text" class="filter-input" placeholder="Filter media..."
-             [ngModel]="filterText" (ngModelChange)="onFilterChange($event)" />
-    </div>
-    <div class="show-section">
-      <select [ngModel]="currentShow" (ngModelChange)="onShowChange($event)">
-        <option *ngFor="let opt of showOptions" [value]="opt">{{ opt }}</option>
-      </select>
-    </div>
-    <div class="sort-section">
-      <select [ngModel]="currentSort" (ngModelChange)="onSortChange($event)">
-        <option *ngFor="let opt of sortOptions" [value]="opt">{{ opt }}</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="media-grid" [style.--thumb-size.px]="getThumbSize()">
-    <div *ngFor="let item of mediaList" class="media-item" [class.playing]="isPlaying(item)" (click)="onPlay(item)">
-      <div class="media-thumb">
-        <img [src]="item.relativeThumb" [alt]="item.name" loading="lazy" />
+  <div class="media-list">
+    <div *ngFor="let item of mediaList" class="media-item" [style.width]="width" [style.height]="height" [class.playing]="isPlaying(item)" (click)="onItemClick(item)">
+      <div class="media-thumb" [style.height]="thumbHeight" [style.width]="thumbWidth">
+        <ng-container [ngTemplateOutlet]="getLazyLoad() ? browserLazyLoad : myLazyLoad" [ngTemplateOutletContext]="{item: item}" />
         <div class="media-overlay">
           <span class="play-icon">&#9654;</span>
         </div>
       </div>
-      <div class="media-name">{{ item.name }}</div>
+      <div class="media-name" [style.width]="width" [style.height]="textHeight" [style.fontSize]="fontSize">{{ item.name }}</div>
     </div>
   </div>
-
-  <div class="media-controls">
-    <button (click)="onPlayPrevious()" title="Previous">&#9664;&#9664;</button>
-    <button (click)="onStop()" title="Stop">&#9632;</button>
-    <button (click)="onPlayNext()" title="Next">&#9654;&#9654;</button>
-    <button (click)="onSkipToMoneyShot()" title="Money Shot">&#9733;</button>
-    <button (click)="onSkipToNextAction()" title="Next Action">&#9654;</button>
-  </div>
 </div>
+
+
+<ng-template #browserLazyLoad let-item="item">
+  <img [ngSrc]="getThumbPath(item)" priority fill [alt]="item.name" class="media-thumb-nail" loading="lazy" />
+</ng-template>
+
+<ng-template #myLazyLoad let-item="item">
+  <img [ngSrc]="getThumbPath(item)" priority fill [alt]="item.name" class="media-thumb-nail lazy" />
+</ng-template>

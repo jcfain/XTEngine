@@ -5,6 +5,7 @@ import { VideoPlayerComponent } from './components/video-player/video-player.com
 import { SettingsComponent } from './components/settings/settings.component';
 import { ScriptStatusComponent } from './components/script-status/script-status.component';
 import { MediaListComponent } from './components/media-list/media-list.component';
+import { MediaToolbarComponent } from './components/media-toolbar/media-toolbar.component';
 import { ConnectionsComponent } from './components/connections/connections.component';
 import { TCodeCommandsComponent } from './components/tcode-commands/tcode-commands.component';
 import { MetadataComponent } from './components/metadata/metadata.component';
@@ -18,7 +19,18 @@ import { ConnectionStatus } from './models/enums';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, VideoPlayerComponent, SettingsComponent, ScriptStatusComponent, MediaListComponent, ConnectionsComponent, TCodeCommandsComponent, MetadataComponent],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    VideoPlayerComponent, 
+    SettingsComponent, 
+    ScriptStatusComponent, 
+    MediaListComponent, 
+    MediaToolbarComponent, 
+    ConnectionsComponent, 
+    TCodeCommandsComponent, 
+    MetadataComponent
+  ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })

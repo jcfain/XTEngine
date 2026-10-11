@@ -66,10 +66,16 @@ export class WebsocketService {
     }
   }
 
-  send(command: string, payload?: Record<string, any>): void {
+  send(command: string, payload?: any): void {
     if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-      const message: WebSocketMessage = { command, ...payload };
-      this.websocket.send(JSON.stringify(message));
+      let obj: WebSocketMessage;
+      if (!payload) {
+        obj = { "command": command }
+      } else {
+        obj = { "command": command, "message": payload }
+      }
+      // const message: WebSocketMessage = { command, ...payload };
+      this.websocket.send(JSON.stringify(obj));
     }
   }
 

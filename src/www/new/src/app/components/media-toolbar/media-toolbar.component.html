@@ -1,0 +1,56 @@
+<!-- <div class="media-toolbar">
+  <div class="show-section">
+    <select [ngModel]="currentShow" (ngModelChange)="onShowChange($event)">
+      <option *ngFor="let opt of showOptions" [value]="opt">{{ opt }}</option>
+    </select>
+  </div>
+  <div class="sort-section">
+    <select [ngModel]="currentSort" (ngModelChange)="onSortChange($event)">
+      <option *ngFor="let opt of sortOptions" [value]="opt">{{ opt }}</option>
+    </select>
+  </div>
+</div> -->
+
+<div class="side-actions">
+  <div class="side-actions-container">
+    <button id="searchButton" title="Search media" class="search-media-button icon-button icon-button--group--vertical" (click)="filterInputHidden = !filterInputHidden">
+      <img class="buttonImage" src="://images/icons/search.svg"/>
+    </button> 
+    <button id="tagButton" title="Filter tags" class="tag-media-button icon-button icon-button--group--vertical" (click)="tagInputHidden = !tagInputHidden">
+      <img class="buttonImage" src="://images/icons/tag.svg"/>
+    </button> 
+    <button  title="TCode actions" name="tcodeActionsButton" class="tcode-actions-button icon-button icon-button--group--vertical"  (click)="tcodeActionsInputHidden = !tcodeActionsInputHidden">
+      <img class="buttonImage" src="://images/icons/tcode.svg" />
+    </button>
+    <button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button icon-button--group--vertical" (click)="toggleShufflePlay()">
+      <img class="buttonImage" src="://images/icons/shuffle.svg" />
+    </button> 
+    <button id="randomizeButton" title="Randomize media playlist" class="hidden random-media-button icon-button icon-button--group--vertical" (click)="sortChange('random')">
+      <img class="buttonImage" src="://images/icons/reload.svg" />
+    </button> 
+  </div>
+</div>
+
+
+<div *ngIf="filterInputHidden" id="filterInputContainer" class="side-action-filter-input-modal">
+  <input id="filterInput" class="side-action-filter-input" placeholder="Filter" [ngModel]="filterText" (ngModelChange)="onFilterChange($event)" />
+  <button class="side-action-filter-clear-button icon-button icon-button--small" (click)="filterText = ''">
+    <img class="buttonImage" src="://images/icons/x.svg" />
+  </button>
+</div>
+<!-- <select id="tagFilterSelect" class="side-action-tag-filter-modal hidden" multiple oninput="filterByTag(this.value)"></select>  -->
+<div *ngIf="tagInputHidden" id="tagFilterOptions" class="side-action-tag-filter-modal hidden"></div>
+<div *ngIf="tcodeActionsInputHidden" id="tcodeActionsMain" class="side-action-tcode-action-modal hidden">
+  <h3>TCode actions</h3>
+  <div id="actionButtons" class="side-action-tcode-action-container"></div>
+</div>
+<div id="scriptStatusModal" class="script-status-model hidden">
+  <div name="noScriptInput" style="align-self: center;">No script input</div>
+  <div name="scriptStatusContainer"  class="script-status-container"></div>
+</div>
+
+<div id="noMedia" style="text-align: center;" hidden>No media found</div>
+<div id="mediaLoading" class="no-media">
+  <div class="loading-spinner"></div>
+  <div id="loadingStatus" style="padding-top: 10px;">Loading...</div>
+</div>

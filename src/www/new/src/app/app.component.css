@@ -1,3 +1,10 @@
+.app-content {
+  display: flex;
+  flex-flow: column;
+  background-color: black;
+  gap: 20px;
+}
+
 .app-header {
   display: flex;
   justify-content: space-between;
@@ -12,24 +19,10 @@
   font-size: 1.3rem;
 }
 
-.version {
-  color: #888;
-  font-size: 0.8rem;
-}
-
 .header-controls {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.status {
-  color: #e74c3c;
-  font-size: 0.85rem;
-}
-
-.status.connected {
-  color: #2ecc71;
 }
 
 .header-btn {
@@ -47,22 +40,28 @@
   color: #fff;
 }
 
-.app-main {
-  padding: 20px;
+.app-body {  
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  height: calc(100svh - 124px);
 }
 
-.app-content {
-  display: flex;
-  gap: 20px;
-  margin-top: 20px;
+.version {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.status {
+  color: #e74c3c;
+  font-size: 0.85rem;
+}
+
+.status.connected {
+  color: #2ecc71;
 }
 
 .sidebar {
   width: 280px;
   flex-shrink: 0;
-}
-
-.main-content {
-  flex: 1;
-  min-width: 0;
 }
