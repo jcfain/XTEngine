@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MediaService } from '../../services/media.service';
 import { AppStateService } from '../../services/app-state.service';
 import { MediaItem } from '../../models/interfaces';
+import { MediaListService } from '../../services/media-list-service';
 
 interface MetaData {
   offset: number;
@@ -37,6 +38,7 @@ export class MetadataComponent implements OnInit {
 
   constructor(
     private mediaService: MediaService,
+    private mediaListService: MediaListService,
     private appState: AppStateService
   ) {}
 
@@ -49,7 +51,7 @@ export class MetadataComponent implements OnInit {
   }
 
   open(item?: MediaItem): void {
-    const mediaItem = item || this.appState.playingMediaItem;
+    const mediaItem = item || this.mediaListService.playingMediaItem;
     if (!mediaItem) return;
     this.mediaItem = mediaItem;
     const meta = (mediaItem as any).metaData as MetaData;

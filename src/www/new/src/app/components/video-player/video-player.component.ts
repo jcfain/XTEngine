@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs';
 import { VideoService } from '../../services/video.service';
 import { MediaService } from '../../services/media.service';
 import { MediaItem } from '../../models/interfaces';
+import { MediaListService } from '../../services/media-list-service';
 
 @Component({
   selector: 'app-video-player',
@@ -18,17 +19,21 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   isPlaying = false;
   isFullScreen = false;
-  controlsVisible = true;
+  controlsVisible = false;
+  videoVisible = false;
+  videoVisibleEmbedded = true;
   volume = 0.5;
   currentTime = '00:00:00';
   duration = '00:00:00';
   progress = 0;
   loading = false;
+  mediaItem: MediaItem | null = null;
 
   private subscriptions: Subscription[] = [];
 
   constructor(
     private videoService: VideoService,
+    private mediaListService: MediaListService,
     private mediaService: MediaService
   ) {}
 
@@ -37,7 +42,9 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
       this.videoService.isPlaying$.subscribe(v => this.isPlaying = v),
       this.videoService.isFullScreen$.subscribe(v => this.isFullScreen = v),
       this.videoService.controlsVisible$.subscribe(v => this.controlsVisible = v),
-      this.videoService.volume$.subscribe(v => this.volume = v)
+      this.videoService.volume$.subscribe(v => this.volume = v),
+      this.videoService.videoVisible$.subscribe(v => this.videoVisible = v),
+      this.videoService.playingMediaItem$.subscribe(v => this.mediaItem = v)
     );
   }
 
@@ -65,15 +72,15 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onPlayNext(): void {
-    this.mediaService.playNextVideo();
+    this.mediaListService.playNextVideo();
   }
 
   onPlayPrevious(): void {
-    this.mediaService.playPreviousVideo();
+    this.mediaListService.playPreviousVideo();
   }
 
   onStop(): void {
-    this.mediaService.stopVideo();
+    this.videoService.stopVideo();
   }
 
   onSkipToMoneyShot(): void {
@@ -140,5 +147,9 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   hideControls(): void {
     this.videoService.hideControlsEvent();
+  }
+
+  isVideoFixedLowHeight(): boolean {
+    return document.documentElement.clientHeight < 600 && !this.isFullScreen && this.videoVisible;
   }
 }

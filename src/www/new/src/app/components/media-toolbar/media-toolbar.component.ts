@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AppStateService } from '../../services/app-state.service';
+import { MediaListService } from '../../services/media-list-service';
 
 @Component({
   selector: 'app-media-toolbar',
@@ -18,7 +18,7 @@ export class MediaToolbarComponent implements OnInit {
   currentSort = 'name';
 
   constructor(
-    private appState: AppStateService
+    private mediaListService: MediaListService
   ) {}
 
   filterInputHidden: boolean = true;
@@ -26,21 +26,21 @@ export class MediaToolbarComponent implements OnInit {
   tcodeActionsInputHidden: boolean = true;
 
   ngOnInit(): void {
-    this.appState.filterCriteria$.subscribe(f => this.filterText = f);
-    this.appState.show$.subscribe(s => this.currentShow = s);
-    this.appState.sortBy$.subscribe(s => this.currentSort = s);
+    this.mediaListService.filterCriteria$.subscribe(f => this.filterText = f);
+    this.mediaListService.show$.subscribe(s => this.currentShow = s);
+    this.mediaListService.sortBy$.subscribe(s => this.currentSort = s);
   }
 
   onFilterChange(value: string): void {
-    this.appState.setFilterCriteria(value);
+    this.mediaListService.setFilterCriteria(value);
   }
 
   onShowChange(value: string): void {
-    this.appState.setShow(value);
+    this.mediaListService.setShow(value);
   }
 
   onSortChange(value: string): void {
-    this.appState.setSortBy(value);
+    this.mediaListService.setSortBy(value);
   }
 
   toggleShufflePlay() {}

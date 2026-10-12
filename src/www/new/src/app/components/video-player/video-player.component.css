@@ -157,6 +157,7 @@
 
 .hidden {
   display: none !important;
+  opacity: 0 !important;
 }
 .video-container {
     border-radius: 4px;
@@ -182,11 +183,11 @@ video {
     opacity: 0;
 }
 
-.video-shown {
+.video-visible {
     opacity: 1;
 }
 
-.video-shown-embeded {
+.video-visible-embeded {
     max-height: 50vh;
 }
 

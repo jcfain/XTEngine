@@ -11,42 +11,9 @@ export class AppStateService {
   private xtpConnectedSubject = new BehaviorSubject<boolean>(false);
   xtpConnected$: Observable<boolean> = this.xtpConnectedSubject.asObservable();
 
-  // Media list
-  private mediaListSubject = new BehaviorSubject<MediaItem[]>([]);
-  mediaList$: Observable<MediaItem[]> = this.mediaListSubject.asObservable();
-
-  private mediaListDisplayedSubject = new BehaviorSubject<MediaItem[]>([]);
-  mediaListDisplayed$: Observable<MediaItem[]> = this.mediaListDisplayedSubject.asObservable();
-
-  // Playing media
-  private playingMediaItemSubject = new BehaviorSubject<MediaItem | null>(null);
-  playingMediaItem$: Observable<MediaItem | null> = this.playingMediaItemSubject.asObservable();
-
-  // Selected media for metadata
-  private selectedMediaItemSubject = new BehaviorSubject<MediaItem | null>(null);
-  selectedMediaItem$: Observable<MediaItem | null> = this.selectedMediaItemSubject.asObservable();
-
   // Remote settings
   private remoteUserSettingsSubject = new BehaviorSubject<RemoteUserSettings | null>(null);
   remoteUserSettings$: Observable<RemoteUserSettings | null> = this.remoteUserSettingsSubject.asObservable();
-
-  // Filter
-  private filterCriteriaSubject = new BehaviorSubject<string>('');
-  filterCriteria$: Observable<string> = this.filterCriteriaSubject.asObservable();
-
-  private tagFilterCriteriaSubject = new BehaviorSubject<string[]>([]);
-  tagFilterCriteria$: Observable<string[]> = this.tagFilterCriteriaSubject.asObservable();
-
-  // Sort / Show
-  private sortBySubject = new BehaviorSubject<string>(JSON.parse(window.localStorage.getItem('sortBy') || '"name"'));
-  sortBy$: Observable<string> = this.sortBySubject.asObservable();
-
-  private showSubject = new BehaviorSubject<string>(JSON.parse(window.localStorage.getItem('show') || '"All"'));
-  show$: Observable<string> = this.showSubject.asObservable();
-
-  // Thumb size
-  private thumbSizeSubject = new BehaviorSubject<number>(JSON.parse(window.localStorage.getItem('thumbSize') || '200'));
-  thumbSize$: Observable<number> = this.thumbSizeSubject.asObservable();
 
   // Devices
   private selectedInputDeviceSubject = new BehaviorSubject<DeviceType>(
@@ -96,14 +63,7 @@ export class AppStateService {
   disableBrowserLazyLoad: boolean = JSON.parse(window.localStorage.getItem('disableLazyLoad') || 'false');
 
   get xtpConnected(): boolean { return this.xtpConnectedSubject.value; }
-  get mediaList(): MediaItem[] { return this.mediaListSubject.value; }
-  get playingMediaItem(): MediaItem | null { return this.playingMediaItemSubject.value; }
-  get selectedMediaItem(): MediaItem | null { return this.selectedMediaItemSubject.value; }
   get remoteUserSettings(): RemoteUserSettings | null { return this.remoteUserSettingsSubject.value; }
-  get filterCriteria(): string { return this.filterCriteriaSubject.value; }
-  get sortBy(): string { return this.sortBySubject.value; }
-  get show(): string { return this.showSubject.value; }
-  get thumbSize(): number { return this.thumbSizeSubject.value; }
   get selectedInputDevice(): DeviceType { return this.selectedInputDeviceSubject.value; }
   get selectedOutputDevice(): DeviceType { return this.selectedOutputDeviceSubject.value; }
   get mediaLoading(): boolean { return this.mediaLoadingSubject.value; }
@@ -115,48 +75,8 @@ export class AppStateService {
     this.xtpConnectedSubject.next(connected);
   }
 
-  setMediaList(list: MediaItem[]): void {
-    this.mediaListSubject.next(list);
-    this.applyFilterAndSort();
-  }
-
-  setPlayingMediaItem(item: MediaItem | null): void {
-    this.playingMediaItemSubject.next(item);
-  }
-
-  setSelectedMediaItem(item: MediaItem | null): void {
-    this.selectedMediaItemSubject.next(item);
-  }
-
   setRemoteUserSettings(settings: RemoteUserSettings): void {
     this.remoteUserSettingsSubject.next(settings);
-  }
-
-  setFilterCriteria(criteria: string): void {
-    this.filterCriteriaSubject.next(criteria);
-    this.applyFilterAndSort();
-  }
-
-  setTagFilterCriteria(tags: string[]): void {
-    this.tagFilterCriteriaSubject.next(tags);
-    this.applyFilterAndSort();
-  }
-
-  setSortBy(sortBy: string): void {
-    this.sortBySubject.next(sortBy);
-    window.localStorage.setItem('sortBy', JSON.stringify(sortBy));
-    this.applyFilterAndSort();
-  }
-
-  setShow(show: string): void {
-    this.showSubject.next(show);
-    window.localStorage.setItem('show', JSON.stringify(show));
-    this.applyFilterAndSort();
-  }
-
-  setThumbSize(size: number): void {
-    this.thumbSizeSubject.next(size);
-    window.localStorage.setItem('thumbSize', JSON.stringify(size));
   }
 
   setSelectedInputDevice(device: DeviceType): void {
@@ -195,63 +115,5 @@ export class AppStateService {
 
   setMediaActions(actions: Record<string, any>): void {
     this.mediaActionsSubject.next(actions);
-  }
-
-  private applyFilterAndSort(): void {
-    let list = [...this.mediaListSubject.value];
-
-    // Filter by show
-    const show = this.showSubject.value;
-    if (show !== 'All') {
-      switch (show) {
-        case 'Unwatched':
-          list = list.filter(m => !m.viewed || m.viewed === 0);
-          break;
-        case 'Watched':
-          list = list.filter(m => m.viewed && m.viewed > 0);
-          break;
-      }
-    }
-
-    // Filter by text
-    const filter = this.filterCriteriaSubject.value.toLowerCase();
-    if (filter) {
-      list = list.filter(m => m.name.toLowerCase().includes(filter));
-    }
-
-    // Filter by tags
-    const tags = this.tagFilterCriteriaSubject.value;
-    if (tags.length > 0) {
-      list = list.filter(m => tags.some(t => m.tags?.includes(t)));
-    }
-
-    // Sort
-    const sortBy = this.sortBySubject.value;
-    list.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'name-desc':
-          return b.name.localeCompare(a.name);
-        case 'date':
-          return (b.metaData.dateAdded?.getTime() || 0) - (a.metaData.dateAdded?.getTime() || 0);
-        case 'date-desc':
-          return (a.metaData.dateAdded?.getTime() || 0) - (b.metaData.dateAdded?.getTime() || 0);
-        default:
-          return a.name.localeCompare(b.name);
-      }
-    });
-
-    this.mediaListDisplayedSubject.next(list);
-  }
-
-  updateMediaItem(updated: MediaItem): void {
-    const list = [...this.mediaListSubject.value];
-    const index = list.findIndex(m => m.id === updated.id);
-    if (index !== -1) {
-      list[index] = updated;
-      this.mediaListSubject.next(list);
-      this.applyFilterAndSort();
-    }
   }
 }

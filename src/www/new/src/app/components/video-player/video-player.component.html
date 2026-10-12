@@ -1,5 +1,5 @@
-<div id="video-container" class="video-container" (mouseenter)="showControls()" (mouseleave)="hideControls()">
-  <video #videoNode [class]="'video' + isPlaying ? '' : ' hidden'" playsinline autoplay controls >
+<div id="video-container" class="video-container" [class.video-container-fixed]="isVideoFixedLowHeight()" (mouseenter)="showControls()" (mouseleave)="hideControls()">
+  <video playsinline autoplay controls #videoNode class="video" [class.video-visible]="videoVisible" [class.video-visible-embeded]="videoVisible && videoVisibleEmbedded" >
     <source id="videoSourceNode" />
   </video>
 
@@ -7,12 +7,121 @@
     <div class="spinner"></div>
   </div>
 
-  <div class="top-controls" [class.hide]="!controlsVisible">
-    <span class="time-elapsed">{{ currentTime }}</span>
+  <!-- <div class="top-controls" [class.hide]="!controlsVisible">
     <span class="video-name"></span>
+  </div> -->
+
+  <div id="top-controls" class="video-controls top-controls"[class.hidden]="!controlsVisible">
+    <div class="left-controls left-controls--top">
+      <div id="videoMediaName" class="video-media-name">{{mediaItem?.name}}</div>
+    </div>
+    <div class="middle-controls middle-controls--top">
+    </div>
+    <div class="right-controls right-controls--top">
+      <button data-title="Exit (x)" class="video-control video-control--action-end video-control-main" id="exit-action">
+        <svg style="color: white" xmlns="http://www.w3.org/2000/svg" class="player-button-icon" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16"> <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" fill="white"></path> </svg>
+      </button>
+  <!-- 		Need to put the menu in the video container for this to work in full screen.
+    <button id="settingsOverlayButton" class="video-control video-control--action-end" onclick="openSettings()">
+        <image class="buttonImage" src="://images/icons/settings.svg" />
+      </button> -->
+    </div>
   </div>
 
-  <div class="bottom-controls" [class.hide]="!controlsVisible">
+  <!-- <div id="bottom-controls" class="video-controls" [class.hidden]="!controlsVisible">
+    <div id="bottom-top-controls" class="bottom-top-controls">
+      <div id="scriptStatusPlayerContainer" name="scriptStatusContainer"  class="script-status-container hidden">
+        <div name="noScriptInput" style="align-self: center; flex-basis: 100%;">No script input</div>
+      </div>
+      <div class="bottom-top-controls-buttons">
+        <button id="scriptStatusPlayerButton" class="video-control video-control-other">
+          <img class="player-button-icon" src="://images/icons/equalizer.svg"/ >
+        </button>
+        <button data-title="Skip to next action (a)" class="video-control  video-control-other video-control--action-begin" id="next-action">
+          <img class="player-button-icon" src="://images/icons/skipToAction.png"></img>
+        </button>
+        <button data-title="Skip to moneyshot (c)" class="video-control  video-control-other video-control--money-shot" id="money-shot">
+          <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg"></img>
+        </button>
+        <button data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control-other video-control--device-state" onclick="togglePauseAllDeviceActions()">
+          <img class="player-button-icon" name="devicePauseStatusIconImage" src="://images/icons/pause.svg" />
+        </button>
+      </div>
+    </div>
+    <div class="time">
+      <time id="time-elapsed">00:00</time>
+      <span> / </span>
+      <time id="duration">00:00</time>
+    </div>
+    <div class="video-progress video-control">
+      <progress id="progress-bar" value="0" min="0"></progress>
+      <input class="seek" id="seek" value="0" min="0" type="range" step="1">
+      <div class="seek-tooltip" id="seek-tooltip">00:00:00</div>
+    </div>
+
+    <div id="bottom-bottom-controls" class="bottom-controls">
+      <div class="left-controls">
+        <button data-title="Skip to next action (a)" class="video-control video-control--action-begin" id="next-action">
+          <img class="player-button-icon" src="://images/icons/skipToAction.png"></img>
+        </button>
+        <button data-title="Skip to moneyshot (c)" class="video-control video-control--money-shot" id="money-shot">
+          <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg"></img>
+        </button>
+        <button  data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control--device-state" onclick="togglePauseAllDeviceActions()">
+          <img class="player-button-icon" name="devicePauseStatusIconImage" src="://images/icons/pause.svg" />
+        </button>
+        <div class="volume-controls">
+          <input data-title="Up (+) - Down (-)" class="volume" id="volume" value="1" data-mute="0.5" type="range" max="1" min="0" step="0.01" />
+          <button data-title="Mute (m)" class="volume-button video-control video-control-main" id="volume-button">
+            <svg class="player-button-icon">
+              <use class="hidden" href="#volume-mute"></use>
+              <use class="hidden" href="#volume-low"></use>
+              <use href="#volume-high"></use>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="middle-controls">
+        <button data-title="Previous video (arrow left)" class="video-control video-control-main" id="play-previous">
+          <svg class="player-button-icon" >
+            <use href="#play-previous-icon"></use>
+          </svg>
+        </button>
+        <button data-title="Play (k)" class="video-control video-control-main" id="play">
+          <svg class="playback-icons player-button-icon">
+            <use id="playIcon" href="#play-icon"></use>
+            <use id="pauseIcon" class="hidden" href="#pause"></use>
+          </svg>
+        </button>
+        <button data-title="Next video (arrow right)" class="video-control video-control-main" id="play-next">
+          <svg class="player-button-icon">
+            <use href="#play-next-icon"></use>
+          </svg>
+        </button>
+      </div>
+      <div class="right-controls">
+        <input id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0.00" value="1.00" step="0.01" onchange="setPlayRate(this.value)" />
+        <button data-title="Alternate scripts" class="video-control video-control-main" id="alternate-scripts-button">
+          <svg class="player-button-icon">
+            <use href="#funscript"></use>
+          </svg>
+        </button>
+        <button data-title="Media settings" class="video-control video-control-main" id="playing-media-settings-button">
+          <svg class="player-button-icon media-settings-button">
+            <use href="#media-settings"></use>
+          </svg>
+        </button>
+        <button data-title="Full screen (f)" class="fullscreen-button video-control video-control-main" id="fullscreen-button">
+          <svg class="player-button-icon">
+            <use href="#fullscreen"></use>
+            <use href="#fullscreen-exit" class="hidden"></use>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div> -->
+  
+  <div class="bottom-controls" class="video-controls" [class.hidden]="!controlsVisible">
     <div class="progress-bar-container">
       <input type="range" class="progress-bar" [value]="progress" (input)="onSeek($event)" min="0" max="100" step="0.1" />
     </div>
@@ -39,6 +148,8 @@
         <button (click)="onSkipToNextAction()" title="Next Action">&#9654;</button>
       </div>
       <div class="right-controls">
+        <span class="time-elapsed">{{ currentTime }}</span>
+				<span> / </span>
         <span class="duration">{{ duration }}</span>
         <button class="control-btn" (click)="toggleFullScreen()" [title]="isFullScreen ? 'Exit full screen (f)' : 'Full screen (f)'">
           <span *ngIf="isFullScreen">&#1053;</span>

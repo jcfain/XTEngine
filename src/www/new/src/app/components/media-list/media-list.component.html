@@ -1,22 +1,31 @@
 <div class="media-list-container">
   <div class="media-list">
-    <div *ngFor="let item of mediaList" class="media-item" [style.width]="width" [style.height]="height" [class.playing]="isPlaying(item)" (click)="onItemClick(item)">
-      <div class="media-thumb" [style.height]="thumbHeight" [style.width]="thumbWidth">
+    <ng-container *ngFor="let item of mediaList">
+      <app-media-list-item class="media-item" 
+        [item]="item" 
+        [width]="width" 
+        [height]="height" 
+        [thumbHeight]="thumbHeight" 
+        [textHeight]="textHeight" 
+        [fontSize]="fontSize"
+        (click)="onItemClick(item)">
+      </app-media-list-item>
+      <!-- <div class="media-thumb" [style.height]="thumbHeight" [style.width]="thumbWidth">
         <ng-container [ngTemplateOutlet]="getLazyLoad() ? browserLazyLoad : myLazyLoad" [ngTemplateOutletContext]="{item: item}" />
         <div class="media-overlay">
           <span class="play-icon">&#9654;</span>
         </div>
       </div>
-      <div class="media-name" [style.width]="width" [style.height]="textHeight" [style.fontSize]="fontSize">{{ item.name }}</div>
-    </div>
+      <div class="media-name" [style.width]="width" [style.height]="textHeight" [style.fontSize]="fontSize">{{ item.name }}</div> -->
+    </ng-container >
   </div>
 </div>
 
 
-<ng-template #browserLazyLoad let-item="item">
+<!-- <ng-template #browserLazyLoad let-item="item">
   <img [ngSrc]="getThumbPath(item)" priority fill [alt]="item.name" class="media-thumb-nail" loading="lazy" />
 </ng-template>
 
 <ng-template #myLazyLoad let-item="item">
   <img [ngSrc]="getThumbPath(item)" priority fill [alt]="item.name" class="media-thumb-nail lazy" />
-</ng-template>
+</ng-template> -->

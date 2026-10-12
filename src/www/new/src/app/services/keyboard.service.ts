@@ -1,6 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { VideoService } from './video.service';
 import { MediaService } from './media.service';
+import { MediaListService } from './media-list-service';
 
 @Injectable({
   providedIn: 'root'
@@ -9,6 +10,7 @@ export class KeyboardService {
   constructor(
     private videoService: VideoService,
     private mediaService: MediaService,
+    private mediaListService: MediaListService,
     private ngZone: NgZone
   ) {
     document.addEventListener('keyup', (event: KeyboardEvent) => {
@@ -39,10 +41,10 @@ export class KeyboardService {
         this.videoService.toggleFullScreen();
         break;
       case 'ArrowRight':
-        this.mediaService.playNextVideo();
+        this.mediaListService.playNextVideo();
         break;
       case 'ArrowLeft':
-        this.mediaService.playPreviousVideo();
+        this.mediaListService.playPreviousVideo();
         break;
       case '+':
       case '=':
@@ -58,7 +60,7 @@ export class KeyboardService {
         this.mediaService.skipToMoneyShot();
         break;
       case 'x':
-        this.mediaService.stopVideo();
+        this.videoService.stopVideo();
         break;
     }
   }
