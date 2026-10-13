@@ -1,7 +1,7 @@
 <div class="media-item" [style.width]="width" [style.height]="height" [class.playing]="isPlaying(item)" (click)="onItemClick(item)">
   <div class="media-thumb" [style.height]="thumbHeight" [style.width]="width">
     <!-- <ng-container [ngTemplateOutlet]="getLazyLoad() ? browserLazyLoad : myLazyLoad" [ngTemplateOutletContext]="{item: item}" /> -->
-  <img [ngSrc]="getThumbPath(item)"  fill [alt]="item.name" class="media-thumb-nail" loading="lazy" />
+  <img [ngSrc]="getThumbPath(item)" fill [alt]="item.name" class="media-thumb-nail" loading="lazy" />
     <div class="media-overlay">
       <span class="play-icon">&#9654;</span>
     </div>

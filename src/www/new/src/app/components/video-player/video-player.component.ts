@@ -6,6 +6,7 @@ import { VideoService } from '../../services/video.service';
 import { MediaService } from '../../services/media.service';
 import { MediaItem } from '../../models/interfaces';
 import { MediaListService } from '../../services/media-list-service';
+import { WebsocketService } from '../../services/websocket.service';
 
 @Component({
   selector: 'app-video-player',
@@ -32,6 +33,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   private subscriptions: Subscription[] = [];
 
   constructor(
+    private webSocketService: WebsocketService,
     private videoService: VideoService,
     private mediaListService: MediaListService,
     private mediaService: MediaService
@@ -91,6 +93,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.mediaService.skipToNextAction();
   }
 
+  togglePauseAllDeviceActions() {
+    this.webSocketService.togglePauseAllDeviceActions();
+  }
+
   onLoadedMetadata(): void {
     const video = this.videoNodeRef.nativeElement;
     const time = this.videoService.formatTime(Math.round(video.duration));
@@ -112,6 +118,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.videoService.togglePlay();
   }
 
+  stop() {
+    this.videoService.stopVideo();
+  }
+
   toggleFullScreen(): void {
     this.videoService.toggleFullScreen();
   }
@@ -120,17 +130,22 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.videoService.toggleMute();
   }
 
-  volumeUp(): void {
-    this.videoService.volumeUp();
+  // volumeUp(): void {
+  //   this.videoService.volumeUp();
+  // }
+
+  // volumeDown(): void {
+  //   this.videoService.volumeDown();
+  // }
+
+  setVolume(value: string): void {
+    const valueNum = parseFloat(value);
+    this.videoService.setVolume(valueNum);
   }
 
-  volumeDown(): void {
-    this.videoService.volumeDown();
-  }
-
-  onVolumeSliderInput(event: Event): void {
-    const value = parseFloat((event.target as HTMLInputElement).value);
-    this.videoService.setVolume(value);
+  setPlayRate(value: string): void {
+    const valueNum = parseFloat(value);
+    this.videoService.setPlayRate(valueNum);
   }
 
   onSeek(event: Event): void {

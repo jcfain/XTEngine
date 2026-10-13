@@ -18,7 +18,7 @@
     <div class="middle-controls middle-controls--top">
     </div>
     <div class="right-controls right-controls--top">
-      <button data-title="Exit (x)" class="video-control video-control--action-end video-control-main" id="exit-action">
+      <button data-title="Exit (x)" class="video-control video-control--action-end video-control-main" id="exit-action" (click)="stop()">
         <svg style="color: white" xmlns="http://www.w3.org/2000/svg" class="player-button-icon" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16"> <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" fill="white"></path> </svg>
       </button>
   <!-- 		Need to put the menu in the video container for this to work in full screen.
@@ -28,22 +28,22 @@
     </div>
   </div>
 
-  <!-- <div id="bottom-controls" class="video-controls" [class.hidden]="!controlsVisible">
+  <div id="bottom-controls" class="video-controls" [class.hidden]="!controlsVisible">
     <div id="bottom-top-controls" class="bottom-top-controls">
       <div id="scriptStatusPlayerContainer" name="scriptStatusContainer"  class="script-status-container hidden">
         <div name="noScriptInput" style="align-self: center; flex-basis: 100%;">No script input</div>
       </div>
       <div class="bottom-top-controls-buttons">
         <button id="scriptStatusPlayerButton" class="video-control video-control-other">
-          <img class="player-button-icon" src="://images/icons/equalizer.svg"/ >
+          <img class="player-button-icon" src="://images/icons/equalizer.svg" />
         </button>
-        <button data-title="Skip to next action (a)" class="video-control  video-control-other video-control--action-begin" id="next-action">
-          <img class="player-button-icon" src="://images/icons/skipToAction.png"></img>
+        <button data-title="Skip to next action (a)" class="video-control  video-control-other video-control--action-begin" id="next-action" (click)="onSkipToNextAction()">
+          <img class="player-button-icon" src="://images/icons/skipToAction.png" />
         </button>
-        <button data-title="Skip to moneyshot (c)" class="video-control  video-control-other video-control--money-shot" id="money-shot">
-          <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg"></img>
+        <button data-title="Skip to moneyshot (c)" class="video-control  video-control-other video-control--money-shot" id="money-shot" (click)="onSkipToMoneyShot()">
+          <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg" />
         </button>
-        <button data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control-other video-control--device-state" onclick="togglePauseAllDeviceActions()">
+        <button data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control-other video-control--device-state" (click)="togglePauseAllDeviceActions()">
           <img class="player-button-icon" name="devicePauseStatusIconImage" src="://images/icons/pause.svg" />
         </button>
       </div>
@@ -61,22 +61,16 @@
 
     <div id="bottom-bottom-controls" class="bottom-controls">
       <div class="left-controls">
-        <button data-title="Skip to next action (a)" class="video-control video-control--action-begin" id="next-action">
-          <img class="player-button-icon" src="://images/icons/skipToAction.png"></img>
-        </button>
-        <button data-title="Skip to moneyshot (c)" class="video-control video-control--money-shot" id="money-shot">
-          <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg"></img>
-        </button>
-        <button  data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control--device-state" onclick="togglePauseAllDeviceActions()">
-          <img class="player-button-icon" name="devicePauseStatusIconImage" src="://images/icons/pause.svg" />
-        </button>
         <div class="volume-controls">
-          <input data-title="Up (+) - Down (-)" class="volume" id="volume" value="1" data-mute="0.5" type="range" max="1" min="0" step="0.01" />
+          <input #volumeSlider data-title="Up (+) - Down (-)" class="volume" id="volume" value="1" data-mute="0.5" type="range" max="1" min="0" step="0.01" (input)="setVolume(volumeSlider.value)" />
           <button data-title="Mute (m)" class="volume-button video-control video-control-main" id="volume-button">
             <svg class="player-button-icon">
-              <use class="hidden" href="#volume-mute"></use>
+              <!-- <use class="hidden" href="#volume-mute"></use>
               <use class="hidden" href="#volume-low"></use>
-              <use href="#volume-high"></use>
+              <use href="#volume-high"></use> -->
+              <use *ngIf="volume === 0">&#128263;</use>
+              <use *ngIf="volume > 0 && volume <= 0.5">&#128264;</use>
+              <use *ngIf="volume > 0.5">&#128266;</use>
             </svg>
           </button>
         </div>
@@ -100,7 +94,7 @@
         </button>
       </div>
       <div class="right-controls">
-        <input id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0.00" value="1.00" step="0.01" onchange="setPlayRate(this.value)" />
+        <input #playbackRateInput id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0.00" value="1.00" step="0.01" (change)="setPlayRate(playbackRateInput.value)" />
         <button data-title="Alternate scripts" class="video-control video-control-main" id="alternate-scripts-button">
           <svg class="player-button-icon">
             <use href="#funscript"></use>
@@ -119,9 +113,9 @@
         </button>
       </div>
     </div>
-  </div> -->
+  </div>
   
-  <div class="bottom-controls" class="video-controls" [class.hidden]="!controlsVisible">
+  <!-- <div class="bottom-controls" class="video-controls" [class.hidden]="!controlsVisible">
     <div class="progress-bar-container">
       <input type="range" class="progress-bar" [value]="progress" (input)="onSeek($event)" min="0" max="100" step="0.1" />
     </div>
@@ -157,5 +151,5 @@
         </button>
       </div>
     </div>
-  </div>
+  </div> -->
 </div>

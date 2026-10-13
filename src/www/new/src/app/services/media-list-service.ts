@@ -128,6 +128,19 @@ export class MediaListService {
         }
     }
 
+    addItem(item: MediaItem): void {
+        const list = [...this.mediaList];
+        if (!list.find(m => m.id === item.id)) {
+        list.push(item);
+        this.setMediaList(list);
+        }
+    }
+
+    deleteItem(itemID: number): void {
+        const list = this.mediaList.filter(m => m.id !== itemID);
+        this.setMediaList(list);
+    }
+
     private getNextShuffleMediaItem(): MediaItem | null {
         const list = this.mediaList;
         if (list.length === 0) return null;

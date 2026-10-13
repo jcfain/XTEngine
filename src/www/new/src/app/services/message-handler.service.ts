@@ -1,28 +1,80 @@
-import { Injectable, NgZone } from '@angular/core';
+import { EventEmitter, Injectable, NgZone } from '@angular/core';
 import { WebsocketService } from './websocket.service';
-import { AppStateService } from './app-state.service';
-import { MediaService } from './media.service';
-import { ServerService } from './server.service';
-import { SettingsService } from './settings.service';
-import { VideoService } from './video.service';
-import { ScriptStatusComponent } from '../components/script-status/script-status.component';
 import { MediaItem } from '../models/interfaces';
-import { XLogLevel, ConnectionStatus } from '../models/enums';
+import { XLogLevel, ConnectionStatus, ChannelTimeType } from '../models/enums';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MessageHandlerService {
+
+  private settingChangeSubject = new BehaviorSubject<{key: string, value: any} | null>(null);
+  settingChange$: Observable<{key: string, value: any} | null> = this.settingChangeSubject.asObservable();
+
+  private stopAllMediaEvent = new EventEmitter();
+  stopAllMedia$: Observable<boolean> = this.stopAllMediaEvent.asObservable();
+
+  private outputDeviceStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Disconnected);
+  outputDeviceStatusSubject$: Observable<ConnectionStatus> = this.outputDeviceStatusSubject.asObservable();
+
+  private inputDeviceStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Disconnected);
+  inputDeviceStatusSubject$: Observable<ConnectionStatus> = this.inputDeviceStatusSubject.asObservable();
+
+  private mediaLoadingStatusSubject = new BehaviorSubject<string | null>(null);
+  mediaLoadingStatusSubject$: Observable<string | null> = this.mediaLoadingStatusSubject.asObservable();
+
+  private updateThumbSubject = new BehaviorSubject<{id: string, thumb: string, errorMessage?: string } | null>(null);
+  updateThumbSubject$: Observable<{id: string, thumb: string, errorMessage?: string } | null> = this.updateThumbSubject.asObservable();
+
+  private updateItemSubject = new BehaviorSubject<{item: MediaItem, roles:number[]} | null>(null);
+  updateItemSubject$: Observable<{item: MediaItem, roles:number[]} | null> = this.updateItemSubject.asObservable();
+
+  private addItemSubject = new BehaviorSubject<MediaItem | null>(null);
+  addItemSubject$: Observable<MediaItem | null> = this.addItemSubject.asObservable();
+
+  private deleteItemSubject = new BehaviorSubject<number | null>(null);
+  deleteItemSubject$: Observable<number | null> = this.deleteItemSubject.asObservable();
+
+  private textToSpeechSubject = new BehaviorSubject<string | null>(null);
+  textToSpeechSubject$: Observable<string | null> = this.textToSpeechSubject.asObservable();
+
+  private skipToNextActionSubject = new BehaviorSubject<number | null>(null);
+  skipToNextActionSubject$: Observable<number | null> = this.skipToNextActionSubject.asObservable();
+
+  private channelProfileChangedSubject = new BehaviorSubject<string | null>(null);
+  channelProfileChangedSubject$: Observable<string | null> = this.channelProfileChangedSubject.asObservable();
+
+  private statusOutputSubject = new BehaviorSubject<{message: string, percentage:number} | null>(null);
+  statusOutputSubject$: Observable<{message: string, percentage:number} | null> = this.statusOutputSubject.asObservable();
+
+  private tagsUpdateSubject = new BehaviorSubject<{allTags: string[], smartTags:string[], userTags: string[]} | null>(null);
+  tagsUpdateSubject$: Observable<{allTags: string[], smartTags:string[], userTags: string[]} | null> = this.tagsUpdateSubject.asObservable();
+
+  private channelPositionChange = new BehaviorSubject<{ channel: string, position: number, time: number, timeType: ChannelTimeType } | null>(null);
+  channelPositionChange$: Observable<{ channel: string, position: number, time: number, timeType: ChannelTimeType } | null> = this.channelPositionChange.asObservable();
+
+  private metadataProcessingFinished$ = new EventEmitter();
+  private mediaLoadingEvent$ = new EventEmitter();
+  private skipToMoneyShotEvent$ = new EventEmitter();
+  private mediaLoadedEvent = new EventEmitter();
+
+  private scriptTogglePausedEvent$ = new EventEmitter();
+  private logoutEvent$ = new EventEmitter();
+  // private changePlayrateSubject  
+  // // private mediaActionSubject
+  
   private statusMessage = '';
   private statusPercentage = 0;
 
   constructor(
     private websocketService: WebsocketService,
-    private appState: AppStateService,
-    private mediaService: MediaService,
-    private serverService: ServerService,
-    private settingsService: SettingsService,
-    private videoService: VideoService,
+    // private appState: AppStateService,
+    // private mediaService: MediaService,
+    // private mediaListService: MediaListService,
+    // private serverService: ServerService,
+    // private settingsService: SettingsService,
+    // private videoService: VideoService,
     private ngZone: NgZone
   ) {
     this.websocketService.messages$.subscribe(message => {
@@ -61,7 +113,8 @@ export class MessageHandlerService {
           const obj = data['message'];
           const key = obj['key'];
           const value = obj['value'];
-          this.settingsService.onSaved(key, value);
+          // this.settingsService.onSaved(key, value);
+          this.settingChangeSubject.next({"key": key, "value": value});
           break;
         }
 
@@ -78,69 +131,82 @@ export class MessageHandlerService {
         }
 
         case 'stopAllMedia':
-          this.mediaService.stopVideo();
+          // this.videoService.stopVideo();
+          this.stopAllMediaEvent.emit();
           break;
 
         case 'outputDeviceStatus': {
           const status = data['message'];
-          this.appState.setOutputConnectionStatus(status['status'] as ConnectionStatus);
+          // this.appState.setOutputConnectionStatus(status['status'] as ConnectionStatus);
+          this.outputDeviceStatusSubject.next(status['status'] as ConnectionStatus);
           break;
         }
 
         case 'inputDeviceStatus': {
           const status = data['message'];
-          this.appState.setInputConnectionStatus(status['status'] as ConnectionStatus);
+          // this.appState.setInputConnectionStatus(status['status'] as ConnectionStatus);
+          this.inputDeviceStatusSubject.next(status['status'] as ConnectionStatus);
           break;
         }
 
         case 'mediaLoaded':
-          this.mediaService.onMediaLoaded();
+          // this.mediaService.onMediaLoaded();
+          this.mediaLoadedEvent.emit();
           break;
 
         case 'mediaLoading':
-          this.mediaService.onMediaLoading();
+          // this.mediaService.onMediaLoading();
+          this.mediaLoadingEvent$.emit();
           break;
 
         case 'mediaLoadingStatus':
-          this.mediaService.onMediaLoadingStatus(data['message']);
+          // this.mediaService.onMediaLoadingStatus(data['message']);
+          this.mediaLoadingStatusSubject.next(data['message']);
           break;
 
         case 'updateThumb':
-          this.mediaService.onUpdateThumb(data['message']);
+          // this.mediaListService.onUpdateThumb(data['message']);
+          this.updateThumbSubject.next(data['message']);
           break;
 
         case 'updateItem': {
           const message = data['message'];
-          this.updateItem(message['item'], message['roles']);
+          // this.messageListService.updateItem(message['item'], message['roles']);
+          this.updateItemSubject.next({ "item": message['item'], "roles": message['roles'] });
           break;
         }
 
         case 'addItem': {
           const message = data['message'];
-          this.addItem(message['item']);
+          // this.messageListService.addItem(message['item']);
+          this.addItemSubject.next(message['item']);
           break;
         }
 
         case 'deleteItem': {
           const message = data['message'];
-          this.deleteItem(message['itemID']);
+          // this.messageListService.deleteItem(message['itemID']);
+          this.deleteItemSubject.next(message['itemID']);
           break;
         }
 
         case 'textToSpeech': {
           const message = data['message'];
           this.onTextToSpeech(message);
+          // this.onTextToSpeechSubject.next(message);
           break;
         }
 
         case 'skipToNextAction': {
           const message = data['message'];
-          this.videoService.skipTo(message);
+          // this.videoService.skipTo(message);
+          this.skipToNextActionSubject.next(message);
           break;
         }
 
         case 'skipToMoneyShot':
-          this.mediaService.skipToMoneyShot();
+          // this.videoService.skipToMoneyShot();
+          this.skipToMoneyShotEvent$.emit();
           break;
 
         case 'logout':
@@ -148,7 +214,9 @@ export class MessageHandlerService {
           break;
 
         case 'channelProfileChanged':
-          this.serverService.getServerChannels();
+          const profile: string = data['message'];
+          // this.serverService.getServerChannels();
+          this.channelProfileChangedSubject.next(profile);
           break;
 
         case 'statusOutput': {
@@ -162,13 +230,14 @@ export class MessageHandlerService {
           const messageObj = data['message'];
           const smartTags = messageObj['smartTags'];
           const userTags = messageObj['userTags'];
-          const settings = this.appState.remoteUserSettings;
-          if (settings) {
-            (settings as any)['allTags'] = [...userTags, ...smartTags];
-            (settings as any)['userTags'] = [...userTags];
-            (settings as any)['smartTags'] = [...smartTags];
-            this.appState.setRemoteUserSettings(settings);
-          }
+          // const settings = this.appState.remoteUserSettings;
+          // if (settings) {
+            // (settings as any)['allTags'] = [...userTags, ...smartTags];
+            // (settings as any)['userTags'] = [...userTags];
+            // (settings as any)['smartTags'] = [...smartTags];
+            // this.appState.setRemoteUserSettings(settings);
+            this.tagsUpdateSubject.next({"allTags": [...userTags, ...smartTags], "smartTags": [...smartTags], "userTags": [...userTags]})
+          // }
           break;
         }
 
@@ -180,6 +249,7 @@ export class MessageHandlerService {
           const timeType = parseInt(messageObj['timeType']);
           // Forward to script status component via event or direct call
           console.log(`Channel ${channel}: ${position} in ${time}ms (type ${timeType})`);
+          this.channelPositionChange.next({ "channel": channel, "position": position, "time": time, "timeType": timeType });
           break;
         }
 
@@ -196,7 +266,8 @@ export class MessageHandlerService {
           break;
 
         case 'metadataProcessingFinished':
-          this.mediaService.loadMediaList();
+          // this.mediaService.loadMediaList();
+          this.metadataProcessingFinished$.emit();
           break;
       }
     } catch (e: any) {
@@ -204,22 +275,9 @@ export class MessageHandlerService {
     }
   }
 
-  private updateItem(item: MediaItem, roles: any): void {
-    this.appState.updateMediaItem(item);
-  }
-
-  private addItem(item: MediaItem): void {
-    const list = [...this.appState.mediaList];
-    if (!list.find(m => m.id === item.id)) {
-      list.push(item);
-      this.appState.setMediaList(list);
-    }
-  }
-
-  private deleteItem(itemID: number): void {
-    const list = this.appState.mediaList.filter(m => m.id !== itemID);
-    this.appState.setMediaList(list);
-  }
+  // private updateItem(item: MediaItem, roles: any): void {
+  //   this.mediaListService.updateMediaItem(item);
+  // }
 
   private onTextToSpeech(message: string): void {
     if ('speechSynthesis' in window) {
