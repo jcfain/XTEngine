@@ -2,7 +2,7 @@ import { EventEmitter, Injectable, NgZone } from '@angular/core';
 import { WebsocketService } from './websocket.service';
 import { MediaItem } from '../models/interfaces';
 import { XLogLevel, ConnectionStatus, ChannelTimeType } from '../models/enums';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -54,13 +54,24 @@ export class MessageHandlerService {
   private channelPositionChange = new BehaviorSubject<{ channel: string, position: number, time: number, timeType: ChannelTimeType } | null>(null);
   channelPositionChange$: Observable<{ channel: string, position: number, time: number, timeType: ChannelTimeType } | null> = this.channelPositionChange.asObservable();
 
-  private metadataProcessingFinished$ = new EventEmitter();
-  private mediaLoadingEvent$ = new EventEmitter();
-  private skipToMoneyShotEvent$ = new EventEmitter();
-  private mediaLoadedEvent = new EventEmitter();
+  private metadataProcessingFinished = new Subject<void>();
+  metadataProcessingFinished$: Observable<void> = this.metadataProcessingFinished.asObservable();
 
-  private scriptTogglePausedEvent$ = new EventEmitter();
-  private logoutEvent$ = new EventEmitter();
+  private mediaLoadingEvent = new Subject<void>();
+  mediaLoadingEvent$: Observable<void> = this.mediaLoadingEvent.asObservable();
+
+  private skipToMoneyShotEvent = new Subject<void>();
+  skipToMoneyShotEvent$: Observable<void> = this.skipToMoneyShotEvent.asObservable();
+
+  private mediaLoadedEvent = new Subject<void>();
+  mediaLoadedEvent$: Observable<void> = this.mediaLoadedEvent.asObservable();
+
+  private scriptTogglePausedEvent = new Subject<void>();
+  scriptTogglePausedEvent$: Observable<void> = this.scriptTogglePausedEvent.asObservable();
+
+  private logoutEvent = new Subject<void>();
+  logoutEvent$: Observable<void> = this.logoutEvent.asObservable();
+
   // private changePlayrateSubject  
   // // private mediaActionSubject
   
@@ -151,12 +162,12 @@ export class MessageHandlerService {
 
         case 'mediaLoaded':
           // this.mediaService.onMediaLoaded();
-          this.mediaLoadedEvent.emit();
+          this.mediaLoadedEvent.next();
           break;
 
         case 'mediaLoading':
           // this.mediaService.onMediaLoading();
-          this.mediaLoadingEvent$.emit();
+          this.mediaLoadingEvent.next();
           break;
 
         case 'mediaLoadingStatus':
@@ -206,7 +217,7 @@ export class MessageHandlerService {
 
         case 'skipToMoneyShot':
           // this.videoService.skipToMoneyShot();
-          this.skipToMoneyShotEvent$.emit();
+          this.skipToMoneyShotEvent.next();
           break;
 
         case 'logout':
@@ -267,7 +278,7 @@ export class MessageHandlerService {
 
         case 'metadataProcessingFinished':
           // this.mediaService.loadMediaList();
-          this.metadataProcessingFinished$.emit();
+          this.metadataProcessingFinished.next();
           break;
       }
     } catch (e: any) {
