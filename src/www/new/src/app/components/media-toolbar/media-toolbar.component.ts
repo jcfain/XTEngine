@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MediaListService } from '../../services/media-list-service';
+import { LocalSettingsService } from '../../services/local-settings.service';
+import { ShowMode, SortMode } from '../../models/enums';
 
 @Component({
   selector: 'app-media-toolbar',
@@ -11,39 +13,58 @@ import { MediaListService } from '../../services/media-list-service';
   styleUrl: './media-toolbar.component.css'
 })
 export class MediaToolbarComponent implements OnInit {
-  filterText = '';
-  showOptions = ['All', 'Unwatched', 'Watched'];
-  sortOptions = ['name', 'name-desc', 'date', 'date-desc'];
-  currentShow = 'All';
-  currentSort = 'name';
+  filterText: string = this.localSettingsService.filterCriteriaDefault;
+  currentShow: ShowMode = this.localSettingsService.showDefault;
+  currentSort: SortMode = this.localSettingsService.sortDefault;
+  randomMode = false;
+
+  private nonRandomSort: SortMode = this.localSettingsService.sortDefault;
 
   constructor(
-    private mediaListService: MediaListService
+    private localSettingsService: LocalSettingsService
   ) {}
 
   filterInputHidden: boolean = true;
   tagInputHidden: boolean = true;
   tcodeActionsInputHidden: boolean = true;
+  scriptInputHidden: boolean = true;
 
   ngOnInit(): void {
-    this.mediaListService.filterCriteria$.subscribe(f => this.filterText = f);
-    this.mediaListService.show$.subscribe(s => this.currentShow = s);
-    this.mediaListService.sortBy$.subscribe(s => this.currentSort = s);
+    this.localSettingsService.filterCriteria$.subscribe(f => this.filterText = f);
+    this.localSettingsService.show$.subscribe(s => {
+      this.currentShow = s
+    });
+    this.localSettingsService.sort$.subscribe(s => {
+      this.currentSort = s;
+    });
   }
 
   onFilterChange(value: string): void {
-    this.mediaListService.setFilterCriteria(value);
+    this.localSettingsService.setFilter(value);
   }
 
-  onShowChange(value: string): void {
-    this.mediaListService.setShow(value);
+  onShowChange(value: ShowMode): void {
+    this.localSettingsService.setShow(value);
   }
 
-  onSortChange(value: string): void {
-    this.mediaListService.setSortBy(value);
+  onSortChange(value: SortMode): void {
+    this.localSettingsService.setSort(value);
   }
 
-  toggleShufflePlay() {}
+  randomize() {
+    this.localSettingsService.setSort(SortMode.Random);
+  }
 
-  sortChange(value: string) {}
+  toggleShufflePlay() {
+    this.randomMode = !this.randomMode;
+    this.setRandom();
+  }
+
+  private setRandom() {
+    if(this.randomMode) {
+      this.nonRandomSort = this.currentSort;
+      this.localSettingsService.setSort(SortMode.Random)
+    } else
+      this.localSettingsService.setSort(this.nonRandomSort)
+  }
 }

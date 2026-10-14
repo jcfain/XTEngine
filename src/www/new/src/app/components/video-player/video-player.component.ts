@@ -7,6 +7,7 @@ import { MediaService } from '../../services/media.service';
 import { MediaItem } from '../../models/interfaces';
 import { MediaListService } from '../../services/media-list-service';
 import { WebsocketService } from '../../services/websocket.service';
+import { MessageHandlerService } from '../../services/message-handler.service';
 
 @Component({
   selector: 'app-video-player',
@@ -34,10 +35,13 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   constructor(
     private webSocketService: WebsocketService,
+    private messageHandlerService: MessageHandlerService, 
     private videoService: VideoService,
     private mediaListService: MediaListService,
     private mediaService: MediaService
-  ) {}
+  ) {
+    this.messageHandlerService.stopAllMedia$.subscribe(() => {this.stop()} )
+  }
 
   ngOnInit(): void {
     this.subscriptions.push(

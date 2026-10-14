@@ -28,7 +28,7 @@ export interface MediaItem {
     relativeThumb: string;
     thumbSize: number;
     duration?: number;
-    modifiedDate: string;
+    modifiedDate: Date;
     isMFS: boolean;
     tooltip: string;
     hasScript: boolean;

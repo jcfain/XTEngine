@@ -3,15 +3,35 @@ import { AppStateService } from "./app-state.service";
 import { MediaItem } from "../models/interfaces";
 import { VideoService } from "./video.service";
 import { BehaviorSubject, Observable } from "rxjs";
+import { LocalSettingsService } from "./local-settings.service";
+import { MediaType, ShowMode, SortMode } from "../models/enums";
 
 @Injectable({
   providedIn: 'root'
 })
 export class MediaListService {
   constructor(
+    private localSettingsService: LocalSettingsService,
     private appState: AppStateService,
     private videoService: VideoService,
-  ) {}
+  ) {
+    this.localSettingsService.show$.subscribe(v => {
+        this.show = v;
+        this.applyFilterAndSort();
+    });
+    this.localSettingsService.sort$.subscribe(v => {
+        this.sortBy = v;
+        this.applyFilterAndSort();
+    });
+    this.localSettingsService.filterCriteria$.subscribe(v => {
+        this.filterCriteria = v;
+        this.applyFilterAndSort();
+    });
+    this.localSettingsService.thumbSize$.subscribe(v => {
+        this.thumbSize = v;
+        // this.applyFilterAndSort();
+    });
+  }
 
     setMediaList(list: MediaItem[]): void {
         this.mediaListSubject.next(list);
@@ -25,10 +45,11 @@ export class MediaListService {
     get mediaList(): MediaItem[] { return this.mediaListSubject.value; }
     get playingMediaItem(): MediaItem | null { return this.playingMediaItemSubject.value; }
     get selectedMediaItem(): MediaItem | null { return this.selectedMediaItemSubject.value; }
-    get filterCriteria(): string { return this.filterCriteriaSubject.value; }
-    get sortBy(): string { return this.sortBySubject.value; }
-    get show(): string { return this.showSubject.value; }
-    get thumbSize(): number { return this.thumbSizeSubject.value; }
+
+    filterCriteria: string = this.localSettingsService.filterCriteriaDefault;
+    sortBy: SortMode = this.localSettingsService.sortDefault;
+    show: ShowMode = this.localSettingsService.showDefault;
+    thumbSize: number = this.localSettingsService.thumbSizeDefault;
 
     // Media list
     private mediaListSubject = new BehaviorSubject<MediaItem[]>([]);
@@ -44,24 +65,9 @@ export class MediaListService {
     // Selected media for metadata
     private selectedMediaItemSubject = new BehaviorSubject<MediaItem | null>(null);
     selectedMediaItem$: Observable<MediaItem | null> = this.selectedMediaItemSubject.asObservable();
-    
-    // Filter
-    private filterCriteriaSubject = new BehaviorSubject<string>('');
-    filterCriteria$: Observable<string> = this.filterCriteriaSubject.asObservable();
 
     private tagFilterCriteriaSubject = new BehaviorSubject<string[]>([]);
     tagFilterCriteria$: Observable<string[]> = this.tagFilterCriteriaSubject.asObservable();
-
-    // Sort / Show
-    private sortBySubject = new BehaviorSubject<string>(JSON.parse(window.localStorage.getItem('sortBy') || '"name"'));
-    sortBy$: Observable<string> = this.sortBySubject.asObservable();
-
-    private showSubject = new BehaviorSubject<string>(JSON.parse(window.localStorage.getItem('show') || '"All"'));
-    show$: Observable<string> = this.showSubject.asObservable();
-
-    // Thumb size
-    private thumbSizeSubject = new BehaviorSubject<number>(JSON.parse(window.localStorage.getItem('thumbSize') || '200'));
-    thumbSize$: Observable<number> = this.thumbSizeSubject.asObservable();
 
     playNextVideo(): void {
         const list = this.mediaList;
@@ -75,10 +81,10 @@ export class MediaListService {
         const next = this.getNextShuffleMediaItem();
         if (next) this.videoService.playVideo(next);
         } else {
-        const nextIndex = index + 1;
-        if (nextIndex < list.length) {
-            this.videoService.playVideo(list[nextIndex]);
-        }
+            const nextIndex = index + 1;
+            if (nextIndex < list.length) {
+                this.videoService.playVideo(list[nextIndex]);
+            }
         }
     }
 
@@ -92,32 +98,10 @@ export class MediaListService {
 
         this.videoService.playVideo(list[index - 1]);
     }
-    
-    setFilterCriteria(criteria: string): void {
-        this.filterCriteriaSubject.next(criteria);
-        this.applyFilterAndSort();
-    }
 
     setTagFilterCriteria(tags: string[]): void {
         this.tagFilterCriteriaSubject.next(tags);
         this.applyFilterAndSort();
-    }
-
-    setSortBy(sortBy: string): void {
-        this.sortBySubject.next(sortBy);
-        window.localStorage.setItem('sortBy', JSON.stringify(sortBy));
-        this.applyFilterAndSort();
-    }
-
-    setShow(show: string): void {
-        this.showSubject.next(show);
-        window.localStorage.setItem('show', JSON.stringify(show));
-        this.applyFilterAndSort();
-    }
-    
-    setThumbSize(size: number): void {
-        this.thumbSizeSubject.next(size);
-        window.localStorage.setItem('thumbSize', JSON.stringify(size));
     }
 
     onUpdateThumb(message: any): void {
@@ -152,45 +136,62 @@ export class MediaListService {
         let list = [...this.mediaListSubject.value];
 
         // Filter by show
-        const show = this.showSubject.value;
-        if (show !== 'All') {
-        switch (show) {
-            case 'Unwatched':
-            list = list.filter(m => !m.viewed || m.viewed === 0);
-            break;
-            case 'Watched':
-            list = list.filter(m => m.viewed && m.viewed > 0);
-            break;
-        }
+        const show = this.show;
+        if (show !== ShowMode.All) {
+            switch (show) {
+                // case 'Unwatched':
+                // list = list.filter(m => !m.viewed || m.viewed === 0);
+                // break;
+                // case 'Watched':
+                // list = list.filter(m => m.viewed && m.viewed > 0);
+                // break;
+                // case ShowMode.All:
+                //     list = JSON.parse(JSON.stringify(this.mediaListSubject.value));
+                //     break;
+                case ShowMode.ThreeD:
+                    list = this.mediaListSubject.value.filter(x => x.type === MediaType.VR || x.metaData.tags.includes("vr"));
+                    break;
+                case ShowMode.TwoD:
+                    list = this.mediaListSubject.value.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video || x.metaData.tags.includes("2d") || x.metaData.tags.includes("audio"));
+                    break;
+            }
         }
 
         // Filter by text
-        const filter = this.filterCriteriaSubject.value.toLowerCase();
+        const filter = this.filterCriteria.toLowerCase();
         if (filter) {
-        list = list.filter(m => m.name.toLowerCase().includes(filter));
+            list = list.filter(m => m.name.toLowerCase().includes(filter));
         }
 
         // Filter by tags
         const tags = this.tagFilterCriteriaSubject.value;
         if (tags.length > 0) {
-        list = list.filter(m => tags.some(t => m.tags?.includes(t)));
+            list = list.filter(m => tags.some(t => m.tags?.includes(t)));
         }
 
         // Sort
-        const sortBy = this.sortBySubject.value;
-        list.sort((a, b) => {
-        switch (sortBy) {
-            case 'name':
-            return a.name.localeCompare(b.name);
-            case 'name-desc':
-            return b.name.localeCompare(a.name);
-            case 'date':
-            return (b.metaData.dateAdded?.getTime() || 0) - (a.metaData.dateAdded?.getTime() || 0);
-            case 'date-desc':
-            return (a.metaData.dateAdded?.getTime() || 0) - (b.metaData.dateAdded?.getTime() || 0);
-            default:
-            return a.name.localeCompare(b.name);
+        const sortBy = this.sortBy;
+        if(sortBy == SortMode.Random)
+        {
+            this.shuffle(list);
         }
+        list.sort((a, b) => {
+            switch (sortBy) {
+                case SortMode.Name:
+                return a.name.localeCompare(b.name);
+                case SortMode.NameDesc:
+                return b.name.localeCompare(a.name);
+                case SortMode.Date:
+                return (b.metaData.dateAdded?.getTime() || 0) - (a.metaData.dateAdded?.getTime() || 0);
+                case SortMode.DateDesc:
+                return (a.metaData.dateAdded?.getTime() || 0) - (b.metaData.dateAdded?.getTime() || 0);
+                case SortMode.DateAdded:
+                return (b.modifiedDate?.getTime() || 0) - (a.modifiedDate?.getTime() || 0);
+                case SortMode.DateAddedDesc:
+                return (a.modifiedDate?.getTime() || 0) - (b.modifiedDate?.getTime() || 0);
+                default:
+                return a.name.localeCompare(b.name);
+            }
         });
 
         this.mediaListDisplayedSubject.next(list);
@@ -203,6 +204,29 @@ export class MediaListService {
         list[index] = updated;
         this.mediaListSubject.next(list);
         this.applyFilterAndSort();
+        }
+    }
+
+    // //https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+    // private  fy(a: any, b?: any, c?: any, d?: any) {//array,placeholder,placeholder,placeholder
+	//     c=a.length;while(c)b=Math.random()*c--|0,d=a[c],a[c]=a[b],a[b]=d
+    // }
+
+    // https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+    // This method will modify the array passed in
+    private shuffle(mediaItems: MediaItem[]) {
+        let currentIndex = mediaItems.length;
+
+        // While there remain elements to shuffle...
+        while (currentIndex != 0) {
+
+            // Pick a remaining element...
+            let randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+
+            // And swap it with the current element.
+            [mediaItems[currentIndex], mediaItems[randomIndex]] = [
+            mediaItems[randomIndex], mediaItems[currentIndex]];
         }
     }
 }

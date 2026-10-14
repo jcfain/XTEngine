@@ -1,6 +1,11 @@
 <div class="media-list-container">
-  <div class="media-list">
-    <ng-container *ngFor="let item of mediaList">
+  <div *ngIf="noMedia()" id="noMedia" style="text-align: center;">No media found</div>
+  <div *ngIf="mediaLoading" id="mediaLoading" class="no-media">
+    <div class="loading-spinner"></div>
+    <div id="loadingStatus" style="padding-top: 10px;">{{mediaLoadingStatus}}</div>
+  </div>
+  <div *ngIf="!noMedia()" class="media-list">
+    <ng-container #mediaNodes *ngFor="let item of mediaList">
       <app-media-list-item class="media-item" 
         [item]="item" 
         [width]="width" 

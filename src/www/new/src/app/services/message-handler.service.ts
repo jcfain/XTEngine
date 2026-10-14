@@ -4,73 +4,81 @@ import { MediaItem } from '../models/interfaces';
 import { XLogLevel, ConnectionStatus, ChannelTimeType } from '../models/enums';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 
+interface SettingChanged {key: string, value: any};
+interface StatusOutput {message: string, percentage:number};
+interface TagsChange {allTags: string[], smartTags:string[], userTags: string[]};
+interface ChannelsPositionChange { channel: string, position: number, time: number, timeType: ChannelTimeType };
+interface ThumbUpdate {id: string, thumb: string, errorMessage?: string };
+interface MediaItemUpdate {item: MediaItem, roles:number[]};
+
 @Injectable({
   providedIn: 'root'
 })
 export class MessageHandlerService {
 
-  private settingChangeSubject = new BehaviorSubject<{key: string, value: any} | null>(null);
-  settingChange$: Observable<{key: string, value: any} | null> = this.settingChangeSubject.asObservable();
-
-  private stopAllMediaEvent = new EventEmitter();
-  stopAllMedia$: Observable<boolean> = this.stopAllMediaEvent.asObservable();
+  private settingChangeSubject = new BehaviorSubject<SettingChanged | null>(null);
+  settingChange$: Observable<SettingChanged | null> = this.settingChangeSubject.asObservable();
 
   private outputDeviceStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Disconnected);
-  outputDeviceStatusSubject$: Observable<ConnectionStatus> = this.outputDeviceStatusSubject.asObservable();
+  outputDeviceStatus$: Observable<ConnectionStatus> = this.outputDeviceStatusSubject.asObservable();
 
   private inputDeviceStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Disconnected);
-  inputDeviceStatusSubject$: Observable<ConnectionStatus> = this.inputDeviceStatusSubject.asObservable();
+  inputDeviceStatus$: Observable<ConnectionStatus> = this.inputDeviceStatusSubject.asObservable();
 
   private mediaLoadingStatusSubject = new BehaviorSubject<string | null>(null);
-  mediaLoadingStatusSubject$: Observable<string | null> = this.mediaLoadingStatusSubject.asObservable();
+  /// Description of the current loading state
+  mediaLoadingStatus$: Observable<string | null> = this.mediaLoadingStatusSubject.asObservable();
 
-  private updateThumbSubject = new BehaviorSubject<{id: string, thumb: string, errorMessage?: string } | null>(null);
-  updateThumbSubject$: Observable<{id: string, thumb: string, errorMessage?: string } | null> = this.updateThumbSubject.asObservable();
+  private updateThumbSubject = new BehaviorSubject<ThumbUpdate | null>(null);
+  updateThumb$: Observable<ThumbUpdate | null> = this.updateThumbSubject.asObservable();
 
-  private updateItemSubject = new BehaviorSubject<{item: MediaItem, roles:number[]} | null>(null);
-  updateItemSubject$: Observable<{item: MediaItem, roles:number[]} | null> = this.updateItemSubject.asObservable();
+  private updateMediaItemSubject = new BehaviorSubject<MediaItemUpdate | null>(null);
+  updateMediaItem$: Observable<MediaItemUpdate | null> = this.updateMediaItemSubject.asObservable();
 
   private addItemSubject = new BehaviorSubject<MediaItem | null>(null);
-  addItemSubject$: Observable<MediaItem | null> = this.addItemSubject.asObservable();
+  addItem$: Observable<MediaItem | null> = this.addItemSubject.asObservable();
 
   private deleteItemSubject = new BehaviorSubject<number | null>(null);
-  deleteItemSubject$: Observable<number | null> = this.deleteItemSubject.asObservable();
+  deleteItem$: Observable<number | null> = this.deleteItemSubject.asObservable();
 
   private textToSpeechSubject = new BehaviorSubject<string | null>(null);
-  textToSpeechSubject$: Observable<string | null> = this.textToSpeechSubject.asObservable();
+  textToSpeech$: Observable<string | null> = this.textToSpeechSubject.asObservable();
 
   private skipToNextActionSubject = new BehaviorSubject<number | null>(null);
-  skipToNextActionSubject$: Observable<number | null> = this.skipToNextActionSubject.asObservable();
+  skipToNextAction$: Observable<number | null> = this.skipToNextActionSubject.asObservable();
 
   private channelProfileChangedSubject = new BehaviorSubject<string | null>(null);
-  channelProfileChangedSubject$: Observable<string | null> = this.channelProfileChangedSubject.asObservable();
+  channelProfileChanged$: Observable<string | null> = this.channelProfileChangedSubject.asObservable();
 
-  private statusOutputSubject = new BehaviorSubject<{message: string, percentage:number} | null>(null);
-  statusOutputSubject$: Observable<{message: string, percentage:number} | null> = this.statusOutputSubject.asObservable();
+  private statusOutputSubject = new BehaviorSubject<StatusOutput | null>(null);
+  statusOutput$: Observable<StatusOutput | null> = this.statusOutputSubject.asObservable();
 
-  private tagsUpdateSubject = new BehaviorSubject<{allTags: string[], smartTags:string[], userTags: string[]} | null>(null);
-  tagsUpdateSubject$: Observable<{allTags: string[], smartTags:string[], userTags: string[]} | null> = this.tagsUpdateSubject.asObservable();
+  private tagsUpdateSubject = new BehaviorSubject<TagsChange | null>(null);
+  tagsUpdateSubject$: Observable<TagsChange | null> = this.tagsUpdateSubject.asObservable();
 
-  private channelPositionChange = new BehaviorSubject<{ channel: string, position: number, time: number, timeType: ChannelTimeType } | null>(null);
-  channelPositionChange$: Observable<{ channel: string, position: number, time: number, timeType: ChannelTimeType } | null> = this.channelPositionChange.asObservable();
+  private channelPositionChange = new BehaviorSubject<ChannelsPositionChange | null>(null);
+  channelPositionChange$: Observable<ChannelsPositionChange | null> = this.channelPositionChange.asObservable();
+
+  private stopAllMediaSubject = new Subject<void>();
+  stopAllMedia$: Observable<void> = this.stopAllMediaSubject.asObservable();
 
   private metadataProcessingFinished = new Subject<void>();
   metadataProcessingFinished$: Observable<void> = this.metadataProcessingFinished.asObservable();
 
-  private mediaLoadingEvent = new Subject<void>();
-  mediaLoadingEvent$: Observable<void> = this.mediaLoadingEvent.asObservable();
+  private mediaLoadingSubject = new Subject<void>();
+  mediaLoading$: Observable<void> = this.mediaLoadingSubject.asObservable();
 
   private skipToMoneyShotEvent = new Subject<void>();
-  skipToMoneyShotEvent$: Observable<void> = this.skipToMoneyShotEvent.asObservable();
+  skipToMoneyShot$: Observable<void> = this.skipToMoneyShotEvent.asObservable();
 
   private mediaLoadedEvent = new Subject<void>();
-  mediaLoadedEvent$: Observable<void> = this.mediaLoadedEvent.asObservable();
+  mediaLoaded$: Observable<void> = this.mediaLoadedEvent.asObservable();
 
   private scriptTogglePausedEvent = new Subject<void>();
-  scriptTogglePausedEvent$: Observable<void> = this.scriptTogglePausedEvent.asObservable();
+  scriptTogglePaused$: Observable<void> = this.scriptTogglePausedEvent.asObservable();
 
   private logoutEvent = new Subject<void>();
-  logoutEvent$: Observable<void> = this.logoutEvent.asObservable();
+  logout$: Observable<void> = this.logoutEvent.asObservable();
 
   // private changePlayrateSubject  
   // // private mediaActionSubject
@@ -143,7 +151,7 @@ export class MessageHandlerService {
 
         case 'stopAllMedia':
           // this.videoService.stopVideo();
-          this.stopAllMediaEvent.emit();
+          this.stopAllMediaSubject.next();
           break;
 
         case 'outputDeviceStatus': {
@@ -167,9 +175,9 @@ export class MessageHandlerService {
 
         case 'mediaLoading':
           // this.mediaService.onMediaLoading();
-          this.mediaLoadingEvent.next();
+          this.mediaLoadingSubject.next();
           break;
-
+        // Description of the current loading state
         case 'mediaLoadingStatus':
           // this.mediaService.onMediaLoadingStatus(data['message']);
           this.mediaLoadingStatusSubject.next(data['message']);
@@ -183,7 +191,7 @@ export class MessageHandlerService {
         case 'updateItem': {
           const message = data['message'];
           // this.messageListService.updateItem(message['item'], message['roles']);
-          this.updateItemSubject.next({ "item": message['item'], "roles": message['roles'] });
+          this.updateMediaItemSubject.next({ "item": message['item'], "roles": message['roles'] });
           break;
         }
 

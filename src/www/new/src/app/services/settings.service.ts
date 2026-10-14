@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { Setting, AllSettings } from '../models/interfaces';
 import { FormControlType, SettingProfile } from '../models/enums';
 import { WebsocketService } from './websocket.service';
+import { MessageHandlerService } from './message-handler.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +19,14 @@ export class SettingsService {
   private mediaManagementEnabledSubject = new BehaviorSubject<boolean>(false);
   mediaManagementEnabled$: Observable<boolean> = this.mediaManagementEnabledSubject.asObservable();
 
-  constructor(private websocketService: WebsocketService) {}
+  constructor(private websocketService: WebsocketService,
+    private messageHandlerService: MessageHandlerService
+  ) {
+    this.messageHandlerService.settingChange$.subscribe(v => {
+      if(v)
+        this.onSaved(v.key, v.value);
+    });
+  }
 
   get mediaManagementEnabled(): boolean {
     return this.mediaManagementEnabledSubject.value;

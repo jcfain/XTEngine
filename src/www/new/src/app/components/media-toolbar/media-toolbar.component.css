@@ -91,3 +91,28 @@
     padding: 4px;
     overflow-y: auto;
 }
+
+.side-action-tcode-action-modal {  
+    width: 150px;
+    border-radius: 25px;
+    position: absolute;
+    z-index: 10;
+    right: 100px;
+    margin-top: 85px;
+    display: flex;
+    background-color: #000000;
+    flex-flow: column;padding: 16px;
+    border: 1px solid aliceblue;
+    max-height: min(275px,calc(100vh - 200px));
+    /* top: calc(100vh - 290px); */
+}
+
+.side-action-tcode-action-container {  
+    padding: 4px;
+    overflow-y: auto;
+}
+
+.side-action-tcode-action-button {
+    width: 100%;  
+    margin: 2px;
+}

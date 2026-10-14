@@ -7,19 +7,29 @@ import { WebSocketMessage } from '../models/interfaces';
   providedIn: 'root'
 })
 export class WebsocketService {
+
   private websocket: WebSocket | null = null;
   private wsUri: string = '';
 
   private connectionStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Disconnected);
-  private messageSubject = new Subject<WebSocketMessage>();
-
   connectionStatus$: Observable<ConnectionStatus> = this.connectionStatusSubject.asObservable();
+
+  private messageSubject = new Subject<WebSocketMessage>();
   messages$: Observable<WebSocketMessage> = this.messageSubject.asObservable();
 
   constructor(private ngZone: NgZone) {}
 
   get connected(): boolean {
     return this.connectionStatusSubject.value === ConnectionStatus.Connected;
+  }
+
+  statusText(): string {
+    switch (this.connectionStatusSubject.value) {
+      case ConnectionStatus.Connected: return 'Connected';
+      case ConnectionStatus.Connecting: return 'Connecting...';
+      case ConnectionStatus.Error: return 'Error';
+      default: return 'Disconnected';
+    }
   }
 
   connect(uri: string): void {

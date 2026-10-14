@@ -149,4 +149,21 @@ export enum Track
     SuckMorePosition,
     SuckLessPosition,
     TRACKS_LENGTH
-};
+}
+
+export enum SortMode {
+    Name,
+    NameDesc,
+    Date,
+    DateDesc,
+    DateAdded,
+    DateAddedDesc,
+    Random
+}
+export enum ShowMode {
+    All,
+    TwoD,
+    ThreeD
+}
+
+;

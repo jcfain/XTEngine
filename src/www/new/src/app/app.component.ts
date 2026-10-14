@@ -15,6 +15,7 @@ import { ServerService } from './services/server.service';
 import { MediaService } from './services/media.service';
 import { AppStateService } from './services/app-state.service';
 import { ConnectionStatus } from './models/enums';
+import { MessageHandlerService } from './services/message-handler.service';
 
 @Component({
   selector: 'app-root',
@@ -37,22 +38,23 @@ import { ConnectionStatus } from './models/enums';
 export class AppComponent implements OnInit {
   title = 'XTP Web';
   webVersion = 'v0.6.6b';
-  connectionStatus = ConnectionStatus.Disconnected;
   settingsOpen = false;
   scriptStatusOpen = false;
   metadataOpen = false;
 
   constructor(
-    private websocketService: WebsocketService,
-    private settingsService: SettingsService,
+    private messageHandlerService: MessageHandlerService,
     private serverService: ServerService,
     private mediaService: MediaService,
     private appState: AppStateService
   ) {}
 
   ngOnInit(): void {
-    this.websocketService.connectionStatus$.subscribe(status => {
-      this.connectionStatus = status;
+    this.messageHandlerService.outputDeviceStatus$.subscribe(status => { 
+      this.appState.setOutputConnectionStatus(status)
+    });
+    this.messageHandlerService.inputDeviceStatus$.subscribe(status => { 
+      this.appState.setInputConnectionStatus(status)
     });
 
     // Initialize: load server settings, then media list
@@ -70,18 +72,5 @@ export class AppComponent implements OnInit {
 
   openMetadata(): void {
     this.metadataOpen = true;
-  }
-
-  isConnected(): boolean {
-    return this.connectionStatus === ConnectionStatus.Connected;
-  }
-
-  statusText(): string {
-    switch (this.connectionStatus) {
-      case ConnectionStatus.Connected: return 'Connected';
-      case ConnectionStatus.Connecting: return 'Connecting...';
-      case ConnectionStatus.Error: return 'Error';
-      default: return 'Disconnected';
-    }
   }
 }

@@ -3,7 +3,7 @@
   <div class="app-header">
     <h1>{{ title }} <span class="version">{{ webVersion }}</span></h1>
     <div class="header-controls">
-      <span class="status" [class.connected]="isConnected()">{{ statusText() }}</span>
+      <!-- <span class="status" [class.connected]="isConnected()">{{ statusText() }}</span> -->
       <button class="header-btn" (click)="toggleScriptStatus()" title="Script Status">&#9881;</button>
       <button class="header-btn" (click)="toggleSettings()" title="Settings">&#9881;</button>
     </div>
