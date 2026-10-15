@@ -34,6 +34,26 @@ export class AuthService {
   logout(): void {
     this.isAuthenticatedSubject.next(false);
     window.location.replace(window.location.origin);
+    
+    // var xhr = new XMLHttpRequest();
+    // xhr.open('GET', "/logout", true);
+    // xhr.responseType = 'json';
+    // xhr.onload = function () {
+    //   var status = xhr.status;
+    //   if (status === 200) {
+    //     window.localStorage.removeItem("storedHash");
+    //     window.sessionStorage.clear();
+    //     delete_cookie("sessionID");
+    //     cookies.sessionID = undefined;
+    //     window.location.replace(window.location.origin);
+    //   } else {
+    //     parseHttpError("Error logging out", xhr);
+    //   }
+    // };
+    // xhr.onerror = function () {
+    //   parseHttpError("Error logging out", xhr);
+    // };
+    // xhr.send();
   }
 
   private checkPass(hashedPass: string): Promise<boolean> {

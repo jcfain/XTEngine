@@ -1,0 +1,11 @@
+
+
+.footer {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+}
+
+.footerSection {
+    flex-basis: 33%;
+}

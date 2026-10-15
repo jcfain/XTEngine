@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MediaListService } from '../../services/media-list-service';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { ShowMode, SortMode } from '../../models/enums';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 @Component({
   selector: 'app-media-toolbar',
@@ -14,6 +14,7 @@ import { ShowMode, SortMode } from '../../models/enums';
 })
 export class MediaToolbarComponent implements OnInit {
   filterText: string = this.localSettingsService.filterCriteriaDefault;
+  filtertextChanged: Subject < string > = new Subject < string > (); 
   currentShow: ShowMode = this.localSettingsService.showDefault;
   currentSort: SortMode = this.localSettingsService.sortDefault;
   randomMode = false;
@@ -22,7 +23,15 @@ export class MediaToolbarComponent implements OnInit {
 
   constructor(
     private localSettingsService: LocalSettingsService
-  ) {}
+  ) {
+    this.filtertextChanged.pipe(
+      debounceTime(400),
+      distinctUntilChanged())
+      .subscribe(value => {
+        // this.consoleMessages.push(value);
+        this.localSettingsService.setFilter(value);
+      });
+  }
 
   filterInputHidden: boolean = true;
   tagInputHidden: boolean = true;
@@ -40,7 +49,8 @@ export class MediaToolbarComponent implements OnInit {
   }
 
   onFilterChange(value: string): void {
-    this.localSettingsService.setFilter(value);
+    // this.localSettingsService.setFilter(value);
+    this.filtertextChanged.next(value);
   }
 
   onShowChange(value: ShowMode): void {

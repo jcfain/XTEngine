@@ -1,0 +1,55 @@
+/* @import url('../styles/global-styles.scss'); */
+
+.header {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+
+.headerSection {
+    flex-basis: 25%;
+}
+
+.headerLogoSection {
+    display: flex;
+    justify-content: center;
+    flex-basis: 55%;
+    flex-flow: column;
+    align-items: center;
+}
+
+.headerActionSection {
+    flex-basis: 15%;
+}
+
+.headerLogo {
+    height: 50px;
+    max-width: fit-content;
+}
+
+.header-logout-button {
+    align-self: flex-end;  
+    margin-top: auto;  
+    margin-bottom: auto;
+}
+
+/* .version {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.status {
+  color: #e74c3c;
+  font-size: 0.85rem;
+}
+
+.status.connected {
+  color: #2ecc71;
+}
+
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+} */

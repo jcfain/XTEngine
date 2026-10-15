@@ -1,0 +1,21 @@
+
+
+.toolBar {
+    display: flex;
+    flex-flow: column;
+    margin: 8px 16px;
+}
+
+.toolBarGroup {
+    display: flex;
+    justify-content: space-evenly;
+    flex-wrap: wrap;
+}
+
+.toolBarGroupStart {
+    justify-content: flex-start;
+}
+
+.toolBarGroupEnd {
+    justify-content: flex-end;
+}

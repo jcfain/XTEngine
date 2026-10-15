@@ -9,13 +9,14 @@ import { MediaToolbarComponent } from './components/media-toolbar/media-toolbar.
 import { ConnectionsComponent } from './components/connections/connections.component';
 import { TCodeCommandsComponent } from './components/tcode-commands/tcode-commands.component';
 import { MetadataComponent } from './components/metadata/metadata.component';
-import { WebsocketService } from './services/websocket.service';
-import { SettingsService } from './services/settings.service';
 import { ServerService } from './services/server.service';
 import { MediaService } from './services/media.service';
-import { AppStateService } from './services/app-state.service';
-import { ConnectionStatus } from './models/enums';
+import { AuthService } from './services/auth.service';
+import { AppHeaderComponent } from './components/app-header/app-header.component';
 import { MessageHandlerService } from './services/message-handler.service';
+import { AppStateService } from './services/app-state.service';
+import { OutputDeviceToolsComponent } from './components/device-tools/output/output-device-tools.component';
+import { AppFooterComponent } from './components/app-footer/app-footer.component';
 
 @Component({
   selector: 'app-root',
@@ -28,35 +29,28 @@ import { MessageHandlerService } from './services/message-handler.service';
     ScriptStatusComponent, 
     MediaListComponent, 
     MediaToolbarComponent, 
-    ConnectionsComponent, 
-    TCodeCommandsComponent, 
-    MetadataComponent
+  //   ConnectionsComponent, 
+  //   TCodeCommandsComponent, 
+    MetadataComponent,
+    AppHeaderComponent,
+    AppFooterComponent
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit {
-  title = 'XTP Web';
-  webVersion = 'v0.6.6b';
   settingsOpen = false;
   scriptStatusOpen = false;
   metadataOpen = false;
 
   constructor(
-    private messageHandlerService: MessageHandlerService,
     private serverService: ServerService,
     private mediaService: MediaService,
-    private appState: AppStateService
-  ) {}
+    private authService: AuthService
+  ) {
+  }
 
   ngOnInit(): void {
-    this.messageHandlerService.outputDeviceStatus$.subscribe(status => { 
-      this.appState.setOutputConnectionStatus(status)
-    });
-    this.messageHandlerService.inputDeviceStatus$.subscribe(status => { 
-      this.appState.setInputConnectionStatus(status)
-    });
-
     // Initialize: load server settings, then media list
     this.serverService.initServerSettings();
     this.mediaService.loadMediaList();
@@ -70,7 +64,7 @@ export class AppComponent implements OnInit {
     this.scriptStatusOpen = !this.scriptStatusOpen;
   }
 
-  openMetadata(): void {
-    this.metadataOpen = true;
+  logout() {
+    this.authService.logout();
   }
 }

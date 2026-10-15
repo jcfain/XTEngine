@@ -1,13 +1,21 @@
 
+
+
+
 <div class="app-content">
-  <div class="app-header">
+<!-- <div class="app-header">
     <h1>{{ title }} <span class="version">{{ webVersion }}</span></h1>
     <div class="header-controls">
-      <!-- <span class="status" [class.connected]="isConnected()">{{ statusText() }}</span> -->
       <button class="header-btn" (click)="toggleScriptStatus()" title="Script Status">&#9881;</button>
       <button class="header-btn" (click)="toggleSettings()" title="Settings">&#9881;</button>
     </div>
-  </div>
+  </div> 
+-->
+  <app-header 
+    (settingsClick)="toggleSettings()" 
+    (scriptStatusClick)="toggleScriptStatus()"
+    (exitClick)="logout()">
+  </app-header>
 
   <div class="app-body">
     <app-video-player></app-video-player>
@@ -19,6 +27,7 @@
     <app-media-list></app-media-list>
   </div>
 </div>
+<app-footer></app-footer>
 
 <app-settings [isOpen]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
 <app-script-status [class.open]="scriptStatusOpen"></app-script-status>

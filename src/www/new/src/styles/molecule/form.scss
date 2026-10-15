@@ -1,0 +1,77 @@
+
+
+.formElement {
+    display: grid;
+    grid-template-columns: 25% 75%;
+    margin-top: 8px;
+    width: 100%;
+    text-align: end;  
+}
+
+.formElement--label-large {
+    grid-template-columns: 70% 30%;
+}
+
+.formElement--column {
+    display: grid;
+    grid-template-columns: 100%;
+    margin-top: 8px;
+    width: 100%;
+    align-items: center;
+    text-align: center;
+}
+
+.formElement select,
+.formElement button:not(.video-control),
+.formElement input:not([type='checkbox']):not([type='range']):not([type='radio']):not(.video-control) {
+    flex-grow: 1;
+    border-radius: 5px;
+    height: 24px;
+}
+.formElement label {
+    height: 24px;
+    flex-basis: 20%;
+    padding-top: 4px;
+    margin-right: 8px;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+.formElement--column label {
+    height: 24px;
+    flex-basis: 100%;
+    padding-top: 4px;
+    margin-right: 0px;
+}
+
+.formElement .radio-group {
+    text-align: start;
+}
+.formElement .radio-group--select-model {
+    text-align: start;
+    display: flex;
+    flex-flow: column;
+}
+
+
+/* width: max-content Hack to get to align left. Somthings not right but im not looking for it now.  */
+.formElement input[type='checkbox'] {
+    width: min-content;
+    height: min-content;
+    margin: 8px;
+}
+.formElement--column input[type='checkbox'] {
+    width: min-content;
+    height: min-content;
+    margin: auto;
+}
+.form-buttons {  
+    display: flex;
+    flex-wrap: wrap;
+}
+/* .form-buttons button {
+    font-size: max(0.5em, 0.1em + 1cqi);
+} */
+.form-buttons button:not(:last-child) {
+    margin-right: 8px;
+}
