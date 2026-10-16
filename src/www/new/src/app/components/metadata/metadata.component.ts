@@ -5,6 +5,7 @@ import { MediaService } from '../../services/media.service';
 import { AppStateService } from '../../services/app-state.service';
 import { MediaItem } from '../../models/interfaces';
 import { MediaListService } from '../../services/media-list-service';
+import { VideoService } from '../../services/video.service';
 
 interface MetaData {
   offset: number;
@@ -38,7 +39,7 @@ export class MetadataComponent implements OnInit {
 
   constructor(
     private mediaService: MediaService,
-    private mediaListService: MediaListService,
+    private videoService: VideoService,
     private appState: AppStateService
   ) {}
 
@@ -51,7 +52,7 @@ export class MetadataComponent implements OnInit {
   }
 
   open(item?: MediaItem): void {
-    const mediaItem = item || this.mediaListService.playingMediaItem;
+    const mediaItem = item || this.videoService.playingMediaItem;
     if (!mediaItem) return;
     this.mediaItem = mediaItem;
     const meta = (mediaItem as any).metaData as MetaData;

@@ -8,6 +8,7 @@ import { MediaItem } from '../../models/interfaces';
 import { MediaListService } from '../../services/media-list-service';
 import { WebsocketService } from '../../services/websocket.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
+import { LocalSettingsService } from '../../services/local-settings.service';
 
 @Component({
   selector: 'app-video-player',
@@ -18,22 +19,46 @@ import { MessageHandlerService } from '../../services/message-handler.service';
 })
 export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('videoNode', { static: false }) videoNodeRef!: ElementRef<HTMLVideoElement>;
+  @ViewChild('progressInput', { static: false }) progressBarNodeRef!: ElementRef<HTMLVideoElement>;
+  @ViewChild('progressTooltip', { static: false }) seekToolTipNodeRef!: ElementRef<HTMLVideoElement>;
 
   isPlaying = false;
+  isPaused = false;
   isFullScreen = false;
-  controlsVisible = false;
+  get controlsVisible(): boolean {
+    return this.mediaItem != null && this.m_controlsVisible;
+  };
   videoVisible = false;
   videoVisibleEmbedded = true;
-  volume = 0.5;
+  set volume(value: number) {
+    this.localSettingsService.setVolume(value);
+  }
+  get volume(): number {
+    return this.m_volume;
+  }
+  m_volume = 0.5;
   currentTime = '00:00:00';
   duration = '00:00:00';
-  progress = 0;
+  durationSecs = 0.0;
+  progressTooltipText = "00:00:00";
   loading = false;
   mediaItem: MediaItem | null = null;
+  muted: boolean = false;
+  m_progress = 0;
+
+  set progress(value: string) {
+    this.m_progress = parseFloat(value);
+    this.onSeek(value);
+  }
+  get progress(): string {
+    return String(this.m_progress);
+  }
 
   private subscriptions: Subscription[] = [];
+  private m_controlsVisible = false;
 
   constructor(
+    private localSettingsService: LocalSettingsService,
     private webSocketService: WebsocketService,
     private messageHandlerService: MessageHandlerService, 
     private videoService: VideoService,
@@ -45,36 +70,29 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit(): void {
     this.subscriptions.push(
-      this.videoService.isPlaying$.subscribe(v => this.isPlaying = v),
+      this.videoService.isPlaying$.subscribe(v => { this.isPlaying = v; }),
+      this.videoService.isPaused$.subscribe(v => { this.isPaused = v; }),
       this.videoService.isFullScreen$.subscribe(v => this.isFullScreen = v),
-      this.videoService.controlsVisible$.subscribe(v => this.controlsVisible = v),
-      this.videoService.volume$.subscribe(v => this.volume = v),
+      this.videoService.controlsVisible$.subscribe(v => this.m_controlsVisible = v),
       this.videoService.videoVisible$.subscribe(v => this.videoVisible = v),
-      this.videoService.playingMediaItem$.subscribe(v => this.mediaItem = v)
+      this.videoService.playingMediaItem$.subscribe(v => this.mediaItem = v),
+      this.localSettingsService.volume$.subscribe(v => this.m_volume = v),
+      this.localSettingsService.mute$.subscribe(v => this.muted = v)
     );
   }
 
   ngAfterViewInit(): void {
     this.videoService.setVideoNode(this.videoNodeRef.nativeElement);
-    const video = this.videoNodeRef.nativeElement;
-
-    video.addEventListener('play', () => this.videoService.onPlay());
-    video.addEventListener('pause', () => this.videoService.onPause());
-    video.addEventListener('volumechange', () => this.videoService.onVolumeChange());
-    video.addEventListener('loadedmetadata', () => this.onLoadedMetadata());
-    video.addEventListener('timeupdate', () => this.onTimeUpdate());
-    video.addEventListener('ended', () => this.onVideoEnd());
-    video.addEventListener('waiting', () => this.loading = true);
-    video.addEventListener('playing', () => this.loading = false);
-    video.addEventListener('click', () => this.videoService.togglePlay());
-
-    document.addEventListener('fullscreenchange', () => this.videoService.onFullScreenChange());
   }
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(s => s.unsubscribe());
     this.videoService.setVideoNode(null);
-    document.removeEventListener('fullscreenchange', () => this.videoService.onFullScreenChange());
+  }
+
+  onFullScreenChange() {
+    this.videoVisibleEmbedded = !this.videoVisibleEmbedded;
+    this.videoService.onFullScreenChange();
   }
 
   onPlayNext(): void {
@@ -85,8 +103,24 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.mediaListService.playPreviousVideo();
   }
 
+  onPlay(): void {
+    this.videoService.onPlay();
+  }
+
+  onPause(): void {
+    this.videoService.onPause();
+  }
+
   onStop(): void {
     this.videoService.stopVideo();
+  }
+
+  onWaiting() {
+    this.loading = true;
+  }
+
+  onPlaying() {
+    this.loading = false
   }
 
   onSkipToMoneyShot(): void {
@@ -103,23 +137,45 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   onLoadedMetadata(): void {
     const video = this.videoNodeRef.nativeElement;
-    const time = this.videoService.formatTime(Math.round(video.duration));
+    const videoDurationSecs = Math.round(video.duration);
+    const time = this.formatTime(videoDurationSecs);
     this.duration = `${time.hours}:${time.minutes}:${time.seconds}`;
+    this.durationSecs = videoDurationSecs;
   }
 
   onTimeUpdate(): void {
     const video = this.videoNodeRef.nativeElement;
-    const time = this.videoService.formatTime(Math.round(video.currentTime));
+    const time = this.formatTime(Math.round(video.currentTime));
     this.currentTime = `${time.hours}:${time.minutes}:${time.seconds}`;
-    this.progress = video.duration > 0 ? (video.currentTime / video.duration) * 100 : 0;
+    this.m_progress = video.currentTime;
+    // this.m_progress = video.duration > 0 ? (video.currentTime / video.duration) * 100 : 0;
+    this.videoService.onPositionChange(video.currentTime);
+  }
+
+  // updateSeekTooltip uses the position of the mouse on the progress bar to
+  // roughly work out what point in the video the user will skip to if
+  // the progress bar is clicked at that point
+  updateSeekTooltip(event: MouseEvent) {
+    const progressBar = this.progressBarNodeRef.nativeElement;
+    const seekToolTip = this.seekToolTipNodeRef.nativeElement;
+    const maxvalue = progressBar.getAttribute('max') || "0";
+    const skipTo = Math.round(
+      (event.offsetX / progressBar.clientWidth) *
+      parseInt(maxvalue, 10)
+    );
+    seekToolTip.setAttribute('data-seek', String(skipTo));
+    const t = this.formatTime(skipTo);
+    this.progressTooltipText = `${t.hours}:${t.minutes}:${t.seconds}`;
+    const rect = progressBar.getBoundingClientRect();
+    seekToolTip.style.left = `${event.pageX - rect.left}px`;
   }
 
   onVideoEnd(): void {
     // Hook for playNextVideo
   }
 
-  togglePlay(): void {
-    this.videoService.togglePlay();
+  togglePause(): void {
+    this.videoService.togglePause();
   }
 
   stop() {
@@ -131,7 +187,15 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   toggleMute(): void {
-    this.videoService.toggleMute();
+    this.localSettingsService.setMute(!this.muted);
+  }
+
+  playNext(): void {
+    this.mediaListService.playNextVideo();
+  }
+
+  playPrevious(): void {
+    this.mediaListService.playPreviousVideo();
   }
 
   // volumeUp(): void {
@@ -142,22 +206,15 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   //   this.videoService.volumeDown();
   // }
 
-  setVolume(value: string): void {
-    const valueNum = parseFloat(value);
-    this.videoService.setVolume(valueNum);
-  }
-
   setPlayRate(value: string): void {
     const valueNum = parseFloat(value);
     this.videoService.setPlayRate(valueNum);
   }
 
-  onSeek(event: Event): void {
-    const value = parseFloat((event.target as HTMLInputElement).value);
-    const video = this.videoNodeRef.nativeElement;
-    if (video.duration > 0) {
-      video.currentTime = (value / 100) * video.duration;
-    }
+  onSeek(valueString: string): void {
+    // const value = parseFloat((event.target as HTMLInputElement).value);
+    const value = parseFloat(valueString);
+    this.videoService.onSeek(value);
   }
 
   showControls(): void {
@@ -165,10 +222,33 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   hideControls(): void {
-    this.videoService.hideControlsEvent();
+    this.videoService.hideControls();
+  }
+
+  hideControlsDebounce(): void {
+    this.videoService.hideControlsDebounce();
   }
 
   isVideoFixedLowHeight(): boolean {
     return document.documentElement.clientHeight < 600 && !this.isFullScreen && this.videoVisible;
+  }
+
+  openMediaSettings(): void {
+    // this.mediaListService.me
+  }
+
+
+  private formatTime(timeInSeconds: number): { hours: string; minutes: string; seconds: string } {
+    if (!timeInSeconds) {
+      return { hours: '00', minutes: '00', seconds: '00' };
+    }
+    const hours = Math.floor(timeInSeconds / 3600);
+    const minutes = Math.floor((timeInSeconds % 3600) / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return {
+      hours: hours < 10 ? '0' + hours : String(hours),
+      minutes: minutes < 10 ? '0' + minutes : String(minutes),
+      seconds: seconds < 10 ? '0' + seconds : String(seconds),
+    };
   }
 }

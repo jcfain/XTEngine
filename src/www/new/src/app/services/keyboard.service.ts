@@ -35,7 +35,7 @@ export class KeyboardService {
         }
         break;
       case 'm':
-        this.videoService.toggleMute();
+        this.videoService.onToggleMute();
         break;
       case 'f':
         this.videoService.toggleFullScreen();

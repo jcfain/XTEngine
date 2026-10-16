@@ -28,7 +28,6 @@ export class MediaToolbarComponent implements OnInit {
       debounceTime(400),
       distinctUntilChanged())
       .subscribe(value => {
-        // this.consoleMessages.push(value);
         this.localSettingsService.setFilter(value);
       });
   }
@@ -68,6 +67,10 @@ export class MediaToolbarComponent implements OnInit {
   toggleShufflePlay() {
     this.randomMode = !this.randomMode;
     this.setRandom();
+  }
+
+  clearFilterText() {
+    this.localSettingsService.setFilter("");
   }
 
   private setRandom() {

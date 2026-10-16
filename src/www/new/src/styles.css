@@ -8,4 +8,5 @@ body {
     color: white;
     font-family: 'sans-serif', "serif", "Lucida Sans Regular", 'Times New Roman', "Times", "DejaVu Serif", "Verdana";
     margin: 0;
+    overflow: hidden;
 }

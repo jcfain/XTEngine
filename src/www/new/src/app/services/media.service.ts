@@ -37,7 +37,7 @@ export class MediaService {
   }
 
   skipToMoneyShot(): void {
-    const playing = this.mediaListService.playingMediaItem;
+    const playing = this.videoService.playingMediaItem;
     if (playing) {
       const moneyShotSecs = (playing as any).metaData?.moneyShotSecs;
       if (moneyShotSecs && moneyShotSecs > 0) {

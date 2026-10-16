@@ -1,14 +1,19 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { AppStateService } from './app-state.service';
 import { SettingsService } from './settings.service';
 import { WebsocketService } from './websocket.service';
+import { ServerState } from '../models/enums';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ServerService {
+
+  private serverState = new BehaviorSubject<ServerState>(ServerState.Disconnected);
+  serverState$: Observable<ServerState> = this.serverState.asObservable();
+
   constructor(
     private http: HttpClient,
     private appState: AppStateService,
@@ -16,12 +21,8 @@ export class ServerService {
     private websocketService: WebsocketService
   ) {}
 
-  getServerSettings(): Observable<any> {
-    return this.http.get<any>('/settings');
-  }
-
   initServerSettings(): void {
-    this.getServerSettings().subscribe({
+    this.http.get<any>('/settings').subscribe({
       next: (response) => {
         this.appState.setRemoteUserSettings(response);
         this.settingsService.load(response);
@@ -29,6 +30,7 @@ export class ServerService {
         this.getTCodeCommands();
         this.getExported();
         this.initWebSocket();
+        this.serverState.next(ServerState.Connected);
       },
       error: (err) => {
         console.error('Error getting server settings:', err);

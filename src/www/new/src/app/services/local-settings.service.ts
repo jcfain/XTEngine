@@ -26,10 +26,23 @@ export class LocalSettingsService {
     private filterCriteriaSubject = new BehaviorSubject<string>(this.filterCriteriaDefault);
     filterCriteria$: Observable<string> = this.filterCriteriaSubject.asObservable();
 
+    readonly volumeDefault = 0.5;
+    private volumeKey = "volume";
+    private volumeSubject = new BehaviorSubject<number>(this.volumeDefault);
+    volume$: Observable<number> = this.volumeSubject.asObservable();
+
+    readonly muteDefault = false;
+    private muteKey = "mute";
+    private muteSubject = new BehaviorSubject<boolean>(this.muteDefault);
+    mute$: Observable<boolean> = this.muteSubject.asObservable();
+
     constructor( ) {
         this.sortSubject.next(this.getFromLocalStorage(this.sortKey, this.sortDefault));
         this.showSubject.next(this.getFromLocalStorage(this.showKey, this.showDefault));
         this.thumbSizeSubject.next(this.getFromLocalStorage(this.thumbSizeKey, this.thumbSizeDefault));
+        this.filterCriteriaSubject.next(this.getFromLocalStorage(this.filterCriteriaKey, this.filterCriteriaDefault));
+        this.volumeSubject.next(this.getFromLocalStorage(this.volumeKey, this.volumeDefault));
+        this.muteSubject.next(this.getFromLocalStorage(this.muteKey, this.muteDefault));
     }
 
     setSort(value: SortMode): void {
@@ -50,6 +63,16 @@ export class LocalSettingsService {
     setFilter(value: string): void {
         this.setToLocalStorage(this.filterCriteriaKey, value);
         this.filterCriteriaSubject.next(value);
+    }
+
+    setVolume(value: number): void {
+        this.setToLocalStorage(this.volumeKey, value);
+        this.volumeSubject.next(value);
+    }
+
+    setMute(value: boolean): void {
+        this.setToLocalStorage(this.muteKey, value);
+        this.muteSubject.next(value);
     }
 
     private getFromLocalStorage<T>(key: string, defaultValue: T): T {

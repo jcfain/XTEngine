@@ -1,3 +1,9 @@
+
+export enum ServerState {
+    Connected,
+    Disconnected
+}
+
 export enum XLogLevel {
     Information = 0,
     Debuging = 1,

@@ -10,6 +10,9 @@ import { MediaType, ShowMode, SortMode } from "../models/enums";
   providedIn: 'root'
 })
 export class MediaListService {
+
+    private playingMediaItem: MediaItem | null = null;
+
   constructor(
     private localSettingsService: LocalSettingsService,
     private appState: AppStateService,
@@ -31,6 +34,7 @@ export class MediaListService {
         this.thumbSize = v;
         // this.applyFilterAndSort();
     });
+    this.videoService.playingMediaItem$.subscribe(v => this.playingMediaItem = v);
   }
 
     setMediaList(list: MediaItem[]): void {
@@ -43,7 +47,7 @@ export class MediaListService {
     }
 
     get mediaList(): MediaItem[] { return this.mediaListSubject.value; }
-    get playingMediaItem(): MediaItem | null { return this.playingMediaItemSubject.value; }
+    get mediaListDisplayed(): MediaItem[] { return this.mediaListDisplayedSubject.value; }
     get selectedMediaItem(): MediaItem | null { return this.selectedMediaItemSubject.value; }
 
     filterCriteria: string = this.localSettingsService.filterCriteriaDefault;
@@ -58,10 +62,6 @@ export class MediaListService {
     private mediaListDisplayedSubject = new BehaviorSubject<MediaItem[]>([]);
     mediaListDisplayed$: Observable<MediaItem[]> = this.mediaListDisplayedSubject.asObservable();
 
-    // Playing media
-    private playingMediaItemSubject = new BehaviorSubject<MediaItem | null>(null);
-    playingMediaItem$: Observable<MediaItem | null> = this.playingMediaItemSubject.asObservable();
-
     // Selected media for metadata
     private selectedMediaItemSubject = new BehaviorSubject<MediaItem | null>(null);
     selectedMediaItem$: Observable<MediaItem | null> = this.selectedMediaItemSubject.asObservable();
@@ -70,33 +70,36 @@ export class MediaListService {
     tagFilterCriteria$: Observable<string[]> = this.tagFilterCriteriaSubject.asObservable();
 
     playNextVideo(): void {
-        const list = this.mediaList;
+        const list = this.mediaListDisplayed;
         const playing = this.playingMediaItem;
         if (!playing || list.length === 0) return;
 
-        const index = list.findIndex(m => m.id === playing.id);
-        if (index === -1) return;
+        let index = list.findIndex(m => m.id === playing.id);
 
         if (this.appState.shufflePlayMode) {
-        const next = this.getNextShuffleMediaItem();
-        if (next) this.videoService.playVideo(next);
+            const next = this.getNextShuffleMediaItem();
+            if (next) 
+                this.videoService.playVideo(next);
         } else {
-            const nextIndex = index + 1;
-            if (nextIndex < list.length) {
-                this.videoService.playVideo(list[nextIndex]);
+            let nextIndex = index + 1;
+            if (nextIndex >= list.length) {
+                nextIndex = 0;
             }
+            this.videoService.playVideo(list[nextIndex]);
         }
     }
 
     playPreviousVideo(): void {
-        const list = this.mediaList;
+        const list = this.mediaListDisplayed;
         const playing = this.playingMediaItem;
         if (!playing || list.length === 0) return;
 
-        const index = list.findIndex(m => m.id === playing.id);
-        if (index <= 0) return;
-
-        this.videoService.playVideo(list[index - 1]);
+        let index = list.findIndex(m => m.id === playing.id);
+        if (index === -1 && list.length > 0) index = list.length;
+        let previousIndex = index - 1;
+        if(previousIndex < 0)
+            previousIndex = list.length - 1
+        this.videoService.playVideo(list[previousIndex]);
     }
 
     setTagFilterCriteria(tags: string[]): void {
@@ -107,8 +110,8 @@ export class MediaListService {
     onUpdateThumb(message: any): void {
         const item = this.mediaList.find(m => m.id === message.id);
         if (item) {
-        item.relativeThumb = '/thumb/' + message.thumb;
-        this.updateMediaItem(item);
+            item.relativeThumb = '/thumb/' + message.thumb;
+            this.updateMediaItem(item);
         }
     }
 
@@ -126,14 +129,14 @@ export class MediaListService {
     }
 
     private getNextShuffleMediaItem(): MediaItem | null {
-        const list = this.mediaList;
+        const list = this.mediaListDisplayed;
         if (list.length === 0) return null;
         const randomIndex = Math.floor(Math.random() * list.length);
         return list[randomIndex];
     }
 
     private applyFilterAndSort(): void {
-        let list = [...this.mediaListSubject.value];
+        let list = [...this.mediaList];
 
         // Filter by show
         const show = this.show;
@@ -198,7 +201,7 @@ export class MediaListService {
     }
 
     updateMediaItem(updated: MediaItem): void {
-        const list = [...this.mediaListSubject.value];
+        const list = [...this.mediaList];
         const index = list.findIndex(m => m.id === updated.id);
         if (index !== -1) {
         list[index] = updated;

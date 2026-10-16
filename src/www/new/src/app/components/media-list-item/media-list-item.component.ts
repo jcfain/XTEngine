@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MediaItem } from '../../models/interfaces';
 import { ThumbState } from '../../models/enums';
 import { MediaListService } from '../../services/media-list-service';
+import { VideoService } from '../../services/video.service';
 
 @Component({
   selector: 'app-media-list-item',
@@ -33,7 +34,7 @@ export class MediaListItemComponent implements OnInit {
   // private mediaItemHeaderIconMultiplier: number = 0.10;
 
   constructor(
-    private mediaListService: MediaListService
+    private videoService: VideoService
   ) {
   }
 
@@ -44,7 +45,7 @@ export class MediaListItemComponent implements OnInit {
   }
 
   isPlaying(item: MediaItem): boolean {
-    return this.mediaListService.playingMediaItem?.id === item.id;
+    return this.videoService.playingMediaItem?.id === item.id;
   }
 
   getThumbPath(item: MediaItem): string {

@@ -34,7 +34,7 @@
 <ng-container *ngIf="!filterInputHidden" >
   <div id="filterInputContainer" class="side-action-filter-input-modal" [style.right.px]="searchButton.style.right" [style.top.px]="searchButton.style.top">
     <input id="filterInput" class="side-action-filter-input" placeholder="Filter" [ngModel]="filterText" (ngModelChange)="onFilterChange($event)" />
-    <button class="side-action-filter-clear-button icon-button icon-button--small" (click)="filterText = ''">
+    <button class="side-action-filter-clear-button icon-button icon-button--small" (click)="clearFilterText()">
       <img class="buttonImage" src="://images/icons/x.svg" />
     </button>
   </div>

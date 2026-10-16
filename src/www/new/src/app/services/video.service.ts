@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, Observable, Subject } from 'rxjs';
 import { WebsocketService } from './websocket.service';
 import { AppStateService } from './app-state.service';
 import { MediaType } from '../models/enums';
 import { MediaItem } from '../models/interfaces';
 import { MediaListService } from './media-list-service';
+import { LocalSettingsService } from './local-settings.service';
 
 @Injectable({
   providedIn: 'root'
@@ -15,6 +16,9 @@ export class VideoService {
 
   private isPlayingSubject = new BehaviorSubject<boolean>(false);
   isPlaying$: Observable<boolean> = this.isPlayingSubject.asObservable();
+
+  private isPausedSubject = new BehaviorSubject<boolean>(false);
+  isPaused$: Observable<boolean> = this.isPausedSubject.asObservable();
 
   private isFullScreenSubject = new BehaviorSubject<boolean>(false);
   isFullScreen$: Observable<boolean> = this.isFullScreenSubject.asObservable();
@@ -28,18 +32,25 @@ export class VideoService {
   private playingMediaItemSubject = new BehaviorSubject<MediaItem | null>(null);
   playingMediaItem$: Observable<MediaItem | null> = this.playingMediaItemSubject.asObservable();
 
+  private playingMediaItemPositionSubject = new BehaviorSubject<number | null>(null);
+  playingMediaItemPosition$: Observable<number | null> = this.playingMediaItemPositionSubject.asObservable();
+
+  private controlsHideDebounceSubject = new Subject<void>();
+  // controlsVisibleDebounce$: Observable<boolean> = this.controlsVisibleDebounceSubject.asObservable();
+
   private videoNode: HTMLVideoElement | null = null;
-  private controlsHideDebounce: any;
   private forceControlsVisible = false;
 
   constructor(
+    private localSettingsService: LocalSettingsService,
     private appState: AppStateService,
     private websocketService: WebsocketService
   ) {
-    const storedVolume = window.localStorage.getItem('volume');
-    if (storedVolume) {
-      this.volumeSubject.next(parseFloat(storedVolume));
-    }
+    this.controlsHideDebounceSubject.pipe(
+      debounceTime(3000))
+      .subscribe(() => {
+        this.controlsVisibleSubject.next(false);
+      });
   }
 
   setVideoNode(node: HTMLVideoElement | null): void {
@@ -54,9 +65,9 @@ export class VideoService {
     return this.playingMediaItemSubject.value;
   }
 
-  set playingMediaItem(item: MediaItem | null) {
-      this.playingMediaItemSubject.next(item);
-  }
+  // set playingMediaItem(item: MediaItem | null) {
+  //     this.playingMediaItemSubject.next(item);
+  // }
 
 
   get volume(): number {
@@ -65,6 +76,10 @@ export class VideoService {
 
   get isPlaying(): boolean {
     return this.isPlayingSubject.value;
+  }
+
+  get isPaused(): boolean {
+    return this.isPausedSubject.value;
   }
 
   get isFullScreen(): boolean {
@@ -96,7 +111,7 @@ export class VideoService {
       return;
     }
 
-    this.playingMediaItem = item;
+    this.playingMediaItemSubject.next(item);
 
     // Handle subtitles
     if (item.subtitle) {
@@ -126,7 +141,7 @@ export class VideoService {
 
     // Setup video source
     this.setVideoSource('/media' + item.relativePath);
-    this.setVideoTitle(item.name);
+    // this.setVideoTitle(item.name);
     this.setPoster('/thumb/' + item.relativeThumb);
     this.loadVideo();
     this.showVideo();
@@ -134,10 +149,12 @@ export class VideoService {
 
   stopVideo(): void {
     this.websocketService.sendStopMedia();
+    this.hideControls();
+    this.exitFullscreen();
     this.hideVideo();
     this.pause();
     this.removeVideoSource();
-    this.clearTitle();
+    // this.clearTitle();
     this.clearPoster();
     this.loadVideo();
 
@@ -146,50 +163,39 @@ export class VideoService {
       playing.playing = false;
       (playing as any).stopped = true;
       this.sendMediaState();
-      this.playingMediaItem = null;
+      this.playingMediaItemSubject.next(null);
     }
   }
 
-  setVolume(value: number): void {
-    this.volumeSubject.next(value);
-    if (this.videoNode) {
-      this.videoNode.volume = value;
-    }
-    window.localStorage.setItem('volume', String(value));
+  onSetVolume(value: number): void {
+    this.localSettingsService.setVolume(value);
   }
 
   volumeUp(): void {
     const current = this.volume;
     const next = Math.min(current + 0.05, 1.0);
-    this.setVolume(next);
+    this.onSetVolume(next);
   }
 
   volumeDown(): void {
     const current = this.volume;
     const next = Math.max(current - 0.05, 0.0);
-    this.setVolume(next);
+    this.onSetVolume(next);
   }
 
-  toggleMute(): void {
-    if (this.videoNode) {
-      this.videoNode.muted = !this.videoNode.muted;
-      if (this.videoNode.muted) {
-        this.videoNode.dataset['volume'] = String(this.videoNode.volume);
-        this.videoNode.volume = 0;
-      } else {
-        this.videoNode.volume = parseFloat(this.videoNode.dataset['volume'] || '0.5');
-      }
-    }
-  }
 
-  togglePlay(): void {
-    if (this.videoNode) {
+  togglePause(): void {
+    if (this.videoNode && this.isMediaItemPlaying()) {
       if (this.videoNode.paused || this.videoNode.ended) {
-        this.videoNode.play();
+        this.unpause();
       } else {
-        this.videoNode.pause();
+        this.pause();
       }
     }
+  }
+
+  setMute(isMuted: boolean) {
+    this.localSettingsService.setMute(isMuted);
   }
 
   setPlayRate(value: number): void {
@@ -209,43 +215,57 @@ export class VideoService {
     const videoContainer = document.getElementById('video-container');
     if (!videoContainer) return;
     if (document.fullscreenElement) {
-      document.exitFullscreen();
+      this.exitFullscreen(videoContainer);
     } else {
-      videoContainer.requestFullscreen();
+      videoContainer.requestFullscreen().then(() => {
+        this.isFullScreenSubject.next(true);
+      }, () => {
+        this.isFullScreenSubject.next(false);
+      });
+    }
+  }
+
+  exitFullscreen(videoContainer?: HTMLElement | null): void {
+    if(!this.isFullScreenSubject.value)
+      return;
+    if (!videoContainer)
+      videoContainer = document.getElementById('video-container');
+    if (!videoContainer) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().then(() => {
+        this.isFullScreenSubject.next(false);
+      });
     }
   }
 
   showControls(force = false): void {
     this.forceControlsVisible = force;
     this.controlsVisibleSubject.next(true);
-    if (this.controlsHideDebounce) {
-      clearTimeout(this.controlsHideDebounce);
-    }
-    if (!force) {
-      this.hideControlsAfterTimeout();
-    }
+    this.controlsHideDebounceSubject.next();
   }
 
   hideControls(force = false): void {
     if (force) {
       this.forceControlsVisible = false;
     }
-    if (this.forceControlsVisible) return;
+    if(this.forceControlsVisible) return;
     this.controlsVisibleSubject.next(false);
   }
 
-  hideControlsAfterTimeout(): void {
-    this.controlsHideDebounce = setTimeout(() => {
-      this.hideControlsEvent();
-    }, 3000);
+  hideControlsDebounce(force = false): void {
+    if (force) {
+      this.forceControlsVisible = false;
+    }
+    if(this.forceControlsVisible) return;
+    this.controlsHideDebounceSubject.next();
   }
 
-  hideControlsEvent(): void {
-    if (this.forceControlsVisible || this.videoNode?.paused) {
-      return;
-    }
-    this.hideControls();
-  }
+  // hideControlsEvent(): void {
+  //   if (this.forceControlsVisible || this.videoNode?.paused) {
+  //     return;
+  //   }
+  //   this.hideControls();
+  // }
 
   disableForceControlsVisible(): void {
     this.forceControlsVisible = false;
@@ -256,33 +276,35 @@ export class VideoService {
   }
 
   onPause(): void {
-    this.isPlayingSubject.next(false);
+    this.isPausedSubject.next(true);
   }
 
-  onVolumeChange(): void {
-    if (this.videoNode) {
-      this.volumeSubject.next(this.videoNode.volume);
-      window.localStorage.setItem('volume', String(this.videoNode.volume));
-    }
+  onVolumeChange(value: number): void {
+    this.onSetVolume(value);
   }
+
+  // toggleMute(isMuted?: boolean): void {
+  //   if (this.videoNode) {
+  //     this.videoNode.muted = isMuted || !this.videoNode.muted;
+  //     let volume = 0;
+  //     if (this.videoNode.muted) {
+  //       this.videoNode.dataset['volume'] = String(this.videoNode.volume);
+  //     } else {
+  //       volume = parseFloat(this.videoNode.dataset['volume'] || '0.5');
+  //     }
+  //   }
+  // }
+
+  // onToggleMute(isMuted: boolean): void {
+  //   // if (this.videoNode) {
+  //   //   this.toggleMute(isMuted);
+  //     this.localSettingsService.setMute(isMuted);
+  //   // }
+  // }
 
   onFullScreenChange(): void {
     const isFs = !!document.fullscreenElement;
     this.isFullScreenSubject.next(isFs);
-  }
-
-  formatTime(timeInSeconds: number): { hours: string; minutes: string; seconds: string } {
-    if (!timeInSeconds) {
-      return { hours: '00', minutes: '00', seconds: '00' };
-    }
-    const hours = Math.floor(timeInSeconds / 3600);
-    const minutes = Math.floor((timeInSeconds % 3600) / 60);
-    const seconds = Math.floor(timeInSeconds % 60);
-    return {
-      hours: hours < 10 ? '0' + hours : String(hours),
-      minutes: minutes < 10 ? '0' + minutes : String(minutes),
-      seconds: seconds < 10 ? '0' + seconds : String(seconds),
-    };
   }
 
   setVideoSource(url: string): void {
@@ -334,13 +356,25 @@ export class VideoService {
     }
   }
 
+  isMediaItemPlaying(): boolean {
+    return this.playingMediaItemSubject.value != null;
+  }
+
+  unpause(): void {
+    if (this.videoNode && this.isMediaItemPlaying()) {
+      this.videoNode.play();
+      this.isPausedSubject.next(false);
+    }
+  }
   pause(): void {
-    if (this.videoNode) {
+    if (this.videoNode && this.isMediaItemPlaying()) {
       this.videoNode.pause();
+      this.isPausedSubject.next(true);
     }
   }
 
   hideVideo(): void {
+    this.exitFullscreen()
     this.videoVisible = false;
   }
 
@@ -348,9 +382,24 @@ export class VideoService {
     this.videoVisible = true;
   }
 
-  skipTo(timeInSeconds: number): void {
-    if (this.videoNode) {
-      this.videoNode.currentTime = timeInSeconds;
+  // skipTo(timeInSeconds: number): void {
+  //   if (this.videoNode) {
+  //     this.videoNode.currentTime = timeInSeconds;
+  //     this.playingMediaItemPositionSubject.next(this.videoNode.currentTime);
+  //   }
+  // }
+
+  onPositionChange(timeInSeconds: number) {
+    if (this.isMediaItemPlaying() && this.video && this.video.duration > 0) {
+      this.playingMediaItemPositionSubject.next(timeInSeconds);
+    }
+  }
+
+  onSeek(timeInSeconds: number) {
+    if (this.isMediaItemPlaying() && this.video && this.video.duration > 0) {
+      this.video.currentTime = timeInSeconds;
+      // this.video.currentTime = (timeInSeconds / 100) * this.video.duration;
+      this.onPositionChange(this.video.currentTime);
     }
   }
 
