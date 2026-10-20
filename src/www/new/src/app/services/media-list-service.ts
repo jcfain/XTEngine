@@ -1,41 +1,39 @@
 import { Injectable } from "@angular/core";
 import { AppStateService } from "./app-state.service";
-import { MediaItem } from "../models/interfaces";
+import { MediaItem, MediaItemMetaData } from "../models/interfaces";
 import { VideoService } from "./video.service";
 import { BehaviorSubject, Observable } from "rxjs";
 import { LocalSettingsService } from "./local-settings.service";
 import { MediaType, ShowMode, SortMode } from "../models/enums";
+import { HttpClient } from "@angular/common/http";
 
 @Injectable({
   providedIn: 'root'
 })
 export class MediaListService {
 
-    private playingMediaItem: MediaItem | null = null;
-
-  constructor(
-    private localSettingsService: LocalSettingsService,
-    private appState: AppStateService,
-    private videoService: VideoService,
-  ) {
-    this.localSettingsService.show$.subscribe(v => {
-        this.show = v;
-        this.applyFilterAndSort();
-    });
-    this.localSettingsService.sort$.subscribe(v => {
-        this.sortBy = v;
-        this.applyFilterAndSort();
-    });
-    this.localSettingsService.filterCriteria$.subscribe(v => {
-        this.filterCriteria = v;
-        this.applyFilterAndSort();
-    });
-    this.localSettingsService.thumbSize$.subscribe(v => {
-        this.thumbSize = v;
-        // this.applyFilterAndSort();
-    });
-    this.videoService.playingMediaItem$.subscribe(v => this.playingMediaItem = v);
-  }
+    constructor(
+        private localSettingsService: LocalSettingsService,
+        private appState: AppStateService,
+        private videoService: VideoService,
+    ) {
+        this.localSettingsService.show$.subscribe(v => {
+            this.show = v;
+            this.applyFilterAndSort();
+        });
+        this.localSettingsService.sort$.subscribe(v => {
+            this.sortBy = v;
+            this.applyFilterAndSort();
+        });
+        this.localSettingsService.filterCriteria$.subscribe(v => {
+            this.filterCriteria = v;
+            this.applyFilterAndSort();
+        });
+        this.localSettingsService.thumbSize$.subscribe(v => {
+            this.thumbSize = v;
+            // this.applyFilterAndSort();
+        });
+    }
 
     setMediaList(list: MediaItem[]): void {
         this.mediaListSubject.next(list);
@@ -69,9 +67,10 @@ export class MediaListService {
     private tagFilterCriteriaSubject = new BehaviorSubject<string[]>([]);
     tagFilterCriteria$: Observable<string[]> = this.tagFilterCriteriaSubject.asObservable();
 
+
     playNextVideo(): void {
         const list = this.mediaListDisplayed;
-        const playing = this.playingMediaItem;
+        const playing = this.videoService.playingMediaItem;
         if (!playing || list.length === 0) return;
 
         let index = list.findIndex(m => m.id === playing.id);
@@ -91,7 +90,7 @@ export class MediaListService {
 
     playPreviousVideo(): void {
         const list = this.mediaListDisplayed;
-        const playing = this.playingMediaItem;
+        const playing = this.videoService.playingMediaItem;
         if (!playing || list.length === 0) return;
 
         let index = list.findIndex(m => m.id === playing.id);

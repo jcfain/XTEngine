@@ -1,12 +1,36 @@
-<div class="media-item" [style.width]="width" [style.height]="height" [class.playing]="isPlaying(item)" (click)="onItemClick(item)">
-  <div class="media-thumb" [style.height]="thumbHeight" [style.width]="width">
+<div class="media-item" 
+    [style.width]="widthPX" 
+    [style.height]="heightPX" 
+    [class]="getItemClass(item)"
+    (click)="onItemClick(item)">
+    <div click-stop-propagation class="media-item-header">
+      <div class="media-item-header-start">
+        <button class="media-context" style="width: 43.125px; height: 43.125px;" data-title="Media actions">
+          <img src="://images/icons/context-menu.svg" [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()">
+        </button>
+      </div>
+      <div class="media-item-header-end">
+        <div *ngIf="hasAltScripts()" title="Alternate script count" style="width: 28.75px; height: 28.75px; color: green;" class="media-item-info-icon media-item-info-icon--margin">
+          {{altScriptCount()}}
+        </div>
+        <svg *ngIf="hasAltScripts()" [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()" class="media-item-info-icon--margin">
+          <use href="#check"></use>
+        </svg>
+        <button class="media-context" style="width: 43.125px; height: 43.125px;" data-title="Tag favorite">
+          <svg [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()" [style.fill]="isFavorite() ? 'crimson' : 'transparant'" [style.stroke]="isFavorite() ? 'crimson' : 'grey'" >
+            <use href="#heart"></use>
+          </svg>
+        </button>
+      </div>
+    </div>
+  <div class="media-thumb" [style.height]="thumbHeightPX" [style.width]="widthPX">
     <!-- <ng-container [ngTemplateOutlet]="getLazyLoad() ? browserLazyLoad : myLazyLoad" [ngTemplateOutletContext]="{item: item}" /> -->
   <img [ngSrc]="getThumbPath(item)" fill [alt]="item.name" class="media-thumb-nail" loading="lazy" />
     <div class="media-overlay">
       <span class="play-icon">&#9654;</span>
     </div>
   </div>
-  <div class="media-name" [style.height]="textHeight" [style.width]="width" [style.fontSize]="fontSize">{{ item.name }}</div>
+  <div class="name" [style.height]="textHeight" [style.width]="widthPX" [style.fontSize]="fontSize">{{ item.name }}</div>
 </div>
 
 <!-- 

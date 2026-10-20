@@ -6,14 +6,15 @@
   </div>
   <div *ngIf="!noMedia()" class="media-list">
     <ng-container #mediaNodes *ngFor="let item of mediaList">
-      <app-media-list-item class="media-item" 
+      <app-media-list-item
         [item]="item" 
-        [width]="width" 
-        [height]="height" 
-        [thumbHeight]="thumbHeight" 
+        [width]="widthInt" 
+        [height]="heightInt" 
+        [thumbHeight]="thumbHeightInt" 
         [textHeight]="textHeight" 
         [fontSize]="fontSize"
-        (click)="onItemClick(item)">
+        (click)="onItemClick(item)"
+        (update)="updateMetadata(item)">
       </app-media-list-item>
       <!-- <div class="media-thumb" [style.height]="thumbHeight" [style.width]="thumbWidth">
         <ng-container [ngTemplateOutlet]="getLazyLoad() ? browserLazyLoad : myLazyLoad" [ngTemplateOutletContext]="{item: item}" />

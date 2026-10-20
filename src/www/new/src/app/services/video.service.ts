@@ -102,9 +102,9 @@ export class VideoService {
       return;
     }
 
-    if (this.playingMediaItem) {
-      this.stopVideo();
-    }
+    // if (this.playingMediaItem) {
+    //   this.stopVideo();
+    // }
 
     if (item.type === MediaType.ExternalType) {
       console.warn('Cannot play external media items from this interface.');

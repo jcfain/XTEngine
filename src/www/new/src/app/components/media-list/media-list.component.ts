@@ -1,12 +1,13 @@
 import { AfterViewInit, Component, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MediaItem } from '../../models/interfaces';
+import { MediaItem, MediaItemMetaData } from '../../models/interfaces';
 import { MediaListItemComponent } from '../media-list-item/media-list-item.component';
 import { MediaListService } from '../../services/media-list-service';
 import { VideoService } from '../../services/video.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
+import { MediaService } from '../../services/media.service';
 
 @Component({
   selector: 'app-media-list',
@@ -32,12 +33,14 @@ export class MediaListComponent implements OnInit, AfterViewInit {
   width = "0";
   widthInt = 0;
   height = "0";
+  heightInt = 0;
   fontSize = "0";
   infoWidth = "0";
   infoHeight = "0";
 
   thumbWidth = "0";
   thumbHeight = "0";
+  thumbHeightInt = 0;
   iconSize = "0";
   mediaLoading = true;
   mediaLoadingStatus = "Loading...";
@@ -46,6 +49,7 @@ export class MediaListComponent implements OnInit, AfterViewInit {
   private mediaItemHeaderIconMultiplier: number = 0.10;
 
   constructor(
+    private mediaService: MediaService,
     private localSettingsService: LocalSettingsService,
     private messageHandlerService: MessageHandlerService,
     private videoService: VideoService,
@@ -86,10 +90,12 @@ export class MediaListComponent implements OnInit, AfterViewInit {
     this.widthInt = thumbSizeGlobal + (thumbSizeGlobal * 0.15);
     this.width = this.widthInt+ "px";
     this.textWidth = this.width;
-    this.height = thumbSizeGlobal + this.textHeightInt + "px";
+    this.heightInt = thumbSizeGlobal + this.textHeightInt;
+    this.height = this.heightInt + "px";
     this.fontSize = (this.textHeightInt * 0.35) + "px";
     this.thumbWidth = thumbSizeGlobal + "px";
-    this.thumbHeight = thumbSizeGlobal - this.textHeightInt + "px";
+    this.thumbHeightInt = thumbSizeGlobal - this.textHeightInt;
+    this.thumbHeight = this.thumbHeightInt + "px";
     this.infoHeight = this.widthInt * this.mediaItemHeaderMultiplier + "px";
     this.infoWidth = this.infoHeight;
     this.iconSize = this.widthInt * this.mediaItemHeaderIconMultiplier + "px";
@@ -105,6 +111,24 @@ export class MediaListComponent implements OnInit, AfterViewInit {
 
   getThumbSize(): number {
     return this.mediaListService.thumbSize;
+  }
+
+  updateMetadata(item: MediaItem) {
+    return this.mediaService.updateItemMetadata(item.metaData);
+  }
+  
+  validateMetadata(metaData: MediaItemMetaData) {
+    if(metaData?.mfsScripts.length > 100)
+    {
+      // showAlertWindow("System error", `There is a possible issue with this items metadata.<br>
+      //   Doing a metadata process by clicking one of the buttons below or<br>
+      //   from 'Settings \> System \> Process metadata' should fix this issue<br>
+      //   You can also click 'Update metadata' from this media items context menu.<br>
+      //   Note: you may need to resave after the item has been updated.<br><br>
+      //   <button style='margin-top:8px' onclick='closeAlertWindow();sendUpdateMetadata(\"${metaData.key}\");'>Process ONLY THIS items metadata</button>
+      //   <button onclick='closeAlertWindow();startMetadataProcess();'>Start processing ALL metadata now</button>`
+      // );
+    }
   }
 
   // onFilterChange(value: string): void {

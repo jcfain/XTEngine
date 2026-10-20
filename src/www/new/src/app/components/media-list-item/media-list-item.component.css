@@ -127,7 +127,8 @@
     border: none;
     border-radius: 20px;  
     height: 15%;
-    width: 100%;
+    width: 100%;  
+    z-index: 1;
 }
 .media-item-header-start {
     display: flex;

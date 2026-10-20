@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { MediaItem } from '../models/interfaces';
+import { MediaItem, MediaItemMetaData } from '../models/interfaces';
 import { MediaType } from '../models/enums';
 import { AppStateService } from './app-state.service';
 import { WebsocketService } from './websocket.service';
@@ -34,6 +34,14 @@ export class MediaService {
         console.error('Error loading media list:', err);
       }
     });
+  }
+
+  // updateItem(item: MediaItem): Observable<any> {
+  //     return this.http.post<MediaItem>(`/mediaItemMetadata`, item);
+  // }
+
+  updateItemMetadata(metadata: MediaItemMetaData): Observable<any> {
+      return this.http.post<MediaItemMetaData>(`/mediaItemMetadata`, metadata);
   }
 
   skipToMoneyShot(): void {
