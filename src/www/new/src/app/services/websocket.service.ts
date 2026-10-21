@@ -138,12 +138,20 @@ export class WebsocketService {
     this.send('skipToMoneyShot');
   }
 
-  sendUpdateThumb(item: Record<string, any>): void {
-    this.send('updateThumb', item);
+  sendUpdateThumb(itemID: string): void {
+    this.send('saveSingleThumb', { itemID: itemID, pos: 0 });
   }
 
-  sendDeleteMediaItem(item: Record<string, any>): void {
-    this.send('deleteMediaItem', item);
+  sendUpdateThumbAt(itemID: string, pos: number): void {
+    this.send('saveSingleThumb', { itemID: itemID, pos: pos });
+  }
+
+  sendUpdateMoneyShotAt(itemID: string, pos: number) {
+    this.send('setMoneyShot', { itemID: itemID, pos: pos });
+  }
+
+  sendDeleteMediaItem(itemID: string): void {
+    this.send('deleteMediaItem', { itemID: itemID });
   }
 
   sendUpdateMetadata(metadataKey: string): void {
@@ -182,8 +190,8 @@ export class WebsocketService {
     this.send('togglePauseAllDeviceActions');
   }
 
-  sendPlayMedia(obj: Record<string, any>): void {
-    this.send('playMedia', obj);
+  sendPlayMedia(itemID: string): void {
+    this.send('playMedia', {id: itemID});
   }
 
   sendStopMedia(): void {

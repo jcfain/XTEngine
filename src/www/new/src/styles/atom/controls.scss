@@ -1,4 +1,9 @@
 
+.disabled {
+    background-color: lightgray;
+    pointer-events: none;
+    cursor: not-allowed;
+}
 
 input:invalid,
 textarea:invalid,

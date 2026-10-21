@@ -14,7 +14,7 @@ import { DeviceType,
         Track } from './enums';
 
 export interface MediaItem {
-    id: number;
+    id: string;
     type: MediaType;
     name: string;
     displayName: string;

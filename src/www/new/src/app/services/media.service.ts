@@ -59,11 +59,11 @@ export class MediaService {
   }
 
   deleteMediaItem(item: MediaItem): void {
-    this.websocketService.sendDeleteMediaItem({ id: item.id });
+    this.websocketService.sendDeleteMediaItem(item.id);
   }
 
   updateThumb(item: MediaItem): void {
-    this.websocketService.sendUpdateThumb({ id: item.id });
+    this.websocketService.sendUpdateThumb(item.id);
   }
 
   updateThumbAtPos(item: MediaItem): void {

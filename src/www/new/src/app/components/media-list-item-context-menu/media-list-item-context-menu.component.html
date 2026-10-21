@@ -1,0 +1,52 @@
+<div click-stop-propagation 
+        class="media-context"
+        [class.hidden]="hidden" >
+  <div class="media-context-menu" 
+        [style.font-size]="fontSize">
+    <div class="media-context-menu-item" 
+          title="This thumb file is not modifiable because it is not managed by XTP."
+          (click)="regenerateThumbEvent()">
+      Regenerate thumb
+    </div>
+    <div class="media-context-menu-item" 
+          [class.disabled]="!isPlaying()"
+          title="getThumbTitle()"
+          (click)="setThumbEvent()">
+      Set thumb at current
+    </div>
+    <div class="media-context-menu-item"  
+          [class.disabled]="!isPlaying()"
+          [title]="getMoneyShotTitle()"
+          (click)="setMoneyShotEvent()">
+      Set moneyshot at current
+    </div>
+    <div class="media-context-menu-item"
+          (click)="processMetadataEvent()">
+      Process metadata
+    </div>
+    <div class="media-context-menu-item"
+          (click)="openMetadataEvent()">
+      Properties
+    </div>
+    <div class="media-context-menu-item" 
+          [title]=getAlternateScriptsTitle()
+          [class.disabled]="!isPlaying()"
+          (click)="openAltScriptsEvent()">
+      Alternate scripts {{altScriptCount}}
+    </div>
+    <div class="media-context-menu-item" 
+          (click)="deleteEvent()">
+      Delete...
+    </div>
+    <div class="media-context-menu-item" 
+          (click)="closeEvent()">
+      Cancel
+    </div>
+  </div>
+</div>
+
+<app-alert-modal
+  *ngIf="deleteAlert"
+  (accept)="deleteEvent()"
+>
+</app-alert-modal>

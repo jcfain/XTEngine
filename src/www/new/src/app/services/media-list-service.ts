@@ -122,7 +122,7 @@ export class MediaListService {
         }
     }
 
-    deleteItem(itemID: number): void {
+    deleteItem(itemID: string): void {
         const list = this.mediaList.filter(m => m.id !== itemID);
         this.setMediaList(list);
     }

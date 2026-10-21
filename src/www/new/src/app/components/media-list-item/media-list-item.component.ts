@@ -5,11 +5,12 @@ import { MediaItem, ScriptInfo } from '../../models/interfaces';
 import { ScriptContainerType, ScriptType, ThumbState } from '../../models/enums';
 import { VideoService } from '../../services/video.service';
 import { ClickStopPropagation } from '../../directives/stop-propegation';
+import { MediaListItemContextMenuComponent } from '../media-list-item-context-menu/media-list-item-context-menu.component';
 
 @Component({
   selector: 'app-media-list-item',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgOptimizedImage, ClickStopPropagation],
+  imports: [CommonModule, FormsModule, NgOptimizedImage, ClickStopPropagation, MediaListItemContextMenuComponent],
   templateUrl: './media-list-item.component.html',
   styleUrl: './media-list-item.component.css'
 })
@@ -43,9 +44,13 @@ export class MediaListItemComponent implements OnInit {
   get thumbHeightPX(): string {
     return this.thumbHeight + "px";
   }
+  get contextMenuHidden(): boolean {
+    return this.m_contextMenuHidden;
+  }
   private playingMediaItem: MediaItem | null = null;
   private mediaItemHeaderIconMultiplier = 0.15;
   private mediaItemHeaderMultiplier = 0.2;
+  private m_contextMenuHidden = true;
 
   // private mediaItemHeaderMultiplier: number = 0.15;
   // private mediaItemHeaderIconMultiplier: number = 0.10;
@@ -135,6 +140,10 @@ export class MediaListItemComponent implements OnInit {
 		}
     this.update.emit(this.item);
 	};
+
+  toggleConextMenu() {
+    this.m_contextMenuHidden = !this.m_contextMenuHidden;
+  }
 
   private filterAltScripts(item: MediaItem) {
     var scripts = item.metaData.scripts;

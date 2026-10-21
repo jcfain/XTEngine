@@ -68,7 +68,10 @@ export class VideoService {
   // set playingMediaItem(item: MediaItem | null) {
   //     this.playingMediaItemSubject.next(item);
   // }
-
+  
+  get currentPosition(): number {
+    return this.playingMediaItemPositionSubject.value || 0;
+  }
 
   get volume(): number {
     return this.volumeSubject.value;

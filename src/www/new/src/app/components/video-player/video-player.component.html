@@ -11,6 +11,8 @@
           class="video" 
           [class.video-visible]="videoVisible" 
           [class.video-visible-embeded]="videoVisible && videoVisibleEmbedded" 
+          [volume]="volume"
+          [muted]="muted"
           (play)="onPlay()"
           (pause)="onPause()"
           (click)="togglePause()"
@@ -18,9 +20,7 @@
           (timeupdate)="onTimeUpdate()"
           (ended)="onVideoEnd()"
           (waiting)="onWaiting()"
-          (playing)="onPlaying()"
-          [volume]="volume"
-          [muted]="muted">
+          (playing)="onPlaying()">
     <source id="videoSourceNode" />
   </video>
 

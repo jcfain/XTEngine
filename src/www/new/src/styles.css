@@ -2,6 +2,7 @@
 @import url('styles/atom/controls.scss');
 @import url('styles/molecule/form.scss');
 @import url('styles/molecule/toolbar.scss');
+@import url('styles/molecule/modal.scss');
 
 body {
     background-color: black;

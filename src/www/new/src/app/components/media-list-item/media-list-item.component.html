@@ -3,9 +3,15 @@
     [style.height]="heightPX" 
     [class]="getItemClass(item)"
     (click)="onItemClick(item)">
+    <app-media-list-item-context-menu [item]="item" 
+                                      [fontSize]="fontSize"
+                                      [hidden]="contextMenuHidden"
+                                      [altScriptCount]="altScriptCount()"
+                                      (close)="toggleConextMenu()">
+    </app-media-list-item-context-menu>
     <div click-stop-propagation class="media-item-header">
       <div class="media-item-header-start">
-        <button class="media-context" style="width: 43.125px; height: 43.125px;" data-title="Media actions">
+        <button class="media-context" style="width: 43.125px; height: 43.125px;" data-title="Media actions" (click)="toggleConextMenu()">
           <img src="://images/icons/context-menu.svg" [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()">
         </button>
       </div>
