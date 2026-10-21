@@ -6,6 +6,7 @@ import { ClickStopPropagation } from '../../directives/stop-propegation';
 import { WebsocketService } from '../../services/websocket.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { AlertComponent } from '../model/alert/alert.component';
+import { MediaType } from '../../models/enums';
 
 @Component({
     selector: 'app-media-list-item-context-menu',
@@ -66,6 +67,18 @@ export class MediaListItemContextMenuComponent implements OnInit {
 
   isPlaying(): boolean {
     return this.playingMediaItem?.id === this.item.id;
+  }
+
+  isThumbReadonly(): boolean {
+    return this.item?.type != MediaType.Video && this.item?.type != MediaType.VR || !this.item?.managedThumb;
+  }
+
+  getRegenerateThumbTitle(): string {
+    if(this.item.type != MediaType.Video && this.item.type != MediaType.VR) {
+      return "This is not a media item that has frames";
+    }
+    return this.item.managedThumb ? "This thumb file is not modifiable because it is not managed by XTP." 
+      : "Regenerate this thumb nail to a random time in the video"
   }
 
   getThumbTitle() {

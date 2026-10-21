@@ -7,6 +7,7 @@ import { VideoService } from '../../services/video.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { MediaService } from '../../services/media.service';
+import { Roles } from '../../models/enums';
 
 @Component({
     selector: 'app-media-list',
@@ -59,13 +60,19 @@ export class MediaListComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.messageHandlerService.mediaLoaded$.subscribe(() => {
-      // this.mediaLoading = false;
+      this.mediaLoading = false;
+      this.mediaLoadingStatus = "";
     });
     this.messageHandlerService.mediaLoading$.subscribe(() => {
       this.mediaLoading = true;
     });
     this.messageHandlerService.mediaLoadingStatus$.subscribe(status => {
       this.mediaLoadingStatus = status || (this.mediaLoading ? "Loading..." : "Loaded");
+    });
+    this.messageHandlerService.updateMediaItem$.subscribe(item => {
+      if(!item)
+        return;
+      this.updateItem(item.item);
     });
     this.mediaListService.mediaListDisplayed$.subscribe(list => {
       this.mediaList = list;
@@ -74,12 +81,12 @@ export class MediaListComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.mediaNodes.changes.subscribe(t => {
-      // if(this.mediaList.length == t.length) {
-        this.mediaLoading = false;
-        this.mediaLoadingStatus = "";
-      // }
-    });
+    // this.mediaNodes.changes.subscribe(t => {
+    //   // if(this.mediaList.length == t.length) {
+    //     this.mediaLoading = false;
+    //     this.mediaLoadingStatus = "";
+    //   // }
+    // });
   }
 
   setDimensions() {
@@ -130,6 +137,19 @@ export class MediaListComponent implements OnInit, AfterViewInit {
     }
   }
 
+  private updateItem(item: MediaItem)
+  {
+    var index = this.mediaList.findIndex(x => x.id == item.id);
+    if(index > -1) {
+      this.mediaList[index] = JSON.parse(JSON.stringify(item));
+      if(this.videoService.isItemPlaying(item)) {
+        this.videoService.playingMediaItem = this.mediaList[index];
+      }
+      // if(selectedMediaItemForMetaData && selectedMediaItemForMetaData.id == libraryItem.id) {
+      //   selectedMediaItemForMetaData = this.mediaList[index];
+      // }
+    }
+  }
   // onFilterChange(value: string): void {
   //   this.mediaListService.setFilterCriteria(value);
   // }

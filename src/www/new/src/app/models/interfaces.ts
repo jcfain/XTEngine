@@ -38,6 +38,7 @@ export interface MediaItem {
     thumbFileError: string;
     thumbFileUnknown: string;
     thumbFileExists: boolean;
+    thumbVersion?: number;
     loaded: boolean;
     playing: boolean;
     managedThumb: boolean;

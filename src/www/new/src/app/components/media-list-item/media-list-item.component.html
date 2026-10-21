@@ -3,7 +3,8 @@
   [style.height]="heightPX"
   [class]="getItemClass(item)"
   (click)="onItemClick(item)">
-  <app-media-list-item-context-menu [item]="item"
+  <app-media-list-item-context-menu 
+    [item]="item"
     [fontSize]="fontSize"
     [hidden]="contextMenuHidden"
     [altScriptCount]="altScriptCount()"
@@ -35,7 +36,7 @@
   </div>
   <div class="media-thumb" [style.height]="thumbHeightPX" [style.width]="widthPX">
     <!-- <ng-container [ngTemplateOutlet]="getLazyLoad() ? browserLazyLoad : myLazyLoad" [ngTemplateOutletContext]="{item: item}" /> -->
-    <img [ngSrc]="getThumbPath(item)" fill [alt]="item.name" class="media-thumb-nail" loading="lazy" />
+    <img [ngSrc]="getThumbPath(item)" fill [alt]="item.name" class="media-thumb-nail" fetchPriority="auto" loading="lazy" />
     <div class="media-overlay">
       <span class="play-icon">&#9654;</span>
     </div>

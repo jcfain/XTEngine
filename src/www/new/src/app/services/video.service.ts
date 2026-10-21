@@ -4,7 +4,6 @@ import { WebsocketService } from './websocket.service';
 import { AppStateService } from './app-state.service';
 import { MediaType } from '../models/enums';
 import { MediaItem } from '../models/interfaces';
-import { MediaListService } from './media-list-service';
 import { LocalSettingsService } from './local-settings.service';
 
 @Injectable({
@@ -65,10 +64,17 @@ export class VideoService {
     return this.playingMediaItemSubject.value;
   }
 
+  set playingMediaItem(value: MediaItem | null)  {
+    if(value == null)
+      return;
+    if(this.isItemPlaying(value))
+      this.playingMediaItemSubject.next(value);
+  }
+
   // set playingMediaItem(item: MediaItem | null) {
   //     this.playingMediaItemSubject.next(item);
   // }
-  
+
   get currentPosition(): number {
     return this.playingMediaItemPositionSubject.value || 0;
   }
@@ -357,6 +363,10 @@ export class VideoService {
     if (this.videoNode) {
       this.videoNode.load();
     }
+  }
+
+  isItemPlaying(item: MediaItem): boolean {
+    return this.playingMediaItemSubject.value?.id == item.id;
   }
 
   isMediaItemPlaying(): boolean {

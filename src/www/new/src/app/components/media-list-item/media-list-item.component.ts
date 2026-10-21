@@ -6,6 +6,7 @@ import { ScriptContainerType, ScriptType, ThumbState } from '../../models/enums'
 import { VideoService } from '../../services/video.service';
 import { ClickStopPropagation } from '../../directives/stop-propegation';
 import { MediaListItemContextMenuComponent } from '../media-list-item-context-menu/media-list-item-context-menu.component';
+import { MessageHandlerService } from '../../services/message-handler.service';
 
 @Component({
     selector: 'app-media-list-item',
@@ -56,10 +57,15 @@ export class MediaListItemComponent implements OnInit {
   // private mediaItemHeaderIconMultiplier: number = 0.10;
 
   constructor(
+    private messageHandlerService: MessageHandlerService,
     private videoService: VideoService
   ) {
     this.videoService.playingMediaItem$.subscribe(v => {
       this.playingMediaItem = v;
+    });
+    this.messageHandlerService.updateThumb$.subscribe(v => {
+      if(this.item)
+        this.item.thumbVersion = Date.now();
     });
   }
 
@@ -76,10 +82,22 @@ export class MediaListItemComponent implements OnInit {
   }
 
   getThumbPath(item: MediaItem): string {
-			if (item.thumbFileExists)
-				return "/thumb/" + item.relativeThumb;
-			else 
-				return "/thumb/" + (item.thumbState === ThumbState.Unknown ? item.thumbFileUnknown : item.thumbState === ThumbState.Error ? item.thumbFileError : item.thumbFileLoading);
+      const thumbFile = "/thumb/";
+      const cacheBust = item.thumbVersion ? `?v=${item.thumbVersion}` : "";
+      switch(item.thumbState)
+      {
+        case ThumbState.Error:
+          return thumbFile + item.thumbFileError;
+        case ThumbState.Loading:
+          return thumbFile + item.thumbFileLoading;
+        case ThumbState.Ready:
+          return thumbFile + item.relativeThumb + cacheBust;
+        case ThumbState.Unknown:
+          return thumbFile + item.thumbFileUnknown;
+        default:
+				  return thumbFile + item.relativeThumb + cacheBust;
+
+      }
   }
 
   getItemClass(item: MediaItem): string {

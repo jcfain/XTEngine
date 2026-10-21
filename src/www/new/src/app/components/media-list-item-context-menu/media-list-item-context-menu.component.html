@@ -4,7 +4,8 @@
   <div class="media-context-menu"
     [style.font-size]="fontSize">
     <div class="media-context-menu-item"
-      title="This thumb file is not modifiable because it is not managed by XTP."
+      [class.disabled]="isThumbReadonly()"
+      [title]="getRegenerateThumbTitle()"
       (click)="regenerateThumbEvent()">
       Regenerate thumb
     </div>
