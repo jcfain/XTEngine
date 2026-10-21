@@ -1,16 +1,16 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { ShowMode, SortMode } from '../../models/enums';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 @Component({
-  selector: 'app-media-toolbar',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './media-toolbar.component.html',
-  styleUrl: './media-toolbar.component.css'
+    selector: 'app-media-toolbar',
+    imports: [FormsModule],
+    templateUrl: './media-toolbar.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './media-toolbar.component.css'
 })
 export class MediaToolbarComponent implements OnInit {
   filterText: string = this.localSettingsService.filterCriteriaDefault;

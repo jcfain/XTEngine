@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { AppStateService } from '../../services/app-state.service';
 import { ServerService } from '../../services/server.service';
@@ -7,11 +7,11 @@ import { WebsocketService } from '../../services/websocket.service';
 import { DeviceType, NetworkProtocol } from '../../models/enums';
 
 @Component({
-  selector: 'app-connections',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './connections.component.html',
-  styleUrl: './connections.component.css'
+    selector: 'app-connections',
+    imports: [FormsModule],
+    templateUrl: './connections.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './connections.component.css'
 })
 export class ConnectionsComponent implements OnInit {
   inputDevices: { type: DeviceType; name: string }[] = [

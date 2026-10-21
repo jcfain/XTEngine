@@ -4,41 +4,51 @@
     <button class="setup-toggle" (click)="toggleSetup()">{{ showSetup ? 'Close' : 'Setup' }}</button>
   </div>
 
-  <div *ngIf="commands.length === 0" class="no-commands">
-    No TCode commands found. Visit the settings to add some.
-  </div>
-
-  <div *ngIf="commands.length > 0" class="tcode-buttons">
-    <button *ngFor="let cmd of commands"
-            [class.hidden]="cmd.hidden"
-            [title]="cmd.command"
-            (click)="sendCommand(cmd)" >{{ cmd.name }}</button>
-  </div>
-
-  <div *ngIf="showSetup" class="tcode-setup">
-    <h4>Command Setup</h4>
-    <table class="tcode-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Command</th>
-          <th>Hidden</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let cmd of commands; let i = index">
-          <td>{{ cmd.name }}</td>
-          <td>{{ cmd.command }}</td>
-          <td><input type="checkbox" [checked]="cmd.hidden" (change)="toggleHidden(cmd)" /></td>
-          <td><button class="delete-btn" (click)="deleteCommand(i)">Delete</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="add-command">
-      <input type="text" placeholder="Name" [(ngModel)]="newCommandName" />
-      <input type="text" placeholder="Command" [(ngModel)]="newCommandValue" />
-      <button (click)="addCommand()">Add</button>
+  @if (commands.length === 0) {
+    <div class="no-commands">
+      No TCode commands found. Visit the settings to add some.
     </div>
-  </div>
+  }
+
+  @if (commands.length > 0) {
+    <div class="tcode-buttons">
+      @for (cmd of commands; track cmd) {
+        <button
+          [class.hidden]="cmd.hidden"
+          [title]="cmd.command"
+        (click)="sendCommand(cmd)" >{{ cmd.name }}</button>
+      }
+    </div>
+  }
+
+  @if (showSetup) {
+    <div class="tcode-setup">
+      <h4>Command Setup</h4>
+      <table class="tcode-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Command</th>
+            <th>Hidden</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cmd of commands; track cmd; let i = $index) {
+            <tr>
+              <td>{{ cmd.name }}</td>
+              <td>{{ cmd.command }}</td>
+              <td><input type="checkbox" [checked]="cmd.hidden" (change)="toggleHidden(cmd)" /></td>
+              <td><button class="delete-btn" (click)="deleteCommand(i)">Delete</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="add-command">
+        <input type="text" placeholder="Name" [(ngModel)]="newCommandName" />
+        <input type="text" placeholder="Command" [(ngModel)]="newCommandValue" />
+        <button (click)="addCommand()">Add</button>
+      </div>
+    </div>
+  }
 </div>

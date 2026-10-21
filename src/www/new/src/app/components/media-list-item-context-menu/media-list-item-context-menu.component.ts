@@ -1,5 +1,4 @@
-import { Component, EventEmitter, input, Input, OnInit, Output } from '@angular/core';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { Component, EventEmitter, input, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, ScriptInfo } from '../../models/interfaces';
 import { VideoService } from '../../services/video.service';
@@ -9,11 +8,11 @@ import { MessageHandlerService } from '../../services/message-handler.service';
 import { AlertComponent } from '../model/alert/alert.component';
 
 @Component({
-  selector: 'app-media-list-item-context-menu',
-  standalone: true,
-  imports: [CommonModule, FormsModule, NgOptimizedImage, ClickStopPropagation, AlertComponent],
-  templateUrl: './media-list-item-context-menu.component.html',
-  styleUrl: './media-list-item-context-menu.component.css'
+    selector: 'app-media-list-item-context-menu',
+    imports: [FormsModule, ClickStopPropagation, AlertComponent],
+    templateUrl: './media-list-item-context-menu.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './media-list-item-context-menu.component.css'
 })
 export class MediaListItemContextMenuComponent implements OnInit {
   @Input() 

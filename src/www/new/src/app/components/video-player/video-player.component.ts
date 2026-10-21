@@ -1,5 +1,5 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { VideoService } from '../../services/video.service';
@@ -11,11 +11,11 @@ import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
 
 @Component({
-  selector: 'app-video-player',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './video-player.component.html',
-  styleUrl: './video-player.component.css'
+    selector: 'app-video-player',
+    imports: [FormsModule],
+    templateUrl: './video-player.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './video-player.component.css'
 })
 export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('videoNode', { static: false }) videoNodeRef!: ElementRef<HTMLVideoElement>;

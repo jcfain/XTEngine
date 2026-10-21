@@ -1,5 +1,5 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
 import { Setting } from '../../models/interfaces';
@@ -12,11 +12,11 @@ interface SettingGroup {
 }
 
 @Component({
-  selector: 'app-settings',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './settings.component.html',
-  styleUrl: './settings.component.css'
+    selector: 'app-settings',
+    imports: [FormsModule],
+    templateUrl: './settings.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './settings.component.css'
 })
 export class SettingsComponent implements OnInit {
   @Input() isOpen = false;

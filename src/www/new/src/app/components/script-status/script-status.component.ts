@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { ChannelInfo } from '../../models/interfaces';
@@ -16,11 +16,11 @@ interface ChannelAnimationState {
 }
 
 @Component({
-  selector: 'app-script-status',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './script-status.component.html',
-  styleUrl: './script-status.component.css'
+    selector: 'app-script-status',
+    imports: [CommonModule],
+    templateUrl: './script-status.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './script-status.component.css'
 })
 export class ScriptStatusComponent implements OnInit, OnDestroy {
   isShown = false;

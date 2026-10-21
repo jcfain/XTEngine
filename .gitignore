@@ -40,3 +40,4 @@ src/www/.vscode/settings.json
 /src/www/new/node_modules
 src/www/new/package-lock.json
 /src/www/new/.angular
+/src/www/new/dist

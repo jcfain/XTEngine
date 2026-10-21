@@ -1,5 +1,5 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { MediaService } from '../../services/media.service';
 import { AppStateService } from '../../services/app-state.service';
@@ -20,11 +20,11 @@ interface MetaData {
 }
 
 @Component({
-  selector: 'app-metadata',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './metadata.component.html',
-  styleUrl: './metadata.component.css'
+    selector: 'app-metadata',
+    imports: [FormsModule],
+    templateUrl: './metadata.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './metadata.component.css'
 })
 export class MetadataComponent implements OnInit {
   @Input() isOpen = false;

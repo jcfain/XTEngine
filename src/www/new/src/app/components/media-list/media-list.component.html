@@ -1,35 +1,43 @@
 <div class="media-list-container">
-  <div *ngIf="noMedia()" id="noMedia" style="text-align: center;">No media found</div>
-  <div *ngIf="mediaLoading" id="mediaLoading" class="no-media">
-    <div class="loading-spinner"></div>
-    <div id="loadingStatus" style="padding-top: 10px;">{{mediaLoadingStatus}}</div>
-  </div>
-  <div *ngIf="!noMedia()" class="media-list">
-    <ng-container #mediaNodes *ngFor="let item of mediaList">
-      <app-media-list-item
-        [item]="item" 
-        [width]="widthInt" 
-        [height]="heightInt" 
-        [thumbHeight]="thumbHeightInt" 
-        [textHeight]="textHeight" 
-        [fontSize]="fontSize"
-        (click)="onItemClick(item)"
-        (update)="updateMetadata(item)">
-      </app-media-list-item>
-      <!-- <div class="media-thumb" [style.height]="thumbHeight" [style.width]="thumbWidth">
-        <ng-container [ngTemplateOutlet]="getLazyLoad() ? browserLazyLoad : myLazyLoad" [ngTemplateOutletContext]="{item: item}" />
-        <div class="media-overlay">
-          <span class="play-icon">&#9654;</span>
+  @if (noMedia()) {
+    <div id="noMedia" style="text-align: center;">No media found</div>
+  }
+  @if (mediaLoading) {
+    <div id="mediaLoading" class="no-media">
+      <div class="loading-spinner"></div>
+      <div id="loadingStatus" style="padding-top: 10px;">{{mediaLoadingStatus}}</div>
+    </div>
+  }
+  @if (!noMedia()) {
+    <div class="media-list">
+      @for (item of mediaList; track item) {
+        <ng-container #mediaNodes>
+          <app-media-list-item
+            [item]="item"
+            [width]="widthInt"
+            [height]="heightInt"
+            [thumbHeight]="thumbHeightInt"
+            [textHeight]="textHeight"
+            [fontSize]="fontSize"
+            (click)="onItemClick(item)"
+            (update)="updateMetadata(item)">
+          </app-media-list-item>
+          <!-- <div class="media-thumb" [style.height]="thumbHeight" [style.width]="thumbWidth">
+          <ng-container [ngTemplateOutlet]="getLazyLoad() ? browserLazyLoad : myLazyLoad" [ngTemplateOutletContext]="{item: item}" />
+          <div class="media-overlay">
+            <span class="play-icon">&#9654;</span>
+          </div>
         </div>
-      </div>
-      <div class="media-name" [style.width]="width" [style.height]="textHeight" [style.fontSize]="fontSize">{{ item.name }}</div> -->
-    </ng-container >
+        <div class="media-name" [style.width]="width" [style.height]="textHeight" [style.fontSize]="fontSize">{{ item.name }}</div> -->
+      </ng-container >
+    }
   </div>
+}
 </div>
 
 
 <!-- <ng-template #browserLazyLoad let-item="item">
-  <img [ngSrc]="getThumbPath(item)" priority fill [alt]="item.name" class="media-thumb-nail" loading="lazy" />
+<img [ngSrc]="getThumbPath(item)" priority fill [alt]="item.name" class="media-thumb-nail" loading="lazy" />
 </ng-template>
 
 <ng-template #myLazyLoad let-item="item">

@@ -1,26 +1,26 @@
-<div id="video-container" 
-      class="video-container" 
-      [class.hide-cursor]="!controlsVisible" 
-      [class.video-container-fixed]="isVideoFixedLowHeight()" 
-      (mousemove)="showControls()" 
-      (mouseleave)="hideControls()"
-      (fullscreenchange)="onFullScreenChange()">
-  <video playsinline 
-          autoplay 
-          #videoNode 
-          class="video" 
-          [class.video-visible]="videoVisible" 
-          [class.video-visible-embeded]="videoVisible && videoVisibleEmbedded" 
-          [volume]="volume"
-          [muted]="muted"
-          (play)="onPlay()"
-          (pause)="onPause()"
-          (click)="togglePause()"
-          (loadedmetadata)="onLoadedMetadata()"
-          (timeupdate)="onTimeUpdate()"
-          (ended)="onVideoEnd()"
-          (waiting)="onWaiting()"
-          (playing)="onPlaying()">
+<div id="video-container"
+  class="video-container"
+  [class.hide-cursor]="!controlsVisible"
+  [class.video-container-fixed]="isVideoFixedLowHeight()"
+  (mousemove)="showControls()"
+  (mouseleave)="hideControls()"
+  (fullscreenchange)="onFullScreenChange()">
+  <video playsinline
+    autoplay
+    #videoNode
+    class="video"
+    [class.video-visible]="videoVisible"
+    [class.video-visible-embeded]="videoVisible && videoVisibleEmbedded"
+    [volume]="volume"
+    [muted]="muted"
+    (play)="onPlay()"
+    (pause)="onPause()"
+    (click)="togglePause()"
+    (loadedmetadata)="onLoadedMetadata()"
+    (timeupdate)="onTimeUpdate()"
+    (ended)="onVideoEnd()"
+    (waiting)="onWaiting()"
+    (playing)="onPlaying()">
     <source id="videoSourceNode" />
   </video>
 
@@ -29,145 +29,159 @@
   </div>
 
   <!-- <div class="top-controls" [class.hide]="!controlsVisible">
-    <span class="video-name"></span>
-  </div> -->
+  <span class="video-name"></span>
+</div> -->
 
-  <div id="top-controls" class="video-controls top-controls" [class.top-controls-visible]="controlsVisible">
-    <div class="left-controls left-controls--top">
-      <div id="videoMediaName" class="video-media-name">{{mediaItem?.name}}</div>
-    </div>
-    <div class="middle-controls middle-controls--top">
-    </div>
-    <div class="right-controls right-controls--top">
-      <button data-title="Exit (x)" class="video-control video-control--action-end video-control-main" id="exit-action" (click)="stop()">
-        <svg style="color: white" xmlns="http://www.w3.org/2000/svg" class="player-button-icon" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16"> <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" fill="white"></path> </svg>
-      </button>
-  <!-- 		Need to put the menu in the video container for this to work in full screen.
+<div id="top-controls" class="video-controls top-controls" [class.top-controls-visible]="controlsVisible">
+  <div class="left-controls left-controls--top">
+    <div id="videoMediaName" class="video-media-name">{{mediaItem?.name}}</div>
+  </div>
+  <div class="middle-controls middle-controls--top">
+  </div>
+  <div class="right-controls right-controls--top">
+    <button data-title="Exit (x)" class="video-control video-control--action-end video-control-main" id="exit-action" (click)="stop()">
+      <svg style="color: white" xmlns="http://www.w3.org/2000/svg" class="player-button-icon" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16"> <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" fill="white"></path> </svg>
+    </button>
+    <!-- 		Need to put the menu in the video container for this to work in full screen.
     <button id="settingsOverlayButton" class="video-control video-control--action-end" onclick="openSettings()">
-        <image class="buttonImage" src="://images/icons/settings.svg" />
-      </button> -->
+      <image class="buttonImage" src="://images/icons/settings.svg" />
+    </button> -->
+  </div>
+</div>
+
+<div id="bottom-controls" class="video-controls bottom-controls" [class.bottom-controls-visible]="controlsVisible">
+  <div id="bottom-top-controls" class="bottom-top-controls">
+    <div id="scriptStatusPlayerContainer" name="scriptStatusContainer"  class="script-status-container hidden">
+      <div name="noScriptInput" style="align-self: center; flex-basis: 100%;">No script input</div>
+    </div>
+    <div class="bottom-top-controls-buttons">
+      <button id="scriptStatusPlayerButton" class="video-control video-control-other">
+        <img class="player-button-icon" src="://images/icons/equalizer.svg" />
+      </button>
+      <button data-title="Skip to next action (a)" class="video-control  video-control-other video-control--action-begin" id="next-action" (click)="onSkipToNextAction()">
+        <img class="player-button-icon" src="://images/icons/skipToAction.png" />
+      </button>
+      <button data-title="Skip to moneyshot (c)" class="video-control  video-control-other video-control--money-shot" id="money-shot" (click)="onSkipToMoneyShot()">
+        <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg" />
+      </button>
+      <button data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control-other video-control--device-state" (click)="togglePauseAllDeviceActions()">
+        <img class="player-button-icon" name="devicePauseStatusIconImage" src="://images/icons/pause.svg" />
+      </button>
     </div>
   </div>
+  <div class="time">
+    <time id="time-elapsed">{{ currentTime }}</time>
+    <span> / </span>
+    <time id="duration">{{ duration }}</time>
+  </div>
+  <div class="video-progress video-control">
+    <progress id="progress-bar" min="0" [max]="durationSecs" [value]="progress" ></progress>
+    <input #progressInput class="seek" id="seek" min="0" [max]="durationSecs" type="range" step="0.01" [(ngModel)]="progress" (mousemove)="updateSeekTooltip($event)">
+    <div #progressTooltip class="seek-tooltip" id="seek-tooltip">{{ progressTooltipText }}</div>
+  </div>
 
-  <div id="bottom-controls" class="video-controls bottom-controls" [class.bottom-controls-visible]="controlsVisible">
-    <div id="bottom-top-controls" class="bottom-top-controls">
-      <div id="scriptStatusPlayerContainer" name="scriptStatusContainer"  class="script-status-container hidden">
-        <div name="noScriptInput" style="align-self: center; flex-basis: 100%;">No script input</div>
-      </div>
-      <div class="bottom-top-controls-buttons">
-        <button id="scriptStatusPlayerButton" class="video-control video-control-other">
-          <img class="player-button-icon" src="://images/icons/equalizer.svg" />
-        </button>
-        <button data-title="Skip to next action (a)" class="video-control  video-control-other video-control--action-begin" id="next-action" (click)="onSkipToNextAction()">
-          <img class="player-button-icon" src="://images/icons/skipToAction.png" />
-        </button>
-        <button data-title="Skip to moneyshot (c)" class="video-control  video-control-other video-control--money-shot" id="money-shot" (click)="onSkipToMoneyShot()">
-          <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg" />
-        </button>
-        <button data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control-other video-control--device-state" (click)="togglePauseAllDeviceActions()">
-          <img class="player-button-icon" name="devicePauseStatusIconImage" src="://images/icons/pause.svg" />
+  <div id="bottom-bottom-controls" class="bottom-bottom-controls">
+    <div class="left-controls">
+      <div class="volume-controls">
+        <input #volumeSlider data-title="Up (+) - Down (-)" class="volume" id="volume" value="1" data-mute="0.5" type="range" max="1" min="0" step="0.01" [(ngModel)]="volume" />
+        <button data-title="Mute (m)" class="volume-button video-control video-control-main" [class.icon-button-down]="muted" id="volume-button" (click)="toggleMute()">
+          <svg class="player-button-icon">
+            @if (volume === 0) {
+              <use href="#volume-mute"></use>
+            }
+            @if (volume > 0 && volume <= 0.5) {
+              <use href="#volume-low"></use>
+            }
+            @if (volume > 0.5) {
+              <use href="#volume-high"></use>
+            }
+          </svg>
         </button>
       </div>
     </div>
-    <div class="time">
-      <time id="time-elapsed">{{ currentTime }}</time>
-      <span> / </span>
-      <time id="duration">{{ duration }}</time>
+    <div class="middle-controls">
+      <button data-title="Previous video (arrow left)" class="video-control video-control-main" id="play-previous" (click)="playPrevious()">
+        <svg class="player-button-icon" >
+          <use href="#play-previous-icon"></use>
+        </svg>
+      </button>
+      <button data-title="Play (k)" class="video-control video-control-main" id="play" (click)="togglePause()">
+        <svg class="playback-icons player-button-icon">
+          @if (isPaused) {
+            <use id="playIcon" href="#play-icon"></use>
+          }
+          @if (!isPaused) {
+            <use id="pauseIcon" href="#pause"></use>
+          }
+        </svg>
+      </button>
+      <button data-title="Next video (arrow right)" class="video-control video-control-main" id="play-next" (click)="playNext()">
+        <svg class="player-button-icon">
+          <use href="#play-next-icon"></use>
+        </svg>
+      </button>
     </div>
-    <div class="video-progress video-control">
-      <progress id="progress-bar" min="0" [max]="durationSecs" [value]="progress" ></progress>
-      <input #progressInput class="seek" id="seek" min="0" [max]="durationSecs" type="range" step="0.01" [(ngModel)]="progress" (mousemove)="updateSeekTooltip($event)">
-      <div #progressTooltip class="seek-tooltip" id="seek-tooltip">{{ progressTooltipText }}</div>
-    </div>
-
-    <div id="bottom-bottom-controls" class="bottom-bottom-controls">
-      <div class="left-controls">
-        <div class="volume-controls">
-          <input #volumeSlider data-title="Up (+) - Down (-)" class="volume" id="volume" value="1" data-mute="0.5" type="range" max="1" min="0" step="0.01" [(ngModel)]="volume" />
-          <button data-title="Mute (m)" class="volume-button video-control video-control-main" [class.icon-button-down]="muted" id="volume-button" (click)="toggleMute()">
-            <svg class="player-button-icon">
-              <use *ngIf="volume === 0" href="#volume-mute"></use>
-              <use *ngIf="volume > 0 && volume <= 0.5" href="#volume-low"></use>
-              <use *ngIf="volume > 0.5" href="#volume-high"></use>
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="middle-controls">
-        <button data-title="Previous video (arrow left)" class="video-control video-control-main" id="play-previous" (click)="playPrevious()">
-          <svg class="player-button-icon" >
-            <use href="#play-previous-icon"></use>
-          </svg>
-        </button>
-        <button data-title="Play (k)" class="video-control video-control-main" id="play" (click)="togglePause()">
-          <svg class="playback-icons player-button-icon">
-            <use *ngIf="isPaused" id="playIcon" href="#play-icon"></use>
-            <use *ngIf="!isPaused" id="pauseIcon" href="#pause"></use>
-          </svg>
-        </button>
-        <button data-title="Next video (arrow right)" class="video-control video-control-main" id="play-next" (click)="playNext()">
-          <svg class="player-button-icon">
-            <use href="#play-next-icon"></use>
-          </svg>
-        </button>
-      </div>
-      <div class="right-controls">
-        <input #playbackRateInput id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0.00" value="1.00" step="0.01" (change)="setPlayRate(playbackRateInput.value)" />
-        <button data-title="Alternate scripts" class="video-control video-control-main" id="alternate-scripts-button">
-          <svg class="player-button-icon">
-            <use href="#funscript"></use>
-          </svg>
-        </button>
-        <button data-title="Media settings" class="video-control video-control-main" id="playing-media-settings-button" (click)="openMediaSettings()">
-          <svg class="player-button-icon media-settings-button">
-            <use href="#media-settings"></use>
-          </svg>
-        </button>
-        <button data-title="Full screen (f)" class="fullscreen-button video-control video-control-main" id="fullscreen-button" (click)="toggleFullScreen()">
-          <svg class="player-button-icon">
-            <use *ngIf="!isFullScreen" href="#fullscreen"></use>
-            <use *ngIf="isFullScreen" href="#fullscreen-exit"></use>
-          </svg>
-        </button>
-      </div>
+    <div class="right-controls">
+      <input #playbackRateInput id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0.00" value="1.00" step="0.01" (change)="setPlayRate(playbackRateInput.value)" />
+      <button data-title="Alternate scripts" class="video-control video-control-main" id="alternate-scripts-button">
+        <svg class="player-button-icon">
+          <use href="#funscript"></use>
+        </svg>
+      </button>
+      <button data-title="Media settings" class="video-control video-control-main" id="playing-media-settings-button" (click)="openMediaSettings()">
+        <svg class="player-button-icon media-settings-button">
+          <use href="#media-settings"></use>
+        </svg>
+      </button>
+      <button data-title="Full screen (f)" class="fullscreen-button video-control video-control-main" id="fullscreen-button" (click)="toggleFullScreen()">
+        <svg class="player-button-icon">
+          @if (!isFullScreen) {
+            <use href="#fullscreen"></use>
+          }
+          @if (isFullScreen) {
+            <use href="#fullscreen-exit"></use>
+          }
+        </svg>
+      </button>
     </div>
   </div>
-  
-  <!-- <div class="bottom-controls" class="video-controls" [class.hidden]="!controlsVisible">
-    <div class="progress-bar-container">
-      <input type="range" class="progress-bar" [value]="progress" (input)="onSeek($event)" min="0" max="100" step="0.1" />
-    </div>
-    <div class="controls-row">
-      <div class="left-controls">
-        <button class="control-btn" (click)="togglePlay()" [title]="isPlaying ? 'Pause (k)' : 'Play (k)'">
-          <span *ngIf="isPlaying">&#10074;&#10074;</span>
-          <span *ngIf="!isPlaying">&#9654;</span>
-        </button>
-        <button class="control-btn" (click)="volumeDown()" title="Volume Down">&#128263;</button>
-        <input type="range" class="volume-slider" [value]="volume" (input)="onVolumeSliderInput($event)" min="0" max="1" step="0.05" />
-        <button class="control-btn" (click)="volumeUp()" title="Volume Up">&#128266;</button>
-        <button class="control-btn" (click)="toggleMute()" title="Mute (m)">
-          <span *ngIf="volume === 0">&#128263;</span>
-          <span *ngIf="volume > 0 && volume <= 0.5">&#128264;</span>
-          <span *ngIf="volume > 0.5">&#128266;</span>
-        </button>
-      </div>
-      <div class="media-controls">
-        <button (click)="onPlayPrevious()" title="Previous">&#9664;&#9664;</button>
-        <button (click)="onStop()" title="Stop">&#9632;</button>
-        <button (click)="onPlayNext()" title="Next">&#9654;&#9654;</button>
-        <button (click)="onSkipToMoneyShot()" title="Money Shot">&#9733;</button>
-        <button (click)="onSkipToNextAction()" title="Next Action">&#9654;</button>
-      </div>
-      <div class="right-controls">
-        <span class="time-elapsed">{{ currentTime }}</span>
-				<span> / </span>
-        <span class="duration">{{ duration }}</span>
-        <button class="control-btn" (click)="toggleFullScreen()" [title]="isFullScreen ? 'Exit full screen (f)' : 'Full screen (f)'">
-          <span *ngIf="isFullScreen">&#1053;</span>
-          <span *ngIf="!isFullScreen">&#1052;</span>
-        </button>
-      </div>
-    </div>
-  </div> -->
+</div>
+
+<!-- <div class="bottom-controls" class="video-controls" [class.hidden]="!controlsVisible">
+<div class="progress-bar-container">
+  <input type="range" class="progress-bar" [value]="progress" (input)="onSeek($event)" min="0" max="100" step="0.1" />
+</div>
+<div class="controls-row">
+  <div class="left-controls">
+    <button class="control-btn" (click)="togglePlay()" [title]="isPlaying ? 'Pause (k)' : 'Play (k)'">
+      <span *ngIf="isPlaying">&#10074;&#10074;</span>
+      <span *ngIf="!isPlaying">&#9654;</span>
+    </button>
+    <button class="control-btn" (click)="volumeDown()" title="Volume Down">&#128263;</button>
+    <input type="range" class="volume-slider" [value]="volume" (input)="onVolumeSliderInput($event)" min="0" max="1" step="0.05" />
+    <button class="control-btn" (click)="volumeUp()" title="Volume Up">&#128266;</button>
+    <button class="control-btn" (click)="toggleMute()" title="Mute (m)">
+      <span *ngIf="volume === 0">&#128263;</span>
+      <span *ngIf="volume > 0 && volume <= 0.5">&#128264;</span>
+      <span *ngIf="volume > 0.5">&#128266;</span>
+    </button>
+  </div>
+  <div class="media-controls">
+    <button (click)="onPlayPrevious()" title="Previous">&#9664;&#9664;</button>
+    <button (click)="onStop()" title="Stop">&#9632;</button>
+    <button (click)="onPlayNext()" title="Next">&#9654;&#9654;</button>
+    <button (click)="onSkipToMoneyShot()" title="Money Shot">&#9733;</button>
+    <button (click)="onSkipToNextAction()" title="Next Action">&#9654;</button>
+  </div>
+  <div class="right-controls">
+    <span class="time-elapsed">{{ currentTime }}</span>
+    <span> / </span>
+    <span class="duration">{{ duration }}</span>
+    <button class="control-btn" (click)="toggleFullScreen()" [title]="isFullScreen ? 'Exit full screen (f)' : 'Full screen (f)'">
+      <span *ngIf="isFullScreen">&#1053;</span>
+      <span *ngIf="!isFullScreen">&#1052;</span>
+    </button>
+  </div>
+</div>
+</div> -->
 </div>

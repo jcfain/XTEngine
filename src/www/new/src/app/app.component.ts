@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { VideoPlayerComponent } from './components/video-player/video-player.component';
 import { SettingsComponent } from './components/settings/settings.component';
@@ -19,24 +19,21 @@ import { OutputDeviceToolsComponent } from './components/device-tools/output/out
 import { AppFooterComponent } from './components/app-footer/app-footer.component';
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [
-    CommonModule, 
-    FormsModule, 
-    VideoPlayerComponent, 
-    SettingsComponent, 
-    ScriptStatusComponent, 
-    MediaListComponent, 
-    MediaToolbarComponent, 
-  //   ConnectionsComponent, 
-  //   TCodeCommandsComponent, 
+    selector: 'app-root',
+    imports: [
+    FormsModule,
+    VideoPlayerComponent,
+    SettingsComponent,
+    ScriptStatusComponent,
+    MediaListComponent,
+    MediaToolbarComponent,
     MetadataComponent,
     AppHeaderComponent,
     AppFooterComponent
-  ],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+],
+    templateUrl: './app.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit {
   settingsOpen = false;

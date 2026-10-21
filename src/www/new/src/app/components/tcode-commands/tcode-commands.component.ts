@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { AppStateService } from '../../services/app-state.service';
 import { ServerService } from '../../services/server.service';
@@ -11,11 +11,11 @@ interface TCodeCommand {
 }
 
 @Component({
-  selector: 'app-tcode-commands',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './tcode-commands.component.html',
-  styleUrl: './tcode-commands.component.css'
+    selector: 'app-tcode-commands',
+    imports: [FormsModule],
+    templateUrl: './tcode-commands.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './tcode-commands.component.css'
 })
 export class TCodeCommandsComponent implements OnInit {
   commands: TCodeCommand[] = [];

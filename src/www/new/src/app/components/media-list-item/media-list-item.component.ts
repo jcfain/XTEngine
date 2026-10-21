@@ -1,5 +1,5 @@
-import { Component, EventEmitter, input, Input, OnInit, Output } from '@angular/core';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { Component, EventEmitter, input, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, ScriptInfo } from '../../models/interfaces';
 import { ScriptContainerType, ScriptType, ThumbState } from '../../models/enums';
@@ -8,11 +8,11 @@ import { ClickStopPropagation } from '../../directives/stop-propegation';
 import { MediaListItemContextMenuComponent } from '../media-list-item-context-menu/media-list-item-context-menu.component';
 
 @Component({
-  selector: 'app-media-list-item',
-  standalone: true,
-  imports: [CommonModule, FormsModule, NgOptimizedImage, ClickStopPropagation, MediaListItemContextMenuComponent],
-  templateUrl: './media-list-item.component.html',
-  styleUrl: './media-list-item.component.css'
+    selector: 'app-media-list-item',
+    imports: [FormsModule, NgOptimizedImage, ClickStopPropagation, MediaListItemContextMenuComponent],
+    templateUrl: './media-list-item.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './media-list-item.component.css'
 })
 export class MediaListItemComponent implements OnInit {
   @Input() 

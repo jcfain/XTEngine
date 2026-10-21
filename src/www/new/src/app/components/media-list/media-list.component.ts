@@ -1,5 +1,4 @@
-import { AfterViewInit, Component, OnInit, QueryList, ViewChildren } from '@angular/core';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { AfterViewInit, Component, OnInit, QueryList, ViewChildren, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, MediaItemMetaData } from '../../models/interfaces';
 import { MediaListItemComponent } from '../media-list-item/media-list-item.component';
@@ -10,11 +9,11 @@ import { LocalSettingsService } from '../../services/local-settings.service';
 import { MediaService } from '../../services/media.service';
 
 @Component({
-  selector: 'app-media-list',
-  standalone: true,
-  imports: [CommonModule, FormsModule, NgOptimizedImage, MediaListItemComponent],
-  templateUrl: './media-list.component.html',
-  styleUrl: './media-list.component.css'
+    selector: 'app-media-list',
+    imports: [FormsModule, MediaListItemComponent],
+    templateUrl: './media-list.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './media-list.component.css'
 })
 export class MediaListComponent implements OnInit, AfterViewInit {
 
