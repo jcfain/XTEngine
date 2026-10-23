@@ -29,6 +29,10 @@ export class MediaListService {
             this.filterCriteria = v;
             this.applyFilterAndSort();
         });
+        this.localSettingsService.selectedTags$.subscribe(v => {
+            this.selectedTags = v;
+            this.applyFilterAndSort();
+        });
         this.localSettingsService.thumbSize$.subscribe(v => {
             this.thumbSize = v;
             // this.applyFilterAndSort();
@@ -53,6 +57,8 @@ export class MediaListService {
     show: ShowMode = this.localSettingsService.showDefault;
     thumbSize: number = this.localSettingsService.thumbSizeDefault;
 
+    private selectedTags: string[] = [];
+
     // Media list
     private mediaListSubject = new BehaviorSubject<MediaItem[]>([]);
     mediaList$: Observable<MediaItem[]> = this.mediaListSubject.asObservable();
@@ -63,10 +69,6 @@ export class MediaListService {
     // Selected media for metadata
     private selectedMediaItemSubject = new BehaviorSubject<MediaItem | null>(null);
     selectedMediaItem$: Observable<MediaItem | null> = this.selectedMediaItemSubject.asObservable();
-
-    private tagFilterCriteriaSubject = new BehaviorSubject<string[]>([]);
-    tagFilterCriteria$: Observable<string[]> = this.tagFilterCriteriaSubject.asObservable();
-
 
     playNextVideo(): void {
         const list = this.mediaListDisplayed;
@@ -99,11 +101,6 @@ export class MediaListService {
         if(previousIndex < 0)
             previousIndex = list.length - 1
         this.videoService.playVideo(list[previousIndex]);
-    }
-
-    setTagFilterCriteria(tags: string[]): void {
-        this.tagFilterCriteriaSubject.next(tags);
-        this.applyFilterAndSort();
     }
 
     onUpdateThumb(message: any): void {
@@ -166,9 +163,17 @@ export class MediaListService {
         }
 
         // Filter by tags
-        const tags = this.tagFilterCriteriaSubject.value;
+        let tags: string[] = JSON.parse(JSON.stringify(this.selectedTags));
+        const orIndex = tags.findIndex(x => x === 'OR');
+        const orMode = orIndex > -1;
+        if(orMode) {
+            tags.splice(orIndex, 1);
+        }
         if (tags.length > 0) {
-            list = list.filter(m => tags.some(t => m.tags?.includes(t)));
+            if(orMode)
+                list = list.filter(m => tags.some(t => m.metaData.tags?.includes(t)));
+            else
+                list = list.filter(m => tags.every(t => m.metaData.tags?.includes(t)));
         }
 
         // Sort

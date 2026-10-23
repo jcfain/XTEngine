@@ -1,6 +1,7 @@
 <div id="video-container"
   class="video-container"
-  [class.hide-cursor]="!controlsVisible"
+  [class.video-container-visible]="videoVisible"
+  [class.hide-cursor]="videoVisible && !controlsVisible"
   [class.video-container-fixed]="isVideoFixedLowHeight()"
   (mousemove)="showControls()"
   (mouseleave)="hideControls()"
@@ -32,7 +33,7 @@
   <span class="video-name"></span>
 </div> -->
 
-<div id="top-controls" class="video-controls top-controls" [class.top-controls-visible]="controlsVisible">
+<div id="top-controls" class="video-controls top-controls" [class.video-controls-visible]="controlsVisible">
   <div class="left-controls left-controls--top">
     <div id="videoMediaName" class="video-media-name">{{mediaItem?.name}}</div>
   </div>
@@ -49,7 +50,7 @@
   </div>
 </div>
 
-<div id="bottom-controls" class="video-controls bottom-controls" [class.bottom-controls-visible]="controlsVisible">
+<div id="bottom-controls" class="video-controls bottom-controls" [class.video-controls-visible]="controlsVisible">
   <div id="bottom-top-controls" class="bottom-top-controls">
     <div id="scriptStatusPlayerContainer" name="scriptStatusContainer"  class="script-status-container hidden">
       <div name="noScriptInput" style="align-self: center; flex-basis: 100%;">No script input</div>

@@ -43,7 +43,18 @@
 }
 
 @if (!tagInputHidden) {
-  <div id="tagFilterOptions" class="side-action-tag-filter-modal"></div>
+  <div id="tagFilterOptions" class="side-action-tag-filter-modal">
+    <div class="system-tag-checkbox">
+      <input title="If checked, the selected tags will be inclusive." id="tagFilterORChk" type="checkbox" value="OR" (click)="onTagClick($event)" [ngModel]="isTagSelected('OR')" />
+      <label for="tagFilterORChk">OR</label>
+    </div>
+    @for (tag of allTags; track tag; let idx = $index) {
+      <div class="system-tag-checkbox">
+        <input [id]="'tagFilter' + idx" type="checkbox" [value]="tag" (click)="onTagClick($event)" [ngModel]="isTagSelected(tag)" />
+        <label for="'tagFilter' + idx">{{tag}}</label>
+      </div>
+    }
+  </div>
 }
 
 @if (!tcodeActionsInputHidden) {

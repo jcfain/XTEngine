@@ -7,6 +7,7 @@ import { VideoService } from '../../services/video.service';
 import { ClickStopPropagation } from '../../directives/stop-propegation';
 import { MediaListItemContextMenuComponent } from '../media-list-item-context-menu/media-list-item-context-menu.component';
 import { MessageHandlerService } from '../../services/message-handler.service';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-media-list-item',
@@ -52,6 +53,7 @@ export class MediaListItemComponent implements OnInit {
   private mediaItemHeaderIconMultiplier = 0.15;
   private mediaItemHeaderMultiplier = 0.2;
   private m_contextMenuHidden = true;
+  private subscriptions = new Subscription();
 
   // private mediaItemHeaderMultiplier: number = 0.15;
   // private mediaItemHeaderIconMultiplier: number = 0.10;
@@ -60,17 +62,25 @@ export class MediaListItemComponent implements OnInit {
     private messageHandlerService: MessageHandlerService,
     private videoService: VideoService
   ) {
-    this.videoService.playingMediaItem$.subscribe(v => {
-      this.playingMediaItem = v;
-    });
-    this.messageHandlerService.updateThumb$.subscribe(v => {
-      if(this.item)
+    this.subscriptions.add(
+      this.videoService.playingMediaItem$.subscribe(v => {
+        this.playingMediaItem = v;
+      })
+    );
+    this.subscriptions.add(
+      this.messageHandlerService.updateThumb$.subscribe(v => {
+      if(this.item && this.item.id == v?.id)
         this.item.thumbVersion = Date.now();
-    });
+      })
+    );
   }
 
   ngOnInit(): void {
     this.filterAltScripts(this.item);
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   onItemClick(item: MediaItem): void {
@@ -118,6 +128,17 @@ export class MediaListItemComponent implements OnInit {
     if(this.isPlaying(item))
       ret += " media-item-playing";
     return ret;
+  }
+
+  getItemName(item: MediaItem): string {
+    let ret = "";
+    if(item.metaData.isSFMA) {
+        ret = "(SFMA) ";
+    } else if (item.isMFS && item.hasScript) {
+        ret = "(MFS) ";
+    } 
+    ret += item.name;
+    return ret; 
   }
   
   headerButtonDimension(): string {

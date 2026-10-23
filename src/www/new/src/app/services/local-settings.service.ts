@@ -36,6 +36,11 @@ export class LocalSettingsService {
     private muteSubject = new BehaviorSubject<boolean>(this.muteDefault);
     mute$: Observable<boolean> = this.muteSubject.asObservable();
 
+    readonly selectedTagsDefault = [];
+    private selectedTagsKey = "selectedTags";
+    private selectedTagsSubject = new BehaviorSubject<string[]>(this.selectedTagsDefault);
+    selectedTags$: Observable<string[]> = this.selectedTagsSubject.asObservable();
+
     constructor( ) {
         this.sortSubject.next(this.getFromLocalStorage(this.sortKey, this.sortDefault));
         this.showSubject.next(this.getFromLocalStorage(this.showKey, this.showDefault));
@@ -43,6 +48,7 @@ export class LocalSettingsService {
         this.filterCriteriaSubject.next(this.getFromLocalStorage(this.filterCriteriaKey, this.filterCriteriaDefault));
         this.volumeSubject.next(this.getFromLocalStorage(this.volumeKey, this.volumeDefault));
         this.muteSubject.next(this.getFromLocalStorage(this.muteKey, this.muteDefault));
+        this.selectedTagsSubject.next(this.getFromLocalStorage(this.selectedTagsKey, this.selectedTagsDefault));
     }
 
     setSort(value: SortMode): void {
@@ -73,6 +79,30 @@ export class LocalSettingsService {
     setMute(value: boolean): void {
         this.setToLocalStorage(this.muteKey, value);
         this.muteSubject.next(value);
+    }
+
+    setSelectedTags(value: string[]): void {
+        this.setToLocalStorage(this.selectedTagsKey, value);
+        this.selectedTagsSubject.next(value);
+    }
+
+    addToSelectedTags(value: string): void {
+        let currentTags = this.selectedTagsSubject.value;
+        if(currentTags.findIndex(x => x === value) > -1) {
+            return;
+        }
+        currentTags.push(value);
+        this.setSelectedTags(currentTags);
+    }
+
+    removeFromSelectedTags(value: string): void {
+        let currentTags: string[] = JSON.parse(JSON.stringify(this.selectedTagsSubject.value));
+        const index = currentTags.findIndex(x => x === value);
+        if(index == -1) {
+            return;
+        }
+        currentTags.splice(index, 1);
+        this.setSelectedTags(currentTags);
     }
 
     private getFromLocalStorage<T>(key: string, defaultValue: T): T {

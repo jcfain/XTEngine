@@ -171,7 +171,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onVideoEnd(): void {
-    // Hook for playNextVideo
+    this.playNext();
   }
 
   togglePause(): void {
@@ -218,7 +218,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   showControls(): void {
-    this.videoService.showControls();
+    if(this.videoVisible)
+      this.videoService.showControls();
   }
 
   hideControls(): void {

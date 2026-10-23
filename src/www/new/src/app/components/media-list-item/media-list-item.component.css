@@ -102,8 +102,8 @@
     overflow: visible;
     border-radius: 25px;
     margin: 5px;
-    content-visibility: auto;
-    contain-intrinsic-size: 1px 500px;
+    /* content-visibility: auto;
+    contain-intrinsic-size: 1px 500px; */
     /* Im not sure about the flex here */
     display: flex;
     flex-flow: column;
@@ -247,7 +247,7 @@
     box-shadow: -1px 1px 5px 0px hotpink, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px hotpink;
 }
 
-.media-item:not(.media-item-playing):hover a {
+.media-item:not(.media-item-playing):hover .name {
     color: plum;
 }
 
@@ -256,11 +256,11 @@
     box-shadow: -1px 1px 5px 0px lightgrey, 1px -1px 5px 0px lightgrey, 1px 1px 5px 0px lightgrey, -1px -1px 5px 0px lightgrey;
 }
 
-.media-item-noscript:not(.media-item-playing) a {
+.media-item-noscript:not(.media-item-playing) .name {
     color: grey;
 }
 
-.media-item-noscript:not(.media-item-playing):hover a {
+.media-item-noscript:not(.media-item-playing):hover .name {
     color: lightgrey;
 }
 
@@ -269,11 +269,11 @@
     box-shadow: -1px 1px 5px 0px gold, 1px -1px 5px 0px orange, 1px 1px 5px 0px red, -1px -1px 5px 0px gold;
 }
 
-.media-item-mfs:not(.media-item-playing) a {
+.media-item-mfs:not(.media-item-playing) .name {
     color: chartreuse;
 }
 
-.media-item-mfs:not(.media-context):not(.media-item-playing):hover a {
+.media-item-mfs:not(.media-context):not(.media-item-playing):hover .name {
     color: gold;
 }
 .media-item-mfs.media-item-playing {
@@ -281,7 +281,7 @@
     box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
 }
 
-.media-item-mfs-noscript:not(.media-item-playing) a {
+.media-item-mfs-noscript:not(.media-item-playing) .name {
     color: cyan;
 }
 
@@ -299,11 +299,11 @@
     box-shadow: -1px 1px 5px 0px yellow, 1px -1px 5px 0px orange, 1px 1px 5px 0px red, -1px -1px 5px 0px yellow;
 }
 
-.media-item-sfma:not(.media-item-playing) a {
+.media-item-sfma:not(.media-item-playing) .name {
     color: yellow;
 }
 
-.media-item-sfma:not(.media-context):not(.media-item-playing):hover a {
+.media-item-sfma:not(.media-context):not(.media-item-playing):hover .name {
     color: yellow;
 }
 .media-item-sfma.media-item-playing {
@@ -311,11 +311,11 @@
     box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
 }
 
-.media-item-sfma-noscript:not(.media-item-playing) a {
+.media-item-sfma-noscript:not(.media-item-playing) .name {
     color: cyan;
 }
 
-.media-item-sfma-noscript:not(.media-context):not(.media-item-playing):hover a {
+.media-item-sfma-noscript:not(.media-context):not(.media-item-playing):hover .name {
     color: lightcyan;
 }
 
@@ -329,11 +329,11 @@
     box-shadow: -1px 1px 5px 0px yellow, 1px -1px 5px 0px orange, 1px 1px 5px 0px red, -1px -1px 5px 0px yellow;
 }
 
-.media-item-alt-noscript:not(.media-item-playing) a {
+.media-item-alt-noscript:not(.media-item-playing) .name {
     color: darkcyan;
 }
 
-.media-item-alt-noscript:not(.media-context):not(.media-item-playing):hover a {
+.media-item-alt-noscript:not(.media-context):not(.media-item-playing):hover .name {
     color: darkcyan;
 }
 
@@ -342,6 +342,6 @@
     box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px cornflowerblue;
 }
 
-.media-item-playing .media-link {
+.media-item-playing .name {
     color: cornflowerblue;
 }

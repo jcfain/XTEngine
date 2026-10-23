@@ -29,7 +29,9 @@ export class MessageHandlerService {
   /// Description of the current loading state
   mediaLoadingStatus$: Observable<string | null> = this.mediaLoadingStatusSubject.asObservable();
 
-  private updateThumbSubject = new BehaviorSubject<ThumbUpdate | null>(null);
+  // private updateThumbSubject = new BehaviorSubject<ThumbUpdate | null>(null);
+  // updateThumb$: Observable<ThumbUpdate | null> = this.updateThumbSubject.asObservable();
+  private updateThumbSubject = new Subject<ThumbUpdate | null>();
   updateThumb$: Observable<ThumbUpdate | null> = this.updateThumbSubject.asObservable();
 
   private updateMediaItemSubject = new BehaviorSubject<MediaItemUpdate | null>(null);

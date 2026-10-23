@@ -84,7 +84,8 @@
     background-color: #000000;
     flex-flow: column;padding: 16px;
     border: 1px solid aliceblue;
-    max-height: min(275px,calc(100vh - 200px));
+    max-height: min(275px,calc(100vh - 200px));  
+    overflow: auto;
 }
 
 .side-action-tag-filter-container {  

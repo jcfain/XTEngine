@@ -47,7 +47,6 @@ export interface MediaItem {
     // TODO: what are these?
     thumbnail?: string;
     viewed?: number;
-    tags?: string[];
 }
 
 export interface MediaItemMetaData {

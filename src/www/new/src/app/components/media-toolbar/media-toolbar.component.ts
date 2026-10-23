@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { ShowMode, SortMode } from '../../models/enums';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { MessageHandlerService } from '../../services/message-handler.service';
+import { AppStateService } from '../../services/app-state.service';
 
 @Component({
     selector: 'app-media-toolbar',
@@ -22,7 +24,9 @@ export class MediaToolbarComponent implements OnInit {
   private nonRandomSort: SortMode = this.localSettingsService.sortDefault;
 
   constructor(
-    private localSettingsService: LocalSettingsService
+    private localSettingsService: LocalSettingsService,
+    private appStateService: AppStateService,
+    private messageHandlerService: MessageHandlerService
   ) {
     this.filtertextChanged.pipe(
       debounceTime(400),
@@ -36,6 +40,8 @@ export class MediaToolbarComponent implements OnInit {
   tagInputHidden: boolean = true;
   tcodeActionsInputHidden: boolean = true;
   scriptInputHidden: boolean = true;
+  allTags: string[] = [];
+  selectedTags: string[] = [];
 
   ngOnInit(): void {
     this.localSettingsService.filterCriteria$.subscribe(f => this.filterText = f);
@@ -45,6 +51,15 @@ export class MediaToolbarComponent implements OnInit {
     this.localSettingsService.sort$.subscribe(s => {
       this.currentSort = s;
     });
+    this.localSettingsService.selectedTags$.subscribe(s => {
+      this.selectedTags = s;
+    });
+    this.messageHandlerService.tagsUpdateSubject$.subscribe(v => {
+      this.allTags = v?.allTags || [];
+    });
+    this.appStateService.remoteUserSettings$.subscribe(v => {
+      this.allTags = v?.allTags || [];
+    })
   }
 
   onFilterChange(value: string): void {
@@ -71,6 +86,18 @@ export class MediaToolbarComponent implements OnInit {
 
   clearFilterText() {
     this.localSettingsService.setFilter("");
+  }
+
+  isTagSelected(tag: string): boolean {
+    return this.selectedTags.findIndex(x => x === tag) > -1;
+  }
+
+  onTagClick($event: Event) {
+    const node = ($event.target as HTMLInputElement);
+    if(node.checked)
+      this.localSettingsService.addToSelectedTags(node.value);
+    else
+      this.localSettingsService.removeFromSelectedTags(node.value);
   }
 
   private setRandom() {

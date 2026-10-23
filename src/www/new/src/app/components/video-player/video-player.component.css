@@ -169,6 +169,10 @@
     position: -webkit-sticky;
     top: 0;
     z-index: 14;
+    visibility: hidden;
+}
+.video-container-visible {
+    visibility: visible;
 }
 
 video {
@@ -204,6 +208,13 @@ video {
     max-width: 50vw;
     border-top-left-radius: 25px;
     border-top-right-radius: 25px;
+    opacity: 0;
+    max-height: 0;
+    transition: max-height 0.25s ease-in-out, opacity 0.5s linear;
+}
+.video-controls-visible {
+    opacity: 1 !important;
+    max-height: min-content;
 }
 
 .top-controls {
@@ -219,6 +230,7 @@ video {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 }
+
 .hide-cursor {
     cursor: none !important;
 }
@@ -294,22 +306,6 @@ progress::-webkit-progress-value {
     font-weight: bold;
     color: #fff;
     background-color: rgba(0, 0, 0, 0.6);
-}
-
-.top-controls-visible {
-    opacity: 1 !important;
-}
-
-.top-controls {
-    opacity: 0;
-}
-
-.bottom-controls-visible {
-    opacity: 1 !important;
-}
-
-.bottom-controls {
-    opacity: 0;
 }
 
 .bottom-top-controls {

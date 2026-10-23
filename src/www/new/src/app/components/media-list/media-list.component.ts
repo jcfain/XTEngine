@@ -60,8 +60,8 @@ export class MediaListComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.messageHandlerService.mediaLoaded$.subscribe(() => {
-      this.mediaLoading = false;
-      this.mediaLoadingStatus = "";
+      // this.mediaLoading = false;
+      // this.mediaLoadingStatus = "";
     });
     this.messageHandlerService.mediaLoading$.subscribe(() => {
       this.mediaLoading = true;
@@ -69,10 +69,10 @@ export class MediaListComponent implements OnInit, AfterViewInit {
     this.messageHandlerService.mediaLoadingStatus$.subscribe(status => {
       this.mediaLoadingStatus = status || (this.mediaLoading ? "Loading..." : "Loaded");
     });
-    this.messageHandlerService.updateMediaItem$.subscribe(item => {
-      if(!item)
+    this.messageHandlerService.updateMediaItem$.subscribe(v => {
+      if(!v?.item)
         return;
-      this.updateItem(item.item);
+      this.updateItem(v.item);
     });
     this.mediaListService.mediaListDisplayed$.subscribe(list => {
       this.mediaList = list;
@@ -81,12 +81,12 @@ export class MediaListComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    // this.mediaNodes.changes.subscribe(t => {
-    //   // if(this.mediaList.length == t.length) {
-    //     this.mediaLoading = false;
-    //     this.mediaLoadingStatus = "";
-    //   // }
-    // });
+    this.mediaNodes.changes.subscribe(t => {
+      if(this.mediaList.length == t.length) {
+        this.mediaLoading = false;
+        this.mediaLoadingStatus = "";
+      }
+    });
   }
 
   setDimensions() {
@@ -108,7 +108,7 @@ export class MediaListComponent implements OnInit, AfterViewInit {
   }
 
   noMedia(): boolean {
-    return !this.mediaLoading && this.mediaList.length == 0;
+    return !this.mediaLoading && this.mediaList?.length == 0;
   }
 
   onItemClick(item: MediaItem) {
