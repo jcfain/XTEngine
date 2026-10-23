@@ -5,12 +5,15 @@ import { VideoService } from '../../services/video.service';
 import { ClickStopPropagation } from '../../directives/stop-propegation';
 import { WebsocketService } from '../../services/websocket.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
-import { AlertComponent } from '../model/alert/alert.component';
 import { MediaType } from '../../models/enums';
+import { AlertComponent } from '../alert-model/alert.component';
+import { GenericOverlayService } from '../../services/overlay.service';
+import { AppStateService } from '../../services/app-state.service';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
     selector: 'app-media-list-item-context-menu',
-    imports: [FormsModule, ClickStopPropagation, AlertComponent],
+    imports: [FormsModule, ClickStopPropagation],
     templateUrl: './media-list-item-context-menu.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './media-list-item-context-menu.component.css'
@@ -27,29 +30,15 @@ export class MediaListItemContextMenuComponent implements OnInit {
 
   @Output()
   close = new EventEmitter()
-  // @Output()
-  // update = new EventEmitter<MediaItem>()
 
   altScripts: ScriptInfo[] = [];
-  deleteAlert = false;
+  mediaManagementEnabled: boolean = false;
 
-  // get widthPX(): string {
-  //   return this.width + "px";
-  // }
-  // get heightPX(): string {
-  //   return this.height + "px";
-  // }
-  // get thumbHeightPX(): string {
-  //   return this.thumbHeight + "px";
-  // }
   private playingMediaItem: MediaItem | null = null;
-  private mediaItemHeaderIconMultiplier = 0.15;
-  private mediaItemHeaderMultiplier = 0.2;
-
-  // private mediaItemHeaderMultiplier: number = 0.15;
-  // private mediaItemHeaderIconMultiplier: number = 0.10;
 
   constructor(
+    private settingsService: SettingsService,
+    private overlayService: GenericOverlayService,
     private videoService: VideoService,
     private websocketService: WebsocketService,
     private messageService: MessageHandlerService
@@ -58,12 +47,14 @@ export class MediaListItemContextMenuComponent implements OnInit {
       this.playingMediaItem = v;
     });
     this.messageService.deleteItem$.subscribe(v => {
-      this.deleteAlert = false;
+      this.overlayService.close();
+    });
+    this.settingsService.mediaManagementEnabled$.subscribe(v => {
+      this.mediaManagementEnabled = v;
     });
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}  
 
   isPlaying(): boolean {
     return this.playingMediaItem?.id === this.item.id;
@@ -153,18 +144,30 @@ export class MediaListItemContextMenuComponent implements OnInit {
     this.closeEvent();
   }
 
-  deleteEvent() {
-    this.deleteAlert = true;
+  deleteEvent($event: MouseEvent) {
+    this.overlayService.open(AlertComponent, 
+      {
+        content: `Are you sure you wish to delete the media? 
+              '${this.item.name}'
+THIS ACTION CANNOT BE UNDONE!`, 
+        titleText: "Warning!", 
+        acceptText: "DELETE", 
+        rejectText: "NO WAY!",
+        onAccept: () => {this.confirmDeleteEvent();},
+        onReject: () => {this.rejectDeleteEvent();},
+        onClose:  () => {this.overlayService.close();},
+      }
+      //, $event 
+    );
     this.closeEvent();
   }
 
   confirmDeleteEvent() {
-    // this.deleteAlert = false;
-    // this.websocketService.sendDeleteMediaItem(this.item.id);
+    this.websocketService.sendDeleteMediaItem(this.item.id);
   }
 
   rejectDeleteEvent() {
-    this.deleteAlert = false;
+    this.overlayService.close();
   }
 
   closeEvent() {

@@ -35,10 +35,12 @@
       (click)="openAltScriptsEvent()">
       Alternate scripts {{altScriptCount}}
     </div>
+  @if(mediaManagementEnabled) {
     <div class="media-context-menu-item"
-      (click)="deleteEvent()">
+      (click)="deleteEvent($event)">
       Delete...
     </div>
+  }
     <div class="media-context-menu-item"
       (click)="closeEvent()">
       Cancel
@@ -46,9 +48,9 @@
   </div>
 </div>
 
-@if (deleteAlert) {
+<!-- @if (deleteAlert) {
   <app-alert-modal
     (accept)="deleteEvent()"
     >
   </app-alert-modal>
-}
+} -->

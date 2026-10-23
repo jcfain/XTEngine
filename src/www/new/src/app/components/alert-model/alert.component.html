@@ -1,0 +1,25 @@
+<div click-stop-propagation class="x-modal x-modal--alert">
+    <div class="x-modal-content x-modal-content--alert">
+        <div class="x-modal-header">
+            <span class="x-modal-title">{{titleText}}</span>
+            <button class="x-modal-close icon-button" (click)="closeEvent()">
+                <img class="buttonImage" src="://images/icons/x.svg" />
+            </button>
+        </div>
+        <div class="x-modal-body x-modal-body--alert">
+            <p style="white-space: pre-wrap">{{content}}</p>
+        </div>
+        <div class="x-modal-footer">
+            <div class="x-modal-footer-content">
+                <button (click)="acceptEvent()">
+                    {{acceptText}}
+                </button>
+                @if (rejectText) {
+                <button (click)="rejectEvent()">
+                    {{rejectText}}
+                </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>

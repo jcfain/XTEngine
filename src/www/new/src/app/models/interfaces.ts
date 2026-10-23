@@ -43,10 +43,6 @@ export interface MediaItem {
     playing: boolean;
     managedThumb: boolean;
     metaData: MediaItemMetaData;
-
-    // TODO: what are these?
-    thumbnail?: string;
-    viewed?: number;
 }
 
 export interface MediaItemMetaData {
