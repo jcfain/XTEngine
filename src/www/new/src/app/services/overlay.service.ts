@@ -42,7 +42,7 @@ import { Injectable, Injector, Type } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class GenericOverlayService {
-  private overlayRef: OverlayRef | null = null;
+  private overlayRefs: {[name: string]: OverlayRef | null} = {};
   constructor(private overlay: Overlay) {}
   /**
    * Opens a component in an overlay at a relative position and remains fixed on scroll.
@@ -50,10 +50,11 @@ export class GenericOverlayService {
    * @param data Optional data or handlers to inject into the component.
    * @param event The click event to determine the position.
    */
-  open<T>(component: Type<T>, data?: any, event?: MouseEvent): void {
-    if (this.overlayRef) {
-      this.close();
+  open<T>(nameID: string, component: Type<T>, data?: any, event?: MouseEvent, closeOnClickOther?: boolean): void {
+    if (this.overlayRefs[component.name]) {
+      return;
     }
+    let overlayRef: OverlayRef;
     if (event && event.target) {
       const target = event.target as HTMLElement;
       // Create a position strategy relative to the clicked element
@@ -71,13 +72,13 @@ export class GenericOverlayService {
         ])
         .withViewportMargin(8) // Add some margin to ensure visibility
         .withPush(false); // Disable repositioning into the viewport
-        this.overlayRef = this.overlay.create({
+        overlayRef = this.overlay.create({
           positionStrategy,
           hasBackdrop: false, // No backdrop
           scrollStrategy: this.overlay.scrollStrategies.reposition(), // Adjust overlay position on scroll if needed
         });
     } else {
-      this.overlayRef = this.overlay.create({
+      overlayRef = this.overlay.create({
         hasBackdrop: true,
         panelClass: ['modal', 'is-active'],
         backdropClass: 'modal-background'
@@ -87,26 +88,30 @@ export class GenericOverlayService {
     const injector = this.createInjector(data);
     const componentPortal = new ComponentPortal(component, null, injector);
     // Attach the component and get its instance
-    const componentRef = this.overlayRef.attach(componentPortal);
+    const componentRef = overlayRef.attach(componentPortal);
     // // Dynamically hook up the `voiceNote` event if it exists
     // if (data?.onVoiceNote && componentRef.instance['voiceNote']) {
     //   componentRef.instance['voiceNote'].subscribe(data.onVoiceNote);
     // }
     // Prevent bubbling from clicks inside the overlay
-    this.overlayRef.overlayElement.addEventListener('click', (event: MouseEvent) => {
+    overlayRef.overlayElement.addEventListener('click', (event: MouseEvent) => {
       event.stopPropagation();
     });
+    this.overlayRefs[nameID] = overlayRef;
     // Close overlay on outside click
-    this.listenForOutsideClick();
+    if(closeOnClickOther)
+      this.listenForOutsideClick(nameID);
   }
   /**
    * Closes the overlay if it's open.
    */
-  close(): void {
-    this.overlayRef?.dispose();
-    this.overlayRef = null;
+  close(nameID: string ): void {
+    this.overlayRefs[nameID]?.dispose();
+    this.overlayRefs[nameID] = null;
     // Remove global click listener
-    document.removeEventListener('click', this.onDocumentClick);
+    document.removeEventListener('click', ($event: MouseEvent) => {
+      this.onDocumentClick($event, nameID);
+    });
   }
   /**
    * Creates an injector with the given data.
@@ -120,21 +125,23 @@ export class GenericOverlayService {
   /**
    * Adds a global click listener to detect outside clicks.
    */
-  private listenForOutsideClick(): void {
+  private listenForOutsideClick(nameID: string): void {
     setTimeout(() => {
-      document.addEventListener('click', this.onDocumentClick);
+      document.addEventListener('click', ($event: MouseEvent) => {
+        this.onDocumentClick($event, nameID);
+      });
     });
   }
   /**
    * Handles document clicks to close the overlay if clicked outside.
    */
-  private onDocumentClick = (event: MouseEvent): void => {
+  private onDocumentClick = (event: MouseEvent, nameID: string): void => {
     if (
-      this.overlayRef &&
-      this.overlayRef.overlayElement &&
-      !this.overlayRef.overlayElement.contains(event.target as Node)
+      this.overlayRefs[nameID] &&
+      this.overlayRefs[nameID].overlayElement &&
+      !this.overlayRefs[nameID].overlayElement.contains(event.target as Node)
     ) {
-      this.close();
+      this.close(nameID);
     }
   };
 }

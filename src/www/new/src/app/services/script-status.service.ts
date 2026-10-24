@@ -13,6 +13,6 @@ export class ScriptStatusService {
     ) {}
 
     toggleScriptStatus($event?: MouseEvent) {
-        this.overlayService.open(ScriptStatusComponent, null, $event);
+        this.overlayService.open("scriptStatus", ScriptStatusComponent, null, $event);
     }
 }

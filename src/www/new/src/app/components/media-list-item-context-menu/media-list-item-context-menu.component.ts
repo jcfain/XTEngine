@@ -35,6 +35,7 @@ export class MediaListItemContextMenuComponent implements OnInit {
   mediaManagementEnabled: boolean = false;
 
   private playingMediaItem: MediaItem | null = null;
+  private deleteAlertNameID = "deleteAlertID";
 
   constructor(
     private settingsService: SettingsService,
@@ -47,7 +48,7 @@ export class MediaListItemContextMenuComponent implements OnInit {
       this.playingMediaItem = v;
     });
     this.messageService.deleteItem$.subscribe(v => {
-      this.overlayService.close();
+      this.overlayService.close(this.deleteAlertNameID);
     });
     this.settingsService.mediaManagementEnabled$.subscribe(v => {
       this.mediaManagementEnabled = v;
@@ -145,7 +146,9 @@ export class MediaListItemContextMenuComponent implements OnInit {
   }
 
   deleteEvent($event: MouseEvent) {
-    this.overlayService.open(AlertComponent, 
+    this.overlayService.open(
+      this.deleteAlertNameID, 
+      AlertComponent, 
       {
         content: `Are you sure you wish to delete the media? 
               '${this.item.name}'
@@ -155,7 +158,7 @@ THIS ACTION CANNOT BE UNDONE!`,
         rejectText: "NO WAY!",
         onAccept: () => {this.confirmDeleteEvent();},
         onReject: () => {this.rejectDeleteEvent();},
-        onClose:  () => {this.overlayService.close();},
+        onClose:  () => {this.overlayService.close(this.deleteAlertNameID);},
       }
       //, $event 
     );
@@ -167,7 +170,7 @@ THIS ACTION CANNOT BE UNDONE!`,
   }
 
   rejectDeleteEvent() {
-    this.overlayService.close();
+    this.overlayService.close(this.deleteAlertNameID);
   }
 
   closeEvent() {
