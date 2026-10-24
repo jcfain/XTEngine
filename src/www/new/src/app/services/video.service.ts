@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, debounceTime, distinctUntilChanged, Observable, Subject } from 'rxjs';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, Observable, Subject, throttleTime } from 'rxjs';
 import { WebsocketService } from './websocket.service';
 import { AppStateService } from './app-state.service';
 import { MediaType } from '../models/enums';
@@ -52,9 +52,13 @@ export class VideoService {
       .subscribe(() => {
         this.controlsVisibleSubject.next(false);
       });
-    this.playingMediaItemPosition$.subscribe(v => {
+    // Time-sync: send at most once per second. timeupdate fires ~4x/sec,
+    // so without this we'd be quadrupling the request rate vs the original.
+    this.playingMediaItemPosition$.pipe(
+      throttleTime(1000, undefined, { leading: true, trailing: true })
+    ).subscribe(v => {
       this.sendMediaState();
-    })
+    });
   }
 
   postMediaState(state: XTPWebMediaState): Observable<any> {
@@ -258,7 +262,9 @@ export class VideoService {
 
   showControls(force = false): void {
     this.forceControlsVisible = force;
-    this.controlsVisibleSubject.next(true);
+    if (!this.controlsVisibleSubject.value) {
+      this.controlsVisibleSubject.next(true);
+    }
     this.controlsHideDebounceSubject.next();
   }
 

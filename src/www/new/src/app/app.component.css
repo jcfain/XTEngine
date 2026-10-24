@@ -1,8 +1,8 @@
-/* @import url('../styles/global-styles.scss'); */
-
 .app-content {
   display: flex;
   flex-flow: column;
+  height: 100svh;
+  overflow: hidden;
   background-color: black;
   gap: 20px;
 }
@@ -43,27 +43,21 @@
   color: #fff;
 } */
 
+/* Keep the header, video player and footer at their natural size;
+   only .app-body is allowed to shrink to make room for the video. */
+app-header,
+app-video-player,
+app-footer {
+  flex-shrink: 0;
+}
 
 .app-body {  
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  height: calc(100svh - 165px);
+  flex: 1;
+  min-height: 0;
 }
-
-/* .version {
-  color: #888;
-  font-size: 0.8rem;
-}
-
-.status {
-  color: #e74c3c;
-  font-size: 0.85rem;
-}
-
-.status.connected {
-  color: #2ecc71;
-} */
 
 .sidebar {
   width: 280px;

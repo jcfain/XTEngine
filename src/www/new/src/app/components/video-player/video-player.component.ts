@@ -65,7 +65,9 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     private mediaListService: MediaListService,
     private mediaService: MediaService
   ) {
-    this.messageHandlerService.stopAllMedia$.subscribe(() => {this.stop()} )
+    this.subscriptions.push(
+      this.messageHandlerService.stopAllMedia$.subscribe(() => {this.stop()})
+    );
   }
 
   ngOnInit(): void {
