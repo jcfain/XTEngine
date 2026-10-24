@@ -3,8 +3,9 @@ import { BehaviorSubject, debounceTime, distinctUntilChanged, Observable, Subjec
 import { WebsocketService } from './websocket.service';
 import { AppStateService } from './app-state.service';
 import { MediaType } from '../models/enums';
-import { MediaItem } from '../models/interfaces';
+import { MediaItem, XTPWebMediaState } from '../models/interfaces';
 import { LocalSettingsService } from './local-settings.service';
+import { HttpClient } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
@@ -41,6 +42,7 @@ export class VideoService {
   private forceControlsVisible = false;
 
   constructor(
+    private http: HttpClient,
     private localSettingsService: LocalSettingsService,
     private appState: AppStateService,
     private websocketService: WebsocketService
@@ -50,6 +52,13 @@ export class VideoService {
       .subscribe(() => {
         this.controlsVisibleSubject.next(false);
       });
+    this.playingMediaItemPosition$.subscribe(v => {
+      this.sendMediaState();
+    })
+  }
+
+  postMediaState(state: XTPWebMediaState): Observable<any> {
+    return this.http.post<any>(`/xtpweb`, state);
   }
 
   setVideoNode(node: HTMLVideoElement | null): void {
@@ -417,13 +426,33 @@ export class VideoService {
   }
 
   sendMediaState(): void {
-    const playing = this.playingMediaItem;
-    if (playing) {
-      this.websocketService.send('mediaState', {
-        itemID: playing.id,
-        playing: playing.playing || false,
-        time: this.video?.currentTime || 0
-      });
-    }
+    const playingmediaItem = this.playingMediaItem;
+    // if (playing) {
+    //   this.websocketService.send('mediaState', {
+    //     itemID: playing.id,
+    //     playing: playing.playing || false,
+    //     time: this.video?.currentTime || 0
+    //   });
+    // }
+    
+		if (this.videoNode && playingmediaItem) {
+			// debug("[sendMediaState] XTPWeb playingmediaItem: time:"+ videoNode.currentTime);
+			this.postMediaState({
+				"path": playingmediaItem.path,
+				"playing": !this.isPaused,
+				"currentTime": this.videoNode.currentTime,
+				"duration": this.videoNode.duration,
+				"playbackSpeed": this.videoNode.playbackRate
+			}).subscribe();
+		} else {
+			// debug("[sendMediaState] XTPWeb playingmediaItem: null: time: 0");
+			this.postMediaState({
+				"path": undefined,
+				"playing": false,
+				"currentTime": 0,
+				"duration": 0,
+				"playbackSpeed": 1.0
+			}).subscribe();
+		}
   }
 }

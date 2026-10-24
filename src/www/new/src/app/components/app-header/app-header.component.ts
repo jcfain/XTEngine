@@ -3,6 +3,7 @@ import { AppStateService } from '../../services/app-state.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 
 import { FormsModule } from '@angular/forms';
+import { ScriptStatusService } from '../../services/script-status.service';
 
 @Component({
     selector: 'app-header',
@@ -19,16 +20,17 @@ export class AppHeaderComponent implements OnInit {
   @Output()
   logoutClick = new EventEmitter();
 
-  constructor() {}
+  constructor(private scriptStatusService: ScriptStatusService) {}
 
   ngOnInit(): void { }
 
-  onSettingsClick() {
+  onSettingsClick($event: MouseEvent) {
     this.settingsClick.emit();
   }
 
-  onScriptStatusClick() {
-    this.scriptStatusClick.emit();
+  onScriptStatusClick($event: MouseEvent) {
+    this.scriptStatusService.toggleScriptStatus($event);
+    // this.scriptStatusClick.emit();
   }
 
   onLogoutClick() {

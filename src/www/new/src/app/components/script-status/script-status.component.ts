@@ -1,8 +1,12 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { ChannelInfo } from '../../models/interfaces';
+import { AvailableChannels, ChannelInfo, ChannelModel } from '../../models/interfaces';
 import { getChannelColor, scale, lerp, round } from '../../utils/utils';
+import { VideoService } from '../../services/video.service';
+import { AppStateService } from '../../services/app-state.service';
+import { MessageHandlerService } from '../../services/message-handler.service';
+import { GenericOverlayService } from '../../services/overlay.service';
 
 interface ChannelAnimationState {
   channel: ChannelInfo;
@@ -23,13 +27,31 @@ interface ChannelAnimationState {
     styleUrl: './script-status.component.css'
 })
 export class ScriptStatusComponent implements OnInit, OnDestroy {
-  isShown = false;
-  isModalShown = false;
+  // isShown = false;
+  // isModalShown = false;
   isPlayerShown = false;
   isPaused = false;
   channels: ChannelAnimationState[] = [];
 
   private animationFrameId: number | null = null;
+  private availableChannels: AvailableChannels | undefined = undefined;
+
+  constructor(
+    private messageHandlerService: MessageHandlerService,
+    private videoService: VideoService,
+    private appStateService: AppStateService
+  ) {
+    this.appStateService.remoteUserSettings$.subscribe(v => {
+      this.availableChannels = v?.availableChannels;
+    });
+    this.messageHandlerService.channelPositionChange$.subscribe(v => {
+      if(!v)
+        return;
+      this.setChannelStatus(v?.channel, v?.position, v?.time, v?.timeType);
+    });
+    this.videoService.isPaused$.subscribe(v => this.isPaused = v);
+    this.videoService.isPlaying$.subscribe(v => this.isPlayerShown = v);
+  }
 
   ngOnInit(): void {
     // Start animation loop
@@ -42,25 +64,30 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleModal(): void {
-    this.isModalShown = !this.isModalShown;
-    this.updateShown();
-  }
+  // toggleModal(): void {
+  //   this.isModalShown = !this.isModalShown;
+  //   this.updateShown();
+  // }
 
-  togglePlayer(): void {
-    this.isPlayerShown = !this.isPlayerShown;
-    this.updateShown();
-  }
+  // togglePlayer(): void {
+  //   this.isPlayerShown = !this.isPlayerShown;
+  //   this.updateShown();
+  // }
 
   setPaused(isPaused: boolean): void {
     this.isPaused = isPaused;
   }
 
-  setChannelStatus(channel: string, value: number, time: number, timeType: number, friendlyName: string): void {
-    if (!this.isShown) return;
+  setChannelStatus(channel: string, value: number, time: number, timeType: number): void {
+    // if (!this.isShown) return;
 
     let state = this.channels.find(c => c.channel.channel === channel);
     if (!state) {
+      let friendlyName = "Unknown";
+      if(this.availableChannels) {
+        const channelModel: ChannelModel = this.availableChannels[channel];
+        friendlyName = channelModel.friendlyName;
+      }
       state = {
         channel: { channel, friendlyName },
         hidden: false,
@@ -81,9 +108,9 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
     }
   }
 
-  private updateShown(): void {
-    this.isShown = this.isModalShown || this.isPlayerShown;
-  }
+  // private updateShown(): void {
+  //   this.isShown = this.isModalShown || this.isPlayerShown;
+  // }
 
   private animate = (): void => {
     const now = performance.now();
@@ -121,5 +148,5 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
 
   getChannelColor(channel: string): string {
     return getChannelColor(channel);
-}
+  }
 }

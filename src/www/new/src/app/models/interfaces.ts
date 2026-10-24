@@ -78,37 +78,66 @@ export interface ChannelInfo {
     friendlyName: string;
 }
 
+export interface AvailableChannels {
+    [name: string]: ChannelModel;
+}
+
 export interface ChannelModel {
-    track: Track ;
-    channelName: string;
+    // track: Track ;
+    // channelName: string;
+    // channel: string;
+    // min: number;
+    // mid: number;
+    // max: number;
+    // userMin: number;
+    // userMid: number;
+    // userMax: number;
+    // dimension: ChannelDimension;
+    // type: ChannelType;
+    // trackName: string;
+    // multiplierEnabled: boolean;
+    // speedEnabled: boolean;
+    // speedRandom: boolean;
+    // speedValue: number;
+    // funscriptInverted: boolean;
+    // gamepadInverted: boolean;
+    // linkToRelatedMFS: boolean;
+    // relatedChannel: string;
+    // offset: number;
+    // gradient: boolean;
+    // linkedInverted: boolean;
+
+    axisName: string;
     channel: string;
-    min: number;
-    mid: number;
+    dimension: number;
+    friendlyName: string;
+    funscriptInverted: boolean;
+    gamepadInverted: boolean;
+    gradient: boolean;
+    linkToRelatedMFS: boolean;
+    linkedInverted: boolean;
     max: number;
-    userMin: number;
-    userMid: number;
-    userMax: number;
-    dimension: ChannelDimension;
-    type: ChannelType;
-    trackName: string;
+    mid: number;
+    min: number;
     multiplierEnabled: boolean;
+    offset: number;
+    relatedChannel: string;
     speedEnabled: boolean;
     speedRandom: boolean;
     speedValue: number;
-    funscriptInverted: boolean;
-    gamepadInverted: boolean;
-    linkToRelatedMFS: boolean;
-    relatedChannel: string;
-    offset: number;
-    gradient: boolean;
-    linkedInverted: boolean;
+    track: number;
+    trackName: string;
+    type: number;
+    userMax: number;
+    userMid: number;
+    userMin: number;
 }
 
 export interface RemoteUserSettings {
     os: string;
     xteVersion: string;
     webSocketServerPort: number;
-    availableChannels: ChannelModel[];
+    availableChannels: AvailableChannels;
     multiplierEnabled: boolean;
     selectedChannelProfile: string;
     allChannelProfileNames: string[];
@@ -119,8 +148,7 @@ export interface RemoteUserSettings {
     smartTags: string[];
     settings: Setting[];
     args: string[];
-
-    // availableChannelsArray: ChannelInfo[];
+    availableChannelsArray?: ChannelModel[];
 
 }
 
@@ -216,4 +244,12 @@ export interface ScriptInfo {
     type: ScriptType;
     containerType: ScriptContainerType;
     containerTypeName: string;
+}
+
+export interface XTPWebMediaState {
+    path: string | undefined;
+    playing: boolean;
+    currentTime: number;
+    duration: number;
+    playbackSpeed: number;
 }

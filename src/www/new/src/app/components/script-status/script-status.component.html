@@ -1,5 +1,5 @@
-<div class="script-status-container" [class.hidden]="!isShown">
-  <div class="script-status-modal" [class.hidden]="!isModalShown">
+<div class="script-status-container">
+  <div class="script-status-model">
     <h3>Script Status</h3>
     @for (ch of channels; track ch) {
       <div class="script-status-div" [class.hidden]="ch.hidden">
@@ -8,12 +8,12 @@
       </div>
     }
   </div>
-  <div class="script-status-player" [class.hidden]="!isPlayerShown">
+  <!-- <div class="script-status-player">
     @for (ch of channels; track ch) {
       <div class="script-status-div" [class.hidden]="ch.hidden">
         <label [style.color]="getChannelColor(ch.channel.channel)">{{ ch.channel.friendlyName }}: {{ ch.progressValue | number:'1.0-2' }}</label>
         <progress [value]="ch.progressValue" min="0" max="100" [style.color]="getChannelColor(ch.channel.channel)"></progress>
       </div>
     }
-  </div>
+  </div> -->
 </div>

@@ -3,7 +3,7 @@
   </div>
   <div class="headerSection headerActionSection toolBar">
     <div class="toolBarGroup toolBarGroupEnd">
-      <button id="scriptStatusModalButton" title="Script status" class="script-status-button icon-button icon-button--group" (click)="onScriptStatusClick()">
+      <button id="scriptStatusModalButton" title="Script status" class="script-status-button icon-button icon-button--group" (click)="onScriptStatusClick($event)">
         <img class="buttonImage" src="://images/icons/equalizer.svg" />
       </button> 
     </div>
@@ -13,7 +13,7 @@
   </div>
   <div class="headerSection headerActionSection toolBar">
     <div class="toolBarGroup toolBarGroupStart">
-      <button title="Settings" id="settingsButton" class="icon-button icon-button--group" (click)="onSettingsClick()">
+      <button title="Settings" id="settingsButton" class="icon-button icon-button--group" (click)="onSettingsClick($event)">
         <img class="buttonImage" src="://images/icons/settings-black.png" />
       </button>
     </div>

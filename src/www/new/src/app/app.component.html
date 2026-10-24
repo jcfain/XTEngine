@@ -20,15 +20,13 @@
 
   <div class="app-body">
     <app-media-toolbar></app-media-toolbar>
-    <!-- <div class="sidebar">
-      <app-tcode-commands></app-tcode-commands>
-      <app-connections></app-connections>
-    </div> -->
     <app-media-list></app-media-list>
   </div>
+  <app-footer></app-footer>
 </div>
-<app-footer></app-footer>
 
 <app-settings [isOpen]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
-<app-script-status [class.open]="scriptStatusOpen"></app-script-status>
+@if (scriptStatusOpen) {
+<app-script-status></app-script-status>
+}
 <app-metadata [isOpen]="metadataOpen" (close)="metadataOpen = false"></app-metadata>
