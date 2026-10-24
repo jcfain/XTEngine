@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { AvailableChannels, ChannelInfo, ChannelModel } from '../../models/interfaces';
@@ -23,7 +23,7 @@ interface ChannelAnimationState {
     selector: 'app-script-status',
     imports: [CommonModule],
     templateUrl: './script-status.component.html',
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     styleUrl: './script-status.component.css'
 })
 export class ScriptStatusComponent implements OnInit, OnDestroy {
@@ -39,7 +39,8 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
   constructor(
     private messageHandlerService: MessageHandlerService,
     private videoService: VideoService,
-    private appStateService: AppStateService
+    private appStateService: AppStateService,
+    private cdr: ChangeDetectorRef
   ) {
     this.appStateService.remoteUserSettings$.subscribe(v => {
       this.availableChannels = v?.availableChannels;
@@ -49,18 +50,23 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
         return;
       this.setChannelStatus(v?.channel, v?.position, v?.time, v?.timeType);
     });
-    this.videoService.isPaused$.subscribe(v => this.isPaused = v);
+    this.videoService.isPaused$.subscribe(v => {
+      this.isPaused = v;
+      if (!v && this.animationFrameId === null) {
+        this.animate();
+      }
+    });
     this.videoService.isPlaying$.subscribe(v => this.isPlayerShown = v);
   }
 
   ngOnInit(): void {
-    // Start animation loop
-    this.animate();
+    // Animation loop is started on demand in setChannelStatus
   }
 
   ngOnDestroy(): void {
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
   }
 
@@ -74,9 +80,9 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
   //   this.updateShown();
   // }
 
-  setPaused(isPaused: boolean): void {
-    this.isPaused = isPaused;
-  }
+  // setPaused(isPaused: boolean): void {
+  //   this.isPaused = isPaused;
+  // }
 
   setChannelStatus(channel: string, value: number, time: number, timeType: number): void {
     // if (!this.isShown) return;
@@ -105,6 +111,10 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
       state.targetTime = time;
       state.startTime = 0;
       state.hidden = false;
+    }
+
+    if (this.animationFrameId === null) {
+      this.animate();
     }
   }
 
@@ -143,7 +153,13 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.animationFrameId = requestAnimationFrame(this.animate);
+    this.cdr.markForCheck();
+
+    if (anyActive) {
+      this.animationFrameId = requestAnimationFrame(this.animate);
+    } else {
+      this.animationFrameId = null;
+    }
   };
 
   getChannelColor(channel: string): string {
