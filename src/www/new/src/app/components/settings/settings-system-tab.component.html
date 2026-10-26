@@ -1,0 +1,53 @@
+<div class="system-tab">
+    <div class="settings-section">
+        <h3>System</h3>
+        <div class="settings-section-body">
+            <h4>Versions</h4>
+            <div><span>XTE: </span><span>{{ xteVersion }}</span></div>
+            <h4>Current browser information</h4>
+            <div>{{ userAgent }}</div>
+            <div>
+                <span>Deo: {{ userAgentIsDeo ? 'yes' : 'no' }}</span>
+                <span>HereSphere: {{ userAgentIsHereSphere ? 'yes' : 'no' }}</span>
+                <span>Mobile: {{ userAgentIsMobile ? 'yes' : 'no' }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="settings-section">
+        <h3>Settings</h3>
+        @for (group of groups; track group.name) {
+            <div class="settings-group">
+                <h4>{{ capitalizeFirstLetter(group.name) }}</h4>
+                @for (setting of group.settings; track setting.key) {
+                    <div class="formElement formElement--label-large">
+                        <label [attr.for]="setting.key" [title]="setting.description">{{ setting.label }}</label>
+                        @switch (getControlType(setting.type)) {
+                            @case ('checkbox') {
+                                <input [id]="setting.key" type="checkbox"
+                                    [ngModel]="setting.value" (ngModelChange)="onValueChange(setting, $event)"
+                                    [title]="setting.description" />
+                            }
+                            @case ('select') {
+                                <select [id]="setting.key"
+                                    [ngModel]="setting.value" (ngModelChange)="onValueChange(setting, $event)"
+                                    [title]="setting.description">
+                                    @for (option of setting.value; track option) {
+                                        <option [value]="option.value">{{ option.key }}</option>
+                                    }
+                                </select>
+                            }
+                            @default {
+                                <input [id]="setting.key" [type]="getControlType(setting.type)"
+                                    [ngModel]="setting.value" (ngModelChange)="onValueChange(setting, $event)"
+                                    [title]="setting.description"
+                                    [min]="getControlProps(setting).min"
+                                    [max]="getControlProps(setting).max"
+                                    [step]="getControlProps(setting).step" />
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,78 @@
+.motion-tab {
+    padding: 8px 0;
+}
+
+.tab-content-header {
+    margin: 16px 0 8px 0;
+}
+
+.tab-content-header-main {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #8DA1BF;
+}
+
+.motion-tab .radio-group {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 4px 12px;
+}
+
+.motion-tab .radio-group label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: auto;
+}
+
+.range-list {
+    padding: 4px 0;
+}
+
+.tab-content-header-eyebrow {
+    font-size: 0.8rem;
+    color: #888;
+    margin: 4px 0 8px 0;
+}
+
+.modifier-list {
+    padding: 4px 0;
+}
+
+.form-group-section {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.form-group-control input {
+    height: 24px;
+    border-radius: 5px;
+}
+
+.form-group-control select {
+    height: 24px;
+    border-radius: 5px;
+}
+
+.form-group-control-header span {
+    font-size: 0.8rem;
+    color: #8DA1BF;
+}
+
+.save-state {
+    align-self: center;
+    font-size: 0.8rem;
+    color: #8DA1BF;
+}
+
+.hidden {
+    display: none;
+}

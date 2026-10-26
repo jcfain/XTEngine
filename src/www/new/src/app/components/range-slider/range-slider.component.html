@@ -1,0 +1,17 @@
+<section class="range-slider">
+    <span class="min-max-buttons">
+        <span class="min-max-button-group">
+            <button class="min-max-button" (click)="minDecrement()">-</button>
+            <button class="min-max-button" (click)="minIncrement()">+</button>
+        </span>
+        <span class="range-values">{{ valueMin }} - {{ midValue }} - {{ valueMax }}</span>
+        <span class="min-max-button-group">
+            <button class="min-max-button" (click)="maxDecrement()">-</button>
+            <button class="min-max-button" (click)="maxIncrement()">+</button>
+        </span>
+    </span>
+    <input class="range-input" type="range" [min]="min" [max]="max - 1"
+        [ngModel]="valueMin" (ngModelChange)="onMinChange($event)" />
+    <input class="range-input" type="range" [min]="min + 1" [max]="max"
+        [ngModel]="valueMax" (ngModelChange)="onMaxChange($event)" />
+</section>

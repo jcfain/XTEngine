@@ -1,0 +1,33 @@
+.local-tab {
+    padding: 8px 0;
+}
+
+.local-tab-help {
+    color: white;
+    text-align: left;
+}
+
+.local-tab-help p {
+    margin: 0;
+}
+
+.local-tab-highlight {
+    color: yellow;
+}
+
+.local-tab .radio-group {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 4px 12px;
+}
+
+.local-tab .radio-group label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: auto;
+    text-wrap: nowrap;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}

@@ -6,7 +6,6 @@ import { SettingsComponent } from './components/settings/settings.component';
 import { ScriptStatusComponent } from './components/script-status/script-status.component';
 import { MediaListComponent } from './components/media-list/media-list.component';
 import { MediaToolbarComponent } from './components/media-toolbar/media-toolbar.component';
-import { ConnectionsComponent } from './components/connections/connections.component';
 import { TCodeCommandsComponent } from './components/tcode-commands/tcode-commands.component';
 import { MetadataComponent } from './components/metadata/metadata.component';
 import { ServerService } from './services/server.service';

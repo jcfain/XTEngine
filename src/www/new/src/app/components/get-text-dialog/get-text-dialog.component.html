@@ -1,0 +1,22 @@
+<div click-stop-propagation class="x-modal x-modal--text">
+    <div class="x-modal-content x-modal-content--text">
+        <div class="x-modal-header">
+            <span class="x-modal-title">{{ titleText }}</span>
+            <button class="x-modal-close icon-button" (click)="closeEvent()">
+                <img class="buttonImage" src="://images/icons/x.svg" />
+            </button>
+        </div>
+        <div class="x-modal-body x-modal-body--alert">
+            <div class="formElement">
+                <label>{{ message }}</label>
+                <input type="text" [ngModel]="value" (ngModelChange)="value = $event"
+                    (keydown.enter)="acceptEvent()" autofocus />
+            </div>
+        </div>
+        <div class="x-modal-footer">
+            <div class="x-modal-footer-content">
+                <button (click)="acceptEvent()">Ok</button>
+            </div>
+        </div>
+    </div>
+</div>

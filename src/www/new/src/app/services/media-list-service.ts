@@ -185,19 +185,19 @@ export class MediaListService {
         list.sort((a, b) => {
             switch (sortBy) {
                 case SortMode.Name:
-                return a.name.localeCompare(b.name);
+                return a.displayName.localeCompare(b.displayName);
                 case SortMode.NameDesc:
-                return b.name.localeCompare(a.name);
+                return b.displayName.localeCompare(a.displayName);
                 case SortMode.Date:
-                return (b.metaData.dateAdded?.getTime() || 0) - (a.metaData.dateAdded?.getTime() || 0);
-                case SortMode.DateDesc:
                 return (a.metaData.dateAdded?.getTime() || 0) - (b.metaData.dateAdded?.getTime() || 0);
+                case SortMode.DateDesc:
+                return (b.metaData.dateAdded?.getTime() || 0) - (a.metaData.dateAdded?.getTime() || 0);
                 case SortMode.DateAdded:
-                return (b.modifiedDate?.getTime() || 0) - (a.modifiedDate?.getTime() || 0);
-                case SortMode.DateAddedDesc:
                 return (a.modifiedDate?.getTime() || 0) - (b.modifiedDate?.getTime() || 0);
+                case SortMode.DateAddedDesc:
+                return (b.modifiedDate?.getTime() || 0) - (a.modifiedDate?.getTime() || 0);
                 default:
-                return a.name.localeCompare(b.name);
+                return a.displayName.localeCompare(b.displayName);
             }
         });
 

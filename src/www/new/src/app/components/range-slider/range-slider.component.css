@@ -1,0 +1,72 @@
+.range-slider {
+    position: relative;
+    width: 100%;
+}
+
+.range-input {
+    pointer-events: none;
+    position: absolute;
+    overflow: hidden;
+    left: 46px;
+    top: 3px;
+    width: calc(100% - 92px);
+    outline: none;
+    margin: 0;
+    padding: 0;
+    background-color: rgba(220, 150, 150, 0.2);
+}
+
+.range-input::-webkit-slider-thumb {
+    pointer-events: all;
+    position: relative;
+    z-index: 1;
+    outline: 0;
+}
+
+.range-input::-moz-range-thumb {
+    pointer-events: all;
+    position: relative;
+    z-index: 10;
+    -moz-appearance: none;
+    width: 9px;
+}
+
+.range-input::-moz-range-track {
+    position: relative;
+    z-index: -1;
+    background-color: rgba(0, 0, 0, 1);
+    border: 0;
+}
+
+.range-input:last-of-type::-moz-range-track {
+    -moz-appearance: none;
+    background: none transparent;
+    border: 0;
+}
+
+.range-input::-moz-focus-outer {
+    border: 0;
+}
+
+.min-max-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.min-max-button-group {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.min-max-button {
+    max-width: 20px;
+    max-height: 20px;
+}
+
+.range-values {
+    align-self: center;
+    font-size: 10px;
+    z-index: 1;
+    pointer-events: none;
+}

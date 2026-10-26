@@ -1,0 +1,25 @@
+.system-tab {
+    padding: 8px 0;
+}
+
+.settings-section {
+    margin-bottom: 24px;
+}
+
+.settings-section h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.2rem;
+}
+
+.settings-section-body h4 {
+    margin: 8px 0 4px 0;
+}
+
+.settings-group {
+    margin-bottom: 16px;
+}
+
+.settings-group h4 {
+    margin: 8px 0 4px 0;
+    color: #8DA1BF;
+}

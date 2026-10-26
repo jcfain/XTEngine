@@ -1,0 +1,35 @@
+.connections-tab {
+    padding: 8px 0;
+}
+
+.connections-tab h3 {
+    margin: 16px 0 8px 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #8DA1BF;
+}
+
+.form-group-section {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.form-group-control input {
+    height: 24px;
+    border-radius: 5px;
+}
+
+.sync-device-status {
+    border-radius: 10px;
+    padding: 3px;
+    color: white;
+    font-size: 0.75rem;
+}

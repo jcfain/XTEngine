@@ -42,7 +42,8 @@ import { Injectable, Injector, Type } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class GenericOverlayService {
-  private overlayRefs: {[name: string]: OverlayRef | null} = {};
+  private overlayRefs: {[name: string]: OverlayRef[]} = {};
+  private outsideClickListeners: {[name: string]: ((event: MouseEvent) => void) | null} = {};
   constructor(private overlay: Overlay) {}
   /**
    * Opens a component in an overlay at a relative position and remains fixed on scroll.
@@ -51,9 +52,7 @@ export class GenericOverlayService {
    * @param event The click event to determine the position.
    */
   open<T>(nameID: string, component: Type<T>, data?: any, event?: MouseEvent, closeOnClickOther?: boolean): void {
-    if (this.overlayRefs[component.name]) {
-      return;
-    }
+    // Multiple overlays with the same nameID are allowed and are stacked
     let overlayRef: OverlayRef;
     if (event && event.target) {
       const target = event.target as HTMLElement;
@@ -97,21 +96,26 @@ export class GenericOverlayService {
     overlayRef.overlayElement.addEventListener('click', (event: MouseEvent) => {
       event.stopPropagation();
     });
-    this.overlayRefs[nameID] = overlayRef;
+    if (!this.overlayRefs[nameID]) {
+      this.overlayRefs[nameID] = [];
+    }
+    this.overlayRefs[nameID].push(overlayRef);
     // Close overlay on outside click
     if(closeOnClickOther)
       this.listenForOutsideClick(nameID);
   }
   /**
-   * Closes the overlay if it's open.
+   * Closes the most recent overlay for the given nameID.
    */
   close(nameID: string ): void {
-    this.overlayRefs[nameID]?.dispose();
-    this.overlayRefs[nameID] = null;
-    // Remove global click listener
-    document.removeEventListener('click', ($event: MouseEvent) => {
-      this.onDocumentClick($event, nameID);
-    });
+    const refs = this.overlayRefs[nameID];
+    if (refs && refs.length) {
+      refs.pop()?.dispose();
+      if (!refs.length) {
+        this.overlayRefs[nameID] = [];
+        this.removeOutsideClickListener(nameID);
+      }
+    }
   }
   /**
    * Creates an injector with the given data.
@@ -126,20 +130,36 @@ export class GenericOverlayService {
    * Adds a global click listener to detect outside clicks.
    */
   private listenForOutsideClick(nameID: string): void {
+    const listener = ($event: MouseEvent) => {
+      this.onDocumentClick($event, nameID);
+    };
+    this.outsideClickListeners[nameID] = listener;
+    // Defer so the click that opened the overlay doesn't immediately close it
     setTimeout(() => {
-      document.addEventListener('click', ($event: MouseEvent) => {
-        this.onDocumentClick($event, nameID);
-      });
+      // Only attach if the overlay is still open (not closed before the timeout fired)
+      if (this.outsideClickListeners[nameID] === listener) {
+        document.addEventListener('click', listener);
+      }
     });
+  }
+  /**
+   * Removes the outside click listener for the given nameID.
+   */
+  private removeOutsideClickListener(nameID: string): void {
+    const listener = this.outsideClickListeners[nameID];
+    if (listener) {
+      document.removeEventListener('click', listener);
+      this.outsideClickListeners[nameID] = null;
+    }
   }
   /**
    * Handles document clicks to close the overlay if clicked outside.
    */
   private onDocumentClick = (event: MouseEvent, nameID: string): void => {
+    const refs = this.overlayRefs[nameID] || [];
     if (
-      this.overlayRefs[nameID] &&
-      this.overlayRefs[nameID].overlayElement &&
-      !this.overlayRefs[nameID].overlayElement.contains(event.target as Node)
+      refs.length &&
+      !refs.some(ref => ref.overlayElement && ref.overlayElement.contains(event.target as Node))
     ) {
       this.close(nameID);
     }

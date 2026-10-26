@@ -1,0 +1,24 @@
+<div click-stop-propagation class="x-modal x-modal--text">
+    <div class="x-modal-content x-modal-content--text">
+        <div class="x-modal-header">
+            <span class="x-modal-title">{{ titleText }}</span>
+            <button class="x-modal-close icon-button" (click)="closeEvent()">
+                <img class="buttonImage" src="://images/icons/x.svg" />
+            </button>
+        </div>
+        <div class="x-modal-body x-modal-body--alert">
+            <div class="formElement">
+                <label>{{ message }}</label>
+                <div class="radio-group radio-group--select-model">
+                    @for (option of options; track option.value) {
+                        <label>
+                            <input type="radio" name="selectDialogGroup" [value]="option.value"
+                                [ngModel]="selected" (ngModelChange)="selectOption($event)" />
+                            {{ option.label }}
+                        </label>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

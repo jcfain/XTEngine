@@ -1,0 +1,34 @@
+<div class="local-tab">
+    <div class="formElement">
+        <label title="If checked, the media items will open the media directly instead of the built in media player. This lets players like DeoVR handle the stream."
+            for="externalStreamingCheckbox">External player</label>
+        <input id="externalStreamingCheckbox" type="checkbox"
+            [ngModel]="externalStreaming" (ngModelChange)="onExternalStreamingChange($event)" />
+    </div>
+    @if (externalStreaming) {
+        <div class="formElement local-tab-help">
+            <label></label>
+            <p>For <span class="local-tab-highlight">External player</span>, make sure to select the correct
+                player sync option on the <span class="local-tab-highlight">Connections</span> tab under
+                <span class="local-tab-highlight">Input connections</span>.</p>
+        </div>
+    }
+    <div class="formElement">
+        <label for="showSelect"><span class="formLabel">Show</span></label>
+        <button id="showSelect" (click)="openShowSelect()">{{ showModeLabel() }}</button>
+    </div>
+    <div class="formElement">
+        <label for="sortBySelect"><span class="formLabel">Sort by</span></label>
+        <button id="sortBySelect" (click)="openSortSelect()">{{ sortModeLabel() }}</button>
+    </div>
+    <div class="formElement">
+        <label for="thumbSizeSelect"><span class="formLabel">Thumb size</span></label>
+        <button id="thumbSizeSelect" (click)="openThumbSizeSelect()">{{ thumbSize }}px</button>
+    </div>
+    <div class="formElement">
+        <label title="If checked, the thumb nails may load in all at once. This could reduce performance with a lot of images. Only check if having issues with loading thumbs in this browser."
+            for="disableLazyLoadCheckbox">Alternate lazy load thumbnails</label>
+        <input id="disableLazyLoadCheckbox" type="checkbox"
+            [ngModel]="disableLazyLoad" (ngModelChange)="onDisableLazyLoadChange($event)" />
+    </div>
+</div>

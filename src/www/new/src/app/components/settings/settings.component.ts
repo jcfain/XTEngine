@@ -1,80 +1,69 @@
-import { Component, OnInit, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { SettingsService } from '../../services/settings.service';
-import { Setting } from '../../models/interfaces';
-import { FormControlType } from '../../models/enums';
-import { capitalizeFirstLetter } from '../../utils/utils';
-
-interface SettingGroup {
-  name: string;
-  settings: Setting[];
-}
+import { ServerService } from '../../services/server.service';
+import { GenericOverlayService } from '../../services/overlay.service';
+import { AlertComponent } from '../alert-model/alert.component';
+import { SettingsLocalTabComponent } from './settings-local-tab.component';
+import { SettingsConnectionsTabComponent } from './settings-connections-tab.component';
+import { SettingsMotionTabComponent } from './settings-motion-tab.component';
+import { SettingsSystemTabComponent } from './settings-system-tab.component';
 
 @Component({
     selector: 'app-settings',
-    imports: [FormsModule],
+    imports: [
+        FormsModule,
+        SettingsLocalTabComponent,
+        SettingsConnectionsTabComponent,
+        SettingsMotionTabComponent,
+        SettingsSystemTabComponent
+    ],
     templateUrl: './settings.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './settings.component.css'
 })
-export class SettingsComponent implements OnInit {
-  @Input() isOpen = false;
-  @Output() toggle = new EventEmitter<void>();
+export class SettingsComponent {
+    @Input() isOpen = false;
+    @Output() toggle = new EventEmitter<void>();
 
-  groups: SettingGroup[] = [];
+    tabs = ['Local', 'Connections', 'Motion', 'System'];
+    activeTab = 0;
+    restartRequired = false;
 
-  constructor(private settingsService: SettingsService) {}
+    constructor(private serverService: ServerService, private overlayService: GenericOverlayService) {}
 
-  ngOnInit(): void {
-    this.settingsService.settings$.subscribe(settings => {
-      const groupMap = new Map<string, Setting[]>();
-      settings.forEach(s => {
-        if (!groupMap.has(s.group)) {
-          groupMap.set(s.group, []);
-        }
-        groupMap.get(s.group)!.push(s);
-      });
-      this.groups = Array.from(groupMap.entries()).map(([name, settings]) => ({
-        name,
-        settings
-      }));
-    });
-  }
-
-  onToggle(): void {
-    this.toggle.emit();
-  }
-
-  getControlType(type: FormControlType): string {
-    switch (type) {
-      case FormControlType.Double:
-      case FormControlType.Int:
-        return 'number';
-      case FormControlType.Text:
-        return 'text';
-      case FormControlType.Radio:
-        return 'radio';
-      case FormControlType.Combo:
-        return 'select';
-      case FormControlType.Checkbox:
-        return 'checkbox';
-      case FormControlType.DateTime:
-        return 'datetime-local';
-      case FormControlType.Date:
-        return 'date';
-      case FormControlType.Time:
-        return 'time';
-      default:
-        return 'text';
+    onToggle(): void {
+        this.toggle.emit();
     }
-  }
 
-  onValueChange(setting: Setting, value: any): void {
-    this.settingsService.changeSetting(setting.key, value);
-  }
+    tabClick(tabNumber: number): void {
+        this.activeTab = tabNumber;
+    }
 
-  capitalizeFirstLetter(val: string): string {
-    return capitalizeFirstLetter(val);
-  }
+    onRestartRequiredChange(required: boolean): void {
+        this.restartRequired = required;
+    }
+
+    defaultLocalSettings(): void {
+        const nameID = 'defaultLocalSettingsAlert';
+        this.overlayService.open(nameID, AlertComponent, {
+            content: 'Are you sure you want to reset ALL local settings to default? Note: This only resets the settings in this browser. Your settings stored in XTP will remain.',
+            titleText: 'Warning',
+            acceptText: 'Reset',
+            rejectText: 'Cancel',
+            onAccept: () => {
+                window.localStorage.clear();
+                window.location.reload();
+            },
+            onClose: () => this.overlayService.close(nameID)
+        });
+    }
+
+    restartXTP(): void {
+        this.serverService.restartXTP();
+    }
+
+    refreshXTPLibrary(): void {
+        this.serverService.refreshXTPLibrary();
+    }
 }

@@ -1,0 +1,141 @@
+<div class="motion-tab">
+    <div class="tab-content-header">
+        <div class="tab-content-header-main">Channel Profile</div>
+    </div>
+    <div class="formElement">
+        <label></label>
+        <div class="form-buttons">
+            <button (click)="onAddProfile()">Add new profile</button>
+            <button (click)="onDeleteProfile()">Delete current profile</button>
+            <button (click)="onCopyToProfile()">Copy profile to new</button>
+            <button (click)="onCopyFromProfile()">Copy profile to current</button>
+        </div>
+    </div>
+    <div class="formElement">
+        <label for="profileNamesDiv">Current Profile</label>
+        <button id="profileNamesDiv" (click)="openProfileSelect()">{{ selectedProfile }}</button>
+    </div>
+    <div class="tab-content-header">
+        <div class="tab-content-header-main">Range Limits</div>
+    </div>
+    <div class="range-list">
+        @for (range of channels; track range.channel.channel) {
+            <div class="formElement">
+                <label class="range-label" [attr.for]="range.channel.channel">{{ range.channel.friendlyName }}</label>
+                <app-range-slider [min]="range.channel.min" [max]="range.channel.max"
+                    [valueMin]="range.userMin" [valueMax]="range.userMax"
+                    (instantChange)="onRangeInstantChange(range, $event)"
+                    (valueChange)="onRangeChange(range, $event)"></app-range-slider>
+            </div>
+        }
+    </div>
+    <div class="formElement">
+        <label></label>
+        <div class="form-buttons">
+            <button (click)="homeDevice()">Home device</button>
+        </div>
+    </div>
+    <div class="tab-content-header">
+        <div class="tab-content-header-main">Motion Modifier</div>
+    </div>
+    <div class="tab-content-header-eyebrow">Add random motion to other channels</div>
+    <div class="formElement">
+        <label for="multiplierEnabled">Enabled</label>
+        <div class="form-group-section">
+            <div class="form-group-control">
+                <input id="multiplierEnabled" type="checkbox" title="Global random motion toggle."
+                    [ngModel]="multiplierEnabled" (ngModelChange)="onMultiplierEnabledChange($event)" />
+            </div>
+            <div class="form-group-control form-group-control-header"><span [title]="linkToHelpText">Link to script</span></div>
+            <div class="form-group-control form-group-control-header"><span [title]="linkInvertedHelpText">Link inverted</span></div>
+            <div class="form-group-control form-group-control-header"><span [title]="speedHelpText">Speed</span></div>
+            <div class="form-group-control form-group-control-header"><span [title]="offsetHelpText">Offset</span></div>
+        </div>
+    </div>
+    <div class="modifier-list">
+        @for (channel of modifierChannels; track channel.channel) {
+            <div class="formElement">
+                <label [attr.for]="channel.channel">{{ channel.friendlyName }}</label>
+                <div class="form-group-section">
+                    <div class="form-group-control">
+                        <input type="checkbox" [attr.id]="channel.channel" [title]="enabledHelpText"
+                            [ngModel]="channel.multiplierEnabled" [disabled]="!multiplierEnabled"
+                            (ngModelChange)="onChannelChange(channel)" />
+                    </div>
+                    <div class="form-group-control" [title]="linkToHelpText">
+                        <input type="checkbox" [title]="linkToHelpText"
+                            [ngModel]="channel.linkToRelatedMFS" [disabled]="!multiplierEnabled"
+                            (ngModelChange)="onChannelChange(channel)" />
+                        @if (userAgentIsHereSphere) {
+                            <button [title]="linkToHelpText" [disabled]="!multiplierEnabled"
+                                (click)="openRelatedChannelSelect(channel)">{{ relatedChannelName(channel) }}</button>
+                        } @else {
+                            <select [title]="linkToHelpText"
+                                [ngModel]="channel.relatedChannel" [disabled]="!multiplierEnabled"
+                                (ngModelChange)="onChannelChange(channel)">
+                                @for (option of relatedChannelOptions(channel); track option.axisName) {
+                                    <option [value]="option.axisName">{{ option.friendlyName }}</option>
+                                }
+                            </select>
+                        }
+                        <input type="checkbox" [title]="linkInvertedHelpText"
+                            [ngModel]="channel.linkedInverted" [disabled]="!multiplierEnabled"
+                            (ngModelChange)="onChannelChange(channel)" />
+                    </div>
+                    <div class="form-group-control">
+                        <input type="checkbox" [title]="speedHelpText"
+                            [ngModel]="channel.speedEnabled" [disabled]="!multiplierEnabled"
+                            (ngModelChange)="onChannelChange(channel)" />
+                        <input type="number" min="0.01" step="0.01" [title]="speedHelpText"
+                            [ngModel]="channel.speedValue" [disabled]="!multiplierEnabled"
+                            (ngModelChange)="onSpeedValueChange(channel, $event)" />
+                        <input type="number" min="-1" max="1" step="0.01" [title]="offsetHelpText"
+                            [ngModel]="channel.offset" [disabled]="!multiplierEnabled"
+                            (ngModelChange)="onOffsetChange(channel, $event)" />
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="tab-content-header">
+        <div class="tab-content-header-main">Invert funscript</div>
+    </div>
+    <div class="modifier-list">
+        @for (channel of modifierChannels; track channel.channel) {
+            <div class="formElement formElement--label-large">
+                <label [attr.for]="channel.channel + 'Inverted'">{{ channel.friendlyName }}</label>
+                <div class="form-group-section">
+                    <div class="form-group-control">
+                        <input type="checkbox" [attr.id]="channel.channel + 'Inverted'"
+                            [ngModel]="channel.funscriptInverted"
+                            (ngModelChange)="onChannelChange(channel)" />
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="tab-content-header">
+        <div class="tab-content-header-main">Gradient</div>
+    </div>
+    <div class="modifier-list">
+        @for (channel of modifierChannels; track channel.channel) {
+            <div class="formElement formElement--label-large">
+                <label [attr.for]="channel.channel + 'Gradient'">{{ channel.friendlyName }}</label>
+                <div class="form-group-section">
+                    <div class="form-group-control">
+                        <input type="checkbox" [attr.id]="channel.channel + 'Gradient'"
+                            [ngModel]="channel.gradient"
+                            (ngModelChange)="onChannelChange(channel)" />
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="formElement">
+        <label></label>
+        <div class="form-buttons">
+            <button [disabled]="!formDirty" (click)="onSaveToXTP()">Save to XTP</button>
+            <span class="save-state" [class.hidden]="!saveState">{{ saveState }}</span>
+        </div>
+    </div>
+</div>
