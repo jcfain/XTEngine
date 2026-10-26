@@ -56,7 +56,7 @@ public:
     void handleActiveSessions(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleExpireSession(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleLogout(const QHttpServerRequest &req, QHttpServerResponder &responder);
-    QFuture<QHttpServerResponse> handleVideoStream(const QHttpServerRequest &req);
+    void handleVideoStream(const QHttpServerRequest &req, QHttpServerResponder &responder);
     void handleVideoList(const QHttpServerRequest &req, QHttpServerResponder &responder);
     QHttpServerResponse handleThumbFile(const QHttpServerRequest &req);
     void handleFunscriptFile(const QHttpServerRequest &req, QHttpServerResponder &responder);
