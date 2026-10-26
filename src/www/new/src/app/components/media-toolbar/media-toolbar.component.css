@@ -34,11 +34,11 @@
 }
 
 .side-actions {
-    position: fixed;  
-    right: 2%;
-    margin-top: 60px;
+    position: fixed;
+    right: 2.3%;
+    margin-top: 76px;
     height: 80vh;
-    z-index: 10;
+    z-index: 18;
     width: fit-content;
     background-color: transparent;
     pointer-events: none;
