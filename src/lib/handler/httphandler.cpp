@@ -1547,13 +1547,23 @@ QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerReq
             qint64 chunkSize = SettingsHandler::getHTTPChunkSize();
             if(hasRange && endByte > 0)
             {
-                // Explicit range from client: honor it exactly (inclusive)
+                // Closed range from client (bytes=N-M): honor it exactly (inclusive)
                 endByte = qMin(endByte, fileSize - 1);
+                chunkSize = endByte - startByte + 1;
+            }
+            else if(hasRange)
+            {
+                // Open-ended range (bytes=N-): send everything from startByte to EOF.
+                // A 206 whose Content-Range end is less than total-1 does NOT make a
+                // <video> element issue a follow-up request; it treats the early close
+                // as a network stall. So honor the full remainder for open-ended ranges.
+                endByte = fileSize - 1;
                 chunkSize = endByte - startByte + 1;
             }
             else
             {
-                // No range (or open-ended): serve one chunk from startByte
+                // No Range header (initial probe): serve one chunk from startByte.
+                // The httpChunkSizeMB setting only governs this case.
                 endByte = qMin(startByte + chunkSize - 1, fileSize - 1);
                 chunkSize = endByte - startByte + 1;
             }

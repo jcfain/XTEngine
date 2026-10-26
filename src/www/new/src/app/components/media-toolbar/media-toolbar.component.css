@@ -36,8 +36,8 @@
 .side-actions {
     position: fixed;
     right: 2.3%;
-    margin-top: 76px;
-    height: 80vh;
+    /* margin-top: 76px; */
+    /* height: 80vh; */
     z-index: 18;
     width: fit-content;
     background-color: transparent;
