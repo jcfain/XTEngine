@@ -1,6 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { ConnectionStatus, DeviceType } from '../models/enums';
+import { ConnectionInterface, ConnectionStatus } from '../models/enums';
 import { WebSocketMessage } from '../models/interfaces';
 
 @Injectable({
@@ -122,11 +122,11 @@ export class WebsocketService {
     this.send('mediaAction', { action });
   }
 
-  sendInputDeviceConnectionChange(device: DeviceType, checked: boolean): void {
+  sendInputDeviceConnectionChange(device: ConnectionInterface, checked: boolean): void {
     this.send('inputDeviceConnectionChange', { device, checked });
   }
 
-  sendOutputDeviceConnectionChange(device: DeviceType, checked: boolean): void {
+  sendOutputDeviceConnectionChange(device: ConnectionInterface, checked: boolean): void {
     this.send('outputDeviceConnectionChange', { device, checked });
   }
 
@@ -188,6 +188,10 @@ export class WebsocketService {
 
   togglePauseAllDeviceActions(): void {
     this.send('togglePauseAllDeviceActions');
+  }
+
+  tcodeDeviceConnectRetry(selectedDevice: ConnectionInterface) {
+    this.send("connectOutputDevice", { deviceName: selectedDevice });
   }
 
   sendPlayMedia(itemID: string): void {

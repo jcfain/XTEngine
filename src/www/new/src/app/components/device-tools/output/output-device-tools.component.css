@@ -1,0 +1,22 @@
+.device-status-disconnected {
+    background-color: crimson;
+    cursor: pointer;
+}
+.device-status-connecting {
+    background-color: yellow;
+}
+.device-status-connected {
+    background-color: chartreuse;
+}
+.device-status-error {
+    background-color: red;
+    cursor: pointer;
+}
+
+.script-status-paused {
+    background-color: green !important;
+}
+
+.script-status {
+    background-color: yellow !important;
+}

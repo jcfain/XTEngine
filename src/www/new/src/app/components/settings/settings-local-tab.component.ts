@@ -6,6 +6,7 @@ import { AppStateService } from '../../services/app-state.service';
 import { GenericOverlayService } from '../../services/overlay.service';
 import { ShowMode, SortMode } from '../../models/enums';
 import { SelectDialogComponent } from '../select-dialog/select-dialog.component';
+import { OutputDeviceToolsComponent } from '../device-tools/output/output-device-tools.component';
 
 @Component({
     selector: 'app-settings-local-tab',

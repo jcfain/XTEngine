@@ -1,3 +1,10 @@
+.hidden {
+  display: none !important;
+}
+
+.hidden-visibility {
+    visibility: hidden;
+}
 
 .disabled {
     background-color: lightgray;

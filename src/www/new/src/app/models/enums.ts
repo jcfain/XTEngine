@@ -11,16 +11,6 @@ export enum XLogLevel {
     Critical = 3
 }
 
-export enum DeviceType {
-    Serial = 0,
-    Network = 1,
-    Deo = 2,
-    Whirligig = 3,
-    Gamepad = 4,
-    XTPWeb = 5,
-    None = 6
-}
-
 export enum ConnectionStatus {
     Connected = 0,
     Disconnected = 1,

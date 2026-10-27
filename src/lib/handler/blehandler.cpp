@@ -74,7 +74,7 @@ void OutputBLEConnectionHandler::foundDevice(const QBluetoothDeviceInfo &info)
                 Q_UNUSED(error);
                 //setError("Cannot connect to remote device.");
                 LogHandler::Error("BLE Error");
-                emit connectionChange({DeviceType::Output, DeviceName::BLE, ConnectionStatus::Error, "BLE error" });
+                emit connectionChange({ConnectionInterface::Output, DeviceName::BLE, ConnectionStatus::Error, "BLE error" });
         });
 #endif
         connect(m_control, &QLowEnergyController::connected, this, [this]() {

@@ -3,6 +3,7 @@ import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AppStateService } from '../../services/app-state.service';
 import { ServerService } from '../../services/server.service';
+import { WebsocketService } from '../../services/websocket.service';
 
 interface TCodeCommand {
   name: string;
@@ -25,6 +26,7 @@ export class TCodeCommandsComponent implements OnInit {
 
   constructor(
     private appState: AppStateService,
+    private websocketService: WebsocketService,
     private serverService: ServerService
   ) {}
 
@@ -53,16 +55,16 @@ export class TCodeCommandsComponent implements OnInit {
     this.newCommandName = '';
     this.newCommandValue = '';
     // Save to server
-    this.serverService.sendSettingChange('tcodeCommands', this.commands);
+    this.websocketService.settingChange('tcodeCommands', this.commands);
   }
 
   deleteCommand(index: number): void {
     this.commands.splice(index, 1);
-    this.serverService.sendSettingChange('tcodeCommands', this.commands);
+    this.websocketService.settingChange('tcodeCommands', this.commands);
   }
 
   toggleHidden(command: TCodeCommand): void {
     command.hidden = !command.hidden;
-    this.serverService.sendSettingChange('tcodeCommands', this.commands);
+    this.websocketService.settingChange('tcodeCommands', this.commands);
   }
 }

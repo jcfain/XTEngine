@@ -180,18 +180,7 @@ export class ServerService {
     this.websocketService.sendSwapScript(scriptInfo);
   }
 
-  sendSettingChange(key: string, value: any): void {
-    this.websocketService.settingChange(key, value);
-  }
-
   saveServerSettings(): Observable<any> {
     return this.http.post<any>('/settings', this.appState.remoteUserSettings);
-  }
-
-  tcodeDeviceConnectRetry(): void {
-    const settings = this.appState.remoteUserSettings;
-    if (settings?.connection?.output?.selectedDevice) {
-      this.websocketService.send('connectOutputDevice', { deviceName: settings.connection.output.selectedDevice });
-    }
   }
 }

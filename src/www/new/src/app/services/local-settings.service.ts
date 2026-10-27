@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { ShowMode, SortMode } from "../models/enums";
+import { ConnectionInterface, ShowMode, SortMode } from "../models/enums";
 import { BehaviorSubject, Observable } from "rxjs";
 
 @Injectable({
@@ -41,6 +41,16 @@ export class LocalSettingsService {
     private selectedTagsSubject = new BehaviorSubject<string[]>(this.selectedTagsDefault);
     selectedTags$: Observable<string[]> = this.selectedTagsSubject.asObservable();
 
+    readonly selectedInputDeviceDefault = ConnectionInterface.None;
+    private selectedInputDeviceKey = "selectedInputDevice";
+    private selectedInputDeviceSubject = new BehaviorSubject<ConnectionInterface>(this.selectedInputDeviceDefault);
+    selectedInputDevice$: Observable<ConnectionInterface> = this.selectedInputDeviceSubject.asObservable();
+
+    readonly selectedOuputDeviceDefault = ConnectionInterface.None;
+    private selectedOuputDeviceKey = "selectedOuputDevice";
+    private selectedOuputDeviceSubject = new BehaviorSubject<ConnectionInterface>(this.selectedOuputDeviceDefault);
+    selectedOuputDevice$: Observable<ConnectionInterface> = this.selectedOuputDeviceSubject.asObservable();
+
     constructor( ) {
         this.sortSubject.next(this.getFromLocalStorage(this.sortKey, this.sortDefault));
         this.showSubject.next(this.getFromLocalStorage(this.showKey, this.showDefault));
@@ -49,6 +59,8 @@ export class LocalSettingsService {
         this.volumeSubject.next(this.getFromLocalStorage(this.volumeKey, this.volumeDefault));
         this.muteSubject.next(this.getFromLocalStorage(this.muteKey, this.muteDefault));
         this.selectedTagsSubject.next(this.getFromLocalStorage(this.selectedTagsKey, this.selectedTagsDefault));
+        this.selectedInputDeviceSubject.next(this.getFromLocalStorage(this.selectedInputDeviceKey, this.selectedInputDeviceDefault));
+        this.selectedOuputDeviceSubject.next(this.getFromLocalStorage(this.selectedOuputDeviceKey, this.selectedOuputDeviceDefault));
     }
 
     setSort(value: SortMode): void {
@@ -103,6 +115,16 @@ export class LocalSettingsService {
         }
         currentTags.splice(index, 1);
         this.setSelectedTags(currentTags);
+    }
+
+    setSelectedInputDevice(value: ConnectionInterface): void {
+        this.setToLocalStorage(this.selectedInputDeviceKey, value);
+        this.selectedInputDeviceSubject.next(value);
+    }
+
+    setSelectedOutputDevice(value: ConnectionInterface): void {
+        this.setToLocalStorage(this.selectedOuputDeviceKey, value);
+        this.selectedOuputDeviceSubject.next(value);
     }
 
     private getFromLocalStorage<T>(key: string, defaultValue: T): T {

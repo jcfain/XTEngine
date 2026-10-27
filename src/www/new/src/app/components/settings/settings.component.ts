@@ -8,6 +8,7 @@ import { SettingsLocalTabComponent } from './settings-local-tab.component';
 import { SettingsConnectionsTabComponent } from './settings-connections-tab.component';
 import { SettingsMotionTabComponent } from './settings-motion-tab.component';
 import { SettingsSystemTabComponent } from './settings-system-tab.component';
+import { OutputDeviceToolsComponent } from '../device-tools/output/output-device-tools.component';
 
 @Component({
     selector: 'app-settings',
@@ -16,7 +17,8 @@ import { SettingsSystemTabComponent } from './settings-system-tab.component';
         SettingsLocalTabComponent,
         SettingsConnectionsTabComponent,
         SettingsMotionTabComponent,
-        SettingsSystemTabComponent
+        SettingsSystemTabComponent,
+        OutputDeviceToolsComponent
     ],
     templateUrl: './settings.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,

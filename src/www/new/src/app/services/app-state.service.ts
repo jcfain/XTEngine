@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { MediaItem, RemoteUserSettings } from '../models/interfaces';
-import { ConnectionStatus, DeviceType, MediaType } from '../models/enums';
+import { ConnectionStatus, MediaType } from '../models/enums';
 
 @Injectable({
   providedIn: 'root'
@@ -16,21 +16,21 @@ export class AppStateService {
   remoteUserSettings$: Observable<RemoteUserSettings | null> = this.remoteUserSettingsSubject.asObservable();
 
   // Devices
-  private selectedInputDeviceSubject = new BehaviorSubject<DeviceType>(
-    JSON.parse(window.localStorage.getItem('selectedSyncConnection') || '0') as DeviceType
-  );
-  selectedInputDevice$: Observable<DeviceType> = this.selectedInputDeviceSubject.asObservable();
+  // private selectedInputDeviceSubject = new BehaviorSubject<ConnectionInterface>(
+  //   JSON.parse(window.localStorage.getItem('selectedSyncConnection') || '0') as ConnectionInterface
+  // );
+  // selectedInputDevice$: Observable<ConnectionInterface> = this.selectedInputDeviceSubject.asObservable();
 
-  private selectedOutputDeviceSubject = new BehaviorSubject<DeviceType>(
-    JSON.parse(window.localStorage.getItem('selectedOutputConnection') || '0') as DeviceType
-  );
-  selectedOutputDevice$: Observable<DeviceType> = this.selectedOutputDeviceSubject.asObservable();
+  // private selectedOutputDeviceSubject = new BehaviorSubject<ConnectionInterface>(
+  //   JSON.parse(window.localStorage.getItem('selectedOutputConnection') || '0') as ConnectionInterface
+  // );
+  // selectedOutputDevice$: Observable<ConnectionInterface> = this.selectedOutputDeviceSubject.asObservable();
 
-  private outputConnectionStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Disconnected);
-  outputConnectionStatus$: Observable<ConnectionStatus> = this.outputConnectionStatusSubject.asObservable();
+  // private outputConnectionStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Disconnected);
+  // outputConnectionStatus$: Observable<ConnectionStatus> = this.outputConnectionStatusSubject.asObservable();
 
-  private inputConnectionStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Disconnected);
-  inputConnectionStatus$: Observable<ConnectionStatus> = this.inputConnectionStatusSubject.asObservable();
+  // private inputConnectionStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Disconnected);
+  // inputConnectionStatus$: Observable<ConnectionStatus> = this.inputConnectionStatusSubject.asObservable();
 
   // Misc
   private mediaLoadingSubject = new BehaviorSubject<boolean>(false);
@@ -64,8 +64,6 @@ export class AppStateService {
 
   get xtpConnected(): boolean { return this.xtpConnectedSubject.value; }
   get remoteUserSettings(): RemoteUserSettings | null { return this.remoteUserSettingsSubject.value; }
-  get selectedInputDevice(): DeviceType { return this.selectedInputDeviceSubject.value; }
-  get selectedOutputDevice(): DeviceType { return this.selectedOutputDeviceSubject.value; }
   get mediaLoading(): boolean { return this.mediaLoadingSubject.value; }
   get shufflePlayMode(): boolean { return this.shufflePlayModeSubject.value; }
   get mediaManagementEnabled(): boolean { return this.mediaManagementEnabledSubject.value; }
@@ -77,24 +75,6 @@ export class AppStateService {
 
   setRemoteUserSettings(settings: RemoteUserSettings): void {
     this.remoteUserSettingsSubject.next(settings);
-  }
-
-  setSelectedInputDevice(device: DeviceType): void {
-    this.selectedInputDeviceSubject.next(device);
-    window.localStorage.setItem('selectedSyncConnection', String(device));
-  }
-
-  setSelectedOutputDevice(device: DeviceType): void {
-    this.selectedOutputDeviceSubject.next(device);
-    window.localStorage.setItem('selectedOutputConnection', String(device));
-  }
-
-  setOutputConnectionStatus(status: ConnectionStatus): void {
-    this.outputConnectionStatusSubject.next(status);
-  }
-
-  setInputConnectionStatus(status: ConnectionStatus): void {
-    this.inputConnectionStatusSubject.next(status);
   }
 
   setMediaLoading(loading: boolean): void {

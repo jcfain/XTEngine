@@ -1,5 +1,8 @@
 <div class="connections-tab">
     <h3>Output connections</h3>
+    <!-- <span class="form-buttons">
+        <button (click)="retryOutputConnection()">Retry output connection</button>
+    </span> -->
     @for (device of outputDevices; track device.type) {
         <div class="formElement">
             <label [attr.for]="'connectionOutput' + device.type">{{ device.name }}</label>
@@ -8,9 +11,9 @@
                     name="outputConnection" [value]="device.type"
                     [ngModel]="selectedOutputDevice" (ngModelChange)="onOutputDeviceChange($event)" />
                 <span class="sync-device-status"
-                    [title]="statusText(outputStatus)"
-                    [style.background-color]="statusColor(outputStatus)">{{ statusText(outputStatus) }}</span>
-                @if (device.type === DeviceType.Network) {
+                    [title]="statusText(device.type)"
+                    [style.background-color]="statusColor(device.type)">{{ statusText(device.type) }}</span>
+                @if (device.type === ConnectionInterface.Network) {
                     <div class="form-group-control">
                         <span class="sync-device-input-label">Address</span>
                         <input [ngModel]="networkAddress" (ngModelChange)="onNetworkAddressChange($event)" />
@@ -25,7 +28,7 @@
                             [ngModel]="networkProtocolWebsocket" (ngModelChange)="onNetworkProtocolChange($event)" />
                     </div>
                 }
-                @if (device.type === DeviceType.Serial) {
+                @if (device.type === ConnectionInterface.Serial) {
                     <div class="form-group-control">
                         <span class="sync-device-input-label">Port</span>
                         <input [ngModel]="serialPort" (ngModelChange)="onSerialPortChange($event)" />
@@ -36,6 +39,10 @@
     }
 
     <h3>Input connections</h3>
+
+    <!-- <span class="form-buttons">
+        <button (click)="retryInputConnection()">Retry input connection</button>
+    </span> -->
     @for (device of inputDevices; track device.type) {
         <div class="formElement">
             <label [attr.for]="'connectionInput' + device.type">{{ device.name }}</label>
@@ -44,9 +51,9 @@
                     name="inputConnection" [value]="device.type"
                     [ngModel]="selectedInputDevice" (ngModelChange)="onInputDeviceChange($event)" />
                 <span class="sync-device-status"
-                    [title]="statusText(inputStatus)"
-                    [style.background-color]="statusColor(inputStatus)">{{ statusText(inputStatus) }}</span>
-                @if (device.type === DeviceType.Deo) {
+                    [title]="statusText(device.type)"
+                    [style.background-color]="statusColor(device.type)">{{ statusText(device.type) }}</span>
+                @if (device.type === ConnectionInterface.HereSphere) {
                     <div class="form-group-control">
                         <span class="sync-device-input-label">Address</span>
                         <input [ngModel]="deoVRAddress" (ngModelChange)="onDeoVRAddressChange($event)" />
@@ -65,9 +72,5 @@
             <input id="connectionGamepad" type="checkbox"
                 [ngModel]="gamePadEnabled" (ngModelChange)="onGamePadChange($event)" />
         </section>
-    </div>
-
-    <div class="form-buttons">
-        <button (click)="retryConnection()">Retry Connection</button>
     </div>
 </div>

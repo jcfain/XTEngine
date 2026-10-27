@@ -1,7 +1,6 @@
-import { DeviceType, 
+import { ConnectionInterface, 
         NetworkProtocol, 
         ConnectionStatus, 
-        ConnectionInterface, 
         ChannelDimension, 
         ChannelType, 
         ChannelTimeType, 
@@ -179,6 +178,7 @@ export interface ConnectionOutputInfo {
     networkAddress: string;
     networkPort: string;
     networkProtocol: NetworkProtocol;
+    serialPort: string;
 }
 
 export interface Setting {
@@ -198,7 +198,7 @@ export interface AllSettings {
 }
 
 export interface DeviceState {
-    type: DeviceType;
+    type: ConnectionInterface;
     status: ConnectionStatus;
     address?: string;
 }

@@ -1,7 +1,7 @@
 import { EventEmitter, Injectable, NgZone } from '@angular/core';
 import { WebsocketService } from './websocket.service';
 import { MediaItem } from '../models/interfaces';
-import { XLogLevel, ConnectionStatus, ChannelTimeType } from '../models/enums';
+import { XLogLevel, ConnectionStatus, ChannelTimeType, ConnectionInterface } from '../models/enums';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 
 interface SettingChanged {key: string, value: any};
@@ -19,11 +19,11 @@ export class MessageHandlerService {
   private settingChangeSubject = new BehaviorSubject<SettingChanged | null>(null);
   settingChange$: Observable<SettingChanged | null> = this.settingChangeSubject.asObservable();
 
-  private outputDeviceStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Disconnected);
-  outputDeviceStatus$: Observable<ConnectionStatus> = this.outputDeviceStatusSubject.asObservable();
+  private outputDeviceStatusSubject = new BehaviorSubject<{type: ConnectionInterface, status: ConnectionStatus}>({type: ConnectionInterface.None, status: ConnectionStatus.Disconnected});
+  outputDeviceStatus$: Observable<{type: ConnectionInterface, status: ConnectionStatus}> = this.outputDeviceStatusSubject.asObservable();
 
-  private inputDeviceStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Disconnected);
-  inputDeviceStatus$: Observable<ConnectionStatus> = this.inputDeviceStatusSubject.asObservable();
+  private inputDeviceStatusSubject = new BehaviorSubject<{type: ConnectionInterface, status: ConnectionStatus}>({type: ConnectionInterface.None, status: ConnectionStatus.Disconnected});
+  inputDeviceStatus$: Observable<{type: ConnectionInterface, status: ConnectionStatus}> = this.inputDeviceStatusSubject.asObservable();
 
   private mediaLoadingStatusSubject = new BehaviorSubject<string | null>(null);
   /// Description of the current loading state
@@ -76,8 +76,8 @@ export class MessageHandlerService {
   private mediaLoadedEvent = new Subject<void>();
   mediaLoaded$: Observable<void> = this.mediaLoadedEvent.asObservable();
 
-  private scriptTogglePausedEvent = new Subject<void>();
-  scriptTogglePaused$: Observable<void> = this.scriptTogglePausedEvent.asObservable();
+  private scriptTogglePausedEvent = new Subject<boolean>();
+  scriptTogglePaused$: Observable<boolean> = this.scriptTogglePausedEvent.asObservable();
 
   private logoutEvent = new Subject<void>();
   logout$: Observable<void> = this.logoutEvent.asObservable();
@@ -157,16 +157,18 @@ export class MessageHandlerService {
           break;
 
         case 'outputDeviceStatus': {
-          const status = data['message'];
-          // this.appState.setOutputConnectionStatus(status['status'] as ConnectionStatus);
-          this.outputDeviceStatusSubject.next(status['status'] as ConnectionStatus);
+          const message = data['message'];
+				  var deviceType = message["deviceName"] as ConnectionInterface;
+          var status = message['status'] as ConnectionStatus;
+          this.outputDeviceStatusSubject.next({type: deviceType, status: status});
           break;
         }
 
         case 'inputDeviceStatus': {
-          const status = data['message'];
-          // this.appState.setInputConnectionStatus(status['status'] as ConnectionStatus);
-          this.inputDeviceStatusSubject.next(status['status'] as ConnectionStatus);
+          const message = data['message'];
+				  var deviceType = message["deviceName"] as ConnectionInterface;
+          var status = message['status'] as ConnectionStatus;
+          this.inputDeviceStatusSubject.next({type: deviceType, status: status});
           break;
         }
 
@@ -279,7 +281,8 @@ export class MessageHandlerService {
 
         case 'scriptTogglePaused': {
           const messageObj = data['message'];
-          console.log('Script paused:', messageObj.isPaused);
+          // console.log('Script paused:', messageObj.isPaused);
+          this.scriptTogglePausedEvent.next(messageObj.isPaused);
           break;
         }
 
