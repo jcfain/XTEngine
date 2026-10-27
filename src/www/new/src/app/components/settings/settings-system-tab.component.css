@@ -1,9 +1,19 @@
 .system-tab {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
     padding: 8px 0;
 }
 
 .settings-section {
-    margin-bottom: 24px;
+    display: flex;
+    flex-flow: column;
+    width: 340px;
+    border: 2px solid white;
+    border-radius: 25px;
+    margin: 8px;
+    padding: 12px;
+    align-items: center;
 }
 
 .settings-section h3 {
@@ -11,15 +21,86 @@
     font-size: 1.2rem;
 }
 
+.settings-section-body {
+    width: 100%;
+    overflow: auto;
+    max-height: 370px;
+    flex-grow: 1;
+}
+
 .settings-section-body h4 {
     margin: 8px 0 4px 0;
 }
 
-.settings-group {
-    margin-bottom: 16px;
+.settings-section-footer {
+    display: flex;
+    align-items: center;
+    flex-flow: row wrap;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px;
 }
 
-.settings-group h4 {
-    margin: 8px 0 4px 0;
-    color: #8DA1BF;
+.browser-info {
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+/* Media Library tags */
+.system-tags {
+    display: flex;
+    width: 100%;
+}
+
+.system-tags-section {
+    margin-right: 8px;
+    flex-basis: 50%;
+}
+
+.system-tags-section h4 {
+    margin: 4px 0;
+}
+
+.system-tags-section-button {
+    width: 50%;
+}
+
+.system-tags-select {
+    height: 257px;
+    min-width: 100%;
+}
+
+/* Backup/Restore table */
+.exported-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.exported-table tr,
+.exported-table > thead {
+    border-bottom: 1px solid aliceblue;
+}
+
+.exported-table td:not(:last-child) {
+    border-right: 1px solid aliceblue;
+}
+
+.exported-download-link {
+    display: block;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    width: 254px;
+    text-wrap: nowrap;
+}
+
+/* TCode commands table */
+.tcodeCommandsSetupTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tcodeCommandsSetupTable td {
+    text-align: center;
+    padding: 4px;
 }

@@ -5,6 +5,7 @@ import { AppStateService } from './app-state.service';
 import { SettingsService } from './settings.service';
 import { WebsocketService } from './websocket.service';
 import { ServerState } from '../models/enums';
+import { TCodeCommand } from '../models/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -58,6 +59,10 @@ export class ServerService {
         console.error('Error getting tcode commands:', err);
       }
     });
+  }
+
+  saveTCodeCommands(commands: TCodeCommand[]): Observable<any> {
+    return this.http.post<any>('/tcodeCommands', commands);
   }
 
   getServerChannels(): void {

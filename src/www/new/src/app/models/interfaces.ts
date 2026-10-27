@@ -149,7 +149,17 @@ export interface RemoteUserSettings {
     settings: Setting[];
     args: string[];
     availableChannelsArray?: ChannelModel[];
+    // Pending tag changes, applied on save
+    tagsToAdd?: string[];
+    tagsToRemove?: string[];
+    smartTagsToAdd?: string[];
+    smartTagsToRemove?: string[];
+}
 
+export interface TCodeCommand {
+    name: string;
+    command: string;
+    hidden: boolean;
 }
 
 export interface ConnectionInfo {
