@@ -118,6 +118,8 @@ private:
     // void sendFile(const QIODevice &device);
     QHttpServerResponse sendFile(const QString &path);
     QHttpServerResponse sendFile(const QString &path, QHttpHeaders& headers);
+    void inputDeviceConnectionChange(QJsonObject object);
+    void outputDeviceConnectionChange(QJsonObject object);
 
 };
 

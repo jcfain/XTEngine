@@ -6,6 +6,7 @@ import { AppStateService } from "../../../services/app-state.service";
 import { WebsocketService } from "../../../services/websocket.service";
 import { ConnectionStatus, ConnectionInterface } from "../../../models/enums";
 import { LocalSettingsService } from "../../../services/local-settings.service";
+import { ServerService } from "../../../services/server.service";
 
 @Component({
     selector: 'output-device-tools',
@@ -23,9 +24,9 @@ export class OutputDeviceToolsComponent implements OnInit {
 
   constructor(
     private localSettingsService: LocalSettingsService,
+    private serverService: ServerService,
     private messageHandlerService: MessageHandlerService,
-    private websocketService: WebsocketService,
-    private appState: AppStateService
+    private websocketService: WebsocketService
   ) {}
 
   ngOnInit(): void {
@@ -38,7 +39,7 @@ export class OutputDeviceToolsComponent implements OnInit {
     // this.messageHandlerService.inputDeviceStatus$.subscribe(status => { 
     //   this.appState.setInputConnectionStatus(status);
     // });
-    this.appState.remoteUserSettings$.subscribe(v => {
+    this.serverService.remoteUserSettings$.subscribe(v => {
       this.selectedDeviceAddress = v?.connection.output.networkAddress;
     });
     this.localSettingsService.selectedOuputDevice$.subscribe(v => {

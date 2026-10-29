@@ -1,5 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
+
 @import url('styles/atom/controls.scss');
+@import url('styles/atom/icon.scss');
+
 @import url('styles/molecule/form.scss');
 @import url('styles/molecule/toolbar.scss');
 @import url('styles/molecule/modal.scss');

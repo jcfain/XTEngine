@@ -25,19 +25,18 @@ export class TCodeCommandsComponent implements OnInit {
   showSetup = false;
 
   constructor(
-    private appState: AppStateService,
     private websocketService: WebsocketService,
     private serverService: ServerService
   ) {}
 
   ngOnInit(): void {
-    this.appState.tcodeCommands$.subscribe(commands => {
+    this.serverService.tcodeCommands$.subscribe(commands => {
       this.commands = commands as TCodeCommand[];
     });
   }
 
   sendCommand(command: TCodeCommand): void {
-    this.serverService.sendTCode(command.command);
+    this.websocketService.sendTCode(command.command);
   }
 
   toggleSetup(): void {

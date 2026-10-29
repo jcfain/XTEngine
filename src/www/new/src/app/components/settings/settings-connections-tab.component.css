@@ -9,7 +9,7 @@
     color: #8DA1BF;
 }
 
-.form-group-section {
+/* .form-group-section {
     display: flex;
     flex-flow: row wrap;
     align-items: center;
@@ -25,11 +25,11 @@
 .form-group-control input {
     height: 24px;
     border-radius: 5px;
-}
+} */
 
 .sync-device-status {
     border-radius: 10px;
     padding: 3px;
-    color: white;
-    font-size: 0.75rem;
+    margin-left: 12px;
+    margin-right: 12px;
 }

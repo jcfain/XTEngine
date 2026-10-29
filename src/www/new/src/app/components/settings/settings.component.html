@@ -17,13 +17,20 @@
                     <app-settings-local-tab></app-settings-local-tab>
                 }
                 @if (activeTab === 1) {
-                    <app-settings-connections-tab></app-settings-connections-tab>
+                    <app-settings-connections-tab
+                        (onDirty)="markDirty()">
+                    </app-settings-connections-tab>
                 }
                 @if (activeTab === 2) {
-                    <app-settings-motion-tab></app-settings-motion-tab>
+                    <app-settings-motion-tab
+                        (onDirty)="markDirty()">
+                    </app-settings-motion-tab>
                 }
                 @if (activeTab === 3) {
-                    <app-settings-system-tab (restartRequiredChange)="onRestartRequiredChange($event)"></app-settings-system-tab>
+                    <app-settings-system-tab 
+                        (onDirty)="markDirty()" 
+                        (restartRequiredChange)="onRestartRequiredChange($event)">
+                    </app-settings-system-tab>
                 }
             </section>
         </div>
@@ -36,10 +43,17 @@
                 <span class="restart-required" [class.hidden]="!restartRequired">Restart required</span>
             </div>
             <div class="settings-modal-footer-content">
+                <span class="save-state" [class.hidden]="!saveState">{{ saveState }}</span>
                 <button title="This will only reset the local browser settings to default. Your settings stored on the XTP machine will remain."
                     (click)="defaultLocalSettings()">Default Local</button>
                 <button title="This will restart XTP" (click)="restartXTP()">Restart XTP</button>
                 <button title="This will start the library loading process" (click)="refreshXTPLibrary()">Refresh library</button>
+                <button [disabled]="!formDirty" (click)="onSaveToXTP()">Save to XTP</button>
+    <!-- <div class="formElement">
+        <label></label>
+        <div class="form-buttons">
+        </div>
+    </div> -->
             </div>
         </div>
     </div>

@@ -5,7 +5,7 @@ import { AppStateService } from './app-state.service';
 import { SettingsService } from './settings.service';
 import { WebsocketService } from './websocket.service';
 import { ServerState } from '../models/enums';
-import { TCodeCommand } from '../models/interfaces';
+import { RemoteUserSettings, ScriptInfo, TCodeCommand } from '../models/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -15,9 +15,25 @@ export class ServerService {
   private serverState = new BehaviorSubject<ServerState>(ServerState.Disconnected);
   serverState$: Observable<ServerState> = this.serverState.asObservable();
 
+  private mediaManagementEnabledSubject = new BehaviorSubject<boolean>(false);
+  mediaManagementEnabled$: Observable<boolean> = this.mediaManagementEnabledSubject.asObservable();
+
+  // T-Code commands
+  private tcodeCommandsSubject = new BehaviorSubject<any[]>([]);
+  tcodeCommands$: Observable<any[]> = this.tcodeCommandsSubject.asObservable();
+
+  // Media actions
+  private mediaActionsSubject = new BehaviorSubject<Record<string, any>>({});
+  mediaActions$: Observable<Record<string, any>> = this.mediaActionsSubject.asObservable();
+
+  // Remote settings
+  private remoteUserSettingsSubject = new BehaviorSubject<RemoteUserSettings | null>(null);
+  remoteUserSettings$: Observable<RemoteUserSettings | null> = this.remoteUserSettingsSubject.asObservable();
+
+  get remoteUserSettings(): RemoteUserSettings | null { return this.remoteUserSettingsSubject.value; }
+
   constructor(
     private http: HttpClient,
-    private appState: AppStateService,
     private settingsService: SettingsService,
     private websocketService: WebsocketService
   ) {}
@@ -25,7 +41,7 @@ export class ServerService {
   initServerSettings(): void {
     this.http.get<any>('/settings').subscribe({
       next: (response) => {
-        this.appState.setRemoteUserSettings(response);
+        this.remoteUserSettingsSubject.next(response);
         this.settingsService.load(response);
         this.getMediaActions();
         this.getTCodeCommands();
@@ -42,7 +58,7 @@ export class ServerService {
   getMediaActions(): void {
     this.http.get<any>('/mediaActions').subscribe({
       next: (response) => {
-        this.appState.setMediaActions(response);
+        this.mediaActionsSubject.next(response);
       },
       error: (err) => {
         console.error('Error getting media actions:', err);
@@ -53,7 +69,7 @@ export class ServerService {
   getTCodeCommands(): void {
     this.http.get<any>('/tcodeCommands').subscribe({
       next: (response) => {
-        this.appState.setTcodeCommands(response.commands || []);
+        this.tcodeCommandsSubject.next(response.commands || []);
       },
       error: (err) => {
         console.error('Error getting tcode commands:', err);
@@ -68,12 +84,12 @@ export class ServerService {
   getServerChannels(): void {
     this.http.get<any>('/channels').subscribe({
       next: (response) => {
-        const settings = this.appState.remoteUserSettings;
+        const settings = this.remoteUserSettingsSubject.value;
         if (settings) {
           settings.availableChannels = response.availableChannels;
           settings.selectedChannelProfile = response.selectedChannelProfile;
           settings.allChannelProfileNames = response.allChannelProfileNames;
-          this.appState.setRemoteUserSettings(settings);
+          this.remoteUserSettingsSubject.next(settings);
         }
       },
       error: (err) => {
@@ -95,7 +111,7 @@ export class ServerService {
   }
 
   initWebSocket(): void {
-    const settings = this.appState.remoteUserSettings;
+    const settings = this.remoteUserSettingsSubject.value;
     if (!settings) return;
 
     const wsUri = `ws://${window.location.hostname}:${settings.webSocketServerPort}`;
@@ -110,41 +126,17 @@ export class ServerService {
     this.websocketService.send('reloadLibrary');
   }
 
-  sendTCode(tcode: string): void {
-    this.websocketService.sendTCode(tcode);
-  }
-
-  sendTCodeRange(channelName: string, min: number, max: number): void {
-    this.websocketService.sendTCodeRange(channelName, min, max);
-  }
-
   sendMediaAction(action: string): void {
     this.websocketService.sendMediaAction(action);
   }
 
-  setSelectedProfile(profileName: string): void {
-    this.websocketService.setSelectedProfile(profileName);
-  }
-
-  addChannelProfile(profileName: string): void {
-    this.websocketService.addChannelProfile(profileName);
-  }
-
-  deleteChannelProfile(profileName: string): void {
-    this.websocketService.deleteChannelProfile(profileName);
-  }
-
-  cloneChannelProfile(fromName: string, toName: string): void {
-    this.websocketService.cloneChannelProfile(fromName, toName);
-  }
-
   sendDeviceHome(): void {
-    const actions = this.appState.mediaActions;
+    const actions = this.mediaActionsSubject.value;
     this.websocketService.sendMediaAction(actions['TCodeHomeAll'] || 'TCodeHomeAll');
   }
 
   togglePauseAllDeviceActions(): void {
-    const actions = this.appState.mediaActions;
+    const actions = this.mediaActionsSubject.value;
     this.websocketService.sendMediaAction(actions['TogglePauseAllDeviceActions'] || 'TogglePauseAllDeviceActions');
   }
 
@@ -176,11 +168,11 @@ export class ServerService {
     this.websocketService.sendUpdateMetadata(metadataKey);
   }
 
-  sendSwapScript(scriptInfo: Record<string, any>): void {
+  sendSwapScript(scriptInfo: ScriptInfo): void {
     this.websocketService.sendSwapScript(scriptInfo);
   }
 
   saveServerSettings(): Observable<any> {
-    return this.http.post<any>('/settings', this.appState.remoteUserSettings);
+    return this.http.post<any>('/settings', this.remoteUserSettingsSubject.value);
   }
 }

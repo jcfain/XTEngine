@@ -28,6 +28,8 @@ export class SettingsComponent {
     @Input() isOpen = false;
     @Output() toggle = new EventEmitter<void>();
 
+    formDirty = false;
+    saveState = '';
     tabs = ['Local', 'Connections', 'Motion', 'System'];
     activeTab = 0;
     restartRequired = false;
@@ -67,5 +69,25 @@ export class SettingsComponent {
 
     refreshXTPLibrary(): void {
         this.serverService.refreshXTPLibrary();
+    }
+
+    markDirty(): void {
+        this.formDirty = true;
+    }
+
+    onSaveToXTP(): void {
+        this.saveState = 'Saving...';
+        this.serverService.saveServerSettings().subscribe({
+            next: () => {
+                this.formDirty = false;
+                this.saveState = 'Saved';
+                setTimeout(() => this.saveState = '', 2000);
+            },
+            error: (err) => {
+                console.error('Error saving settings:', err);
+                this.saveState = 'Save failed';
+                setTimeout(() => this.saveState = '', 2000);
+            }
+        });
     }
 }

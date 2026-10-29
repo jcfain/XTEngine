@@ -2,11 +2,9 @@ import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { LocalSettingsService } from '../../services/local-settings.service';
-import { AppStateService } from '../../services/app-state.service';
 import { GenericOverlayService } from '../../services/overlay.service';
 import { ShowMode, SortMode } from '../../models/enums';
 import { SelectDialogComponent } from '../select-dialog/select-dialog.component';
-import { OutputDeviceToolsComponent } from '../device-tools/output/output-device-tools.component';
 
 @Component({
     selector: 'app-settings-local-tab',
@@ -41,7 +39,6 @@ export class SettingsLocalTabComponent implements OnInit {
 
     constructor(
         private localSettings: LocalSettingsService,
-        private appState: AppStateService,
         private overlayService: GenericOverlayService
     ) {}
 
@@ -52,8 +49,8 @@ export class SettingsLocalTabComponent implements OnInit {
         this.localSettings.show$.subscribe(v => this.showMode = v);
         this.localSettings.sort$.subscribe(v => this.sortMode = v);
         this.localSettings.thumbSize$.subscribe(v => this.thumbSize = v);
-        this.externalStreaming = this.appState.externalStreaming;
-        this.disableLazyLoad = this.appState.disableBrowserLazyLoad;
+        this.localSettings.externalStreaming$.subscribe(v => this.externalStreaming = v);
+        this.localSettings.disableBrowserLazyLoad$.subscribe(v => this.disableLazyLoad = v);
     }
 
     onShowChange(mode: ShowMode): void {
@@ -112,14 +109,10 @@ export class SettingsLocalTabComponent implements OnInit {
     }
 
     onExternalStreamingChange(checked: boolean): void {
-        this.externalStreaming = checked;
-        this.appState.externalStreaming = checked;
-        window.localStorage.setItem('externalStreaming', JSON.stringify(checked));
+        this.localSettings.setExternalStreamingDefault(checked);
     }
 
     onDisableLazyLoadChange(checked: boolean): void {
-        this.disableLazyLoad = checked;
-        this.appState.disableBrowserLazyLoad = checked;
-        window.localStorage.setItem('disableLazyLoad', JSON.stringify(checked));
+        this.localSettings.setDisableBrowserLazyLoad(checked);
     }
 }

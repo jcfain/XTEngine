@@ -59,19 +59,19 @@
                 <div class="form-group-section">
                     <div class="form-group-control">
                         <input type="checkbox" [attr.id]="channel.channel" [title]="enabledHelpText"
-                            [ngModel]="channel.multiplierEnabled" [disabled]="!multiplierEnabled"
+                            [(ngModel)]="channel.multiplierEnabled" [disabled]="!multiplierEnabled"
                             (ngModelChange)="onChannelChange(channel)" />
                     </div>
                     <div class="form-group-control" [title]="linkToHelpText">
                         <input type="checkbox" [title]="linkToHelpText"
-                            [ngModel]="channel.linkToRelatedMFS" [disabled]="!multiplierEnabled"
+                            [(ngModel)]="channel.linkToRelatedMFS" [disabled]="!multiplierEnabled"
                             (ngModelChange)="onChannelChange(channel)" />
                         @if (userAgentIsHereSphere) {
                             <button [title]="linkToHelpText" [disabled]="!multiplierEnabled"
                                 (click)="openRelatedChannelSelect(channel)">{{ relatedChannelName(channel) }}</button>
                         } @else {
                             <select [title]="linkToHelpText"
-                                [ngModel]="channel.relatedChannel" [disabled]="!multiplierEnabled"
+                                [(ngModel)]="channel.relatedChannel" [disabled]="!multiplierEnabled"
                                 (ngModelChange)="onChannelChange(channel)">
                                 @for (option of relatedChannelOptions(channel); track option.axisName) {
                                     <option [value]="option.axisName">{{ option.friendlyName }}</option>
@@ -79,18 +79,18 @@
                             </select>
                         }
                         <input type="checkbox" [title]="linkInvertedHelpText"
-                            [ngModel]="channel.linkedInverted" [disabled]="!multiplierEnabled"
+                            [(ngModel)]="channel.linkedInverted" [disabled]="!multiplierEnabled"
                             (ngModelChange)="onChannelChange(channel)" />
                     </div>
                     <div class="form-group-control">
                         <input type="checkbox" [title]="speedHelpText"
-                            [ngModel]="channel.speedEnabled" [disabled]="!multiplierEnabled"
+                            [(ngModel)]="channel.speedEnabled" [disabled]="!multiplierEnabled"
                             (ngModelChange)="onChannelChange(channel)" />
                         <input type="number" min="0.01" step="0.01" [title]="speedHelpText"
-                            [ngModel]="channel.speedValue" [disabled]="!multiplierEnabled"
+                            [(ngModel)]="channel.speedValue" [disabled]="!multiplierEnabled"
                             (ngModelChange)="onSpeedValueChange(channel, $event)" />
                         <input type="number" min="-1" max="1" step="0.01" [title]="offsetHelpText"
-                            [ngModel]="channel.offset" [disabled]="!multiplierEnabled"
+                            [(ngModel)]="channel.offset" [disabled]="!multiplierEnabled"
                             (ngModelChange)="onOffsetChange(channel, $event)" />
                     </div>
                 </div>
@@ -107,7 +107,7 @@
                 <div class="form-group-section">
                     <div class="form-group-control">
                         <input type="checkbox" [attr.id]="channel.channel + 'Inverted'"
-                            [ngModel]="channel.funscriptInverted"
+                            [(ngModel)]="channel.funscriptInverted"
                             (ngModelChange)="onChannelChange(channel)" />
                     </div>
                 </div>
@@ -124,18 +124,11 @@
                 <div class="form-group-section">
                     <div class="form-group-control">
                         <input type="checkbox" [attr.id]="channel.channel + 'Gradient'"
-                            [ngModel]="channel.gradient"
+                            [(ngModel)]="channel.gradient"
                             (ngModelChange)="onChannelChange(channel)" />
                     </div>
                 </div>
             </div>
         }
-    </div>
-    <div class="formElement">
-        <label></label>
-        <div class="form-buttons">
-            <button [disabled]="!formDirty" (click)="onSaveToXTP()">Save to XTP</button>
-            <span class="save-state" [class.hidden]="!saveState">{{ saveState }}</span>
-        </div>
     </div>
 </div>

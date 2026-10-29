@@ -1,37 +1,39 @@
 <div class="connections-tab">
     <h3>Output connections</h3>
-    <!-- <span class="form-buttons">
+    <span class="form-buttons">
         <button (click)="retryOutputConnection()">Retry output connection</button>
-    </span> -->
+    </span>
     @for (device of outputDevices; track device.type) {
         <div class="formElement">
             <label [attr.for]="'connectionOutput' + device.type">{{ device.name }}</label>
             <section class="form-group-section">
                 <input [id]="'connectionOutput' + device.type" type="radio"
                     name="outputConnection" [value]="device.type"
-                    [ngModel]="selectedOutputDevice" (ngModelChange)="onOutputDeviceChange($event)" />
-                <span class="sync-device-status"
-                    [title]="statusText(device.type)"
-                    [style.background-color]="statusColor(device.type)">{{ statusText(device.type) }}</span>
+                    [(ngModel)]="selectedOutputDevice" (ngModelChange)="onOutputDeviceChange($event)" />
+                    <img [alt]="statusText(device.type)" 
+                        class="sync-device-status icon-small" 
+                        [title]="statusText(device.type)" 
+                        [src]="statusImage(device.type)" 
+                        [style.background-color]="statusColor(device.type)">
                 @if (device.type === ConnectionInterface.Network) {
                     <div class="form-group-control">
                         <span class="sync-device-input-label">Address</span>
-                        <input [ngModel]="networkAddress" (ngModelChange)="onNetworkAddressChange($event)" />
+                        <input [(ngModel)]="networkAddress" (ngModelChange)="onNetworkAddressChange($event)" />
                     </div>
                     <div class="form-group-control">
                         <span class="sync-device-input-label">Port</span>
-                        <input [ngModel]="networkPort" (ngModelChange)="onNetworkPortChange($event)" />
+                        <input [(ngModel)]="networkPort" (ngModelChange)="onNetworkPortChange($event)" />
                     </div>
                     <div class="form-group-control">
                         <span class="sync-device-input-label">Use websocket</span>
                         <input type="checkbox"
-                            [ngModel]="networkProtocolWebsocket" (ngModelChange)="onNetworkProtocolChange($event)" />
+                            [(ngModel)]="networkProtocolWebsocket" (ngModelChange)="onNetworkProtocolChange($event)" />
                     </div>
                 }
                 @if (device.type === ConnectionInterface.Serial) {
                     <div class="form-group-control">
                         <span class="sync-device-input-label">Port</span>
-                        <input [ngModel]="serialPort" (ngModelChange)="onSerialPortChange($event)" />
+                        <input [(ngModel)]="serialPort" (ngModelChange)="onSerialPortChange($event)" />
                     </div>
                 }
             </section>
@@ -49,18 +51,20 @@
             <section class="form-group-section">
                 <input [id]="'connectionInput' + device.type" type="radio"
                     name="inputConnection" [value]="device.type"
-                    [ngModel]="selectedInputDevice" (ngModelChange)="onInputDeviceChange($event)" />
-                <span class="sync-device-status"
-                    [title]="statusText(device.type)"
-                    [style.background-color]="statusColor(device.type)">{{ statusText(device.type) }}</span>
+                    [(ngModel)]="selectedInputDevice" (ngModelChange)="onInputDeviceChange($event)" />
+                <img [alt]="statusText(device.type)" 
+                    class="sync-device-status icon-small" 
+                    [title]="statusText(device.type)" 
+                    [src]="statusImage(device.type)" 
+                    [style.background-color]="statusColor(device.type)">
                 @if (device.type === ConnectionInterface.HereSphere) {
                     <div class="form-group-control">
                         <span class="sync-device-input-label">Address</span>
-                        <input [ngModel]="deoVRAddress" (ngModelChange)="onDeoVRAddressChange($event)" />
+                        <input [(ngModel)]="deoVRAddress" (ngModelChange)="onDeoVRAddressChange($event)" />
                     </div>
                     <div class="form-group-control">
                         <span class="sync-device-input-label">Port</span>
-                        <input [ngModel]="deoVRPort" (ngModelChange)="onDeoVRPortChange($event)" />
+                        <input [(ngModel)]="deoVRPort" (ngModelChange)="onDeoVRPortChange($event)" />
                     </div>
                 }
             </section>
@@ -70,7 +74,12 @@
         <label for="connectionGamepad">Gamepad</label>
         <section class="form-group-section">
             <input id="connectionGamepad" type="checkbox"
-                [ngModel]="gamePadEnabled" (ngModelChange)="onGamePadChange($event)" />
+                [(ngModel)]="gamePadEnabled" (ngModelChange)="onGamePadChange($event)" />
+                <img [alt]="statusText(ConnectionInterface.Gamepad)" 
+                    class="sync-device-status icon-small" 
+                    [title]="statusText(ConnectionInterface.Gamepad)" 
+                    [src]="statusImage(ConnectionInterface.Gamepad)" 
+                    [style.background-color]="statusColor(ConnectionInterface.Gamepad)">
         </section>
     </div>
 </div>

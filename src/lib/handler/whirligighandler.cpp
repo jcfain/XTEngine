@@ -207,11 +207,14 @@ void InputWhirligigConnectionHandler::onSocketStateChange (QAbstractSocket::Sock
                 //keepAliveTimer->stop();
             if(SettingsHandler::getSelectedInputDevice() == ConnectionInterface::Whirligig)
             {
-                LogHandler::Debug("Whirligig retrying: " + _address.address);
-                LogHandler::Debug("port: " + QString::number(_address.port));
-                QHostAddress addressObj;
-                addressObj.setAddress(_address.address);
-                tcpSocket->connectToHost(addressObj, _address.port);
+                QTimer::singleShot(2000, [this] () {
+                    // init(_address, _waitTimeout);
+                    LogHandler::Debug("Whirligig retrying: " + _address.address);
+                    LogHandler::Debug("port: " + QString::number(_address.port));
+                    QHostAddress addressObj;
+                    addressObj.setAddress(_address.address);
+                    tcpSocket->connectToHost(addressObj, _address.port);
+                });
             }
             else
             {

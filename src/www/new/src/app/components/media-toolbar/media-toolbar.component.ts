@@ -6,6 +6,7 @@ import { ShowMode, SortMode } from '../../models/enums';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { AppStateService } from '../../services/app-state.service';
+import { ServerService } from '../../services/server.service';
 
 @Component({
     selector: 'app-media-toolbar',
@@ -25,7 +26,7 @@ export class MediaToolbarComponent implements OnInit {
 
   constructor(
     private localSettingsService: LocalSettingsService,
-    private appStateService: AppStateService,
+    private serverService: ServerService,
     private messageHandlerService: MessageHandlerService
   ) {
     this.filtertextChanged.pipe(
@@ -57,7 +58,7 @@ export class MediaToolbarComponent implements OnInit {
     this.messageHandlerService.tagsUpdateSubject$.subscribe(v => {
       this.allTags = v?.allTags || [];
     });
-    this.appStateService.remoteUserSettings$.subscribe(v => {
+    this.serverService.remoteUserSettings$.subscribe(v => {
       this.allTags = v?.allTags || [];
     })
   }

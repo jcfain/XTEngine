@@ -40,6 +40,7 @@ export class VideoService {
 
   private videoNode: HTMLVideoElement | null = null;
   private forceControlsVisible = false;
+  private externalStreaming = false;
 
   constructor(
     private http: HttpClient,
@@ -59,6 +60,9 @@ export class VideoService {
     ).subscribe(v => {
       this.sendMediaState();
     });
+    this.localSettingsService.externalStreaming$.subscribe(v => {
+      this.externalStreaming = v;
+    })
   }
 
   postMediaState(state: XTPWebMediaState): Observable<any> {
@@ -155,7 +159,7 @@ export class VideoService {
     }
 
     // External streaming
-    if (this.appState.externalStreaming) {
+    if (this.externalStreaming) {
       const filePath = '/media' + item.relativePath;
       window.open(filePath);
       return;

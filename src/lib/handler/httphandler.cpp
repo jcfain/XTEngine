@@ -14,9 +14,19 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
 {
 #ifndef Q_OS_WIN
     // Ignore SIGPIPE so a client that cancels an in-flight media request (e.g.
-    // clicking to a new item) doesn't kill the process when we write to the
-    // now-closed socket. Writes then fail with EPIPE, which Qt handles cleanly.
-    signal(SIGPIPE, SIG_IGN);
+    // refreshing the page aborts the video stream) doesn't kill the process when
+    // we write to the now-closed socket. Writes then fail with EPIPE, which Qt
+    // handles cleanly.
+    //
+    // sigaction() is used instead of signal() because signal() has
+    // implementation-defined semantics on some platforms (the handler can be
+    // reset to SIG_DFL after delivery) and can be clobbered by other libraries.
+    // sigaction() is the portable, thread-safe way to install the ignore.
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGPIPE, &sa, nullptr);
 #endif
 
     _mediaLibraryHandler = mediaLibraryHandler;
@@ -730,39 +740,41 @@ void HttpHandler::handleSettingsUpdate(const QHttpServerRequest &request, QHttpS
 
         QJsonObject connection = doc["connection"].toObject();
         QJsonObject input = connection["input"].toObject();
+        inputDeviceConnectionChange(input);
         QJsonObject output = connection["output"].toObject();
+        outputDeviceConnectionChange(output);
 
-        ConnectionInterface selectedInputDevice = (ConnectionInterface)input["selectedDevice"].toInt();
-        QString deoAddress = input["deoAddress"].toString();
-        QString deoPort = input["deoPort"].toString();
-        if(deoAddress != SettingsHandler::getDeoAddress() || deoPort != SettingsHandler::getDeoPort())
-        {
-            SettingsHandler::setDeoAddress(deoAddress);
-            SettingsHandler::setDeoPort(deoPort);
-            if(selectedInputDevice == ConnectionInterface::HereSphere)
-                emit connectInputDevice(ConnectionInterface::HereSphere, true);
-        }
-        ConnectionInterface selectedOutputDevice = (ConnectionInterface)output["selectedDevice"].toInt();
-        QString networkAddress = output["networkAddress"].toString();
-        QString networkPort = output["networkPort"].toString();
-        NetworkProtocol networkProtocol = static_cast<NetworkProtocol>(output["networkProtocol"].toInt());
-        if(!networkAddress.isEmpty() && (networkAddress != SettingsHandler::getServerAddress()
-                                          || networkPort != SettingsHandler::getServerPort()
-                                          || networkProtocol != SettingsHandler::getSelectedNetworkProtocol()))
-        {
-            SettingsHandler::setServerAddress(networkAddress);
-            SettingsHandler::setServerPort(networkPort);
-            SettingsHandler::setSelectedNetworkProtocol(networkProtocol);
-            if(selectedOutputDevice == ConnectionInterface::Network)
-                emit connectOutputDevice(ConnectionInterface::Network, true);
-        }
-        QString serialPort = output["serialPort"].toString();
-        if(!serialPort.isEmpty() && serialPort != SettingsHandler::getSerialPort())
-        {
-            SettingsHandler::setSerialPort(serialPort);
-            if(selectedOutputDevice == ConnectionInterface::Serial)
-                emit connectOutputDevice(ConnectionInterface::Serial, true);
-        }
+        // ConnectionInterface selectedInputDevice = (ConnectionInterface)input["selectedDevice"].toInt();
+        // QString deoAddress = input["deoAddress"].toString();
+        // QString deoPort = input["deoPort"].toString();
+        // if(deoAddress != SettingsHandler::getDeoAddress() || deoPort != SettingsHandler::getDeoPort())
+        // {
+        //     SettingsHandler::setDeoAddress(deoAddress);
+        //     SettingsHandler::setDeoPort(deoPort);
+        //     if(selectedInputDevice == ConnectionInterface::HereSphere)
+        //         emit connectInputDevice(ConnectionInterface::HereSphere, true);
+        // }
+        // ConnectionInterface selectedOutputDevice = (ConnectionInterface)output["selectedDevice"].toInt();
+        // QString networkAddress = output["networkAddress"].toString();
+        // QString networkPort = output["networkPort"].toString();
+        // NetworkProtocol networkProtocol = static_cast<NetworkProtocol>(output["networkProtocol"].toInt());
+        // if(!networkAddress.isEmpty() && (networkAddress != SettingsHandler::getServerAddress()
+        //                                   || networkPort != SettingsHandler::getServerPort()
+        //                                   || networkProtocol != SettingsHandler::getSelectedNetworkProtocol()))
+        // {
+        //     SettingsHandler::setServerAddress(networkAddress);
+        //     SettingsHandler::setServerPort(networkPort);
+        //     SettingsHandler::setSelectedNetworkProtocol(networkProtocol);
+        //     if(selectedOutputDevice == ConnectionInterface::Network)
+        //         emit connectOutputDevice(ConnectionInterface::Network, true);
+        // }
+        // QString serialPort = output["serialPort"].toString();
+        // if(!serialPort.isEmpty() && serialPort != SettingsHandler::getSerialPort())
+        // {
+        //     SettingsHandler::setSerialPort(serialPort);
+        //     if(selectedOutputDevice == ConnectionInterface::Serial)
+        //         emit connectOutputDevice(ConnectionInterface::Serial, true);
+        // }
         if(!doc["tagsToRemove"].isNull())
         {
             QJsonArray tagsToRemove = doc["tagsToRemove"].toArray();
@@ -1620,7 +1632,14 @@ void HttpHandler::handleVideoStream(const QHttpServerRequest &request, QHttpServ
             responder.writeChunk(chunk);
             remaining -= chunk.size();
             if (responder.isResponseCanceled())
+            {
+                // The client (browser) closed the connection mid-stream, e.g. a
+                // page refresh/navigation. The writeChunk() above hit a closed
+                // socket (EPIPE / SIGPIPE source). This is expected and benign
+                // now that SIGPIPE is ignored.
+                LogHandler::Debug(QString("Video stream aborted by client after %1 of %2 bytes sent (page refresh / navigation) - EPIPE/SIGPIPE source").arg(chunkSize - remaining).arg(chunkSize));
                 break;
+            }
         }
         responder.writeEndChunked(QByteArray());
         file.close();
@@ -1761,6 +1780,45 @@ QHttpServerResponse HttpHandler::sendFile(const QString &path, QHttpHeaders &hea
     auto response = QHttpServerResponse::fromFile(path);
     // response.headers().append("filename", fileInfo.fileName());
     return response;
+}
+
+void HttpHandler::inputDeviceConnectionChange(QJsonObject input)
+{
+    ConnectionInterface selectedInputDevice = static_cast<ConnectionInterface>(input["selectedDevice"].toInt(0));
+    QString deoAddress = input["deoAddress"].toString();
+    QString deoPort = input["deoPort"].toString();
+    if(deoAddress != SettingsHandler::getDeoAddress() || deoPort != SettingsHandler::getDeoPort())
+    {
+        SettingsHandler::setDeoAddress(deoAddress);
+        SettingsHandler::setDeoPort(deoPort);
+        if(selectedInputDevice == ConnectionInterface::HereSphere)
+            emit connectInputDevice(ConnectionInterface::HereSphere, true);
+    }
+}
+
+void HttpHandler::outputDeviceConnectionChange(QJsonObject output)
+{
+    ConnectionInterface selectedOutputDevice = static_cast<ConnectionInterface>(output["selectedDevice"].toInt(0));
+    QString networkAddress = output["networkAddress"].toString();
+    QString networkPort = output["networkPort"].toString();
+    NetworkProtocol networkProtocol = static_cast<NetworkProtocol>(output["networkProtocol"].toInt());
+    if(!networkAddress.isEmpty() && (networkAddress != SettingsHandler::getServerAddress()
+                                      || networkPort != SettingsHandler::getServerPort()
+                                      || networkProtocol != SettingsHandler::getSelectedNetworkProtocol()))
+    {
+        SettingsHandler::setServerAddress(networkAddress);
+        SettingsHandler::setServerPort(networkPort);
+        SettingsHandler::setSelectedNetworkProtocol(networkProtocol);
+        if(selectedOutputDevice == ConnectionInterface::Network)
+            emit connectOutputDevice(ConnectionInterface::Network, true);
+    }
+    QString serialPort = output["serialPort"].toString();
+    if(!serialPort.isEmpty() && serialPort != SettingsHandler::getSerialPort())
+    {
+        SettingsHandler::setSerialPort(serialPort);
+        if(selectedOutputDevice == ConnectionInterface::Serial)
+            emit connectOutputDevice(ConnectionInterface::Serial, true);
+    }
 }
 
 void HttpHandler::on_webSocketClient_Connected(QWebSocket* client)

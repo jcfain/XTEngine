@@ -51,6 +51,16 @@ export class LocalSettingsService {
     private selectedOuputDeviceSubject = new BehaviorSubject<ConnectionInterface>(this.selectedOuputDeviceDefault);
     selectedOuputDevice$: Observable<ConnectionInterface> = this.selectedOuputDeviceSubject.asObservable();
 
+    readonly externalStreamingDefault = false;
+    private externalStreamingKey = "externalStreaming";
+    private externalStreamingSubject = new BehaviorSubject<boolean>(this.externalStreamingDefault);
+    externalStreaming$: Observable<boolean> = this.externalStreamingSubject.asObservable();
+
+    readonly disableBrowserLazyLoadDefault = false;
+    private disableBrowserLazyLoadKey = "disableBrowserLazyLoad";
+    private disableBrowserLazyLoadSubject = new BehaviorSubject<boolean>(this.disableBrowserLazyLoadDefault);
+    disableBrowserLazyLoad$: Observable<boolean> = this.disableBrowserLazyLoadSubject.asObservable();
+
     constructor( ) {
         this.sortSubject.next(this.getFromLocalStorage(this.sortKey, this.sortDefault));
         this.showSubject.next(this.getFromLocalStorage(this.showKey, this.showDefault));
@@ -61,6 +71,8 @@ export class LocalSettingsService {
         this.selectedTagsSubject.next(this.getFromLocalStorage(this.selectedTagsKey, this.selectedTagsDefault));
         this.selectedInputDeviceSubject.next(this.getFromLocalStorage(this.selectedInputDeviceKey, this.selectedInputDeviceDefault));
         this.selectedOuputDeviceSubject.next(this.getFromLocalStorage(this.selectedOuputDeviceKey, this.selectedOuputDeviceDefault));
+        this.externalStreamingSubject.next(this.getFromLocalStorage(this.externalStreamingKey, this.externalStreamingDefault));
+        this.disableBrowserLazyLoadSubject.next(this.getFromLocalStorage(this.disableBrowserLazyLoadKey, this.externalStreamingDefault));
     }
 
     setSort(value: SortMode): void {
@@ -125,6 +137,16 @@ export class LocalSettingsService {
     setSelectedOutputDevice(value: ConnectionInterface): void {
         this.setToLocalStorage(this.selectedOuputDeviceKey, value);
         this.selectedOuputDeviceSubject.next(value);
+    }
+
+    setExternalStreamingDefault(value: boolean): void {
+        this.setToLocalStorage(this.externalStreamingKey, value);
+        this.externalStreamingSubject.next(value);
+    }
+
+    setDisableBrowserLazyLoad(value: boolean): void {
+        this.setToLocalStorage(this.disableBrowserLazyLoadKey, value);
+        this.disableBrowserLazyLoadSubject.next(value);
     }
 
     private getFromLocalStorage<T>(key: string, defaultValue: T): T {

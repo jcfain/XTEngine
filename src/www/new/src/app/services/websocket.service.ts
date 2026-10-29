@@ -1,7 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { ConnectionInterface, ConnectionStatus } from '../models/enums';
-import { WebSocketMessage } from '../models/interfaces';
+import { ScriptInfo, WebSocketMessage } from '../models/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -111,23 +111,23 @@ export class WebsocketService {
   }
 
   sendTCode(tcode: string): void {
-    this.send('tcode', { tcode });
+    this.send('tcode', tcode+"\n" );
   }
 
   sendTCodeRange(channelName: string, min: number, max: number): void {
-    this.send('tcodeRange', { channelName, min, max });
+    this.send('setChannelRange', { channelName, min, max });
   }
 
   sendMediaAction(action: string): void {
-    this.send('mediaAction', { action });
+    this.send('mediaAction', action );
   }
 
   sendInputDeviceConnectionChange(device: ConnectionInterface, checked: boolean): void {
-    this.send('inputDeviceConnectionChange', { device, checked });
+    this.send('connectInputDevice', { deviceName: device, enabled: checked });
   }
 
   sendOutputDeviceConnectionChange(device: ConnectionInterface, checked: boolean): void {
-    this.send('outputDeviceConnectionChange', { device, checked });
+    this.send('connectOutputDevice', { deviceName: device, enabled: checked });
   }
 
   sendSkipToNextAction(): void {
@@ -163,19 +163,19 @@ export class WebsocketService {
   }
 
   sendQuickImport(filename: string): void {
-    this.send('quickImport', { filename });
+    this.send('quickImport', filename );
   }
 
   setSelectedProfile(profileName: string): void {
-    this.send('setSelectedProfile', { profileName });
+    this.send('changeChannelProfile', profileName );
   }
 
   addChannelProfile(profileName: string): void {
-    this.send('addChannelProfile', { profileName });
+    this.send('addChannelProfile', profileName );
   }
 
   deleteChannelProfile(profileName: string): void {
-    this.send('deleteChannelProfile', { profileName });
+    this.send('deleteChannelProfile', profileName );
   }
 
   cloneChannelProfile(fromName: string, toName: string): void {
@@ -202,15 +202,15 @@ export class WebsocketService {
     this.send('stopMedia');
   }
 
-  sendSwapScript(scriptInfo: Record<string, any>): void {
+  sendSwapScript(scriptInfo: ScriptInfo): void {
     this.send('swapScript', scriptInfo);
   }
 
   settingChange(key: string, value: any): void {
-    this.send('settingChange', { key, value });
+    this.send('settingChange', { key: key, value: value });
   }
 
   sendPlaybackRate(value: number): void {
-    this.send('setPlaybackRate', { value });
+    this.send('setPlaybackRate', value );
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, Output, EventEmitter } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { AppStateService } from '../../services/app-state.service';
@@ -11,6 +11,8 @@ import { RangeSliderComponent, RangeValue } from '../range-slider/range-slider.c
 import { SelectDialogComponent } from '../select-dialog/select-dialog.component';
 import { GetTextDialogComponent } from '../get-text-dialog/get-text-dialog.component';
 import { AlertComponent } from '../alert-model/alert.component';
+import { WebsocketService } from '../../services/websocket.service';
+import { MessageHandlerService } from '../../services/message-handler.service';
 
 interface ChannelRange {
     channel: ChannelModel;
@@ -26,14 +28,15 @@ interface ChannelRange {
     styleUrl: './settings-motion-tab.component.css'
 })
 export class SettingsMotionTabComponent implements OnInit {
+    @Output()
+    onDirty = new EventEmitter();
+
     profiles: string[] = [];
     selectedProfile = '';
     channels: ChannelRange[] = [];
 
     multiplierEnabled = false;
     modifierChannels: ChannelModel[] = [];
-    formDirty = false;
-    saveState = '';
     userAgentIsHereSphere = false;
 
     private profileSelectNameID = 'motionProfileSelect';
@@ -55,13 +58,15 @@ export class SettingsMotionTabComponent implements OnInit {
     constructor(
         private appState: AppStateService,
         private serverService: ServerService,
+        private websocketService: WebsocketService,
+        private messageHandlerService: MessageHandlerService,
         private overlayService: GenericOverlayService
     ) {
         this.userAgentIsHereSphere = this.appState.userAgentIsHereSphere;
     }
 
     ngOnInit(): void {
-        this.appState.remoteUserSettings$.subscribe(settings => {
+        this.serverService.remoteUserSettings$.subscribe(settings => {
             if (!settings) {
                 return;
             }
@@ -72,11 +77,14 @@ export class SettingsMotionTabComponent implements OnInit {
             this.modifierChannels = available.filter(c => c.type !== ChannelType.HalfOscillate);
             this.channels = this.modifierChannels.map(c => ({ channel: c, userMin: c.userMin, userMax: c.userMax }));
         });
+        this.messageHandlerService.channelProfileChanged$.subscribe(v => {
+            this.serverService.getServerChannels();
+        });
     }
 
     onProfileChange(profile: string): void {
         this.selectedProfile = profile;
-        this.serverService.setSelectedProfile(profile);
+        this.websocketService.setSelectedProfile(profile);
     }
 
     openProfileSelect(): void {
@@ -96,8 +104,7 @@ export class SettingsMotionTabComponent implements OnInit {
             message: 'Enter the name of the new profile',
             onAccept: (value: string) => {
                 if (value) {
-                    this.serverService.addChannelProfile(value);
-                    this.serverService.getServerChannels();
+                    this.websocketService.addChannelProfile(value);
                 }
             },
             onClose: () => this.overlayService.close(this.addProfileTextNameID)
@@ -115,8 +122,7 @@ export class SettingsMotionTabComponent implements OnInit {
             acceptText: 'Delete',
             rejectText: 'Cancel',
             onAccept: () => {
-                this.serverService.deleteChannelProfile(this.selectedProfile);
-                this.serverService.getServerChannels();
+                this.websocketService.deleteChannelProfile(this.selectedProfile);
             },
             onClose: () => this.overlayService.close(this.profileAlertNameID)
         });
@@ -128,8 +134,7 @@ export class SettingsMotionTabComponent implements OnInit {
             message: 'Enter the name of the new profile',
             onAccept: (value: string) => {
                 if (value) {
-                    this.serverService.cloneChannelProfile(this.selectedProfile, value);
-                    this.serverService.getServerChannels();
+                    this.websocketService.cloneChannelProfile(this.selectedProfile, value);
                 }
             },
             onClose: () => this.overlayService.close(this.copyToProfileTextNameID)
@@ -147,8 +152,7 @@ export class SettingsMotionTabComponent implements OnInit {
             message: 'Select a profile to copy from',
             options: others.map(p => ({ value: p, label: p })),
             onAccept: (value: string) => {
-                this.serverService.cloneChannelProfile(value, this.selectedProfile);
-                this.serverService.getServerChannels();
+                this.websocketService.cloneChannelProfile(value, this.selectedProfile);
             },
             onClose: () => this.overlayService.close(this.copyFromProfileSelectNameID)
         }, undefined, true);
@@ -163,7 +167,7 @@ export class SettingsMotionTabComponent implements OnInit {
     }
 
     onRangeInstantChange(range: ChannelRange, value: number): void {
-        this.serverService.sendTCode(range.channel.channel + value.toString().padStart(4, '0') + 'S2000');
+        this.websocketService.sendTCode(range.channel.channel + value.toString().padStart(4, '0') + 'S2000');
     }
 
     onRangeChange(range: ChannelRange, value: RangeValue): void {
@@ -175,7 +179,7 @@ export class SettingsMotionTabComponent implements OnInit {
         }
         this.rangeDebounceers[id] = setTimeout(() => {
             this.rangeDebounceers[id] = undefined;
-            this.serverService.sendTCodeRange(id, range.userMin, range.userMax);
+        this.websocketService.sendTCodeRange(id, range.userMin, range.userMax);
         }, this.rangeDebounceTimeout);
     }
 
@@ -184,11 +188,11 @@ export class SettingsMotionTabComponent implements OnInit {
     }
 
     onMultiplierEnabledChange(value: boolean): void {
-        const settings = this.appState.remoteUserSettings;
+        const settings = this.serverService.remoteUserSettings;
         if (settings) {
             settings.multiplierEnabled = value;
             this.multiplierEnabled = value;
-            this.markDirty();
+            this.onDirty.emit();
         }
     }
 
@@ -209,47 +213,27 @@ export class SettingsMotionTabComponent implements OnInit {
             selectedValue: channel.relatedChannel,
             onAccept: (value: string) => {
                 channel.relatedChannel = value;
-                this.markDirty();
+                this.onDirty.emit();
             },
             onClose: () => this.overlayService.close(this.relatedChannelSelectNameID)
         }, undefined, true);
     }
 
     onChannelChange(channel: ChannelModel): void {
-        this.markDirty();
+        this.onDirty.emit();
     }
 
     onSpeedValueChange(channel: ChannelModel, value: number): void {
         if (value !== undefined && value !== null && !isNaN(value)) {
             channel.speedValue = round(value, 2);
-            this.markDirty();
+            this.onDirty.emit();
         }
     }
 
     onOffsetChange(channel: ChannelModel, value: number): void {
         if (value !== undefined && value !== null && !isNaN(value)) {
             channel.offset = value;
-            this.markDirty();
+            this.onDirty.emit();
         }
-    }
-
-    markDirty(): void {
-        this.formDirty = true;
-    }
-
-    onSaveToXTP(): void {
-        this.saveState = 'Saving...';
-        this.serverService.saveServerSettings().subscribe({
-            next: () => {
-                this.formDirty = false;
-                this.saveState = 'Saved';
-                setTimeout(() => this.saveState = '', 2000);
-            },
-            error: (err) => {
-                console.error('Error saving settings:', err);
-                this.saveState = 'Save failed';
-                setTimeout(() => this.saveState = '', 2000);
-            }
-        });
     }
 }

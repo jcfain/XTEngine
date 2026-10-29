@@ -7,6 +7,7 @@ import { VideoService } from '../../services/video.service';
 import { AppStateService } from '../../services/app-state.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { GenericOverlayService } from '../../services/overlay.service';
+import { ServerService } from '../../services/server.service';
 
 interface ChannelAnimationState {
   channel: ChannelInfo;
@@ -37,12 +38,12 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
   private availableChannels: AvailableChannels | undefined = undefined;
 
   constructor(
+    private serverService: ServerService,
     private messageHandlerService: MessageHandlerService,
     private videoService: VideoService,
-    private appStateService: AppStateService,
     private cdr: ChangeDetectorRef
   ) {
-    this.appStateService.remoteUserSettings$.subscribe(v => {
+    this.serverService.remoteUserSettings$.subscribe(v => {
       this.availableChannels = v?.availableChannels;
     });
     this.messageHandlerService.channelPositionChange$.subscribe(v => {

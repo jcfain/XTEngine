@@ -6,6 +6,7 @@ import { AppStateService } from '../../services/app-state.service';
 import { MediaItem } from '../../models/interfaces';
 import { MediaListService } from '../../services/media-list-service';
 import { VideoService } from '../../services/video.service';
+import { ServerService } from '../../services/server.service';
 
 interface MetaData {
   offset: number;
@@ -38,13 +39,13 @@ export class MetadataComponent implements OnInit {
   isDirty = false;
 
   constructor(
+    private serverService: ServerService,
     private mediaService: MediaService,
-    private videoService: VideoService,
-    private appState: AppStateService
+    private videoService: VideoService
   ) {}
 
   ngOnInit(): void {
-    this.appState.remoteUserSettings$.subscribe(settings => {
+    this.serverService.remoteUserSettings$.subscribe(settings => {
       if (settings) {
         this.allTags = (settings as any)['allTags'] || [];
       }

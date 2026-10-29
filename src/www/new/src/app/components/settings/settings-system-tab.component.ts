@@ -29,7 +29,10 @@ interface ExportedFile {
     styleUrl: './settings-system-tab.component.css'
 })
 export class SettingsSystemTabComponent implements OnInit {
-    @Output() restartRequiredChange = new EventEmitter<boolean>();
+    @Output()
+    onDirty = new EventEmitter();
+    @Output() 
+    restartRequiredChange = new EventEmitter<boolean>();
 
     groups: SettingGroup[] = [];
     xteVersion = '';
@@ -61,8 +64,8 @@ export class SettingsSystemTabComponent implements OnInit {
     private debounceerTimeout = 1000;
 
     constructor(
-        private settingsService: SettingsService,
         private appState: AppStateService,
+        private settingsService: SettingsService,
         private serverService: ServerService,
         private overlayService: GenericOverlayService
     ) {}
@@ -70,7 +73,7 @@ export class SettingsSystemTabComponent implements OnInit {
     ngOnInit(): void {
         this.getBrowserInformation();
 
-        this.appState.remoteUserSettings$.subscribe(settings => {
+        this.serverService.remoteUserSettings$.subscribe(settings => {
             if (settings) {
                 this.xteVersion = settings.xteVersion || '';
                 this.userTags = settings.userTags || [];
@@ -95,7 +98,7 @@ export class SettingsSystemTabComponent implements OnInit {
             }));
         });
 
-        this.appState.tcodeCommands$.subscribe(commands => {
+        this.serverService.tcodeCommands$.subscribe(commands => {
             this.tcodeCommands = commands as TCodeCommand[];
         });
 
@@ -300,7 +303,7 @@ export class SettingsSystemTabComponent implements OnInit {
             this.showTagAlert(`Tag '${name}' already exists in ${otherTagName}!`);
             return;
         }
-        const settings = this.appState.remoteUserSettings;
+        const settings = this.serverService.remoteUserSettings;
         if (!settings) return;
         const settingMemberName = smartMode ? 'smartTagsToAdd' : 'tagsToAdd';
         const list = settings[settingMemberName] ?? (settings[settingMemberName] = []);
@@ -310,7 +313,7 @@ export class SettingsSystemTabComponent implements OnInit {
     }
 
     removeTag(smartMode: boolean): void {
-        const settings = this.appState.remoteUserSettings;
+        const settings = this.serverService.remoteUserSettings;
         if (!settings) return;
         const selected = smartMode ? this.selectedSmartTags : this.selectedUserTags;
         const tags = smartMode ? this.smartTags : this.userTags;
@@ -327,7 +330,7 @@ export class SettingsSystemTabComponent implements OnInit {
     }
 
     saveTags(): void {
-        const settings = this.appState.remoteUserSettings;
+        const settings = this.serverService.remoteUserSettings;
         if (!settings) return;
         this.serverService.saveServerSettings().subscribe({
             next: () => {
