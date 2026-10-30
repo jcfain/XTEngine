@@ -1,10 +1,10 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
-
+import { Component, OnInit, ChangeDetectionStrategy, Input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { GenericOverlayService } from '../../services/overlay.service';
 import { ShowMode, SortMode } from '../../models/enums';
 import { SelectDialogComponent } from '../select-dialog/select-dialog.component';
+import { AppStateService } from '../../services/app-state.service';
 
 @Component({
     selector: 'app-settings-local-tab',
@@ -14,6 +14,9 @@ import { SelectDialogComponent } from '../select-dialog/select-dialog.component'
     styleUrl: './settings-local-tab.component.css'
 })
 export class SettingsLocalTabComponent implements OnInit {
+    @Input()
+    isVisible = false;
+    
     showModes = [
         { mode: ShowMode.All, label: 'All' },
         { mode: ShowMode.ThreeD, label: '3D only' },
@@ -31,13 +34,43 @@ export class SettingsLocalTabComponent implements OnInit {
     ];
 
     thumbSizes: number[] = [];
-    showMode: ShowMode = ShowMode.All;
-    sortMode: SortMode = SortMode.Name;
-    thumbSize = 200;
+    private _showMode: ShowMode = ShowMode.All;
+    public get showMode(): ShowMode {
+        return this._showMode;
+    }
+    public set showMode(value: ShowMode) {
+        const valueNum: number =  Number(value);
+        this.localSettings.setShow(valueNum);
+        this._showMode = valueNum;
+    }
+    private _sortMode: SortMode = SortMode.Name;
+    public get sortMode(): SortMode {
+        return this._sortMode;
+    }
+    public set sortMode(value: SortMode) {
+        const valueNum: number =  Number(value);
+        this.localSettings.setSort(valueNum);
+        this._sortMode = valueNum;
+    }
+    private _thumbSize = 200;
+    public get thumbSize(): number {
+        return this._thumbSize;
+    }
+    public set thumbSize(value: number) {
+        // This is done because the select element 
+        // Always pukes out a string for some reason.
+        // This messes up the thumb size calculations done
+        // on the media list.
+        const valueNum: number =  Number(value);
+        this.localSettings.setThumbSize(valueNum);
+        this._thumbSize = valueNum;
+    }
     externalStreaming = false;
     disableLazyLoad = false;
+    userAgentIsHereSphere = false;
 
     constructor(
+        private appState: AppStateService,
         private localSettings: LocalSettingsService,
         private overlayService: GenericOverlayService
     ) {}
@@ -46,23 +79,12 @@ export class SettingsLocalTabComponent implements OnInit {
         for (let size = 50; size <= 500; size += 25) {
             this.thumbSizes.push(size);
         }
-        this.localSettings.show$.subscribe(v => this.showMode = v);
-        this.localSettings.sort$.subscribe(v => this.sortMode = v);
-        this.localSettings.thumbSize$.subscribe(v => this.thumbSize = v);
+        this.localSettings.show$.subscribe(v => this._showMode = v);
+        this.localSettings.sort$.subscribe(v => this._sortMode = v);
+        this.localSettings.thumbSize$.subscribe(v => this._thumbSize = v);
         this.localSettings.externalStreaming$.subscribe(v => this.externalStreaming = v);
         this.localSettings.disableBrowserLazyLoad$.subscribe(v => this.disableLazyLoad = v);
-    }
-
-    onShowChange(mode: ShowMode): void {
-        this.localSettings.setShow(mode);
-    }
-
-    onSortChange(mode: SortMode): void {
-        this.localSettings.setSort(mode);
-    }
-
-    onThumbSizeChange(size: number): void {
-        this.localSettings.setThumbSize(size);
+        this.userAgentIsHereSphere = this.appState.userAgentIsHereSphere;
     }
 
     showModeLabel(): string {
@@ -81,7 +103,7 @@ export class SettingsLocalTabComponent implements OnInit {
             message: 'Select what to show',
             options: this.showModes.map(m => ({ value: m.mode, label: m.label })),
             selectedValue: this.showMode,
-            onAccept: (value: ShowMode) => this.onShowChange(value),
+            onAccept: (value: ShowMode) => this.showMode = value,
             onClose: () => this.overlayService.close('localShowSelect')
         }, undefined, true);
     }
@@ -92,7 +114,7 @@ export class SettingsLocalTabComponent implements OnInit {
             message: 'Select sort order',
             options: this.sortModes.map(m => ({ value: m.mode, label: m.label })),
             selectedValue: this.sortMode,
-            onAccept: (value: SortMode) => this.onSortChange(value),
+            onAccept: (value: SortMode) => this.sortMode = value,
             onClose: () => this.overlayService.close('localSortSelect')
         }, undefined, true);
     }
@@ -103,7 +125,7 @@ export class SettingsLocalTabComponent implements OnInit {
             message: 'Select thumb size',
             options: this.thumbSizes.map(size => ({ value: size, label: size + 'px' })),
             selectedValue: this.thumbSize,
-            onAccept: (value: number) => this.onThumbSizeChange(value),
+            onAccept: (value: number) => this.thumbSize = value,
             onClose: () => this.overlayService.close('localThumbSizeSelect')
         }, undefined, true);
     }

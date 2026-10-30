@@ -23,6 +23,11 @@ export class WebsocketService {
     return this.connectionStatusSubject.value === ConnectionStatus.Connected;
   }
 
+  init(port: number): void {
+    const wsUri = `ws://${window.location.hostname}:${port}`;
+    this.connect(wsUri);
+  }
+
   statusText(): string {
     switch (this.connectionStatusSubject.value) {
       case ConnectionStatus.Connected: return 'Connected';
@@ -74,6 +79,14 @@ export class WebsocketService {
       this.websocket = null;
       this.connectionStatusSubject.next(ConnectionStatus.Disconnected);
     }
+  }
+
+  restartXTP(): void {
+    this.send('restartService');
+  }
+
+  refreshXTPLibrary(): void {
+    this.send('reloadLibrary');
   }
 
   send(command: string, payload?: any): void {
@@ -159,11 +172,11 @@ export class WebsocketService {
   }
 
   sendQuickExport(): void {
-    this.send('quickExport');
+    this.send('settingsQuickExport');
   }
 
   sendQuickImport(filename: string): void {
-    this.send('quickImport', filename );
+    this.send('settingsQuickImport', { filename } );
   }
 
   setSelectedProfile(profileName: string): void {

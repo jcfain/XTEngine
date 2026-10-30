@@ -10,6 +10,7 @@ interface TagsChange {allTags: string[], smartTags:string[], userTags: string[]}
 interface ChannelsPositionChange { channel: string, position: number, time: number, timeType: ChannelTimeType };
 interface ThumbUpdate {id: string, thumb: string, errorMessage?: string };
 interface MediaItemUpdate {item: MediaItem, roles:number[]};
+interface SettingsBackupUpdate {message: string, path:string, success: boolean};
 
 @Injectable({
   providedIn: 'root'
@@ -61,6 +62,9 @@ export class MessageHandlerService {
   private channelPositionChange = new BehaviorSubject<ChannelsPositionChange | null>(null);
   channelPositionChange$: Observable<ChannelsPositionChange | null> = this.channelPositionChange.asObservable();
 
+  private scriptTogglePausedEvent = new BehaviorSubject<boolean>(false);
+  scriptTogglePaused$: Observable<boolean> = this.scriptTogglePausedEvent.asObservable();
+
   private stopAllMediaSubject = new Subject<void>();
   stopAllMedia$: Observable<void> = this.stopAllMediaSubject.asObservable();
 
@@ -76,11 +80,14 @@ export class MessageHandlerService {
   private mediaLoadedEvent = new Subject<void>();
   mediaLoaded$: Observable<void> = this.mediaLoadedEvent.asObservable();
 
-  private scriptTogglePausedEvent = new Subject<boolean>();
-  scriptTogglePaused$: Observable<boolean> = this.scriptTogglePausedEvent.asObservable();
-
   private logoutEvent = new Subject<void>();
   logout$: Observable<void> = this.logoutEvent.asObservable();
+
+  private settingsExportedEvent = new Subject<SettingsBackupUpdate>();
+  settingsExported$: Observable<SettingsBackupUpdate> = this.settingsExportedEvent.asObservable();
+
+  private settingsImportedEvent = new Subject<SettingsBackupUpdate>();
+  settingsImported$: Observable<SettingsBackupUpdate> = this.settingsImportedEvent.asObservable();
 
   // private changePlayrateSubject  
   // // private mediaActionSubject
@@ -141,12 +148,14 @@ export class MessageHandlerService {
 
         case 'settingsExported': {
           const obj = data['message'];
+          this.settingsExportedEvent.next(obj);
           console.log('Settings exported:', obj['message'], obj['path'], obj['success']);
           break;
         }
 
         case 'settingsImported': {
           const obj = data['message'];
+          this.settingsImportedEvent.next(obj);
           console.log('Settings imported:', obj['message'], obj['path'], obj['success']);
           break;
         }

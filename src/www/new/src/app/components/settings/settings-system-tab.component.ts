@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter, ChangeDetectionStrategy, Input } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
@@ -10,6 +10,8 @@ import { AlertComponent } from '../alert-model/alert.component';
 import { Setting, TCodeCommand } from '../../models/interfaces';
 import { FormControlType } from '../../models/enums';
 import { capitalizeFirstLetter } from '../../utils/utils';
+import { WebsocketService } from '../../services/websocket.service';
+import { MessageHandlerService } from '../../services/message-handler.service';
 
 interface SettingGroup {
     name: string;
@@ -29,6 +31,8 @@ interface ExportedFile {
     styleUrl: './settings-system-tab.component.css'
 })
 export class SettingsSystemTabComponent implements OnInit {
+    @Input()
+    isVisible = false;
     @Output()
     onDirty = new EventEmitter();
     @Output() 
@@ -65,6 +69,8 @@ export class SettingsSystemTabComponent implements OnInit {
 
     constructor(
         private appState: AppStateService,
+        private websocketService: WebsocketService,
+        private messageHandlerService: MessageHandlerService,
         private settingsService: SettingsService,
         private serverService: ServerService,
         private overlayService: GenericOverlayService
@@ -79,6 +85,9 @@ export class SettingsSystemTabComponent implements OnInit {
                 this.userTags = settings.userTags || [];
                 this.smartTags = settings.smartTags || [];
             }
+        });
+        this.messageHandlerService.settingsExported$.subscribe(v => {
+            this.loadExportedFiles();
         });
         this.userAgentIsDeo = this.appState.userAgentIsDeo;
         this.userAgentIsHereSphere = this.appState.userAgentIsHereSphere;
@@ -238,8 +247,8 @@ export class SettingsSystemTabComponent implements OnInit {
     }
 
     quickExport(): void {
-        this.serverService.sendQuickExport();
-        setTimeout(() => this.loadExportedFiles(), 1000);
+        this.websocketService.sendQuickExport();
+        // setTimeout(() => this.loadExportedFiles(), 1000);
     }
 
     restoreExported(filename: string): void {
@@ -248,7 +257,7 @@ export class SettingsSystemTabComponent implements OnInit {
             titleText: 'Restore',
             acceptText: 'Restore',
             rejectText: 'Cancel',
-            onAccept: () => this.serverService.sendQuickImport(filename),
+            onAccept: () => this.websocketService.sendQuickImport(filename),
             onClose: () => this.overlayService.close(this.confirmAlertNameID)
         });
     }
@@ -359,7 +368,7 @@ export class SettingsSystemTabComponent implements OnInit {
             titleText: 'Process metadata',
             acceptText: 'Process',
             rejectText: 'Cancel',
-            onAccept: () => this.serverService.startMetadataProcess(),
+            onAccept: () => this.websocketService.sendMetadataProcess(),
             onClose: () => this.overlayService.close(this.confirmAlertNameID)
         });
     }
@@ -370,7 +379,7 @@ export class SettingsSystemTabComponent implements OnInit {
             titleText: 'Clean metadata',
             acceptText: 'Clean',
             rejectText: 'Cancel',
-            onAccept: () => this.serverService.startMetadataCleanProcess(),
+            onAccept: () => this.websocketService.sendMetadataCleanProcess(),
             onClose: () => this.overlayService.close(this.confirmAlertNameID)
         });
     }
@@ -381,7 +390,7 @@ export class SettingsSystemTabComponent implements OnInit {
             titleText: 'Clean thumbs',
             acceptText: 'Clean',
             rejectText: 'Cancel',
-            onAccept: () => this.serverService.startThumbCleanupProcess(),
+            onAccept: () => this.websocketService.sendCleanupThumbsProcess(),
             onClose: () => this.overlayService.close(this.confirmAlertNameID)
         });
     }

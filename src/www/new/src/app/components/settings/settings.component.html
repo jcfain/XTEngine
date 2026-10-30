@@ -13,25 +13,22 @@
                 }
             </div>
             <section class="tab-section">
-                @if (activeTab === 0) {
-                    <app-settings-local-tab></app-settings-local-tab>
-                }
-                @if (activeTab === 1) {
-                    <app-settings-connections-tab
-                        (onDirty)="markDirty()">
-                    </app-settings-connections-tab>
-                }
-                @if (activeTab === 2) {
-                    <app-settings-motion-tab
-                        (onDirty)="markDirty()">
-                    </app-settings-motion-tab>
-                }
-                @if (activeTab === 3) {
-                    <app-settings-system-tab 
-                        (onDirty)="markDirty()" 
-                        (restartRequiredChange)="onRestartRequiredChange($event)">
-                    </app-settings-system-tab>
-                }
+                <app-settings-local-tab
+                    [isVisible]="activeTab === 0">
+                </app-settings-local-tab>
+                <app-settings-connections-tab
+                    [isVisible]="activeTab === 1"
+                    (onDirty)="markDirty()">
+                </app-settings-connections-tab>
+                <app-settings-motion-tab
+                    [isVisible]="activeTab === 2"
+                    (onDirty)="markDirty()">
+                </app-settings-motion-tab>
+                <app-settings-system-tab 
+                    [isVisible]="activeTab === 3"
+                    (onDirty)="markDirty()" 
+                    (restartRequiredChange)="onRestartRequiredChange($event)">
+                </app-settings-system-tab>
             </section>
         </div>
         

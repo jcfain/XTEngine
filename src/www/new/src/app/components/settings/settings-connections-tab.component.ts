@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, Output, EventEmitter, Input } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { AppStateService } from '../../services/app-state.service';
@@ -8,6 +8,7 @@ import { ConnectionInterface, ConnectionStatus, NetworkProtocol } from '../../mo
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { RemoteUserSettings } from '../../models/interfaces';
+import { ConnectedOverlayPositionChange } from '@angular/cdk/overlay';
 
 @Component({
     selector: 'app-settings-connections-tab',
@@ -19,17 +20,20 @@ import { RemoteUserSettings } from '../../models/interfaces';
 export class SettingsConnectionsTabComponent implements OnInit {
     ConnectionInterface = ConnectionInterface;
     
+    @Input()
+    isVisible = false;
     @Output()
     onDirty = new EventEmitter();
 
     inputDevices: { type: ConnectionInterface; name: string }[] = [
-        { type: ConnectionInterface.None, name: 'None' },
+        // { type: ConnectionInterface.None, name: 'None' },
         { type: ConnectionInterface.HereSphere, name: 'DeoVR/HereSphere' },
         { type: ConnectionInterface.Whirligig, name: 'Whirligig' },
         { type: ConnectionInterface.XTPWeb, name: 'XTP Web (internal web player)' }
     ];
 
     outputDevices: { type: ConnectionInterface; name: string }[] = [
+        // { type: ConnectionInterface.None, name: 'None' },
         { type: ConnectionInterface.Serial, name: 'Serial' },
         { type: ConnectionInterface.Network, name: 'Network' }
     ];
@@ -94,6 +98,13 @@ export class SettingsConnectionsTabComponent implements OnInit {
             obj.networkProtocol = value ? NetworkProtocol.WEBSOCKET : NetworkProtocol.UDP;
     }
 
+    get selectedOutputConnected(): boolean {
+        if(this.selectedOutputDevice == ConnectionInterface.None)
+            return false;
+        const status = this.getStatus(this.selectedOutputDevice);
+        return status === ConnectionStatus.Connected || status === ConnectionStatus.Connecting;
+    }
+
     private inputDeviceStatus: {[key: number]: ConnectionStatus} = {};
     private outputDeviceStatus: {[key: number]: ConnectionStatus} = {};
     private settings: RemoteUserSettings | null = null;
@@ -107,6 +118,13 @@ export class SettingsConnectionsTabComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        this.serverService.remoteUserSettings$.subscribe(v => {
+            this.settings = v;
+            if(this.settings?.connection?.input?.selectedDevice)
+                this.checkAndUpdateInputConnection(this.settings?.connection?.input?.selectedDevice);
+            if(this.settings?.connection?.output?.selectedDevice)
+                this.checkAndUpdateOutputConnection(this.settings?.connection?.output?.selectedDevice);
+        });
         this.inputDevices.forEach(x => {
             this.inputDeviceStatus[x.type] = ConnectionStatus.Disconnected;
         });
@@ -116,26 +134,10 @@ export class SettingsConnectionsTabComponent implements OnInit {
         this.messageHandlerService.inputDeviceStatus$.subscribe(s => this.inputDeviceStatus[s.type] = s.status);
         this.messageHandlerService.outputDeviceStatus$.subscribe(s => this.outputDeviceStatus[s.type] = s.status);
         this.localSettingsService.selectedInputDevice$.subscribe(s => {
-            this.selectedInputDevice = s
-            this.websocketService.sendInputDeviceConnectionChange(s, true);
+            this.checkAndUpdateInputConnection(s);
         });
         this.localSettingsService.selectedOuputDevice$.subscribe(s => {
-            this.selectedOutputDevice = s;
-            this.websocketService.sendOutputDeviceConnectionChange(s, true);
-        });
-
-        this.serverService.remoteUserSettings$.subscribe(v => {
-            this.settings = v;
-            // if (v?.connection) {
-            //     const conn = v.connection;
-            //     this.gamePadEnabled = conn.input?.gamePadEnabled ?? false;
-            //     this.deoVRAddress = conn.input?.deoAddress || '';
-            //     this.deoVRPort = conn.input?.deoPort || '';
-            //     this.networkAddress = conn.output?.networkAddress || '';
-            //     this.networkPort = conn.output?.networkPort || '';
-            //     this.serialPort = conn.output?.serialPort || '';
-            //     this.networkProtocolWebsocket = conn.output?.networkProtocol === NetworkProtocol.WEBSOCKET;
-            // }
+            this.checkAndUpdateOutputConnection(s);
         });
     }
 
@@ -229,6 +231,25 @@ export class SettingsConnectionsTabComponent implements OnInit {
 
     retryInputConnection() {
         this.websocketService.sendInputDeviceConnectionChange(this.selectedInputDevice, true);
+    }
+
+    private checkAndUpdateInputConnection(value: ConnectionInterface) {
+        if(value == ConnectionInterface.None) {
+            this.selectedInputDevice = this.settings?.connection.input.selectedDevice ?? value;
+        } else {
+            this.selectedInputDevice = value;
+        }
+        if(this.getStatus(value) !== ConnectionStatus.Connected)
+            this.websocketService.sendInputDeviceConnectionChange(value, true);
+    }
+    private checkAndUpdateOutputConnection(value: ConnectionInterface) {
+        if(value == ConnectionInterface.None) {
+            this.selectedOutputDevice = this.settings?.connection.output.selectedDevice ?? value;
+        } else {
+            this.selectedOutputDevice = value;
+        }
+        if(this.getStatus(value) !== ConnectionStatus.Connected)
+            this.websocketService.sendOutputDeviceConnectionChange(value, true);
     }
 
     private getStatus(device: ConnectionInterface): ConnectionStatus {

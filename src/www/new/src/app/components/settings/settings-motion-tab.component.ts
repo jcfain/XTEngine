@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, Output, EventEmitter, Input } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { AppStateService } from '../../services/app-state.service';
@@ -28,6 +28,8 @@ interface ChannelRange {
     styleUrl: './settings-motion-tab.component.css'
 })
 export class SettingsMotionTabComponent implements OnInit {
+    @Input()
+    isVisible = false;
     @Output()
     onDirty = new EventEmitter();
 
@@ -83,7 +85,6 @@ export class SettingsMotionTabComponent implements OnInit {
     }
 
     onProfileChange(profile: string): void {
-        this.selectedProfile = profile;
         this.websocketService.setSelectedProfile(profile);
     }
 
@@ -93,7 +94,10 @@ export class SettingsMotionTabComponent implements OnInit {
             message: 'Select a channel profile',
             options: this.profiles.map(p => ({ value: p, label: p })),
             selectedValue: this.selectedProfile,
-            onAccept: (value: string) => this.onProfileChange(value),
+            onAccept: (value: string) => { 
+                this.selectedProfile = value;
+                this.onProfileChange(value);
+            },
             onClose: () => this.overlayService.close(this.profileSelectNameID)
         }, undefined, true);
     }
@@ -184,7 +188,7 @@ export class SettingsMotionTabComponent implements OnInit {
     }
 
     homeDevice(): void {
-        this.serverService.sendDeviceHome();
+        this.websocketService.sendDeviceHome();
     }
 
     onMultiplierEnabledChange(value: boolean): void {

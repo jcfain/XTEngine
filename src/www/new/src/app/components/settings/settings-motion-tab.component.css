@@ -39,7 +39,26 @@
     padding: 4px 0;
 }
 
-.form-group-section {
+.checkbox-list {
+    max-width: fit-content;
+}
+
+.channel-modifier-container {
+    display: flex;
+}
+
+.channel-modifier-container-item {
+    display: flex;
+    flex-flow: column;  
+    padding: 16px;
+}
+
+.channel-modifier-container-item-header {
+    font-size: 0.9rem;
+    color: white;
+}
+
+/* .form-group-section {
     display: flex;
     flex-flow: row wrap;
     align-items: center;
@@ -65,7 +84,7 @@
 .form-group-control-header span {
     font-size: 0.8rem;
     color: #8DA1BF;
-}
+} */
 
 .save-state {
     align-self: center;

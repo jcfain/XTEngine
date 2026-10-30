@@ -41,12 +41,12 @@ export class ServerService {
   initServerSettings(): void {
     this.http.get<any>('/settings').subscribe({
       next: (response) => {
+        this.websocketService.init(response.webSocketServerPort);
         this.remoteUserSettingsSubject.next(response);
         this.settingsService.load(response);
         this.getMediaActions();
         this.getTCodeCommands();
         this.getExported();
-        this.initWebSocket();
         this.serverState.next(ServerState.Connected);
       },
       error: (err) => {
@@ -54,6 +54,17 @@ export class ServerService {
       }
     });
   }
+
+  // getAvailableSerialPorts(): void {
+  //   this.http.get<any>('/availableSerialPorts').subscribe({
+  //     next: (response) => {
+  //       this.availableSerialPorts.next(response);
+  //     },
+  //     error: (err) => {
+  //       console.error('Error getting server serial ports:', err);
+  //     }
+  //   });
+  // }
 
   getMediaActions(): void {
     this.http.get<any>('/mediaActions').subscribe({
@@ -110,67 +121,52 @@ export class ServerService {
     return this.http.post<any>(`/exported/${filename}/restore`, {});
   }
 
-  initWebSocket(): void {
-    const settings = this.remoteUserSettingsSubject.value;
-    if (!settings) return;
 
-    const wsUri = `ws://${window.location.hostname}:${settings.webSocketServerPort}`;
-    this.websocketService.connect(wsUri);
-  }
+  // sendMediaAction(action: string): void {
+  //   this.websocketService.sendMediaAction(action);
+  // }
 
-  restartXTP(): void {
-    this.websocketService.send('restartService');
-  }
+  // sendDeviceHome(): void {
+  //   const actions = this.mediaActionsSubject.value;
+  //   this.websocketService.sendMediaAction(actions['TCodeHomeAll'] || 'TCodeHomeAll');
+  // }
 
-  refreshXTPLibrary(): void {
-    this.websocketService.send('reloadLibrary');
-  }
+  // togglePauseAllDeviceActions(): void {
+  //   const actions = this.mediaActionsSubject.value;
+  //   this.websocketService.sendMediaAction(actions['TogglePauseAllDeviceActions'] || 'TogglePauseAllDeviceActions');
+  // }
 
-  sendMediaAction(action: string): void {
-    this.websocketService.sendMediaAction(action);
-  }
+  // sendQuickExport(): void {
+  //   this.websocketService.sendQuickExport();
+  // }
 
-  sendDeviceHome(): void {
-    const actions = this.mediaActionsSubject.value;
-    this.websocketService.sendMediaAction(actions['TCodeHomeAll'] || 'TCodeHomeAll');
-  }
+  // sendQuickImport(filename: string): void {
+  //   this.websocketService.sendQuickImport(filename);
+  // }
 
-  togglePauseAllDeviceActions(): void {
-    const actions = this.mediaActionsSubject.value;
-    this.websocketService.sendMediaAction(actions['TogglePauseAllDeviceActions'] || 'TogglePauseAllDeviceActions');
-  }
+  // startMetadataProcess(): void {
+  //   this.websocketService.sendMetadataProcess();
+  // }
 
-  sendQuickExport(): void {
-    this.websocketService.sendQuickExport();
-  }
+  // startMetadataCleanProcess(): void {
+  //   this.websocketService.sendMetadataCleanProcess();
+  // }
 
-  sendQuickImport(filename: string): void {
-    this.websocketService.sendQuickImport(filename);
-  }
+  // startThumbCleanupProcess(): void {
+  //   this.websocketService.sendCleanupThumbsProcess();
+  // }
 
-  startMetadataProcess(): void {
-    this.websocketService.sendMetadataProcess();
-  }
+  // startClean1024Process(): void {
+  //   this.websocketService.sendClean1024Process();
+  // }
 
-  startMetadataCleanProcess(): void {
-    this.websocketService.sendMetadataCleanProcess();
-  }
+  // sendUpdateMetadata(metadataKey: string): void {
+  //   this.websocketService.sendUpdateMetadata(metadataKey);
+  // }
 
-  startThumbCleanupProcess(): void {
-    this.websocketService.sendCleanupThumbsProcess();
-  }
-
-  startClean1024Process(): void {
-    this.websocketService.sendClean1024Process();
-  }
-
-  sendUpdateMetadata(metadataKey: string): void {
-    this.websocketService.sendUpdateMetadata(metadataKey);
-  }
-
-  sendSwapScript(scriptInfo: ScriptInfo): void {
-    this.websocketService.sendSwapScript(scriptInfo);
-  }
+  // sendSwapScript(scriptInfo: ScriptInfo): void {
+  //   this.websocketService.sendSwapScript(scriptInfo);
+  // }
 
   saveServerSettings(): Observable<any> {
     return this.http.post<any>('/settings', this.remoteUserSettingsSubject.value);

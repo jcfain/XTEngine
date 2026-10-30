@@ -9,6 +9,8 @@ import { SettingsConnectionsTabComponent } from './settings-connections-tab.comp
 import { SettingsMotionTabComponent } from './settings-motion-tab.component';
 import { SettingsSystemTabComponent } from './settings-system-tab.component';
 import { OutputDeviceToolsComponent } from '../device-tools/output/output-device-tools.component';
+import { WebsocketService } from '../../services/websocket.service';
+import { LocalSettingsService } from '../../services/local-settings.service';
 
 @Component({
     selector: 'app-settings',
@@ -34,7 +36,11 @@ export class SettingsComponent {
     activeTab = 0;
     restartRequired = false;
 
-    constructor(private serverService: ServerService, private overlayService: GenericOverlayService) {}
+    constructor(
+        private localSettingsService: LocalSettingsService,
+        private websocketService: WebsocketService,
+        private serverService: ServerService, 
+        private overlayService: GenericOverlayService) {}
 
     onToggle(): void {
         this.toggle.emit();
@@ -56,19 +62,18 @@ export class SettingsComponent {
             acceptText: 'Reset',
             rejectText: 'Cancel',
             onAccept: () => {
-                window.localStorage.clear();
-                window.location.reload();
+                this.localSettingsService.reset()
             },
             onClose: () => this.overlayService.close(nameID)
         });
     }
 
     restartXTP(): void {
-        this.serverService.restartXTP();
+        this.websocketService.restartXTP();
     }
 
     refreshXTPLibrary(): void {
-        this.serverService.refreshXTPLibrary();
+        this.websocketService.refreshXTPLibrary();
     }
 
     markDirty(): void {

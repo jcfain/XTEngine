@@ -149,6 +149,11 @@ export class LocalSettingsService {
         this.disableBrowserLazyLoadSubject.next(value);
     }
 
+    reset() {
+        window.localStorage.clear();
+        window.location.reload();
+    }
+
     private getFromLocalStorage<T>(key: string, defaultValue: T): T {
         const valueInStorage = window.localStorage.getItem(key);
         if(valueInStorage == null) {

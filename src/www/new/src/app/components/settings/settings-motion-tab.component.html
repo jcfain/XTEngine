@@ -1,4 +1,4 @@
-<div class="motion-tab">
+<div class="motion-tab" [class.hidden]="!isVisible">
     <div class="tab-content-header">
         <div class="tab-content-header-main">Channel Profile</div>
     </div>
@@ -12,8 +12,19 @@
         </div>
     </div>
     <div class="formElement">
-        <label for="profileNamesDiv">Current Profile</label>
-        <button id="profileNamesDiv" (click)="openProfileSelect()">{{ selectedProfile }}</button>
+        @if (userAgentIsHereSphere) {
+            <label for="profileNamesSelect">Select Profile</label>
+            <button id="profileNamesSelect" (click)="openProfileSelect()">{{ selectedProfile }}</button>
+        } @else {
+            <label for="profileNamesSelect">Select Profile</label>
+            <select id="profileNamesSelect" title="Change the loaded motion profile"
+                [(ngModel)]="selectedProfile"
+                (ngModelChange)="onProfileChange(selectedProfile)">
+                @for (profile of profiles; track profile) {
+                    <option [value]="profile">{{ profile }}</option>
+                }
+            </select>
+        }
     </div>
     <div class="tab-content-header">
         <div class="tab-content-header-main">Range Limits</div>
@@ -98,37 +109,42 @@
         }
     </div>
     <div class="tab-content-header">
-        <div class="tab-content-header-main">Invert funscript</div>
+        <div class="tab-content-header-main">Channel</div>
     </div>
-    <div class="modifier-list">
-        @for (channel of modifierChannels; track channel.channel) {
-            <div class="formElement formElement--label-large">
-                <label [attr.for]="channel.channel + 'Inverted'">{{ channel.friendlyName }}</label>
-                <div class="form-group-section">
-                    <div class="form-group-control">
-                        <input type="checkbox" [attr.id]="channel.channel + 'Inverted'"
-                            [(ngModel)]="channel.funscriptInverted"
-                            (ngModelChange)="onChannelChange(channel)" />
+    <div class="channel-modifier-container">
+        <div class="channel-modifier-container-item">
+            <span class="channel-modifier-container-item-header">Invert</span>
+            <div class="modifier-list checkbox-list">
+                @for (channel of modifierChannels; track channel.channel) {
+                    <div class="formElement formElement--label-large">
+                        <label [attr.for]="channel.channel + 'Inverted'">{{ channel.friendlyName }}</label>
+                        <div class="form-group-section">
+                            <div class="form-group-control">
+                                <input type="checkbox" [attr.id]="channel.channel + 'Inverted'"
+                                    [(ngModel)]="channel.funscriptInverted"
+                                    (ngModelChange)="onChannelChange(channel)" />
+                            </div>
+                        </div>
                     </div>
-                </div>
+                }
             </div>
-        }
-    </div>
-    <div class="tab-content-header">
-        <div class="tab-content-header-main">Gradient</div>
-    </div>
-    <div class="modifier-list">
-        @for (channel of modifierChannels; track channel.channel) {
-            <div class="formElement formElement--label-large">
-                <label [attr.for]="channel.channel + 'Gradient'">{{ channel.friendlyName }}</label>
-                <div class="form-group-section">
-                    <div class="form-group-control">
-                        <input type="checkbox" [attr.id]="channel.channel + 'Gradient'"
-                            [(ngModel)]="channel.gradient"
-                            (ngModelChange)="onChannelChange(channel)" />
+        </div>
+        <div class="channel-modifier-container-item">
+            <span class="channel-modifier-container-item-header">Gradient</span>
+            <div class="modifier-list checkbox-list">
+                @for (channel of modifierChannels; track channel.channel) {
+                    <div class="formElement formElement--label-large">
+                        <label [attr.for]="channel.channel + 'Gradient'">{{ channel.friendlyName }}</label>
+                        <div class="form-group-section">
+                            <div class="form-group-control">
+                                <input type="checkbox" [attr.id]="channel.channel + 'Gradient'"
+                                    [(ngModel)]="channel.gradient"
+                                    (ngModelChange)="onChannelChange(channel)" />
+                            </div>
+                        </div>
                     </div>
-                </div>
+                }
             </div>
-        }
+        </div>
     </div>
 </div>

@@ -1,7 +1,7 @@
-<div class="connections-tab">
+<div class="connections-tab" [class.hidden]="!isVisible">
     <h3>Output connections</h3>
     <span class="form-buttons">
-        <button (click)="retryOutputConnection()">Retry output connection</button>
+        <button [disabled]="selectedOutputConnected" (click)="retryOutputConnection()">Retry output connection</button>
     </span>
     @for (device of outputDevices; track device.type) {
         <div class="formElement">
@@ -32,8 +32,8 @@
                 }
                 @if (device.type === ConnectionInterface.Serial) {
                     <div class="form-group-control">
-                        <span class="sync-device-input-label">Port</span>
-                        <input [(ngModel)]="serialPort" (ngModelChange)="onSerialPortChange($event)" />
+                        <span class="sync-device-input-label">Port: {{ serialPort }}</span>
+                        <!-- <input [(ngModel)]="serialPort" (ngModelChange)="onSerialPortChange($event)" /> -->
                     </div>
                 }
             </section>

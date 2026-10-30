@@ -1,4 +1,4 @@
-<div class="local-tab">
+<div class="local-tab" [class.hidden]="!isVisible">
     <div class="formElement">
         <label title="If checked, the media items will open the media directly instead of the built in media player. This lets players like DeoVR handle the stream."
             for="externalStreamingCheckbox">External player</label>
@@ -15,15 +15,42 @@
     }
     <div class="formElement">
         <label for="showSelect"><span class="formLabel">Show</span></label>
-        <button id="showSelect" (click)="openShowSelect()">{{ showModeLabel() }}</button>
+        @if (userAgentIsHereSphere) {
+            <button id="showSelect" (click)="openShowSelect()">{{ showModeLabel() }}</button>
+        } @else {
+            <select id="showSelect" title="Change the current filter"
+                [(ngModel)]="showMode">
+                @for (value of showModes; track value.mode) {
+                    <option [value]="value.mode">{{ value.label }}</option>
+                }
+            </select>
+        }
     </div>
     <div class="formElement">
         <label for="sortBySelect"><span class="formLabel">Sort by</span></label>
-        <button id="sortBySelect" (click)="openSortSelect()">{{ sortModeLabel() }}</button>
+        @if (userAgentIsHereSphere) {
+            <button id="sortBySelect" (click)="openSortSelect()">{{ sortModeLabel() }}</button>
+        } @else {
+            <select id="sortBySelect" title="Change the current sort"
+                [(ngModel)]="sortMode">
+                @for (value of sortModes; track value.mode) {
+                    <option [value]="value.mode">{{ value.label }}</option>
+                }
+            </select>
+        }
     </div>
     <div class="formElement">
         <label for="thumbSizeSelect"><span class="formLabel">Thumb size</span></label>
-        <button id="thumbSizeSelect" (click)="openThumbSizeSelect()">{{ thumbSize }}px</button>
+        @if (userAgentIsHereSphere) {
+            <button id="thumbSizeSelect" (click)="openThumbSizeSelect()">{{ thumbSize }}px</button>
+        } @else {
+            <select id="thumbSizeSelect" title="Change the current sort"
+                [(ngModel)]="thumbSize">
+                @for (value of thumbSizes; track value) {
+                    <option [value]="value">{{ value }}px</option>
+                }
+            </select>
+        }
     </div>
     <div class="formElement">
         <label title="If checked, the thumb nails may load in all at once. This could reduce performance with a lot of images. Only check if having issues with loading thumbs in this browser."

@@ -49,6 +49,12 @@ export class MediaListItemComponent implements OnInit {
   get contextMenuHidden(): boolean {
     return this.m_contextMenuHidden;
   }
+  get headerButtonPX() {
+    return this.height * this.mediaItemHeaderIconMultiplier + "px"
+  }
+  get headerIconPX(): string {
+    return this.thumbHeight * this.mediaItemHeaderIconMultiplier + "px"
+  }
   private playingMediaItem: MediaItem | null = null;
   private mediaItemHeaderIconMultiplier = 0.15;
   private mediaItemHeaderMultiplier = 0.2;
@@ -180,7 +186,7 @@ export class MediaListItemComponent implements OnInit {
     this.update.emit(this.item);
 	};
 
-  toggleConextMenu() {
+  toggleContextMenu() {
     this.m_contextMenuHidden = !this.m_contextMenuHidden;
   }
 

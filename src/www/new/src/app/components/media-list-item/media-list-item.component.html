@@ -8,17 +8,17 @@
     [fontSize]="fontSize"
     [hidden]="contextMenuHidden"
     [altScriptCount]="altScriptCount()"
-    (close)="toggleConextMenu()">
+    (close)="toggleContextMenu()">
   </app-media-list-item-context-menu>
   <div click-stop-propagation class="media-item-header">
     <div class="media-item-header-start">
-      <button class="media-context" style="width: 43.125px; height: 43.125px;" data-title="Media actions" (click)="toggleConextMenu()">
+      <button class="media-context" [style.width]="headerButtonPX" [style.height]="headerButtonPX" data-title="Media actions" (click)="toggleContextMenu()">
         <img src="://images/icons/context-menu.svg" [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()">
       </button>
     </div>
     <div class="media-item-header-end">
       @if (hasAltScripts()) {
-        <div title="Alternate script count" style="width: 28.75px; height: 28.75px; color: green;" class="media-item-info-icon media-item-info-icon--margin">
+        <div title="Alternate script count" style="color: green;"  [style.width]="headerIconPX" [style.height]="headerIconPX" class="media-item-info-icon media-item-info-icon--margin">
           {{altScriptCount()}}
         </div>
       }
@@ -27,7 +27,7 @@
           <use href="#check"></use>
         </svg>
       }
-      <button class="media-context" style="width: 43.125px; height: 43.125px;" data-title="Tag favorite">
+      <button class="media-context" [style.width]="headerButtonPX" [style.height]="headerButtonPX" data-title="Tag favorite" (click)="toggleFavorite()">
         <svg [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()" [style.fill]="isFavorite() ? 'crimson' : 'transparant'" [style.stroke]="isFavorite() ? 'crimson' : 'grey'" >
           <use href="#heart"></use>
         </svg>
