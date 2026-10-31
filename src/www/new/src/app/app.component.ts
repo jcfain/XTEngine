@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { filter } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
 import { VideoPlayerComponent } from './components/video-player/video-player.component';
@@ -16,6 +17,7 @@ import { MessageHandlerService } from './services/message-handler.service';
 import { AppStateService } from './services/app-state.service';
 import { OutputDeviceToolsComponent } from './components/device-tools/output/output-device-tools.component';
 import { AppFooterComponent } from './components/app-footer/app-footer.component';
+import { AuthComponent } from './components/auth/auth.component';
 
 @Component({
     selector: 'app-root',
@@ -28,7 +30,8 @@ import { AppFooterComponent } from './components/app-footer/app-footer.component
     MediaToolbarComponent,
     MetadataComponent,
     AppHeaderComponent,
-    AppFooterComponent
+    AppFooterComponent,
+    AuthComponent
 ],
     templateUrl: './app.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
@@ -46,10 +49,17 @@ export class AppComponent implements OnInit {
   ) {
   }
 
+  get isAuthenticated(): boolean {
+    return this.authService.isAuthenticated;
+  }
+
   ngOnInit(): void {
-    // Initialize: load server settings, then media list
+    // Fetch server settings once on load; the response tells us whether auth is
+    // enabled (hasLaunchPass). The media list loads once we're authenticated.
     this.serverService.initServerSettings();
-    this.mediaService.loadMediaList();
+    this.authService.isAuthenticated$.pipe(filter(v => v)).subscribe(() => {
+      this.mediaService.loadMediaList();
+    });
   }
 
   toggleSettings(): void {

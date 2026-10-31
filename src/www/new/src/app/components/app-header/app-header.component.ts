@@ -5,6 +5,7 @@ import { MessageHandlerService } from '../../services/message-handler.service';
 import { FormsModule } from '@angular/forms';
 import { ScriptStatusService } from '../../services/script-status.service';
 import { AuthService } from '../../services/auth.service';
+import { ServerService } from '../../services/server.service';
 
 @Component({
     selector: 'app-header',
@@ -21,15 +22,25 @@ export class AppHeaderComponent implements OnInit {
   @Output()
   logoutClick = new EventEmitter();
 
-  isAuthenticated = false;
+  get logoutVisible() {
+    return this.authEnabled && this.isAuthenticated;
+  }
+  
+  private isAuthenticated = false;
+  private authEnabled: boolean | undefined = true;
+
 
   constructor(
     private authService: AuthService,
+    private serverService: ServerService,
     private scriptStatusService: ScriptStatusService
   ) {
     this.authService.isAuthenticated$.subscribe(v => {
       this.isAuthenticated = v;
     });
+    this.serverService.remoteUserSettings$.subscribe(v => {
+      this.authEnabled = v?.hasLaunchPass;
+    })
   }
 
   ngOnInit(): void { }

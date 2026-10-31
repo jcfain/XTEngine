@@ -358,95 +358,50 @@ HttpHandler::~HttpHandler()
 void  HttpHandler::handleRoot(const QHttpServerRequest &request, QHttpServerResponder &responder)
 {
     auto root = SettingsHandler::getHttpServerRoot();
-    auto hashedWebPass = SettingsHandler::hashedWebPass();
     m_hostAddress = "http://" + request.headers().value("Host", "") + "/";
-    if(!hashedWebPass.isEmpty() && !isAuthenticated(request))
+    // Always serve the single SPA entry point. Authentication is enforced on
+    // the data/API endpoints, not on which HTML document is served. The app
+    // (legacy or Angular) decides whether to show its login screen.
+    QString indexPath = root + "/index.html";
+    LogHandler::Debug(tr("Sending root index.html"));
+    if(!QFileInfo::exists(indexPath))
     {
-        LogHandler::Debug(tr("Sending root auth-min.html"));
-        if(!QFileInfo::exists(root+"/auth-min.html"))
-        {
-            LogHandler::Debug("file does not exist: "+root+"/auth-min.html");
-            responder.write(QHttpServerResponse::StatusCode::BadRequest);
-        }
-        else
-        {
-            sendFile(responder, root+"/auth-min.html");
-        }
-
+        LogHandler::Debug("file does not exist: "+indexPath);
+        responder.write(QHttpServerResponse::StatusCode::BadRequest);
     }
     else
     {
-        LogHandler::Debug(tr("Sending root index-min.html"));
-        if(!QFileInfo::exists(root+"/index-min.html"))
-        {
-            LogHandler::Debug("file does not exist: "+root+"/index-min.html");
-            responder.write(QHttpServerResponse::StatusCode::BadRequest);
-        }
-        else
-        {
-            sendFile(responder, root+"/index-min.html");
-        }
+        sendFile(responder, indexPath);
     }
 }
 
 QHttpServerResponse HttpHandler::handleFile(const QUrl &url, const QHttpServerRequest &request)
 {
     auto root = SettingsHandler::getHttpServerRoot();
-    auto hashedWebPass = SettingsHandler::hashedWebPass();
     auto path = request.url().path();
-    if(!hashedWebPass.isEmpty() && !isAuthenticated(request)) {// Not authorized to see root with few exceptions
-        if(path =="/common-min.js" || path =="/auth-min.js" ||
-            path =="/js-sha3-min.js" ||
-            path == "/styles-min.css"  ||
-            path == "/faviicon.ico" ||
-            path.startsWith("/://images"))
-        {
-            QString localPath;
-            if(path.startsWith("/:"))
-            {
-                localPath = path.remove(0,1);
-            }
-            else
-            {
-                localPath = root + path;
-            }
-            if(QFile::exists(localPath))
-            {
-                return sendFile(localPath);
-            }
-            else
-                return QHttpServerResponse(QHttpServerResponse::StatusCode::BadRequest);
-        }
-        else
-        {
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Unauthorized);
-        }
-    }
-    else // Is authorized to see root.
+    // Static web assets are served to everyone (authed or not) so the SPA can
+    // load and render its login screen. All data/API endpoints are separate
+    // handlers that enforce authentication themselves, so serving the app's
+    // static files exposes nothing sensitive.
+    if(path.contains("favicon.ico"))
     {
-        if(path.contains("favicon.ico"))
-        {
-            return sendFile(root+"/favicon.ico");
-        }
-        else
-        {
-            QString localPath;
-            if(path.startsWith("/:"))
-            {
-                localPath = path.remove(0,1);
-            }
-            else
-            {
-                localPath = root + path;
-            }
-            if(QFile::exists(localPath))
-            {
-                return sendFile(localPath);
-            }
-            else
-                return QHttpServerResponse(QHttpServerResponse::StatusCode::BadRequest);
-        }
+        return sendFile(root+"/favicon.ico");
     }
+    QString localPath;
+    if(path.startsWith("/:"))
+    {
+        localPath = path.remove(0,1);
+    }
+    else
+    {
+        localPath = root + path;
+    }
+    if(QFile::exists(localPath))
+    {
+        return sendFile(localPath);
+    }
+    else
+        return QHttpServerResponse(QHttpServerResponse::StatusCode::BadRequest);
 }
 
 void HttpHandler::handleAuth(const QHttpServerRequest &request, QHttpServerResponder &responder)
@@ -460,6 +415,7 @@ void HttpHandler::handleAuth(const QHttpServerRequest &request, QHttpServerRespo
         LogHandler::Error(tr("XTP Web json response error: ")+error.errorString());
         LogHandler::Error(tr("data: ")+body);
         responder.write(QHttpServerResponse::StatusCode::BadRequest);
+        return;
     }
     else
     {
@@ -504,6 +460,7 @@ void HttpHandler::handleAuth(const QHttpServerRequest &request, QHttpServerRespo
 
             m_authenticated.insert(sessionID, createDate);
             responder.write(headers, QHttpServerResponse::StatusCode::Ok);
+            return;
         } else {
             response = QHttpServerResponse::StatusCode::Unauthorized;
         }

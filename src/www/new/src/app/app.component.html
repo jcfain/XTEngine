@@ -2,6 +2,7 @@
 
 
 
+@if (isAuthenticated) {
 <div class="app-content">
 <!-- <div class="app-header">
     <h1>{{ title }} <span class="version">{{ webVersion }}</span></h1>
@@ -30,3 +31,6 @@
 <app-script-status></app-script-status>
 }
 <app-metadata [isOpen]="metadataOpen" (close)="metadataOpen = false"></app-metadata>
+} @else {
+<app-auth></app-auth>
+}

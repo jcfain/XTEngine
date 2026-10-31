@@ -39,6 +39,10 @@ export class AuthService {
     });
 
     this.serverService.remoteUserSettings$.subscribe(v => {
+      // No launch password configured -> authentication is disabled; skip login.
+      if (v && v.hasLaunchPass === false) {
+        this.isAuthenticatedSubject.next(true);
+      }
       this.loadSessions();
     })
     const cookie = parseCookie(document.cookie)['sessionID'];

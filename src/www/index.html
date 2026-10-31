@@ -16,6 +16,41 @@
 </head>
 
 <body>
+	<script>
+	// Client-side auth guard: this page is now served to everyone (the server
+	// enforces auth on the data/API endpoints, not on which HTML is served).
+	// If we're not authenticated, auto-login with a stored hash if available,
+	// otherwise redirect to the login page.
+	(function () {
+		var x = new XMLHttpRequest();
+		x.open('GET', '/settings', true);
+		x.onreadystatechange = function () {
+			if (x.readyState !== 4) return;
+			if (x.status === 401) {
+				var h = window.localStorage.getItem('storedHash');
+				if (h) { try { h = JSON.parse(h); } catch (e) {} }
+				if (h && h.length) {
+					var a = new XMLHttpRequest();
+					a.open('POST', '/auth', true);
+					a.setRequestHeader('Content-Type', 'application/json');
+					a.onreadystatechange = function () {
+						if (a.readyState !== 4) return;
+						if (a.status === 200) {
+							window.location.replace(window.location.origin);
+						} else {
+							window.localStorage.removeItem('storedHash');
+							window.location.replace('/auth.html');
+						}
+					};
+					a.send('{"hashedPass":"' + h + '", "remember":"true"}');
+				} else {
+					window.location.replace('/auth.html');
+				}
+			}
+		};
+		x.send();
+	})();
+	</script>
 	<div class="header">
 		<div id="logoutSectionSpacing" class="headerSection toolBar" style="margin-left:32px">
 			<!-- <div id="statusOutput"></div> -->
