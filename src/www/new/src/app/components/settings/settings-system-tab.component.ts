@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter, ChangeDetectionStrategy, Input } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ChangeDetectionStrategy, Input } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
@@ -7,11 +7,12 @@ import { ServerService } from '../../services/server.service';
 import { GenericOverlayService } from '../../services/overlay.service';
 import { GetTextDialogComponent } from '../get-text-dialog/get-text-dialog.component';
 import { AlertComponent } from '../alert-model/alert.component';
-import { Setting, TCodeCommand } from '../../models/interfaces';
+import { Setting, TCodeCommand, ActiveSession } from '../../models/interfaces';
 import { FormControlType } from '../../models/enums';
 import { capitalizeFirstLetter } from '../../utils/utils';
 import { WebsocketService } from '../../services/websocket.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
+import { AuthService } from '../../services/auth.service';
 
 interface SettingGroup {
     name: string;
@@ -60,6 +61,9 @@ export class SettingsSystemTabComponent implements OnInit {
     tcodeCommands: TCodeCommand[] = [];
     tcodeDirty = false;
 
+    sessionID: string | undefined = undefined;
+    sessions: ActiveSession[] = [];
+
     private addTagTextNameID = 'systemAddTagText';
     private tagAlertNameID = 'systemTagAlert';
     private confirmAlertNameID = 'systemConfirmAlert';
@@ -73,8 +77,16 @@ export class SettingsSystemTabComponent implements OnInit {
         private messageHandlerService: MessageHandlerService,
         private settingsService: SettingsService,
         private serverService: ServerService,
-        private overlayService: GenericOverlayService
-    ) {}
+        private overlayService: GenericOverlayService,
+        private authService: AuthService
+    ) {
+        this.authService.sessionID$.subscribe(v => {
+            this.sessionID = v;
+        });
+        this.authService.sessions$.subscribe(v => {
+            this.sessions = v;
+        });
+    }
 
     ngOnInit(): void {
         this.getBrowserInformation();
@@ -112,6 +124,10 @@ export class SettingsSystemTabComponent implements OnInit {
         });
 
         this.loadExportedFiles();
+    }
+
+    deauthorizeSession(sessionID: string): void {
+        this.authService.deauthorizeSession(sessionID);
     }
 
     getBrowserInformation(): void {

@@ -172,4 +172,35 @@
             <button [disabled]="!tcodeDirty" (click)="cancelTCodeCommands()">Cancel</button>
         </div>
     </div>
+
+    <!-- Authorized browser sessions -->
+    @if (sessionID) {
+        <div class="settings-section settings-section--wide">
+            <h3>Authorized browser sessions</h3>
+            <div class="settings-section-body">
+                <table class="session-info-table">
+                    <thead>
+                        <tr>
+                            <th>Session ID</th>
+                            <th>Last access</th>
+                            <th>Expire</th>
+                            <th>Current</th>
+                            <th>Deauthorize</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (session of sessions; track session.id) {
+                            <tr>
+                                <td>{{ session.id }}</td>
+                                <td>{{ session.lastAccessed }}</td>
+                                <td>{{ session.expire }}</td>
+                                <td>{{ session.current ? '*' : '' }}</td>
+                                <td><button (click)="deauthorizeSession(session.id)">X</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
 </div>

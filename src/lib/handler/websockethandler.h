@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QJsonDocument>
+#include <functional>
 #include "QtWebSockets/qwebsocketserver.h"
 #include "QtWebSockets/qwebsocket.h"
 
@@ -46,6 +47,7 @@ public:
     QUrl getUrl();
     QString getServerName();
     int getServerPort();
+    void setSessionValidator(std::function<bool(const QString&)> validator);
     void onSettingChange(QString setting, QVariant value);
     void sendCommand(QString command, QString message = nullptr, QWebSocket* client = 0);
     void sendCommand(QString command, QJsonObject message, QWebSocket* client = 0);
@@ -63,6 +65,7 @@ public:
 private:
     QWebSocketServer *m_pWebSocketServer;
     QList<QWebSocket *> m_clients;
+    std::function<bool(const QString&)> m_sessionValidator;
     ConnectionChangedSignal _outputDeviceStatus = {ConnectionDirection::Output, ConnectionInterface::Serial, ConnectionStatus::Disconnected, "Disconnected"};
     ConnectionChangedSignal _inputDeviceStatus = {ConnectionDirection::Input, ConnectionInterface::None, ConnectionStatus::Disconnected, "Disconnected"};
     ConnectionChangedSignal _gamepadStatus = {ConnectionDirection::Input, ConnectionInterface::Gamepad, ConnectionStatus::Disconnected, "Disconnected"};
@@ -74,6 +77,7 @@ private:
     void processTextMessage(QString message);
     void socketDisconnected();
     void initNewClient(QWebSocket* client);
+    bool isSocketAuthenticated(QWebSocket *socket);
 };
 
 #endif // WEBSOCKETHANDLER_H

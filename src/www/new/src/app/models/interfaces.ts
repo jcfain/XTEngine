@@ -161,6 +161,13 @@ export interface TCodeCommand {
     hidden: boolean;
 }
 
+export interface ActiveSession {
+    id: string;
+    lastAccessed: string;
+    expire: string;
+    current: boolean;
+}
+
 export interface ConnectionInfo {
     input: ConnectionInputInfo;
     output: ConnectionOutputInfo;

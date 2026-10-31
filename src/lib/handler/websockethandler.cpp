@@ -1,5 +1,7 @@
 #include "websockethandler.h"
 #include "settingshandler.h"
+#include <QAbstractSocket>
+#include <QNetworkCookie>
 
 #include "xmediastatehandler.h"
 
@@ -73,10 +75,17 @@ void WebSocketHandler::sendCommand(QString command, QString message, QWebSocket*
     else
         commandJson = "{ \"command\": \""+command+"\", \"message\": \""+message+"\"}";
     if(client)
-        client->sendTextMessage(commandJson);
+    {
+        // Only write to sockets that are still connected. A client that just
+        // closed (e.g. a page refresh) may not have been removed from m_clients
+        // yet; writing to it raises EPIPE/SIGPIPE.
+        if(client->state() == QAbstractSocket::ConnectedState)
+            client->sendTextMessage(commandJson);
+    }
     else
         for (QWebSocket *pClient : qAsConst(m_clients))
-        pClient->sendTextMessage(commandJson);
+            if(pClient->state() == QAbstractSocket::ConnectedState)
+                pClient->sendTextMessage(commandJson);
 }
 
 void WebSocketHandler::sendCommand(QString command, QJsonObject message, QWebSocket* client)
@@ -88,10 +97,14 @@ void WebSocketHandler::sendCommand(QString command, QJsonObject message, QWebSoc
     doc.setObject(obj);
     QString fullMessage = QString(doc.toJson(QJsonDocument::Compact));
     if(client)
-        client->sendTextMessage(fullMessage);
+    {
+        if(client->state() == QAbstractSocket::ConnectedState)
+            client->sendTextMessage(fullMessage);
+    }
     else
         for (QWebSocket *pClient : qAsConst(m_clients))
-            pClient->sendTextMessage(fullMessage);
+            if(pClient->state() == QAbstractSocket::ConnectedState)
+                pClient->sendTextMessage(fullMessage);
 }
 
 void WebSocketHandler::sendUserError(QString message)
@@ -118,6 +131,17 @@ void WebSocketHandler::onNewConnection()
 {
     QWebSocket *pSocket = m_pWebSocketServer->nextPendingConnection();
 
+    // Authenticate the handshake before accepting the client. The browser sends
+    // the same-origin sessionID cookie on the upgrade request, so a valid
+    // session here means the user already passed the web password.
+    if (!isSocketAuthenticated(pSocket))
+    {
+        LogHandler::Warn("Rejected unauthenticated WebSocket connection from " + pSocket->peerAddress().toString());
+        pSocket->close(QWebSocketProtocol::CloseCodePolicyViolated, "Unauthorized");
+        pSocket->deleteLater();
+        return;
+    }
+
     connect(pSocket, &QWebSocket::textMessageReceived, this, &WebSocketHandler::processTextMessage);
     connect(pSocket, &QWebSocket::binaryMessageReceived, this, &WebSocketHandler::processBinaryMessage);
     connect(pSocket, &QWebSocket::disconnected, this, &WebSocketHandler::socketDisconnected);
@@ -126,6 +150,29 @@ void WebSocketHandler::onNewConnection()
     initNewClient(pSocket);
 
     emit newWebSocketConnected(pSocket);
+}
+
+void WebSocketHandler::setSessionValidator(std::function<bool(const QString&)> validator)
+{
+    m_sessionValidator = validator;
+}
+
+bool WebSocketHandler::isSocketAuthenticated(QWebSocket *socket)
+{
+    if (!m_sessionValidator)
+        return true; // No validator configured -> allow (auth disabled).
+
+    // Pull the sessionID cookie from the handshake request headers.
+    QString sessionID;
+    const QList<QNetworkCookie> cookies = QNetworkCookie::parseCookies(socket->request().rawHeader("Cookie"));
+    for (const QNetworkCookie &cookie : cookies)
+        if (cookie.name() == "sessionID")
+        {
+            sessionID = cookie.value();
+            break;
+        }
+
+    return m_sessionValidator(sessionID);
 }
 
 void WebSocketHandler::initNewClient(QWebSocket* client)
@@ -234,7 +281,7 @@ void WebSocketHandler::processBinaryMessage(QByteArray message)
 {
     QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
     LogHandler::Debug("WEBSOCKET Binary Message received: " + message);
-    if (pClient)
+    if (pClient && pClient->state() == QAbstractSocket::ConnectedState)
         pClient->sendBinaryMessage(message);
 }
 

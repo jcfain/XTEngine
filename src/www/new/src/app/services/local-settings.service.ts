@@ -6,6 +6,12 @@ import { BehaviorSubject, Observable } from "rxjs";
   providedIn: 'root'
 })
 export class LocalSettingsService {
+
+    readonly storedHashDefault = null;
+    private storedHashKey = "storedHash";
+    private storedHashSubject = new BehaviorSubject<string | null>(this.storedHashDefault);
+    storedHash$: Observable<string | null> = this.storedHashSubject.asObservable();
+
     readonly sortDefault: SortMode = SortMode.Name;
     private sortKey = "sortBy";
     private sortSubject = new BehaviorSubject<SortMode>(this.sortDefault);
@@ -62,6 +68,7 @@ export class LocalSettingsService {
     disableBrowserLazyLoad$: Observable<boolean> = this.disableBrowserLazyLoadSubject.asObservable();
 
     constructor( ) {
+        this.storedHashSubject.next(this.getFromLocalStorage(this.storedHashKey, this.storedHashDefault));
         this.sortSubject.next(this.getFromLocalStorage(this.sortKey, this.sortDefault));
         this.showSubject.next(this.getFromLocalStorage(this.showKey, this.showDefault));
         this.thumbSizeSubject.next(this.getFromLocalStorage(this.thumbSizeKey, this.thumbSizeDefault));
@@ -73,6 +80,11 @@ export class LocalSettingsService {
         this.selectedOuputDeviceSubject.next(this.getFromLocalStorage(this.selectedOuputDeviceKey, this.selectedOuputDeviceDefault));
         this.externalStreamingSubject.next(this.getFromLocalStorage(this.externalStreamingKey, this.externalStreamingDefault));
         this.disableBrowserLazyLoadSubject.next(this.getFromLocalStorage(this.disableBrowserLazyLoadKey, this.externalStreamingDefault));
+    }
+
+    setStoredHash(value: string | null): void {
+        this.setToLocalStorage(this.storedHashKey, value);
+        this.storedHashSubject.next(value);
     }
 
     setSort(value: SortMode): void {

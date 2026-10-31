@@ -7,8 +7,8 @@
 
 .settings-section {
     display: flex;
-    flex-flow: column;
-    width: 470px;
+    flex-flow: column;  
+    flex-basis: 45%;
     border: 2px solid white;
     border-radius: 25px;
     margin: 8px;
@@ -103,4 +103,23 @@
 .tcodeCommandsSetupTable td {
     text-align: center;
     padding: 4px;
+}
+
+/* Authorized browser sessions */
+.settings-section--wide {
+    flex-basis: 100%;
+}
+
+.session-info-table,
+.session-info-table td,
+.session-info-table th {
+    border: 1px solid white;
+    border-collapse: collapse;
+    padding: 4px 8px;
+    text-align: center;
+}
+
+.session-info-table td button {
+    width: 100%;
+    max-width: 50px;
 }

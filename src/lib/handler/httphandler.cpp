@@ -34,6 +34,9 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
 
 
     _webSocketHandler = new WebSocketHandler(this);
+    _webSocketHandler->setSessionValidator([this](const QString &sessionID) {
+        return isSessionValid(sessionID);
+    });
 
     connect(SettingsHandler::instance(), &SettingsHandler::tagsChanged, this, [this]() {
         QJsonObject obj;
@@ -574,7 +577,8 @@ void HttpHandler::handleAvailableSerialPorts(const QHttpServerRequest &request, 
     QJsonArray root;
     //root = Sett
     QHttpHeaders headers;
-    responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
+    responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::NotImplemented);
+    // responder.write(QJsonDocument(root), headers, QHttpServerResponse::StatusCode::Ok);
 }
 
 void HttpHandler::handleMediaActions(const QHttpServerRequest &request, QHttpServerResponder &responder)
@@ -1684,11 +1688,16 @@ void HttpHandler::onLibraryLoadingStatusChange(QString message) {
 
 bool HttpHandler::isAuthenticated(const QHttpServerRequest &request)
 {
+    LogHandler::Debug("Auth from cookie.");
+    return isSessionValid(getCookie(request, "sessionID"));
+}
+
+bool HttpHandler::isSessionValid(const QString &sessionID)
+{
+    // No web password configured -> authentication is disabled.
     if(SettingsHandler::hashedWebPass().isEmpty()) {
         return true;
     }
-    LogHandler::Debug("Auth from cookie.");
-    QString sessionID = getCookie(request, "sessionID");
     if(sessionID.isEmpty())
         return false;
     bool isAuthed = m_authenticated.contains(sessionID);

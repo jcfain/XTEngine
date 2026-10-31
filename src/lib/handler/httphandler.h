@@ -110,6 +110,7 @@ private:
     void onSetLibraryLoading();
     void onLibraryLoadingStatusChange(QString message);
     bool isAuthenticated(const QHttpServerRequest &req);
+    bool isSessionValid(const QString &sessionID);
     QString getURL(const QHttpServerRequest &request);
     QString getCookie(const QHttpServerRequest &request, const QString& name);
     void sendFile(QHttpServerResponder &responder, const QString &path);

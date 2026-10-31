@@ -1,11 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { AppStateService } from './app-state.service';
 import { SettingsService } from './settings.service';
 import { WebsocketService } from './websocket.service';
 import { ServerState } from '../models/enums';
-import { RemoteUserSettings, ScriptInfo, TCodeCommand } from '../models/interfaces';
+import { RemoteUserSettings, TCodeCommand, ActiveSession } from '../models/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -55,6 +54,7 @@ export class ServerService {
     });
   }
 
+  // TODO implement
   // getAvailableSerialPorts(): void {
   //   this.http.get<any>('/availableSerialPorts').subscribe({
   //     next: (response) => {
@@ -121,54 +121,19 @@ export class ServerService {
     return this.http.post<any>(`/exported/${filename}/restore`, {});
   }
 
-
-  // sendMediaAction(action: string): void {
-  //   this.websocketService.sendMediaAction(action);
-  // }
-
-  // sendDeviceHome(): void {
-  //   const actions = this.mediaActionsSubject.value;
-  //   this.websocketService.sendMediaAction(actions['TCodeHomeAll'] || 'TCodeHomeAll');
-  // }
-
-  // togglePauseAllDeviceActions(): void {
-  //   const actions = this.mediaActionsSubject.value;
-  //   this.websocketService.sendMediaAction(actions['TogglePauseAllDeviceActions'] || 'TogglePauseAllDeviceActions');
-  // }
-
-  // sendQuickExport(): void {
-  //   this.websocketService.sendQuickExport();
-  // }
-
-  // sendQuickImport(filename: string): void {
-  //   this.websocketService.sendQuickImport(filename);
-  // }
-
-  // startMetadataProcess(): void {
-  //   this.websocketService.sendMetadataProcess();
-  // }
-
-  // startMetadataCleanProcess(): void {
-  //   this.websocketService.sendMetadataCleanProcess();
-  // }
-
-  // startThumbCleanupProcess(): void {
-  //   this.websocketService.sendCleanupThumbsProcess();
-  // }
-
-  // startClean1024Process(): void {
-  //   this.websocketService.sendClean1024Process();
-  // }
-
-  // sendUpdateMetadata(metadataKey: string): void {
-  //   this.websocketService.sendUpdateMetadata(metadataKey);
-  // }
-
-  // sendSwapScript(scriptInfo: ScriptInfo): void {
-  //   this.websocketService.sendSwapScript(scriptInfo);
-  // }
-
   saveServerSettings(): Observable<any> {
     return this.http.post<any>('/settings', this.remoteUserSettingsSubject.value);
+  }
+
+  getActiveSessions(): Observable<ActiveSession[]> {
+    return this.http.get<ActiveSession[]>('/activeSessions');
+  }
+
+  expireSession(sessionID: string): Observable<any> {
+    return this.http.post<any>(`/expireSession?sessionID=${sessionID}`, {});
+  }
+
+  logout(): Observable<any> {
+    return this.http.get<any>(`/logout`);
   }
 }

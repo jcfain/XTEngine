@@ -464,9 +464,39 @@ function refreshXTPLibrary() {
 	mediaReloadRequiredNode.classList.add('hidden');
 }
 
+function buildWebSocketUri(port) {
+	var loc = window.location;
+	var secure = loc.protocol === 'https:';
+	var scheme = secure ? 'wss' : 'ws';
+
+	// Explicit override for unusual proxy setups. Set it from the browser
+	// console with: localStorage.setItem('xtpWebSocketUrl', 'wss://myhost.example/ws')
+	var override = null;
+	try { override = localStorage.getItem('xtpWebSocketUrl'); } catch (e) {}
+	if (override) return override;
+
+	// When the page is served over HTTPS, the backend WebSocket server is a
+	// separate plain (non-TLS) port that the reverse proxy does not expose to
+	// the client, so the upgrade must be routed through the proxy on the same
+	// origin, using a dedicated path.
+	if (secure) {
+		return scheme + '://' + loc.host + '/ws';
+	}
+
+	// A plain-HTTP page on a default port (80/none) is also typically behind a
+	// reverse proxy.
+	if (loc.port === '' || loc.port === '80') {
+		return scheme + '://' + loc.host + '/ws';
+	}
+
+	// Direct access to the HTTP server on a non-default port: connect straight
+	// to the backend WebSocket port.
+	return scheme + '://' + loc.hostname + ':' + port;
+}
+
 function initWebSocket() {
 	try {
-		wsUri = "ws://" + window.location.hostname + ":" + remoteUserSettings.webSocketServerPort;
+		wsUri = buildWebSocketUri(remoteUserSettings.webSocketServerPort);
 		
 		debug("Connecting to web socket uri: "+wsUri);
 		if (typeof MozWebSocket == 'function')

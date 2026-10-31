@@ -24,17 +24,30 @@ export class WebsocketService {
   }
 
   init(port: number): void {
-    const wsUri = `ws://${window.location.hostname}:${port}`;
+    const wsUri = this.buildWebSocketUri(port);
     this.connect(wsUri);
   }
 
-  statusText(): string {
-    switch (this.connectionStatusSubject.value) {
-      case ConnectionStatus.Connected: return 'Connected';
-      case ConnectionStatus.Connecting: return 'Connecting...';
-      case ConnectionStatus.Error: return 'Error';
-      default: return 'Disconnected';
+  private buildWebSocketUri(port: number): string {
+    const loc = window.location;
+    const secure = loc.protocol === 'https:';
+    const scheme = secure ? 'wss' : 'ws';
+
+    // Explicit override for unusual proxy setups.
+    let override: string | null = null;
+    try { override = localStorage.getItem('xtpWebSocketUrl'); } catch (e) {}
+    if (override) return override;
+
+    // Behind a reverse proxy the page is served from the proxy origin. The
+    // backend WebSocket server is a separate plain (non-TLS) port that the
+    // proxy does not expose to the client, so the upgrade must be routed
+    // through the proxy on the same origin using a dedicated path.
+    if (secure || loc.port === '' || loc.port === '80') {
+      return `${scheme}://${loc.host}/ws`;
     }
+
+    // Direct access to the HTTP server on a non-default port.
+    return `${scheme}://${loc.hostname}:${port}`;
   }
 
   connect(uri: string): void {

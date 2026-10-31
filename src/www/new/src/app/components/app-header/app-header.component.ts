@@ -4,6 +4,7 @@ import { MessageHandlerService } from '../../services/message-handler.service';
 
 import { FormsModule } from '@angular/forms';
 import { ScriptStatusService } from '../../services/script-status.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
     selector: 'app-header',
@@ -20,7 +21,16 @@ export class AppHeaderComponent implements OnInit {
   @Output()
   logoutClick = new EventEmitter();
 
-  constructor(private scriptStatusService: ScriptStatusService) {}
+  isAuthenticated = false;
+
+  constructor(
+    private authService: AuthService,
+    private scriptStatusService: ScriptStatusService
+  ) {
+    this.authService.isAuthenticated$.subscribe(v => {
+      this.isAuthenticated = v;
+    });
+  }
 
   ngOnInit(): void { }
 
