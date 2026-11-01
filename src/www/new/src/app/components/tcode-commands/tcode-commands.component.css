@@ -1,6 +1,33 @@
-.tcode-commands-container {
-  padding: 10px 15px;
+
+.tcode-commands-modal {  
+    width: 150px;
+    border-radius: 25px;
+    position: absolute;
+    z-index: 10;
+    right: 100px;
+    margin-top: 85px;
+    display: flex;
+    background-color: #000000;
+    flex-flow: column;padding: 16px;
+    border: 1px solid aliceblue;
+    max-height: min(275px,calc(100vh - 200px));
+    /* top: calc(100vh - 290px); */
 }
+
+.tcode-commands-container {  
+    padding: 4px;
+    overflow-y: auto;
+}
+
+.tcode-commands-button {
+    width: 100%;  
+    margin: 2px;
+}
+
+
+/* .tcode-commands-container {
+  padding: 10px 15px;
+} */
 
 .tcode-header {
   display: flex;
@@ -14,7 +41,7 @@
   margin: 0;
   font-size: 1rem;
 }
-
+/* 
 .setup-toggle {
   background: none;
   border: 1px solid #333;
@@ -28,7 +55,7 @@
 .setup-toggle:hover {
   background: #16213e;
   color: #fff;
-}
+} */
 
 .no-commands {
   color: #888;
@@ -36,7 +63,7 @@
   padding: 10px;
 }
 
-.tcode-buttons {
+/* .tcode-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -59,9 +86,9 @@
 
 .tcode-buttons button.hidden {
   display: none;
-}
+} */
 
-.tcode-setup {
+/* .tcode-setup {
   margin-top: 15px;
   padding: 10px;
   background: #16213e;
@@ -130,4 +157,4 @@
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
-}
+} */

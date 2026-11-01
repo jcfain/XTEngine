@@ -6,6 +6,7 @@ import { MediaType } from '../models/enums';
 import { MediaItem, XTPWebMediaState } from '../models/interfaces';
 import { LocalSettingsService } from './local-settings.service';
 import { HttpClient } from '@angular/common/http';
+import { MessageHandlerService } from './message-handler.service';
 
 @Injectable({
   providedIn: 'root'
@@ -41,11 +42,11 @@ export class VideoService {
   private videoNode: HTMLVideoElement | null = null;
   private forceControlsVisible = false;
   private externalStreaming = false;
+  private isMuted = false;
 
   constructor(
     private http: HttpClient,
     private localSettingsService: LocalSettingsService,
-    private appState: AppStateService,
     private websocketService: WebsocketService
   ) {
     this.controlsHideDebounceSubject.pipe(
@@ -62,7 +63,10 @@ export class VideoService {
     });
     this.localSettingsService.externalStreaming$.subscribe(v => {
       this.externalStreaming = v;
-    })
+    });
+    this.localSettingsService.mute$.subscribe(v => {
+      this.isMuted = v;
+    });
   }
 
   postMediaState(state: XTPWebMediaState): Observable<any> {
@@ -129,7 +133,7 @@ export class VideoService {
     }
 
     // if (this.playingMediaItem) {
-    //   this.stopVideo();
+    //   this.clearVideo();
     // }
 
     if (item.type === MediaType.ExternalType) {
@@ -173,11 +177,8 @@ export class VideoService {
     this.showVideo();
   }
 
-  stopVideo(): void {
+  clearVideo(): void {
     this.websocketService.sendStopMedia();
-    this.hideControls();
-    this.exitFullscreen();
-    this.hideVideo();
     this.pause();
     this.removeVideoSource();
     // this.clearTitle();
@@ -191,6 +192,12 @@ export class VideoService {
       this.sendMediaState();
       this.playingMediaItemSubject.next(null);
     }
+  }
+  stopVideo(): void {
+    this.clearVideo();
+    this.hideControls();
+    this.exitFullscreen();
+    this.hideVideo();
   }
 
   onSetVolume(value: number): void {
@@ -209,6 +216,13 @@ export class VideoService {
     this.onSetVolume(next);
   }
 
+  toggleMute(): void {
+    this.setMute(!this.isMuted);
+  }
+
+  setMute(isMuted: boolean) {
+    this.localSettingsService.setMute(isMuted);
+  }
 
   togglePause(): void {
     if (this.videoNode && this.isMediaItemPlaying()) {
@@ -218,10 +232,6 @@ export class VideoService {
         this.pause();
       }
     }
-  }
-
-  setMute(isMuted: boolean) {
-    this.localSettingsService.setMute(isMuted);
   }
 
   setPlayRate(value: number): void {
@@ -398,6 +408,7 @@ export class VideoService {
       this.isPausedSubject.next(false);
     }
   }
+
   pause(): void {
     if (this.videoNode && this.isMediaItemPlaying()) {
       this.videoNode.pause();

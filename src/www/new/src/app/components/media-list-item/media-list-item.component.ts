@@ -112,10 +112,12 @@ export class MediaListItemComponent implements OnInit, OnChanges {
       const cacheBust = item.thumbVersion ? `?v=${item.thumbVersion}` : "";
       switch(item.thumbState)
       {
+        case ThumbState.Waiting:
+          return thumbFile + item.thumbFileLoading;
         case ThumbState.Error:
           return thumbFile + item.thumbFileError;
         case ThumbState.Loading:
-          return thumbFile + item.thumbFileLoading;
+          return thumbFile + item.thumbFileLoadingCurrent;
         case ThumbState.Ready:
           return thumbFile + item.relativeThumb + cacheBust;
         case ThumbState.Unknown:

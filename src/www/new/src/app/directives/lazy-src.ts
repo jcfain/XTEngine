@@ -17,7 +17,10 @@ import { LocalSettingsService } from "../services/local-settings.service";
     host: {
         "width": "100%",
         "height": "100%",
-        "object-fit": "cover"
+        "object-fit": "cover",
+        "class.lazy-src-loading": "loading",
+        "(load)": "onLoaded()",
+        "(error)": "onLoaded()"
     }
 })
 export class LazySrcDirective implements OnInit, OnDestroy {
@@ -27,6 +30,7 @@ export class LazySrcDirective implements OnInit, OnDestroy {
     private observer: IntersectionObserver | null = null;
     private loaded = false;
     private subscription = new Subscription();
+    loading = false;
 
     constructor(
         private el: ElementRef<HTMLImageElement>,
@@ -37,6 +41,7 @@ export class LazySrcDirective implements OnInit, OnDestroy {
         if (!this.lazySrc) {
             return;
         }
+        this.loading = true;
         // Honor the "disable lazy load" local setting
         this.subscription.add(
             this.localSettingsService.disableBrowserLazyLoad$.subscribe(disabled => {
@@ -66,6 +71,7 @@ export class LazySrcDirective implements OnInit, OnDestroy {
     ngOnChanges(changes: SimpleChanges): void {
         // The thumb path can change (e.g. cache-bust on thumb update) - reload if already loaded
         if (changes['lazySrc'] && this.loaded) {
+            this.loading = true;
             this.load();
         }
     }
@@ -74,6 +80,10 @@ export class LazySrcDirective implements OnInit, OnDestroy {
         this.subscription.unsubscribe();
         this.observer?.disconnect();
         this.observer = null;
+    }
+
+    onLoaded(): void {
+        this.loading = false;
     }
 
     private load(): void {

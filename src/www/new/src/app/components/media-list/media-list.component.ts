@@ -86,6 +86,9 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
       this.mediaList = list;
       this.buildRows();
     });
+    this.mediaListService.scrollToItem$.subscribe(item => {
+      this.scrollToItem(item);
+    });
     this.localSettingsService.thumbSize$.subscribe(() => {
       this.setDimensions();
       this.buildRows();
@@ -179,6 +182,13 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onItemClick(item: MediaItem) {
     this.videoService.playVideo(item);
+  }
+
+  private scrollToItem(item: MediaItem) {
+    const index = this.mediaList.findIndex(m => m.id === item.id);
+    if (index === -1) return;
+    const rowIndex = Math.floor(index / this.columns);
+    this.mediaListContainer?.scrollToIndex(rowIndex);
   }
 
   getThumbSize(): number {

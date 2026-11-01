@@ -1,18 +1,21 @@
 import { Injectable, NgZone } from '@angular/core';
 import { VideoService } from './video.service';
-import { MediaService } from './media.service';
 import { MediaListService } from './media-list-service';
+import { WebsocketService } from './websocket.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class KeyboardService {
   constructor(
+    private websocketService: WebsocketService,
     private videoService: VideoService,
-    private mediaService: MediaService,
     private mediaListService: MediaListService,
     private ngZone: NgZone
   ) {
+  }
+
+  init() {
     document.addEventListener('keyup', (event: KeyboardEvent) => {
       this.ngZone.run(() => this.handleKey(event));
     });
@@ -27,7 +30,7 @@ export class KeyboardService {
 
     switch (event.key) {
       case 'k':
-        this.videoService.togglePlay();
+        this.videoService.togglePause();
         if (this.videoService.video?.paused) {
           this.videoService.showControls();
         } else {
@@ -35,7 +38,7 @@ export class KeyboardService {
         }
         break;
       case 'm':
-        this.videoService.onToggleMute();
+        this.videoService.toggleMute();
         break;
       case 'f':
         this.videoService.toggleFullScreen();
@@ -54,10 +57,10 @@ export class KeyboardService {
         this.videoService.volumeDown();
         break;
       case 'a':
-        this.mediaService.skipToNextAction();
+        this.websocketService.sendSkipToNextAction();
         break;
       case 'c':
-        this.mediaService.skipToMoneyShot();
+        this.websocketService.sendSkipToMoneyShot();
         break;
       case 'x':
         this.videoService.stopVideo();

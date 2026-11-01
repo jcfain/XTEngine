@@ -5,12 +5,14 @@ import { LocalSettingsService } from '../../services/local-settings.service';
 import { ShowMode, SortMode } from '../../models/enums';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { MessageHandlerService } from '../../services/message-handler.service';
-import { AppStateService } from '../../services/app-state.service';
 import { ServerService } from '../../services/server.service';
+import { TCodeCommandsComponent } from '../tcode-commands/tcode-commands.component';
+import { MediaListService } from '../../services/media-list-service';
+import { AppStateService } from '../../services/app-state.service';
 
 @Component({
     selector: 'app-media-toolbar',
-    imports: [FormsModule],
+    imports: [FormsModule, TCodeCommandsComponent],
     templateUrl: './media-toolbar.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './media-toolbar.component.css'
@@ -22,12 +24,14 @@ export class MediaToolbarComponent implements OnInit {
   currentSort: SortMode = this.localSettingsService.sortDefault;
   randomMode = false;
 
-  private nonRandomSort: SortMode = this.localSettingsService.sortDefault;
+  // private nonRandomSort: SortMode = this.localSettingsService.sortDefault;
 
   constructor(
     private localSettingsService: LocalSettingsService,
     private serverService: ServerService,
-    private messageHandlerService: MessageHandlerService
+    private messageHandlerService: MessageHandlerService,
+    private appState: AppStateService,
+    private mediaListService: MediaListService
   ) {
     this.filtertextChanged.pipe(
       debounceTime(400),
@@ -77,12 +81,14 @@ export class MediaToolbarComponent implements OnInit {
   }
 
   randomize() {
-    this.localSettingsService.setSort(SortMode.Random);
+    // this.localSettingsService.setSort(SortMode.Random);
+    this.mediaListService.playNextVideo();
   }
 
   toggleShufflePlay() {
     this.randomMode = !this.randomMode;
-    this.setRandom();
+    this.appState.setShufflePlayMode(this.randomMode);
+    // this.setRandom();
   }
 
   clearFilterText() {
@@ -101,11 +107,11 @@ export class MediaToolbarComponent implements OnInit {
       this.localSettingsService.removeFromSelectedTags(node.value);
   }
 
-  private setRandom() {
-    if(this.randomMode) {
-      this.nonRandomSort = this.currentSort;
-      this.localSettingsService.setSort(SortMode.Random)
-    } else
-      this.localSettingsService.setSort(this.nonRandomSort)
-  }
+  // private setRandom() {
+  //   if(this.randomMode) {
+  //     this.nonRandomSort = this.currentSort;
+  //     this.localSettingsService.setSort(SortMode.Random)
+  //   } else
+  //     this.localSettingsService.setSort(this.nonRandomSort)
+  // }
 }

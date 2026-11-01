@@ -1,5 +1,6 @@
 /* You can add global styles to this file, and also import other style files */
 
+@import url('styles/atom/colors.scss');
 @import url('styles/atom/controls.scss');
 @import url('styles/atom/icon.scss');
 
@@ -13,4 +14,20 @@ body {
     font-family: 'sans-serif', "serif", "Lucida Sans Regular", 'Times New Roman', "Times", "DejaVu Serif", "Verdana";
     margin: 0;
     overflow: hidden;
+}
+
+/* Shimmer placeholder shown by the lazySrc directive while the image loads */
+img.lazy-src-loading {
+    background: linear-gradient(90deg, #1a1a1a 25%, #2e2e2e 50%, #1a1a1a 75%);
+    background-size: 200% 100%;
+    animation: lazy-src-shimmer 1.2s linear infinite;
+}
+
+@keyframes lazy-src-shimmer {
+    from {
+        background-position: 200% 0;
+    }
+    to {
+        background-position: -200% 0;
+    }
 }

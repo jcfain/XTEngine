@@ -56,17 +56,27 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private subscriptions: Subscription[] = [];
   private m_controlsVisible = false;
+  private deviceIsPaused = false;
 
   constructor(
     private localSettingsService: LocalSettingsService,
     private webSocketService: WebsocketService,
     private messageHandlerService: MessageHandlerService, 
     private videoService: VideoService,
-    private mediaListService: MediaListService,
-    private mediaService: MediaService
+    private mediaListService: MediaListService
   ) {
     this.subscriptions.push(
-      this.messageHandlerService.stopAllMedia$.subscribe(() => {this.stop()})
+      this.messageHandlerService.stopAllMedia$.subscribe(() => {this.stop()}),
+        this.messageHandlerService.skipToNextAction$.subscribe(v => {
+          if(v)
+            this.skipToNextAction(v);
+        }),
+        this.messageHandlerService.skipToMoneyShot$.subscribe(v => {
+            this.skipToMoneyShot();
+        }),
+        this.messageHandlerService.scriptTogglePaused$.subscribe(v => {
+          this.deviceIsPaused = v;
+        })
     );
   }
 
@@ -126,15 +136,31 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onSkipToMoneyShot(): void {
-    this.mediaService.skipToMoneyShot();
+    //this.mediaService.skipToMoneyShot();
+    this.webSocketService.sendSkipToMoneyShot();
   }
 
   onSkipToNextAction(): void {
-    this.mediaService.skipToNextAction();
+    // this.mediaService.skipToNextAction();
+    this.webSocketService.sendSkipToNextAction();
   }
 
   togglePauseAllDeviceActions() {
     this.webSocketService.togglePauseAllDeviceActions();
+  }
+
+  skipToMoneyShot(): void {
+    const playing = this.videoService.playingMediaItem;
+    if (playing) {
+      const moneyShotSecs = (playing as any).metaData?.moneyShotSecs;
+      if (moneyShotSecs && moneyShotSecs > 0) {
+        this.onSeek(moneyShotSecs);
+      }
+    }
+  }
+
+  skipToNextAction(nextAction: number): void {
+      this.videoService.onSeek(nextAction);
   }
 
   onLoadedMetadata(): void {

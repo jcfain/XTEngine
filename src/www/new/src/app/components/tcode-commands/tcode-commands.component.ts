@@ -39,31 +39,31 @@ export class TCodeCommandsComponent implements OnInit {
     this.websocketService.sendTCode(command.command);
   }
 
-  toggleSetup(): void {
-    this.showSetup = !this.showSetup;
-  }
+  // toggleSetup(): void {
+  //   this.showSetup = !this.showSetup;
+  // }
 
-  addCommand(): void {
-    if (!this.newCommandName.trim() || !this.newCommandValue.trim()) return;
-    const newCmd: TCodeCommand = {
-      name: this.newCommandName.trim(),
-      command: this.newCommandValue.trim(),
-      hidden: false
-    };
-    this.commands.push(newCmd);
-    this.newCommandName = '';
-    this.newCommandValue = '';
-    // Save to server
-    this.websocketService.settingChange('tcodeCommands', this.commands);
-  }
+  // addCommand(): void {
+  //   if (!this.newCommandName.trim() || !this.newCommandValue.trim()) return;
+  //   const newCmd: TCodeCommand = {
+  //     name: this.newCommandName.trim(),
+  //     command: this.newCommandValue.trim(),
+  //     hidden: false
+  //   };
+  //   this.commands.push(newCmd);
+  //   this.newCommandName = '';
+  //   this.newCommandValue = '';
+  //   // Save to server
+  //   this.websocketService.settingChange('tcodeCommands', this.commands);
+  // }
 
-  deleteCommand(index: number): void {
-    this.commands.splice(index, 1);
-    this.websocketService.settingChange('tcodeCommands', this.commands);
-  }
+  // deleteCommand(index: number): void {
+  //   this.commands.splice(index, 1);
+  //   this.websocketService.settingChange('tcodeCommands', this.commands);
+  // }
 
-  toggleHidden(command: TCodeCommand): void {
-    command.hidden = !command.hidden;
-    this.websocketService.settingChange('tcodeCommands', this.commands);
-  }
+  // toggleHidden(command: TCodeCommand): void {
+  //   command.hidden = !command.hidden;
+  //   this.websocketService.settingChange('tcodeCommands', this.commands);
+  // }
 }

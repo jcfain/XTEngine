@@ -65,7 +65,7 @@
       <button data-title="Skip to moneyshot (c)" class="video-control  video-control-other video-control--money-shot" id="money-shot" (click)="onSkipToMoneyShot()">
         <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg" />
       </button>
-      <button data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control-other video-control--device-state" (click)="togglePauseAllDeviceActions()">
+      <button data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control-other" [class.background-color-caution]="!deviceIsPaused" [class.background-color-go]="deviceIsPaused" (click)="togglePauseAllDeviceActions()">
         <img class="player-button-icon" name="devicePauseStatusIconImage" src="://images/icons/pause.svg" />
       </button>
     </div>

@@ -44,20 +44,6 @@ export class MediaService {
       return this.http.post<MediaItemMetaData>(`/mediaItemMetadata`, metadata);
   }
 
-  skipToMoneyShot(): void {
-    const playing = this.videoService.playingMediaItem;
-    if (playing) {
-      const moneyShotSecs = (playing as any).metaData?.moneyShotSecs;
-      if (moneyShotSecs && moneyShotSecs > 0) {
-        this.websocketService.sendSkipToMoneyShot();
-      }
-    }
-  }
-
-  skipToNextAction(): void {
-    this.websocketService.sendSkipToNextAction();
-  }
-
   deleteMediaItem(item: MediaItem): void {
     this.websocketService.sendDeleteMediaItem(item.id);
   }

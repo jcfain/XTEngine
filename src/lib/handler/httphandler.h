@@ -98,7 +98,7 @@ private:
     QHash<QString, QDateTime> m_authenticated;
     QStringList m_authenticatedForMedia;
     QTimer m_sessionPolice;
-    int m_sessionTimeout = 900; // 15 Min
+    int m_sessionTimeout = 3600; // 1 hr
     QString m_hostAddress;
 
     // /media response cache: the serialized library is rebuilt lazily and only

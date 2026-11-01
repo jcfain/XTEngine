@@ -33,26 +33,32 @@ void OutputUdpConnectionHandler::init(NetworkAddress address, int waitTimeout)
     if (QAbstractSocket::IPv4Protocol == m_hostAddress.protocol() || QAbstractSocket::IPv6Protocol == m_hostAddress.protocol())
     {
         LogHandler::Debug("IP address passed in to UDP: "+_address.address);
+        tryConnectDevice(waitTimeout);
     }
     else
     {
         LogHandler::Debug("Hostname passed in to UDP: "+_address.address);
-        QHostInfo info = QHostInfo::fromName(_address.address);
-        if(info.error() != QHostInfo::NoError) {
-            emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Error, info.errorString()});
-            return;
-        }
-        if (!info.addresses().isEmpty()) {
-            m_hostAddress = QHostAddress(info.addresses().constFirst());
-        } else {
-            emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Error, tr("No IP for: ") + _address.address + tr(" found")});
-            return;
-        }
-        LogHandler::Debug("IP resolved: "+m_hostAddress.toString());
+        // Resolve the hostname ASYNCHRONOUSLY. The synchronous
+        // QHostInfo::fromName() blocks the calling (main) thread for the whole
+        // DNS timeout (~5s) when the name can't be resolved (e.g. an offline
+        // mDNS host like "tcode.local"), which starves the single-threaded
+        // QHttpServer and stalls every in-flight request. lookupHost() runs the
+        // resolution on Qt's network thread and invokes the functor on our own.
+        QHostInfo::lookupHost(_address.address, this, [this, waitTimeout](QHostInfo info) {
+            if(info.error() != QHostInfo::NoError) {
+                emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Error, info.errorString()});
+                return;
+            }
+            if (!info.addresses().isEmpty()) {
+                m_hostAddress = QHostAddress(info.addresses().constFirst());
+            } else {
+                emit connectionChange({ConnectionDirection::Output, ConnectionInterface::Network, ConnectionStatus::Error, tr("No IP for: ") + _address.address + tr(" found")});
+                return;
+            }
+            LogHandler::Debug("IP resolved: "+m_hostAddress.toString());
+            tryConnectDevice(waitTimeout);
+        });
     }
-
-    tryConnectDevice(waitTimeout);
-
 }
 
 void OutputUdpConnectionHandler::sendTCode(const QString &tcode)

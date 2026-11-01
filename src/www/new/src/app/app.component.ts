@@ -16,6 +16,7 @@ import { AuthComponent } from './components/auth/auth.component';
 import { WebsocketService } from './services/websocket.service';
 import { MessageHandlerService } from './services/message-handler.service';
 import { ConnectionStatus } from './models/enums';
+import { KeyboardService } from './services/keyboard.service';
 
 @Component({
     selector: 'app-root',
@@ -47,8 +48,10 @@ export class AppComponent implements OnInit {
     private serverService: ServerService,
     private mediaService: MediaService,
     private authService: AuthService,
-    private messageHandlerService: MessageHandlerService
+    private messageHandlerService: MessageHandlerService,
+    private keyboardService: KeyboardService
   ) {
+    this.keyboardService.init();
   }
 
   get isAuthenticated(): boolean {
