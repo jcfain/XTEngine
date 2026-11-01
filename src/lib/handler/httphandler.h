@@ -10,6 +10,7 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QJsonValue>
+#include <QMutex>
 #include <QtConcurrent/QtConcurrent>
 
 #include "websockethandler.h"
@@ -100,7 +101,16 @@ private:
     int m_sessionTimeout = 900; // 15 Min
     QString m_hostAddress;
 
+    // /media response cache: the serialized library is rebuilt lazily and only
+    // when it changes, so repeat requests are served from cache (or a 304).
+    QJsonDocument m_mediaListCache;
+    quint64 m_mediaListVersion = 0;
+    bool m_mediaListDirty = true;
+    QMutex m_mediaListMutex;
+
     QJsonObject createMediaObject(const LibraryListItem27& libraryListItem, QString hostAddress);
+    void rebuildMediaListCache();
+    void invalidateMediaListCache();
     QJsonObject createDeoObject(const LibraryListItem27& libraryListItem, QString hostAddress);
     QJsonObject createHeresphereObject(const LibraryListItem27&  libraryListItem, QString hostAddress);
     QJsonObject createSelectedChannels();

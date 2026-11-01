@@ -68,7 +68,7 @@ export class LocalSettingsService {
     disableBrowserLazyLoad$: Observable<boolean> = this.disableBrowserLazyLoadSubject.asObservable();
 
     constructor( ) {
-        this.storedHashSubject.next(this.getFromLocalStorage(this.storedHashKey, this.storedHashDefault));
+        this.storedHashSubject.next(this.getStoredHash());
         this.sortSubject.next(this.getFromLocalStorage(this.sortKey, this.sortDefault));
         this.showSubject.next(this.getFromLocalStorage(this.showKey, this.showDefault));
         this.thumbSizeSubject.next(this.getFromLocalStorage(this.thumbSizeKey, this.thumbSizeDefault));
@@ -83,7 +83,14 @@ export class LocalSettingsService {
     }
 
     setStoredHash(value: string | null): void {
-        this.setToLocalStorage(this.storedHashKey, value);
+        if (value === null) {
+            window.localStorage.removeItem(this.storedHashKey);
+        } else {
+            // "storedHash" is shared with the legacy (non-Angular) site, which
+            // stores and reads it as a raw string (see auth.js). Keep it raw so
+            // both front-ends stay interoperable.
+            window.localStorage.setItem(this.storedHashKey, value);
+        }
         this.storedHashSubject.next(value);
     }
 
@@ -166,13 +173,33 @@ export class LocalSettingsService {
         window.location.reload();
     }
 
+    private getStoredHash(): string | null {
+        const valueInStorage = window.localStorage.getItem(this.storedHashKey);
+        if (valueInStorage == null) {
+            return this.storedHashDefault;
+        }
+        // Accept both the legacy raw string and a JSON-quoted string (written by
+        // an earlier version of this app) so existing stored hashes keep working.
+        try {
+            return JSON.parse(valueInStorage) as string;
+        } catch {
+            return valueInStorage;
+        }
+    }
+
     private getFromLocalStorage<T>(key: string, defaultValue: T): T {
         const valueInStorage = window.localStorage.getItem(key);
         if(valueInStorage == null) {
             this.setToLocalStorage(key, defaultValue);
             return defaultValue;
         }
-        return JSON.parse(valueInStorage) as T;
+        try {
+            return JSON.parse(valueInStorage) as T;
+        } catch {
+            // Tolerate values written by the legacy (non-Angular) site, which
+            // stored some values (e.g. storedHash) as raw strings.
+            return valueInStorage as unknown as T;
+        }
     }
 
     private setToLocalStorage<T>(key: string, value: T) {

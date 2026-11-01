@@ -1,22 +1,23 @@
-import { Component, EventEmitter, input, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
-import { NgOptimizedImage } from '@angular/common';
+import { Component, EventEmitter, input, Input, OnChanges, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
+import { SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, ScriptInfo } from '../../models/interfaces';
 import { ScriptContainerType, ScriptType, ThumbState } from '../../models/enums';
 import { VideoService } from '../../services/video.service';
 import { ClickStopPropagation } from '../../directives/stop-propegation';
+import { LazySrcDirective } from '../../directives/lazy-src';
 import { MediaListItemContextMenuComponent } from '../media-list-item-context-menu/media-list-item-context-menu.component';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-media-list-item',
-    imports: [FormsModule, NgOptimizedImage, ClickStopPropagation, MediaListItemContextMenuComponent],
+    imports: [FormsModule, ClickStopPropagation, LazySrcDirective, MediaListItemContextMenuComponent],
     templateUrl: './media-list-item.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './media-list-item.component.css'
 })
-export class MediaListItemComponent implements OnInit {
+export class MediaListItemComponent implements OnInit, OnChanges {
   @Input() 
   item!: MediaItem;
   @Input() 
@@ -82,7 +83,16 @@ export class MediaListItemComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.filterAltScripts(this.item);
+  }
+
+  // The component is recycled by the virtual scroller (and reused when an
+  // item is updated in place) so re-derive item state whenever the input changes
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['item'] && this.item) {
+      this.altScripts = [];
+      this.filterAltScripts(this.item);
+      this.m_contextMenuHidden = true;
+    }
   }
 
   ngOnDestroy(): void {

@@ -3,34 +3,45 @@
 
 
 @if (isAuthenticated) {
-<div class="app-content">
-<!-- <div class="app-header">
-    <h1>{{ title }} <span class="version">{{ webVersion }}</span></h1>
-    <div class="header-controls">
-      <button class="header-btn" (click)="toggleScriptStatus()" title="Script Status">&#9881;</button>
-      <button class="header-btn" (click)="toggleSettings()" title="Settings">&#9881;</button>
+  <div class="app-content">
+
+  @if (websocketConnected) {
+    <app-header 
+      (settingsClick)="toggleSettings()" 
+      (scriptStatusClick)="toggleScriptStatus()"
+      (logoutClick)="logout()">
+    </app-header>
+    <app-media-toolbar></app-media-toolbar>
+    <app-video-player></app-video-player>
+
+    <div class="app-body">
+      <app-media-list></app-media-list>
     </div>
-  </div> 
--->
-  <app-header 
-    (settingsClick)="toggleSettings()" 
-    (scriptStatusClick)="toggleScriptStatus()"
-    (logoutClick)="logout()">
-  </app-header>
-  <app-media-toolbar></app-media-toolbar>
-  <app-video-player></app-video-player>
+    <app-footer></app-footer>
+    
+  } @else {
 
-  <div class="app-body">
-    <app-media-list></app-media-list>
+    <div class="media-list-status" >
+      <div class="loading-spinner"></div>
+      <div style="padding-top: 10px;">
+        @if(websocketConnecting) {
+          Loading...
+        }
+        @else {
+          Server disconnected waiting for reconnect...
+        }
+      </div>
+    </div>
+  }
   </div>
-  <app-footer></app-footer>
-</div>
 
-<app-settings [isOpen]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
-@if (scriptStatusOpen) {
-<app-script-status></app-script-status>
-}
-<app-metadata [isOpen]="metadataOpen" (close)="metadataOpen = false"></app-metadata>
+  @if (websocketConnected) {
+    <app-settings [isOpen]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
+  }
+  @if (scriptStatusOpen) {
+    <app-script-status></app-script-status>
+  }
+  <app-metadata [isOpen]="metadataOpen" (close)="metadataOpen = false"></app-metadata>
 } @else {
-<app-auth></app-auth>
+  <app-auth></app-auth>
 }

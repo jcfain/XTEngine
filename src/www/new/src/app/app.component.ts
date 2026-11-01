@@ -1,5 +1,4 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { filter } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
 import { VideoPlayerComponent } from './components/video-player/video-player.component';
@@ -7,17 +6,16 @@ import { SettingsComponent } from './components/settings/settings.component';
 import { ScriptStatusComponent } from './components/script-status/script-status.component';
 import { MediaListComponent } from './components/media-list/media-list.component';
 import { MediaToolbarComponent } from './components/media-toolbar/media-toolbar.component';
-import { TCodeCommandsComponent } from './components/tcode-commands/tcode-commands.component';
 import { MetadataComponent } from './components/metadata/metadata.component';
 import { ServerService } from './services/server.service';
 import { MediaService } from './services/media.service';
 import { AuthService } from './services/auth.service';
 import { AppHeaderComponent } from './components/app-header/app-header.component';
-import { MessageHandlerService } from './services/message-handler.service';
-import { AppStateService } from './services/app-state.service';
-import { OutputDeviceToolsComponent } from './components/device-tools/output/output-device-tools.component';
 import { AppFooterComponent } from './components/app-footer/app-footer.component';
 import { AuthComponent } from './components/auth/auth.component';
+import { WebsocketService } from './services/websocket.service';
+import { MessageHandlerService } from './services/message-handler.service';
+import { ConnectionStatus } from './models/enums';
 
 @Component({
     selector: 'app-root',
@@ -41,11 +39,15 @@ export class AppComponent implements OnInit {
   settingsOpen = false;
   scriptStatusOpen = false;
   metadataOpen = false;
+  websocketConnected = false;
+  websocketConnecting = true;
 
   constructor(
+    private websocketService: WebsocketService,
     private serverService: ServerService,
     private mediaService: MediaService,
-    private authService: AuthService
+    private authService: AuthService,
+    private messageHandlerService: MessageHandlerService
   ) {
   }
 
@@ -55,11 +57,22 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     // Fetch server settings once on load; the response tells us whether auth is
-    // enabled (hasLaunchPass). The media list loads once we're authenticated.
+    // enabled (hasLaunchPass) and gives us the WebSocket port.
     this.serverService.initServerSettings();
-    this.authService.isAuthenticated$.pipe(filter(v => v)).subscribe(() => {
+    // Fetch the media list exactly once, when the server reports the library is
+    // ready over the WebSocket. Anchoring to this (instead of the auth state)
+    // avoids a premature /media request that fires on the session cookie before
+    // the server has validated the session. The server re-serializes the entire
+    // library on every /media call with no caching, so a duplicate request
+    // blocks the single-threaded HTTP server - and the thumbnail requests -
+    // for several seconds on every page load.
+    this.messageHandlerService.mediaLoaded$.subscribe(() => {
       this.mediaService.loadMediaList();
     });
+    this.websocketService.connectionStatus$.subscribe(v => {
+      this.websocketConnected = v == ConnectionStatus.Connected;
+      this.websocketConnecting = v == ConnectionStatus.Connecting;
+    })
   }
 
   toggleSettings(): void {

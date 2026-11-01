@@ -7,26 +7,52 @@
 #include "../tool/medialibrarycache.h"
 #include "xmediastatehandler.h"
 #include <csignal>
+#ifndef Q_OS_WIN
+#include <execinfo.h>
+#include <unistd.h>
+#endif
 // #include "xtpwebhandler.h"
 // #include "../tool/videoformat.h"
+
+#ifndef Q_OS_WIN
+// Diagnostic SIGPIPE handler: proves the disposition is installed, captures a
+// backtrace to stderr the instant SIGPIPE is delivered, then ignores the signal
+// so the process survives. This is temporary -- once the offending write site is
+// identified it can be swapped back to a plain SIG_IGN.
+static void sigpipeDiagnosticHandler(int)
+{
+    // write() is async-signal-safe; qInfo/printf are not.
+    const char msg[] = "\n=== SIGPIPE received: client aborted a socket write ===\n";
+    ssize_t w = write(STDERR_FILENO, msg, sizeof(msg) - 1);
+    (void)w;
+
+    void* frames[64];
+    int n = backtrace(frames, 64);
+    // backtrace_symbols_fd is not strictly async-signal-safe, but it is the
+    // standard tool for pinpointing the offending write site from a signal.
+    backtrace_symbols_fd(frames, n, STDERR_FILENO);
+}
+#endif
 
 HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *parent) : QObject(parent)
 {
 #ifndef Q_OS_WIN
-    // Ignore SIGPIPE so a client that cancels an in-flight media request (e.g.
-    // refreshing the page aborts the video stream) doesn't kill the process when
-    // we write to the now-closed socket. Writes then fail with EPIPE, which Qt
-    // handles cleanly.
+    // Install a SIGPIPE disposition so a client that cancels an in-flight
+    // request (e.g. a page refresh aborting a response/stream) doesn't kill the
+    // process. Writes then fail with EPIPE, which Qt handles cleanly.
     //
     // sigaction() is used instead of signal() because signal() has
     // implementation-defined semantics on some platforms (the handler can be
     // reset to SIG_DFL after delivery) and can be clobbered by other libraries.
-    // sigaction() is the portable, thread-safe way to install the ignore.
+    //
+    // NOTE: this is a DIAGNOSTIC handler (logs a backtrace) so we can confirm
+    // the disposition is actually in effect and find the exact write site.
     struct sigaction sa;
-    sa.sa_handler = SIG_IGN;
+    sa.sa_handler = sigpipeDiagnosticHandler;
     sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SIGPIPE, &sa, nullptr);
+    sa.sa_flags = SA_RESTART;
+    int saResult = sigaction(SIGPIPE, &sa, nullptr);
+    LogHandler::Info(QString("HttpHandler: SIGPIPE disposition installed (sigaction result=%1; 0=ok, -1=failed)").arg(saResult));
 #endif
 
     _mediaLibraryHandler = mediaLibraryHandler;
@@ -51,6 +77,12 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         obj["userTags"] = userTags;
         obj["smartTags"] = smartTags;
         _webSocketHandler->sendCommand("tagsUpdate", obj);
+        invalidateMediaListCache();
+    });
+    // Any server setting that is embedded in the media objects (e.g. thumb size)
+    // changes the serialized /media payload, so mark the cache dirty.
+    connect(SettingsHandler::instance(), &SettingsHandler::settingChange, this, [this](QString, QVariant) {
+        invalidateMediaListCache();
     });
     connect(SettingsHandler::instance(), &SettingsHandler::settingsExported, this, [this](QString message, QString path, bool success) {
         QJsonObject obj;
@@ -199,6 +231,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _mediaLibraryHandler->getLibraryCache()->lockForRead();
         auto item = _mediaLibraryHandler->getLibraryCache()->at(index);
         itemUpdated(&item, roles);
+        invalidateMediaListCache();
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemAdded, this, [this](int index, int newSize) {
         if(_mediaLibraryHandler->isLibraryProcessing() || index < 0)
@@ -209,11 +242,13 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _mediaLibraryHandler->getLibraryCache()->unlock();
         QString itemJson = QString(doc.toJson(QJsonDocument::Compact));
         _webSocketHandler->sendAddItem(itemJson);
+        invalidateMediaListCache();
     });
     connect(_mediaLibraryHandler, QOverload<QString>::of(&MediaLibraryHandler::itemRemoved), this, [this](QString itemID) {
         QJsonObject ret;
         ret["itemID"] = itemID;
         _webSocketHandler->sendCommand("deleteItem", ret);
+        invalidateMediaListCache();
     });
     connect(_webSocketHandler, &WebSocketHandler::deleteMediaItem, this, [this](QString itemID) {
         QStringList errors;
@@ -358,7 +393,14 @@ HttpHandler::~HttpHandler()
 void  HttpHandler::handleRoot(const QHttpServerRequest &request, QHttpServerResponder &responder)
 {
     auto root = SettingsHandler::getHttpServerRoot();
-    m_hostAddress = "http://" + request.headers().value("Host", "") + "/";
+    QString newHost = "http://" + request.headers().value("Host", "") + "/";
+    {
+        QMutexLocker locker(&m_mediaListMutex);
+        if(newHost != m_hostAddress) {
+            m_hostAddress = newHost;
+            m_mediaListDirty = true;
+        }
+    }
     // Always serve the single SPA entry point. Authentication is enforced on
     // the data/API endpoints, not on which HTML document is served. The app
     // (legacy or Angular) decides whether to show its login screen.
@@ -961,26 +1003,56 @@ void HttpHandler::handleVideoList(const QHttpServerRequest &request, QHttpServer
         return;
     }
 
+    const QString ifNoneMatch = QString(request.headers().value("If-None-Match").constData());
+
+    QMutexLocker locker(&m_mediaListMutex);
+    if(m_mediaListDirty)
+        rebuildMediaListCache();
+
+    const QString etag = QString("\"v%1\"").arg(m_mediaListVersion);
+
+    QHttpHeaders headers;
+    headers.append("ETag", etag);
+    headers.append(QHttpHeaders::WellKnownHeader::CacheControl, "no-cache");
+    headers.append("HereSphere-JSON-Version", QString("1"));
+
+    // Client already has this exact version -> nothing changed, no body.
+    if(!ifNoneMatch.isEmpty() && ifNoneMatch == etag) {
+        QHttpServerResponse notModified(QHttpServerResponse::StatusCode::NotModified);
+        notModified.setHeaders(headers);
+        responder.sendResponse(notModified);
+        return;
+    }
+    responder.write(m_mediaListCache, headers, QHttpServerResponse::StatusCode::Ok);
+}
+
+// Expensive: serializes the whole library. Runs lazily at most once per real
+// change (see m_mediaListDirty). Caller must hold m_mediaListMutex.
+void HttpHandler::rebuildMediaListCache()
+{
     QJsonArray media;
-    // TODO conflict?
-    QString hostAddress = "http://" + request.headers().value("Host", "") + "/";
     auto libraryCache = _mediaLibraryHandler->getLibraryCache();
     libraryCache->lockForRead();
     for(int i=0; i< libraryCache->length(); i++)
     {
-        QJsonObject object;
         auto item = libraryCache->at(i);
         if(item.type == LibraryListItemType::PlaylistInternal || item.type == LibraryListItemType::FunscriptType)
             continue;
         media.append(createMediaObject(item, m_hostAddress));
     }
     libraryCache->unlock();
-    // request.response->setStatus(QHttpServerResponse::StatusCode::Ok, QJsonDocument(media));
-    // request.response->compressBody();
-    // return HttpPromise::resolve(data);
-    QHttpHeaders headers;
-    headers.append("HereSphere-JSON-Version", QString("1"));
-    responder.write(QJsonDocument(media), headers, QHttpServerResponse::StatusCode::Ok);
+    m_mediaListCache = QJsonDocument(media);
+    m_mediaListVersion++;
+    m_mediaListDirty = false;
+}
+
+// Cheap: O(1) dirty-mark. Called from every path that mutates the library or
+// any setting embedded in the media objects. The cache is rebuilt lazily on the
+// next /media request, so bursts of changes coalesce into a single rebuild.
+void HttpHandler::invalidateMediaListCache()
+{
+    QMutexLocker locker(&m_mediaListMutex);
+    m_mediaListDirty = true;
 }
 
 QJsonObject HttpHandler::createMediaObject(const LibraryListItem27& item, QString hostAddress)
@@ -1628,12 +1700,14 @@ void HttpHandler::stopAllMedia()
 void HttpHandler::onSetLibraryLoaded()
 {
     _libraryLoaded = true;
+    invalidateMediaListCache();
     if(_webSocketHandler)
         _webSocketHandler->sendCommand("mediaLoaded");
 }
 void HttpHandler::onSetLibraryLoading()
 {
     _libraryLoaded = false;
+    invalidateMediaListCache();
     if(_webSocketHandler)
         _webSocketHandler->sendCommand("mediaLoading");
 }
@@ -1731,6 +1805,7 @@ void HttpHandler::sendFile(QHttpServerResponder &responder, QHttpHeaders& header
 
 QHttpServerResponse HttpHandler::sendFile(const QString &path)
 {
+    LogHandler::Debug("HttpHandler::sendFile: "+ path);
     QHttpHeaders headers;
     return sendFile(path, headers);
 }

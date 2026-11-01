@@ -51,10 +51,20 @@ app-footer {
   flex-shrink: 0;
 }
 
+/* The media list fills the remaining space. The virtual scroll viewport's
+   content is absolutely positioned so the height must be determinate all
+   the way down the flex chain (app-media-list -> .media-list-container -> viewport). */
+app-media-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-flow: column;
+}
+
 .app-body {  
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   flex: 1;
   min-height: 0;
 }

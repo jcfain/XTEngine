@@ -1,5 +1,6 @@
-import { AfterViewInit, Component, OnInit, QueryList, ViewChildren, ChangeDetectionStrategy } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { MediaItem, MediaItemMetaData } from '../../models/interfaces';
 import { MediaListItemComponent } from '../media-list-item/media-list-item.component';
 import { MediaListService } from '../../services/media-list-service';
@@ -11,16 +12,20 @@ import { Roles } from '../../models/enums';
 
 @Component({
     selector: 'app-media-list',
-    imports: [FormsModule, MediaListItemComponent],
+    imports: [FormsModule, CdkVirtualScrollViewport, CdkFixedSizeVirtualScroll, CdkVirtualForOf, MediaListItemComponent],
     templateUrl: './media-list.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './media-list.component.css'
 })
-export class MediaListComponent implements OnInit, AfterViewInit {
+export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
 
-  @ViewChildren('mediaNodes') mediaNodes: QueryList<any> = new QueryList();
+  @ViewChild('mediaListContainer') mediaListContainer?: CdkVirtualScrollViewport;
 
   mediaList: MediaItem[] = [];
+  // The list chunked into rows of `columns` items - cdk-virtual-scroll is
+  // single column so the rows are what gets virtualized
+  rows: MediaItem[][] = [];
+  columns = 1;
   // filterText = '';
   // showOptions = ['All', 'Unwatched', 'Watched'];
   // sortOptions = ['name', 'name-desc', 'date', 'date-desc'];
@@ -47,6 +52,9 @@ export class MediaListComponent implements OnInit, AfterViewInit {
 
   private mediaItemHeaderMultiplier: number = 0.15;
   private mediaItemHeaderIconMultiplier: number = 0.10;
+  private resizeObserver: ResizeObserver | null = null;
+  private resizeDebounce: ReturnType<typeof setTimeout> | null = null;
+  private windowResizeHandler: (() => void) | null = null;
 
   constructor(
     private mediaService: MediaService,
@@ -60,8 +68,8 @@ export class MediaListComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.messageHandlerService.mediaLoaded$.subscribe(() => {
-      // this.mediaLoading = false;
-      // this.mediaLoadingStatus = "";
+      this.mediaLoading = false;
+      this.mediaLoadingStatus = "";
     });
     this.messageHandlerService.mediaLoading$.subscribe(() => {
       this.mediaLoading = true;
@@ -76,17 +84,75 @@ export class MediaListComponent implements OnInit, AfterViewInit {
     });
     this.mediaListService.mediaListDisplayed$.subscribe(list => {
       this.mediaList = list;
+      this.buildRows();
     });
-    this.localSettingsService.thumbSize$.subscribe(() => {this.setDimensions();});
+    this.localSettingsService.thumbSize$.subscribe(() => {
+      this.setDimensions();
+      this.buildRows();
+    });
   }
 
   ngAfterViewInit() {
-    this.mediaNodes.changes.subscribe(t => {
-      if(this.mediaList.length == t.length) {
-        this.mediaLoading = false;
-        this.mediaLoadingStatus = "";
-      }
-    });
+    if (this.mediaListContainer) {
+      // Debounced - resizes fire continuously (window drag, video player
+      // open/close) and each rebuild re-chunks the whole list
+      this.resizeObserver = new ResizeObserver(() => this.scheduleRebuild());
+      this.resizeObserver.observe(this.mediaListContainer.elementRef.nativeElement);
+    }
+    // Fallback: the ResizeObserver on the cdk viewport can miss width-only
+    // changes in some browsers; a window resize listener guarantees the grid
+    // re-flows when the viewport width changes.
+    this.windowResizeHandler = () => this.scheduleRebuild();
+    window.addEventListener('resize', this.windowResizeHandler);
+    this.buildRows();
+  }
+
+  private scheduleRebuild() {
+    if (this.resizeDebounce) {
+      clearTimeout(this.resizeDebounce);
+    }
+    this.resizeDebounce = setTimeout(() => this.buildRows(), 150);
+  }
+
+  ngOnDestroy() {
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
+    if (this.windowResizeHandler) {
+      window.removeEventListener('resize', this.windowResizeHandler);
+      this.windowResizeHandler = null;
+    }
+    if (this.resizeDebounce) {
+      clearTimeout(this.resizeDebounce);
+      this.resizeDebounce = null;
+    }
+  }
+
+  // .media-item has a 5px margin top and bottom
+  get rowHeight(): number {
+    return this.heightInt + 10;
+  }
+
+  // Track rows by their first item's id + the current column count. The
+  // column count is part of the key so that when the viewport resizes and
+  // buildRows() re-chunks the list (different items per row), the virtual
+  // scroller sees new track ids and re-stamps the visible rows instead of
+  // reusing stale row views (which left the grid failing to re-flow).
+  // Must be an arrow-function property (not a method): the CDK invokes the
+  // trackBy as a bare function call, so a method would lose the component's
+  // `this` and `this.columns` would be undefined.
+  trackRow = (index: number, row?: MediaItem[]): string | number => {
+    return row && row.length ? `${row[0].id}:${this.columns}` : index;
+  };
+
+  private buildRows() {
+    const containerWidth = this.mediaListContainer?.elementRef.nativeElement.clientWidth || window.innerWidth;
+    const itemWidth = this.widthInt + 10; // .media-item margin 5px each side
+    this.columns = Math.max(1, Math.floor(containerWidth / itemWidth));
+    const rows: MediaItem[][] = [];
+    for (let i = 0; i < this.mediaList.length; i += this.columns) {
+      rows.push(this.mediaList.slice(i, i + this.columns));
+    }
+    this.rows = rows;
   }
 
   setDimensions() {
@@ -141,9 +207,18 @@ export class MediaListComponent implements OnInit, AfterViewInit {
   {
     var index = this.mediaList.findIndex(x => x.id == item.id);
     if(index > -1) {
-      this.mediaList[index] = JSON.parse(JSON.stringify(item));
+      var updated = JSON.parse(JSON.stringify(item));
+      this.mediaList[index] = updated;
       if(this.videoService.isItemPlaying(item)) {
-        this.videoService.playingMediaItem = this.mediaList[index];
+        this.videoService.playingMediaItem = updated;
+      }
+      // Swap the item in place in its row. Rebuilding all rows here would
+      // re-chunk the entire list and force the virtual scroller to re-diff
+      // every row on each update message - the inner @for (track item.id)
+      // picks up the in-place change on the next change detection pass.
+      var row = this.rows[Math.floor(index / this.columns)];
+      if (row) {
+        row[index % this.columns] = updated;
       }
       // if(selectedMediaItemForMetaData && selectedMediaItemForMetaData.id == libraryItem.id) {
       //   selectedMediaItemForMetaData = this.mediaList[index];

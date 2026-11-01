@@ -80,13 +80,21 @@
 }
  */
 
+/* Overlay so it doesn't take flex space - the virtual viewport must keep
+   its full height (and start loading thumbs) while the spinner is shown */
 .media-list-status {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    background-color: black;
     text-align: center;
     display: flex;
     flex-flow: column;
     justify-content: center;
     align-items: center;
-    height: calc(100vh - 100px);
 }
 
 @keyframes loading-spinner {
@@ -128,13 +136,21 @@
     flex-flow: column;
     font-family: arial;
     font-size: 16px;
+    flex: 1;
+    min-height: 0;
+    position: relative;
 }
 
+/* cdk-virtual-scroll container - must be the scroll element with a
+   determinate height (flex: 1 in the .app-content column) */
 .media-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.media-row {
     display: flex;
     flex-flow: row;
-    flex-wrap: wrap;
-    justify-content: center;  
-    /* height: calc(100vh - 300px);
-    overflow: scroll; */
+    justify-content: center;
 }

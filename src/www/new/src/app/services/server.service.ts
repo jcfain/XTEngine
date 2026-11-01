@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { SettingsService } from './settings.service';
 import { WebsocketService } from './websocket.service';
-import { ServerState } from '../models/enums';
+import { ConnectionStatus, ServerState } from '../models/enums';
 import { RemoteUserSettings, TCodeCommand, ActiveSession } from '../models/interfaces';
 
 @Injectable({
@@ -35,7 +35,16 @@ export class ServerService {
     private http: HttpClient,
     private settingsService: SettingsService,
     private websocketService: WebsocketService
-  ) {}
+  ) {
+    this.websocketService.connectionStatus$.subscribe(v => {
+      if(v !== ConnectionStatus.Connected) {
+        if(this.serverState.value !== ServerState.Disconnected)
+          this.serverState.next(ServerState.Disconnected);
+      } else if(this.serverState.value !== ServerState.Connected) {
+        this.serverState.next(ServerState.Connected);
+      }
+    });
+  }
 
   initServerSettings(): void {
     this.http.get<any>('/settings').subscribe({

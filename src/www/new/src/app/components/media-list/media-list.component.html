@@ -3,35 +3,28 @@
     <div id="noMedia" class="media-list-status" style="text-align: center;">No media found</div>
   }
   @if (mediaLoading) {
-    <div id="mediaLoading" class="media-list-status" >
+    <div class="media-list-status" >
       <div class="loading-spinner"></div>
-      <div id="loadingStatus" style="padding-top: 10px;">{{mediaLoadingStatus}}</div>
+      <div style="padding-top: 10px;">{{mediaLoadingStatus}}</div>
     </div>
   }
   @if (!noMedia()) {
-    <div class="media-list">
-      @for (item of mediaList; track item) {
-        <ng-container #mediaNodes>
-          <app-media-list-item
-            [item]="item"
-            [width]="widthInt"
-            [height]="heightInt"
-            [thumbHeight]="thumbHeightInt"
-            [textHeight]="textHeight"
-            [fontSize]="fontSize"
-            (click)="onItemClick(item)"
-            (update)="updateMetadata(item)">
-          </app-media-list-item>
-          <!-- <div class="media-thumb" [style.height]="thumbHeight" [style.width]="thumbWidth">
-          <ng-container [ngTemplateOutlet]="getLazyLoad() ? browserLazyLoad : myLazyLoad" [ngTemplateOutletContext]="{item: item}" />
-          <div class="media-overlay">
-            <span class="play-icon">&#9654;</span>
-          </div>
+    <cdk-virtual-scroll-viewport #mediaListContainer class="media-list" [itemSize]="rowHeight" [minBufferPx]="rowHeight * 4" [maxBufferPx]="rowHeight * 8">
+      <div *cdkVirtualFor="let row of rows; trackBy: trackRow" class="media-row">
+          @for (item of row; track item.id) {
+            <app-media-list-item
+              [item]="item"
+              [width]="widthInt"
+              [height]="heightInt"
+              [thumbHeight]="thumbHeightInt"
+              [textHeight]="textHeight"
+              [fontSize]="fontSize"
+              (click)="onItemClick(item)"
+              (update)="updateMetadata(item)">
+            </app-media-list-item>
+          }
         </div>
-        <div class="media-name" [style.width]="width" [style.height]="textHeight" [style.fontSize]="fontSize">{{ item.name }}</div> -->
-      </ng-container >
-    }
-  </div>
+    </cdk-virtual-scroll-viewport>
 }
 </div>
 
