@@ -1765,6 +1765,13 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
         QDirIterator jpgThumbs(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*.jpg", QDir::Files, QDirIterator::Subdirectories);
         while (jpgThumbs.hasNext())
         {
+            if(m_thumbCleanupFuture.isCanceled())
+            {
+                LogHandler::Debug("thumb cleanup stopped -1");
+                emit backgroundProcessStateChange(nullptr, -1);
+                emit cleanUpThumbsFailed();
+                return;
+            }
             emit backgroundProcessStateChange("Converting legacy thumbs", XMath::roundTwoDecimal(((float)currentJpgFileCount/(float)jpgFileCount)*100.0));
             QString filepath = jpgThumbs.next();
             QString fileNoExtension = XFileUtil::getPathNoExtension(filepath);
