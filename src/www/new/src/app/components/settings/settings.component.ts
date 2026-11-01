@@ -35,12 +35,17 @@ export class SettingsComponent {
     tabs = ['Local', 'Connections', 'Motion', 'System'];
     activeTab = 0;
     restartRequired = false;
+    hasLaunchPass: boolean | undefined = undefined;
 
     constructor(
         private localSettingsService: LocalSettingsService,
         private websocketService: WebsocketService,
         private serverService: ServerService, 
-        private overlayService: GenericOverlayService) {}
+        private overlayService: GenericOverlayService) {
+            this.serverService.remoteUserSettings$.subscribe(v => {
+                this.hasLaunchPass = v?.hasLaunchPass;
+            });
+        }
 
     onToggle(): void {
         this.toggle.emit();
@@ -69,7 +74,19 @@ export class SettingsComponent {
     }
 
     restartXTP(): void {
-        this.websocketService.restartXTP();
+        const nameID = 'restartXTPAlert';
+        this.overlayService.open(nameID, AlertComponent, {
+            content: `Are you sure you want restart XTP? 
+${this.hasLaunchPass ? `PLEASE NOTE: XTP is protected by a launch password.
+You will need to go to the pc and enter the password manually for now.` : ''}`,
+            titleText: 'Confirm',
+            acceptText: 'Restart XTP',
+            rejectText: 'Cancel',
+            onAccept: () => {
+                this.websocketService.restartXTP();
+            },
+            onClose: () => this.overlayService.close(nameID)
+        });
     }
 
     refreshXTPLibrary(): void {

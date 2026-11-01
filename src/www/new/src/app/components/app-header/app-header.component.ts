@@ -39,7 +39,7 @@ export class AppHeaderComponent implements OnInit {
       this.isAuthenticated = v;
     });
     this.serverService.remoteUserSettings$.subscribe(v => {
-      this.authEnabled = v?.hasLaunchPass;
+      this.authEnabled = v?.hasWebPass;
     })
   }
 

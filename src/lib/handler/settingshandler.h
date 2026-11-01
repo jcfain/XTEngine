@@ -134,6 +134,7 @@ public:
 
     static QString getSettingsBackupDirectory();
     static QString getSelectedThumbsDir();
+    static QString getManagedThumbPathNoExtension(const LibraryListItem27* item);
     static void setSelectedThumbsDir(QString thumbDir);
     static void setSelectedThumbsDirDefault();
     static void setUseMediaDirForThumbs(bool value);
@@ -440,7 +441,7 @@ public:
     }
 
     static const QString getThumbFormatExtension() {
-        return "jpg";
+        return "webp";
     }
 
     static const QString &hashedWebPass();

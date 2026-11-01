@@ -816,8 +816,8 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
 
             foreach (QString tag, SettingsHandler::getUserSmartTags()) {
                 bool isMatch = false;
-                foreach (auto script, item.metadata.MFSScripts) {
-                    if(script.contains(tag, Qt::CaseInsensitive)) {
+                foreach (auto track, item.metadata.MFSTracks) {
+                    if(track.toLower() == tag.toLower()) {
                         isMatch = true;
                         break;
                     }
@@ -1514,7 +1514,7 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &item)
         item.managedThumb = true;
         return;
     }
-    QString globalPath = SettingsHandler::getSelectedThumbsDir() + item.name;
+    QString globalPath = SettingsHandler::getManagedThumbPathNoExtension(&item);
 
     QString filepathGlobal = globalPath + "." + SettingsHandler::getThumbFormatExtension();
     if(QFileInfo::exists(filepathGlobal))
@@ -1532,6 +1532,25 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &item)
         item.thumbFile = filepathGlobalLocked;
         return;
     }
+
+    // TODO: remove when webp has been the default format for a long time. added 10/31/26 next release after 0.6.6
+    QString filepathGlobalLegacy = SettingsHandler::getSelectedThumbsDir() + item.name + ".jpg";
+    if(QFileInfo::exists(filepathGlobalLegacy))
+    {
+        item.thumbFileExists = true;
+        item.managedThumb = true;
+        item.thumbFile = filepathGlobalLegacy;
+        return;
+    }
+    QString filepathGlobalLockedLegacy = SettingsHandler::getSelectedThumbsDir() + item.name  + ".lock.jpg";
+    if(QFileInfo::exists(filepathGlobalLockedLegacy))
+    {
+        item.thumbFileExists = true;
+        item.managedThumb = true;
+        item.thumbFile = filepathGlobalLockedLegacy;
+        return;
+    }
+    ////////////////////////
 
     if(setLocalThumbPath(item))
         return;
@@ -1566,7 +1585,7 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &item)
     }
 
     item.managedThumb = true;
-    item.thumbFile = SettingsHandler::getSelectedThumbsDir() + item.name + "." + SettingsHandler::getThumbFormatExtension();
+    item.thumbFile = SettingsHandler::getManagedThumbPathNoExtension(&item) + "." + SettingsHandler::getThumbFormatExtension();
     item.thumbFileExists = QFileInfo::exists(item.thumbFile);
 
 }
@@ -1738,6 +1757,36 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
             return;
         }
         emit backgroundProcessStateChange("Cleaning thumbs...", -1);
+
+        // jpg to webp migration.
+        qint64 currentJpgFileCount = 0;
+        QDir jpgDir(SettingsHandler::getSelectedThumbsDir(),"*." + SettingsHandler::getThumbFormatExtension(), QDir::NoSort, QDir::Filter::Files);
+        int jpgFileCount = jpgDir.count();
+        QDirIterator jpgThumbs(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*.jpg", QDir::Files, QDirIterator::Subdirectories);
+        while (jpgThumbs.hasNext())
+        {
+            emit backgroundProcessStateChange("Converting legacy thumbs", XMath::roundTwoDecimal(((float)currentJpgFileCount/(float)jpgFileCount)*100.0));
+            QString filepath = jpgThumbs.next();
+            QString fileNoExtension = XFileUtil::getPathNoExtension(filepath);
+            // Rmove media extension in this migration.
+            QString fileNoNoExtension = XFileUtil::getPathNoExtension(fileNoExtension);
+            // QString nameNoExtension = XFileUtil::getNameNoExtension(filepath);
+            // LibraryListItem27* item = mediaLibraryHandler->findItemByNameNoExtension(nameNoExtension);
+            // item->thu
+            QImage image(filepath);
+            if (!image.save(fileNoNoExtension + ".webp", nullptr, 15))
+            {
+                LogHandler::Error("[MediaLibraryHandler::cleanGlobalThumbDirectory] Save thumb webp error");
+            }
+            else
+            {
+                QFile::remove(filepath);
+            }
+            image = QImage();
+            currentJpgFileCount++;
+        }
+        ////////////////////////////
+
         for(int i=0; i<m_mediaLibraryCache.length(); i++) {
             if(m_thumbCleanupFuture.isCanceled()) {
                 LogHandler::Debug("thumb cleanup stopped 1");
@@ -1755,7 +1804,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
             QString hasLocal;
             QString hasLocalLocked;
             QFileInfo mediaInfo(libraryListItem.path);
-            QString globalPath = SettingsHandler::getSelectedThumbsDir() + libraryListItem.name;
+            QString globalPath = SettingsHandler::getManagedThumbPathNoExtension(&libraryListItem);
 
             QString filepathGlobal = globalPath + "." + SettingsHandler::getThumbFormatExtension();
             if(QFileInfo::exists(filepathGlobal))

@@ -2,8 +2,8 @@
 // Posted by Lerner, modified by community. See post 'Timeline' for change history
 // Retrieved 2026-10-10, License - CC BY-SA 4.0
 
-import { HttpInterceptorFn, HttpResponse } from '@angular/common/http';
-import { tap } from 'rxjs';
+import { HttpInterceptorFn, HttpResponse, HttpEventType, HttpErrorResponse } from '@angular/common/http';
+import { tap, catchError, throwError } from 'rxjs';
 import { deleteCookie, getCookie } from '../utils/utils';
 
 const dateRegex =
@@ -41,20 +41,29 @@ function convertDates(
 export const apiInterceptor: HttpInterceptorFn = (request, next) => {
     return next(request).pipe(
         tap((event) => {
-            if (event instanceof HttpResponse) {
-                if (event.status === 401) {
-                    // A rejected session (cookie present but invalid, e.g. after a
-                    // server restart) -> clear it and reload to the login view. A
-                    // missing cookie simply means "not logged in"; the login view
-                    // handles that, so don't reload (avoids a reload loop on load).
-                    if (getCookie('sessionID')) {
-                        deleteCookie('sessionID');
-                        window.location.replace(window.location.origin);
-                    }
-                    return;
-                }
-                convertDates(event.body);
+            // Successful (2xx) responses arrive as HttpEventType.Response events.
+            // Use the numeric `type` discriminator (not `instanceof`) because Vite
+            // can produce two module instances of @angular/common/http.
+            if (event.type === HttpEventType.Response) {
+                convertDates((event as HttpResponse<unknown>).body);
             }
+        }),
+        catchError((error) => {
+            // Non-2xx responses (incl. 401) are NOT emitted as HttpResponse events:
+            // the XHR backend calls observer.error() with an HttpErrorResponse. So
+            // 401 handling must live here, not in the tap above. Duck-type the
+            // status to avoid the same instanceof cross-module pitfall.
+            if (error && (error as HttpErrorResponse).status === 401) {
+                // A rejected session (cookie present but invalid, e.g. after a
+                // server restart) -> clear it and reload to the login view. A
+                // missing cookie simply means "not logged in"; the login view
+                // handles that, so don't reload (avoids a reload loop on load).
+                if (getCookie('sessionID')) {
+                    deleteCookie('sessionID');
+                    window.location.replace(window.location.origin);
+                }
+            }
+            return throwError(() => error);
         })
     );
 };

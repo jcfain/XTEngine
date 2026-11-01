@@ -1849,6 +1849,11 @@ QString SettingsHandler::getSelectedThumbsDir()
     return (customThumbDirExists ? _selectedThumbsDir + "/" : _appdataLocation + "/thumbs/");
 }
 
+QString SettingsHandler::getManagedThumbPathNoExtension(const LibraryListItem27* item)
+{
+    return getSelectedThumbsDir() + item->nameNoExtension;
+}
+
 void SettingsHandler::setSelectedThumbsDir(QString thumbDir)
 {
     QMutexLocker locker(&mutex);

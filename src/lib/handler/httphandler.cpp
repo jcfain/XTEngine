@@ -621,6 +621,7 @@ void HttpHandler::handleSettings(const QHttpServerRequest &request, QHttpServerR
 
     root["connection"] = connectionSettingsJson;
     root["hasLaunchPass"] = !SettingsHandler::GetHashedPass().isEmpty();
+    root["hasWebPass"] = !SettingsHandler::hashedWebPass().isEmpty();
 
     QJsonArray tags;
     QStringList allTags = SettingsHandler::getTags();

@@ -142,6 +142,7 @@ export interface RemoteUserSettings {
     allChannelProfileNames: string[];
     connection: ConnectionInfo;
     hasLaunchPass: boolean;
+    hasWebPass: boolean;
     allTags: string[];
     userTags: string[];
     smartTags: string[];
