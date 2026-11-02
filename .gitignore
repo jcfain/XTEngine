@@ -37,7 +37,7 @@ src/www/.vscode/settings.json
 /build
 .DS_Store
 /src/.qtc_clangd
-/src/www/new/node_modules
-src/www/new/package-lock.json
-/src/www/new/.angular
-/src/www/new/dist
+/src/wwwsrc/.angular
+/src/wwwsrc/node_modules
+/src/wwwsrc/dist
+/src/wwwsrc/package-lock.json
