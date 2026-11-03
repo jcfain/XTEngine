@@ -391,7 +391,10 @@ export class SettingsSystemTabComponent implements OnInit {
 
     cleanMetadata(): void {
         this.overlayService.open(this.confirmAlertNameID, AlertComponent, {
-            content: 'This will compare the metadata with the currently loaded libraries and delete any that do not exist any more.\nDO NOT RUN unless you have all your media currently loaded!',
+            content: `This will compare the metadata with the currently loaded 
+libraries and delete any that do not exist any more.
+
+DO NOT RUN unless you have all your media currently loaded!`,
             titleText: 'Clean metadata',
             acceptText: 'Clean',
             rejectText: 'Cancel',
@@ -402,7 +405,14 @@ export class SettingsSystemTabComponent implements OnInit {
 
     cleanThumbs(): void {
         this.overlayService.open(this.confirmAlertNameID, AlertComponent, {
-            content: 'This will go through the thumbs and remove any thumbs where the media do not exist or they not have an image in the media directory.',
+            content: `Are you sure you want to clean up generated thumbs?
+This will search the chosen thumbs directory for files that end with jpg
+that are either duplicated or not existant in the current library.
+WARNING: if your current libraries doesnt not have some of these thumbs they will be deleted.
+This will not delete files that are in your media directory.
+
+This process could take a long time.
+Continue?`,
             titleText: 'Clean thumbs',
             acceptText: 'Clean',
             rejectText: 'Cancel',

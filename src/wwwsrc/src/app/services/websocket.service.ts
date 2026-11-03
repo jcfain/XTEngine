@@ -42,7 +42,8 @@ export class WebsocketService {
   private buildWebSocketUri(port: number): string {
     const loc = window.location;
     const secure = loc.protocol === 'https:';
-    const scheme = secure ? 'wss' : 'ws';
+    // const scheme = secure ? 'wss' : 'ws';
+    const scheme = 'ws';
 
     // Explicit override for unusual proxy setups.
     let override: string | null = null;
