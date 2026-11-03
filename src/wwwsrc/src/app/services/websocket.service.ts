@@ -1,6 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { ConnectionInterface, ConnectionStatus } from '../models/enums';
+import { ConnectionInterface, ConnectionStatus, MediaActions } from '../models/enums';
 import { ScriptInfo, WebSocketMessage } from '../models/interfaces';
 
 @Injectable({
@@ -17,6 +17,8 @@ export class WebsocketService {
   private messageSubject = new Subject<WebSocketMessage>();
   messages$: Observable<WebSocketMessage> = this.messageSubject.asObservable();
 
+  private mediaActions: Record<string, string> | undefined = undefined;
+
   constructor(private ngZone: NgZone) {}
 
   get connected(): boolean {
@@ -24,8 +26,17 @@ export class WebsocketService {
   }
 
   init(port: number): void {
+    if(this.connectionStatusSubject.value == ConnectionStatus.Connected
+        || this.connectionStatusSubject.value == ConnectionStatus.Connecting
+    ) {
+      return;
+    }
     const wsUri = this.buildWebSocketUri(port);
     this.connect(wsUri);
+  }
+
+  setMediaActions(v: Record<string, string>) {
+    this.mediaActions = v;
   }
 
   private buildWebSocketUri(port: number): string {
@@ -50,42 +61,6 @@ export class WebsocketService {
     return `${scheme}://${loc.hostname}:${port}`;
   }
 
-  connect(uri: string): void {
-    this.wsUri = uri;
-    this.connectionStatusSubject.next(ConnectionStatus.Connecting);
-
-    this.websocket = new WebSocket(uri);
-
-    this.websocket.onopen = () => {
-      this.ngZone.run(() => {
-        this.connectionStatusSubject.next(ConnectionStatus.Connected);
-      });
-    };
-
-    this.websocket.onmessage = (evt: MessageEvent) => {
-      this.ngZone.run(() => {
-        try {
-          const message: WebSocketMessage = JSON.parse(evt.data as string);
-          this.messageSubject.next(message);
-        } catch (e) {
-          console.error('Failed to parse WebSocket message:', e);
-        }
-      });
-    };
-
-    this.websocket.onclose = () => {
-      this.ngZone.run(() => {
-        this.connectionStatusSubject.next(ConnectionStatus.Disconnected);
-      });
-    };
-
-    this.websocket.onerror = () => {
-      this.ngZone.run(() => {
-        this.connectionStatusSubject.next(ConnectionStatus.Error);
-      });
-    };
-  }
-
   disconnect(): void {
     if (this.websocket) {
       this.websocket.close();
@@ -104,6 +79,10 @@ export class WebsocketService {
 
   send(command: string, payload?: any): void {
     if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+      if(this.mediaActions && this.mediaActions[command]) {
+        payload = command;
+        command = 'mediaAction';
+      }
       let obj: WebSocketMessage;
       if (!payload) {
         obj = { "command": command }
@@ -144,9 +123,9 @@ export class WebsocketService {
     this.send('setChannelRange', { channelName, min, max });
   }
 
-  sendMediaAction(action: string): void {
-    this.send('mediaAction', action );
-  }
+  // sendMediaAction(action: string): void {
+  //   this.send('mediaAction', action );
+  // }
 
   sendInputDeviceConnectionChange(device: ConnectionInterface, checked: boolean): void {
     this.send('connectInputDevice', { deviceName: device, enabled: checked });
@@ -209,11 +188,11 @@ export class WebsocketService {
   }
 
   sendDeviceHome(): void {
-    this.send('deviceHome');
+    this.send(MediaActions.TCodeHomeAll);
   }
 
   togglePauseAllDeviceActions(): void {
-    this.send('togglePauseAllDeviceActions');
+    this.send(MediaActions.TogglePauseAllDeviceActions);
   }
 
   tcodeDeviceConnectRetry(selectedDevice: ConnectionInterface) {
@@ -238,5 +217,41 @@ export class WebsocketService {
 
   sendPlaybackRate(value: number): void {
     this.send('setPlaybackRate', value );
+  }
+
+  private connect(uri: string): void {
+    this.wsUri = uri;
+    this.connectionStatusSubject.next(ConnectionStatus.Connecting);
+
+    this.websocket = new WebSocket(uri);
+
+    this.websocket.onopen = () => {
+      this.ngZone.run(() => {
+        this.connectionStatusSubject.next(ConnectionStatus.Connected);
+      });
+    };
+
+    this.websocket.onmessage = (evt: MessageEvent) => {
+      this.ngZone.run(() => {
+        try {
+          const message: WebSocketMessage = JSON.parse(evt.data as string);
+          this.messageSubject.next(message);
+        } catch (e) {
+          console.error('Failed to parse WebSocket message:', e);
+        }
+      });
+    };
+
+    this.websocket.onclose = () => {
+      this.ngZone.run(() => {
+        this.connectionStatusSubject.next(ConnectionStatus.Disconnected);
+      });
+    };
+
+    this.websocket.onerror = () => {
+      this.ngZone.run(() => {
+        this.connectionStatusSubject.next(ConnectionStatus.Error);
+      });
+    };
   }
 }

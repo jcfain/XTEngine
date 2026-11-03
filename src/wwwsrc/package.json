@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "deploy": "ng build --configuration production && rm -f ../www/*.js && rm -f ../www/*.css && rm -f ../www/*.html && cp -r dist/xtp-web/browser/* ../www/",
     "watch": "ng build --watch --configuration development"
   },
   "private": true,

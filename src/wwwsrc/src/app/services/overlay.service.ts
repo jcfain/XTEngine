@@ -36,13 +36,13 @@
 
 // https://medium.com/@ahmeddin_77866/creating-a-generic-overlay-service-in-angular-a-comprehensive-guide-0bb43962126c
 
-import { Overlay, OverlayRef } from '@angular/cdk/overlay';
+import { ConnectedPosition, FlexibleConnectedPositionStrategy, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { Injectable, Injector, Type } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class GenericOverlayService {
-  private overlayRefs: {[name: string]: OverlayRef[]} = {};
+  private overlayRefs: {[name: string]: OverlayRef | undefined} = {};
   private outsideClickListeners: {[name: string]: ((event: MouseEvent) => void) | null} = {};
   constructor(private overlay: Overlay) {}
   /**
@@ -51,16 +51,13 @@ export class GenericOverlayService {
    * @param data Optional data or handlers to inject into the component.
    * @param event The click event to determine the position.
    */
-  open<T>(nameID: string, component: Type<T>, data?: any, event?: MouseEvent, closeOnClickOther?: boolean): void {
+  open<T>(nameID: string, component: Type<T>, data?: any, closeOnClickOther?: boolean, event?: MouseEvent, positions?: ConnectedPosition[]): void {
     // Multiple overlays with the same nameID are allowed and are stacked
     let overlayRef: OverlayRef;
     if (event && event.target) {
       const target = event.target as HTMLElement;
-      // Create a position strategy relative to the clicked element
-      const positionStrategy = this.overlay
-        .position()
-        .flexibleConnectedTo(target)
-        .withPositions([
+      if(!positions) {
+        positions = [
           {
             originX: 'center',
             originY: 'top',
@@ -68,7 +65,13 @@ export class GenericOverlayService {
             overlayY: 'bottom',
             offsetY: -10, // 10px above the clicked element
           },
-        ])
+        ];
+      }
+      // Create a position strategy relative to the clicked element
+      const positionStrategy = this.overlay
+        .position()
+        .flexibleConnectedTo(target)
+        .withPositions(positions)
         .withViewportMargin(8) // Add some margin to ensure visibility
         .withPush(false); // Disable repositioning into the viewport
         overlayRef = this.overlay.create({
@@ -96,10 +99,7 @@ export class GenericOverlayService {
     overlayRef.overlayElement.addEventListener('click', (event: MouseEvent) => {
       event.stopPropagation();
     });
-    if (!this.overlayRefs[nameID]) {
-      this.overlayRefs[nameID] = [];
-    }
-    this.overlayRefs[nameID].push(overlayRef);
+    this.overlayRefs[nameID] = overlayRef;
     // Close overlay on outside click
     if(closeOnClickOther)
       this.listenForOutsideClick(nameID);
@@ -107,16 +107,21 @@ export class GenericOverlayService {
   /**
    * Closes the most recent overlay for the given nameID.
    */
-  close(nameID: string ): void {
-    const refs = this.overlayRefs[nameID];
-    if (refs && refs.length) {
-      refs.pop()?.dispose();
-      if (!refs.length) {
-        this.overlayRefs[nameID] = [];
-        this.removeOutsideClickListener(nameID);
-      }
+  close(nameID: string): void {
+    const ref = this.overlayRefs[nameID];
+    if (ref) {
+      ref.dispose();
+      this.removeOutsideClickListener(nameID);
+      this.overlayRefs[nameID] = undefined;
     }
   }
+  /**
+   * Checks for an overlay with given nameID to be open currently.
+   */
+  isOpen(nameID: string): boolean {
+    return this.overlayRefs[nameID] !== undefined;
+  }
+
   /**
    * Creates an injector with the given data.
    * @param data The data or handlers to inject.
@@ -156,11 +161,8 @@ export class GenericOverlayService {
    * Handles document clicks to close the overlay if clicked outside.
    */
   private onDocumentClick = (event: MouseEvent, nameID: string): void => {
-    const refs = this.overlayRefs[nameID] || [];
-    if (
-      refs.length &&
-      !refs.some(ref => ref.overlayElement && ref.overlayElement.contains(event.target as Node))
-    ) {
+    const ref = this.overlayRefs[nameID];
+    if (ref && ref.overlayElement && ref.overlayElement.contains(event.target as Node)) {
       this.close(nameID);
     }
   };

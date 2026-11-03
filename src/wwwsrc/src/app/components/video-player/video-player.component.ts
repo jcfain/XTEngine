@@ -9,6 +9,7 @@ import { MediaListService } from '../../services/media-list-service';
 import { WebsocketService } from '../../services/websocket.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
+import { ScriptStatusService } from '../../services/script-status.service';
 
 @Component({
     selector: 'app-video-player',
@@ -45,6 +46,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   mediaItem: MediaItem | null = null;
   muted: boolean = false;
   m_progress = 0;
+  scriptStatusOpen = false;
+  inputDeviceConnected = false;
 
   set progress(value: string) {
     this.m_progress = parseFloat(value);
@@ -60,13 +63,16 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   constructor(
     private localSettingsService: LocalSettingsService,
+    private scriptStatusService: ScriptStatusService,
     private webSocketService: WebsocketService,
     private messageHandlerService: MessageHandlerService, 
     private videoService: VideoService,
     private mediaListService: MediaListService
   ) {
     this.subscriptions.push(
-      this.messageHandlerService.stopAllMedia$.subscribe(() => {this.stop()}),
+      this.messageHandlerService.stopAllMedia$.subscribe(() => {
+        this.stop()
+      }),
         this.messageHandlerService.skipToNextAction$.subscribe(v => {
           if(v)
             this.skipToNextAction(v);
@@ -207,6 +213,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   stop() {
+    if(this.scriptStatusOpen)
+      this.toggleScriptStatus();
     this.videoService.stopVideo();
   }
 
@@ -255,7 +263,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   hideControlsDebounce(): void {
-    this.videoService.hideControlsDebounce();
+    this.videoService.hideControlsDebounce(this.scriptStatusOpen);
   }
 
   isVideoFixedLowHeight(): boolean {
@@ -266,6 +274,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     // this.mediaListService.me
   }
 
+  toggleScriptStatus($event?: MouseEvent): void {
+    this.scriptStatusOpen = this.scriptStatusService.toggleScriptStatusVideo($event);
+    this.videoService.setForceControlsVisible(this.scriptStatusOpen);
+  }
 
   private formatTime(timeInSeconds: number): { hours: string; minutes: string; seconds: string } {
     if (!timeInSeconds) {

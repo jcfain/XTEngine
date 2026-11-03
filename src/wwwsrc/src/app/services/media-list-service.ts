@@ -54,9 +54,10 @@ export class MediaListService {
         this.selectedMediaItemSubject.next(item);
     }
 
-    get mediaList(): MediaItem[] { return this.mediaListSubject.value; }
-    get mediaListDisplayed(): MediaItem[] { return this.mediaListDisplayedSubject.value; }
-    get selectedMediaItem(): MediaItem | null { return this.selectedMediaItemSubject.value; }
+    // private get selectedMediaItem(): MediaItem | null { return this.selectedMediaItemSubject.value; }
+
+    private get mediaList(): MediaItem[] | undefined { return this.mediaListSubject.value; }
+    private get mediaListDisplayed(): MediaItem[] | undefined { return this.mediaListDisplayedSubject.value; }
 
     filterCriteria: string = this.localSettingsService.filterCriteriaDefault;
     sortBy: SortMode = this.localSettingsService.sortDefault;
@@ -67,11 +68,11 @@ export class MediaListService {
     private shufflePlayMode: boolean = false;
 
     // Media list
-    private mediaListSubject = new BehaviorSubject<MediaItem[]>([]);
-    mediaList$: Observable<MediaItem[]> = this.mediaListSubject.asObservable();
+    private mediaListSubject = new BehaviorSubject<MediaItem[] | undefined>([]);
+    mediaList$: Observable<MediaItem[] | undefined> = this.mediaListSubject.asObservable();
 
-    private mediaListDisplayedSubject = new BehaviorSubject<MediaItem[]>([]);
-    mediaListDisplayed$: Observable<MediaItem[]> = this.mediaListDisplayedSubject.asObservable();
+    private mediaListDisplayedSubject = new BehaviorSubject<MediaItem[] | undefined>(undefined);
+    mediaListDisplayed$: Observable<MediaItem[] | undefined> = this.mediaListDisplayedSubject.asObservable();
 
     // Selected media for metadata
     private selectedMediaItemSubject = new BehaviorSubject<MediaItem | null>(null);
@@ -83,7 +84,7 @@ export class MediaListService {
 
     playNextVideo(): void {
         const list = this.mediaListDisplayed;
-        if (list.length === 0) return;
+        if (!list || list.length === 0) return;
         const playing = this.videoService.playingMediaItem;
         let index = 0;
         if (playing !== null) {
@@ -110,6 +111,7 @@ export class MediaListService {
 
     playPreviousVideo(): void {
         const list = this.mediaListDisplayed;
+        if(!list) return;
         const playing = this.videoService.playingMediaItem;
         if (!playing || list.length === 0) return;
 
@@ -122,6 +124,7 @@ export class MediaListService {
     }
 
     onUpdateThumb(message: any): void {
+        if(!this.mediaList) return;
         const item = this.mediaList.find(m => m.id === message.id);
         if (item) {
             item.relativeThumb = '/thumb/' + message.thumb;
@@ -130,6 +133,7 @@ export class MediaListService {
     }
 
     addItem(item: MediaItem): void {
+        if(!this.mediaList) return;
         const list = [...this.mediaList];
         if (!list.find(m => m.id === item.id)) {
         list.push(item);
@@ -138,11 +142,13 @@ export class MediaListService {
     }
 
     deleteItem(itemID: string): void {
+        if(!this.mediaList) return;
         const list = this.mediaList.filter(m => m.id !== itemID);
         this.setMediaList(list);
     }
 
     updateMediaItem(updated: MediaItem): void {
+        if(!this.mediaList) return;
         const list = [...this.mediaList];
         const index = list.findIndex(m => m.id === updated.id);
         if (index !== -1) {
@@ -154,12 +160,13 @@ export class MediaListService {
 
     private getNextShuffleMediaItem(): MediaItem | null {
         const list = this.mediaListDisplayed;
-        if (list.length === 0) return null;
+        if (!list || list.length === 0) return null;
         const randomIndex = Math.floor(Math.random() * list.length);
         return list[randomIndex];
     }
 
     private applyFilterAndSort(): void {
+        if(!this.mediaList) return;
         let list = [...this.mediaList];
 
         // Filter by show
@@ -176,10 +183,10 @@ export class MediaListService {
                 //     list = JSON.parse(JSON.stringify(this.mediaListSubject.value));
                 //     break;
                 case ShowMode.ThreeD:
-                    list = this.mediaListSubject.value.filter(x => x.type === MediaType.VR || x.metaData.tags.includes("vr"));
+                    list = this.mediaList.filter(x => x.type === MediaType.VR || x.metaData.tags.includes("vr"));
                     break;
                 case ShowMode.TwoD:
-                    list = this.mediaListSubject.value.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video || x.metaData.tags.includes("2d") || x.metaData.tags.includes("audio"));
+                    list = this.mediaList.filter(x => x.type === MediaType.Audio || x.type === MediaType.Video || x.metaData.tags.includes("2d") || x.metaData.tags.includes("audio"));
                     break;
             }
         }

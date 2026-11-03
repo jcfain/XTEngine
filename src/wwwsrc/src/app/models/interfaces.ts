@@ -136,10 +136,7 @@ export interface RemoteUserSettings {
     os: string;
     xteVersion: string;
     webSocketServerPort: number;
-    availableChannels: AvailableChannels;
     multiplierEnabled: boolean;
-    selectedChannelProfile: string;
-    allChannelProfileNames: string[];
     connection: ConnectionInfo;
     hasLaunchPass: boolean;
     hasWebPass: boolean;
@@ -148,6 +145,9 @@ export interface RemoteUserSettings {
     smartTags: string[];
     settings: Setting[];
     args: string[];
+    availableChannels: AvailableChannels;
+    selectedChannelProfile: string;
+    allChannelProfileNames: string[];
     availableChannelsArray?: ChannelModel[];
     // Pending tag changes, applied on save
     tagsToAdd?: string[];

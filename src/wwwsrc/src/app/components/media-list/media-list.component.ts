@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy, ViewChildren, QueryList } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { MediaItem, MediaItemMetaData } from '../../models/interfaces';
@@ -18,7 +18,7 @@ import { Roles } from '../../models/enums';
     styleUrl: './media-list.component.css'
 })
 export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
-
+  // @ViewChildren(MediaListItemComponent) mediaNodes: QueryList<MediaListItemComponent> = new QueryList();
   @ViewChild('mediaListContainer') mediaListContainer?: CdkVirtualScrollViewport;
 
   mediaList: MediaItem[] = [];
@@ -68,8 +68,9 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.messageHandlerService.mediaLoaded$.subscribe(() => {
-      this.mediaLoading = false;
-      this.mediaLoadingStatus = "";
+      // this.mediaLoading = false;
+      // this.mediaLoadingStatus = "";
+      this.mediaLoadingStatus = "Downloading list...";
     });
     this.messageHandlerService.mediaLoading$.subscribe(() => {
       this.mediaLoading = true;
@@ -83,8 +84,13 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
       this.updateItem(v.item);
     });
     this.mediaListService.mediaListDisplayed$.subscribe(list => {
-      this.mediaList = list;
-      this.buildRows();
+      if(list) {
+        this.mediaList = list;
+        this.mediaLoadingStatus = "Rendering rows...";
+        this.buildRows();
+        this.mediaLoading = false;
+        this.mediaLoadingStatus = "";
+      }
     });
     this.mediaListService.scrollToItem$.subscribe(item => {
       this.scrollToItem(item);
@@ -96,6 +102,12 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
+    // this.mediaNodes.changes.subscribe(t => {
+    //   // if(this.mediaList.length == t.length) {
+    //     this.mediaLoading = false;
+    //     this.mediaLoadingStatus = "";
+    //   // }
+    // });
     if (this.mediaListContainer) {
       // Debounced - resizes fire continuously (window drag, video player
       // open/close) and each rebuild re-chunks the whole list
@@ -177,7 +189,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   noMedia(): boolean {
-    return !this.mediaLoading && this.mediaList?.length == 0;
+    return this.mediaList?.length == 0;
   }
 
   onItemClick(item: MediaItem) {

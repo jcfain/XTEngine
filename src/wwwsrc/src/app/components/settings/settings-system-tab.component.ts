@@ -309,7 +309,7 @@ export class SettingsSystemTabComponent implements OnInit {
             message: 'Name',
             onAccept: (value: string) => this.systemTagAdded(value, smartMode),
             onClose: () => this.overlayService.close(this.addTagTextNameID)
-        }, undefined, true);
+        }, true);
     }
 
     systemTagAdded(name: string, smartMode: boolean): void {

@@ -1,5 +1,6 @@
 import { EventEmitter, Injectable, NgZone } from '@angular/core';
 import { WebsocketService } from './websocket.service';
+import { SpeechSynthesisService } from './speech-synthesis.service';
 import { MediaItem } from '../models/interfaces';
 import { XLogLevel, ConnectionStatus, ChannelTimeType, ConnectionInterface } from '../models/enums';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
@@ -97,6 +98,7 @@ export class MessageHandlerService {
 
   constructor(
     private websocketService: WebsocketService,
+    private speechSynthesis: SpeechSynthesisService,
     // private appState: AppStateService,
     // private mediaService: MediaService,
     // private mediaListService: MediaListService,
@@ -313,10 +315,7 @@ export class MessageHandlerService {
   // }
 
   private onTextToSpeech(message: string): void {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(message);
-      window.speechSynthesis.speak(utterance);
-    }
+    this.speechSynthesis.speak(message);
   }
 
   getStatusMessage(): string {

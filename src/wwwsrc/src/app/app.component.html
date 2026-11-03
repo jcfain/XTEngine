@@ -2,46 +2,48 @@
 
 
 
-@if (isAuthenticated) {
-  <div class="app-content">
+@if (!pongFailed) {
+  @if (isAuthenticated) {
+    <div class="app-content">
 
-  @if (websocketConnected) {
-    <app-header 
-      (settingsClick)="toggleSettings()" 
-      (scriptStatusClick)="toggleScriptStatus()"
-      (logoutClick)="logout()">
-    </app-header>
-    <app-media-toolbar></app-media-toolbar>
-    <app-video-player></app-video-player>
+      <app-header 
+        (settingsClick)="toggleSettings()" 
+        (scriptStatusClick)="toggleScriptStatus()"
+        (logoutClick)="logout()">
+      </app-header>
+      <app-media-toolbar></app-media-toolbar>
+      <app-video-player></app-video-player>
 
-    <div class="app-body">
-      <app-media-list></app-media-list>
-    </div>
-    <app-footer></app-footer>
-    
-  } @else {
-
-    <div class="media-list-status" >
-      <div class="loading-spinner"></div>
-      <div style="padding-top: 10px;">
-        @if(websocketConnecting) {
-          Loading...
-        }
-        @else {
-          Server disconnected waiting for reconnect...
-        }
+      <div class="app-body">
+        <app-media-list></app-media-list>
       </div>
+      <app-footer></app-footer>
     </div>
-  }
-  </div>
 
-  @if (websocketConnected) {
-    <app-settings [isOpen]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
+    @if (websocketConnected) {
+      <app-settings [isOpen]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
+    }
+    @if (scriptStatusOpen) {
+      <app-script-status></app-script-status>
+    }
+    <app-metadata [isOpen]="metadataOpen" (close)="metadataOpen = false"></app-metadata>
+  } @else {
+    <app-auth
+      (result)="onAuth($event)">
+    </app-auth>
   }
-  @if (scriptStatusOpen) {
-    <app-script-status></app-script-status>
-  }
-  <app-metadata [isOpen]="metadataOpen" (close)="metadataOpen = false"></app-metadata>
+    
 } @else {
-  <app-auth></app-auth>
+
+  <div class="media-list-status" >
+    <div class="loading-spinner"></div>
+    <div style="padding-top: 10px;">
+      @if(websocketConnecting) {
+        Loading...
+      }
+      @else {
+        Server disconnected waiting for reconnect...
+      }
+    </div>
+  </div>
 }

@@ -18,6 +18,7 @@ interface ChannelAnimationState {
   startTime: number;
   lastAnimation: number | null;
   progressValue: number;
+  timeout?: number | undefined;
 }
 
 @Component({
@@ -32,6 +33,7 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
   // isModalShown = false;
   isPlayerShown = false;
   isPaused = false;
+  noScriptInput = true;
   channels: ChannelAnimationState[] = [];
 
   private animationFrameId: number | null = null;
@@ -57,7 +59,7 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
         this.animate();
       }
     });
-    this.videoService.isPlaying$.subscribe(v => this.isPlayerShown = v);
+    this.videoService.videoVisible$.subscribe(v => this.isPlayerShown = v);
   }
 
   ngOnInit(): void {
@@ -88,7 +90,7 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
   setChannelStatus(channel: string, value: number, time: number, timeType: number): void {
     // if (!this.isShown) return;
 
-    let state = this.channels.find(c => c.channel.channel === channel);
+    let state: ChannelAnimationState | undefined = this.channels.find(c => c.channel.channel === channel);
     if (!state) {
       let friendlyName = "Unknown";
       if(this.availableChannels) {
@@ -117,6 +119,20 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
     if (this.animationFrameId === null) {
       this.animate();
     }
+    this.noScriptInput = false;
+
+    if(state.timeout) {
+        clearTimeout(state.timeout);
+    }
+    state.timeout = setTimeout(() => {
+      let stateToRemove = this.channels.findIndex(x => x.channel.channel === channel);
+      if(stateToRemove > -1) {
+        this.channels.splice(stateToRemove, 1);
+      }
+      if(this.channels.length == 0) {
+        this.noScriptInput = true;
+      }
+    }, 10000);
   }
 
   // private updateShown(): void {

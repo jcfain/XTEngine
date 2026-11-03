@@ -12,11 +12,3 @@
     background-color: red;
     cursor: pointer;
 }
-
-.script-status-paused {
-    background-color: green !important;
-}
-
-.script-status {
-    background-color: yellow !important;
-}

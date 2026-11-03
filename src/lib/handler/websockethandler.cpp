@@ -273,6 +273,8 @@ void WebSocketHandler::processTextMessage(QString message)
         QJsonObject obj = json["message"].toObject();
         QString itemID = obj["itemID"].toString();
         emit deleteMediaItem(itemID);
+    } else {
+        LogHandler::Warn("Command not defined in websocketHandler: "+command);
     }
 
 }

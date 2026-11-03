@@ -3,6 +3,7 @@
 @import url('styles/atom/colors.scss');
 @import url('styles/atom/controls.scss');
 @import url('styles/atom/icon.scss');
+@import url('styles/atom/spinner.scss');
 
 @import url('styles/molecule/form.scss');
 @import url('styles/molecule/toolbar.scss');

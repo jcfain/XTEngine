@@ -99,7 +99,7 @@ export class SettingsMotionTabComponent implements OnInit {
                 this.onProfileChange(value);
             },
             onClose: () => this.overlayService.close(this.profileSelectNameID)
-        }, undefined, true);
+        }, true);
     }
 
     onAddProfile(): void {
@@ -112,7 +112,7 @@ export class SettingsMotionTabComponent implements OnInit {
                 }
             },
             onClose: () => this.overlayService.close(this.addProfileTextNameID)
-        }, undefined, true);
+        }, true);
     }
 
     onDeleteProfile(): void {
@@ -142,7 +142,7 @@ export class SettingsMotionTabComponent implements OnInit {
                 }
             },
             onClose: () => this.overlayService.close(this.copyToProfileTextNameID)
-        }, undefined, true);
+        }, true);
     }
 
     onCopyFromProfile(): void {
@@ -159,7 +159,7 @@ export class SettingsMotionTabComponent implements OnInit {
                 this.websocketService.cloneChannelProfile(value, this.selectedProfile);
             },
             onClose: () => this.overlayService.close(this.copyFromProfileSelectNameID)
-        }, undefined, true);
+        }, true);
     }
 
     showProfileAlert(message: string): void {
@@ -220,7 +220,7 @@ export class SettingsMotionTabComponent implements OnInit {
                 this.onDirty.emit();
             },
             onClose: () => this.overlayService.close(this.relatedChannelSelectNameID)
-        }, undefined, true);
+        }, true);
     }
 
     onChannelChange(channel: ChannelModel): void {

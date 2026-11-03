@@ -52,7 +52,8 @@ export class VideoService {
     this.controlsHideDebounceSubject.pipe(
       debounceTime(3000))
       .subscribe(() => {
-        this.controlsVisibleSubject.next(false);
+        if(!this.forceControlsVisible)
+          this.controlsVisibleSubject.next(false);
       });
     // Time-sync: send at most once per second. timeupdate fires ~4x/sec,
     // so without this we'd be quadrupling the request rate vs the original.
@@ -274,24 +275,29 @@ export class VideoService {
     }
   }
 
-  showControls(force = false): void {
-    this.forceControlsVisible = force;
+  setForceControlsVisible(forceVisible: boolean): void {
+    this.forceControlsVisible = forceVisible;
+  }
+
+  showControls(forceVisible = false): void {
+    if(forceVisible)
+      this.forceControlsVisible = true;
     if (!this.controlsVisibleSubject.value) {
       this.controlsVisibleSubject.next(true);
     }
     this.controlsHideDebounceSubject.next();
   }
 
-  hideControls(force = false): void {
-    if (force) {
+  hideControls(forceHide = false): void {
+    if (forceHide) {
       this.forceControlsVisible = false;
     }
     if(this.forceControlsVisible) return;
     this.controlsVisibleSubject.next(false);
   }
 
-  hideControlsDebounce(force = false): void {
-    if (force) {
+  hideControlsDebounce(forceHide = false): void {
+    if (forceHide) {
       this.forceControlsVisible = false;
     }
     if(this.forceControlsVisible) return;

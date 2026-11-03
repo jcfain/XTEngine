@@ -13,6 +13,7 @@
       <div *cdkVirtualFor="let row of rows; trackBy: trackRow" class="media-row">
           @for (item of row; track item.id) {
             <app-media-list-item
+              #mediaNodes
               [item]="item"
               [width]="widthInt"
               [height]="heightInt"

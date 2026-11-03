@@ -1,0 +1,51 @@
+
+/* Overlay so it doesn't take flex space - the virtual viewport must keep
+   its full height (and start loading thumbs) while the spinner is shown */
+.media-list-status {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    background-color: black;
+    text-align: center;
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+}
+
+@keyframes loading-spinner {
+  to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 80px;
+    height: 80px;
+    margin-top: 10px;
+}
+
+.loading-spinner:after {
+    content: " ";
+    display: block;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 6px solid #fff;
+    border-color: #fff transparent #fff transparent;
+    animation: loading-spinner 1.2s linear infinite;
+}
+
+.loading-spinner--button-icon {
+    width: 16px;
+    height: 16px;
+}
+.loading-spinner--button-icon::after {
+    width: 12px;
+    height: 12px;
+}
+.loading-spinner--button-icon-label {
+    margin-left: 16px;
+}

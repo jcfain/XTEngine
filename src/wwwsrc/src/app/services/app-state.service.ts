@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { ConnectionStatus } from '../models/enums';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AppStateService {
   // Connection
-  private xtpConnectedSubject = new BehaviorSubject<boolean>(false);
-  xtpConnected$: Observable<boolean> = this.xtpConnectedSubject.asObservable();
+  private serverStateSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Connecting);
+  serverState$: Observable<ConnectionStatus> = this.serverStateSubject.asObservable();
 
   // Misc
   private mediaLoadingSubject = new BehaviorSubject<boolean>(false);
@@ -22,12 +23,12 @@ export class AppStateService {
   userAgentIsHereSphere: boolean = this.userAgent.indexOf('HereSphere') !== -1;
   userAgentIsMobile: boolean = this.userAgent.indexOf('Mobile') !== -1;
 
-  get xtpConnected(): boolean { return this.xtpConnectedSubject.value; }
-  get mediaLoading(): boolean { return this.mediaLoadingSubject.value; }
+  // get mediaLoading(): boolean { return this.mediaLoadingSubject.value; }
+  get serverState(): ConnectionStatus { return this.serverStateSubject.value; }
   get shufflePlayMode(): boolean { return this.shufflePlayModeSubject.value; }
 
-  setXtpConnected(connected: boolean): void {
-    this.xtpConnectedSubject.next(connected);
+  setServerState(state: ConnectionStatus): void {
+    this.serverStateSubject.next(state);
   }
 
   setMediaLoading(loading: boolean): void {

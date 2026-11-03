@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
+import { AuthResult } from '../../models/enums';
 
 @Component({
   selector: 'app-auth',
@@ -11,6 +12,8 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './auth.component.css'
 })
 export class AuthComponent implements OnInit {
+  @Output()
+  result = new EventEmitter<AuthResult>();
   password = '';
   remember = false;
   error = '';
@@ -21,7 +24,7 @@ export class AuthComponent implements OnInit {
   ngOnInit(): void {
     this.authService.autoLogin().then(success => {
       if (success) {
-        window.location.replace(window.location.origin);
+        this.result.emit(AuthResult.Success);
       }
     });
   }
@@ -39,9 +42,10 @@ export class AuthComponent implements OnInit {
     this.authService.login(this.password, this.remember).then(success => {
       this.loading = false;
       if (success) {
-        window.location.replace(window.location.origin);
+        this.result.emit(AuthResult.Success);
       } else {
         this.error = 'Invalid password or server error';
+        this.result.emit(AuthResult.Fail);
       }
     });
   }

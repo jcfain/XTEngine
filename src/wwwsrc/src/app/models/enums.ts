@@ -1,9 +1,3 @@
-
-export enum ServerState {
-    Connected,
-    Disconnected
-}
-
 export enum XLogLevel {
     Information = 0,
     Debuging = 1,
@@ -160,6 +154,61 @@ export enum ShowMode {
     All,
     TwoD,
     ThreeD
+}
+
+export enum AuthResult {
+    Fail,
+    Success
+}
+
+
+
+export class MediaActions {
+    static readonly TogglePause = "TogglePause";
+    static readonly Next = "Next";
+    static readonly Back = "Back";
+    static readonly FullScreen = "FullScreen";
+    static readonly VolumeUp = "VolumeUp";
+    static readonly VolumeDown = "VolumeDown";
+    static readonly Mute = "Mute";
+    static readonly Stop = "Stop";
+    static readonly Loop = "Loop";
+    static readonly Rewind = "Rewind";
+    static readonly FastForward = "Fast forward";
+    static readonly TCodeSpeedUp = "TCodeSpeedUp";
+    static readonly TCodeSpeedDown = "TCodeSpeedDown";
+    static readonly TCodeHomeAll = "TCodeHomeAll";
+    static readonly IncreaseXRange = "IncreaseXRange";
+    static readonly DecreaseXRange = "DecreaseXRange";
+    static readonly IncreaseXUpperRange = "IncreaseXUpperRange";
+    static readonly DecreaseXUpperRange = "DecreaseXUpperRange";
+    static readonly IncreaseXLowerRange = "IncreaseXLowerRange";
+    static readonly DecreaseXLowerRange = "DecreaseXLowerRange";
+    static readonly ResetLiveXRange = "ResetLiveXRange";
+    static readonly ToggleAxisMultiplier = "ToggleAxisMiltiplier";
+    static readonly ToggleChannelRollMultiplier = "ToggleChannelRollMultiplier";
+    static readonly ToggleChannelPitchMultiplier = "ToggleChannelPitchMultiplier";
+    static readonly ToggleChannelSurgeMultiplier = "ToggleChannelSurgeMultiplier";
+    static readonly ToggleChannelSwayMultiplier = "ToggleChannelSwayMultiplier";
+    static readonly ToggleChannelTwistMultiplier = "ToggleChannelTwistMultiplier";
+    static readonly ToggleFunscriptInvert = "ToggleFunscriptInvert";
+    static readonly TogglePauseAllDeviceActions = "TogglePauseAllDeviceActions";
+    static readonly ChannelProfileNext = "ChannelProfileNext";
+    static readonly ChannelProfilePrevious = "ChannelProfilePrevious";
+    static readonly SkipToMoneyShot = "SkipToMoneyShot";
+    static readonly ToggleSkipToMoneyShotPlaysFunscript = "ToggleSkipToMoneyShotPlaysFunscript";
+    static readonly SkipToAction = "SkipToAction";
+    static readonly IncreaseFunscriptModifier = "IncreaseFunscriptModifier";
+    static readonly DecreaseFunscriptModifier = "DecreaseFunscriptModifier";
+    static readonly ResetFunscriptModifier = "ResetFunscriptModifier";
+    static readonly IncreaseOffset = "IncreaseDelay";
+    static readonly DecreaseOffset = "DecreaseDelay";
+    static readonly ResetOffset = "ResetOffset";
+    static readonly IncreasePlaybackRate = "IncreasePlaybackRate";
+    static readonly DecreasePlaybackRate = "DecreasePlaybackRate";
+    static readonly ResetPlaybackRate = "ResetPlaybackRate";
+    static readonly AltFunscriptNext = "AltFunscriptNext";
+    static readonly AltFunscriptPrev = "AltFunscriptPrev";
 }
 
 ;

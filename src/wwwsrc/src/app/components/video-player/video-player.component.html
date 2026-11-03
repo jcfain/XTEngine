@@ -52,17 +52,14 @@
 
 <div id="bottom-controls" class="video-controls bottom-controls" [class.video-controls-visible]="controlsVisible">
   <div id="bottom-top-controls" class="bottom-top-controls">
-    <div id="scriptStatusPlayerContainer" name="scriptStatusContainer"  class="script-status-container hidden">
-      <div name="noScriptInput" style="align-self: center; flex-basis: 100%;">No script input</div>
-    </div>
     <div class="bottom-top-controls-buttons">
-      <button id="scriptStatusPlayerButton" class="video-control video-control-other">
+      <button id="scriptStatusPlayerButton" class="video-control video-control-other" [class.disabled]="inputDeviceConnected" (click)="toggleScriptStatus($event)">
         <img class="player-button-icon" src="://images/icons/equalizer.svg" />
       </button>
-      <button data-title="Skip to next action (a)" class="video-control  video-control-other video-control--action-begin" id="next-action" (click)="onSkipToNextAction()">
+      <button data-title="Skip to next action (a)" class="video-control video-control-other video-control--action-begin" [class.disabled]="inputDeviceConnected" id="next-action" (click)="onSkipToNextAction()">
         <img class="player-button-icon" src="://images/icons/skipToAction.png" />
       </button>
-      <button data-title="Skip to moneyshot (c)" class="video-control  video-control-other video-control--money-shot" id="money-shot" (click)="onSkipToMoneyShot()">
+      <button data-title="Skip to moneyshot (c)" class="video-control video-control-other video-control--money-shot" id="money-shot" [class.disabled]="inputDeviceConnected" (click)="onSkipToMoneyShot()">
         <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg" />
       </button>
       <button data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control-other" [class.background-color-caution]="!deviceIsPaused" [class.background-color-go]="deviceIsPaused" (click)="togglePauseAllDeviceActions()">

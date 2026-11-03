@@ -1,18 +1,19 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { SettingsService } from './settings.service';
 import { WebsocketService } from './websocket.service';
-import { ConnectionStatus, ServerState } from '../models/enums';
+import { ConnectionStatus } from '../models/enums';
 import { RemoteUserSettings, TCodeCommand, ActiveSession } from '../models/interfaces';
+import { AppStateService } from './app-state.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ServerService {
 
-  private serverState = new BehaviorSubject<ServerState>(ServerState.Disconnected);
-  serverState$: Observable<ServerState> = this.serverState.asObservable();
+  private serverPongSubject = new Subject<ConnectionStatus>();
+  serverPong$: Observable<ConnectionStatus> = this.serverPongSubject.asObservable();
 
   private mediaManagementEnabledSubject = new BehaviorSubject<boolean>(false);
   mediaManagementEnabled$: Observable<boolean> = this.mediaManagementEnabledSubject.asObservable();
@@ -22,8 +23,8 @@ export class ServerService {
   tcodeCommands$: Observable<any[]> = this.tcodeCommandsSubject.asObservable();
 
   // Media actions
-  private mediaActionsSubject = new BehaviorSubject<Record<string, any>>({});
-  mediaActions$: Observable<Record<string, any>> = this.mediaActionsSubject.asObservable();
+  private mediaActionsSubject = new BehaviorSubject<Record<string, string>>({});
+  mediaActions$: Observable<Record<string, string>> = this.mediaActionsSubject.asObservable();
 
   // Remote settings
   private remoteUserSettingsSubject = new BehaviorSubject<RemoteUserSettings | null>(null);
@@ -33,15 +34,19 @@ export class ServerService {
 
   constructor(
     private http: HttpClient,
-    private settingsService: SettingsService,
-    private websocketService: WebsocketService
+    private settingsService: SettingsService
   ) {
-    this.websocketService.connectionStatus$.subscribe(v => {
-      if(v !== ConnectionStatus.Connected) {
-        if(this.serverState.value !== ServerState.Disconnected)
-          this.serverState.next(ServerState.Disconnected);
-      } else if(this.serverState.value !== ServerState.Connected) {
-        this.serverState.next(ServerState.Connected);
+  }
+
+  ping(): void {
+    this.serverPongSubject.next(ConnectionStatus.Connecting);
+    this.http.get<any>('/ping').subscribe({
+      next: () => {
+        this.serverPongSubject.next(ConnectionStatus.Connected);
+      },
+      error: (err) => {
+        console.error('Error pinging server:', err);
+        this.serverPongSubject.next(ConnectionStatus.Disconnected);
       }
     });
   }
@@ -49,13 +54,11 @@ export class ServerService {
   initServerSettings(): void {
     this.http.get<any>('/settings').subscribe({
       next: (response) => {
-        this.websocketService.init(response.webSocketServerPort);
         this.remoteUserSettingsSubject.next(response);
         this.settingsService.load(response);
         this.getMediaActions();
         this.getTCodeCommands();
         this.getExported();
-        this.serverState.next(ServerState.Connected);
       },
       error: (err) => {
         console.error('Error getting server settings:', err);

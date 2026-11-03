@@ -1,4 +1,8 @@
 {
+    "/ping": {
+        "target": "http://localhost:8080",
+        "secure": false
+    },
     "/settings": {
         "target": "http://localhost:8080",
         "secure": false

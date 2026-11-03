@@ -338,6 +338,9 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     extensions += "|";
     extensions += SettingsHandler::getAudioExtensions().join("|");
     _server->route("/", QHttpServerRequest::Method::Get,  this, &HttpHandler::handleRoot);
+    _server->route("/ping", QHttpServerRequest::Method::Get, this, [this](const QHttpServerRequest &request, QHttpServerResponder &responder) {
+        responder.write(QHttpServerResponse::StatusCode::Ok);
+    });
     _server->route("/auth", QHttpServerRequest::Method::Post, this, &HttpHandler::handleAuth);
     _server->route("/settings", QHttpServerRequest::Method::Get, this, &HttpHandler::handleSettings);
     _server->route("/exported", QHttpServerRequest::Method::Get, this, &HttpHandler::handleExportedList);
@@ -405,7 +408,7 @@ void  HttpHandler::handleRoot(const QHttpServerRequest &request, QHttpServerResp
     // the data/API endpoints, not on which HTML document is served. The app
     // (legacy or Angular) decides whether to show its login screen.
     QString indexPath = root + "/index.html";
-    LogHandler::Debug(tr("Sending root index.html"));
+    LogHandler::Debug(tr("Sending root: ") +indexPath);
     if(!QFileInfo::exists(indexPath))
     {
         LogHandler::Debug("file does not exist: "+indexPath);
@@ -590,6 +593,9 @@ void HttpHandler::handleMediaActions(const QHttpServerRequest &request, QHttpSer
     QJsonObject root;
     foreach(QString action, actions.Values.keys())
     {
+        // TODO Why is this like this?
+        // Should it be "root[action] = action.Values[action]" at least?
+        // What good does an object with its own key as the value?
         root[action] = action;
     }
     QHttpHeaders headers;

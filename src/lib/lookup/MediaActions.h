@@ -14,6 +14,7 @@ class XTENGINE_EXPORT MediaActions
 {
 public:
     MediaActions();
+    // Remeber to add action to web front end.
     const QString TogglePause = "TogglePause";
     const QString Next = "Next";
     const QString Back = "Back";

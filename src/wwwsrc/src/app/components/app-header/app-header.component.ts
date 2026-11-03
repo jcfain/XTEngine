@@ -50,7 +50,7 @@ export class AppHeaderComponent implements OnInit {
   }
 
   onScriptStatusClick($event: MouseEvent) {
-    this.scriptStatusService.toggleScriptStatus($event);
+    this.scriptStatusService.toggleScriptStatusHeader($event);
     // this.scriptStatusClick.emit();
   }
 

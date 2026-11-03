@@ -67,6 +67,31 @@ export class LocalSettingsService {
     private disableBrowserLazyLoadSubject = new BehaviorSubject<boolean>(this.disableBrowserLazyLoadDefault);
     disableBrowserLazyLoad$: Observable<boolean> = this.disableBrowserLazyLoadSubject.asObservable();
 
+    readonly enableTextToSpeechDefault = true;
+    private enableTextToSpeechKey = "enableTextToSpeech";
+    private enableTextToSpeechSubject = new BehaviorSubject<boolean>(this.enableTextToSpeechDefault);
+    enableTextToSpeech$: Observable<boolean> = this.enableTextToSpeechSubject.asObservable();
+
+    readonly selectedVoiceIndexDefault = 0;
+    private selectedVoiceIndexKey = "selectedVoiceIndex";
+    private selectedVoiceIndexSubject = new BehaviorSubject<number>(this.selectedVoiceIndexDefault);
+    selectedVoiceIndex$: Observable<number> = this.selectedVoiceIndexSubject.asObservable();
+
+    readonly speechPitchDefault = 1;
+    private speechPitchKey = "speechPitch";
+    private speechPitchSubject = new BehaviorSubject<number>(this.speechPitchDefault);
+    speechPitch$: Observable<number> = this.speechPitchSubject.asObservable();
+
+    readonly speechRateDefault = 1;
+    private speechRateKey = "speechRate";
+    private speechRateSubject = new BehaviorSubject<number>(this.speechRateDefault);
+    speechRate$: Observable<number> = this.speechRateSubject.asObservable();
+
+    readonly speechVolumeDefault = 0.5;
+    private speechVolumeKey = "speechVolume";
+    private speechVolumeSubject = new BehaviorSubject<number>(this.speechVolumeDefault);
+    speechVolume$: Observable<number> = this.speechVolumeSubject.asObservable();
+
     constructor( ) {
         this.storedHashSubject.next(this.getStoredHash());
         this.sortSubject.next(this.getFromLocalStorage(this.sortKey, this.sortDefault));
@@ -80,6 +105,11 @@ export class LocalSettingsService {
         this.selectedOuputDeviceSubject.next(this.getFromLocalStorage(this.selectedOuputDeviceKey, this.selectedOuputDeviceDefault));
         this.externalStreamingSubject.next(this.getFromLocalStorage(this.externalStreamingKey, this.externalStreamingDefault));
         this.disableBrowserLazyLoadSubject.next(this.getFromLocalStorage(this.disableBrowserLazyLoadKey, this.externalStreamingDefault));
+        this.enableTextToSpeechSubject.next(this.getFromLocalStorage(this.enableTextToSpeechKey, this.enableTextToSpeechDefault));
+        this.selectedVoiceIndexSubject.next(this.getFromLocalStorage(this.selectedVoiceIndexKey, this.selectedVoiceIndexDefault));
+        this.speechPitchSubject.next(this.getFromLocalStorage(this.speechPitchKey, this.speechPitchDefault));
+        this.speechRateSubject.next(this.getFromLocalStorage(this.speechRateKey, this.speechRateDefault));
+        this.speechVolumeSubject.next(this.getFromLocalStorage(this.speechVolumeKey, this.speechVolumeDefault));
     }
 
     setStoredHash(value: string | null): void {
@@ -166,6 +196,31 @@ export class LocalSettingsService {
     setDisableBrowserLazyLoad(value: boolean): void {
         this.setToLocalStorage(this.disableBrowserLazyLoadKey, value);
         this.disableBrowserLazyLoadSubject.next(value);
+    }
+
+    setEnableTextToSpeech(value: boolean): void {
+        this.setToLocalStorage(this.enableTextToSpeechKey, value);
+        this.enableTextToSpeechSubject.next(value);
+    }
+
+    setSelectedVoiceIndex(value: number): void {
+        this.setToLocalStorage(this.selectedVoiceIndexKey, value);
+        this.selectedVoiceIndexSubject.next(value);
+    }
+
+    setSpeechPitch(value: number): void {
+        this.setToLocalStorage(this.speechPitchKey, value);
+        this.speechPitchSubject.next(value);
+    }
+
+    setSpeechRate(value: number): void {
+        this.setToLocalStorage(this.speechRateKey, value);
+        this.speechRateSubject.next(value);
+    }
+
+    setSpeechVolume(value: number): void {
+        this.setToLocalStorage(this.speechVolumeKey, value);
+        this.speechVolumeSubject.next(value);
     }
 
     reset() {
