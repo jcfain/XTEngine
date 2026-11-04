@@ -1,7 +1,7 @@
 <div class="settings-tab tab-content" [class.hidden]="!isVisible">
     <div class="formElement">
         <label title="Change the sync offset for the current media item">Offset (ms)</label>
-        <input type="number" step="1" [(ngModel)]="offset" (ngModelChange)="onOffsetChange()" />
+        <input type="number" step="1" [(ngModel)]="offset" />
     </div>
     <div class="formElement">
         <label></label>
@@ -19,7 +19,7 @@
 
     <div class="formElement">
         <label title="Change the funscript range of the current media item">Funscript modifier (%)</label>
-        <input type="number" step="10" min="0" [(ngModel)]="funscriptModifier" (ngModelChange)="onModifierChange()" />
+        <input type="number" step="10" min="0" [(ngModel)]="funscriptModifier" />
     </div>
     <div class="formElement">
         <label></label>
@@ -37,7 +37,7 @@
 
     <div class="formElement">
         <label title="Change the moneyshot for the current media item">Moneyshot (ms)</label>
-        <input type="number" step="1000" min="-1" [(ngModel)]="moneyShotMillis" (ngModelChange)="onMoneyShotChange()" />
+        <input type="number" step="1000" min="-1" [(ngModel)]="moneyShotMillis" />
     </div>
     <div class="formElement">
         <label></label>

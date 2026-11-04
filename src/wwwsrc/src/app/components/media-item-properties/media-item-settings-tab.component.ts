@@ -15,55 +15,91 @@ export class MediaItemSettingsTabComponent implements OnInit {
     @Input() isVisible = false;
     @Output() onDirty = new EventEmitter<void>();
 
-    offset = 0;
-    funscriptModifier = 0;
-    moneyShotMillis = -1;
+    private _offset = 0;
+    public get offset() {
+        return this._offset;
+    }
+    public set offset(value) {
+        this._offset = value;
+        if (this.item?.metaData) {
+            this.item.metaData.offset = this._offset;
+            this.onDirty.emit();
+        }
+    }
+    private _funscriptModifier = 0;
+    public get funscriptModifier() {
+        return this._funscriptModifier;
+    }
+    public set funscriptModifier(value) {
+        this._funscriptModifier = value;
+        if (this.item?.metaData) {
+            this.item.metaData.funscriptModifier = this.funscriptModifier;
+            this.onDirty.emit();
+        }
+    }
+    private _moneyShotMillis = -1;
+    public get moneyShotMillis() {
+        return this._moneyShotMillis;
+    }
+    public set moneyShotMillis(value) {
+        this._moneyShotMillis = value;
+        if (this.item?.metaData) {
+            this.item.metaData.moneyShotMillis = String(this.moneyShotMillis);
+            this.onDirty.emit();
+        }
+    }
 
     ngOnInit(): void {
         const meta = this.item?.metaData;
         if (!meta) {
             return;
         }
-        this.offset = meta.offset ?? 0;
-        this.funscriptModifier = meta.funscriptModifier ?? 0;
-        this.moneyShotMillis = (meta.moneyShotMillis === undefined || meta.moneyShotMillis === null)
+        this._offset = meta.offset ?? 0;
+        this._funscriptModifier = meta.funscriptModifier ?? 0;
+        this._moneyShotMillis = (meta.moneyShotMillis === undefined || meta.moneyShotMillis === null)
             ? -1
             : Number(meta.moneyShotMillis);
     }
 
-    onOffsetChange(): void {
-        if (this.item?.metaData) {
-            this.item.metaData.offset = this.offset;
-        }
-        this.onDirty.emit();
-    }
+    // onOffsetChange(): void {
+    //     // if(v != undefined)
+    //     //     this.offset = v;
+    //     // if (this.item?.metaData) {
+    //     //     this.item.metaData.offset = this.offset;
+    //     // }
+    //     this.onDirty.emit();
+    // }
 
-    onModifierChange(): void {
-        if (this.item?.metaData) {
-            this.item.metaData.funscriptModifier = this.funscriptModifier;
-        }
-        this.onDirty.emit();
-    }
+    // onModifierChange(v?: number): void {
+    //     if(v != undefined)
+    //         this.funscriptModifier = v;
+    //     if (this.item?.metaData) {
+    //         this.item.metaData.funscriptModifier = this.funscriptModifier;
+    //     }
+    //     this.onDirty.emit();
+    // }
 
-    onMoneyShotChange(): void {
-        if (this.item?.metaData) {
-            this.item.metaData.moneyShotMillis = String(this.moneyShotMillis);
-        }
-        this.onDirty.emit();
-    }
+    // onMoneyShotChange(v?: number): void {
+    //     if(v != undefined)
+    //         this.moneyShotMillis = v;
+    //     if (this.item?.metaData) {
+    //         this.item.metaData.moneyShotMillis = String(this.moneyShotMillis);
+    //     }
+    //     this.onDirty.emit();
+    // }
 
     addToOffset(amount: number): void {
         this.offset += amount;
-        this.onOffsetChange();
+        // this.onOffsetChange();
     }
 
     addToModifier(amount: number): void {
         this.funscriptModifier += amount;
-        this.onModifierChange();
+        // this.onModifierChange();
     }
 
     resetMoneyShot(): void {
         this.moneyShotMillis = -1;
-        this.onMoneyShotChange();
+        // this.onMoneyShotChange();
     }
 }

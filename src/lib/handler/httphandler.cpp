@@ -870,6 +870,7 @@ void HttpHandler::handleMediaItemMetadataUpdate(const QHttpServerRequest &reques
         libraryItem->metadata = metadata;
         SettingsHandler::updateLibraryListItemMetaData(*libraryItem);
         emit updateMetadata(libraryItem->metadata);
+        invalidateMediaListCache();
     } else {
         SettingsHandler::setForceMetaDataFullProcess(true);
         responder.write(createError(tr("Invalid metadata item please process metadata<br> In System tab under settings.")), QHttpServerResponse::StatusCode::Conflict);

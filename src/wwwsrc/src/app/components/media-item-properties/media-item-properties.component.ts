@@ -35,7 +35,11 @@ export class MediaItemPropertiesComponent {
     tabs = ['Settings', 'Tags', 'Info'];
     activeTab = 0;
 
-    isDirty = false;
+    get isDirty() {
+        return this._isDirty || this._isDirty && !this._isSaving;
+    }
+    private _isDirty = false;
+    private _isSaving = false;
     saveState = '';
 
     private _allTags: string[] = [];
@@ -61,7 +65,7 @@ export class MediaItemPropertiesComponent {
     }
 
     markDirty(): void {
-        this.isDirty = true;
+        this._isDirty = true;
     }
 
     save(): void {
@@ -69,16 +73,19 @@ export class MediaItemPropertiesComponent {
             return;
         }
         this.saveState = 'Saving...';
+        this._isSaving = true;
         this.mediaService.updateItemMetadata(this.item.metaData).subscribe({
             next: () => {
-                this.isDirty = false;
                 this.saveState = 'Saved';
                 setTimeout(() => this.saveState = '', 2000);
+                this._isSaving = false;
+                this._isDirty = false;
             },
             error: (err) => {
                 console.error('Error saving metadata:', err);
                 this.saveState = 'Save failed';
                 setTimeout(() => this.saveState = '', 2000);
+                this._isSaving = false;
             }
         });
     }
