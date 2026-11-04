@@ -60,9 +60,6 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
 
 
     _webSocketHandler = new WebSocketHandler(this);
-    _webSocketHandler->setSessionValidator([this](const QString &sessionID) {
-        return isSessionValid(sessionID);
-    });
 
     connect(SettingsHandler::instance(), &SettingsHandler::tagsChanged, this, [this]() {
         QJsonObject obj;
@@ -142,6 +139,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     connect(_webSocketHandler, &WebSocketHandler::saveSingleThumb, this, [this](QString itemID, qint64 pos) {
         _mediaLibraryHandler->saveSingleThumb(itemID, pos);
     });
+    connect(_webSocketHandler, &WebSocketHandler::setMoneyShot, this, &HttpHandler::setMoneyShot);
     connect(_webSocketHandler, &WebSocketHandler::cleanupThumbs, this, &HttpHandler::cleanupThumbs);
     connect(_webSocketHandler, &WebSocketHandler::reloadLibrary, _mediaLibraryHandler, &MediaLibraryHandler::loadLibraryAsync);
     connect(_webSocketHandler, &WebSocketHandler::startMetadataProcess, this, [this]() {
@@ -321,6 +319,28 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     });
 
     _server = new QHttpServer(this);
+
+    // WebSocket upgrades are handled by the HTTP server itself (Qt 6.8+), so the
+    // WebSocket shares the HTTP port — no separate QWebSocketServer / port needed.
+    // Accept upgrades only on /ws, and only for a valid session (the browser sends
+    // the same-origin sessionID cookie on the upgrade request).
+    _server->addWebSocketUpgradeVerifier(this, [this](const QHttpServerRequest &request) {
+        // The frontend dials ws://host/ws behind a proxy but ws://host:port
+        // (root path) for a direct connection, so accept upgrades on any path
+        // and rely on the session check for authorization.
+        if (!isSessionValid(getCookie(request, "sessionID")))
+            return QHttpServerWebSocketUpgradeResponse::deny();
+        return QHttpServerWebSocketUpgradeResponse::accept();
+    });
+    connect(_server, &QAbstractHttpServer::newWebSocketConnection, this, [this]() {
+        auto ws = _server->nextPendingWebSocketConnection();
+        if (ws && _webSocketHandler) {
+            QWebSocket* raw = ws.release();
+            raw->setParent(_webSocketHandler);
+            _webSocketHandler->handleNewWebSocket(raw);
+        }
+    });
+
     // config.port = SettingsHandler::getHTTPPort();
     // // config.maxRequestSize =
     // config.requestTimeout = 20;

@@ -7,8 +7,10 @@
     <div id="progressSection" class="footerSection toolBar">
         <div class="toolBarGroup toolBarGroupEnd">
             <!-- <div id="statusOutput"></div> -->
-            <label id="statusOutputLabel" for="statusOutput" style="font-size: 0.7rem;" class="hidden"></label>
-            <progress id="statusOutput" class="pregress-status hidden" value="0" max="100"></progress>
+             @if(progressMessage) {
+                <label id="statusOutputLabel" for="statusOutput" style="font-size: 0.7rem;">{{ progressValue | number: '1.0-0'  }}% {{ progressMessage }}</label>
+                <progress id="statusOutput" class="progress-status" [value]="progressValue" min="0" max="100"></progress>
+             }
         </div>
     </div>
 </div>

@@ -40,6 +40,7 @@ signals:
     void swapScript(ScriptInfo script);
     void clean1024();
     void updateMetadata(LibraryListItemMetaData258 value);
+    void setMoneyShot(QString itemID, qint64 pos);
 
 public slots:
     void on_DeviceConnection_StateChange(ConnectionChangedSignal status);

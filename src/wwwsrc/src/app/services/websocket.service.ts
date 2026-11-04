@@ -101,19 +101,19 @@ export class WebsocketService {
   }
 
   sendMetadataProcess(): void {
-    this.send('metadataProcess');
+    this.send('startMetadataProcess');
   }
 
   sendMetadataCleanProcess(): void {
-    this.send('metadataCleanProcess');
+    this.send('cleanupMetadata');
   }
 
   sendCleanupThumbsProcess(): void {
-    this.send('cleanupThumbsProcess');
+    this.send('cleanupThumbs');
   }
 
   sendClean1024Process(): void {
-    this.send('clean1024Process');
+    this.send('clean1024');
   }
 
   sendTCode(tcode: string): void {
@@ -161,7 +161,7 @@ export class WebsocketService {
   }
 
   sendUpdateMetadata(metadataKey: string): void {
-    this.send('updateMetadata', { metadataKey });
+    this.send('processMetadata', metadataKey);
   }
 
   sendQuickExport(): void {
@@ -197,7 +197,7 @@ export class WebsocketService {
   }
 
   tcodeDeviceConnectRetry(selectedDevice: ConnectionInterface) {
-    this.send("connectOutputDevice", { deviceName: selectedDevice });
+    this.send("connectOutputDevice", { deviceName: selectedDevice, enabled: true });
   }
 
   sendPlayMedia(itemID: string): void {

@@ -9,3 +9,9 @@
 .footerSection {
     flex-basis: 33%;
 }
+
+.progress-status {
+    height: 10px;
+    position: inherit;
+    width: 100%;
+}

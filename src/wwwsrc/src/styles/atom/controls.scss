@@ -63,7 +63,12 @@ select:disabled {
 
 }
 
-button:not(.icon-button):not(.tab-section-tab):not(.video-control):not(.media-context):not(.side-action-tcode-action-button) {
+button:not(.icon-button)
+        :not(.tab-section-tab)
+        :not(.video-control)
+        :not(.media-context)
+        :not(.side-action-tcode-action-button)
+        :not(.login-button) {
     border-radius: 5px;
     height: 24px;
 }
@@ -73,8 +78,11 @@ select {
 }
 
 select:hover,
-button:hover:not(.video-control):not(.media-context),
-input:hover:not(.range-input) {
+button:hover:not(.video-control)
+            :not(.media-context)
+            :not(.login-button),
+input:hover:not(.range-input)
+            :not(.login-pass){
     background-color: lightblue;
 }
 

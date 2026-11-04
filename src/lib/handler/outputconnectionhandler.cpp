@@ -23,7 +23,7 @@ void OutputConnectionHandler::tryConnectStop() {
         m_initFuture.waitForFinished();
     }
 }
-void OutputConnectionHandler::tryConnectDevice(unsigned long waitTimeout) {
+QFuture<void> OutputConnectionHandler::tryConnectDevice(unsigned long waitTimeout) {
     tryConnectStop();
 
     m_stop = false;
@@ -50,6 +50,7 @@ void OutputConnectionHandler::tryConnectDevice(unsigned long waitTimeout) {
             setConnected(true);
         }
     });
+    return m_initFuture;
 }
 void OutputConnectionHandler::processDeviceInput(QString buffer) {
     m_readBuffer += buffer;

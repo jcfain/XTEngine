@@ -1,14 +1,12 @@
 import { Component, OnInit, ChangeDetectionStrategy, Output, EventEmitter, Input } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { AppStateService } from '../../services/app-state.service';
 import { ServerService } from '../../services/server.service';
 import { WebsocketService } from '../../services/websocket.service';
 import { ConnectionInterface, ConnectionStatus, NetworkProtocol } from '../../models/enums';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { RemoteUserSettings } from '../../models/interfaces';
-import { ConnectedOverlayPositionChange } from '@angular/cdk/overlay';
 
 @Component({
     selector: 'app-settings-connections-tab',
@@ -131,8 +129,12 @@ export class SettingsConnectionsTabComponent implements OnInit {
         this.outputDevices.forEach(x => {
             this.outputDeviceStatus[x.type] = ConnectionStatus.Disconnected;
         });
-        this.messageHandlerService.inputDeviceStatus$.subscribe(s => this.inputDeviceStatus[s.type] = s.status);
-        this.messageHandlerService.outputDeviceStatus$.subscribe(s => this.outputDeviceStatus[s.type] = s.status);
+        this.messageHandlerService.inputDeviceStatus$.subscribe(s => 
+            this.inputDeviceStatus[s.type] = s.status
+        );
+        this.messageHandlerService.outputDeviceStatus$.subscribe(s => 
+            this.outputDeviceStatus[s.type] = s.status
+        );
         this.localSettingsService.selectedInputDevice$.subscribe(s => {
             this.checkAndUpdateInputConnection(s);
         });
@@ -252,7 +254,7 @@ export class SettingsConnectionsTabComponent implements OnInit {
             this.websocketService.sendOutputDeviceConnectionChange(value, true);
     }
 
-    private getStatus(device: ConnectionInterface): ConnectionStatus {
+    private getStatus(device: ConnectionInterface): ConnectionStatus | undefined {
         let status = this.inputDeviceStatus[device];
         if(status == undefined)
             status = this.outputDeviceStatus[device];

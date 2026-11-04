@@ -81,6 +81,7 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
         }
     });
 
+
     connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, [this]() {
         LogHandler::Info("XTEngine about to quit");
         SettingsHandler::Save();
@@ -117,6 +118,14 @@ void XTEngine::init()
         connect(_httpHandler, &HttpHandler::swapScript, _syncHandler, QOverload<const ScriptInfo&>::of(&SyncHandler::swap));
         connect(_httpHandler, &HttpHandler::updateMetadata, _syncHandler, &SyncHandler::updateMetadata);
         connect(SettingsHandler::instance(), &SettingsHandler::settingChange, _httpHandler, &HttpHandler::onSettingChange);
+
+        connect(_httpHandler, &HttpHandler::setMoneyShot, this, [this](QString itemID, qint64 pos) {
+            if(pos > 0) {
+                auto item = mediaLibraryHandler()->findItemByID(itemID);
+                if(item)
+                    SettingsHandler::instance()->setMoneyShot(*item, pos, false);
+            }
+        });
 
 
         connect(_httpHandler, &HttpHandler::clean1024, this, [this]() {

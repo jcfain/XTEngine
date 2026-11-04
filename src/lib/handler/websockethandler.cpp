@@ -1,60 +1,27 @@
 #include "websockethandler.h"
 #include "settingshandler.h"
 #include <QAbstractSocket>
-#include <QNetworkCookie>
 
 #include "xmediastatehandler.h"
 
 WebSocketHandler::WebSocketHandler(QObject *parent):
-    QObject(parent),
-    m_pWebSocketServer(new QWebSocketServer(QStringLiteral("XTP Websocket"),
-                                            QWebSocketServer::NonSecureMode, this))
+    QObject(parent)
 {
-   // QNetworkProxy proxy;
-   // proxy.setType(QNetworkProxy::HttpProxy);
-   // // proxy.setHostName("localhost");
-   // // proxy.setPort(SettingsHandler::getWebSocketPort());
-   // // proxy.setUser("username");
-   // // proxy.setPassword("password");
-   // // QNetworkProxy::setApplicationProxy(proxy);
-   // m_pWebSocketServer->setProxy(proxy);
-   // QHostAddress mHost;
-   // mHost.setAddress("192.168.0.243");
-    // m_pWebSocketServer->setProxy(QNetworkProxy::ProxyType::DefaultProxy);
-    if (m_pWebSocketServer->listen(QHostAddress::Any, SettingsHandler::getWebSocketPort()))
-    {
-        LogHandler::Debug("Websocket listening on port " + QString::number(m_pWebSocketServer->serverPort()));
-        connect(m_pWebSocketServer, &QWebSocketServer::newConnection, this, &WebSocketHandler::onNewConnection);
-        connect(m_pWebSocketServer, &QWebSocketServer::closed, this, &WebSocketHandler::closed);
-    }
-    else {
-        LogHandler::Error("Websocket start fail on port: "+QString::number(SettingsHandler::getWebSocketPort()));
-        LogHandler::Error("Websocket Error: "+m_pWebSocketServer->errorString());
-    }
+    // The WebSocket server is no longer a separate QWebSocketServer. The HTTP
+    // server (Qt 6.8+) handles WebSocket upgrades on the same port and forwards
+    // each accepted socket to handleNewWebSocket().
 }
 
 WebSocketHandler::~WebSocketHandler()
 {
     sendCommand("connectionClosed");
-    m_pWebSocketServer->close();
     //qDeleteAll(m_clients.begin(), m_clients.end());
 }
 
-QHostAddress WebSocketHandler::getAddress()
-{
-    return m_pWebSocketServer->serverAddress();
-}
-QUrl WebSocketHandler::getUrl()
-{
-    return m_pWebSocketServer->serverUrl();
-}
-QString WebSocketHandler::getServerName()
-{
-    return m_pWebSocketServer->serverName();
-}
 int WebSocketHandler::getServerPort()
 {
-    return m_pWebSocketServer->serverPort();
+    // WebSocket now shares the HTTP port, so report that port to the client.
+    return SettingsHandler::getHTTPPort();
 }
 
 void WebSocketHandler::onSettingChange(QString setting, QVariant value)
@@ -127,52 +94,18 @@ void WebSocketHandler::sendWarning(QString message)
     sendCommand("systemWarning", message);
 }
 
-void WebSocketHandler::onNewConnection()
+void WebSocketHandler::handleNewWebSocket(QWebSocket* client)
 {
-    QWebSocket *pSocket = m_pWebSocketServer->nextPendingConnection();
+    // The upgrade (and session auth) was already performed by the HTTP server via
+    // addWebSocketUpgradeVerifier(); the socket arrives fully connected.
+    connect(client, &QWebSocket::textMessageReceived, this, &WebSocketHandler::processTextMessage);
+    connect(client, &QWebSocket::binaryMessageReceived, this, &WebSocketHandler::processBinaryMessage);
+    connect(client, &QWebSocket::disconnected, this, &WebSocketHandler::socketDisconnected);
 
-    // Authenticate the handshake before accepting the client. The browser sends
-    // the same-origin sessionID cookie on the upgrade request, so a valid
-    // session here means the user already passed the web password.
-    if (!isSocketAuthenticated(pSocket))
-    {
-        LogHandler::Warn("Rejected unauthenticated WebSocket connection from " + pSocket->peerAddress().toString());
-        pSocket->close(QWebSocketProtocol::CloseCodePolicyViolated, "Unauthorized");
-        pSocket->deleteLater();
-        return;
-    }
+    m_clients << client;
+    initNewClient(client);
 
-    connect(pSocket, &QWebSocket::textMessageReceived, this, &WebSocketHandler::processTextMessage);
-    connect(pSocket, &QWebSocket::binaryMessageReceived, this, &WebSocketHandler::processBinaryMessage);
-    connect(pSocket, &QWebSocket::disconnected, this, &WebSocketHandler::socketDisconnected);
-
-    m_clients << pSocket;
-    initNewClient(pSocket);
-
-    emit newWebSocketConnected(pSocket);
-}
-
-void WebSocketHandler::setSessionValidator(std::function<bool(const QString&)> validator)
-{
-    m_sessionValidator = validator;
-}
-
-bool WebSocketHandler::isSocketAuthenticated(QWebSocket *socket)
-{
-    if (!m_sessionValidator)
-        return true; // No validator configured -> allow (auth disabled).
-
-    // Pull the sessionID cookie from the handshake request headers.
-    QString sessionID;
-    const QList<QNetworkCookie> cookies = QNetworkCookie::parseCookies(socket->request().rawHeader("Cookie"));
-    for (const QNetworkCookie &cookie : cookies)
-        if (cookie.name() == "sessionID")
-        {
-            sessionID = cookie.value();
-            break;
-        }
-
-    return m_sessionValidator(sessionID);
+    emit newWebSocketConnected(client);
 }
 
 void WebSocketHandler::initNewClient(QWebSocket* client)
@@ -245,6 +178,12 @@ void WebSocketHandler::processTextMessage(QString message)
         emit skipToMoneyShot();
     } else if (command == "skipToNextAction") {
         emit skipToNextAction();
+
+    } else if (command == "setMoneyShot") {
+        QJsonObject obj = json["message"].toObject();
+        QString itemID = obj["itemID"].toString();
+        qint64 pos = obj["pos"].toDouble() * 1000;
+        emit setMoneyShot(itemID, pos);
     } else if (command == "saveSingleThumb") {
         QJsonObject obj = json["message"].toObject();
         QString itemID = obj["itemID"].toString();
@@ -296,12 +235,6 @@ void WebSocketHandler::socketDisconnected()
         m_clients.removeAll(pClient);
         pClient->deleteLater();
     }
-}
-
-void WebSocketHandler::closed()
-{
-    QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
-    LogHandler::Debug("WEBSOCKET closed: " + pClient->objectName());
 }
 
 void  WebSocketHandler::sendDeviceConnectionStatus(ConnectionChangedSignal status, QWebSocket* client)

@@ -38,7 +38,7 @@ protected slots:
 protected:
     ConnectionInterface m_deviceName;
     void tryConnectStop();
-    void tryConnectDevice(unsigned long waitTimeout = 5000);
+    QFuture<void> tryConnectDevice(unsigned long waitTimeout = 5000);
 
     void processDeviceInput(QString buffer);
 

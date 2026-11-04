@@ -90,12 +90,6 @@ export class MessageHandlerService {
   private settingsImportedEvent = new Subject<SettingsBackupUpdate>();
   settingsImported$: Observable<SettingsBackupUpdate> = this.settingsImportedEvent.asObservable();
 
-  // private changePlayrateSubject  
-  // // private mediaActionSubject
-  
-  private statusMessage = '';
-  private statusPercentage = 0;
-
   constructor(
     private websocketService: WebsocketService,
     private speechSynthesis: SpeechSynthesisService,
@@ -255,8 +249,8 @@ export class MessageHandlerService {
 
         case 'statusOutput': {
           const messageObj = data['message'];
-          this.statusMessage = messageObj['message'];
-          this.statusPercentage = messageObj['percentage'];
+          let status: StatusOutput = {message: messageObj['message'], percentage: messageObj['percentage']};
+          this.statusOutputSubject.next(status);
           break;
         }
 
@@ -316,13 +310,5 @@ export class MessageHandlerService {
 
   private onTextToSpeech(message: string): void {
     this.speechSynthesis.speak(message);
-  }
-
-  getStatusMessage(): string {
-    return this.statusMessage;
-  }
-
-  getStatusPercentage(): number {
-    return this.statusPercentage;
   }
 }

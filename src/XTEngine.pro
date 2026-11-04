@@ -289,10 +289,16 @@ win32 {
 #QMAKE_EXTRA_TARGETS += mypackagerule
 
 # https://dragly.org/2013/11/05/copying-data-files-to-the-build-directory-when-working-with-qmake/
+# Wipe $$DESTDIR/www first so regenerated (content-hashed) Angular bundles don't
+# accumulate stale files in the build dir: `cp -R` only adds/overwrites and never
+# deletes, so old bundles (e.g. main-XXXX.js / styles-XXXX.css) would linger and
+# the served page could go stale. Wiping makes $$DESTDIR/www an exact mirror.
 win32 {
-    copydata.commands = $(COPY_DIR) $$shell_quote($$shell_path($$PWD/www)) $$shell_quote($$shell_path($$DESTDIR/www))
+    rmDir = rmdir /s /q
+    copydata.commands = $$rmDir $$shell_quote($$shell_path($$DESTDIR/www)) && $(COPY_DIR) $$shell_quote($$shell_path($$PWD/www)) $$shell_quote($$shell_path($$DESTDIR))
 } else: {
-    copydata.commands = $(COPY_DIR) $$shell_quote($$PWD/www) $$shell_quote($$DESTDIR)
+    rmDir = rm -rf
+    copydata.commands = $$rmDir $$shell_quote($$DESTDIR/www) && $(COPY_DIR) $$shell_quote($$PWD/www) $$shell_quote($$DESTDIR)
 }
 first.depends = $(first) copydata
 export(first.depends)
