@@ -2,7 +2,7 @@
     <div class="properties-modal-content">
         <div class="properties-modal-header">
             <span class="properties-modal-title">Properties</span>
-            <button class="close-btn" (click)="close()">&times;</button>
+            <button class="close-btn" (click)="closeProperties()">&times;</button>
         </div>
 
         <div class="properties-modal-body">
@@ -14,6 +14,7 @@
                 }
             </div>
             <section class="tab-section">
+                @if (item) {
                 <app-media-item-settings-tab
                     [class.hidden]="activeTab !== 0"
                     [item]="item"
@@ -32,6 +33,7 @@
                     [item]="item"
                     [isVisible]="activeTab === 2">
                 </app-media-item-info-tab>
+                }
             </section>
         </div>
 

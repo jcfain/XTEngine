@@ -3,17 +3,17 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Cha
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { VideoService } from '../../services/video.service';
-import { MediaService } from '../../services/media.service';
 import { MediaItem } from '../../models/interfaces';
 import { MediaListService } from '../../services/media-list-service';
 import { WebsocketService } from '../../services/websocket.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { ScriptStatusService } from '../../services/script-status.service';
+import { MediaItemPropertiesComponent } from '../media-item-properties/media-item-properties.component';
 
 @Component({
     selector: 'app-video-player',
-    imports: [FormsModule],
+    imports: [FormsModule, MediaItemPropertiesComponent],
     templateUrl: './video-player.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './video-player.component.css'
@@ -47,6 +47,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   muted: boolean = false;
   m_progress = 0;
   scriptStatusOpen = false;
+  mediaSettingsOpen = false;
   inputDeviceConnected = false;
 
   set progress(value: string) {
@@ -271,7 +272,14 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   openMediaSettings(): void {
-    // this.mediaListService.me
+    if (!this.mediaItem) {
+      return;
+    }
+    this.mediaSettingsOpen = true;
+  }
+
+  closeMediaSettings(): void {
+    this.mediaSettingsOpen = false;
   }
 
   toggleScriptStatus($event?: MouseEvent): void {

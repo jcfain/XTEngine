@@ -1,17 +1,15 @@
-import { Component, ChangeDetectionStrategy, Inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, EventEmitter, Inject, Input, Optional, Output } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { Observable } from 'rxjs';
-import { MediaItem, MediaItemMetaData } from '../../models/interfaces';
+import { MediaItem } from '../../models/interfaces';
+import { MediaService } from '../../services/media.service';
+import { ServerService } from '../../services/server.service';
 import { MediaItemSettingsTabComponent } from './media-item-settings-tab.component';
 import { MediaItemTagsTabComponent } from './media-item-tags-tab.component';
 import { MediaItemInfoTabComponent } from './media-item-info-tab.component';
 
 export interface MediaItemPropertiesData {
   item: MediaItem;
-  allTags: string[];
-  onSave: (metaData: MediaItemMetaData) => Observable<any>;
-  onClose: () => void;
 }
 
 @Component({
@@ -27,8 +25,12 @@ export interface MediaItemPropertiesData {
     styleUrl: './media-item-properties.component.css'
 })
 export class MediaItemPropertiesComponent {
-    item: MediaItem;
-    allTags: string[];
+    @Input() item: MediaItem | null = null;
+    @Output() close = new EventEmitter<void>();
+
+    get allTags(): string[] {
+        return this._allTags;
+    }
 
     tabs = ['Settings', 'Tags', 'Info'];
     activeTab = 0;
@@ -36,9 +38,22 @@ export class MediaItemPropertiesComponent {
     isDirty = false;
     saveState = '';
 
-    constructor(@Inject('overlayData') private data: MediaItemPropertiesData) {
-        this.item = this.data.item;
-        this.allTags = this.data.allTags || [];
+    private _allTags: string[] = [];
+
+    constructor(
+        private mediaService: MediaService,
+        private serverService: ServerService,
+        @Inject('overlayData') @Optional() data?: MediaItemPropertiesData
+    ) {
+        // When opened via the overlay service, the item is injected.
+        // When rendered inline (e.g. inside the video player), it is
+        // supplied through the @Input() binding instead.
+        if (data) {
+            this.item = data.item;
+        }
+        this.serverService.remoteUserSettings$.subscribe(v => {
+            this._allTags = v?.allTags || [];
+        });
     }
 
     tabClick(index: number): void {
@@ -54,7 +69,7 @@ export class MediaItemPropertiesComponent {
             return;
         }
         this.saveState = 'Saving...';
-        this.data.onSave(this.item.metaData).subscribe({
+        this.mediaService.updateItemMetadata(this.item.metaData).subscribe({
             next: () => {
                 this.isDirty = false;
                 this.saveState = 'Saved';
@@ -68,9 +83,7 @@ export class MediaItemPropertiesComponent {
         });
     }
 
-    close(): void {
-        if (this.data.onClose) {
-            this.data.onClose();
-        }
+    closeProperties(): void {
+        this.close.emit();
     }
 }

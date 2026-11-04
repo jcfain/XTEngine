@@ -91,6 +91,11 @@ export class GenericOverlayService {
     const componentPortal = new ComponentPortal(component, null, injector);
     // Attach the component and get its instance
     const componentRef = overlayRef.attach(componentPortal);
+    // If the component exposes a `close` EventEmitter, close the overlay when it emits
+    const closeOutput = (componentRef.instance as any)?.close;
+    if (closeOutput && typeof closeOutput.subscribe === 'function') {
+      closeOutput.subscribe(() => this.close(nameID));
+    }
     // // Dynamically hook up the `voiceNote` event if it exists
     // if (data?.onVoiceNote && componentRef.instance['voiceNote']) {
     //   componentRef.instance['voiceNote'].subscribe(data.onVoiceNote);

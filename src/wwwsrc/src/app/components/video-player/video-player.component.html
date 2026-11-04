@@ -182,4 +182,10 @@
   </div>
 </div>
 </div> -->
+
+<app-media-item-properties
+    [class.hidden]="!mediaSettingsOpen"
+    [item]="mediaItem"
+    (close)="closeMediaSettings()">
+</app-media-item-properties>
 </div>

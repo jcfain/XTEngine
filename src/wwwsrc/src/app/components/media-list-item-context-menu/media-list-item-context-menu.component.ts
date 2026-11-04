@@ -1,6 +1,6 @@
 import { Component, EventEmitter, input, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MediaItem, ScriptInfo, MediaItemMetaData } from '../../models/interfaces';
+import { MediaItem, ScriptInfo } from '../../models/interfaces';
 import { VideoService } from '../../services/video.service';
 import { ClickStopPropagation } from '../../directives/stop-propegation';
 import { WebsocketService } from '../../services/websocket.service';
@@ -8,10 +8,7 @@ import { MessageHandlerService } from '../../services/message-handler.service';
 import { MediaType } from '../../models/enums';
 import { AlertComponent } from '../alert-model/alert.component';
 import { GenericOverlayService } from '../../services/overlay.service';
-import { AppStateService } from '../../services/app-state.service';
 import { SettingsService } from '../../services/settings.service';
-import { MediaService } from '../../services/media.service';
-import { ServerService } from '../../services/server.service';
 import { MediaItemPropertiesComponent } from '../media-item-properties/media-item-properties.component';
 
 @Component({
@@ -45,9 +42,7 @@ export class MediaListItemContextMenuComponent implements OnInit {
     private overlayService: GenericOverlayService,
     private videoService: VideoService,
     private websocketService: WebsocketService,
-    private messageService: MessageHandlerService,
-    private mediaService: MediaService,
-    private serverService: ServerService
+    private messageService: MessageHandlerService
   ) {
     this.videoService.playingMediaItem$.subscribe(v => {
       this.playingMediaItem = v;
@@ -129,10 +124,7 @@ export class MediaListItemContextMenuComponent implements OnInit {
   openMetadataEvent() {
     const nameID = 'mediaItemProperties';
     this.overlayService.open(nameID, MediaItemPropertiesComponent, {
-      item: this.item,
-      allTags: this.serverService.remoteUserSettings?.allTags || [],
-      onSave: (metaData: MediaItemMetaData) => this.mediaService.updateItemMetadata(metaData),
-      onClose: () => this.overlayService.close(nameID)
+      item: this.item
     });
     this.closeEvent();
   }
