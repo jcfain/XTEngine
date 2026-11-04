@@ -1,0 +1,37 @@
+<div class="info-tab" [class.hidden]="!isVisible">
+    <div class="info-row">
+        <span class="info-label">Name:</span>
+        <span class="info-value">{{ name }}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Path:</span>
+        <span class="info-value">{{ libraryItemPath }}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Date Added:</span>
+        <span class="info-value">{{ dateAdded }}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Date Created:</span>
+        <span class="info-value">{{ modifiedDate }}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Has alternate script(s):</span>
+        <span class="info-value">{{ hasAlternate ? 'Yes' : 'No' }}</span>
+    </div>
+
+    @if (scripts.length) {
+        <div class="info-row info-row--block">
+            <span class="info-label">Scripts:</span>
+            <div class="info-scripts">
+                @for (script of scripts; track script) {
+                    <div class="info-script">{{ script }}</div>
+                }
+            </div>
+        </div>
+    }
+</div>

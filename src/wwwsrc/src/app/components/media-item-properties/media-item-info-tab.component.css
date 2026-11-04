@@ -1,0 +1,41 @@
+.info-tab {
+    padding: 10px 4px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.info-tab.hidden {
+    display: none;
+}
+
+.info-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    gap: 8px;
+}
+
+.info-row--block {
+    display: block;
+}
+
+.info-label {
+    font-weight: bold;
+    min-width: 180px;
+}
+
+.info-value {
+    color: #ccc;
+    word-break: break-all;
+}
+
+.info-scripts {
+    margin-top: 4px;
+}
+
+.info-script {
+    color: #ccc;
+    padding: 2px 0;
+    word-break: break-all;
+}

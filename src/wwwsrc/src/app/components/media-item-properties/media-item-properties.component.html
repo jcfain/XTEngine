@@ -1,0 +1,45 @@
+<div class="properties-modal">
+    <div class="properties-modal-content">
+        <div class="properties-modal-header">
+            <span class="properties-modal-title">Properties</span>
+            <button class="close-btn" (click)="close()">&times;</button>
+        </div>
+
+        <div class="properties-modal-body">
+            <div class="tab-row">
+                @for (tab of tabs; track tab; let i = $index) {
+                    <button class="tab-section-tab"
+                        [class.tab-section-tab--active]="activeTab === i"
+                        (click)="tabClick(i)">{{ tab }}</button>
+                }
+            </div>
+            <section class="tab-section">
+                <app-media-item-settings-tab
+                    [class.hidden]="activeTab !== 0"
+                    [item]="item"
+                    [isVisible]="activeTab === 0"
+                    (onDirty)="markDirty()">
+                </app-media-item-settings-tab>
+                <app-media-item-tags-tab
+                    [class.hidden]="activeTab !== 1"
+                    [item]="item"
+                    [allTags]="allTags"
+                    [isVisible]="activeTab === 1"
+                    (onDirty)="markDirty()">
+                </app-media-item-tags-tab>
+                <app-media-item-info-tab
+                    [class.hidden]="activeTab !== 2"
+                    [item]="item"
+                    [isVisible]="activeTab === 2">
+                </app-media-item-info-tab>
+            </section>
+        </div>
+
+        <div class="properties-modal-footer">
+            <div class="properties-modal-footer-content">
+                <span class="save-state" [class.hidden]="!saveState">{{ saveState }}</span>
+                <button [disabled]="!isDirty" (click)="save()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>

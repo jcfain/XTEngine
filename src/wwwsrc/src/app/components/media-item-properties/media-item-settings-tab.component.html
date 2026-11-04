@@ -1,0 +1,48 @@
+<div class="settings-tab" [class.hidden]="!isVisible">
+    <div class="formElement">
+        <label title="Change the sync offset for the current media item">Offset (ms)</label>
+        <input type="number" step="1" [(ngModel)]="offset" (ngModelChange)="onOffsetChange()" />
+    </div>
+    <div class="formElement">
+        <label></label>
+        <div class="form-buttons">
+            <button (click)="addToOffset(-500)">-500</button>
+            <button (click)="addToOffset(-100)">-100</button>
+            <button (click)="addToOffset(-50)">-50</button>
+            <button (click)="addToOffset(-10)">-10</button>
+            <button (click)="addToOffset(10)">+10</button>
+            <button (click)="addToOffset(50)">+50</button>
+            <button (click)="addToOffset(100)">+100</button>
+            <button (click)="addToOffset(500)">+500</button>
+        </div>
+    </div>
+
+    <div class="formElement">
+        <label title="Change the funscript range of the current media item">Funscript modifier (%)</label>
+        <input type="number" step="10" min="0" [(ngModel)]="funscriptModifier" (ngModelChange)="onModifierChange()" />
+    </div>
+    <div class="formElement">
+        <label></label>
+        <div class="form-buttons">
+            <button (click)="addToModifier(-50)">-50</button>
+            <button (click)="addToModifier(-30)">-30</button>
+            <button (click)="addToModifier(-10)">-10</button>
+            <button (click)="addToModifier(-5)">-5</button>
+            <button (click)="addToModifier(5)">+5</button>
+            <button (click)="addToModifier(10)">+10</button>
+            <button (click)="addToModifier(30)">+30</button>
+            <button (click)="addToModifier(50)">+50</button>
+        </div>
+    </div>
+
+    <div class="formElement">
+        <label title="Change the moneyshot for the current media item">Moneyshot (ms)</label>
+        <input type="number" step="1000" min="-1" [(ngModel)]="moneyShotMillis" (ngModelChange)="onMoneyShotChange()" />
+    </div>
+    <div class="formElement">
+        <label></label>
+        <div class="form-buttons">
+            <button (click)="resetMoneyShot()">Reset money shot</button>
+        </div>
+    </div>
+</div>
