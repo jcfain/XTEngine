@@ -70,54 +70,6 @@
     min-height: 0;
 }
 
-.tab-row {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background-color: black;
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-}
-
-.tab-section-tab {
-    cursor: pointer;
-    display: inline-block;
-    background-color: #5E6B7F;
-    color: white;
-    text-align: center;
-    transition: .25s ease;
-    border: none;
-    padding: 12px 16px;
-    min-height: 44px;
-    font-size: 1rem;
-    border-radius: 12px 12px 0 0;
-    min-width: fit-content;
-}
-
-.tab-section-tab--active {
-    background-color: #8DA1BF;
-}
-
-.tab-section {
-    display: flex;
-    flex-flow: column;
-    flex-grow: 1;
-    min-height: 0;
-    overflow: hidden;
-    border-top: 2px solid #5E6B7F;
-}
-
-.tab-section > app-media-item-settings-tab,
-.tab-section > app-media-item-tags-tab,
-.tab-section > app-media-item-info-tab {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-}
-
 .properties-modal-footer {
     display: flex;
     flex-flow: row;
@@ -159,8 +111,4 @@
 
 .save-state {
     color: yellow;
-}
-
-.hidden {
-    display: none;
 }

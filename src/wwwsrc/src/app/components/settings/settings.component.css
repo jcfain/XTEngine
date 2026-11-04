@@ -10,10 +10,6 @@
     background-color: rgba(0, 0, 0, 0.4);
 }
 
-.settings-modal.hidden {
-    display: none;
-}
-
 .settings-modal-content {
     display: flex;
     flex-flow: column;
@@ -63,42 +59,11 @@
 }
 
 .settings-modal-body {
-    overflow-y: auto;
+    display: flex;
+    flex-flow: column;
     flex-grow: 1;
     width: 100%;
-    height: 100%;
-}
-
-.tab-row {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background-color: black;
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-}
-
-.tab-section-tab {
-    cursor: pointer;
-    display: inline-block;
-    background-color: #5E6B7F;
-    color: white;
-    text-align: center;
-    transition: .25s ease;
-    border: none;
-    padding: 10px;
-    border-radius: 12px 12px 0 0;
-    min-width: fit-content;
-}
-
-.tab-section-tab--active {
-    background-color: #8DA1BF;
-}
-
-.tab-section {
-    border-top: 2px solid #5E6B7F;
+    min-height: 0;
 }
 
 .settings-modal-footer {

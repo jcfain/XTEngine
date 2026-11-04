@@ -14,17 +14,21 @@
             </div>
             <section class="tab-section">
                 <app-settings-local-tab
+                    [class.hidden]="activeTab !== 0"
                     [isVisible]="activeTab === 0">
                 </app-settings-local-tab>
                 <app-settings-connections-tab
+                    [class.hidden]="activeTab !== 1"
                     [isVisible]="activeTab === 1"
                     (onDirty)="markDirty()">
                 </app-settings-connections-tab>
                 <app-settings-motion-tab
+                    [class.hidden]="activeTab !== 2"
                     [isVisible]="activeTab === 2"
                     (onDirty)="markDirty()">
                 </app-settings-motion-tab>
                 <app-settings-system-tab 
+                    [class.hidden]="activeTab !== 3"
                     [isVisible]="activeTab === 3"
                     (onDirty)="markDirty()" 
                     (restartRequiredChange)="onRestartRequiredChange($event)">

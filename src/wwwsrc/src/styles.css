@@ -8,6 +8,7 @@
 @import url('styles/molecule/form.scss');
 @import url('styles/molecule/toolbar.scss');
 @import url('styles/molecule/modal.scss');
+@import url('styles/molecule/tab.scss');
 
 body {
     background-color: black;

@@ -1,14 +1,3 @@
-.settings-tab {
-    padding: 10px 4px;
-    overflow-y: auto;
-    flex: 1;
-    min-height: 0;
-}
-
-.settings-tab.hidden {
-    display: none;
-}
-
 .formElement {
     display: grid;
     grid-template-columns: 25% 75%;

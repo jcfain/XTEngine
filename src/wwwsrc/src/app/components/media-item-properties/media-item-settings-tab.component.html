@@ -1,4 +1,4 @@
-<div class="settings-tab" [class.hidden]="!isVisible">
+<div class="settings-tab tab-content" [class.hidden]="!isVisible">
     <div class="formElement">
         <label title="Change the sync offset for the current media item">Offset (ms)</label>
         <input type="number" step="1" [(ngModel)]="offset" (ngModelChange)="onOffsetChange()" />
