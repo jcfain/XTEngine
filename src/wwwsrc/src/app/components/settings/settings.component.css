@@ -58,14 +58,6 @@
     color: #fff;
 }
 
-.settings-modal-body {
-    display: flex;
-    flex-flow: column;
-    flex-grow: 1;
-    width: 100%;
-    min-height: 0;
-}
-
 .settings-modal-footer {
     display: flex;
     flex-flow: row;

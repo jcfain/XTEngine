@@ -1,6 +1,16 @@
 /* Shared tab styles for the settings and media item properties modals.
-   The tab row is pinned at the top of the modal body and each tab
-   component fills the tab section and scrolls its own content. */
+   The modal body is the scroll container and the tab row is pinned to
+   its top with position: sticky, so tab content scrolls under the row. */
+
+/* The modal body that contains the tab row and tab section.
+   It is the scroll container: the tab row pins to its top and
+   tab content scrolls under the row when it overflows. */
+.tab-body {
+    overflow-y: auto;
+    flex-grow: 1;
+    width: 100%;
+    min-height: 0;
+}
 
 .tab-row {
     position: sticky;
@@ -33,27 +43,14 @@
 }
 
 .tab-section {
-    display: flex;
-    flex-flow: column;
-    flex-grow: 1;
-    min-height: 0;
-    overflow: hidden;
     border-top: 2px solid #5E6B7F;
-}
-
-/* Each tab component fills the section and scrolls its own content */
-.tab-section > * {
-    display: flex;
-    flex-direction: column;
-    // flex: 1;
-    min-height: 0;  
-    max-height: 500px;
 }
 
 .tab-content {
     padding: 10px 4px;
     box-sizing: border-box;
-    overflow-y: auto;
-    flex: 1;
-    min-height: 0;
+}
+
+.hidden {
+    display: none;
 }

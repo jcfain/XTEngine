@@ -62,14 +62,6 @@
     background: rgba(255, 255, 255, 0.1);
 }
 
-.properties-modal-body {
-    display: flex;
-    flex-flow: column;
-    flex-grow: 1;
-    width: 100%;
-    min-height: 0;
-}
-
 .properties-modal-footer {
     display: flex;
     flex-flow: row;
