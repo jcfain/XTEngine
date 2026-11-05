@@ -24,7 +24,8 @@ input:disabled,
 textarea:disabled,
 button:disabled,
 select:disabled,
-input[type='checkbox']:disabled {
+input[type='checkbox']:disabled,
+input[type='radio']:disabled {
     border: 0;
     box-shadow: none;
     color: var(--control-disabled-text-color);
@@ -139,6 +140,28 @@ input[type='checkbox']:checked::after {
     line-height: 1;
     text-align: center;
     color: var(--control-text-color);
+}
+
+input[type='radio'] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--control-border-color);
+    border-radius: 50%;
+    background: var(--control-background);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+input[type='radio']:checked::after {
+    content: "";
+    display: block;
+    width: 10px;
+    height: 10px;
+    margin: 6px;
+    border-radius: 50%;
+    background: var(--control-text-color);
 }
 
 input[type='range'] {
