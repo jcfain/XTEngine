@@ -133,17 +133,20 @@ export class MediaToolbarComponent implements OnInit {
   }
 
   private updateTagCounts(allTags: string[]): void {
+    this.tagCounts = {};
     this.updateTagCountTotals(allTags);
     this.updateTagCountsDisplayed(allTags);
   }
 
   private updateTagCountTotals(allTags: string[]): void {
     allTags.forEach(tag => {
+      if(!this.tagCounts[tag]) {
+        this.tagCounts[tag] = {count: 0, total: 0};
+      } else {
+        this.tagCounts[tag].total = 0;
+      }
       this.mediaListService.mediaList?.forEach(item => {
         if(item.metaData.tags.some(x => x == tag)) {
-          if(!this.tagCounts[tag]) {
-            this.tagCounts[tag] = {count: 0, total: 0};
-          }
           this.tagCounts[tag].total++;
         }
       });
@@ -152,11 +155,13 @@ export class MediaToolbarComponent implements OnInit {
 
   private updateTagCountsDisplayed(allTags: string[]): void {
     allTags.forEach(tag => {
+      if(!this.tagCounts[tag]) {
+        this.tagCounts[tag] = {count: 0, total: 0};
+      } else {
+        this.tagCounts[tag].count = 0;
+      }
       this.mediaListService.mediaListDisplayed?.forEach(item => {
         if(item.metaData.tags.some(x => x == tag)) {
-          if(!this.tagCounts[tag]) {
-            this.tagCounts[tag] = {count: 0, total: 0};
-          }
           this.tagCounts[tag].count++;
         }
       });
