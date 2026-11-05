@@ -1,11 +1,13 @@
-
+/* Form layout. Control appearance (colors, borders, sizing) comes
+   from the global theme in styles/atom/controls.scss. */
 
 .formElement {
     display: grid;
     grid-template-columns: 25% 75%;
     margin-top: 8px;
     width: 100%;
-    text-align: end;  
+    text-align: end;
+    align-items: center;
 }
 
 .formElement--label-large {
@@ -21,66 +23,47 @@
     text-align: center;
 }
 
-.formElement select,
-.formElement button:not(.video-control),
-.formElement input:not([type='checkbox']):not([type='range']):not([type='radio']):not(.video-control) {
-    flex-grow: 1;
-    border-radius: 5px;
-    height: 24px;
-}
-.formElement > label {
-    height: 24px;
-    flex-basis: 20%;
-    padding-top: 4px;
-    margin-right: 8px;
+.formElement label {
+    font-size: 1.05rem;
+    font-weight: bold;
+    margin-right: 12px;
     text-wrap: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
 }
+
 .formElement--column > label {
-    height: 24px;
-    flex-basis: 100%;
-    padding-top: 4px;
-    margin-right: 0px;
+    margin-right: 0;
+}
+
+.formElement input:not([type='checkbox']):not([type='range']):not([type='radio']):not(.video-control),
+.formElement select {
+    width: 100%;
+}
+
+.formElement input[type='checkbox'] {
+    margin: 8px;
+}
+
+.formElement--column input[type='checkbox'] {
+    margin: auto;
 }
 
 .formElement .radio-group {
     text-align: start;
 }
+
 .formElement .radio-group--select-model {
     text-align: start;
     display: flex;
     flex-flow: column;
 }
 
-
-/* width: max-content Hack to get to align left. Somthings not right but im not looking for it now.  */
-.formElement input[type='checkbox'] {
-    width: min-content;
-    height: min-content;
-    margin: 8px;
-}
-.formElement--column input[type='checkbox'] {
-    width: min-content;
-    height: min-content;
-    margin: auto;
-}
-.form-buttons {  
+.form-buttons {
     display: flex;
     flex-wrap: wrap;
-}
-/* .form-buttons button {
-    font-size: max(0.5em, 0.1em + 1cqi);
-} */
-.form-buttons button:not(:last-child) {
-    margin-right: 8px;
-}
-
-.form-group-label {
-
-}
-
-.form-group {
+    justify-content: flex-end;
+    gap: 8px;
 }
 
 .form-group-section {
@@ -89,27 +72,9 @@
     width: 100%;
     place-items: center;
 }
-.form-group-section > * {
-    // min-width: max-content;
-    // max-width: 33%;
-}
-
-/* grid-template-columns: 5% 10% 15% 27% 15% 27%; */
-.form-group-section-connection {
-    
-}
-.form-group-control-header {
-    
-}
-.form-group-control-header > * {
-
-}
 
 .form-group-control {
     display: flex;
     flex-wrap: nowrap;
     flex-grow: 1;
-}
-.form-group-control > * {
- /*    min-width: max-content;   */  
 }

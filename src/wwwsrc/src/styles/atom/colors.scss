@@ -1,4 +1,27 @@
+/* Theme color variables. Swap these values to re-theme the app.
+   Naming: --{module}-{element}-{property}, relative to the generic
+   function of the color so themes can be swapped in one place. */
+:root {
+    /* Controls (inputs, selects, checkboxes) */
+    --control-background: #16213e;
+    --control-border-color: #333;
+    --control-text-color: #e0e0e0;
 
+    /* Buttons */
+    --button-background: #16213e;
+    --button-border-color: #333;
+    --button-text-color: #e0e0e0;
+    --button-hover-background: #533483;
+
+    /* Control states */
+    --control-disabled-background: #ccc;
+    --control-disabled-text-color: #888;
+    --control-invalid-border-color: red;
+
+    /* Tabs */
+    --tab-background: #5E6B7F;
+    --tab-active-background: #8DA1BF;
+}
 
 .background-color-caution {
     background-color: yellow !important;

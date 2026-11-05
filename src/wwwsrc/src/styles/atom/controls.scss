@@ -16,18 +16,19 @@ input:invalid,
 textarea:invalid,
 button:invalid,
 select:invalid {
-    border-color: red;
+    border-color: var(--control-invalid-border-color);
     border-width: 2px;
 }
 
 input:disabled,
 textarea:disabled,
 button:disabled,
-select:disabled {
+select:disabled,
+input[type='checkbox']:disabled {
     border: 0;
     box-shadow: none;
-    color: #888;
-    background-color: #ccc;
+    color: var(--control-disabled-text-color);
+    background-color: var(--control-disabled-background);
     pointer-events: none;
 }
 
@@ -63,27 +64,128 @@ select:disabled {
 
 }
 
-button:not(.icon-button)
-        :not(.tab-section-tab)
-        :not(.video-control)
-        :not(.media-context)
-        :not(.side-action-tcode-action-button)
-        :not(.login-button) {
-    border-radius: 5px;
-    height: 24px;
+/* ============ Themed controls ============
+   The app-wide default look for buttons, text inputs, selects and
+   checkboxes. Exclusions use :where() so the theme keeps the lowest
+   possible specificity (element level) and any component, form or
+   state rule can override it. Colors come from the theme variables
+   in styles/atom/colors.scss. */
+
+button:where(:not(.icon-button):not(.tab-section-tab):not(.video-control):not(.media-context):not(.side-action-tcode-action-button):not(.login-button)) {
+    background: var(--button-background);
+    border: 1px solid var(--button-border-color);
+    color: var(--button-text-color);
+    min-height: 44px;
+    min-width: 56px;
+    padding: 10px 16px;
+    font-size: 1.05rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+button:where(:not(.icon-button):not(.tab-section-tab):not(.video-control):not(.media-context):not(.side-action-tcode-action-button):not(.login-button)):hover {
+    background: var(--button-hover-background);
+}
+
+/* Compact variant for dense layouts (e.g. range slider steppers) */
+button.button--small {
+    min-height: 28px;
+    min-width: 28px;
+    padding: 2px 8px;
+    font-size: 1rem;
+}
+
+input:where(:not([type='checkbox']):not([type='range']):not([type='radio']):not(.video-control):not(.login-pass)) {
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 1.1rem;
+    border: 1px solid var(--control-border-color);
+    border-radius: 8px;
+    background: var(--control-background);
+    color: var(--control-text-color);
+    box-sizing: border-box;
 }
 
 select {
     min-width: 132px;
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 1.1rem;
+    border: 1px solid var(--control-border-color);
+    border-radius: 8px;
+    background: var(--control-background);
+    color: var(--control-text-color);
+    box-sizing: border-box;
 }
 
-select:hover,
-button:hover:not(.video-control)
-            :not(.media-context)
-            :not(.login-button),
-input:hover:not(.range-input)
-            :not(.login-pass){
-    background-color: lightblue;
+input[type='checkbox'] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--control-border-color);
+    border-radius: 6px;
+    background: var(--control-background);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+input[type='checkbox']:checked::after {
+    content: "✓";
+    display: block;
+    padding: 3px;
+    font-size: 16px;
+    line-height: 1;
+    text-align: center;
+    color: var(--control-text-color);
+}
+
+input[type='range'] {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 20px;
+    background: transparent;
+    cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+    height: 8px;
+    border: 1px solid var(--control-border-color);
+    border-radius: 4px;
+    background: var(--control-background);
+}
+
+input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -6px;
+    border: 2px solid var(--control-border-color);
+    border-radius: 50%;
+    background: var(--control-text-color);
+    cursor: pointer;
+}
+
+input[type='range']::-moz-range-track {
+    height: 8px;
+    border: 1px solid var(--control-border-color);
+    border-radius: 4px;
+    background: var(--control-background);
+}
+
+input[type='range']::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--control-border-color);
+    border-radius: 50%;
+    background: var(--control-text-color);
+    cursor: pointer;
+}
+
+input[type='range']::-moz-focus-outer {
+    border: 0;
 }
 
 .icon-button {

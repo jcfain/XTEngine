@@ -26,7 +26,7 @@
 .tab-section-tab {
     cursor: pointer;
     display: inline-block;
-    background-color: #5E6B7F;
+    background-color: var(--tab-background);
     color: white;
     text-align: center;
     transition: .25s ease;
@@ -39,11 +39,11 @@
 }
 
 .tab-section-tab--active {
-    background-color: #8DA1BF;
+    background-color: var(--tab-active-background);
 }
 
 .tab-section {
-    border-top: 2px solid #5E6B7F;
+    border-top: 2px solid var(--tab-background);
 }
 
 .tab-content {
