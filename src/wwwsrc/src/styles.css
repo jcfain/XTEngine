@@ -11,8 +11,8 @@
 @import url('styles/molecule/tab.scss');
 
 body {
-    background-color: black;
-    color: white;
+    background-color: var(--background-color);
+    color: var(--foreground-color);
     font-family: 'sans-serif', "serif", "Lucida Sans Regular", 'Times New Roman', "Times", "DejaVu Serif", "Verdana";
     margin: 0;
     overflow: hidden;

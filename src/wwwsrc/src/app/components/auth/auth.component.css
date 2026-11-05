@@ -3,11 +3,11 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: black;
+  background: rgb(24, 24, 24);
 }
 
 .auth-box {
-  background: #282828;
+  background: var(--background-color);
   padding: 40px;
   border-radius: 8px;
   /* box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); */
@@ -17,7 +17,7 @@
 }
 
 h2 {
-  color: #e0e0e0;
+  color: var(--foreground-color);
   margin-top: 0;
   text-align: center;
 }
@@ -35,62 +35,28 @@ h2 {
 
 .form-group label {
   display: block;
-  color: #aaa;
+  color: var(--foreground-color);
   margin-bottom: 8px;
 }
 
 .login-pass {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #333;
-  border-radius: 4px;
-  background: #717171;
-  color: #ddd;
-  font-size: 1rem;
-  box-sizing: border-box;
-}
-
-.login-pass:focus {
-  outline: none;
-  border-color: #9b9b9b;
-}
-.login-pass:hover {
-  border-color: #e0e0e0;
-  background: #9b9b9b;
 }
 
 .checkbox-group label {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #aaa;
+  color: var(--foreground-color);
   cursor: pointer;
 }
 
 .error {
-  color: crimson;
+  color: var(--control-invalid-border-color);
   font-size: 0.9rem;
   margin-bottom: 15px;
 }
 
 .login-button {
   width: 100%;
-  padding: 12px;
-  background: black;
-  color: #aaa;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: box-shadow 0.2s;
-}
-
-.login-button:hover:not(:disabled) {
-  background: #131313;
-  /* box-shadow: 0px 0px 20px rgba(255, 0, 0, 0.8); */
-}
-
-.login-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
