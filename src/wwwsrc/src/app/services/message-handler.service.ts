@@ -96,7 +96,6 @@ export class MessageHandlerService {
     private speechSynthesis: SpeechSynthesisService,
     // private appState: AppStateService,
     // private mediaService: MediaService,
-    // private mediaListService: MediaListService,
     // private serverService: ServerService,
     // private settingsService: SettingsService,
     // private videoService: VideoService,
@@ -194,7 +193,6 @@ export class MessageHandlerService {
           break;
 
         case 'updateThumb':
-          // this.mediaListService.onUpdateThumb(data['message']);
           this.updateThumbSubject.next(data['message']);
           break;
 

@@ -2,9 +2,10 @@ import { Injectable } from "@angular/core";
 import { AppStateService } from "./app-state.service";
 import { MediaItem, MediaItemMetaData } from "../models/interfaces";
 import { VideoService } from "./video.service";
+import { MessageHandlerService } from "./message-handler.service";
 import { BehaviorSubject, Observable, Subject } from "rxjs";
 import { LocalSettingsService } from "./local-settings.service";
-import { MediaType, ShowMode, SortMode } from "../models/enums";
+import { MediaType, ShowMode, SortMode, ThumbState } from "../models/enums";
 import { HttpClient } from "@angular/common/http";
 import { convertMediaItemDates } from "../utils/utils";
 
@@ -17,7 +18,16 @@ export class MediaListService {
         private localSettingsService: LocalSettingsService,
         private appState: AppStateService,
         private videoService: VideoService,
+        private messageHandlerService: MessageHandlerService,
     ) {
+        // The server sends 'updateThumb' (not 'updateItem') when a thumb is
+        // generated. Transition the item out of Waiting/Loading so the thumb
+        // path resolves to the real file. Updating the canonical list in place
+        // also fixes off-screen items (the displayed rows share these same
+        // object references) whose components don't exist yet.
+        this.messageHandlerService.updateThumb$.subscribe(v => {
+            if (v) this.onUpdateThumb(v);
+        });
         this.localSettingsService.show$.subscribe(v => {
             this.show = v;
             this.applyFilterAndSort();
@@ -58,7 +68,7 @@ export class MediaListService {
     // private get selectedMediaItem(): MediaItem | null { return this.selectedMediaItemSubject.value; }
 
     get mediaList(): MediaItem[] | undefined { return this.mediaListSubject.value; }
-    private get mediaListDisplayed(): MediaItem[] | undefined { return this.mediaListDisplayedSubject.value; }
+    get mediaListDisplayed(): MediaItem[] | undefined { return this.mediaListDisplayedSubject.value; }
 
     filterCriteria: string = this.localSettingsService.filterCriteriaDefault;
     sortBy: SortMode = this.localSettingsService.sortDefault;
@@ -129,7 +139,9 @@ export class MediaListService {
         const item = this.mediaList.find(m => m.id === message.id);
         if (item) {
             item.relativeThumb = '/thumb/' + message.thumb;
-            this.updateMediaItem(item);
+            item.thumbState = message.errorMessage ? ThumbState.Error : ThumbState.Ready;
+            item.thumbFileExists = !message.errorMessage;
+            item.thumbVersion = Date.now();
         }
     }
 

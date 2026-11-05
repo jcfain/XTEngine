@@ -48,13 +48,22 @@ export class MediaToolbarComponent implements OnInit {
   scriptInputHidden: boolean = true;
   allTags: string[] = [];
   selectedTags: string[] = [];
+  totalMediaItems: number = 0;
 
   getTagCount(tag: string): number {
-    const count = this.tagCounts[tag];
-    return !count ? 0 : count;;
+    if(!this.tagCounts[tag])
+      return 0;
+    const count = this.tagCounts[tag].count;
+    return !count ? 0 : count;
+  }
+  getTagTotal(tag: string): number {
+    if(!this.tagCounts[tag])
+      return 0;
+    const count = this.tagCounts[tag].total;
+    return !count ? 0 : count;
   }
 
-  private tagCounts: Record<string, number> = {};
+  private tagCounts: Record<string, {count: number, total: number}> = {};
 
   ngOnInit(): void {
     this.localSettingsService.filterCriteria$.subscribe(f => this.filterText = f);
@@ -68,7 +77,10 @@ export class MediaToolbarComponent implements OnInit {
       this.selectedTags = s;
     });
     this.mediaListService.mediaList$.subscribe(v => {
-      this.updateTagCounts(this.allTags);
+      this.updateTagCountTotals(this.allTags);
+    });
+    this.mediaListService.mediaListDisplayed$.subscribe(v => {
+      this.updateTagCountsDisplayed(this.allTags);
     });
     this.messageHandlerService.tagsUpdateSubject$.subscribe(v => {
       this.allTags = v?.allTags || [];
@@ -121,13 +133,31 @@ export class MediaToolbarComponent implements OnInit {
   }
 
   private updateTagCounts(allTags: string[]): void {
+    this.updateTagCountTotals(allTags);
+    this.updateTagCountsDisplayed(allTags);
+  }
+
+  private updateTagCountTotals(allTags: string[]): void {
     allTags.forEach(tag => {
       this.mediaListService.mediaList?.forEach(item => {
         if(item.metaData.tags.some(x => x == tag)) {
           if(!this.tagCounts[tag]) {
-            this.tagCounts[tag] = 0;
+            this.tagCounts[tag] = {count: 0, total: 0};
           }
-          this.tagCounts[tag]++;
+          this.tagCounts[tag].total++;
+        }
+      });
+    });
+  }
+
+  private updateTagCountsDisplayed(allTags: string[]): void {
+    allTags.forEach(tag => {
+      this.mediaListService.mediaListDisplayed?.forEach(item => {
+        if(item.metaData.tags.some(x => x == tag)) {
+          if(!this.tagCounts[tag]) {
+            this.tagCounts[tag] = {count: 0, total: 0};
+          }
+          this.tagCounts[tag].count++;
         }
       });
     });

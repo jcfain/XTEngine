@@ -38,7 +38,7 @@
     right: 2.3%;
     /* margin-top: 76px; */
     /* height: 80vh; */
-    z-index: 18;
+    z-index: 15;
     width: fit-content;
     background-color: transparent;
     pointer-events: none;
@@ -57,7 +57,7 @@
     right: 100px;    
     margin-top: 16px;
     position: absolute;
-    z-index: 10;
+    z-index: 15;
     border: 1px black;
     background-color: white;
 }
@@ -74,10 +74,10 @@
 }
 
 .side-action-tag-filter-modal {  
-    width: 150px;
+    width: 280px;
     border-radius: 25px;
     position: absolute;
-    z-index: 10;
+    z-index: 15;
     right: 100px;
     margin-top: 60px;
     display: flex;

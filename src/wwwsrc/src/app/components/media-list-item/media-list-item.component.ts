@@ -7,7 +7,6 @@ import { VideoService } from '../../services/video.service';
 import { ClickStopPropagation } from '../../directives/stop-propegation';
 import { LazySrcDirective } from '../../directives/lazy-src';
 import { MediaListItemContextMenuComponent } from '../media-list-item-context-menu/media-list-item-context-menu.component';
-import { MessageHandlerService } from '../../services/message-handler.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -66,18 +65,11 @@ export class MediaListItemComponent implements OnInit, OnChanges {
   // private mediaItemHeaderIconMultiplier: number = 0.10;
 
   constructor(
-    private messageHandlerService: MessageHandlerService,
     private videoService: VideoService
   ) {
     this.subscriptions.add(
       this.videoService.playingMediaItem$.subscribe(v => {
         this.playingMediaItem = v;
-      })
-    );
-    this.subscriptions.add(
-      this.messageHandlerService.updateThumb$.subscribe(v => {
-      if(this.item && this.item.id == v?.id)
-        this.item.thumbVersion = Date.now();
       })
     );
   }

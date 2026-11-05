@@ -45,7 +45,7 @@ export class ServerService {
         this.serverPongSubject.next(ConnectionStatus.Connected);
       },
       error: (err) => {
-        console.error('Error pinging server:', err);
+        console.warn('No pong on ping:', err);
         this.serverPongSubject.next(ConnectionStatus.Disconnected);
       }
     });
