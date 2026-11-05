@@ -4,6 +4,7 @@ import { SpeechSynthesisService } from './speech-synthesis.service';
 import { MediaItem } from '../models/interfaces';
 import { XLogLevel, ConnectionStatus, ChannelTimeType, ConnectionInterface } from '../models/enums';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { convertMediaItemDates } from '../utils/utils';
 
 interface SettingChanged {key: string, value: any};
 interface StatusOutput {message: string, percentage:number};
@@ -199,15 +200,19 @@ export class MessageHandlerService {
 
         case 'updateItem': {
           const message = data['message'];
+          const item = message['item'] as MediaItem;
+          convertMediaItemDates(item);
           // this.messageListService.updateItem(message['item'], message['roles']);
-          this.updateMediaItemSubject.next({ "item": message['item'], "roles": message['roles'] });
+          this.updateMediaItemSubject.next({ "item": item, "roles": message['roles'] });
           break;
         }
 
         case 'addItem': {
           const message = data['message'];
+          const item = message['item'] as MediaItem;
+          convertMediaItemDates(item);
           // this.messageListService.addItem(message['item']);
-          this.addItemSubject.next(message['item']);
+          this.addItemSubject.next(item);
           break;
         }
 

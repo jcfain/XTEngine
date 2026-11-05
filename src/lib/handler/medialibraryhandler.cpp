@@ -816,7 +816,7 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
 
             foreach (QString tag, SettingsHandler::getUserSmartTags()) {
                 bool isMatch = false;
-                foreach (auto track, item.metadata.MFSTracks) {
+                foreach (auto track, item.metadata.tracks) {
                     if(track.toLower() == tag.toLower()) {
                         isMatch = true;
                         break;
@@ -1301,6 +1301,7 @@ void MediaLibraryHandler::updateItem(LibraryListItem27 item, QVector<int> roles,
     auto index = m_mediaLibraryCache.findItemIndexByID(item.ID);
     if(index > -1) {
         LibraryListItem27::copyProperties(item, *m_mediaLibraryCache.value(index));
+        auto itemAfter = m_mediaLibraryCache.value(index);
         if(notify) {
             emit itemUpdated(index, {roles});
         }
@@ -1711,7 +1712,7 @@ bool MediaLibraryHandler::discoverMultiAxis(LibraryListItem27 &item) {
     item.metadata.isMFS = false;
     item.metadata.toolTip.clear();
     item.metadata.MFSScripts.clear();
-    item.metadata.MFSTracks.clear();
+    item.metadata.tracks.clear();
     QString path = item.script.isEmpty() ? item.path : item.script;
     auto sfmaTracks = FunscriptHandler::getSFMATracks(path);
     if(!sfmaTracks.empty())
@@ -1722,7 +1723,7 @@ bool MediaLibraryHandler::discoverMultiAxis(LibraryListItem27 &item) {
         {
             item.metadata.toolTip += "\n";
             item.metadata.toolTip += track.track;
-            item.metadata.MFSTracks << track.track;
+            item.metadata.tracks << track.track;
         }
     }
     QString pathNoExtension = XFileUtil::getPathNoExtension(path);
@@ -1739,7 +1740,7 @@ bool MediaLibraryHandler::discoverMultiAxis(LibraryListItem27 &item) {
             item.metadata.toolTip += "\n";
             item.metadata.toolTip += pathNoExtension + scriptExtension;
             item.metadata.MFSScripts << pathNoExtension + scriptExtension;
-            item.metadata.MFSTracks << scriptExtension.remove("funscript").remove(".");
+            item.metadata.tracks << scriptExtension.remove("funscript").remove(".");
         }
     }
     return item.metadata.isMFS || item.metadata.isSFMA;

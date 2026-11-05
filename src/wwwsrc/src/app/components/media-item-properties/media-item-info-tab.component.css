@@ -1,6 +1,6 @@
 .info-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     margin-bottom: 12px;
     gap: 8px;
 }
@@ -11,12 +11,12 @@
 
 .info-label {
     font-weight: bold;
-    min-width: 180px;
+    min-width: 115px;
 }
 
 .info-value {
     color: #ccc;
-    word-break: break-all;
+    word-break: break-word;
 }
 
 .info-scripts {
@@ -26,5 +26,12 @@
 .info-script {
     color: #ccc;
     padding: 2px 0;
-    word-break: break-all;
+    word-break: break-word;
+}
+
+
+@media (max-width: 768px) {
+    .info-row {
+        flex-wrap: wrap;
+    }
 }

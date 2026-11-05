@@ -39,7 +39,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
     QList<QString> funscripts;
     QList<QString> tags;
     QStringList MFSScripts;
-    QStringList MFSTracks;
+    QStringList tracks;
     QList<ScriptInfo> scripts;
 
     friend QDataStream & operator<<(QDataStream &dataStream, const LibraryListItemMetaData258 &object )
@@ -71,7 +71,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
             dataStream << tag;
         foreach(auto script, object.MFSScripts )
             dataStream << script;
-        foreach(auto track, object.MFSTracks )
+        foreach(auto track, object.tracks )
             dataStream << track;
         foreach(auto script, object.scripts )
             dataStream << script;
@@ -108,7 +108,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
             dataStream >> tag;
         foreach(auto script, object.MFSScripts )
             dataStream >> script;
-        foreach(auto track, object.MFSTracks )
+        foreach(auto track, object.tracks )
             dataStream >> track;
         foreach(auto script, object.scripts )
             dataStream >> script;
@@ -175,8 +175,8 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         }
         obj["MFSScripts"] = mfsScripts;
         QJsonArray mfsTracks;
-        foreach (auto script, item.MFSTracks) {
-            mfsScripts.append(script);
+        foreach (auto track, item.tracks) {
+            mfsTracks.append(track);
         }
         obj["MFSTracks"] = mfsTracks;
         QJsonArray scripts;
@@ -227,7 +227,7 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         }
         foreach(auto track, obj["MFSTracks"].toArray())
         {
-            newItem.MFSTracks.append(track.toString());
+            newItem.tracks.append(track.toString());
         }
         foreach(auto track, obj["scripts"].toArray())
         {
@@ -284,10 +284,10 @@ struct XTENGINE_EXPORT LibraryListItemMetaData258
         {
             MFSScripts.append(script);
         }
-        MFSTracks.clear();
-        foreach(auto track, newItem.MFSTracks)
+        tracks.clear();
+        foreach(auto track, newItem.tracks)
         {
-            MFSTracks.append(track);
+            tracks.append(track);
         }
         scripts.clear();
         foreach(auto track, newItem.scripts)

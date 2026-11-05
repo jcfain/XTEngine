@@ -6,6 +6,7 @@ import { BehaviorSubject, Observable, Subject } from "rxjs";
 import { LocalSettingsService } from "./local-settings.service";
 import { MediaType, ShowMode, SortMode } from "../models/enums";
 import { HttpClient } from "@angular/common/http";
+import { convertMediaItemDates } from "../utils/utils";
 
 @Injectable({
   providedIn: 'root'
@@ -56,7 +57,7 @@ export class MediaListService {
 
     // private get selectedMediaItem(): MediaItem | null { return this.selectedMediaItemSubject.value; }
 
-    private get mediaList(): MediaItem[] | undefined { return this.mediaListSubject.value; }
+    get mediaList(): MediaItem[] | undefined { return this.mediaListSubject.value; }
     private get mediaListDisplayed(): MediaItem[] | undefined { return this.mediaListDisplayedSubject.value; }
 
     filterCriteria: string = this.localSettingsService.filterCriteriaDefault;
@@ -152,9 +153,9 @@ export class MediaListService {
         const list = [...this.mediaList];
         const index = list.findIndex(m => m.id === updated.id);
         if (index !== -1) {
-        list[index] = updated;
-        this.mediaListSubject.next(list);
-        this.applyFilterAndSort();
+            list[index] = updated;
+            this.mediaListSubject.next(list);
+            this.applyFilterAndSort();
         }
     }
 
@@ -223,12 +224,20 @@ export class MediaListService {
                     case SortMode.NameDesc:
                     return b.displayName.localeCompare(a.displayName);
                     case SortMode.Date:
+                    convertMediaItemDates(a);
+                    convertMediaItemDates(b);
                     return (a.metaData.dateAdded?.getTime() || 0) - (b.metaData.dateAdded?.getTime() || 0);
                     case SortMode.DateDesc:
+                    convertMediaItemDates(a);
+                    convertMediaItemDates(b);
                     return (b.metaData.dateAdded?.getTime() || 0) - (a.metaData.dateAdded?.getTime() || 0);
                     case SortMode.DateAdded:
+                    convertMediaItemDates(a);
+                    convertMediaItemDates(b);
                     return (a.modifiedDate?.getTime() || 0) - (b.modifiedDate?.getTime() || 0);
                     case SortMode.DateAddedDesc:
+                    convertMediaItemDates(a);
+                    convertMediaItemDates(b);
                     return (b.modifiedDate?.getTime() || 0) - (a.modifiedDate?.getTime() || 0);
                     default:
                     return a.displayName.localeCompare(b.displayName);

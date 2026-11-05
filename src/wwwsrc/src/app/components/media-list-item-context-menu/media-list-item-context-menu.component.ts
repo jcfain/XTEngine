@@ -130,7 +130,7 @@ export class MediaListItemContextMenuComponent implements OnInit {
   }
 
   processMetadataEvent() {
-    this.websocketService.sendUpdateMetadata(this.item.id);
+    this.websocketService.sendUpdateMetadata(this.item.metaData.key);
     this.closeEvent();
   }
 

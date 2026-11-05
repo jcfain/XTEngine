@@ -1,3 +1,5 @@
+import { MediaItem } from "../models/interfaces";
+
 export function scale(number: number, inMin: number, inMax: number, outMin: number, outMax: number): number {
     return (((number - inMin) * (outMax - outMin)) / (inMax - inMin)) + outMin;
 }
@@ -97,3 +99,10 @@ export function getCookie(name: string): boolean {
         return c.trim().startsWith(name + '=');
     });
 }
+
+export function convertMediaItemDates(item: MediaItem): void {
+    if(typeof item.modifiedDate === "string")
+        item.modifiedDate = new Date(item.modifiedDate);
+    if(typeof item.metaData.dateAdded === "string")
+        item.metaData.dateAdded = new Date(item.metaData.dateAdded);
+};

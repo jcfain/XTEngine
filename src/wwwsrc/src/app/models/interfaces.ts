@@ -12,6 +12,8 @@ import { ConnectionInterface,
         SettingProfile, 
         Track } from './enums';
 
+// When adding dates, make sure to add it to utils.ts convertMediaItemDates
+// As well for websocket transmition 
 export interface MediaItem {
     id: string;
     type: MediaType;
@@ -44,6 +46,8 @@ export interface MediaItem {
     metaData: MediaItemMetaData;
 }
 
+// When adding dates, make sure to add it to utils.ts convertMediaItemDates
+// As well for websocket transmition 
 export interface MediaItemMetaData {
     id: string;
     key: string;
@@ -67,8 +71,8 @@ export interface MediaItemMetaData {
     thumbExtractError: string;
     bookmarks: Bookmark[];
     tags: string[];
-    mfsScripts: string[];// TODO: do these convert from MFS to mfs camel case?
-    mfsTracks: string[];
+    MFSScripts: string[];
+    MFSTracks: string[];
     scripts: ScriptInfo[];
 }
 

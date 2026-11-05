@@ -20,18 +20,45 @@
     </div>
 
     <div class="info-row">
-        <span class="info-label">Has alternate script(s):</span>
+        <span class="info-label">Alt script(s):</span>
         <span class="info-value">{{ hasAlternate ? 'Yes' : 'No' }}</span>
     </div>
 
-    @if (scripts.length) {
-        <div class="info-row info-row--block">
-            <span class="info-label">Scripts:</span>
-            <div class="info-scripts">
+
+    <div class="info-row">
+        <span class="info-label">Scripts:</span>
+        <div class="info-value">
+            @if (scripts.length) {
+                @for (script of scripts; track script) {
+                    <div class="info-script">{{ script.filename }} {{ script.track }}</div>
+                }
+            } @else {
+                <div class="info-script">No scripts</div>
+            }
+        </div>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Tracks:</span>
+        <div class="info-value">
+            @if (tracks.length) {
+                @for (value of tracks; track value) {
+                    <div class="info-script">{{ value }}</div>
+                }
+            } @else {
+                <div class="info-script">{{scripts.length ? 'No aditional tracks' : 'No tracks'}}</div>
+            }
+        </div>
+    </div>
+    <!-- <div class="info-row info-row--block">
+        <span class="info-label">Scripts:</span>
+        <div class="info-scripts">
+            @if (scripts.length) {
                 @for (script of scripts; track script) {
                     <div class="info-script">{{ script }}</div>
                 }
-            </div>
+            } @else {
+                <div class="info-script">No scripts.</div>
+            }
         </div>
-    }
+    </div> -->
 </div>

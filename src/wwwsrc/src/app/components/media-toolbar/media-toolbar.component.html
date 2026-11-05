@@ -51,7 +51,7 @@
     @for (tag of allTags; track tag; let idx = $index) {
       <div class="system-tag-checkbox">
         <input [id]="'tagFilter' + idx" type="checkbox" [value]="tag" (click)="onTagClick($event)" [ngModel]="isTagSelected(tag)" />
-        <label for="'tagFilter' + idx">{{tag}}</label>
+        <label for="'tagFilter' + idx">{{tag}} ({{getTagCount(tag)}})</label>
       </div>
     }
   </div>

@@ -212,7 +212,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   validateMetadata(metaData: MediaItemMetaData) {
-    if(metaData?.mfsScripts.length > 100)
+    if(metaData?.MFSScripts.length > 100)
     {
       // showAlertWindow("System error", `There is a possible issue with this items metadata.<br>
       //   Doing a metadata process by clicking one of the buttons below or<br>
@@ -229,10 +229,9 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
   {
     var index = this.mediaList.findIndex(x => x.id == item.id);
     if(index > -1) {
-      var updated = JSON.parse(JSON.stringify(item));
-      this.mediaList[index] = updated;
+      this.mediaListService.updateMediaItem(item);
       if(this.videoService.isItemPlaying(item)) {
-        this.videoService.playingMediaItem = updated;
+        this.videoService.playingMediaItem = item;
       }
       // Swap the item in place in its row. Rebuilding all rows here would
       // re-chunk the entire list and force the virtual scroller to re-diff
@@ -240,7 +239,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
       // picks up the in-place change on the next change detection pass.
       var row = this.rows[Math.floor(index / this.columns)];
       if (row) {
-        row[index % this.columns] = updated;
+        row[index % this.columns] = item;
       }
       // if(selectedMediaItemForMetaData && selectedMediaItemForMetaData.id == libraryItem.id) {
       //   selectedMediaItemForMetaData = this.mediaList[index];

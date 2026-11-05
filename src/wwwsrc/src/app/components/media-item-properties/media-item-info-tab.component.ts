@@ -1,6 +1,6 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 
-import { MediaItem } from '../../models/interfaces';
+import { MediaItem, ScriptInfo } from '../../models/interfaces';
 
 @Component({
     selector: 'app-media-item-info-tab',
@@ -35,8 +35,14 @@ export class MediaItemInfoTabComponent {
         return this.item?.metaData?.hasAlternate ?? false;
     }
 
-    get scripts(): string[] {
-        return (this.item?.metaData?.scripts || [])
-            .map(s => s.filename + (s.track ? '.' + s.track : ''));
+    get scripts(): ScriptInfo[] {
+        return (this.item?.metaData?.scripts || []);
+        // return (this.item?.metaData?.scripts || [])
+        //     .map(s => s.filename + (s.track ? '.' + s.track : ''));
+    }
+    get tracks(): string[] {
+        return (this.item?.metaData?.MFSTracks || []);
+        // return (this.item?.metaData?.scripts || [])
+        //     .map(s => s.filename + (s.track ? '.' + s.track : ''));
     }
 }

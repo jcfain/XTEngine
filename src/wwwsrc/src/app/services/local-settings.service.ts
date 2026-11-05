@@ -92,6 +92,11 @@ export class LocalSettingsService {
     private speechVolumeSubject = new BehaviorSubject<number>(this.speechVolumeDefault);
     speechVolume$: Observable<number> = this.speechVolumeSubject.asObservable();
 
+    readonly lastSelectedPropertiesTabDefault = 0;
+    private lastSelectedPropertiesTabKey = "lastSelectedPropertiesTab";
+    private lastSelectedPropertiesTabSubject = new BehaviorSubject<number>(this.lastSelectedPropertiesTabDefault);
+    lastSelectedPropertiesTab$: Observable<number> = this.lastSelectedPropertiesTabSubject.asObservable();
+
     constructor( ) {
         this.storedHashSubject.next(this.getStoredHash());
         this.sortSubject.next(this.getFromLocalStorage(this.sortKey, this.sortDefault));
@@ -110,6 +115,7 @@ export class LocalSettingsService {
         this.speechPitchSubject.next(this.getFromLocalStorage(this.speechPitchKey, this.speechPitchDefault));
         this.speechRateSubject.next(this.getFromLocalStorage(this.speechRateKey, this.speechRateDefault));
         this.speechVolumeSubject.next(this.getFromLocalStorage(this.speechVolumeKey, this.speechVolumeDefault));
+        this.lastSelectedPropertiesTabSubject.next(this.getFromLocalStorage(this.lastSelectedPropertiesTabKey, this.lastSelectedPropertiesTabDefault));
     }
 
     setStoredHash(value: string | null): void {
@@ -221,6 +227,11 @@ export class LocalSettingsService {
     setSpeechVolume(value: number): void {
         this.setToLocalStorage(this.speechVolumeKey, value);
         this.speechVolumeSubject.next(value);
+    }
+
+    setLastSelectedPropertiesTab(value: number): void {
+        this.setToLocalStorage(this.lastSelectedPropertiesTabKey, value);
+        this.lastSelectedPropertiesTabSubject.next(value);
     }
 
     reset() {

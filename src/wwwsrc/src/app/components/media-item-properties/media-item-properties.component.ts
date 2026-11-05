@@ -7,6 +7,7 @@ import { ServerService } from '../../services/server.service';
 import { MediaItemSettingsTabComponent } from './media-item-settings-tab.component';
 import { MediaItemTagsTabComponent } from './media-item-tags-tab.component';
 import { MediaItemInfoTabComponent } from './media-item-info-tab.component';
+import { LocalSettingsService } from '../../services/local-settings.service';
 
 export interface MediaItemPropertiesData {
   item: MediaItem;
@@ -45,6 +46,7 @@ export class MediaItemPropertiesComponent {
     private _allTags: string[] = [];
 
     constructor(
+        private localSettingsService: LocalSettingsService,
         private mediaService: MediaService,
         private serverService: ServerService,
         @Inject('overlayData') @Optional() data?: MediaItemPropertiesData
@@ -58,10 +60,13 @@ export class MediaItemPropertiesComponent {
         this.serverService.remoteUserSettings$.subscribe(v => {
             this._allTags = v?.allTags || [];
         });
+        this.localSettingsService.lastSelectedPropertiesTab$.subscribe(v => {
+            this.activeTab = v;
+        });
     }
 
     tabClick(index: number): void {
-        this.activeTab = index;
+        this.localSettingsService.setLastSelectedPropertiesTab(index);
     }
 
     markDirty(): void {

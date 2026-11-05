@@ -167,6 +167,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             auto item = _mediaLibraryHandler->findItemByMetadataKey(metadataKey);
             if(item) {
                 _mediaLibraryHandler->processMetadata(*item);
+                invalidateMediaListCache();
             } else
                 _webSocketHandler->sendError(tr("Unknown library item"));
         } else {

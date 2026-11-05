@@ -10,6 +10,7 @@ import { TCodeCommandsComponent } from '../tcode-commands/tcode-commands.compone
 import { MediaListService } from '../../services/media-list-service';
 import { AppStateService } from '../../services/app-state.service';
 
+
 @Component({
     selector: 'app-media-toolbar',
     imports: [FormsModule, TCodeCommandsComponent],
@@ -48,6 +49,13 @@ export class MediaToolbarComponent implements OnInit {
   allTags: string[] = [];
   selectedTags: string[] = [];
 
+  getTagCount(tag: string): number {
+    const count = this.tagCounts[tag];
+    return !count ? 0 : count;;
+  }
+
+  private tagCounts: Record<string, number> = {};
+
   ngOnInit(): void {
     this.localSettingsService.filterCriteria$.subscribe(f => this.filterText = f);
     this.localSettingsService.show$.subscribe(s => {
@@ -59,11 +67,16 @@ export class MediaToolbarComponent implements OnInit {
     this.localSettingsService.selectedTags$.subscribe(s => {
       this.selectedTags = s;
     });
+    this.mediaListService.mediaList$.subscribe(v => {
+      this.updateTagCounts(this.allTags);
+    });
     this.messageHandlerService.tagsUpdateSubject$.subscribe(v => {
       this.allTags = v?.allTags || [];
+      this.updateTagCounts(this.allTags);
     });
     this.serverService.remoteUserSettings$.subscribe(v => {
       this.allTags = v?.allTags || [];
+      this.updateTagCounts(this.allTags);
     })
   }
 
@@ -105,6 +118,19 @@ export class MediaToolbarComponent implements OnInit {
       this.localSettingsService.addToSelectedTags(node.value);
     else
       this.localSettingsService.removeFromSelectedTags(node.value);
+  }
+
+  private updateTagCounts(allTags: string[]): void {
+    allTags.forEach(tag => {
+      this.mediaListService.mediaList?.forEach(item => {
+        if(item.metaData.tags.some(x => x == tag)) {
+          if(!this.tagCounts[tag]) {
+            this.tagCounts[tag] = 0;
+          }
+          this.tagCounts[tag]++;
+        }
+      });
+    });
   }
 
   // private setRandom() {
