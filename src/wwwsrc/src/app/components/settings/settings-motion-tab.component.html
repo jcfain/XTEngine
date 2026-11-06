@@ -50,7 +50,8 @@
         <div class="tab-content-header-main">Motion Modifier</div>
     </div>
     <div class="tab-content-header-eyebrow">Add random motion to other channels</div>
-    <div class="modifier-grid modifier-grid-header">
+    <div class="modifier-grid-scroll">
+        <div class="modifier-grid modifier-grid-header">
         <div class="modifier-grid-cell">
             <input id="multiplierEnabled" type="checkbox" title="Global random motion toggle."
                 [ngModel]="multiplierEnabled" (ngModelChange)="onMultiplierEnabledChange($event)" />
@@ -107,6 +108,7 @@
                 </div>
             </div>
         }
+    </div>
     </div>
     <div class="tab-content-header">
         <div class="tab-content-header-main">Channel</div>

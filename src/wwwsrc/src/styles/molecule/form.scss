@@ -66,6 +66,12 @@
     gap: 8px;
 }
 
+@media (max-width: 600px) {
+    .form-buttons button {
+        flex: 1;
+    }
+}
+
 .form-group-section {
     display: flex;
     flex-wrap: wrap;

@@ -54,12 +54,17 @@
     color: var(--foreground-color-header);
 }
 
+.modifier-grid-scroll {
+    overflow-x: auto;
+}
+
 .modifier-grid {
     display: grid;
     grid-template-columns: 25% 2fr 1fr 1fr;
     gap: 8px;
     margin-top: 8px;
     width: 100%;
+    min-width: 600px;
     align-items: center;
     text-align: start;
 }
