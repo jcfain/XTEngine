@@ -23,7 +23,7 @@
     text-align: center;
 }
 
-.formElement label {
+.formElement > label {
     font-size: 1.05rem;
     font-weight: bold;
     margin-right: 12px;
@@ -75,12 +75,38 @@
 .form-group-section {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     width: 100%;
-    place-items: center;
+    gap: 8px 12px;
 }
 
 .form-group-control {
     display: flex;
+    align-items: center;
     flex-wrap: nowrap;
-    flex-grow: 1;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* Sub-label inside a control group. A consistent min-width keeps the
+   controls aligned with each other (most visible in the mobile column). */
+.form-group-control > label {
+    min-width: 110px;
+    white-space: nowrap;
+}
+
+/* Inputs inside a control group fill the remaining width of their group
+   (not the whole section) and keep a readable minimum width. */
+.form-group-control input:not([type='checkbox']):not([type='radio']):not([type='range']) {
+    flex: 1;
+    min-width: 100px;
+}
+
+/* On narrow screens the label/control groups collapse into a column under
+   the parent form control. The primary control (radio/checkbox + status)
+   keeps the first row; each group takes a full row below it. */
+@media (max-width: 600px) {
+    .form-group-control {
+        flex-basis: 100%;
+    }
 }

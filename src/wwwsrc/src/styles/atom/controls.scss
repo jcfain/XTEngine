@@ -12,6 +12,10 @@
     cursor: not-allowed;
 }
 
+[readonly] {
+    background-color: rgb(23, 23, 23);
+}
+
 input:invalid,
 textarea:invalid,
 button:invalid,
@@ -85,7 +89,12 @@ button:where(:not(.icon-button):not(.tab-section-tab):not(.video-control):not(.m
     transition: background-color 0.15s ease;
 }
 
-button:where(:not(.icon-button):not(.tab-section-tab):not(.video-control):not(.media-context):not(.side-action-tcode-action-button)):hover {
+button:where(:not(.icon-button)
+                :not(.tab-section-tab)
+                :not(.video-control)
+                :not(.media-context)
+                :not(.side-action-tcode-action-button)
+                :not([readonly='true'])):hover {
     background: var(--button-hover-background);
 }
 
@@ -107,10 +116,11 @@ input:where(:not([type='checkbox']):not([type='range']):not([type='radio']):not(
     color: var(--control-text-color);
     box-sizing: border-box;
 }
-select:where(:not(:disabled)):hover,
-select:where(:not(:disabled)):focus,
-input:where(:not(:disabled)):hover,
-input:where(:not(:disabled)):focus {
+
+select:not(:disabled):not([readonly]):hover,
+select:not(:disabled):not([readonly]):focus,
+input:not(:disabled):not([readonly]):hover,
+input:not(:disabled):not([readonly]):focus {
     background: var(--control-hover-background);
 }
 
