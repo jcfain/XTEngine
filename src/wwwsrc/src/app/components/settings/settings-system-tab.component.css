@@ -8,6 +8,7 @@
     display: flex;
     flex-flow: column;  
     flex-basis: 45%;
+    min-width: 0; /* allow shrinking below content width so the body scrolls on x */
     border: 2px solid white;
     border-radius: 25px;
     margin: 8px;
@@ -122,4 +123,15 @@
 .session-info-table td button {
     width: 100%;
     max-width: 50px;
+}
+
+/* Mobile: stack sections full width, scroll horizontally when content is wider */
+@media (max-width: 768px) {
+    .settings-section {
+        flex-basis: 100%;
+    }
+
+    .settings-section-body {
+        overflow-x: auto;
+    }
 }
