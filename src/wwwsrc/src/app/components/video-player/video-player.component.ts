@@ -10,10 +10,11 @@ import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { ScriptStatusService } from '../../services/script-status.service';
 import { MediaItemPropertiesComponent } from '../media-item-properties/media-item-properties.component';
+import { MediaItemAltScriptsComponent } from '../media-item-alt-scripts/media-item-alt-scripts.component';
 
 @Component({
     selector: 'app-video-player',
-    imports: [FormsModule, MediaItemPropertiesComponent],
+    imports: [FormsModule, MediaItemPropertiesComponent, MediaItemAltScriptsComponent],
     templateUrl: './video-player.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './video-player.component.css'
@@ -48,6 +49,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   m_progress = 0;
   scriptStatusOpen = false;
   mediaSettingsOpen = false;
+  altScriptsOpen = false;
   inputDeviceConnected = false;
 
   set progress(value: string) {
@@ -281,6 +283,17 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   closeMediaSettings(): void {
     this.mediaSettingsOpen = false;
+  }
+
+  openAltScripts(): void {
+    if (!this.mediaItem) {
+      return;
+    }
+    this.altScriptsOpen = true;
+  }
+
+  closeAltScripts(): void {
+    this.altScriptsOpen = false;
   }
 
   toggleScriptStatus($event?: MouseEvent): void {

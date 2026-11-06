@@ -55,8 +55,9 @@ export class VideoService {
         if(!this.forceControlsVisible)
           this.controlsVisibleSubject.next(false);
       });
-    // Time-sync: send at most once per second. timeupdate fires ~4x/sec,
-    // so without this we'd be quadrupling the request rate vs the original.
+    // Time-sync: send at most once per second. This is driven by the
+    // timeupdate event (via onPositionChange -> playingMediaItemPosition$),
+    // matching the old project's onVideoTimeUpdate behaviour.
     this.playingMediaItemPosition$.pipe(
       throttleTime(1000, undefined, { leading: true, trailing: true })
     ).subscribe(v => {
@@ -176,6 +177,12 @@ export class VideoService {
     this.setPoster('/thumb/' + item.relativeThumb);
     this.loadVideo();
     this.showVideo();
+
+    // A new media item has started: reset the paused flag so the reported
+    // state is "playing", then notify the backend immediately. (The
+    // per-second updates are driven by the timeupdate event.)
+    this.isPausedSubject.next(false);
+    this.sendMediaState();
   }
 
   clearVideo(): void {
@@ -317,10 +324,13 @@ export class VideoService {
 
   onPlay(): void {
     this.isPlayingSubject.next(true);
+    this.isPausedSubject.next(false);
+    this.sendMediaState();
   }
 
   onPause(): void {
     this.isPausedSubject.next(true);
+    this.sendMediaState();
   }
 
   onVolumeChange(value: number): void {

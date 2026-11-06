@@ -121,7 +121,7 @@
     </div>
     <div class="right-controls">
       <input #playbackRateInput id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0.00" value="1.00" step="0.01" (change)="setPlayRate(playbackRateInput.value)" />
-      <button data-title="Alternate scripts" class="video-control video-control-main" id="alternate-scripts-button">
+      <button data-title="Alternate scripts" class="video-control video-control-main" id="alternate-scripts-button" (click)="openAltScripts()">
         <svg class="player-button-icon">
           <use href="#funscript"></use>
         </svg>
@@ -188,4 +188,10 @@
     [item]="mediaItem"
     (close)="closeMediaSettings()">
 </app-media-item-properties>
+
+<app-media-item-alt-scripts
+    [class.hidden]="!altScriptsOpen"
+    [item]="mediaItem"
+    (close)="closeAltScripts()">
+</app-media-item-alt-scripts>
 </div>
