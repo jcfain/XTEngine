@@ -246,6 +246,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   setPlayRate(value: string): void {
     const valueNum = parseFloat(value);
     this.videoService.setPlayRate(valueNum);
+    this.videoService.showControls();
   }
 
   onSeek(valueString: string): void {
