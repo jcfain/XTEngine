@@ -51,11 +51,13 @@ export class GenericOverlayService {
    * @param data Optional data or handlers to inject into the component.
    * @param event The click event to determine the position.
    */
-  open<T>(nameID: string, component: Type<T>, data?: any, closeOnClickOther?: boolean, event?: MouseEvent, positions?: ConnectedPosition[]): void {
+  open<T>(nameID: string, component: Type<T>, data?: any, closeOnClickOther?: boolean, event?: MouseEvent | HTMLElement, positions?: ConnectedPosition[]): void {
     // Multiple overlays with the same nameID are allowed and are stacked
     let overlayRef: OverlayRef;
-    if (event && event.target) {
-      const target = event.target as HTMLElement;
+    // `event` may be a click event (use its target) or a direct element reference
+    // (e.g. the video player's bottom controls) to align the overlay to.
+    const origin = event instanceof HTMLElement ? event : (event ? (event.target as HTMLElement) : undefined);
+    if (origin) {
       if(!positions) {
         positions = [
           {
@@ -67,10 +69,10 @@ export class GenericOverlayService {
           },
         ];
       }
-      // Create a position strategy relative to the clicked element
+      // Create a position strategy relative to the origin element
       const positionStrategy = this.overlay
         .position()
-        .flexibleConnectedTo(target)
+        .flexibleConnectedTo(origin)
         .withPositions(positions)
         .withViewportMargin(8) // Add some margin to ensure visibility
         .withPush(false); // Disable repositioning into the viewport

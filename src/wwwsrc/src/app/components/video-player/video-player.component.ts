@@ -296,9 +296,18 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.altScriptsOpen = false;
   }
 
-  toggleScriptStatus($event?: MouseEvent): void {
-    this.scriptStatusOpen = this.scriptStatusService.toggleScriptStatusVideo($event);
+  toggleScriptStatus(bottomControls?: HTMLElement): void {
+    // The bottom controls element is passed in from the template so the overlay is
+    // aligned with the video player's bottom controls, not the button clicked.
+    this.scriptStatusOpen = this.scriptStatusService.toggleScriptStatusVideo(bottomControls);
     this.videoService.setForceControlsVisible(this.scriptStatusOpen);
+  }
+  
+  getScriptPausedStatusImage() {
+    if(this.deviceIsPaused)
+      return "://images/icons/play.svg";
+    else
+    return "://images/icons/pause.svg";
   }
 
   private formatTime(timeInSeconds: number): { hours: string; minutes: string; seconds: string } {

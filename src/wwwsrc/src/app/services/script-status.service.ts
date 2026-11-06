@@ -33,22 +33,23 @@ export class ScriptStatusService {
         return this.overlayService.isOpen(nameID);
     }
 
-    toggleScriptStatusVideo($event?: MouseEvent): boolean {
+    toggleScriptStatusVideo(originElement?: HTMLElement): boolean {
         const nameID = "scriptStatusVideo";
         if(this.overlayService.isOpen(nameID)) {
             this.overlayService.close(nameID);
         } else {
+            // Anchor to the video player's bottom controls so the overlay is always
+            // aligned with them, regardless of which button triggered it.
             const positions: ConnectedPosition[] = [
             {
                 originX: 'center',
-                originY: 'bottom',
+                originY: 'top',
                 overlayX: 'center',
                 overlayY: 'bottom',
-                offsetY: -32.5, // 20px above the clicked element
-                offsetX: 262.5, // 20px above the clicked element
+                offsetY: -8, // small gap above the bottom controls
             },
             ]
-            this.overlayService.open(nameID, ScriptStatusComponent, null, false, $event, positions);
+            this.overlayService.open(nameID, ScriptStatusComponent, null, false, originElement, positions);
         }
         return this.overlayService.isOpen(nameID);
     }

@@ -22,7 +22,7 @@
     <button #tcodeActionsButton title="TCode actions" name="tcodeActionsButton" class="tcode-actions-button icon-button icon-button--group--vertical"  (click)="tcodeActionsInputHidden = !tcodeActionsInputHidden">
       <img class="buttonImage" src="://images/icons/tcode.svg" />
     </button>
-    <button #shuffleButton id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button icon-button--group--vertical" (click)="toggleShufflePlay()">
+    <button #shuffleButton id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button icon-button--group--vertical" [class.button-down]="randomMode" (click)="toggleShufflePlay()">
       <img class="buttonImage" src="://images/icons/shuffle.svg" />
     </button>
     @if (randomMode) {

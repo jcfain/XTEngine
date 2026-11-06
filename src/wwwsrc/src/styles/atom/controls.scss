@@ -106,6 +106,11 @@ button.button--small {
     font-size: var(--font-size-small);
 }
 
+.button-down {
+    background-color: var(--button-background-down) !important;
+    color: var(--button-color-down);
+}
+
 input:where(:not([type='checkbox']):not([type='range']):not([type='radio']):not(.video-control)) {
     min-height: var(--control-height);
     padding: var(--control-padding);
@@ -272,8 +277,4 @@ input[type='range']::-moz-focus-outer {
 }
 .icon-button--group--vertical {
     margin-bottom: 8px;
-}
-.icon-button-down {
-    background-color: rgba(128, 140, 255, 0.596) !important;
-    color: white;
 }
