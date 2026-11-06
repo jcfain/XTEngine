@@ -5,7 +5,7 @@ import { AppStateService } from '../../services/app-state.service';
 import { ServerService } from '../../services/server.service';
 import { GenericOverlayService } from '../../services/overlay.service';
 import { ChannelModel } from '../../models/interfaces';
-import { ChannelType } from '../../models/enums';
+import { ChannelType, Track } from '../../models/enums';
 import { round } from '../../utils/utils';
 import { RangeSliderComponent, RangeValue } from '../range-slider/range-slider.component';
 import { SelectDialogComponent } from '../select-dialog/select-dialog.component';
@@ -35,10 +35,10 @@ export class SettingsMotionTabComponent implements OnInit {
 
     profiles: string[] = [];
     selectedProfile = '';
-    channels: ChannelRange[] = [];
+    channelRanges: ChannelRange[] = [];
 
     multiplierEnabled = false;
-    modifierChannels: ChannelModel[] = [];
+    channels: ChannelModel[] = [];
     userAgentIsHereSphere = false;
 
     private profileSelectNameID = 'motionProfileSelect';
@@ -47,6 +47,7 @@ export class SettingsMotionTabComponent implements OnInit {
     private copyToProfileTextNameID = 'motionCopyToProfileText';
     private copyFromProfileSelectNameID = 'motionCopyFromProfileSelect';
     private profileAlertNameID = 'motionProfileAlert';
+    private allChannels: ChannelModel[] = [];
 
     enabledHelpText = 'The will toggle whether this channel is included in the random motion generation or not.';
     linkToHelpText = 'This will match the values of the linked channel 1:1 with modifiers speed and offset applied.';
@@ -76,8 +77,10 @@ export class SettingsMotionTabComponent implements OnInit {
             this.selectedProfile = settings.selectedChannelProfile || '';
             this.multiplierEnabled = settings.multiplierEnabled || false;
             const available = settings.availableChannelsArray || Object.values(settings.availableChannels || {});
-            this.modifierChannels = available.filter(c => c.type !== ChannelType.HalfOscillate);
-            this.channels = this.modifierChannels.map(c => ({ channel: c, userMin: c.userMin, userMax: c.userMax }));
+            this.allChannels = available;
+            const wholeChannels = available.filter(c => c.type !== ChannelType.HalfOscillate);
+            this.channels = this.sortChannels(wholeChannels);
+            this.channelRanges = this.channels.map(c => ({ channel: c, userMin: c.userMin, userMax: c.userMax }));
         });
         this.messageHandlerService.channelProfileChanged$.subscribe(v => {
             this.serverService.getServerChannels();
@@ -201,11 +204,11 @@ export class SettingsMotionTabComponent implements OnInit {
     }
 
     relatedChannelOptions(channel: ChannelModel): ChannelModel[] {
-        return this.modifierChannels.filter(c => c.channel !== channel.channel);
+        return this.allChannels.filter(c => c.channel !== channel.channel);
     }
 
     relatedChannelName(channel: ChannelModel): string {
-        const related = this.modifierChannels.find(x => x.axisName === channel.relatedChannel);
+        const related = this.channels.find(x => x.axisName === channel.relatedChannel);
         return related ? related.friendlyName : '';
     }
 
@@ -239,5 +242,35 @@ export class SettingsMotionTabComponent implements OnInit {
             channel.offset = value;
             this.onDirty.emit();
         }
+    }
+
+    private sortChannels(channelsIn: ChannelModel[]): ChannelModel[] {
+        let channelsOut: ChannelModel[] = [];
+        let index = channelsIn.findIndex(x => x.track == Track.Stroke);
+        if(index > -1) {
+            channelsOut.push(channelsIn.splice(index, 1)[0]);
+        }
+        index = channelsIn.findIndex(x => x.track == Track.Roll);
+        if(index > -1) {
+            channelsOut.push(channelsIn.splice(index, 1)[0]);
+        }
+        index = channelsIn.findIndex(x => x.track == Track.Pitch);
+        if(index > -1) {
+            channelsOut.push(channelsIn.splice(index, 1)[0]);
+        }
+        index = channelsIn.findIndex(x => x.track == Track.Twist);
+        if(index > -1) {
+            channelsOut.push(channelsIn.splice(index, 1)[0]);
+        }
+        index = channelsIn.findIndex(x => x.track == Track.Surge);
+        if(index > -1) {
+            channelsOut.push(channelsIn.splice(index, 1)[0]);
+        }
+        index = channelsIn.findIndex(x => x.track == Track.Sway);
+        if(index > -1) {
+            channelsOut.push(channelsIn.splice(index, 1)[0]);
+        }
+        channelsIn.forEach(x => channelsOut.push(x));
+        return channelsOut;
     }
 }

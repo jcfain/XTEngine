@@ -36,7 +36,8 @@
 }
 
 .checkbox-list {
-    max-width: fit-content;
+    max-width: fit-content;  
+    min-width: 100px;
 }
 
 .channel-modifier-container {
@@ -59,14 +60,16 @@
 }
 
 .modifier-grid {
-    display: grid;
-    grid-template-columns: 25% 2fr 1fr 1fr;
+    display: grid;  
+    grid-template-columns: 15% 5fr 2fr 1.5fr;
     gap: 8px;
     margin-top: 8px;
     width: 100%;
     min-width: 600px;
     align-items: center;
     text-align: start;
+    /* column-count: 5;
+    column-rule: 1px solid color-mix(in srgb, var(--foreground-color-header) 50%, transparent); */
 }
 
 .modifier-grid-header {
@@ -77,6 +80,16 @@
     font-size: 0.8rem;
     color: var(--foreground-color-header);
     padding: 0 8px;
+    :first-child {
+        padding: 0;
+    }
+}
+.modifier-grid-header > .modifier-grid-cell:first-child {
+    padding-left: 0;
+}
+
+.modifier-grid-header > .modifier-grid-cell:nth-child(2) {
+    padding-right: 0;
 }
 
 .modifier-grid-header .modifier-grid-cell + .modifier-grid-cell {

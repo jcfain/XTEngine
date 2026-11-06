@@ -30,7 +30,7 @@
         <div class="tab-content-header-main">Range Limits</div>
     </div>
     <div class="range-list">
-        @for (range of channels; track range.channel.channel) {
+        @for (range of channelRanges; track range.channel.channel) {
             <div class="formElement">
                 <label class="range-label" [attr.for]="range.channel.channel">{{ range.channel.friendlyName }}</label>
                 <app-range-slider [min]="range.channel.min" [max]="range.channel.max"
@@ -65,7 +65,7 @@
         <div class="modifier-grid-cell"><span [title]="offsetHelpText">Offset</span></div>
     </div>
     <div class="modifier-list">
-        @for (channel of modifierChannels; track channel.channel) {
+        @for (channel of channels; track channel.channel) {
             <div class="modifier-grid">
                 <div class="modifier-grid-cell">
                     <input type="checkbox" [attr.id]="channel.channel" [title]="enabledHelpText"
@@ -117,7 +117,7 @@
         <div class="channel-modifier-container-item">
             <span class="channel-modifier-container-item-header">Invert</span>
             <div class="modifier-list checkbox-list">
-                @for (channel of modifierChannels; track channel.channel) {
+                @for (channel of channels; track channel.channel) {
                     <div class="formElement formElement--label-large">
                         <label [attr.for]="channel.channel + 'Inverted'">{{ channel.friendlyName }}</label>
                         <div class="form-group-section">
@@ -134,7 +134,7 @@
         <div class="channel-modifier-container-item">
             <span class="channel-modifier-container-item-header">Gradient</span>
             <div class="modifier-list checkbox-list">
-                @for (channel of modifierChannels; track channel.channel) {
+                @for (channel of channels; track channel.channel) {
                     <div class="formElement formElement--label-large">
                         <label [attr.for]="channel.channel + 'Gradient'">{{ channel.friendlyName }}</label>
                         <div class="form-group-section">

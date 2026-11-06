@@ -73,7 +73,8 @@
 /* Backup/Restore table */
 .exported-table {
     border-collapse: collapse;
-    width: 100%;
+    width: 100%;  
+    text-align: center;
 }
 
 .exported-table tr,
