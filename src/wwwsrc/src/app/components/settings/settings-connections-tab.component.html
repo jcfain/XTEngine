@@ -59,11 +59,11 @@
                     [style.background-color]="statusColor(device.type)">
                 @if (device.type === ConnectionInterface.HereSphere) {
                     <div class="form-group-control">
-                        <span class="sync-device-input-label">Address</span>
+                        <label>Address</label>
                         <input [(ngModel)]="deoVRAddress" (ngModelChange)="onDeoVRAddressChange($event)" />
                     </div>
                     <div class="form-group-control">
-                        <span class="sync-device-input-label">Port</span>
+                        <label>Port</label>
                         <input [(ngModel)]="deoVRPort" (ngModelChange)="onDeoVRPortChange($event)" />
                     </div>
                 }

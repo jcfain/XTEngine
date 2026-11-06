@@ -80,11 +80,11 @@ button:where(:not(.icon-button):not(.tab-section-tab):not(.video-control):not(.m
     background: var(--button-background);
     border: 1px solid var(--button-border-color);
     color: var(--button-text-color);
-    min-height: 44px;
-    min-width: 56px;
-    padding: 10px 16px;
-    font-size: 1.05rem;
-    border-radius: 8px;
+    min-height: var(--control-height);
+    min-width: var(--control-min-width);
+    padding: 10px var(--spacing-large);
+    font-size: var(--font-size-base);
+    border-radius: var(--control-border-radius);
     cursor: pointer;
     transition: background-color 0.15s ease;
 }
@@ -100,18 +100,18 @@ button:where(:not(.icon-button)
 
 /* Compact variant for dense layouts (e.g. range slider steppers) */
 button.button--small {
-    min-height: 28px;
-    min-width: 28px;
+    min-height: var(--control-height-small);
+    min-width: var(--control-height-small);
     padding: 2px 8px;
-    font-size: 1rem;
+    font-size: var(--font-size-small);
 }
 
 input:where(:not([type='checkbox']):not([type='range']):not([type='radio']):not(.video-control)) {
-    min-height: 44px;
-    padding: 10px 14px;
-    font-size: 1.1rem;
+    min-height: var(--control-height);
+    padding: var(--control-padding);
+    font-size: var(--font-size-control);
     border: 1px solid var(--control-border-color);
-    border-radius: 8px;
+    border-radius: var(--control-border-radius);
     background: var(--control-background);
     color: var(--control-text-color);
     box-sizing: border-box;
@@ -125,12 +125,12 @@ input:not(:disabled):not([readonly]):focus {
 }
 
 select {
-    min-width: 132px;
-    min-height: 44px;
-    padding: 10px 14px;
-    font-size: 1.1rem;
+    min-width: var(--control-select-min-width);
+    min-height: var(--control-height);
+    padding: var(--control-padding);
+    font-size: var(--font-size-control);
     border: 1px solid var(--control-border-color);
-    border-radius: 8px;
+    border-radius: var(--control-border-radius);
     background: var(--control-background);
     color: var(--control-text-color);
     box-sizing: border-box;
@@ -139,8 +139,8 @@ select {
 input[type='checkbox'] {
     appearance: none;
     -webkit-appearance: none;
-    width: 24px;
-    height: 24px;
+    width: var(--control-toggle-size);
+    height: var(--control-toggle-size);
     border: 1px solid var(--control-border-color);
     border-radius: 6px;
     background: var(--control-background);
@@ -161,8 +161,8 @@ input[type='checkbox']:checked::after {
 input[type='radio'] {
     appearance: none;
     -webkit-appearance: none;
-    width: 24px;
-    height: 24px;
+    width: var(--control-toggle-size);
+    height: var(--control-toggle-size);
     border: 1px solid var(--control-border-color);
     border-radius: 50%;
     background: var(--control-background);

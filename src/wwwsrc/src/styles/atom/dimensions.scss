@@ -1,0 +1,25 @@
+/* Theme dimension variables. Swap these values to re-scale the app.
+   Naming: generic concept names shared by forms and controls so
+   sizes stay consistent in one place. */
+:root {
+    /* Control sizing (inputs, selects, buttons, tabs) */
+    --control-height: 44px;
+    --control-height-small: 28px;
+    --control-min-width: 56px;
+    --control-select-min-width: 132px;
+    --control-toggle-size: 24px;
+    --control-label-min-width: 110px;
+    --control-input-min-width: 100px;
+    --control-padding: 10px 14px;
+    --control-border-radius: 8px;
+
+    /* Typography */
+    --font-size-small: 1rem;
+    --font-size-base: 1.05rem;
+    --font-size-control: 1.1rem;
+
+    /* Spacing */
+    --spacing-small: 8px;
+    --spacing-base: 12px;
+    --spacing-large: 16px;
+}

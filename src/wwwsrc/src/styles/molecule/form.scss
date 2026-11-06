@@ -4,7 +4,8 @@
 .formElement {
     display: grid;
     grid-template-columns: 25% 75%;
-    margin-top: 8px;
+    margin-top: var(--spacing-small);
+    min-height: var(--control-height);
     width: 100%;
     text-align: end;
     align-items: center;
@@ -17,16 +18,16 @@
 .formElement--column {
     display: grid;
     grid-template-columns: 100%;
-    margin-top: 8px;
+    margin-top: var(--spacing-small);
     width: 100%;
     align-items: center;
     text-align: center;
 }
 
 .formElement > label {
-    font-size: 1.05rem;
+    font-size: var(--font-size-base);
     font-weight: bold;
-    margin-right: 12px;
+    margin-right: var(--spacing-base);
     text-wrap: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -63,7 +64,7 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 8px;
+    gap: var(--spacing-small);
 }
 
 @media (max-width: 600px) {
@@ -77,21 +78,21 @@
     flex-wrap: wrap;
     align-items: center;
     width: 100%;
-    gap: 8px 12px;
+    gap: var(--spacing-small) var(--spacing-base);
 }
 
 .form-group-control {
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
-    gap: 8px;
+    gap: var(--spacing-small);
     min-width: 0;
 }
 
 /* Sub-label inside a control group. A consistent min-width keeps the
    controls aligned with each other (most visible in the mobile column). */
 .form-group-control > label {
-    min-width: 110px;
+    min-width: var(--control-label-min-width);
     white-space: nowrap;
 }
 
@@ -99,7 +100,7 @@
    (not the whole section) and keep a readable minimum width. */
 .form-group-control input:not([type='checkbox']):not([type='radio']):not([type='range']) {
     flex: 1;
-    min-width: 100px;
+    min-width: var(--control-input-min-width);
 }
 
 /* On narrow screens the label/control groups collapse into a column under
