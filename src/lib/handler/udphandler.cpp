@@ -45,6 +45,7 @@ void OutputUdpConnectionHandler::init(NetworkAddress address, int waitTimeout)
         // QHttpServer and stalls every in-flight request. lookupHost() runs the
         // resolution on Qt's network thread and invokes the functor on our own.
         QHostInfo::lookupHost(_address.address, this, [this, waitTimeout](QHostInfo info) {
+            LogHandler::Debug("Looking up IP address...");
             if(isConnected())
                 return;
             if(info.error() != QHostInfo::NoError) {

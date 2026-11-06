@@ -196,10 +196,6 @@ export class WebsocketService {
     this.send(MediaActions.TogglePauseAllDeviceActions);
   }
 
-  tcodeDeviceConnectRetry(selectedDevice: ConnectionInterface) {
-    this.send("connectOutputDevice", { deviceName: selectedDevice, enabled: true });
-  }
-
   sendPlayMedia(itemID: string): void {
     this.send('playMedia', {id: itemID});
   }

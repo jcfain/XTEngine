@@ -118,10 +118,16 @@ export class SettingsConnectionsTabComponent implements OnInit {
     ngOnInit(): void {
         this.serverService.remoteUserSettings$.subscribe(v => {
             this.settings = v;
-            if(this.settings?.connection?.input?.selectedDevice)
-                this.checkAndUpdateInputConnection(this.settings?.connection?.input?.selectedDevice);
-            if(this.settings?.connection?.output?.selectedDevice)
-                this.checkAndUpdateOutputConnection(this.settings?.connection?.output?.selectedDevice);
+            // On first launch local settings are None; seed them from remote settings.
+            // This triggers selectedOuputDevice$ which calls checkAndUpdateOutputConnection.
+            if(this.selectedOutputDevice === ConnectionInterface.None
+                && this.settings?.connection?.output?.selectedDevice) {
+                this.localSettingsService.setSelectedOutputDevice(this.settings.connection.output.selectedDevice);
+            }
+            if(this.selectedInputDevice === ConnectionInterface.None
+                && this.settings?.connection?.input?.selectedDevice) {
+                this.localSettingsService.setSelectedInputDevice(this.settings.connection.input.selectedDevice);
+            }
         });
         this.inputDevices.forEach(x => {
             this.inputDeviceStatus[x.type] = ConnectionStatus.Disconnected;
@@ -136,10 +142,16 @@ export class SettingsConnectionsTabComponent implements OnInit {
             this.outputDeviceStatus[s.type] = s.status
         );
         this.localSettingsService.selectedInputDevice$.subscribe(s => {
-            this.checkAndUpdateInputConnection(s);
+            this.selectedInputDevice = s;
+            if(this.selectedInputDevice != ConnectionInterface.None) {
+                this.checkAndUpdateInputConnection(s);
+            }
         });
         this.localSettingsService.selectedOuputDevice$.subscribe(s => {
-            this.checkAndUpdateOutputConnection(s);
+            this.selectedOutputDevice = s;
+            if(this.selectedOutputDevice != ConnectionInterface.None) {
+                this.checkAndUpdateOutputConnection(s);
+            }
         });
     }
 
@@ -227,9 +239,9 @@ export class SettingsConnectionsTabComponent implements OnInit {
         }
     }
 
-    retryOutputConnection(): void {
-        this.websocketService.tcodeDeviceConnectRetry(this.selectedOutputDevice);
-    }
+    // retryOutputConnection(): void {
+    //     this.websocketService.sendOutputDeviceConnectionChange(this.selectedOutputDevice, true);
+    // }
 
     retryInputConnection() {
         this.websocketService.sendInputDeviceConnectionChange(this.selectedInputDevice, true);
@@ -241,17 +253,24 @@ export class SettingsConnectionsTabComponent implements OnInit {
         } else {
             this.selectedInputDevice = value;
         }
-        if(this.getStatus(value) !== ConnectionStatus.Connected)
-            this.websocketService.sendInputDeviceConnectionChange(value, true);
+        const device = this.selectedInputDevice;
+        if(device !== ConnectionInterface.None
+            && this.getStatus(device) !== ConnectionStatus.Connected
+            && this.getStatus(device) !== ConnectionStatus.Connecting)
+            this.websocketService.sendInputDeviceConnectionChange(device, true);
     }
+    
     private checkAndUpdateOutputConnection(value: ConnectionInterface) {
         if(value == ConnectionInterface.None) {
             this.selectedOutputDevice = this.settings?.connection.output.selectedDevice ?? value;
         } else {
             this.selectedOutputDevice = value;
         }
-        if(this.getStatus(value) !== ConnectionStatus.Connected)
-            this.websocketService.sendOutputDeviceConnectionChange(value, true);
+        const device = this.selectedOutputDevice;
+        if(device !== ConnectionInterface.None
+            && this.getStatus(device) !== ConnectionStatus.Connected
+            && this.getStatus(device) !== ConnectionStatus.Connecting)
+            this.websocketService.sendOutputDeviceConnectionChange(device, true);
     }
 
     private getStatus(device: ConnectionInterface): ConnectionStatus | undefined {

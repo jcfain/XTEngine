@@ -27,7 +27,7 @@
 
 .tab-content-header-eyebrow {
     font-size: 0.8rem;
-    color: #888;
+    color: var(--foreground-color-header-eyebrow);
     margin: 4px 0 8px 0;
 }
 
@@ -51,36 +51,62 @@
 
 .channel-modifier-container-item-header {
     font-size: 0.9rem;
-    color: white;
+    color: var(--foreground-color-header);
 }
 
-/* .form-group-section {
-    display: flex;
-    flex-flow: row wrap;
-    align-items: center;
+.modifier-grid {
+    display: grid;
+    grid-template-columns: 25% 2fr 1fr 1fr;
     gap: 8px;
-}
-
-.form-group-control {
-    display: flex;
+    margin-top: 8px;
+    width: 100%;
     align-items: center;
-    gap: 4px;
+    text-align: start;
 }
 
-.form-group-control input {
-    height: 24px;
-    border-radius: 5px;
+.modifier-grid-header {
+    margin-top: 0;
 }
 
-.form-group-control select {
-    height: 24px;
-    border-radius: 5px;
-}
-
-.form-group-control-header span {
+.modifier-grid-header .modifier-grid-cell {
     font-size: 0.8rem;
-    color: #8DA1BF;
-} */
+    color: var(--foreground-color-header);
+    padding: 0 8px;
+}
+
+.modifier-grid-header .modifier-grid-cell + .modifier-grid-cell {
+    border-left: 1px solid color-mix(in srgb, var(--foreground-color-header) 50%, transparent);
+}
+
+.modifier-grid-header .modifier-grid-cell--link {
+    justify-content: space-between;
+}
+
+.modifier-grid-subheader {
+    font-size: 0.7rem;
+}
+
+.modifier-grid-cell > label {
+    font-size: 1.05rem;
+    font-weight: bold;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.modifier-grid-cell {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    min-width: 0;
+}
+
+.modifier-grid-cell input[type='number'],
+.modifier-grid-cell select {
+    flex: 1;
+    min-width: 0;
+}
 
 .save-state {
     align-self: center;

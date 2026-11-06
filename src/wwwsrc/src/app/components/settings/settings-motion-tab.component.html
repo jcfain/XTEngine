@@ -50,60 +50,60 @@
         <div class="tab-content-header-main">Motion Modifier</div>
     </div>
     <div class="tab-content-header-eyebrow">Add random motion to other channels</div>
-    <div class="formElement">
-        <label for="multiplierEnabled">Enabled</label>
-        <div class="form-group-section">
-            <div class="form-group-control">
-                <input id="multiplierEnabled" type="checkbox" title="Global random motion toggle."
-                    [ngModel]="multiplierEnabled" (ngModelChange)="onMultiplierEnabledChange($event)" />
-            </div>
-            <div class="form-group-control form-group-control-header"><span [title]="linkToHelpText">Link to script</span></div>
-            <div class="form-group-control form-group-control-header"><span [title]="linkInvertedHelpText">Link inverted</span></div>
-            <div class="form-group-control form-group-control-header"><span [title]="speedHelpText">Speed</span></div>
-            <div class="form-group-control form-group-control-header"><span [title]="offsetHelpText">Offset</span></div>
+    <div class="modifier-grid modifier-grid-header">
+        <div class="modifier-grid-cell">
+            <input id="multiplierEnabled" type="checkbox" title="Global random motion toggle."
+                [ngModel]="multiplierEnabled" (ngModelChange)="onMultiplierEnabledChange($event)" />
+            <label for="multiplierEnabled">Enabled</label>
         </div>
+        <div class="modifier-grid-cell modifier-grid-cell--link">
+            <span [title]="linkToHelpText">Link to script</span>
+            <span class="modifier-grid-subheader" [title]="linkInvertedHelpText">Invert</span>
+        </div>
+        <div class="modifier-grid-cell"><span [title]="speedHelpText">Speed</span></div>
+        <div class="modifier-grid-cell"><span [title]="offsetHelpText">Offset</span></div>
     </div>
     <div class="modifier-list">
         @for (channel of modifierChannels; track channel.channel) {
-            <div class="formElement">
-                <label [attr.for]="channel.channel">{{ channel.friendlyName }}</label>
-                <div class="form-group-section">
-                    <div class="form-group-control">
-                        <input type="checkbox" [attr.id]="channel.channel" [title]="enabledHelpText"
-                            [(ngModel)]="channel.multiplierEnabled" [disabled]="!multiplierEnabled"
-                            (ngModelChange)="onChannelChange(channel)" />
-                    </div>
-                    <div class="form-group-control" [title]="linkToHelpText">
-                        <input type="checkbox" [title]="linkToHelpText"
-                            [(ngModel)]="channel.linkToRelatedMFS" [disabled]="!multiplierEnabled"
-                            (ngModelChange)="onChannelChange(channel)" />
-                        @if (userAgentIsHereSphere) {
-                            <button [title]="linkToHelpText" [disabled]="!multiplierEnabled"
-                                (click)="openRelatedChannelSelect(channel)">{{ relatedChannelName(channel) }}</button>
-                        } @else {
-                            <select [title]="linkToHelpText"
-                                [(ngModel)]="channel.relatedChannel" [disabled]="!multiplierEnabled"
-                                (ngModelChange)="onChannelChange(channel)">
-                                @for (option of relatedChannelOptions(channel); track option.axisName) {
-                                    <option [value]="option.axisName">{{ option.friendlyName }}</option>
-                                }
-                            </select>
-                        }
-                        <input type="checkbox" [title]="linkInvertedHelpText"
-                            [(ngModel)]="channel.linkedInverted" [disabled]="!multiplierEnabled"
-                            (ngModelChange)="onChannelChange(channel)" />
-                    </div>
-                    <div class="form-group-control">
-                        <input type="checkbox" [title]="speedHelpText"
-                            [(ngModel)]="channel.speedEnabled" [disabled]="!multiplierEnabled"
-                            (ngModelChange)="onChannelChange(channel)" />
-                        <input type="number" min="0.01" step="0.01" [title]="speedHelpText"
-                            [(ngModel)]="channel.speedValue" [disabled]="!multiplierEnabled"
-                            (ngModelChange)="onSpeedValueChange(channel, $event)" />
-                        <input type="number" min="-1" max="1" step="0.01" [title]="offsetHelpText"
-                            [(ngModel)]="channel.offset" [disabled]="!multiplierEnabled"
-                            (ngModelChange)="onOffsetChange(channel, $event)" />
-                    </div>
+            <div class="modifier-grid">
+                <div class="modifier-grid-cell">
+                    <input type="checkbox" [attr.id]="channel.channel" [title]="enabledHelpText"
+                        [(ngModel)]="channel.multiplierEnabled" [disabled]="!multiplierEnabled"
+                        (ngModelChange)="onChannelChange(channel)" />
+                    <label [attr.for]="channel.channel">{{ channel.friendlyName }}</label>
+                </div>
+                <div class="modifier-grid-cell">
+                    <input type="checkbox" [title]="linkToHelpText"
+                        [(ngModel)]="channel.linkToRelatedMFS" [disabled]="!multiplierEnabled"
+                        (ngModelChange)="onChannelChange(channel)" />
+                    @if (userAgentIsHereSphere) {
+                        <button [title]="linkToHelpText" [disabled]="!multiplierEnabled"
+                            (click)="openRelatedChannelSelect(channel)">{{ relatedChannelName(channel) }}</button>
+                    } @else {
+                        <select [title]="linkToHelpText"
+                            [(ngModel)]="channel.relatedChannel" [disabled]="!multiplierEnabled"
+                            (ngModelChange)="onChannelChange(channel)">
+                            @for (option of relatedChannelOptions(channel); track option.axisName) {
+                                <option [value]="option.axisName">{{ option.friendlyName }}</option>
+                            }
+                        </select>
+                    }
+                    <input type="checkbox" [title]="linkInvertedHelpText"
+                        [(ngModel)]="channel.linkedInverted" [disabled]="!multiplierEnabled"
+                        (ngModelChange)="onChannelChange(channel)" />
+                </div>
+                <div class="modifier-grid-cell">
+                    <input type="checkbox" [title]="speedHelpText"
+                        [(ngModel)]="channel.speedEnabled" [disabled]="!multiplierEnabled"
+                        (ngModelChange)="onChannelChange(channel)" />
+                    <input type="number" min="0.01" step="0.01" [title]="speedHelpText"
+                        [(ngModel)]="channel.speedValue" [disabled]="!multiplierEnabled"
+                        (ngModelChange)="onSpeedValueChange(channel, $event)" />
+                </div>
+                <div class="modifier-grid-cell">
+                    <input type="number" min="-1" max="1" step="0.01" [title]="offsetHelpText"
+                        [(ngModel)]="channel.offset" [disabled]="!multiplierEnabled"
+                        (ngModelChange)="onOffsetChange(channel, $event)" />
                 </div>
             </div>
         }

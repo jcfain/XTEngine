@@ -110,8 +110,10 @@ export class OutputDeviceToolsComponent implements OnInit {
   }
 
   tcodeDeviceConnectRetry() {
-    if(this.selectedDevice === ConnectionInterface.None || this.selectedDevice === undefined)
+    if(this.selectedDevice === ConnectionInterface.None 
+        || this.selectedDevice === undefined
+        || this.deviceConnectionStatus == ConnectionStatus.Connecting)
       return;
-    this.websocketService.tcodeDeviceConnectRetry(this.selectedDevice);
+    this.websocketService.sendOutputDeviceConnectionChange(this.selectedDevice, true);
   }
 }

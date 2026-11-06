@@ -17,25 +17,37 @@ bool OutputConnectionHandler::isConnected() {
 }
 void OutputConnectionHandler::onSendHandShake() { sendTCode("D1"); }
 void OutputConnectionHandler::tryConnectStop() {
+    LogHandler::Debug(" OutputConnectionHandler::tryConnectStop Enter");
     if (m_initFuture.isRunning()) {
+        LogHandler::Debug(" OutputConnectionHandler::tryConnectStop is running");
         m_stop = true;
         m_initFuture.cancel();
         m_initFuture.waitForFinished();
+        LogHandler::Debug(" OutputConnectionHandler::tryConnectStop finished");
     }
+    LogHandler::Debug(" OutputConnectionHandler::tryConnectStop Exit");
 }
 QFuture<void> OutputConnectionHandler::tryConnectDevice(unsigned long waitTimeout) {
     tryConnectStop();
 
     m_stop = false;
 
-    m_initFuture = QtConcurrent::run([this, waitTimeout]() {
+    m_initFuture = QtConcurrent::run([this](unsigned long waitTimeout) {
         if (!SettingsHandler::getDisableTCodeValidation()) {
             uint8_t timeouttracker = 0;
             const uint8_t maxTries = 3;
-            while (!isConnected() && !m_stop && timeouttracker <= maxTries) {
+            while (!m_initFuture.isCanceled() && !isConnected() && !m_stop && timeouttracker <= maxTries) {
                 emit sendHandShake();
                 timeouttracker++;
-                QThread::msleep(waitTimeout);
+                // Sleep in small chunks so m_stop / cancel is honoured promptly
+                // instead of blocking the caller in waitForFinished() for the
+                // full waitTimeout.
+                unsigned long elapsed = 0;
+                const unsigned long chunkMs = 100;
+                while (elapsed < waitTimeout && !m_stop && !m_initFuture.isCanceled()) {
+                    QThread::msleep(chunkMs);
+                    elapsed += chunkMs;
+                }
             }
             if (!m_stop && timeouttracker > maxTries) {
                 setConnected(false);
@@ -49,7 +61,7 @@ QFuture<void> OutputConnectionHandler::tryConnectDevice(unsigned long waitTimeou
             m_stop = true;
             setConnected(true);
         }
-    });
+    }, waitTimeout);
     return m_initFuture;
 }
 void OutputConnectionHandler::processDeviceInput(QString buffer) {

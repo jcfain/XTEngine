@@ -368,7 +368,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
     _server->route("^/media/(.*\\.(("+extensions+")$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleVideoStream);
     _server->route("^/media/(.*\\.(("+SettingsHandler::getSubtitleExtensions().join("|")+")$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleSubtitle);
     _server->route("^/exported/(.*\\.((json)$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleDownloadExported);
-    _server->route("^/media$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleVideoList);
+    _server->route("^/media$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleMediaList);
     _server->route("^/thumb/.*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleThumbFile);
     _server->route("^/funscript/(.*\\.((funscript)$))?[.]*$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleFunscriptFile);
     _server->route("^/deotest$", QHttpServerRequest::Method::Get, this, &HttpHandler::handleDeo);
@@ -1024,12 +1024,13 @@ void HttpHandler::handleChannels(const QHttpServerRequest &request, QHttpServerR
 //    return HttpPromise::resolve(data);
 //}
 
-void HttpHandler::handleVideoList(const QHttpServerRequest &request, QHttpServerResponder &responder)
+void HttpHandler::handleMediaList(const QHttpServerRequest &request, QHttpServerResponder &responder)
 {
     if(!isAuthenticated(request)) {
         responder.write(QHttpServerResponse::StatusCode::Unauthorized);
         return;
     }
+    LogHandler::Debug("Start building media list");
 
     const QString ifNoneMatch = QString(request.headers().value("If-None-Match").constData());
 
@@ -1051,13 +1052,16 @@ void HttpHandler::handleVideoList(const QHttpServerRequest &request, QHttpServer
         responder.sendResponse(notModified);
         return;
     }
+    LogHandler::Debug("Respond writing media list");
     responder.write(m_mediaListCache, headers, QHttpServerResponse::StatusCode::Ok);
+    LogHandler::Debug("Finish building media list");
 }
 
 // Expensive: serializes the whole library. Runs lazily at most once per real
 // change (see m_mediaListDirty). Caller must hold m_mediaListMutex.
 void HttpHandler::rebuildMediaListCache()
 {
+    LogHandler::Debug("Start rebuildMediaListCache");
     QJsonArray media;
     auto libraryCache = _mediaLibraryHandler->getLibraryCache();
     libraryCache->lockForRead();
@@ -1072,6 +1076,7 @@ void HttpHandler::rebuildMediaListCache()
     m_mediaListCache = QJsonDocument(media);
     m_mediaListVersion++;
     m_mediaListDirty = false;
+    LogHandler::Debug("Exit rebuildMediaListCache");
 }
 
 // Cheap: O(1) dirty-mark. Called from every path that mutates the library or

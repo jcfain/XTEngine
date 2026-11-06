@@ -1,8 +1,8 @@
 <div class="connections-tab tab-content" [class.hidden]="!isVisible">
     <h3>Output connections</h3>
-    <span class="form-buttons">
+    <!-- <span class="form-buttons">
         <button [disabled]="selectedOutputConnected" (click)="retryOutputConnection()">Retry output connection</button>
-    </span>
+    </span> -->
     @for (device of outputDevices; track device.type) {
         <div class="formElement">
             <label [attr.for]="'connectionOutput' + device.type">{{ device.name }}</label>
