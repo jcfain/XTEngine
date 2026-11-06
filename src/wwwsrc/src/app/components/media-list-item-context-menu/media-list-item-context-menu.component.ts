@@ -10,6 +10,7 @@ import { AlertComponent } from '../alert-model/alert.component';
 import { GenericOverlayService } from '../../services/overlay.service';
 import { SettingsService } from '../../services/settings.service';
 import { MediaItemPropertiesComponent } from '../media-item-properties/media-item-properties.component';
+import { MediaItemAltScriptsComponent } from '../media-item-alt-scripts/media-item-alt-scripts.component';
 
 @Component({
     selector: 'app-media-list-item-context-menu',
@@ -117,7 +118,10 @@ export class MediaListItemContextMenuComponent implements OnInit {
   }
 
   openAltScriptsEvent() {
-    // this.openAltScripts.emit();
+    const nameID = 'mediaItemAltScripts';
+    this.overlayService.open(nameID, MediaItemAltScriptsComponent, {
+      item: this.item
+    });
     this.closeEvent();
   }
 

@@ -1,0 +1,27 @@
+<div class="alt-scripts-modal">
+    <div class="alt-scripts-modal-content">
+        <div class="alt-scripts-modal-header">
+            <span class="alt-scripts-modal-title">Alternate scripts</span>
+            <button class="close-btn" (click)="closeOverlay()">&times;</button>
+        </div>
+
+        <div class="alt-scripts-modal-body">
+            @if (altScripts.length) {
+                <div class="alt-scripts-group" role="radiogroup" aria-label="Alternate scripts">
+                    @for (script of altScripts; track script; let i = $index) {
+                        <label class="alt-script-row" [for]="'altScript-' + i">
+                            <input type="radio"
+                                [id]="'altScript-' + i"
+                                name="altScriptsGroup"
+                                [checked]="isSelected(script)"
+                                (change)="onScriptSelected(script)" />
+                            <span class="alt-script-name">{{ getScriptInfoName(script) }}</span>
+                        </label>
+                    }
+                </div>
+            } @else {
+                <div class="alt-scripts-empty">No alternate scripts available for this media item.</div>
+            }
+        </div>
+    </div>
+</div>
