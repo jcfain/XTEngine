@@ -107,7 +107,7 @@ private:
     // has the socket) are separate, so we bridge them with this queue.
     QStringList m_pendingWebSocketSessions;
     QTimer m_sessionPolice;
-    int m_sessionTimeoutInSecs = 60; // 1 hr
+    int m_sessionTimeoutInSecs = 3600; // 1 hr
     QString m_hostAddress;
 
     // /media response cache: the serialized library is rebuilt lazily and only
