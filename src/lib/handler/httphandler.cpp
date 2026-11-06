@@ -133,6 +133,8 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
             TCodeChannelLookup::copyChannelsProfile(toName, fromName);
     });
     connect(_webSocketHandler, &WebSocketHandler::newWebSocketConnected, this, &HttpHandler::on_webSocketClient_Connected);
+    // A live WebSocket keeps its session alive (see touchSession).
+    connect(_webSocketHandler, &WebSocketHandler::clientActivity, this, &HttpHandler::touchSession);
     connect(_webSocketHandler, &WebSocketHandler::restartService, this, &HttpHandler::restartService);
     connect(_webSocketHandler, &WebSocketHandler::skipToMoneyShot, this, &HttpHandler::skipToMoneyShot);
     connect(_webSocketHandler, &WebSocketHandler::skipToNextAction, this, &HttpHandler::skipToNextAction);
@@ -329,8 +331,13 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         // The frontend dials ws://host/ws behind a proxy but ws://host:port
         // (root path) for a direct connection, so accept upgrades on any path
         // and rely on the session check for authorization.
-        if (!isSessionValid(getCookie(request, "sessionID")))
+        QString sessionID = getCookie(request, "sessionID");
+        if (!isSessionValid(sessionID))
             return QHttpServerWebSocketUpgradeResponse::deny();
+        // Queue the session so we can associate it with the socket once it's
+        // connected (the upgrade callback and the connection callback are
+        // separate and the socket isn't available here yet).
+        m_pendingWebSocketSessions.append(sessionID);
         return QHttpServerWebSocketUpgradeResponse::accept();
     });
     connect(_server, &QAbstractHttpServer::newWebSocketConnection, this, [this]() {
@@ -338,7 +345,10 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         if (ws && _webSocketHandler) {
             QWebSocket* raw = ws.release();
             raw->setParent(_webSocketHandler);
-            _webSocketHandler->handleNewWebSocket(raw);
+            QString sessionID;
+            if (!m_pendingWebSocketSessions.isEmpty())
+                sessionID = m_pendingWebSocketSessions.takeFirst();
+            _webSocketHandler->handleNewWebSocket(raw, sessionID);
         }
     });
 
@@ -494,7 +504,11 @@ void HttpHandler::handleAuth(const QHttpServerRequest &request, QHttpServerRespo
                     QStringList expiredIDs;
                     foreach(QString sessionID, m_authenticated.keys())
                     {
-                        if(m_authenticated.value(sessionID).addSecs(m_sessionTimeout) < QDateTime::currentDateTime())// Exipre if not accessed in 15min
+                        // "Remember me" sessions persist; only idle non-remember
+                        // sessions expire after the timeout.
+                        if (m_rememberMeSessions.contains(sessionID))
+                            continue;
+                        if(m_authenticated.value(sessionID).addSecs(m_sessionTimeoutInSecs) < QDateTime::currentDateTime())
                         {
                             expiredIDs << sessionID;
                         }
@@ -502,28 +516,44 @@ void HttpHandler::handleAuth(const QHttpServerRequest &request, QHttpServerRespo
                     foreach (QString sessionID, expiredIDs)
                     {
                         m_authenticated.remove(sessionID);
+                        m_rememberMeSessions.remove(sessionID);
+                        // Proactively log the client out (it clears its cookie and
+                        // reloads to the login view) instead of waiting for a 401.
+                        if (_webSocketHandler)
+                            _webSocketHandler->expireSessionClients(sessionID);
                     }
                 });
-                // Run every 5 mins.
-                m_sessionPolice.start(300);
+                // Check just past the session timeout (a few seconds after a
+                // session is due to expire) so the timeout is honored to within a
+                // few seconds. The interval scales with the timeout, so it stays
+                // correct if m_sessionTimeoutInSecs changes. (start() takes ms.)
+                m_sessionPolice.start((m_sessionTimeoutInSecs + 5) * 1000);
             }
 
 //            root["sessionID"] = sessionID;
             QDateTime dateTime;
             QDateTime createDate = QDateTime::currentDateTime();
+            bool remember = doc["remember"].toBool(false);
             QNetworkCookie cookie("sessionID", sessionID.toUtf8());
-            if(!doc["remember"].toBool(false))
-                cookie.setExpirationDate(createDate.addDays(1));
             cookie.setPath("/");
+            // "Remember me" -> persistent cookie (30 days). Otherwise a session
+            // cookie that dies when the browser closes.
+            if (remember)
+                cookie.setExpirationDate(createDate.addDays(30));
             QString lastSessionID = getCookie(request, "sessionID");
             if(!lastSessionID.isEmpty())
+            {
                 m_authenticated.remove(lastSessionID);
+                m_rememberMeSessions.remove(lastSessionID);
+            }
             // responder.->setCookie(cookie);
             // request.response->setStatus(QHttpServerResponse::StatusCode::Ok);
             // request.response->compressBody();
             QHttpHeaders headers;
-            headers.append(QHttpHeaders::WellKnownHeader::SetCookie, "sessionID="+sessionID);
+            headers.append(QHttpHeaders::WellKnownHeader::SetCookie, cookie.toRawForm());
 
+            if (remember)
+                m_rememberMeSessions.insert(sessionID);
             m_authenticated.insert(sessionID, createDate);
             responder.write(headers, QHttpServerResponse::StatusCode::Ok);
             return;
@@ -546,7 +576,7 @@ void HttpHandler::handleActiveSessions(const QHttpServerRequest &request, QHttpS
         QJsonObject session;
         session["id"] = sessionID;
         session["lastAccessed"] = m_authenticated.value(sessionID).toString();
-        session["expire"] = m_authenticated.value(sessionID).addSecs(m_sessionTimeout).toString();
+        session["expire"] = m_authenticated.value(sessionID).addSecs(m_sessionTimeoutInSecs).toString();
         session["current"] = sessionID == getCookie(request, "sessionID");
         activeSessions.append(session);
     }
@@ -560,7 +590,10 @@ void HttpHandler::handleExpireSession(const QHttpServerRequest &request, QHttpSe
         LogHandler::Debug("Auth from query.");
         QString sessionID = getCookie(request, "sessionID");
         if(m_authenticated.contains(sessionID))
+        {
             m_authenticated.remove(sessionID);
+            m_rememberMeSessions.remove(sessionID);
+        }
         else {
             responder.write(QHttpServerResponse::StatusCode::BadRequest);
             return;
@@ -577,6 +610,7 @@ void HttpHandler::handleLogout(const QHttpServerRequest &request, QHttpServerRes
 {
     QString sessionID = getCookie(request, "sessionID");
     m_authenticated.remove(sessionID);
+    m_rememberMeSessions.remove(sessionID);
     responder.write(QHttpServerResponse::StatusCode::Ok);
 }
 
@@ -1773,6 +1807,14 @@ bool HttpHandler::isSessionValid(const QString &sessionID)
         m_authenticated[sessionID] = QDateTime::currentDateTime();
     }
     return isAuthed;
+}
+
+void HttpHandler::touchSession(const QString &sessionID)
+{
+    // WebSocket activity counts as session activity, so a live socket keeps the
+    // session from expiring (the 1hr sliding window) without any HTTP request.
+    if(!sessionID.isEmpty() && m_authenticated.contains(sessionID))
+        m_authenticated[sessionID] = QDateTime::currentDateTime();
 }
 
 QString HttpHandler::getURL(const QHttpServerRequest &request)

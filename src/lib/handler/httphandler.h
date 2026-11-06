@@ -11,6 +11,7 @@
 #include <QJsonDocument>
 #include <QJsonValue>
 #include <QMutex>
+#include <QSet>
 #include <QtConcurrent/QtConcurrent>
 
 #include "websockethandler.h"
@@ -98,8 +99,15 @@ private:
     QMutex m_fileMutex;
     QHash<QString, QDateTime> m_authenticated;
     QStringList m_authenticatedForMedia;
+    // Sessions created with "Remember me" checked. These persist (no idle
+    // expiry); all other sessions expire after m_sessionTimeout of inactivity.
+    QSet<QString> m_rememberMeSessions;
+    // FIFO of sessionIDs for WebSocket upgrades that are about to connect. The
+    // upgrade verifier (which has the cookie) and the connection callback (which
+    // has the socket) are separate, so we bridge them with this queue.
+    QStringList m_pendingWebSocketSessions;
     QTimer m_sessionPolice;
-    int m_sessionTimeout = 3600; // 1 hr
+    int m_sessionTimeoutInSecs = 60; // 1 hr
     QString m_hostAddress;
 
     // /media response cache: the serialized library is rebuilt lazily and only
@@ -122,6 +130,7 @@ private:
     void onLibraryLoadingStatusChange(QString message);
     bool isAuthenticated(const QHttpServerRequest &req);
     bool isSessionValid(const QString &sessionID);
+    void touchSession(const QString &sessionID);
     QString getURL(const QHttpServerRequest &request);
     QString getCookie(const QHttpServerRequest &request, const QString& name);
     void sendFile(QHttpServerResponder &responder, const QString &path);

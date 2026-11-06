@@ -1,6 +1,7 @@
 #include "websockethandler.h"
 #include "settingshandler.h"
 #include <QAbstractSocket>
+#include <QDateTime>
 
 #include "xmediastatehandler.h"
 
@@ -10,6 +11,13 @@ WebSocketHandler::WebSocketHandler(QObject *parent):
     // The WebSocket server is no longer a separate QWebSocketServer. The HTTP
     // server (Qt 6.8+) handles WebSocket upgrades on the same port and forwards
     // each accepted socket to handleNewWebSocket().
+    //
+    // Keep-alive: intermediate devices (reverse proxies, firewalls, NATs) drop
+    // idle WebSocket connections after a couple of minutes. Send a ping frame to
+    // every client every 30s; the browser automatically replies with a pong, so
+    // the socket stays active in both directions with no client-side changes.
+    connect(&m_keepAliveTimer, &QTimer::timeout, this, &WebSocketHandler::sendKeepAlive);
+    m_keepAliveTimer.start(30000);
 }
 
 WebSocketHandler::~WebSocketHandler()
@@ -94,15 +102,19 @@ void WebSocketHandler::sendWarning(QString message)
     sendCommand("systemWarning", message);
 }
 
-void WebSocketHandler::handleNewWebSocket(QWebSocket* client)
+void WebSocketHandler::handleNewWebSocket(QWebSocket* client, QString sessionID)
 {
     // The upgrade (and session auth) was already performed by the HTTP server via
     // addWebSocketUpgradeVerifier(); the socket arrives fully connected.
     connect(client, &QWebSocket::textMessageReceived, this, &WebSocketHandler::processTextMessage);
     connect(client, &QWebSocket::binaryMessageReceived, this, &WebSocketHandler::processBinaryMessage);
     connect(client, &QWebSocket::disconnected, this, &WebSocketHandler::socketDisconnected);
+    connect(client, &QWebSocket::pong, this, &WebSocketHandler::onPongReceived);
 
     m_clients << client;
+    m_lastPong.insert(client, QDateTime::currentMSecsSinceEpoch());
+    if (!sessionID.isEmpty())
+        m_clientSessions.insert(client, sessionID);
     initNewClient(client);
 
     emit newWebSocketConnected(client);
@@ -129,7 +141,15 @@ void WebSocketHandler::processTextMessage(QString message)
     else
         LogHandler::Error("Invalid JSON...");
     QString command = json["command"].toString();
-    if (command == "tcode") {
+    QWebSocket *client = qobject_cast<QWebSocket *>(sender());
+    // Any real (non-ping) message is user activity -> extend the session. Ping
+    // is only a keep-alive and must not extend it (so idle sessions can expire).
+    if (client && command != "ping" && m_clientSessions.contains(client))
+        emit clientActivity(m_clientSessions.value(client));
+    if (command == "ping") {
+        // Client keep-alive; reply so the client knows the server is alive.
+        sendCommand("pong", QString(), client);
+    } else if (command == "tcode") {
         QString commandMessage = json["message"].toString();
         emit tcode(commandMessage);
     } else if (command == "systemReady") {
@@ -233,7 +253,53 @@ void WebSocketHandler::socketDisconnected()
     if (pClient)
     {
         m_clients.removeAll(pClient);
+        m_lastPong.remove(pClient);
+        m_clientSessions.remove(pClient);
         pClient->deleteLater();
+    }
+}
+
+void WebSocketHandler::sendKeepAlive()
+{
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const qint64 staleTimeoutMs = 90000; // ~3 missed pings -> treat as dead
+    for (QWebSocket *client : qAsConst(m_clients))
+    {
+        if (client->state() != QAbstractSocket::ConnectedState)
+            continue;
+        // Ping frame: the browser auto-responds with a pong, keeping the
+        // connection active through idle-timeout devices. (This is a keep-alive
+        // only - it deliberately does NOT extend the session, so idle sessions
+        // can still expire. Real messages do that, see processTextMessage.)
+        client->ping();
+        // Close clients that stopped responding (e.g. the machine slept), so we
+        // don't accumulate dead sockets. The client will reconnect on its side.
+        if (m_lastPong.value(client, now) < now - staleTimeoutMs)
+        {
+            LogHandler::Warn("WEBSOCKET client stopped responding to pings; closing.");
+            client->close();
+        }
+    }
+}
+
+void WebSocketHandler::onPongReceived()
+{
+    QWebSocket *client = qobject_cast<QWebSocket *>(sender());
+    if (client)
+        m_lastPong.insert(client, QDateTime::currentMSecsSinceEpoch());
+}
+
+void WebSocketHandler::expireSessionClients(const QString &sessionID)
+{
+    // Called when a session expires. Tell the owning client(s) to log out (the
+    // client clears its cookie and reloads to the login view) and drop the socket.
+    for (QWebSocket *client : qAsConst(m_clients))
+    {
+        if (client && m_clientSessions.value(client) == sessionID)
+        {
+            sendCommand("logout", QString(), client);
+            client->close();
+        }
     }
 }
 

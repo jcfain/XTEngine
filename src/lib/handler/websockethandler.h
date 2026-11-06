@@ -3,6 +3,8 @@
 
 #include <QObject>
 #include <QJsonDocument>
+#include <QTimer>
+#include <QHash>
 #include "QtWebSockets/qwebsocket.h"
 
 #include "../struct/ConnectionChangedSignal.h"
@@ -22,6 +24,7 @@ signals:
     void deleteChannelProfile(QString name);
     void cloneChannelProfile(QString fromName, QString toName);
     void newWebSocketConnected(QWebSocket* client);
+    void clientActivity(QString sessionID);
     void restartService();
     void cleanupThumbs();
     void cleanupMetadata();
@@ -43,7 +46,8 @@ public:
     explicit WebSocketHandler(QObject *parent = nullptr);
     ~WebSocketHandler();
     int getServerPort();
-    void handleNewWebSocket(QWebSocket* client);
+    void handleNewWebSocket(QWebSocket* client, QString sessionID = QString());
+    void expireSessionClients(const QString &sessionID);
     void onSettingChange(QString setting, QVariant value);
     void sendCommand(QString command, QString message = nullptr, QWebSocket* client = 0);
     void sendCommand(QString command, QJsonObject message, QWebSocket* client = 0);
@@ -65,10 +69,21 @@ private:
     ConnectionChangedSignal _gamepadStatus = {ConnectionDirection::Input, ConnectionInterface::Gamepad, ConnectionStatus::Disconnected, "Disconnected"};
     bool scriptPaused = false;
 
+    // Keep-alive: proxies/firewalls/NATs drop idle WebSockets after a couple of
+    // minutes. A periodic ping frame (browser auto-pongs) keeps the socket active.
+    // m_lastPong tracks the last pong per client so we can close dead clients.
+    QTimer m_keepAliveTimer;
+    QHash<QWebSocket*, qint64> m_lastPong;
+    // Maps each client to its HTTP session so WebSocket activity can keep the
+    // session alive (emitted via clientActivity, handled by HttpHandler).
+    QHash<QWebSocket*, QString> m_clientSessions;
+
     void processBinaryMessage(QByteArray message);
     void processTextMessage(QString message);
     void socketDisconnected();
     void initNewClient(QWebSocket* client);
+    void sendKeepAlive();
+    void onPongReceived();
 };
 
 #endif // WEBSOCKETHANDLER_H

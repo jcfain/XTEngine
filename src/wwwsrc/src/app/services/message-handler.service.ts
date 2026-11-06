@@ -4,7 +4,7 @@ import { SpeechSynthesisService } from './speech-synthesis.service';
 import { MediaItem } from '../models/interfaces';
 import { XLogLevel, ConnectionStatus, ChannelTimeType, ConnectionInterface } from '../models/enums';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { convertMediaItemDates } from '../utils/utils';
+import { convertMediaItemDates, deleteCookie } from '../utils/utils';
 
 interface SettingChanged {key: string, value: any};
 interface StatusOutput {message: string, percentage:number};
@@ -241,6 +241,9 @@ export class MessageHandlerService {
           break;
 
         case 'logout':
+          // Server expired our session (idle timeout, no "remember me"). Clear
+          // the cookie so we land directly on the login view.
+          deleteCookie('sessionID');
           window.location.replace(window.location.origin);
           break;
 

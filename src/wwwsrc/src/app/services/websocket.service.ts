@@ -19,6 +19,13 @@ export class WebsocketService {
 
   private mediaActions: Record<string, string> | undefined = undefined;
 
+  // Keep-alive: send a ping every 30s so idle-timeout devices (proxies/firewalls/
+  // NATs) don't drop the socket. Force a reconnect if no pong arrives in 90s.
+  private keepAliveTimer: number | undefined;
+  private lastPong = 0;
+  private static readonly KEEP_ALIVE_INTERVAL_MS = 30000;
+  private static readonly PONG_TIMEOUT_MS = 90000;
+
   constructor(private ngZone: NgZone) {}
 
   get connected(): boolean {
@@ -64,6 +71,7 @@ export class WebsocketService {
 
   disconnect(): void {
     if (this.websocket) {
+      this.stopKeepAlive();
       this.websocket.close();
       this.websocket = null;
       this.connectionStatusSubject.next(ConnectionStatus.Disconnected);
@@ -226,12 +234,18 @@ export class WebsocketService {
       this.ngZone.run(() => {
         this.connectionStatusSubject.next(ConnectionStatus.Connected);
       });
+      this.lastPong = Date.now();
+      this.startKeepAlive();
     };
 
     this.websocket.onmessage = (evt: MessageEvent) => {
       this.ngZone.run(() => {
         try {
           const message: WebSocketMessage = JSON.parse(evt.data as string);
+          if (message.command === 'pong') {
+            this.lastPong = Date.now();
+            return;
+          }
           this.messageSubject.next(message);
         } catch (e) {
           console.error('Failed to parse WebSocket message:', e);
@@ -241,6 +255,7 @@ export class WebsocketService {
 
     this.websocket.onclose = () => {
       this.ngZone.run(() => {
+        this.stopKeepAlive();
         this.connectionStatusSubject.next(ConnectionStatus.Disconnected);
       });
     };
@@ -250,5 +265,37 @@ export class WebsocketService {
         this.connectionStatusSubject.next(ConnectionStatus.Error);
       });
     };
+  }
+
+  private startKeepAlive(): void {
+    this.stopKeepAlive();
+    this.keepAliveTimer = window.setInterval(() => {
+      if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+        // Outgoing traffic also counts as activity for idle-timeout devices.
+        this.websocket.send(JSON.stringify({ command: 'ping' }));
+      }
+      // If the server stopped responding, force a clean reconnect.
+      if (Date.now() - this.lastPong > WebsocketService.PONG_TIMEOUT_MS) {
+        console.warn('WebSocket pong timeout; forcing reconnect.');
+        this.forceReconnect();
+      }
+    }, WebsocketService.KEEP_ALIVE_INTERVAL_MS);
+  }
+
+  private stopKeepAlive(): void {
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = undefined;
+    }
+  }
+
+  private forceReconnect(): void {
+    this.stopKeepAlive();
+    if (this.websocket) {
+      // Closing fires onclose -> Disconnected, which drives the app's normal
+      // ping-and-reconnect flow. Null it out so we don't touch a dead socket.
+      this.websocket.close();
+      this.websocket = null;
+    }
   }
 }
