@@ -215,6 +215,29 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.videoService.togglePause();
   }
 
+  // Clicking the video toggles pause, but only for real mouse clicks. On touch
+  // devices a tap fires touchstart followed by a synthetic click, so we record
+  // the touch time and ignore the click if a touch just happened.
+  private lastVideoTouchTime = 0;
+
+  // Tapping the video toggles the controls: show them if hidden, hide them if
+  // shown (unless forceControlsVisible is set, in which case hideControls is a no-op).
+  onVideoTouch(): void {
+    this.lastVideoTouchTime = Date.now();
+    if (this.controlsVisible) {
+      this.videoService.hideControls();
+    } else {
+      this.videoService.showControls();
+    }
+  }
+
+  onVideoClick(): void {
+    if (Date.now() - this.lastVideoTouchTime < 500) {
+      return;
+    }
+    this.togglePause();
+  }
+
   stop() {
     if(this.scriptStatusOpen)
       this.toggleScriptStatus();
@@ -258,6 +281,12 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   showControls(): void {
+    // A mobile tap fires a synthetic mousemove right after touchstart, which would
+    // immediately re-show the controls we just hid on the second tap. Ignore the
+    // call if a touch just happened.
+    if (Date.now() - this.lastVideoTouchTime < 500) {
+      return;
+    }
     if(this.videoVisible)
       this.videoService.showControls();
   }

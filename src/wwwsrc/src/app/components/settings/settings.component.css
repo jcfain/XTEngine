@@ -75,3 +75,20 @@
 .restart-required {
     color: yellow;
 }
+
+/* On narrow screens the footer has too much to fit in one row (device tools
+   plus the action buttons). Let it wrap: the device tools take their own row
+   and the action buttons wrap below, so nothing gets clipped off the edge. */
+@media (max-width: 768px) {
+    .settings-modal-footer {
+        flex-wrap: wrap;
+        gap: var(--spacing-small);
+    }
+    .settings-modal-footer .toolBarGroup {
+        flex-basis: 100%;
+        justify-content: flex-start;
+    }
+    .settings-modal-footer-content {
+        flex-wrap: wrap;
+    }
+}

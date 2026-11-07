@@ -54,3 +54,12 @@
 .hidden {
     display: none;
 }
+
+/* Tighten the tabs on narrow screens so the full set (Local, Connections,
+   Motion, System) fits without needing to scroll. The tab row keeps its
+   horizontal scroll as a fallback for very small widths. */
+@media (max-width: 600px) {
+    .tab-section-tab {
+        padding: var(--spacing-small) var(--spacing-base);
+    }
+}

@@ -37,9 +37,44 @@
     margin-right: 0;
 }
 
+/* When the formElement wraps its controls in a form-group-section (connections
+   and motion tabs), the section is tall (multiple control rows). Align the label
+   to the top and size it to the first control's row (44px, matching the inputs)
+   so it lines up with the radio/checkbox instead of being centered in the middle
+   of the section. */
+.formElement:has(> .form-group-section) {
+    align-items: start;
+}
+.formElement:has(> .form-group-section) > label {
+    line-height: var(--control-height);
+}
+
+/* On narrow screens, stack the label above the control so both get the
+   full width. This stops long labels (e.g. "Voice enabled") from being
+   truncated by the ellipsis and gives the controls room to breathe. */
+@media (max-width: 600px) {
+    .formElement,
+    .formElement--label-large {
+        grid-template-columns: 100%;
+        text-align: start;
+    }
+    .formElement > label {
+        margin-right: 0;
+        margin-bottom: var(--spacing-small);
+    }
+}
+
 .formElement input:not([type='checkbox']):not([type='range']):not([type='radio']):not(.video-control),
 .formElement select {
     width: 100%;
+}
+
+/* Give checkboxes and radios the full control height so they line up with the
+   text inputs next to them. The visual toggle stays centered; the extra space
+   is transparent hit area. */
+.formElement input[type='checkbox'],
+.formElement input[type='radio'] {
+    margin: calc((var(--control-height) - var(--control-toggle-size)) / 2) 0;
 }
 
 .formElement--column input[type='checkbox'] {
@@ -59,7 +94,6 @@
 .form-buttons {
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-end;
     gap: var(--spacing-small);
 }
 
