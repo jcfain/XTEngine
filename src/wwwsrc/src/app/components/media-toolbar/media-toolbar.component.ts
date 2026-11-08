@@ -1,9 +1,9 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { ShowMode, SortMode } from '../../models/enums';
-import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, Subject, Subscription } from 'rxjs';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { ServerService } from '../../services/server.service';
 import { TCodeCommandsComponent } from '../tcode-commands/tcode-commands.component';
@@ -18,7 +18,8 @@ import { AppStateService } from '../../services/app-state.service';
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './media-toolbar.component.css'
 })
-export class MediaToolbarComponent implements OnInit {
+export class MediaToolbarComponent implements OnInit, OnDestroy {
+  private subscriptions = new Subscription();
   filterText: string = this.localSettingsService.filterCriteriaDefault;
   filtertextChanged: Subject < string > = new Subject < string > (); 
   currentShow: ShowMode = this.localSettingsService.showDefault;
@@ -66,30 +67,34 @@ export class MediaToolbarComponent implements OnInit {
   private tagCounts: Record<string, {count: number, total: number}> = {};
 
   ngOnInit(): void {
-    this.localSettingsService.filterCriteria$.subscribe(f => this.filterText = f);
-    this.localSettingsService.show$.subscribe(s => {
+    this.subscriptions.add(this.localSettingsService.filterCriteria$.subscribe(f => this.filterText = f));
+    this.subscriptions.add(this.localSettingsService.show$.subscribe(s => {
       this.currentShow = s
-    });
-    this.localSettingsService.sort$.subscribe(s => {
+    }));
+    this.subscriptions.add(this.localSettingsService.sort$.subscribe(s => {
       this.currentSort = s;
-    });
-    this.localSettingsService.selectedTags$.subscribe(s => {
+    }));
+    this.subscriptions.add(this.localSettingsService.selectedTags$.subscribe(s => {
       this.selectedTags = s;
-    });
-    this.mediaListService.mediaList$.subscribe(v => {
+    }));
+    this.subscriptions.add(this.mediaListService.mediaList$.subscribe(v => {
       this.updateTagCountTotals(this.allTags);
-    });
-    this.mediaListService.mediaListDisplayed$.subscribe(v => {
+    }));
+    this.subscriptions.add(this.mediaListService.mediaListDisplayed$.subscribe(v => {
       this.updateTagCountsDisplayed(this.allTags);
-    });
-    this.messageHandlerService.tagsUpdateSubject$.subscribe(v => {
+    }));
+    this.subscriptions.add(this.messageHandlerService.tagsUpdateSubject$.subscribe(v => {
       this.allTags = v?.allTags || [];
       this.updateTagCounts(this.allTags);
-    });
-    this.serverService.remoteUserSettings$.subscribe(v => {
+    }));
+    this.subscriptions.add(this.serverService.remoteUserSettings$.subscribe(v => {
       this.allTags = v?.allTags || [];
       this.updateTagCounts(this.allTags);
-    })
+    }))
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   onFilterChange(value: string): void {
@@ -139,14 +144,14 @@ export class MediaToolbarComponent implements OnInit {
   }
 
   private updateTagCountTotals(allTags: string[]): void {
+    this.tagCounts = {};
     allTags.forEach(tag => {
-      if(!this.tagCounts[tag]) {
-        this.tagCounts[tag] = {count: 0, total: 0};
-      } else {
-        this.tagCounts[tag].total = 0;
-      }
-      this.mediaListService.mediaList?.forEach(item => {
-        if(item.metaData.tags.some(x => x == tag)) {
+      this.tagCounts[tag] = {count: 0, total: 0};
+    });
+    // O(items * tags_per_item) instead of O(tags * items * tags_per_item)
+    this.mediaListService.mediaList?.forEach(item => {
+      item.metaData.tags.forEach(tag => {
+        if(this.tagCounts[tag]) {
           this.tagCounts[tag].total++;
         }
       });
@@ -160,8 +165,11 @@ export class MediaToolbarComponent implements OnInit {
       } else {
         this.tagCounts[tag].count = 0;
       }
-      this.mediaListService.mediaListDisplayed?.forEach(item => {
-        if(item.metaData.tags.some(x => x == tag)) {
+    });
+    // O(items * tags_per_item) instead of O(tags * items * tags_per_item)
+    this.mediaListService.mediaListDisplayed?.forEach(item => {
+      item.metaData.tags.forEach(tag => {
+        if(this.tagCounts[tag]) {
           this.tagCounts[tag].count++;
         }
       });
