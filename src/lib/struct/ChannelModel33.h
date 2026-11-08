@@ -160,12 +160,12 @@ struct ChannelModel33
         obj["multiplierEnabled"] = item.MultiplierEnabled;
         obj["speedEnabled"] = item.SpeedEnabled;
         obj["speedRandom"] = item.SpeedRandom;
-        obj["speedValue"] = item.SpeedValue;
+        obj["speedValue"] = qRound(item.SpeedValue * 100.0) / 100.0;
         obj["funscriptInverted"] = item.FunscriptInverted;
         obj["gamepadInverted"] = item.GamepadInverted;
         obj["linkToRelatedMFS"] = item.LinkToRelatedMFS;
         obj["relatedChannel"] = item.RelatedChannel;
-        obj["offset"] = item.Offset;
+        obj["offset"] = qRound(item.Offset * 100.0) / 100.0;
         obj["gradient"] = item.Gradient;
         obj["linkedInverted"] = item.LinkedInverted;
         return obj;

@@ -246,7 +246,7 @@ export class SettingsMotionTabComponent implements OnInit {
 
     onOffsetChange(channel: ChannelModel, value: number): void {
         if (value !== undefined && value !== null && !isNaN(value)) {
-            channel.offset = value;
+            channel.offset = round(value, 2);
             this.onDirty.emit();
         }
     }
