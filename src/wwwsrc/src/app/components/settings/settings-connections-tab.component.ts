@@ -1,12 +1,11 @@
-import { Component, OnInit, ChangeDetectionStrategy, Output, EventEmitter, Input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, Output, EventEmitter, Input } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { ServerService } from '../../services/server.service';
 import { WebsocketService } from '../../services/websocket.service';
 import { ConnectionInterface, ConnectionStatus, NetworkProtocol } from '../../models/enums';
-import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
-import { RemoteUserSettings } from '../../models/interfaces';
+import { DeviceConnectionService } from '../../services/device-connection.service';
 
 @Component({
     selector: 'app-settings-connections-tab',
@@ -15,7 +14,7 @@ import { RemoteUserSettings } from '../../models/interfaces';
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './settings-connections-tab.component.css'
 })
-export class SettingsConnectionsTabComponent implements OnInit {
+export class SettingsConnectionsTabComponent {
     ConnectionInterface = ConnectionInterface;
     
     @Input()
@@ -24,20 +23,55 @@ export class SettingsConnectionsTabComponent implements OnInit {
     onDirty = new EventEmitter();
 
     inputDevices: { type: ConnectionInterface; name: string }[] = [
-        // { type: ConnectionInterface.None, name: 'None' },
         { type: ConnectionInterface.HereSphere, name: 'DeoVR/HereSphere' },
         { type: ConnectionInterface.Whirligig, name: 'Whirligig' },
         { type: ConnectionInterface.XTPWeb, name: 'XTP Web (internal web player)' }
     ];
 
     outputDevices: { type: ConnectionInterface; name: string }[] = [
-        // { type: ConnectionInterface.None, name: 'None' },
         { type: ConnectionInterface.Serial, name: 'Serial' },
         { type: ConnectionInterface.Network, name: 'Network' }
     ];
 
-    selectedInputDevice = ConnectionInterface.None;
-    selectedOutputDevice = ConnectionInterface.None;
+    get selectedInputDevice(): ConnectionInterface {
+        return this.deviceConnectionService.selectedInputDevice;
+    }
+    set selectedInputDevice(value: ConnectionInterface) {
+        this.deviceConnectionService.selectedInputDevice = value;
+    }
+    get selectedOutputDevice(): ConnectionInterface {
+        return this.deviceConnectionService.selectedOutputDevice;
+    }
+    set selectedOutputDevice(value: ConnectionInterface) {
+        this.deviceConnectionService.selectedOutputDevice = value;
+    }
+
+    get inputDeviceStatus(): { [key: number]: ConnectionStatus } {
+        return this.deviceConnectionService.inputDeviceStatus;
+    }
+    get outputDeviceStatus(): { [key: number]: ConnectionStatus } {
+        return this.deviceConnectionService.outputDeviceStatus;
+    }
+
+    get settings() {
+        return this.deviceConnectionService.settings;
+    }
+
+    get networkProtocolWebsocket(): boolean {
+        return this.settings?.connection?.output?.networkProtocol === NetworkProtocol.WEBSOCKET;
+    }
+    set networkProtocolWebsocket(value: boolean) {
+        let obj = this.settings?.connection?.output;
+        if (obj)
+            obj.networkProtocol = value ? NetworkProtocol.WEBSOCKET : NetworkProtocol.UDP;
+    }
+
+    constructor(
+        private localSettingsService: LocalSettingsService,
+        private websocketService: WebsocketService,
+        private serverService: ServerService,
+        private deviceConnectionService: DeviceConnectionService
+    ) {}
 
     public get gamePadEnabled(): boolean | undefined {
         return this.settings?.connection?.input?.gamePadEnabled;
@@ -87,118 +121,45 @@ export class SettingsConnectionsTabComponent implements OnInit {
         if(obj)
             obj.serialPort = value;
     }
-    public get networkProtocolWebsocket(): boolean | undefined {
-        return this.settings?.connection?.output?.networkProtocol == NetworkProtocol.WEBSOCKET;
-    }
-    public set networkProtocolWebsocket(value: boolean) {
-        let obj = this.settings?.connection?.output;
-        if(obj)
-            obj.networkProtocol = value ? NetworkProtocol.WEBSOCKET : NetworkProtocol.UDP;
+
+    onInputDeviceChange(value: ConnectionInterface): void {
+        this.localSettingsService.setSelectedInputDevice(value);
     }
 
-    get selectedOutputConnected(): boolean {
-        if(this.selectedOutputDevice == ConnectionInterface.None)
-            return false;
-        const status = this.getStatus(this.selectedOutputDevice);
-        return status === ConnectionStatus.Connected || status === ConnectionStatus.Connecting;
-    }
-
-    private inputDeviceStatus: {[key: number]: ConnectionStatus} = {};
-    private outputDeviceStatus: {[key: number]: ConnectionStatus} = {};
-    private settings: RemoteUserSettings | null = null;
-
-    constructor(
-        private localSettingsService: LocalSettingsService,
-        private serverService: ServerService,
-        private messageHandlerService: MessageHandlerService,
-        private websocketService: WebsocketService
-    ) {
-    }
-
-    ngOnInit(): void {
-        this.serverService.remoteUserSettings$.subscribe(v => {
-            this.settings = v;
-            // On first launch local settings are None; seed them from remote settings.
-            // This triggers selectedOuputDevice$ which calls checkAndUpdateOutputConnection.
-            if(this.selectedOutputDevice === ConnectionInterface.None
-                && this.settings?.connection?.output?.selectedDevice) {
-                this.localSettingsService.setSelectedOutputDevice(this.settings.connection.output.selectedDevice);
-            }
-            if(this.selectedInputDevice === ConnectionInterface.None
-                && this.settings?.connection?.input?.selectedDevice) {
-                this.localSettingsService.setSelectedInputDevice(this.settings.connection.input.selectedDevice);
-            }
-        });
-        this.inputDevices.forEach(x => {
-            this.inputDeviceStatus[x.type] = ConnectionStatus.Disconnected;
-        });
-        this.outputDevices.forEach(x => {
-            this.outputDeviceStatus[x.type] = ConnectionStatus.Disconnected;
-        });
-        this.messageHandlerService.inputDeviceStatus$.subscribe(s => 
-            this.inputDeviceStatus[s.type] = s.status
-        );
-        this.messageHandlerService.outputDeviceStatus$.subscribe(s => 
-            this.outputDeviceStatus[s.type] = s.status
-        );
-        this.localSettingsService.selectedInputDevice$.subscribe(s => {
-            this.selectedInputDevice = s;
-            if(this.selectedInputDevice != ConnectionInterface.None) {
-                this.checkAndUpdateInputConnection(s);
-            }
-        });
-        this.localSettingsService.selectedOuputDevice$.subscribe(s => {
-            this.selectedOutputDevice = s;
-            if(this.selectedOutputDevice != ConnectionInterface.None) {
-                this.checkAndUpdateOutputConnection(s);
-            }
-        });
-    }
-
-    onInputDeviceChange(device: ConnectionInterface): void {
-        this.localSettingsService.setSelectedInputDevice(device);
-    }
-
-    onOutputDeviceChange(device: ConnectionInterface): void {
-        this.localSettingsService.setSelectedOutputDevice(device);
+    onOutputDeviceChange(value: ConnectionInterface): void {
+        this.localSettingsService.setSelectedOutputDevice(value);
     }
 
     onGamePadChange(checked: boolean): void {
-        this.websocketService.sendInputDeviceConnectionChange(ConnectionInterface.Gamepad, checked);
+        this.deviceConnectionService.setGamepadEnabled(checked);
     }
 
     onDeoVRAddressChange(value: string): void {
         this.onDirty.emit();
-        // this.websocketService.settingChange('deoVRAddress', value);
     }
 
     onDeoVRPortChange(value: string): void {
         this.onDirty.emit();
-        // this.websocketService.settingChange('deoVRPort', value);
     }
 
     onNetworkAddressChange(value: string): void {
         this.onDirty.emit();
-        // this.websocketService.settingChange('networkAddress', value);
     }
 
     onNetworkPortChange(value: string): void {
         this.onDirty.emit();
-        // this.websocketService.settingChange('networkPort', value);
     }
 
     onSerialPortChange(value: string): void {
         this.onDirty.emit();
-        // this.websocketService.settingChange('serialPort', value);
     }
 
     onNetworkProtocolChange(checked: boolean): void {
         this.onDirty.emit();
-        // this.websocketService.settingChange('networkProtocol', checked ? NetworkProtocol.WEBSOCKET : NetworkProtocol.UDP);
     }
 
     statusColor(deviceType: ConnectionInterface): string {
-        const status = this.getStatus(deviceType);
+        const status = this.deviceConnectionService.getStatus(deviceType);
         switch (status) {
             case ConnectionStatus.Connected:
                 return 'green';
@@ -212,7 +173,7 @@ export class SettingsConnectionsTabComponent implements OnInit {
     }
 
     statusImage(deviceType: ConnectionInterface): string {
-        const status = this.getStatus(deviceType);
+        const status = this.deviceConnectionService.getStatus(deviceType);
         switch(status) {
         case ConnectionStatus.Connected:
             return "://images/icons/check-mark-black.png";
@@ -226,7 +187,7 @@ export class SettingsConnectionsTabComponent implements OnInit {
   }
 
     statusText(deviceType: ConnectionInterface): string {
-        const status = this.getStatus(deviceType);
+        const status = this.deviceConnectionService.getStatus(deviceType);
         switch (status) {
             case ConnectionStatus.Connected:
                 return 'Connected';
@@ -239,44 +200,18 @@ export class SettingsConnectionsTabComponent implements OnInit {
         }
     }
 
-    // retryOutputConnection(): void {
-    //     this.websocketService.sendOutputDeviceConnectionChange(this.selectedOutputDevice, true);
-    // }
+    get selectedOutputConnected(): boolean {
+        if (this.selectedOutputDevice == ConnectionInterface.None)
+            return false;
+        const status = this.deviceConnectionService.getStatus(this.selectedOutputDevice);
+        return status === ConnectionStatus.Connected || status === ConnectionStatus.Connecting;
+    }
+
+    retryOutputConnection(): void {
+        this.websocketService.sendOutputDeviceConnectionChange(this.selectedOutputDevice, true);
+    }
 
     retryInputConnection() {
         this.websocketService.sendInputDeviceConnectionChange(this.selectedInputDevice, true);
-    }
-
-    private checkAndUpdateInputConnection(value: ConnectionInterface) {
-        if(value == ConnectionInterface.None) {
-            this.selectedInputDevice = this.settings?.connection.input.selectedDevice ?? value;
-        } else {
-            this.selectedInputDevice = value;
-        }
-        const device = this.selectedInputDevice;
-        if(device !== ConnectionInterface.None
-            && this.getStatus(device) !== ConnectionStatus.Connected
-            && this.getStatus(device) !== ConnectionStatus.Connecting)
-            this.websocketService.sendInputDeviceConnectionChange(device, true);
-    }
-    
-    private checkAndUpdateOutputConnection(value: ConnectionInterface) {
-        if(value == ConnectionInterface.None) {
-            this.selectedOutputDevice = this.settings?.connection.output.selectedDevice ?? value;
-        } else {
-            this.selectedOutputDevice = value;
-        }
-        const device = this.selectedOutputDevice;
-        if(device !== ConnectionInterface.None
-            && this.getStatus(device) !== ConnectionStatus.Connected
-            && this.getStatus(device) !== ConnectionStatus.Connecting)
-            this.websocketService.sendOutputDeviceConnectionChange(device, true);
-    }
-
-    private getStatus(device: ConnectionInterface): ConnectionStatus | undefined {
-        let status = this.inputDeviceStatus[device];
-        if(status == undefined)
-            status = this.outputDeviceStatus[device];
-        return status;
     }
 }

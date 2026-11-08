@@ -18,6 +18,7 @@ import { AuthResult, ConnectionStatus } from './models/enums';
 import { KeyboardService } from './services/keyboard.service';
 import { AppStateService } from './services/app-state.service';
 import { ConnectionStateService, ConnectionState } from './services/connection-state.service';
+import { DeviceConnectionService } from './services/device-connection.service';
 
 @Component({
     selector: 'app-root',
@@ -50,7 +51,8 @@ export class AppComponent implements OnInit {
     private authService: AuthService,
     private messageHandlerService: MessageHandlerService,
     private keyboardService: KeyboardService,
-    private connectionStateService: ConnectionStateService
+    private connectionStateService: ConnectionStateService,
+    private deviceConnectionService: DeviceConnectionService
   ) {
     this.keyboardService.init();
   }
