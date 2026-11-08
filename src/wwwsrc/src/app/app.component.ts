@@ -93,6 +93,16 @@ export class AppComponent implements OnInit {
         if(v)
           this.websocketService.init(v.webSocketServerPort);
     });
+    // Re-fetch server settings once we're authenticated. The bootstrap /settings
+    // call (made on the server pong, before the session cookie exists) 401s on a
+    // password-protected server, so the WebSocket port is unknown until the
+    // auto-login sets the cookie. Re-fetching here picks up the port so the
+    // WebSocket connects and the media list loads.
+    this.authService.isAuthenticated$.subscribe(authed => {
+      if (authed) {
+        this.serverService.initServerSettings();
+      }
+    });
     this.serverService.mediaActions$.subscribe(v => {
       this.websocketService.setMediaActions(v);
     });
@@ -117,7 +127,9 @@ export class AppComponent implements OnInit {
 
   onAuth(result: AuthResult) {
     if(result == AuthResult.Success) {
-      window.location.replace(window.location.origin);
+      // isAuthenticated is already true (set by AuthService.checkPass on success),
+      // so the app renders the media list directly. No page reload is needed - the
+      // reload used to flash the login screen on every auto-login.
     } else if(this.websocketState == ConnectionStatus.Disconnected) {
       this.startServerConnection();
     }

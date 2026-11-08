@@ -24,9 +24,20 @@ export class AuthService {
   private rememberPassword = false;
   private storedHash: string | null = null;
   private sessionAlertNameID = 'systemSessionAlert';
+  // True if a sessionID cookie was already present when the app booted. A 401 on a
+  // protected endpoint is only a "stale session" (worth clearing + reloading to the
+  // login view) when the cookie pre-existed this page load. During the initial
+  // auto-login the cookie is created mid-load, so a 401 from a request that fired
+  // before the cookie was set is expected and must NOT trigger a reload (that would
+  // wipe the freshly-set cookie and loop the login screen).
+  private hadCookieAtStartup = false;
 
   get isAuthenticated(): boolean {
     return this.isAuthenticatedSubject.value;
+  }
+
+  get hadSessionAtStartup(): boolean {
+    return this.hadCookieAtStartup;
   }
 
   constructor(
@@ -48,6 +59,7 @@ export class AuthService {
     const cookie = parseCookie(document.cookie)['sessionID'];
     if(cookie)
       this.isAuthenticatedSubject.next(true);
+    this.hadCookieAtStartup = !!cookie;
     this.sessionIDSubject.next(cookie);
   }
 

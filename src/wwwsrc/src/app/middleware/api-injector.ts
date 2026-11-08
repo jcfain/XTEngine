@@ -3,8 +3,10 @@
 // Retrieved 2026-10-10, License - CC BY-SA 4.0
 
 import { HttpInterceptorFn, HttpResponse, HttpEventType, HttpErrorResponse } from '@angular/common/http';
+import { inject } from '@angular/core';
 import { tap, catchError, throwError } from 'rxjs';
 import { deleteCookie, getCookie } from '../utils/utils';
+import { AuthService } from '../services/auth.service';
 
 const dateRegex =
     /^\d{4}(-\d{2}){2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,7}(?:\+\d{2}:\d{2})?)?)?$/;
@@ -39,6 +41,7 @@ function convertDates(
     }
 
 export const apiInterceptor: HttpInterceptorFn = (request, next) => {
+    const authService = inject(AuthService);
     return next(request).pipe(
         tap((event) => {
             // Successful (2xx) responses arrive as HttpEventType.Response events.
@@ -58,7 +61,13 @@ export const apiInterceptor: HttpInterceptorFn = (request, next) => {
                 // server restart) -> clear it and reload to the login view. A
                 // missing cookie simply means "not logged in"; the login view
                 // handles that, so don't reload (avoids a reload loop on load).
-                if (getCookie('sessionID')) {
+                //
+                // Only treat this as a stale session when the cookie was already
+                // present at page load. During the initial auto-login the cookie is
+                // created mid-load, so a 401 from a request that fired before the
+                // cookie was set is expected and must NOT clear the freshly-set
+                // cookie (that would loop the login screen).
+                if (getCookie('sessionID') && authService.hadSessionAtStartup) {
                     deleteCookie('sessionID');
                     window.location.replace(window.location.origin);
                 }

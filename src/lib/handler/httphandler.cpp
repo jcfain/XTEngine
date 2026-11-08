@@ -7,6 +7,8 @@
 #include "../tool/medialibrarycache.h"
 #include "xmediastatehandler.h"
 #include <csignal>
+#include <QTimer>
+#include <functional>
 #ifndef Q_OS_WIN
 #include <execinfo.h>
 #include <unistd.h>
@@ -1596,160 +1598,123 @@ void HttpHandler::handleDeleteExported(const QHttpServerRequest &request, QHttpS
     responder.write(QHttpServerResponse::StatusCode::Ok);
 }
 
-void HttpHandler::handleVideoStream(const QHttpServerRequest &request, QHttpServerResponder &responder)
+QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerRequest &request)
 {
     QString match = getURL(request);
     QHttpHeaders requestHeaders = request.headers();
 
-    try
+    QFuture<QHttpServerResponse> future = QtConcurrent::run([this](QString match, QHttpHeaders requestHeaders)
     {
-        QElapsedTimer timer;
-        LogHandler::Debug("Enter Video stream");
-        timer.start();
-        QString parameter = match;
-        QString apiStr("/media/");
-        QString mediaName = parameter.replace(parameter.indexOf(apiStr), apiStr.size(), "");
-        if(mediaName.contains("../"))
+        try
         {
-            responder.write(QHttpServerResponder::StatusCode::Forbidden);
-            return;
-        }
-        LibraryListItem27* libraryItem = _mediaLibraryHandler->findItemByPartialMediaPath(mediaName);
-        if(!libraryItem) {
-            LogHandler::Error(QString("Media item not found (%1)").arg(mediaName));
-            responder.write(QHttpServerResponder::StatusCode::NotFound);
-            return;
-        }
-        QString filename = libraryItem->path;
-        QFile file(filename);
-        if (!file.open(QIODevice::ReadOnly))
-        {
-            LogHandler::Error(QString("Unable to open file to be sent (%1): %2").arg(filename).arg(file.errorString()));
-            responder.write(QHttpServerResponder::StatusCode::Forbidden);
-            return;
-        }
-        qint64 fileSize = file.size();
-
-        QString range = QString(requestHeaders.value(QHttpHeaders::WellKnownHeader::Range).toByteArray());
-        LogHandler::Debug("Requested range: "+range);
-        qint64 startByte = 0;
-        qint64 endByte = 0;
-        bool hasRange = false;
-        QStringList rangeKeyValue = range.split('=');
-        if(rangeKeyValue.length() > 1)
-        {
-            QStringList rangeEnds = rangeKeyValue[1].split('-');
-            if(rangeEnds.length() > 0 && !rangeEnds[0].isEmpty())
+            QElapsedTimer timer;
+            LogHandler::Debug("Enter Video stream");
+            timer.start();
+            QString parameter = match;
+            QString apiStr("/media/");
+            QString mediaName = parameter.replace(parameter.indexOf(apiStr), apiStr.size(), "");
+            if(mediaName.contains("../"))
             {
-                startByte = rangeEnds[0].toLongLong();
-                hasRange = true;
-                if(rangeEnds.length() > 1 && !rangeEnds[1].isEmpty())
-                    endByte = rangeEnds[1].toLongLong();
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Forbidden);
             }
-        }
-        LogHandler::Debug("startByte: "+ QString::number(startByte));
-        LogHandler::Debug("endByte: "+ QString::number(endByte));
+            LibraryListItem27* libraryItem = _mediaLibraryHandler->findItemByPartialMediaPath(mediaName);
+            if(!libraryItem) {
+                LogHandler::Error(QString("Media item not found (%1)").arg(mediaName));
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::NotFound);
+            }
+            QString filename = libraryItem->path;
+            QFile file(filename);
+            if (!file.open(QIODevice::ReadOnly))
+            {
+                LogHandler::Error(QString("Unable to open file to be sent (%1): %2").arg(filename).arg(file.errorString()));
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Forbidden);
+            }
+            qint64 fileSize = file.size();
 
-        qint64 chunkSize = SettingsHandler::getHTTPChunkSize();
-        if(hasRange && endByte > 0)
-        {
-            // Closed range from client (bytes=N-M): honor it exactly (inclusive)
-            endByte = qMin(endByte, fileSize - 1);
-            chunkSize = endByte - startByte + 1;
-        }
-        else if(hasRange)
-        {
-            // Open-ended range (bytes=N-): send everything from startByte to EOF.
-            // A 206 whose Content-Range end is less than total-1 does NOT make a
-            // <video> element issue a follow-up request; it treats the early close
-            // as a network stall. So honor the full remainder for open-ended ranges.
-            endByte = fileSize - 1;
-            chunkSize = endByte - startByte + 1;
-        }
-        else
-        {
-            // No Range header (initial probe): serve the ENTIRE file. A <video>
-            // element that receives a 206 with a partial range in response to a
-            // non-range request can treat that partial body as the complete
-            // response; it then has only a few MB, the chunked body is already
-            // terminated, and it hangs waiting for bytes that will never arrive.
-            // Serving the full file (as a 200, chunked) gives the browser every
-            // byte it needs and lets it seek via follow-up Range requests.
-            endByte = fileSize - 1;
-            chunkSize = endByte - startByte + 1;
-        }
+            QString range = QString(requestHeaders.value(QHttpHeaders::WellKnownHeader::Range).toByteArray());
+            LogHandler::Debug("Requested range: "+range);
+            qint64 startByte = 0;
+            qint64 endByte = 0;
+            bool hasRange = false;
+            QStringList rangeKeyValue = range.split('=');
+            if(rangeKeyValue.length() > 1)
+            {
+                QStringList rangeEnds = rangeKeyValue[1].split('-');
+                if(rangeEnds.length() > 0 && !rangeEnds[0].isEmpty())
+                {
+                    startByte = rangeEnds[0].toLongLong();
+                    hasRange = true;
+                    if(rangeEnds.length() > 1 && !rangeEnds[1].isEmpty())
+                        endByte = rangeEnds[1].toLongLong();
+                }
+            }
+            LogHandler::Debug("startByte: "+ QString::number(startByte));
+            LogHandler::Debug("endByte: "+ QString::number(endByte));
 
-        if (startByte >= fileSize){
-            LogHandler::Debug("RequestRangeNotSatisfiable: startByte: "+ QString::number(startByte));
-            LogHandler::Debug("RequestRangeNotSatisfiable: fileSize: "+ QString::number(fileSize));
+            qint64 chunkSize = SettingsHandler::getHTTPChunkSize();
+            if(hasRange && endByte > 0)
+            {
+                // Closed range from client (bytes=N-M): honor it exactly (inclusive)
+                endByte = qMin(endByte, fileSize - 1);
+                chunkSize = endByte - startByte + 1;
+            }
+            else if(hasRange)
+            {
+                // Open-ended range (bytes=N-): serve a chunk from startByte.
+                // The browser will issue follow-up range requests as it needs
+                // more buffered data (standard HTTP video streaming behavior).
+                endByte = qMin(startByte + chunkSize - 1, fileSize - 1);
+                chunkSize = endByte - startByte + 1;
+            }
+            else
+            {
+                // No Range header: serve the first chunk. The browser's
+                // <video> element will then use range requests for subsequent data.
+                endByte = qMin(startByte + chunkSize - 1, fileSize - 1);
+                chunkSize = endByte - startByte + 1;
+            }
+
+            if (startByte >= fileSize){
+                LogHandler::Debug("RequestRangeNotSatisfiable: startByte: "+ QString::number(startByte));
+                LogHandler::Debug("RequestRangeNotSatisfiable: fileSize: "+ QString::number(fileSize));
+                file.close();
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::RequestRangeNotSatisfiable);
+            }
+            LogHandler::Debug("chunkSize: "+ QString::number(chunkSize));
+            QString requestBytes = "bytes " + QString::number(startByte) + "-" + QString::number(endByte) + "/" + QString::number(fileSize);
+            LogHandler::Debug("Request bytes: "+requestBytes);
+            if(startByte > 0 && !file.seek(startByte))
+            {
+                LogHandler::Error(QString("Unable to seek to byte %1 in %2").arg(startByte).arg(filename));
+                file.close();
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::InternalServerError);
+            }
+            LogHandler::Debug("Video stream read start: "+ QString::number(timer.elapsed()));
+            QByteArray byteArray = file.read(chunkSize);
             file.close();
-            responder.write(QHttpServerResponder::StatusCode::RequestRangeNotSatisfiable);
-            return;
-        }
-        LogHandler::Debug("chunkSize: "+ QString::number(chunkSize));
-        QString requestBytes = "bytes " + QString::number(startByte) + "-" + QString::number(endByte) + "/" + QString::number(fileSize);
-        LogHandler::Debug("Request bytes: "+requestBytes);
-        if(startByte > 0 && !file.seek(startByte))
-        {
-            LogHandler::Error(QString("Unable to seek to byte %1 in %2").arg(startByte).arg(filename));
-            file.close();
-            responder.write(QHttpServerResponder::StatusCode::InternalServerError);
-            return;
-        }
-        LogHandler::Debug("Video stream read start: "+ QString::number(timer.elapsed()));
-
-        QHttpHeaders headers;
-        headers.append(QHttpHeaders::WellKnownHeader::AcceptRanges, "bytes");
-        QString mimeType = mimeDatabase.mimeTypeForFile(filename, QMimeDatabase::MatchExtension).name();
-        headers.append(QHttpHeaders::WellKnownHeader::ContentType, mimeType);
-
-        // Full-file request (no Range header) -> 200 OK, no Content-Range.
-        // Range request -> 206 Partial Content with Content-Range.
-        QHttpServerResponder::StatusCode statusCode;
-        if (hasRange)
-        {
-            statusCode = QHttpServerResponder::StatusCode::PartialContent;
+            LogHandler::Debug("Video stream read end: "+ QString::number(timer.elapsed()));
+            if(byteArray.size() != chunkSize)
+            {
+                LogHandler::Error(QString("Short read: expected %1 bytes, got %2 from %3").arg(chunkSize).arg(byteArray.size()).arg(filename));
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::InternalServerError);
+            }
+            QHttpHeaders headers;
+            headers.append(QHttpHeaders::WellKnownHeader::AcceptRanges, "bytes");
             headers.append(QHttpHeaders::WellKnownHeader::ContentRange, requestBytes);
+            headers.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(byteArray.size()));
+            QString mimeType = mimeDatabase.mimeTypeForFile(filename, QMimeDatabase::MatchExtension).name();
+            headers.append(QHttpHeaders::WellKnownHeader::ContentType, mimeType);
+            auto response = QHttpServerResponse(byteArray, QHttpServerResponse::StatusCode::PartialContent);
+            response.setHeaders(headers);
+            LogHandler::Debug("Video stream send chunk finish: "+ QString::number(timer.elapsed()));
+            return response;
         }
-        else
+        catch (...)
         {
-            statusCode = QHttpServerResponder::StatusCode::Ok;
+            return QHttpServerResponse(QHttpServerResponse::StatusCode::InternalServerError);
         }
-
-        // Stream the response in small chunks (chunked transfer encoding) instead
-        // of buffering the whole range in a single QByteArray. Buffering a ~91 MB
-        // file (plus a second copy inside QHttpServerResponse) was causing a 502 on
-        // large files. The client determines the byte range from Content-Range (206)
-        // or reads the full chunked body (200), so a separate Content-Length header
-        // is not required.
-        responder.writeBeginChunked(headers, statusCode);
-        const qint64 readChunkSize = 1024 * 1024; // 1 MB
-        qint64 remaining = chunkSize;
-        while (remaining > 0)
-        {
-            QByteArray chunk = file.read(qMin(readChunkSize, remaining));
-            if (chunk.isEmpty())
-                break;
-            responder.writeChunk(chunk);
-            remaining -= chunk.size();
-            if (responder.isResponseCanceled())
-            {
-                // The client (browser) closed the connection mid-stream, e.g. a
-                // page refresh/navigation. The writeChunk() above hit a closed
-                // socket (EPIPE / SIGPIPE source). This is expected and benign
-                // now that SIGPIPE is ignored.
-                LogHandler::Debug(QString("Video stream aborted by client after %1 of %2 bytes sent (page refresh / navigation) - EPIPE/SIGPIPE source").arg(chunkSize - remaining).arg(chunkSize));
-                break;
-            }
-        }
-        responder.writeEndChunked(QByteArray());
-        file.close();
-        LogHandler::Debug("Video stream send chunk finish: "+ QString::number(timer.elapsed()));
-    }
-    catch (...)
-    {
-        LogHandler::Error("Video stream exception");
-    }
+    }, match, requestHeaders);
+    return future;
 }
 
 
