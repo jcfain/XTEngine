@@ -23,6 +23,7 @@ export class AppFooterComponent implements OnInit {
     this.messageHandlerService.statusOutput$.subscribe(v => {
       this.progressValue = v?.percentage;
       this.progressMessage = v?.message;
+      // console.log(`${Date.now()}: ${this.progressValue}% ${this.progressMessage} `);
     })
    }
 }

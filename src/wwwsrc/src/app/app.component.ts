@@ -19,6 +19,7 @@ import { KeyboardService } from './services/keyboard.service';
 import { AppStateService } from './services/app-state.service';
 import { ConnectionStateService, ConnectionState } from './services/connection-state.service';
 import { DeviceConnectionService } from './services/device-connection.service';
+import { MediaListService } from './services/media-list-service';
 
 @Component({
     selector: 'app-root',
@@ -48,6 +49,7 @@ export class AppComponent implements OnInit {
     private websocketService: WebsocketService,
     private serverService: ServerService,
     private mediaService: MediaService,
+    private mediaListService: MediaListService,
     private authService: AuthService,
     private messageHandlerService: MessageHandlerService,
     private keyboardService: KeyboardService,
@@ -80,9 +82,12 @@ export class AppComponent implements OnInit {
       this.connectionState = state;
       // Keep AppStateService in sync for any components that read it
       if (state === ConnectionState.Connected) {
-        this.appStateService.setServerState(ConnectionStatus.Connected);
+        this.deviceConnectionService.init();
       } else {
-        this.appStateService.setServerState(ConnectionStatus.Disconnected);
+        // Bust the client-side media list cache when the backend exits.
+        // This forces a fresh fetch on reconnect and avoids the "stale list
+        // displayed + loading progress" conflict that blocks the main thread.
+        this.mediaListService.setMediaList([]);
       }
     });
 
@@ -97,6 +102,7 @@ export class AppComponent implements OnInit {
     });
 
     this.connectionStateService.start();
+    this.deviceConnectionService.init();
   }
 
   onAuth(result: AuthResult) {

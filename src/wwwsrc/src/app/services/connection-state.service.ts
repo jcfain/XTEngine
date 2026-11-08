@@ -4,6 +4,7 @@ import { ServerService } from './server.service';
 import { WebsocketService } from './websocket.service';
 import { AuthService } from './auth.service';
 import { ConnectionStatus } from '../models/enums';
+import { DeviceConnectionService } from './device-connection.service';
 
 export enum ConnectionState {
   Disconnected = 'disconnected',

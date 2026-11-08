@@ -162,13 +162,22 @@ export class MediaListService {
 
     updateMediaItem(updated: MediaItem): void {
         if(!this.mediaList) return;
-        const list = [...this.mediaList];
-        const index = list.findIndex(m => m.id === updated.id);
+        const index = this.mediaList.findIndex(m => m.id === updated.id);
         if (index !== -1) {
-            list[index] = updated;
-            this.mediaListSubject.next(list);
-            this.applyFilterAndSort();
+            this.mediaList[index] = updated;
+            this.mediaListSubject.next(this.mediaList);
+            this.scheduleFilterAndSort();
         }
+    }
+
+    private filterAndSortTimer: number | null = null;
+    private filterAndSortGeneration = 0;
+    private scheduleFilterAndSort(): void {
+        if (this.filterAndSortTimer !== null) return;
+        this.filterAndSortTimer = window.setTimeout(() => {
+            this.filterAndSortTimer = null;
+            this.applyFilterAndSort();
+        }, 250);
     }
 
     private getNextShuffleMediaItem(): MediaItem | null {
@@ -180,6 +189,7 @@ export class MediaListService {
 
     private applyFilterAndSort(): void {
         if(!this.mediaList) return;
+        const gen = ++this.filterAndSortGeneration;
         let list = [...this.mediaList];
 
         // Filter by show
@@ -257,6 +267,8 @@ export class MediaListService {
             });
         }
 
+        // Cancelable: abort emission if a newer call started
+        if (this.filterAndSortGeneration !== gen) return;
         this.mediaListDisplayedSubject.next(list);
     }
 

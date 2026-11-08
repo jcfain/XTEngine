@@ -20,6 +20,7 @@ import { AppStateService } from '../../services/app-state.service';
 })
 export class MediaToolbarComponent implements OnInit, OnDestroy {
   private subscriptions = new Subscription();
+  private mediaLoading = false;
   filterText: string = this.localSettingsService.filterCriteriaDefault;
   filtertextChanged: Subject < string > = new Subject < string > (); 
   currentShow: ShowMode = this.localSettingsService.showDefault;
@@ -65,6 +66,7 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
   }
 
   private tagCounts: Record<string, {count: number, total: number}> = {};
+  private tagCountGeneration = 0;
 
   ngOnInit(): void {
     this.subscriptions.add(this.localSettingsService.filterCriteria$.subscribe(f => this.filterText = f));
@@ -77,11 +79,8 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
     this.subscriptions.add(this.localSettingsService.selectedTags$.subscribe(s => {
       this.selectedTags = s;
     }));
-    this.subscriptions.add(this.mediaListService.mediaList$.subscribe(v => {
-      this.updateTagCountTotals(this.allTags);
-    }));
     this.subscriptions.add(this.mediaListService.mediaListDisplayed$.subscribe(v => {
-      this.updateTagCountsDisplayed(this.allTags);
+      this.updateTagCounts(this.allTags);
     }));
     this.subscriptions.add(this.messageHandlerService.tagsUpdateSubject$.subscribe(v => {
       this.allTags = v?.allTags || [];
@@ -144,21 +143,26 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
   }
 
   private updateTagCountTotals(allTags: string[]): void {
+    const gen = ++this.tagCountGeneration;
     this.tagCounts = {};
     allTags.forEach(tag => {
       this.tagCounts[tag] = {count: 0, total: 0};
     });
-    // O(items * tags_per_item) instead of O(tags * items * tags_per_item)
-    this.mediaListService.mediaList?.forEach(item => {
-      item.metaData.tags.forEach(tag => {
-        if(this.tagCounts[tag]) {
-          this.tagCounts[tag].total++;
-        }
-      });
-    });
+    const list = this.mediaListService.mediaList;
+    if (!list) return;
+    // Re-entrant: abort if a newer update started
+    for (let i = 0; i < list.length; i++) {
+      if (this.tagCountGeneration !== gen) return;
+      const tags = list[i].metaData.tags;
+      for (let j = 0; j < tags.length; j++) {
+        const tc = this.tagCounts[tags[j]];
+        if (tc) tc.total++;
+      }
+    }
   }
 
   private updateTagCountsDisplayed(allTags: string[]): void {
+    const gen = ++this.tagCountGeneration;
     allTags.forEach(tag => {
       if(!this.tagCounts[tag]) {
         this.tagCounts[tag] = {count: 0, total: 0};
@@ -166,14 +170,17 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
         this.tagCounts[tag].count = 0;
       }
     });
-    // O(items * tags_per_item) instead of O(tags * items * tags_per_item)
-    this.mediaListService.mediaListDisplayed?.forEach(item => {
-      item.metaData.tags.forEach(tag => {
-        if(this.tagCounts[tag]) {
-          this.tagCounts[tag].count++;
-        }
-      });
-    });
+    const list = this.mediaListService.mediaListDisplayed;
+    if (!list) return;
+    // Re-entrant: abort if a newer update started
+    for (let i = 0; i < list.length; i++) {
+      if (this.tagCountGeneration !== gen) return;
+      const tags = list[i].metaData.tags;
+      for (let j = 0; j < tags.length; j++) {
+        const tc = this.tagCounts[tags[j]];
+        if (tc) tc.count++;
+      }
+    }
   }
 
   // private setRandom() {

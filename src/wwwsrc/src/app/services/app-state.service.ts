@@ -6,9 +6,6 @@ import { ConnectionStatus } from '../models/enums';
   providedIn: 'root'
 })
 export class AppStateService {
-  // Connection
-  private serverStateSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Connecting);
-  serverState$: Observable<ConnectionStatus> = this.serverStateSubject.asObservable();
 
   // Misc
   private mediaLoadingSubject = new BehaviorSubject<boolean>(false);
@@ -24,12 +21,7 @@ export class AppStateService {
   userAgentIsMobile: boolean = this.userAgent.indexOf('Mobile') !== -1;
 
   // get mediaLoading(): boolean { return this.mediaLoadingSubject.value; }
-  get serverState(): ConnectionStatus { return this.serverStateSubject.value; }
   get shufflePlayMode(): boolean { return this.shufflePlayModeSubject.value; }
-
-  setServerState(state: ConnectionStatus): void {
-    this.serverStateSubject.next(state);
-  }
 
   setMediaLoading(loading: boolean): void {
     this.mediaLoadingSubject.next(loading);

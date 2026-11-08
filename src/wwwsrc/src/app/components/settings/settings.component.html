@@ -1,4 +1,5 @@
-<div class="settings-modal" [class.hidden]="!isOpen">
+@if (isOpen) {
+<div class="settings-modal">
     <div class="settings-modal-content">
         <div class="settings-modal-header">
             <span class="settings-modal-title">Settings</span>
@@ -51,3 +52,4 @@
         </div>
     </div>
 </div>
+}

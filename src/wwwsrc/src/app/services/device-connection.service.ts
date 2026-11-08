@@ -43,22 +43,33 @@ export class DeviceConnectionService {
         if (this.selectedOutputDevice === ConnectionInterface.None && v.connection?.output?.selectedDevice) {
           this.localSettingsService.setSelectedOutputDevice(v.connection.output.selectedDevice);
         }
-        this.checkAndUpdateInputConnection();
-        this.checkAndUpdateOutputConnection();
+        // this.checkAndUpdateInputConnection();
+        // this.checkAndUpdateOutputConnection();
       }
     });
     this.localSettingsService.selectedInputDevice$.subscribe(s => {
       this.selectedInputDevice = s;
-      if (s !== ConnectionInterface.None) {
+      if (this.initialized && s !== ConnectionInterface.None) {
         this.checkAndUpdateInputConnection(s);
       }
     });
     this.localSettingsService.selectedOuputDevice$.subscribe(s => {
       this.selectedOutputDevice = s;
-      if (s !== ConnectionInterface.None) {
+      if (this.initialized && s !== ConnectionInterface.None) {
         this.checkAndUpdateOutputConnection(s);
       }
     });
+  }
+  private initialized = false;
+
+  init() {
+      if (this.selectedInputDevice !== ConnectionInterface.None) {
+        this.checkAndUpdateInputConnection(this.selectedInputDevice);
+      }
+      if (this.selectedOutputDevice !== ConnectionInterface.None) {
+        this.checkAndUpdateOutputConnection(this.selectedOutputDevice);
+      }
+      this.initialized = true;
   }
 
   checkAndUpdateInputConnection(value?: ConnectionInterface) {
