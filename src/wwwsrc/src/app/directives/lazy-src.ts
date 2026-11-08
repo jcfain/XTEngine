@@ -18,7 +18,6 @@ import { LocalSettingsService } from "../services/local-settings.service";
         "width": "100%",
         "height": "100%",
         "object-fit": "cover",
-        "class.lazy-src-loading": "loading",
         "(load)": "onLoaded()",
         "(error)": "onLoaded()"
     }
@@ -42,6 +41,7 @@ export class LazySrcDirective implements OnInit, OnDestroy {
             return;
         }
         this.loading = true;
+        this.el.nativeElement.classList.add("lazy-src-loading");
         // Honor the "disable lazy load" local setting
         this.subscription.add(
             this.localSettingsService.disableBrowserLazyLoad$.subscribe(disabled => {
@@ -72,6 +72,7 @@ export class LazySrcDirective implements OnInit, OnDestroy {
         // The thumb path can change (e.g. cache-bust on thumb update) - reload if already loaded
         if (changes['lazySrc'] && this.loaded) {
             this.loading = true;
+            this.el.nativeElement.classList.add("lazy-src-loading");
             this.load();
         }
     }
@@ -84,6 +85,7 @@ export class LazySrcDirective implements OnInit, OnDestroy {
 
     onLoaded(): void {
         this.loading = false;
+        this.el.nativeElement.classList.remove("lazy-src-loading");
     }
 
     private load(): void {
