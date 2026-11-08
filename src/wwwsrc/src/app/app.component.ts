@@ -18,6 +18,7 @@ import { MessageHandlerService } from './services/message-handler.service';
 import { AuthResult, ConnectionStatus } from './models/enums';
 import { KeyboardService } from './services/keyboard.service';
 import { AppStateService } from './services/app-state.service';
+import { ConnectionStateService, ConnectionState } from './services/connection-state.service';
 
 @Component({
     selector: 'app-root',
@@ -41,10 +42,7 @@ export class AppComponent implements OnInit {
   settingsOpen = false;
   scriptStatusOpen = false;
   metadataOpen = false;
-  websocketState = ConnectionStatus.Disconnected;
-  pongFailed = false;
-
-  serverCheckTimeout: number | undefined;
+  connectionState = ConnectionState.Disconnected;
 
   constructor(
     private appStateService: AppStateService,
@@ -53,7 +51,8 @@ export class AppComponent implements OnInit {
     private mediaService: MediaService,
     private authService: AuthService,
     private messageHandlerService: MessageHandlerService,
-    private keyboardService: KeyboardService
+    private keyboardService: KeyboardService,
+    private connectionStateService: ConnectionStateService
   ) {
     this.keyboardService.init();
   }
@@ -62,82 +61,46 @@ export class AppComponent implements OnInit {
     return this.authService.isAuthenticated;
   }
 
-  get websocketConnected(): boolean {
-    return this.websocketState == ConnectionStatus.Connected;
+  get isConnected(): boolean {
+    return this.connectionState === ConnectionState.Connected;
   }
 
-  get websocketConnecting(): boolean {
-    return this.websocketState == ConnectionStatus.Connecting;
+  get isConnecting(): boolean {
+    return this.connectionState === ConnectionState.Disconnected
+        || this.connectionState === ConnectionState.Pinging
+        || this.connectionState === ConnectionState.Configured;
+  }
+
+  get isAwaitingAuth(): boolean {
+    return this.connectionState === ConnectionState.AwaitingAuth;
   }
 
   ngOnInit(): void {
-    this.serverService.serverPong$.subscribe(v => {
-      if(v == ConnectionStatus.Connecting) {
-        return;
-      }
-      if(this.serverCheckTimeout) {
-        clearTimeout(this.serverCheckTimeout);
-      }
-      this.serverCheckTimeout = undefined;
-      if(v === ConnectionStatus.Connected) {
-          this.pongFailed = false;
-        // Fetch server settings once on load; the response tells us whether auth is
-        // enabled (hasLaunchPass) and gives us the WebSocket port.
-        this.serverService.initServerSettings();
+    this.connectionStateService.state$.subscribe(state => {
+      this.connectionState = state;
+      // Keep AppStateService in sync for any components that read it
+      if (state === ConnectionState.Connected) {
+        this.appStateService.setServerState(ConnectionStatus.Connected);
       } else {
-        this.pongFailed = true;
-        this.serverCheckTimeout = setTimeout(() => { this.startServerConnection() }, 5000);
+        this.appStateService.setServerState(ConnectionStatus.Disconnected);
       }
     });
-    this.serverService.remoteUserSettings$.subscribe(v => {
-        if(v)
-          this.websocketService.init(v.webSocketServerPort);
-    });
-    // Re-fetch server settings once we're authenticated. The bootstrap /settings
-    // call (made on the server pong, before the session cookie exists) 401s on a
-    // password-protected server, so the WebSocket port is unknown until the
-    // auto-login sets the cookie. Re-fetching here picks up the port so the
-    // WebSocket connects and the media list loads.
-    this.authService.isAuthenticated$.subscribe(authed => {
-      if (authed) {
-        this.serverService.initServerSettings();
-      }
-    });
+
     this.serverService.mediaActions$.subscribe(v => {
       this.websocketService.setMediaActions(v);
     });
-    this.websocketService.connectionStatus$.subscribe(v => {
-      this.websocketState = v;
-      this.appStateService.setServerState(v);
-      if(v === ConnectionStatus.Disconnected) {
-        this.startServerConnection();
-      }
-    });
+
     // Fetch the media list exactly once, when the server reports the library is
-    // ready over the WebSocket. Anchoring to this (instead of the auth state)
-    // avoids a premature /media request that fires on the session cookie before
-    // the server has validated the session. The server re-serializes the entire
-    // library on every /media call with no caching, so a duplicate request
-    // blocks the single-threaded HTTP server - and the thumbnail requests -
-    // for several seconds on every page load.
+    // ready over the WebSocket.
     this.messageHandlerService.mediaLoaded$.subscribe(() => {
       this.mediaService.loadMediaList();
     });
+
+    this.connectionStateService.start();
   }
 
   onAuth(result: AuthResult) {
-    if(result == AuthResult.Success) {
-      // isAuthenticated is already true (set by AuthService.checkPass on success),
-      // so the app renders the media list directly. No page reload is needed - the
-      // reload used to flash the login screen on every auto-login.
-    } else if(this.websocketState == ConnectionStatus.Disconnected) {
-      this.startServerConnection();
-    }
-  }
-
-  startServerConnection() {
-    //This leads to a pong and kicks off the connection change
-    this.serverService.ping();
+    // Auth state changes are handled by the state machine via isAuthenticated$
   }
 
   toggleSettings(): void {

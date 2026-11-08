@@ -9,7 +9,6 @@ import { MessageHandlerService } from './message-handler.service';
   providedIn: 'root'
 })
 export class SettingsService {
-  private loaded = false;
   private debounceer: { [id: string]: any } = {};
   private debounceerTimeout = 1000;
 
@@ -33,14 +32,12 @@ export class SettingsService {
   }
 
   load(allSettings: AllSettings): void {
-    if (this.loaded) return;
     const settings: Setting[] = [];
     allSettings['settings'].forEach(x => {
       if (x.internal) return;
       settings.push(x);
     });
     this.settingsSubject.next(settings);
-    this.loaded = true;
   }
 
   getSetting(key: string): Setting | undefined {

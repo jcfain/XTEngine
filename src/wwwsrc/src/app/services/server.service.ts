@@ -1,19 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { SettingsService } from './settings.service';
-import { WebsocketService } from './websocket.service';
-import { ConnectionStatus } from '../models/enums';
 import { RemoteUserSettings, TCodeCommand, ActiveSession } from '../models/interfaces';
-import { AppStateService } from './app-state.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ServerService {
-
-  private serverPongSubject = new Subject<ConnectionStatus>();
-  serverPong$: Observable<ConnectionStatus> = this.serverPongSubject.asObservable();
 
   private mediaManagementEnabledSubject = new BehaviorSubject<boolean>(false);
   mediaManagementEnabled$: Observable<boolean> = this.mediaManagementEnabledSubject.asObservable();
@@ -38,32 +32,20 @@ export class ServerService {
   ) {
   }
 
-  ping(): void {
-    this.serverPongSubject.next(ConnectionStatus.Connecting);
-    this.http.get<any>('/ping').subscribe({
-      next: () => {
-        this.serverPongSubject.next(ConnectionStatus.Connected);
-      },
-      error: (err) => {
-        console.warn('No pong on ping:', err);
-        this.serverPongSubject.next(ConnectionStatus.Disconnected);
-      }
-    });
+  ping(): Observable<any> {
+    return this.http.get<any>('/ping');
   }
 
-  initServerSettings(): void {
-    this.http.get<any>('/settings').subscribe({
-      next: (response) => {
+  initServerSettings(): Observable<any> {
+    return this.http.get<any>('/settings').pipe(
+      tap(response => {
         this.remoteUserSettingsSubject.next(response);
         this.settingsService.load(response);
         this.getMediaActions();
         this.getTCodeCommands();
         this.getExported();
-      },
-      error: (err) => {
-        console.error('Error getting server settings:', err);
-      }
-    });
+      })
+    );
   }
 
   // TODO implement
