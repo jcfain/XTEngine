@@ -1701,7 +1701,6 @@ QFuture<QHttpServerResponse> HttpHandler::handleVideoStream(const QHttpServerReq
             QHttpHeaders headers;
             headers.append(QHttpHeaders::WellKnownHeader::AcceptRanges, "bytes");
             headers.append(QHttpHeaders::WellKnownHeader::ContentRange, requestBytes);
-            headers.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(byteArray.size()));
             QString mimeType = mimeDatabase.mimeTypeForFile(filename, QMimeDatabase::MatchExtension).name();
             headers.append(QHttpHeaders::WellKnownHeader::ContentType, mimeType);
             auto response = QHttpServerResponse(byteArray, QHttpServerResponse::StatusCode::PartialContent);
