@@ -51,7 +51,7 @@ export class AuthService {
 
     this.serverService.remoteUserSettings$.subscribe(v => {
       // No launch password configured -> authentication is disabled; skip login.
-      if (v && v.hasLaunchPass === false) {
+      if (v && v.hasWebPass === false && !this.isAuthenticatedSubject.value) {
         this.isAuthenticatedSubject.next(true);
       }
       this.loadSessions();
