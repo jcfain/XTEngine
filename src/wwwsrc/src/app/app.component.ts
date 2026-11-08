@@ -6,7 +6,6 @@ import { SettingsComponent } from './components/settings/settings.component';
 import { ScriptStatusComponent } from './components/script-status/script-status.component';
 import { MediaListComponent } from './components/media-list/media-list.component';
 import { MediaToolbarComponent } from './components/media-toolbar/media-toolbar.component';
-import { MetadataComponent } from './components/metadata/metadata.component';
 import { ServerService } from './services/server.service';
 import { MediaService } from './services/media.service';
 import { AuthService } from './services/auth.service';
@@ -29,7 +28,6 @@ import { ConnectionStateService, ConnectionState } from './services/connection-s
     ScriptStatusComponent,
     MediaListComponent,
     MediaToolbarComponent,
-    MetadataComponent,
     AppHeaderComponent,
     AppFooterComponent,
     AuthComponent
@@ -41,7 +39,7 @@ import { ConnectionStateService, ConnectionState } from './services/connection-s
 export class AppComponent implements OnInit {
   settingsOpen = false;
   scriptStatusOpen = false;
-  metadataOpen = false;
+  mediaLoaded = false;
   connectionState = ConnectionState.Disconnected;
 
   constructor(

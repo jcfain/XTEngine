@@ -34,6 +34,7 @@
   <span class="video-name"></span>
 </div> -->
 
+@if (videoVisible) {
 <div id="top-controls" class="video-controls top-controls" [class.video-controls-visible]="controlsVisible">
   <div class="left-controls left-controls--top">
     <div id="videoMediaName" class="video-media-name">{{mediaItem?.name}}</div>
@@ -195,4 +196,5 @@
     [item]="mediaItem"
     (close)="closeAltScripts()">
 </app-media-item-alt-scripts>
+}
 </div>

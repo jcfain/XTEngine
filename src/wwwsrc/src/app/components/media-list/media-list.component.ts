@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy, ViewChildren, QueryList } from '@angular/core';
+import { AfterViewChecked, AfterViewInit, Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy, ViewChildren, QueryList } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { MediaItem, MediaItemMetaData } from '../../models/interfaces';
@@ -17,7 +17,7 @@ import { Roles } from '../../models/enums';
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './media-list.component.css'
 })
-export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
+export class MediaListComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
   // @ViewChildren(MediaListItemComponent) mediaNodes: QueryList<MediaListItemComponent> = new QueryList();
   @ViewChild('mediaListContainer') mediaListContainer?: CdkVirtualScrollViewport;
 
@@ -50,6 +50,10 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
   mediaLoading = true;
   mediaLoadingStatus = "Loading...";
 
+  @Output() rendered = new EventEmitter<void>();
+  private renderedEmitted = false;
+  private pendingRender = false;
+
   private mediaItemHeaderMultiplier: number = 0.15;
   private mediaItemHeaderIconMultiplier: number = 0.10;
   private resizeObserver: ResizeObserver | null = null;
@@ -68,8 +72,6 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.messageHandlerService.mediaLoaded$.subscribe(() => {
-      // this.mediaLoading = false;
-      // this.mediaLoadingStatus = "";
       this.mediaLoadingStatus = "Downloading list...";
     });
     this.messageHandlerService.mediaLoading$.subscribe(() => {
@@ -90,6 +92,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
         this.buildRows();
         this.mediaLoading = false;
         this.mediaLoadingStatus = "";
+        this.pendingRender = true;
       }
     });
     this.mediaListService.scrollToItem$.subscribe(item => {
@@ -120,6 +123,14 @@ export class MediaListComponent implements OnInit, AfterViewInit, OnDestroy {
     this.windowResizeHandler = () => this.scheduleRebuild();
     window.addEventListener('resize', this.windowResizeHandler);
     this.buildRows();
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.pendingRender && !this.renderedEmitted) {
+      this.renderedEmitted = true;
+      this.pendingRender = false;
+      this.rendered.emit();
+    }
   }
 
   private scheduleRebuild() {

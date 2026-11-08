@@ -141,7 +141,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onPlaying() {
-    this.loading = false
+    this.loading = false;
   }
 
   onSkipToMoneyShot(): void {

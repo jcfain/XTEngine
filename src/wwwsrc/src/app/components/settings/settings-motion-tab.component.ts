@@ -68,6 +68,8 @@ export class SettingsMotionTabComponent implements OnInit {
         this.userAgentIsHereSphere = this.appState.userAgentIsHereSphere;
     }
 
+    private relatedOptionsCache: Map<string, ChannelModel[]> = new Map();
+
     ngOnInit(): void {
         this.serverService.remoteUserSettings$.subscribe(settings => {
             if (!settings) {
@@ -78,6 +80,7 @@ export class SettingsMotionTabComponent implements OnInit {
             this.multiplierEnabled = settings.multiplierEnabled || false;
             const available = settings.availableChannelsArray || Object.values(settings.availableChannels || {});
             this.allChannels = available;
+            this.relatedOptionsCache.clear();
             const wholeChannels = available.filter(c => c.type !== ChannelType.HalfOscillate);
             this.channels = this.sortChannels(wholeChannels);
             this.channelRanges = this.channels.map(c => ({ channel: c, userMin: c.userMin, userMax: c.userMax }));
@@ -204,7 +207,11 @@ export class SettingsMotionTabComponent implements OnInit {
     }
 
     relatedChannelOptions(channel: ChannelModel): ChannelModel[] {
-        return this.allChannels.filter(c => c.channel !== channel.channel);
+        const key = channel.channel;
+        if (!this.relatedOptionsCache.has(key)) {
+            this.relatedOptionsCache.set(key, this.allChannels.filter(c => c.channel !== key));
+        }
+        return this.relatedOptionsCache.get(key)!;
     }
 
     relatedChannelName(channel: ChannelModel): string {

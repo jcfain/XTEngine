@@ -24,14 +24,13 @@
     <app-video-player></app-video-player>
 
     <div class="app-body">
-      <app-media-list></app-media-list>
+      <app-media-list (rendered)="mediaLoaded = true"></app-media-list>
     </div>
     <app-footer></app-footer>
   </div>
 
-  @if (isConnected) {
+  @if (mediaLoaded) {
     <app-settings [isOpen]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
-    <app-metadata [isOpen]="metadataOpen" (close)="metadataOpen = false"></app-metadata>
   }
   @if (scriptStatusOpen) {
     <app-script-status></app-script-status>
