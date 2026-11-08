@@ -41,7 +41,7 @@ export class SettingsSystemTabComponent implements OnInit {
 
     groups: SettingGroup[] = [];
     xteVersion = '';
-    webVersion = 'v0.6.7b';
+    webVersion = 'v0.6.8b';
     userAgent = navigator.userAgent;
     userAgentIsDeo = false;
     userAgentIsHereSphere = false;
