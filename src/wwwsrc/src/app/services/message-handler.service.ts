@@ -1,6 +1,7 @@
 import { EventEmitter, Injectable, NgZone } from '@angular/core';
 import { WebsocketService } from './websocket.service';
 import { SpeechSynthesisService } from './speech-synthesis.service';
+import { AlertService } from './alert.service';
 import { MediaItem } from '../models/interfaces';
 import { XLogLevel, ConnectionStatus, ChannelTimeType, ConnectionInterface } from '../models/enums';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
@@ -94,6 +95,7 @@ export class MessageHandlerService {
   constructor(
     private websocketService: WebsocketService,
     private speechSynthesis: SpeechSynthesisService,
+    private alertService: AlertService,
     // private appState: AppStateService,
     // private mediaService: MediaService,
     // private serverService: ServerService,
@@ -111,26 +113,32 @@ export class MessageHandlerService {
       switch (data['command']) {
         case 'messageSend': {
           const obj = data['message'];
-          const message = obj['message'].replaceAll('\n', '<br>');
+          const message = obj['message'];
           const level = obj['loglevel'];
           switch (level) {
             case XLogLevel.Critical:
               console.error(message);
+              this.alertService.error(message);
               break;
             case XLogLevel.Information:
               console.log(message);
+              this.alertService.info(message);
               break;
             case XLogLevel.Warning:
               console.warn(message);
+              this.alertService.warning(message);
               break;
           }
           break;
         }
         case 'userError':
-        case 'userWarning':
         case 'systemError':
+          this.alertService.error(data['message']);
+          break;
+
+        case 'userWarning':
         case 'systemWarning':
-          console.warn(data['command'] + ':', data['message'].replaceAll('\n', '<br>'));
+          this.alertService.warning(data['message']);
           break;
 
         case 'settingChange': {

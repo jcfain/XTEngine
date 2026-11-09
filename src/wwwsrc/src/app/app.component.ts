@@ -12,8 +12,10 @@ import { AuthService } from './services/auth.service';
 import { AppHeaderComponent } from './components/app-header/app-header.component';
 import { AppFooterComponent } from './components/app-footer/app-footer.component';
 import { AuthComponent } from './components/auth/auth.component';
+import { AlertsComponent } from './components/alerts/alerts.component';
 import { WebsocketService } from './services/websocket.service';
 import { MessageHandlerService } from './services/message-handler.service';
+import { AlertService } from './services/alert.service';
 import { AuthResult, ConnectionStatus } from './models/enums';
 import { KeyboardService } from './services/keyboard.service';
 import { AppStateService } from './services/app-state.service';
@@ -32,7 +34,8 @@ import { MediaListService } from './services/media-list-service';
     MediaToolbarComponent,
     AppHeaderComponent,
     AppFooterComponent,
-    AuthComponent
+    AuthComponent,
+    AlertsComponent
 ],
     templateUrl: './app.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
@@ -52,6 +55,7 @@ export class AppComponent implements OnInit {
     private mediaListService: MediaListService,
     private authService: AuthService,
     private messageHandlerService: MessageHandlerService,
+    private alertService: AlertService,
     private keyboardService: KeyboardService,
     private connectionStateService: ConnectionStateService,
     private deviceConnectionService: DeviceConnectionService

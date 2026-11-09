@@ -1,0 +1,124 @@
+.alerts-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 50vh;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+/* Sticky header stays at the top of the container while the list scrolls */
+.alerts-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    background-color: var(--background-color);
+    border-bottom: 1px solid var(--control-border-color);
+}
+
+.alerts-header-title {
+    color: var(--foreground-color-header);
+    font-weight: bold;
+}
+
+.alerts-dismiss-all {
+    background: var(--button-background);
+    border: 1px solid var(--button-border-color);
+    color: var(--button-text-color);
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.alerts-dismiss-all:hover {
+    background: var(--button-hover-background);
+}
+
+.alerts-list {
+    display: flex;
+    flex-flow: column;
+}
+
+.alert-toast {
+    margin: 4px 8px;
+    border: 1px solid var(--control-border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    color: black;
+    animation: alert-toast-expand 0.5s ease-out;
+}
+
+@keyframes alert-toast-expand {
+    from {
+        max-height: 0;
+    }
+    to {
+        max-height: 50vh;
+    }
+}
+
+.alert-toast--error {
+    background-color: var(--alert-color-error);
+}
+
+.alert-toast--info {
+    background-color: var(--alert-color-info);
+}
+
+.alert-toast--warning {
+    background-color: var(--alert-color-warning);
+}
+
+.alert-toast--debug {
+    background-color: var(--alert-color-debug);
+}
+
+.alert-toast-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    font-weight: bold;
+}
+
+.alert-toast-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+.alert-toast-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.alert-toast-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: black;
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 4px;
+}
+
+.alert-toast-close:hover {
+    text-decoration: underline;
+}
+
+/* Left padding matches the header's icon (16px) + gap (6px) + padding (8px)
+   so the message text lines up with the level text. */
+.alert-toast-message {
+    padding: 6px 8px 6px 30px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}

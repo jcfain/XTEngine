@@ -29,6 +29,12 @@
     /* Tabs */
     --tab-background: #5E6B7F;
     --tab-active-background: #8DA1BF;
+
+    /* Alert toast levels */
+    --alert-color-error: crimson;
+    --alert-color-info: lightblue;
+    --alert-color-warning: yellow;
+    --alert-color-debug: grey;
 }
 
 .background-color-caution {
