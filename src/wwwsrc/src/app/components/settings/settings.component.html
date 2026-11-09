@@ -33,21 +33,24 @@
             <div class="toolBarGroup toolBarGroupStart">
                 <output-device-tools></output-device-tools>
             </div>
-            <div class="settings-modal-footer-content">
+            <div class="toolBarGroup toolBarGroupEnd">
                 <span class="restart-required" [class.hidden]="!restartRequired">Restart required</span>
-            </div>
-            <div class="settings-modal-footer-content">
                 <span class="save-state" [class.hidden]="!saveState">{{ saveState }}</span>
-                <button title="This will only reset the local browser settings to default. Your settings stored on the XTP machine will remain."
-                    (click)="defaultLocalSettings()">Default Local</button>
-                <button title="This will restart XTP" (click)="restartXTP()">Restart XTP</button>
-                <button title="This will start the library loading process" (click)="refreshXTPLibrary()">Refresh library</button>
-                <button [disabled]="!formDirty" (click)="onSaveToXTP()">Save to XTP</button>
-    <!-- <div class="formElement">
-        <label></label>
-        <div class="form-buttons">
-        </div>
-    </div> -->
+                <div class="footer-popup-wrap icon-button--group">
+                    <button class="icon-button" title="More actions" (click)="showMoreActions = !showMoreActions">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+                    </button>
+                    @if (showMoreActions) {
+                        <div class="footer-popup">
+                            <button title="This will only reset the local browser settings to default. Your settings stored on the XTP machine will remain." (click)="defaultLocalSettings(); showMoreActions = false">Default Local</button>
+                            <button title="This will restart XTP" (click)="restartXTP(); showMoreActions = false">Restart XTP</button>
+                            <button title="This will start the library loading process" (click)="refreshXTPLibrary(); showMoreActions = false">Refresh library</button>
+                        </div>
+                    }
+                </div>
+                <button class="icon-button" title="Save to XTP" [disabled]="!formDirty" (click)="onSaveToXTP()">
+                    <img class="buttonImage" src="://images/icons/save.svg" />
+                </button>
             </div>
         </div>
     </div>

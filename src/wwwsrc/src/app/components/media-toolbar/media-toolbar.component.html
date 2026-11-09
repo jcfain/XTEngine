@@ -1,67 +1,65 @@
-<!-- <div class="media-toolbar">
-<div class="show-section">
-  <select [ngModel]="currentShow" (ngModelChange)="onShowChange($event)">
-    <option *ngFor="let opt of showOptions" [value]="opt">{{ opt }}</option>
-  </select>
-</div>
-<div class="sort-section">
-  <select [ngModel]="currentSort" (ngModelChange)="onSortChange($event)">
-    <option *ngFor="let opt of sortOptions" [value]="opt">{{ opt }}</option>
-  </select>
-</div>
-</div> -->
-
-<div class="side-actions">
-  <div class="side-actions-container">
-    <button #searchButton id="searchButton" title="Search media" class="search-media-button icon-button icon-button--group--vertical" (click)="filterInputHidden = !filterInputHidden">
-      <img class="buttonImage" src="://images/icons/search.svg"/>
-    </button>
-    <button #tagButton id="tagButton" title="Filter tags" class="tag-media-button icon-button icon-button--group--vertical" (click)="tagInputHidden = !tagInputHidden">
-      <img class="buttonImage" src="://images/icons/tag.svg"/>
-    </button>
-    <button #tcodeActionsButton title="TCode actions" name="tcodeActionsButton" class="tcode-actions-button icon-button icon-button--group--vertical"  (click)="tcodeActionsInputHidden = !tcodeActionsInputHidden">
+<div class="media-toolbar">
+  <div class="tcode-actions-wrapper">
+    <button #tcodeActionsButton title="TCode actions" name="tcodeActionsButton" class="tcode-actions-button icon-button" (click)="tcodeActionsInputHidden = !tcodeActionsInputHidden">
       <img class="buttonImage" src="://images/icons/tcode.svg" />
     </button>
-    <button #shuffleButton id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button icon-button--group--vertical" [class.button-down]="randomMode" (click)="toggleShufflePlay()">
-      <img class="buttonImage" src="://images/icons/shuffle.svg" />
+
+    @if (!tcodeActionsInputHidden) {
+      <app-tcode-commands></app-tcode-commands>
+    }
+  </div>
+  <button #shuffleButton id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button" [class.button-down]="randomMode" (click)="toggleShufflePlay()">
+    <img class="buttonImage" src="://images/icons/shuffle.svg" />
+  </button>
+  @if (randomMode) {
+    <button #randomizeButton id="randomizeButton" title="Randomize media playlist" class="random-media-button icon-button" (click)="randomize()">
+      <img class="buttonImage" src="://images/icons/reload.svg" />
     </button>
-    @if (randomMode) {
-      <button #randomizeButton id="randomizeButton" title="Randomize media playlist" class="random-media-button icon-button icon-button--group--vertical" (click)="randomize()">
-        <img class="buttonImage" src="://images/icons/reload.svg" />
+  }
+  <div class="toolbar-right">
+    @if (activeFilterCount > 0) {
+      <button id="clearFiltersButton" class="clear-filters-button icon-button" title="Clear all filters" (click)="clearAllFilters()">
+        <img class="buttonImage" src="://images/icons/x.svg" />
+        <span class="filter-count-badge">{{ activeFilterCount }}</span>
       </button>
     }
-  </div>
-</div>
-
-@if (!filterInputHidden) {
-  <div id="filterInputContainer" class="side-action-filter-input-modal" [style.right.px]="searchButton.style.right" [style.top.px]="searchButton.style.top">
-    <input id="filterInput" class="side-action-filter-input" placeholder="Filter" [ngModel]="filterText" (ngModelChange)="onFilterChange($event)" />
-    <button class="side-action-filter-clear-button icon-button icon-button--small" (click)="clearFilterText()">
-      <img class="buttonImage" src="://images/icons/x.svg" />
-    </button>
-  </div>
-}
-
-@if (!tagInputHidden) {
-  <div id="tagFilterOptions" class="side-action-tag-filter-modal">
-    <div class="system-tag-checkbox">
-      <input title="If checked, the selected tags will be inclusive." id="tagFilterORChk" type="checkbox" value="OR" (click)="onTagClick($event)" [ngModel]="isTagSelected('OR')" />
-      <label for="tagFilterORChk">OR</label>
+    <div class="tag-filter-wrapper">
+      <button #tagButton id="tagButton" title="Filter tags" class="tag-media-button icon-button" [class.button-down]="!tagInputHidden" (click)="tagInputHidden = !tagInputHidden">
+        <img class="buttonImage" src="://images/icons/tag.svg" />
+      </button>
     </div>
-    @for (tag of allTags; track tag; let idx = $index) {
-      <div class="system-tag-checkbox">
-        <input [id]="'tagFilter' + idx" type="checkbox" [value]="tag" (click)="onTagClick($event)" [ngModel]="isTagSelected(tag)" />
-        <label for="'tagFilter' + idx">{{tag}} ({{
-          getTagCount(tag) == getTagTotal(tag) ? getTagCount(tag) : getTagCount(tag)+'/'+getTagTotal(tag)
-        }})</label>
-      </div>
-    }
+    <div class="toolbar-search">
+      <input id="filterInput" class="toolbar-search-input" placeholder="Search" [ngModel]="filterText" (ngModelChange)="onFilterChange($event)" />
+      <button class="side-action-filter-clear-button icon-button icon-button--small" (click)="clearFilterText()">
+        <img class="buttonImage" src="://images/icons/x.svg" />
+      </button>
+    </div>
   </div>
-}
 
-@if (!tcodeActionsInputHidden) {
-    <app-tcode-commands></app-tcode-commands>
-}
+  @if (!tagInputHidden) {
+    <div id="tagFilterOptions" class="tag-filter-overlay">
+      <div class="tag-filter-header">
+        <input type="text" class="tag-filter-search" placeholder="Filter tags..." [(ngModel)]="tagFilterText" />
+        <div class="system-tag-checkbox">
+          <input title="If checked, the selected tags will be inclusive." id="tagFilterORChk" type="checkbox" value="OR" (click)="onTagClick($event)" [ngModel]="isTagSelected('OR')" />
+          <label for="tagFilterORChk">OR</label>
+        </div>
+      </div>
+      <div class="tags-scroll">
+        <div class="tags-grid">
+          @for (tag of filteredTags; track tag) {
+            <button class="tag-toggle" [class.tag-toggle--active]="isTagSelected(tag)" (click)="onTagToggle(tag)">{{ tag }} ({{
+              getTagCount(tag) == getTagTotal(tag) ? getTagCount(tag) : getTagCount(tag)+'/'+getTagTotal(tag)
+            }})</button>
+          }
+        </div>
+        @if (!filteredTags.length) {
+          <div class="tags-empty">No tags match your filter.</div>
+        }
+      </div>
+    </div>
+  }
+</div>
 
 @if (!scriptInputHidden) {
   <div id="scriptStatusModal" class="script-status-model">

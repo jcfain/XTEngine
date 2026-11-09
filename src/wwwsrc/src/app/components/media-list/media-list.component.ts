@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { MediaItem, MediaItemMetaData } from '../../models/interfaces';
 import { MediaListItemComponent } from '../media-list-item/media-list-item.component';
+import { MediaToolbarComponent } from '../media-toolbar/media-toolbar.component';
 import { MediaListService } from '../../services/media-list-service';
 import { VideoService } from '../../services/video.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
@@ -12,7 +13,7 @@ import { Roles } from '../../models/enums';
 
 @Component({
     selector: 'app-media-list',
-    imports: [FormsModule, CdkVirtualScrollViewport, CdkFixedSizeVirtualScroll, CdkVirtualForOf, MediaListItemComponent],
+    imports: [FormsModule, CdkVirtualScrollViewport, CdkFixedSizeVirtualScroll, CdkVirtualForOf, MediaListItemComponent, MediaToolbarComponent],
     templateUrl: './media-list.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './media-list.component.css'

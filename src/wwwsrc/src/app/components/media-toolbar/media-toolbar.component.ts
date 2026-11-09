@@ -44,10 +44,10 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
       });
   }
 
-  filterInputHidden: boolean = true;
   tagInputHidden: boolean = true;
   tcodeActionsInputHidden: boolean = true;
   scriptInputHidden: boolean = true;
+  tagFilterText: string = '';
   allTags: string[] = [];
   selectedTags: string[] = [];
   totalMediaItems: number = 0;
@@ -122,6 +122,32 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
 
   clearFilterText() {
     this.localSettingsService.setFilter("");
+  }
+
+  get filteredTags(): string[] {
+    const filter = this.tagFilterText.trim().toLowerCase();
+    if (!filter)
+      return this.allTags;
+    return this.allTags.filter(tag => tag.toLowerCase().includes(filter));
+  }
+
+  get activeFilterCount(): number {
+    let count = this.selectedTags.filter(tag => tag !== 'OR').length;
+    if (this.filterText.trim())
+      count++;
+    return count;
+  }
+
+  clearAllFilters() {
+    this.localSettingsService.setFilter("");
+    this.localSettingsService.setSelectedTags([]);
+  }
+
+  onTagToggle(tag: string) {
+    if (this.isTagSelected(tag))
+      this.localSettingsService.removeFromSelectedTags(tag);
+    else
+      this.localSettingsService.addToSelectedTags(tag);
   }
 
   isTagSelected(tag: string): boolean {

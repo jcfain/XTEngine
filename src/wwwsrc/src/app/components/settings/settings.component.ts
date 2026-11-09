@@ -36,6 +36,7 @@ export class SettingsComponent {
     activeTab = 0;
     restartRequired = false;
     hasLaunchPass: boolean | undefined = undefined;
+    showMoreActions = false;
 
     constructor(
         private localSettingsService: LocalSettingsService,

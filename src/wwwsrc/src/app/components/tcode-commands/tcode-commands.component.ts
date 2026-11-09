@@ -23,6 +23,14 @@ export class TCodeCommandsComponent implements OnInit {
   newCommandName = '';
   newCommandValue = '';
   showSetup = false;
+  filterText = '';
+
+  get filteredCommands(): TCodeCommand[] {
+    const filter = this.filterText.trim().toLowerCase();
+    if (!filter)
+      return this.commands;
+    return this.commands.filter(cmd => cmd.name.toLowerCase().includes(filter));
+  }
 
   constructor(
     private websocketService: WebsocketService,

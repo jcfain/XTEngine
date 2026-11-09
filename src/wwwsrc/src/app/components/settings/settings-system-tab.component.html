@@ -111,9 +111,9 @@
                         }
                     </select>
                 </div>
-                <button class="system-tags-section-button" (click)="addTag(false)">Add</button>
-                <button class="system-tags-section-button" [disabled]="!selectedUserTags.length"
-                    (click)="removeTag(false)">Remove</button>
+                <button class="system-tags-section-button" title="Add tag" (click)="addTag(false)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <button class="system-tags-section-button" title="Remove tag" [disabled]="!selectedUserTags.length"
+                    (click)="removeTag(false)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
             </div>
             <div class="system-tags-section">
                 <h4 [title]="'Smart tags are a special tag. When in the system and the metadata is being processed, this processing will look for the tag text in the video path. If found, the tag is automatically added to the media.'">Smart tags</h4>
@@ -125,9 +125,9 @@
                         }
                     </select>
                 </div>
-                <button class="system-tags-section-button" (click)="addTag(true)">Add</button>
-                <button class="system-tags-section-button" [disabled]="!selectedSmartTags.length"
-                    (click)="removeTag(true)">Remove</button>
+                <button class="system-tags-section-button" title="Add tag" (click)="addTag(true)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <button class="system-tags-section-button" title="Remove tag" [disabled]="!selectedSmartTags.length"
+                    (click)="removeTag(true)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
             </div>
         </div>
         <div class="settings-section-footer">

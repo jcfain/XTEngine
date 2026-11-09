@@ -5,7 +5,6 @@ import { VideoPlayerComponent } from './components/video-player/video-player.com
 import { SettingsComponent } from './components/settings/settings.component';
 import { ScriptStatusComponent } from './components/script-status/script-status.component';
 import { MediaListComponent } from './components/media-list/media-list.component';
-import { MediaToolbarComponent } from './components/media-toolbar/media-toolbar.component';
 import { ServerService } from './services/server.service';
 import { MediaService } from './services/media.service';
 import { AuthService } from './services/auth.service';
@@ -31,7 +30,6 @@ import { MediaListService } from './services/media-list-service';
     SettingsComponent,
     ScriptStatusComponent,
     MediaListComponent,
-    MediaToolbarComponent,
     AppHeaderComponent,
     AppFooterComponent,
     AuthComponent,
