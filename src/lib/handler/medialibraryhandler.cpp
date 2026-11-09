@@ -1773,8 +1773,15 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
         // skip it entirely when we've fallen back to jpg (no webp writer plugin).
         if(SettingsHandler::getThumbFormatExtension() == "webp") {
         qint64 currentJpgFileCount = 0;
-        QDir jpgDir(SettingsHandler::getSelectedThumbsDir(),"*." + SettingsHandler::getThumbFormatExtension(), QDir::NoSort, QDir::Filter::Files);
-        int jpgFileCount = jpgDir.count();
+        // Count the legacy jpg thumbs we're about to convert (recursively,
+        // matching the iterator below) so the progress percentage uses the
+        // correct total. (Previously this counted *.webp files, so the
+        // percentage blew past 100% when many jpgs were being converted.)
+        int jpgFileCount = 0;
+        {
+            QDirIterator countIter(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*.jpg", QDir::Files, QDirIterator::Subdirectories);
+            while (countIter.hasNext()) { countIter.next(); jpgFileCount++; }
+        }
         QDirIterator jpgThumbs(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*.jpg", QDir::Files, QDirIterator::Subdirectories);
         while (jpgThumbs.hasNext())
         {
@@ -1785,7 +1792,6 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
                 emit cleanUpThumbsFailed();
                 return;
             }
-            emit backgroundProcessStateChange("Converting legacy thumbs", XMath::roundTwoDecimal(((float)currentJpgFileCount/(float)jpgFileCount)*100.0));
             QString filepath = jpgThumbs.next();
             QString fileNoExtension = XFileUtil::getPathNoExtension(filepath);
             // Rmove media extension in this migration.
@@ -1804,6 +1810,8 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
             }
             image = QImage();
             currentJpgFileCount++;
+            if (jpgFileCount > 0)
+                emit backgroundProcessStateChange("Converting legacy thumbs", XMath::roundTwoDecimal(((float)currentJpgFileCount/(float)jpgFileCount)*100.0));
         }
         } // end webp migration
         ////////////////////////////
