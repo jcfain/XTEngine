@@ -406,8 +406,9 @@ DO NOT RUN unless you have all your media currently loaded!`,
     cleanThumbs(): void {
         this.overlayService.open(this.confirmAlertNameID, AlertComponent, {
             content: `Are you sure you want to clean up generated thumbs?
-This will search the chosen thumbs directory for files that end with jpg
-that are either duplicated or not existant in the current library.
+This will search the chosen thumbs directory for files that end with webp 
+that are either duplicated or not existent in the current library.
+It will also convert any jpgs to webp format.
 WARNING: if your current libraries doesnt not have some of these thumbs they will be deleted.
 This will not delete files that are in your media directory.
 
