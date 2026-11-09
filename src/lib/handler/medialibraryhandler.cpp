@@ -910,10 +910,20 @@ void MediaLibraryHandler::saveSingleThumb(QString id, qint64 position)
     ThumbExtractor* extractor = new ThumbExtractor(this);
     m_thumbProcessFuture = QtConcurrent::run([this, id, position, extractor](){
         auto item = findItemByID(id);
-        if(item && !_thumbProcessIsRunning && item->thumbFile.endsWith(SettingsHandler::getThumbFormatExtension()) && !item->thumbFile.contains(".lock."))
+        // Only regenerate thumbs XTP manages (not local/external thumbs) and
+        // never locked thumbs. managedThumb is true for both current webp
+        // thumbs and legacy jpg thumbs, so regenerating a legacy item now
+        // produces a fresh webp instead of being silently skipped (the old
+        // guard required thumbFile to already end in the current extension,
+        // which left legacy-jpg items stuck).
+        if(item && !_thumbProcessIsRunning && item->managedThumb && !item->thumbFile.contains(".lock."))
         {
             item->metadata.thumbExtractError = nullptr;
-            // saveThumb(*item, position);
+            // Target the managed thumb path in the current format so a new
+            // generation is written as webp even if the item currently has a
+            // legacy jpg. setThumbPath (called in processThumb) will then
+            // prefer the new webp over the legacy jpg.
+            item->thumbFile = SettingsHandler::getManagedThumbPathNoExtension(item) + "." + SettingsHandler::getThumbFormatExtension();
             // This will not play in a NON GUI thread.
             processThumb(extractor, *item, position);
         }
