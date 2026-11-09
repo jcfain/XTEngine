@@ -11,6 +11,7 @@ import { LocalSettingsService } from '../../services/local-settings.service';
 import { ScriptStatusService } from '../../services/script-status.service';
 import { MediaItemPropertiesComponent } from '../media-item-properties/media-item-properties.component';
 import { MediaItemAltScriptsComponent } from '../media-item-alt-scripts/media-item-alt-scripts.component';
+import { MediaListOverlayService } from '../../services/media-list-overlay.service';
 
 @Component({
     selector: 'app-video-player',
@@ -23,6 +24,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('videoNode', { static: false }) videoNodeRef!: ElementRef<HTMLVideoElement>;
   @ViewChild('progressInput', { static: false }) progressBarNodeRef!: ElementRef<HTMLVideoElement>;
   @ViewChild('progressTooltip', { static: false }) seekToolTipNodeRef!: ElementRef<HTMLVideoElement>;
+  // Host for the media list overlay (re-parented here while full screen)
+  @ViewChild('fullscreenMediaListHost', { static: false }) fullscreenMediaListHost?: ElementRef<HTMLDivElement>;
 
   isPlaying = false;
   isPaused = false;
@@ -70,7 +73,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     private webSocketService: WebsocketService,
     private messageHandlerService: MessageHandlerService, 
     private videoService: VideoService,
-    private mediaListService: MediaListService
+    private mediaListService: MediaListService,
+    private mediaListOverlayService: MediaListOverlayService
   ) {
     this.subscriptions.push(
       this.messageHandlerService.stopAllMedia$.subscribe(() => {
@@ -104,6 +108,9 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.videoService.setVideoNode(this.videoNodeRef.nativeElement);
+    if (this.fullscreenMediaListHost) {
+      this.mediaListOverlayService.registerFullscreenHost(this.fullscreenMediaListHost.nativeElement);
+    }
   }
 
   ngOnDestroy(): void {

@@ -197,4 +197,11 @@
     (close)="closeAltScripts()">
 </app-media-item-alt-scripts>
 }
+
+<!-- Host for the media list overlay. The media list element is re-parented
+     here by MediaListOverlayService while full screen so it renders inside
+     the full screen element and can overlay the video. display: contents so
+     the host has no box of its own - the absolutely positioned media list
+     is laid out against .video-container directly. -->
+<div #fullscreenMediaListHost class="fullscreen-media-list-host"></div>
 </div>

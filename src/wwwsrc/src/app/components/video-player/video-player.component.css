@@ -172,6 +172,11 @@
     visibility: hidden;
     overflow: hidden;
 }
+/* No box of its own - the re-parented media list (position: absolute) is
+   laid out against .video-container directly. */
+.fullscreen-media-list-host {
+    display: contents;
+}
 .video-container-visible {
     visibility: visible;
 }
@@ -404,7 +409,10 @@ progress::-webkit-progress-value {
 
 }
 
-.video-container button {
+/* Scoped to .video-controls (the top/bottom control bars) so these player
+   button styles don't leak into the media list overlay, which is re-parented
+   into the video container while full screen. */
+.video-container .video-controls button {
     cursor: pointer;
     position: relative;
     font-size: 12px;
@@ -413,19 +421,19 @@ progress::-webkit-progress-value {
     outline: none;
 }
 
-.video-container button > svg {
+.video-container .video-controls button > svg {
     padding-top: 4px;
 }
 
-.video-container button * {
+.video-container .video-controls button * {
     pointer-events: none;
 }
-.video-container button:active:hover {
+.video-container .video-controls button:active:hover {
     box-shadow: none;
 }
 
-.video-container button::before,
-.video-container input::before {
+.video-container .video-controls button::before,
+.video-container .video-controls input::before {
     content: attr(data-title);
     position: absolute;
     display: none;

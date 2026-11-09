@@ -41,6 +41,7 @@ export class VideoService {
 
   private videoNode: HTMLVideoElement | null = null;
   private forceControlsVisible = false;
+  private mediaListHover = false;
   private externalStreaming = false;
   private isMuted = false;
 
@@ -52,7 +53,10 @@ export class VideoService {
     this.controlsHideDebounceSubject.pipe(
       debounceTime(3000))
       .subscribe(() => {
-        if(!this.forceControlsVisible)
+        // While the mouse is over the full screen media list overlay the
+        // controls (and with them the overlay) stay visible; the countdown
+        // restarts when the mouse leaves the list (see setMediaListHover).
+        if(!this.forceControlsVisible && !this.mediaListHover)
           this.controlsVisibleSubject.next(false);
       });
     // Time-sync: send at most once per second. This is driven by the
@@ -309,6 +313,22 @@ export class VideoService {
     }
     if(this.forceControlsVisible) return;
     this.controlsHideDebounceSubject.next();
+  }
+
+  /**
+   * Tracks whether the mouse is over the media list overlay (full screen).
+   * While hovering, the auto-hide countdown is ignored so the overlay stays
+   * visible; when the mouse leaves, the countdown starts so the overlay
+   * auto-hides with the controls.
+   */
+  setMediaListHover(hover: boolean): void {
+    if (this.mediaListHover === hover) {
+      return;
+    }
+    this.mediaListHover = hover;
+    if (!hover) {
+      this.hideControlsDebounce();
+    }
   }
 
   // hideControlsEvent(): void {

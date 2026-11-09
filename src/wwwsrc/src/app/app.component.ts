@@ -21,6 +21,7 @@ import { AppStateService } from './services/app-state.service';
 import { ConnectionStateService, ConnectionState } from './services/connection-state.service';
 import { DeviceConnectionService } from './services/device-connection.service';
 import { MediaListService } from './services/media-list-service';
+import { VideoService } from './services/video.service';
 
 @Component({
     selector: 'app-root',
@@ -51,6 +52,7 @@ export class AppComponent implements OnInit {
     private serverService: ServerService,
     private mediaService: MediaService,
     private mediaListService: MediaListService,
+    private videoService: VideoService,
     private authService: AuthService,
     private messageHandlerService: MessageHandlerService,
     private alertService: AlertService,

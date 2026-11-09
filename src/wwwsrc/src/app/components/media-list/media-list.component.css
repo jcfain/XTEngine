@@ -103,3 +103,27 @@
     flex-flow: row;
     justify-content: center;
 }
+
+/* Full screen overlay: the media list view is re-parented into the video
+   container (the full screen element) and slides in from the right. The
+   width animates up to 35vw; it is shown/hidden with the player controls.
+   The container's overflow: hidden clips the panel while it is parked off
+   the right edge, so it never intercepts clicks on the video. */
+:host(.media-list-overlay) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 25vw;
+    max-width: 25vw;
+    display: flex;
+    flex-flow: column;
+    z-index: 100;
+    background-color: rgba(0, 0, 0, 0.5);
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+}
+
+:host(.media-list-overlay.media-list-overlay-visible) {
+    transform: translateX(0);
+}

@@ -1,4 +1,4 @@
-import { AfterViewChecked, AfterViewInit, Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy, ViewChildren, QueryList } from '@angular/core';
+import { AfterViewChecked, AfterViewInit, Component, ElementRef, EventEmitter, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy, ViewChildren, QueryList } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { MediaItem, MediaItemMetaData } from '../../models/interfaces';
@@ -9,6 +9,7 @@ import { VideoService } from '../../services/video.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { MediaService } from '../../services/media.service';
+import { MediaListOverlayService } from '../../services/media-list-overlay.service';
 import { Roles } from '../../models/enums';
 
 @Component({
@@ -16,7 +17,14 @@ import { Roles } from '../../models/enums';
     imports: [FormsModule, CdkVirtualScrollViewport, CdkFixedSizeVirtualScroll, CdkVirtualForOf, MediaListItemComponent, MediaToolbarComponent],
     templateUrl: './media-list.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
-    styleUrl: './media-list.component.css'
+    styleUrl: './media-list.component.css',
+    host: {
+      // Full screen: the view is re-parented into the video container by
+      // MediaListOverlayService and styled as a right-hand overlay that shows
+      // and hides with the player controls.
+      '[class.media-list-overlay]': 'isFullScreen',
+      '[class.media-list-overlay-visible]': 'isFullScreen && controlsVisible',
+    }
 })
 export class MediaListComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
   // @ViewChildren(MediaListItemComponent) mediaNodes: QueryList<MediaListItemComponent> = new QueryList();
@@ -50,6 +58,9 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
   iconSize = "0";
   mediaLoading = true;
   mediaLoadingStatus = "Loading...";
+  // Drives the full screen overlay host classes (see host bindings)
+  isFullScreen = false;
+  controlsVisible = false;
 
   @Output() rendered = new EventEmitter<void>();
   private renderedEmitted = false;
@@ -66,12 +77,20 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     private localSettingsService: LocalSettingsService,
     private messageHandlerService: MessageHandlerService,
     private videoService: VideoService,
-    private mediaListService: MediaListService
+    private mediaListService: MediaListService,
+    private mediaListOverlayService: MediaListOverlayService,
+    private elementRef: ElementRef<HTMLElement>
   ) {
     this.setDimensions();
   }
 
   ngOnInit(): void {
+    this.videoService.isFullScreen$.subscribe(v => {
+      this.isFullScreen = v;
+    });
+    this.videoService.controlsVisible$.subscribe(v => {
+      this.controlsVisible = v;
+    });
     this.messageHandlerService.mediaLoaded$.subscribe(() => {
       this.mediaLoadingStatus = "Downloading list...";
     });
@@ -106,12 +125,9 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
   }
 
   ngAfterViewInit() {
-    // this.mediaNodes.changes.subscribe(t => {
-    //   // if(this.mediaList.length == t.length) {
-    //     this.mediaLoading = false;
-    //     this.mediaLoadingStatus = "";
-    //   // }
-    // });
+    // Register this element with the overlay service: while full screen it is
+    // re-parented into the video container and back again when it exits.
+    this.mediaListOverlayService.registerMediaListElement(this.elementRef.nativeElement);
     if (this.mediaListContainer) {
       // Debounced - resizes fire continuously (window drag, video player
       // open/close) and each rebuild re-chunks the whole list
