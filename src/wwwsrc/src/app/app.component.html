@@ -29,8 +29,8 @@
     <app-footer></app-footer>
   </div>
 
-  @if (mediaLoaded) {
-    <app-settings [isOpen]="settingsOpen" (toggle)="toggleSettings()"></app-settings>
+  @if (mediaLoaded && settingsOpen) {
+    <app-settings [isOpen]="true" (toggle)="toggleSettings()"></app-settings>
   }
   @if (scriptStatusOpen) {
     <app-script-status></app-script-status>

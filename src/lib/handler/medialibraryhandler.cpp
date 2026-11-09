@@ -1759,7 +1759,9 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
         }
         emit backgroundProcessStateChange("Cleaning thumbs...", -1);
 
-        // jpg to webp migration.
+        // jpg to webp migration. Only meaningful when webp is the target format;
+        // skip it entirely when we've fallen back to jpg (no webp writer plugin).
+        if(SettingsHandler::getThumbFormatExtension() == "webp") {
         qint64 currentJpgFileCount = 0;
         QDir jpgDir(SettingsHandler::getSelectedThumbsDir(),"*." + SettingsHandler::getThumbFormatExtension(), QDir::NoSort, QDir::Filter::Files);
         int jpgFileCount = jpgDir.count();
@@ -1793,6 +1795,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
             image = QImage();
             currentJpgFileCount++;
         }
+        } // end webp migration
         ////////////////////////////
 
         for(int i=0; i<m_mediaLibraryCache.length(); i++) {

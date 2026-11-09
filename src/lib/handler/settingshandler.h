@@ -12,6 +12,7 @@
 #include <QTranslator>
 #include <QStandardPaths>
 #include <QDirIterator>
+#include <QImageWriter>
 #include <QtConcurrent/QtConcurrent>
 #include "loghandler.h"
 #include "../settings/medialibrarysettings.h"
@@ -440,8 +441,18 @@ public:
         return ext;
     }
 
-    static const QString getThumbFormatExtension() {
-        return "webp";
+    static QString getThumbFormatExtension() {
+        // Prefer webp, but fall back to jpg when the webp image-format plugin is
+        // not available at runtime (e.g. an AppImage that linuxdeployqt did not
+        // bundle imageformats/libqwebp.so into). Every path build / save / file
+        // lookup goes through this helper, so the choice stays consistent.
+        // Computed once after the Qt plugin system is up (first call happens
+        // during library loading, well after QGuiApplication init).
+        static QString ext = []() {
+            const QList<QByteArray> supported = QImageWriter::supportedImageFormats();
+            return supported.contains(QByteArray("webp")) ? "webp" : "jpg";
+        }();
+        return ext;
     }
 
     static const QString &hashedWebPass();
