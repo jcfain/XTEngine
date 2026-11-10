@@ -10,38 +10,60 @@
     [altScriptCount]="altScriptCount()"
     (close)="toggleContextMenu()">
   </app-media-list-item-context-menu>
-  <div click-stop-propagation class="media-item-header">
-    <div class="media-item-header-start">
-      <button class="media-context" [style.width]="headerButtonPX" [style.height]="headerButtonPX" data-title="Media actions" (click)="toggleContextMenu()">
-        <img src="://images/icons/context-menu.svg" [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()">
-      </button>
-    </div>
-    <div class="media-item-header-end">
-      @if (hasAltScripts()) {
-        <div title="Alternate script count" style="color: green;"  [style.width]="headerIconPX" [style.height]="headerIconPX" class="media-item-info-icon media-item-info-icon--margin">
-          {{altScriptCount()}}
-        </div>
-      }
-      @if (hasWatched()) {
-        <svg [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()" class="media-item-info-icon--margin">
-          <use href="#check"></use>
-        </svg>
-      }
-      <button class="media-context" [style.width]="headerButtonPX" [style.height]="headerButtonPX" data-title="Tag favorite" (click)="toggleFavorite()">
-        <svg [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()" [style.fill]="isFavorite() ? 'crimson' : 'transparant'" [style.stroke]="isFavorite() ? 'crimson' : 'grey'" >
-          <use href="#heart"></use>
-        </svg>
-      </button>
-    </div>
-  </div>
+
+  <!-- Large thumbnail on top (YouTube style) with corner status badges -->
   <div class="media-thumb" [style.height]="thumbHeightPX" [style.width]="widthPX">
-    <!-- <ng-container [ngTemplateOutlet]="getLazyLoad() ? browserLazyLoad : myLazyLoad" [ngTemplateOutletContext]="{item: item}" /> -->
     <img [lazySrc]="getThumbPath(item)" [alt]="item.name" class="media-thumb-nail" />
     <div class="media-overlay">
       <span class="play-icon">&#9654;</span>
     </div>
+    @if (hasWatched()) {
+      <div class="media-thumb-badge media-thumb-badge--watched" title="Watched">
+        <svg [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()">
+          <use href="#check"></use>
+        </svg>
+      </div>
+    }
+    @if (hasAltScripts()) {
+      <div class="media-thumb-badge media-thumb-badge--alt" title="Alternate script count"
+        [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()"
+        [style.font-size]="altBadgeFontDimension()">
+        {{altScriptCount()}}
+      </div>
+    }
+    @if (hasSubtitle()) {
+      <div class="media-thumb-badge media-thumb-badge--subtitle" title="Has subtitles">
+        <img src="://images/icons/cc.svg" [style.width]="headerButtonIconDimension()" [style.height]="headerButtonIconDimension()">
+      </div>
+    }
   </div>
-  <div class="name" [style.height]="textHeight" [style.width]="widthPX" [style.fontSize]="fontSize">{{ getItemName(item) }}</div>
+
+  <!-- Name row: friendly name on the left, favorite + context actions on the right -->
+  <div class="media-item-name-row" [style.height]="textHeight" [style.width]="widthPX">
+    <div class="name" [style.fontSize]="fontSize">{{ getItemName(item) }}</div>
+    <div class="media-item-actions" click-stop-propagation>
+      <button class="media-context" [style.width]="actionButtonPX" [style.height]="actionButtonPX" data-title="Tag favorite" (click)="toggleFavorite()">
+        <svg [style.width]="actionIconDimension()" [style.height]="actionIconDimension()" [style.fill]="isFavorite() ? 'crimson' : 'transparent'" [style.stroke]="isFavorite() ? 'crimson' : 'grey'" >
+          <use href="#heart"></use>
+        </svg>
+      </button>
+      <button class="media-context" [style.width]="actionButtonPX" [style.height]="actionButtonPX" data-title="Media actions" (click)="toggleContextMenu()">
+        <img src="://images/icons/context-menu.svg" [style.width]="actionIconDimension()" [style.height]="actionIconDimension()">
+      </button>
+    </div>
+  </div>
+
+  <!-- Tags row: truncated to half the item width with a "+<n>" overflow badge.
+       The whole row is a shortcut to the media properties Tags tab. -->
+  <div class="media-item-tags" #tagsContainer [style.height]="tagsHeight" [style.width]="tagsWidthPX"
+    title="View all tags" click-stop-propagation (click)="openTagsProperties()">
+    @for (tag of tags; track $index) {
+      <span class="media-item-tag" #tagRef [style.fontSize]="tagsFontSize">{{ tag }}</span>
+    }
+    @if (overflowCount > 0) {
+      <span class="media-item-tag media-item-tag--overflow" #overflowBadge [style.fontSize]="tagsFontSize">+{{ overflowCount }}</span>
+    }
+  </div>
 </div>
 
 <!--

@@ -55,10 +55,14 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
   height = "0";
   heightInt = 0;
   fontSize = "0";
+  tagsHeightInt = 0;
+  tagsHeight = "0";
+  tagsFontSize = "0";
   infoWidth = "0";
   infoHeight = "0";
 
   thumbWidth = "0";
+  thumbWidthInt = 0;
   thumbHeight = "0";
   thumbHeightInt = 0;
   iconSize = "0";
@@ -217,20 +221,48 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
 
   setDimensions() {
     const thumbSizeGlobal = this.getThumbSize();
-    this.textHeightInt = (thumbSizeGlobal * 0.25);
-    this.textHeight = this.textHeightInt + "px";
-    this.widthInt = thumbSizeGlobal + (thumbSizeGlobal * 0.15);
-    this.width = this.widthInt+ "px";
+    // The thumbnail is 16:9. Its height is a fixed fraction of the thumb size
+    // and its width follows from that ratio; the item width matches the
+    // thumbnail so the image fills the card edge to edge.
+    this.thumbHeightInt = thumbSizeGlobal * 0.78;
+    this.thumbWidthInt = this.thumbHeightInt * (16 / 9);
+    this.widthInt = this.thumbWidthInt;
+    this.width = this.widthInt + "px";
     this.textWidth = this.width;
-    this.heightInt = thumbSizeGlobal + this.textHeightInt;
+    // Font sizes scale non-linearly with the thumb size (see scaleFont): they
+    // match the old linear size at the desktop reference (250px) but fall off
+    // more gently on small/mobile thumbs so the text stays readable.
+    const nameFont = this.scaleFont(thumbSizeGlobal, 0.06, 10);
+    const tagsFont = this.scaleFont(thumbSizeGlobal, 0.042, 8);
+    this.fontSize = nameFont + "px";
+    this.tagsFontSize = tagsFont + "px";
+    // The name + tags rows grow to fit their font (the info section can expand
+    // on small thumbs) while keeping the font a fixed fraction of the row.
+    this.textHeightInt = nameFont / 0.4; // name row
+    this.textHeight = this.textHeightInt + "px";
+    this.tagsHeightInt = tagsFont / 0.42; // tags row
+    this.tagsHeight = this.tagsHeightInt + "px";
+    this.heightInt = this.thumbHeightInt + this.textHeightInt + this.tagsHeightInt;
     this.height = this.heightInt + "px";
-    this.fontSize = (this.textHeightInt * 0.35) + "px";
-    this.thumbWidth = thumbSizeGlobal + "px";
-    this.thumbHeightInt = thumbSizeGlobal - this.textHeightInt;
+    this.thumbWidth = this.thumbWidthInt + "px";
     this.thumbHeight = this.thumbHeightInt + "px";
     this.infoHeight = this.widthInt * this.mediaItemHeaderMultiplier + "px";
     this.infoWidth = this.infoHeight;
     this.iconSize = this.widthInt * this.mediaItemHeaderIconMultiplier + "px";
+  }
+
+  // Non-linear font scaling. At/above the reference thumb size (250px, the
+  // desktop size that was tuned) the font is the old linear size. Below it a
+  // sub-linear power curve makes the font fall off more gently, and a floor
+  // keeps it readable on the smallest (mobile) thumbs.
+  private scaleFont(thumbSize: number, linearFactor: number, minFont: number): number {
+    const REF_THUMB = 250;
+    const POWER = 0.6;
+    if (thumbSize >= REF_THUMB) {
+      return thumbSize * linearFactor;
+    }
+    const refFont = REF_THUMB * linearFactor;
+    return Math.max(minFont, refFont * Math.pow(thumbSize / REF_THUMB, POWER));
   }
 
   noMedia(): boolean {

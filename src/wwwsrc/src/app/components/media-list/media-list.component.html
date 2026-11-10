@@ -19,8 +19,11 @@
               [width]="widthInt"
               [height]="heightInt"
               [thumbHeight]="thumbHeightInt"
+              [thumbSize]="getThumbSize()"
               [textHeight]="textHeight"
               [fontSize]="fontSize"
+              [tagsHeight]="tagsHeight"
+              [tagsFontSize]="tagsFontSize"
               (click)="onItemClick(item)"
               (update)="updateMetadata(item)">
             </app-media-list-item>
