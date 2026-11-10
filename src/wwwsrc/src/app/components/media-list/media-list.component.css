@@ -127,3 +127,23 @@
 :host(.media-list-overlay.media-list-overlay-visible) {
     transform: translateX(0);
 }
+
+/* Touch devices: the bottom controls are full width on mobile, so the
+   overlay stops above them (keeping the controls visible and tappable)
+   instead of running to the bottom edge. The bar height is exposed by the
+   video player as the --video-controls-height CSS variable (it wraps to
+   several lines depending on screen size). */
+@media (pointer: coarse) {
+    :host(.media-list-overlay) {
+        bottom: var(--video-controls-height, 96px);
+    }
+}
+
+/* Portrait phones get a wider panel (55vw) for easier thumb reach;
+   landscape keeps the slimmer 25vw panel. */
+@media (pointer: coarse) and (orientation: portrait) {
+    :host(.media-list-overlay) {
+        width: 55vw;
+        max-width: 55vw;
+    }
+}

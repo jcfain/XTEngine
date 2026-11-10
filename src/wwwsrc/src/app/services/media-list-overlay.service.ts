@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { VideoService } from './video.service';
+import { LocalSettingsService } from './local-settings.service';
 
 /**
  * Moves the single media list element between its normal position in the app
@@ -21,14 +22,31 @@ export class MediaListOverlayService {
   private mediaListEl: HTMLElement | null = null;
   private originalParent: HTMLElement | null = null;
   private fullscreenHost: HTMLElement | null = null;
+  // "Disable full screen media list" local setting: when checked the list
+  // is never re-parented into the video container, even in full screen.
+  private disabled = false;
+  private overlayActive = false;
 
-  constructor(private videoService: VideoService) {
-    this.videoService.isFullScreen$.subscribe(isFullScreen => {
-      if (isFullScreen) {
+  constructor(
+    private videoService: VideoService,
+    private localSettingsService: LocalSettingsService
+  ) {
+    const update = () => {
+      const active = this.videoService.isFullScreen && !this.disabled;
+      if (active === this.overlayActive) {
+        return;
+      }
+      this.overlayActive = active;
+      if (active) {
         this.moveToFullscreen();
       } else {
         this.moveToDefault();
       }
+    };
+    this.videoService.isFullScreen$.subscribe(update);
+    this.localSettingsService.disableFullScreenMediaList$.subscribe(v => {
+      this.disabled = v;
+      update();
     });
   }
 
@@ -43,9 +61,9 @@ export class MediaListOverlayService {
     if (el.parentElement !== this.fullscreenHost) {
       this.originalParent = el.parentElement;
     }
-    // If we are already in full screen (e.g. the media list was re-created
+    // If the overlay is already active (e.g. the media list was re-created
     // after a reconnect), move the fresh element into the overlay now.
-    if (this.videoService.isFullScreen) {
+    if (this.overlayActive) {
       this.moveToFullscreen();
     }
   }

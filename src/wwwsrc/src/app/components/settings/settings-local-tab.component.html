@@ -5,6 +5,12 @@
         <input id="externalStreamingCheckbox" type="checkbox"
             [ngModel]="externalStreaming" (ngModelChange)="onExternalStreamingChange($event)" />
     </div>
+    <div class="formElement">
+        <label title="If checked, the media list will not overlay the video in full screen."
+            for="disableFullScreenMediaListCheckbox">Disable full screen media list</label>
+        <input id="disableFullScreenMediaListCheckbox" type="checkbox"
+            [ngModel]="disableFullScreenMediaList" (ngModelChange)="onDisableFullScreenMediaListChange($event)" />
+    </div>
     @if (externalStreaming) {
         <div class="formElement local-tab-help">
             <label></label>

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ViewChildren, QueryList, ElementRef, AfterViewInit, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -26,6 +26,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('progressTooltip', { static: false }) seekToolTipNodeRef!: ElementRef<HTMLVideoElement>;
   // Host for the media list overlay (re-parented here while full screen)
   @ViewChild('fullscreenMediaListHost', { static: false }) fullscreenMediaListHost?: ElementRef<HTMLDivElement>;
+  // The bottom controls only exist while the video is visible (inside an
+  // @if block), so track them with a ViewChildren query instead of a plain
+  // ViewChild.
+  @ViewChildren('bottomControls') bottomControlsQuery?: QueryList<ElementRef<HTMLElement>>;
 
   isPlaying = false;
   isPaused = false;
@@ -66,6 +70,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   private subscriptions: Subscription[] = [];
   private m_controlsVisible = false;
   private deviceIsPaused = false;
+  private controlsResizeObserver: ResizeObserver | null = null;
+  private observedControlsElement: HTMLElement | null = null;
 
   constructor(
     private localSettingsService: LocalSettingsService,
@@ -97,7 +103,14 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.subscriptions.push(
       this.videoService.isPlaying$.subscribe(v => { this.isPlaying = v; }),
       this.videoService.isPaused$.subscribe(v => { this.isPaused = v; }),
-      this.videoService.isFullScreen$.subscribe(v => this.isFullScreen = v),
+      this.videoService.isFullScreen$.subscribe(v => {
+        this.isFullScreen = v;
+        // The embedded (half-height) video is only used when NOT full screen.
+        // Syncing from the service (instead of toggling on the
+        // fullscreenchange event) also covers the CSS fake full screen mode
+        // used on iOS, where no fullscreenchange event fires.
+        this.videoVisibleEmbedded = !v;
+      }),
       this.videoService.controlsVisible$.subscribe(v => this.m_controlsVisible = v),
       this.videoService.videoVisible$.subscribe(v => this.videoVisible = v),
       this.videoService.playingMediaItem$.subscribe(v => this.mediaItem = v),
@@ -111,15 +124,44 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     if (this.fullscreenMediaListHost) {
       this.mediaListOverlayService.registerFullscreenHost(this.fullscreenMediaListHost.nativeElement);
     }
+    // The bottom controls are created/destroyed with the video visibility,
+    // so watch the query for changes and observe whichever instance exists.
+    this.bottomControlsQuery?.changes.subscribe(() => this.observeBottomControls());
+    this.observeBottomControls();
   }
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(s => s.unsubscribe());
     this.videoService.setVideoNode(null);
+    this.controlsResizeObserver?.disconnect();
+    this.controlsResizeObserver = null;
+  }
+
+  // Exposes the bottom controls bar height as the --video-controls-height CSS
+  // variable on the video container. The media list overlay sits above the
+  // (full width) bottom controls on touch devices and uses the variable to
+  // offset itself by exactly the bar height, which varies with screen size
+  // as the control buttons wrap.
+  private observeBottomControls(): void {
+    const el = this.bottomControlsQuery?.first?.nativeElement ?? null;
+    if (el === this.observedControlsElement) {
+      return;
+    }
+    this.controlsResizeObserver?.disconnect();
+    this.controlsResizeObserver = null;
+    this.observedControlsElement = el;
+    if (el) {
+      this.controlsResizeObserver = new ResizeObserver(() => {
+        const h = el.offsetHeight;
+        if (h > 0) {
+          document.getElementById('video-container')?.style.setProperty('--video-controls-height', h + 'px');
+        }
+      });
+      this.controlsResizeObserver.observe(el);
+    }
   }
 
   onFullScreenChange() {
-    this.videoVisibleEmbedded = !this.videoVisibleEmbedded;
     this.videoService.onFullScreenChange();
   }
 

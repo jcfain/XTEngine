@@ -67,6 +67,11 @@ export class LocalSettingsService {
     private disableBrowserLazyLoadSubject = new BehaviorSubject<boolean>(this.disableBrowserLazyLoadDefault);
     disableBrowserLazyLoad$: Observable<boolean> = this.disableBrowserLazyLoadSubject.asObservable();
 
+    readonly disableFullScreenMediaListDefault = false;
+    private disableFullScreenMediaListKey = "disableFullScreenMediaList";
+    private disableFullScreenMediaListSubject = new BehaviorSubject<boolean>(this.disableFullScreenMediaListDefault);
+    disableFullScreenMediaList$: Observable<boolean> = this.disableFullScreenMediaListSubject.asObservable();
+
     readonly enableTextToSpeechDefault = true;
     private enableTextToSpeechKey = "enableTextToSpeech";
     private enableTextToSpeechSubject = new BehaviorSubject<boolean>(this.enableTextToSpeechDefault);
@@ -202,6 +207,11 @@ export class LocalSettingsService {
     setDisableBrowserLazyLoad(value: boolean): void {
         this.setToLocalStorage(this.disableBrowserLazyLoadKey, value);
         this.disableBrowserLazyLoadSubject.next(value);
+    }
+
+    setDisableFullScreenMediaList(value: boolean): void {
+        this.setToLocalStorage(this.disableFullScreenMediaListKey, value);
+        this.disableFullScreenMediaListSubject.next(value);
     }
 
     setEnableTextToSpeech(value: boolean): void {

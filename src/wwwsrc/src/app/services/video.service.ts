@@ -42,6 +42,9 @@ export class VideoService {
   private videoNode: HTMLVideoElement | null = null;
   private forceControlsVisible = false;
   private mediaListHover = false;
+  // iOS Safari has no element full screen API - full screen is faked with
+  // CSS (see enterFakeFullScreen) and tracked with this flag.
+  private fakeFullScreen = false;
   private externalStreaming = false;
   private isMuted = false;
 
@@ -72,6 +75,16 @@ export class VideoService {
     });
     this.localSettingsService.mute$.subscribe(v => {
       this.isMuted = v;
+    });
+    // Keep isFullScreen$ in sync with the browser at all times. The
+    // component-level fullscreenchange handler only fires while the video
+    // player's template is listening; a document-level listener catches
+    // every transition (including ones the UI didn't initiate) so the media
+    // list overlay state can never get stuck out of sync.
+    document.addEventListener('fullscreenchange', () => {
+      if (!this.fakeFullScreen) {
+        this.isFullScreenSubject.next(!!document.fullscreenElement);
+      }
     });
   }
 
@@ -264,12 +277,26 @@ export class VideoService {
     if (!videoContainer) return;
     if (document.fullscreenElement) {
       this.exitFullscreen(videoContainer);
-    } else {
+    } else if (this.fakeFullScreen) {
+      this.exitFakeFullScreen(videoContainer);
+    } else if (videoContainer.requestFullscreen) {
       videoContainer.requestFullscreen().then(() => {
-        this.isFullScreenSubject.next(true);
-      }, () => {
+        // Trust the browser state over the promise - on some mobile browsers
+        // the promise resolves but the element is not (yet) reported as the
+        // fullscreen element, which left the media list overlay hidden.
+        this.isFullScreenSubject.next(!!document.fullscreenElement);
+        // Show the controls (and with them the media list overlay) right
+        // after entering full screen - on touch devices nothing else resets
+        // the auto-hide countdown, so without this the overlay would slide
+        // away 3s later and appear to never have shown.
+        this.showControls();
+      }, (err) => {
+        console.warn('[VideoService] requestFullscreen failed:', err);
         this.isFullScreenSubject.next(false);
       });
+    } else {
+      // iOS Safari has no element full screen API - fake it with CSS
+      this.enterFakeFullScreen(videoContainer);
     }
   }
 
@@ -283,7 +310,22 @@ export class VideoService {
       document.exitFullscreen().then(() => {
         this.isFullScreenSubject.next(false);
       });
+    } else if (this.fakeFullScreen) {
+      this.exitFakeFullScreen(videoContainer);
     }
+  }
+
+  private enterFakeFullScreen(videoContainer: HTMLElement): void {
+    videoContainer.classList.add('video-container-fake-fullscreen');
+    this.fakeFullScreen = true;
+    this.isFullScreenSubject.next(true);
+    this.showControls();
+  }
+
+  private exitFakeFullScreen(videoContainer: HTMLElement): void {
+    videoContainer.classList.remove('video-container-fake-fullscreen');
+    this.fakeFullScreen = false;
+    this.isFullScreenSubject.next(false);
   }
 
   setForceControlsVisible(forceVisible: boolean): void {
@@ -327,6 +369,24 @@ export class VideoService {
     }
     this.mediaListHover = hover;
     if (!hover) {
+      this.hideControlsDebounce();
+    }
+  }
+
+  /**
+   * Touch-based keep-alive for the media list overlay. Touch devices don't
+   * fire mouseenter/mouseleave, so the hover flag is managed explicitly:
+   * while a finger is on the list the controls (and with them the overlay)
+   * stay visible; when the finger lifts the auto-hide countdown starts.
+   */
+  setMediaListTouchActive(active: boolean): void {
+    if (this.mediaListHover === active) {
+      return;
+    }
+    this.mediaListHover = active;
+    if (active) {
+      this.showControls();
+    } else {
       this.hideControlsDebounce();
     }
   }
@@ -377,7 +437,7 @@ export class VideoService {
   // }
 
   onFullScreenChange(): void {
-    const isFs = !!document.fullscreenElement;
+    const isFs = !!document.fullscreenElement || this.fakeFullScreen;
     this.isFullScreenSubject.next(isFs);
   }
 

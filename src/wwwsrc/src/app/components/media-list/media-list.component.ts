@@ -21,9 +21,15 @@ import { Roles } from '../../models/enums';
     host: {
       // Full screen: the view is re-parented into the video container by
       // MediaListOverlayService and styled as a right-hand overlay that shows
-      // and hides with the player controls.
-      '[class.media-list-overlay]': 'isFullScreen',
-      '[class.media-list-overlay-visible]': 'isFullScreen && controlsVisible',
+      // and hides with the player controls. Can be turned off in the local
+      // settings (see overlayActive).
+      '[class.media-list-overlay]': 'overlayActive',
+      '[class.media-list-overlay-visible]': 'overlayActive && controlsVisible',
+      // Touch devices don't fire mouseenter/mouseleave, so the overlay
+      // keep-alive is driven by touch events (see onMediaListTouch*).
+      '(touchstart)': 'onMediaListTouchStart()',
+      '(touchend)': 'onMediaListTouchEnd()',
+      '(touchcancel)': 'onMediaListTouchEnd()',
     }
 })
 export class MediaListComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
@@ -61,6 +67,14 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
   // Drives the full screen overlay host classes (see host bindings)
   isFullScreen = false;
   controlsVisible = false;
+  // Local setting: when checked the media list never overlays the video in
+  // full screen and stays in its normal position in the app body.
+  private fullScreenMediaListDisabled = false;
+  // Full screen overlay active: full screen AND not disabled by the setting.
+  // Host bindings use this instead of isFullScreen directly.
+  get overlayActive(): boolean {
+    return this.isFullScreen && !this.fullScreenMediaListDisabled;
+  }
 
   @Output() rendered = new EventEmitter<void>();
   private renderedEmitted = false;
@@ -90,6 +104,9 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     });
     this.videoService.controlsVisible$.subscribe(v => {
       this.controlsVisible = v;
+    });
+    this.localSettingsService.disableFullScreenMediaList$.subscribe(v => {
+      this.fullScreenMediaListDisabled = v;
     });
     this.messageHandlerService.mediaLoaded$.subscribe(() => {
       this.mediaLoadingStatus = "Downloading list...";
@@ -222,6 +239,23 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
 
   onItemClick(item: MediaItem) {
     this.videoService.playVideo(item);
+  }
+
+  // While a finger is on the list the controls (and with them the overlay)
+  // stay visible; when it lifts the auto-hide countdown starts. Only applies
+  // while the overlay is active - in the normal layout (or when the overlay
+  // is disabled in the local settings) touching the list shouldn't drive the
+  // player controls.
+  onMediaListTouchStart(): void {
+    if (this.overlayActive) {
+      this.videoService.setMediaListTouchActive(true);
+    }
+  }
+
+  onMediaListTouchEnd(): void {
+    if (this.overlayActive) {
+      this.videoService.setMediaListTouchActive(false);
+    }
   }
 
   private scrollToItem(item: MediaItem) {

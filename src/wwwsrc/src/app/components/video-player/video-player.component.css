@@ -223,8 +223,10 @@ video {
 }
 
 /* On mobile the video is full width, so the controls should span the whole
-   container instead of the desktop 25vw/50vw offset. */
-@media (max-width: 768px) {
+   container instead of the desktop 25vw/50vw offset. Keyed on pointer: coarse
+   as well as viewport width so it also applies to phones in landscape, where
+   the viewport is wider than 768px. */
+@media (max-width: 768px), (pointer: coarse) {
     .video-controls {
         left: 0;
         right: 0;
@@ -565,6 +567,18 @@ button.video-control:hover {
     top: 2%;
     z-index: 10;
     width: 45vw;
+}
+
+/* iOS Safari has no element full screen API: fake it by pinning the
+   container over the entire viewport. The controls and the media list
+   overlay (position: absolute) work identically inside it. */
+.video-container-fake-fullscreen {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    background-color: #000;
 }
 
 .video-container-fixed > .video-controls {

@@ -35,7 +35,7 @@
 </div> -->
 
 @if (videoVisible) {
-<div id="top-controls" class="video-controls top-controls" [class.video-controls-visible]="controlsVisible">
+<div id="top-controls" class="video-controls top-controls" [class.video-controls-visible]="controlsVisible" (touchstart)="showControls()">
   <div class="left-controls left-controls--top">
     <div id="videoMediaName" class="video-media-name">{{mediaItem?.name}}</div>
   </div>
@@ -52,7 +52,7 @@
   </div>
 </div>
 
-<div id="bottom-controls" #bottomControls class="video-controls bottom-controls" [class.video-controls-visible]="controlsVisible">
+<div id="bottom-controls" #bottomControls class="video-controls bottom-controls" [class.video-controls-visible]="controlsVisible" (touchstart)="showControls()">
   <div id="bottom-top-controls" class="bottom-top-controls">
     <div class="bottom-top-controls-buttons">
       <button id="scriptStatusPlayerButton" class="video-control video-control-other" [class.button-down]="scriptStatusOpen" [class.disabled]="inputDeviceConnected" (click)="toggleScriptStatus(bottomControls)">
