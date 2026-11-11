@@ -133,7 +133,7 @@
       </button>
     </div>
     <div class="right-controls">
-      <input #playbackRateInput id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0.00" value="1.00" step="0.01" (change)="setPlayRate(playbackRateInput.value)" />
+      <input #playbackRateInput id="playbackRateInput" type="number" class="playback-rate-input video-control video-control-main" min="0.00" value="1.00" step="0.01" (change)="setPlayRate(playbackRateInput.value)" (focus)="onPlayRateFocus()" (blur)="onPlayRateBlur()" />
       <button data-title="Alternate scripts" class="video-control video-control-main" id="alternate-scripts-button" (click)="openAltScripts()">
         <svg class="player-button-icon">
           <use href="#funscript"></use>
