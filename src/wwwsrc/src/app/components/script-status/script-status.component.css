@@ -15,6 +15,7 @@
        caps the panel's height. No effect in the header usage, where the
        host is a plain block. */
     min-height: 0;
+    width: 50vw;
 }
 .script-status-model {
     border-radius: 25px;
