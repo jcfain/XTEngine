@@ -433,6 +433,18 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.videoService.hideControlsDebounce();
   }
 
+  // Pin: while pinned the player holds a keep-alive on the controls, so the
+  // auto-hide (mouse idle / touch) never hides them. Unpinning releases it.
+  controlsPinned = false;
+  toggleControlsPin(): void {
+    this.controlsPinned = !this.controlsPinned;
+    if (this.controlsPinned) {
+      this.videoService.showControls(true);
+    } else {
+      this.videoService.hideControls(true);
+    }
+  }
+
   isVideoFixedLowHeight(): boolean {
     return document.documentElement.clientHeight < 600 && !this.isFullScreen && this.videoVisible;
   }

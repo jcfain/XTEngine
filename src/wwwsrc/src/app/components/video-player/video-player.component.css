@@ -466,6 +466,16 @@ progress::-webkit-progress-value {
     flex-basis: 15%;
     pointer-events: all;
 }
+/* Center the icons inside the top bar buttons - the buttons stretch to
+   fill their flex slot, so plain inline icons sit off to one side. */
+.video-container .top-controls button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.video-container .top-controls button > svg {
+    padding-top: 0;
+}
 .right-controls button {
     margin-left: 7px;
     margin-right: 0;
@@ -519,7 +529,8 @@ progress::-webkit-progress-value {
 }
 
 .video-container .video-controls button > svg {
-    padding-top: 4px;
+    padding-top: 4px;  
+    padding-bottom: 4px;
 }
 
 .video-container .video-controls button * {
@@ -624,6 +635,12 @@ button.video-control-other:not(:last-child) {
 }
 
 button.video-control:hover {
+    box-shadow: -1px 1px 5px 0px hotpink, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px hotpink;
+    background-color: plum;
+}
+
+/* Pinned controls button: keep the hover highlight while active. */
+button.video-control.pinned {
     box-shadow: -1px 1px 5px 0px hotpink, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px hotpink;
     background-color: plum;
 }
