@@ -10,6 +10,7 @@ import { LocalSettingsService } from '../../services/local-settings.service';
 import { MediaItemPropertiesComponent } from '../media-item-properties/media-item-properties.component';
 import { MediaItemAltScriptsComponent } from '../media-item-alt-scripts/media-item-alt-scripts.component';
 import { ScriptStatusComponent } from '../script-status/script-status.component';
+import { MotionProfilesComponent } from '../motion-profiles/motion-profiles.component';
 
 // Compact stand-in for the video player while media plays on the external
 // player (see the "External player" local setting). It shows the playing
@@ -18,7 +19,7 @@ import { ScriptStatusComponent } from '../script-status/script-status.component'
 // full screen are all absent).
 @Component({
     selector: 'app-external-player',
-    imports: [MediaItemPropertiesComponent, MediaItemAltScriptsComponent, ScriptStatusComponent],
+    imports: [MediaItemPropertiesComponent, MediaItemAltScriptsComponent, ScriptStatusComponent, MotionProfilesComponent],
     templateUrl: './external-player.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './external-player.component.css'
@@ -29,6 +30,7 @@ export class ExternalPlayerComponent implements OnInit, OnDestroy {
     }
     mediaItem: MediaItem | null = null;
     scriptStatusOpen = false;
+    motionProfilesOpen = false;
     mediaSettingsOpen = false;
     altScriptsOpen = false;
     heatmapSvg: string | null = null;
@@ -101,6 +103,13 @@ export class ExternalPlayerComponent implements OnInit, OnDestroy {
         this.scriptStatusOpen = !this.scriptStatusOpen;
     }
 
+    // The motion profiles are rendered under the script status inside the
+    // player container (see .motion-profiles-embedded) - it just toggles its
+    // visibility here.
+    toggleMotionProfiles(): void {
+        this.motionProfilesOpen = !this.motionProfilesOpen;
+    }
+
     openMediaSettings(): void {
         if (!this.mediaItem) {
             return;
@@ -126,6 +135,8 @@ export class ExternalPlayerComponent implements OnInit, OnDestroy {
     stop(): void {
         if (this.scriptStatusOpen)
             this.toggleScriptStatus();
+        if (this.motionProfilesOpen)
+            this.toggleMotionProfiles();
         this.setHeatmapSvg(null);
         this.videoService.stopVideo();
     }

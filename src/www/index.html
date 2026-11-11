@@ -6,7 +6,7 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-<style>:root{--background-color:black;--foreground-color:#e0e0e0;--foreground-color-header:#8DA1BF;--foreground-color-header-eyebrow:#888;--control-background:#333333;--control-border-color:#333;--control-text-color:#e0e0e0;--control-hover-background:#16213e;--button-background:#333333;--button-border-color:#333;--button-text-color:#e0e0e0;--button-hover-background:#16213e;--button-background-down:rgba(128, 140, 255, .596);--button-color-down:white;--control-disabled-background:#ccc;--control-disabled-text-color:#888;--control-invalid-border-color:red;--tab-background:#5E6B7F;--tab-active-background:#8DA1BF;--alert-color-error:crimson;--alert-color-info:lightblue;--alert-color-warning:yellow;--alert-color-debug:grey}:root{--control-height:44px;--control-height-small:28px;--control-min-width:56px;--control-select-min-width:132px;--control-toggle-size:24px;--control-label-min-width:110px;--control-input-min-width:100px;--control-padding:10px 14px;--control-border-radius:8px;--font-size-small:1rem;--font-size-base:1.05rem;--font-size-control:1.1rem;--spacing-small:8px;--spacing-base:12px;--spacing-large:16px}body{background-color:var(--background-color);color:var(--foreground-color);font-family:"sans-serif","serif",Lucida Sans Regular,Times New Roman,Times,"DejaVu Serif",Verdana;margin:0;overflow:hidden}</style><link rel="stylesheet" href="styles-BXQVE2MU.css" media="print" data-beasties-media="all"><noscript><link rel="stylesheet" href="styles-BXQVE2MU.css"></noscript></head>
+<style>:root{--background-color:black;--foreground-color:#e0e0e0;--foreground-color-header:#8DA1BF;--foreground-color-header-eyebrow:#888;--control-background:#333333;--control-border-color:#333;--control-text-color:#e0e0e0;--control-hover-background:#16213e;--button-background:#333333;--button-border-color:#333;--button-text-color:#e0e0e0;--button-hover-background:#16213e;--button-background-down:rgba(135, 206, 250, .596);--button-color-down:white;--button-background-motion:lightskyblue;--control-disabled-background:#ccc;--control-disabled-text-color:#888;--control-invalid-border-color:red;--tab-background:#5E6B7F;--tab-active-background:#8DA1BF;--alert-color-error:crimson;--alert-color-info:lightblue;--alert-color-warning:yellow;--alert-color-debug:grey}:root{--control-height:44px;--control-height-small:28px;--control-min-width:56px;--control-select-min-width:132px;--control-toggle-size:24px;--control-label-min-width:110px;--control-input-min-width:100px;--control-padding:10px 14px;--control-border-radius:8px;--font-size-small:1rem;--font-size-base:1.05rem;--font-size-control:1.1rem;--spacing-small:8px;--spacing-base:12px;--spacing-large:16px}body{background-color:var(--background-color);color:var(--foreground-color);font-family:"sans-serif","serif",Lucida Sans Regular,Times New Roman,Times,"DejaVu Serif",Verdana;margin:0;overflow:hidden}</style><link rel="stylesheet" href="styles-XEHG7CKJ.css" media="print" data-beasties-media="all"><noscript><link rel="stylesheet" href="styles-XEHG7CKJ.css"></noscript></head>
 <body>
   <app-root></app-root>
 
@@ -63,6 +63,55 @@
 		<symbol id="pin" viewBox="0 0 24 24">
 			<circle cx="12" cy="7.5" r="5"/>
 			<rect x="11" y="10.5" width="2" height="12" rx="1"/>
+		</symbol>
+
+		<!-- Equalizer / script status. No fill attribute - the icon inherits
+		     the fill of the <svg> that uses it (white in the players, black
+		     on the header's light buttons). -->
+		<symbol id="equalizer" viewBox="0 0 61.719 61.719">
+			<rect x="0.651" y="52.409" width="4.167" height="9.311"/>
+			<rect x="0.651" y="47.015" width="4.167" height="3.245"/>
+			<rect x="0.651" y="41.993" width="4.167" height="3.244"/>
+			<rect x="6.901" y="43.89" width="4.167" height="3.245"/>
+			<rect x="6.901" y="38.868" width="4.167" height="3.244"/>
+			<rect x="13.151" y="39.724" width="4.167" height="3.245"/>
+			<rect x="13.151" y="34.701" width="4.167" height="3.244"/>
+			<rect x="19.401" y="41.807" width="4.167" height="3.245"/>
+			<rect x="19.401" y="36.784" width="4.167" height="3.244"/>
+			<rect x="25.651" y="30.349" width="4.167" height="3.245"/>
+			<rect x="25.651" y="25.325" width="4.167" height="3.245"/>
+			<rect x="31.902" y="5.024" width="4.166" height="3.245"/>
+			<rect x="31.902" width="4.166" height="3.245"/>
+			<rect x="38.152" y="9.191" width="4.166" height="3.245"/>
+			<rect x="38.152" y="4.167" width="4.166" height="3.245"/>
+			<rect x="44.402" y="15.441" width="4.166" height="3.245"/>
+			<rect x="44.402" y="10.417" width="4.166" height="3.245"/>
+			<rect x="50.652" y="30.024" width="4.166" height="3.244"/>
+			<rect x="50.652" y="25" width="4.166" height="3.245"/>
+			<rect x="56.902" y="26.899" width="4.166" height="3.245"/>
+			<rect x="56.902" y="21.875" width="4.166" height="3.245"/>
+			<rect x="6.901" y="49.305" width="4.167" height="12.414"/>
+			<rect x="13.151" y="45.313" width="4.167" height="16.406"/>
+			<rect x="25.651" y="35.677" width="4.167" height="26.042"/>
+			<rect x="31.902" y="10.742" width="4.166" height="50.978"/>
+			<rect x="38.152" y="14.909" width="4.166" height="46.811"/>
+			<rect x="44.402" y="21.159" width="4.166" height="40.561"/>
+			<rect x="50.652" y="35.677" width="4.166" height="26.042"/>
+			<rect x="56.902" y="32.292" width="4.166" height="29.428"/>
+			<rect x="19.401" y="47.222" width="4.167" height="14.497"/>
+		</symbol>
+
+		<!-- Motion profiles: an oscillating wave with dots at various
+		     locations (the motion channels). The wave is a stroke path and
+		     the dots are filled - both inherit the color of the <svg> that
+		     uses it. -->
+		<symbol id="motion-profiles" viewBox="0 0 24 24">
+			<path d="M1 12 C 4.5 4, 8 4, 12 12 C 16 20, 19.5 20, 23 12" fill="none" stroke-width="2" stroke-linecap="round"/>
+			<circle cx="3" cy="5" r="1.5"/>
+			<circle cx="12" cy="12" r="1.5"/>
+			<circle cx="21" cy="5" r="1.5"/>
+			<circle cx="7" cy="19" r="1.5"/>
+			<circle cx="20" cy="19" r="1.5"/>
 		</symbol>
 
 		<symbol id="info" viewBox="0 0 24 24">
@@ -194,5 +243,5 @@
              447.56,421.11 448.00,412.27 448.00,406.00 Z"/>
 		</symbol>
 	</svg>
-<script src="polyfills-5CFQRCPP.js" type="module"></script><script src="main-POOK2I6H.js" type="module"></script><script>document.querySelectorAll('link[data-beasties-media]').forEach(function(l){l.media=l.getAttribute('data-beasties-media');l.removeAttribute('data-beasties-media')})</script></body>
+<script src="polyfills-5CFQRCPP.js" type="module"></script><script src="main-EDJX3E63.js" type="module"></script><script>document.querySelectorAll('link[data-beasties-media]').forEach(function(l){l.media=l.getAttribute('data-beasties-media');l.removeAttribute('data-beasties-media')})</script></body>
 </html>

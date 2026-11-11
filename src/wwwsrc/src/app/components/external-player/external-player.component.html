@@ -15,6 +15,11 @@
         <use href="#equalizer"></use>
       </svg>
     </button>
+    <button id="externalMotionProfilesButton" class="video-control video-control-main" [class.button-down]="motionProfilesOpen" (click)="toggleMotionProfiles()">
+      <svg class="player-button-icon">
+        <use href="#motion-profiles"></use>
+      </svg>
+    </button>
     <!-- Skip to next action / money shot are hidden for now - they need
           seeking in the external player (HereSphere/DeoVR), which doesn't
           work yet. The component methods are kept for when it does.
@@ -47,6 +52,13 @@
        bars are added/removed internally. -->
   @if (scriptStatusOpen) {
     <app-script-status class="script-status-embedded" width="100%"></app-script-status>
+  }
+
+  <!-- Motion profiles: under the script status, full view width with a
+       static 20vh height that scrolls on y. Opening it pushes the media
+       list down by exactly 20vh, like the script status. -->
+  @if (motionProfilesOpen) {
+    <app-motion-profiles class="motion-profiles-embedded" width="100%"></app-motion-profiles>
   }
 
   <app-media-item-properties

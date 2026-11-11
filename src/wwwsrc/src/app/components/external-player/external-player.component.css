@@ -43,12 +43,12 @@
    (no seek on click - seeking drives the media player directly). */
 .external-player-heatmap {
     width: 100%;
-    height: 10vh;
+    height: 20vh;
     background: black;
     overflow: hidden;
 }
 
-.external-player-heatmap svg {
+.external-player-heatmap > svg {
     display: block;
     width: 100%;
     height: 100%;
@@ -184,4 +184,16 @@ button.video-control:hover {
     height: 20vh;
     overflow-y: auto;
     --script-status-border-color: transparent;
+}
+
+/* Motion profiles: same push-down behaviour as the script status (see
+   .script-status-embedded) - a static 20vh height that scrolls on y, so
+   opening it grows the player by exactly 20vh and never resizes as profiles
+   are added/removed. The border is dropped via the component's
+   --motion-profiles-border-color variable. */
+.motion-profiles-embedded {
+    width: 100%;
+    max-height: 20vh;
+    overflow-y: auto;
+    --motion-profiles-border-color: transparent;
 }

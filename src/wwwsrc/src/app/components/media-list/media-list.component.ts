@@ -312,7 +312,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
   private listFocused = false;
 
   private updateListKeepAlive(): void {
-    const active = this.listMouseOver || this.listTouchActive || this.listFocused;
+    const active = this.isFullScreen &&  (this.listMouseOver || this.listTouchActive || this.listFocused);
     if (this.overlayActive) {
       this.videoService.setMediaListActive(active);
     } else if (active) {
@@ -362,7 +362,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     const index = this.mediaList.findIndex(m => m.id === item.id);
     if (index === -1) return;
     const rowIndex = Math.floor(index / this.columns);
-    this.mediaListContainer?.scrollToIndex(rowIndex);
+    this.mediaListContainer?.scrollToIndex(rowIndex, "smooth" );
   }
 
   getThumbSize(): number {
@@ -380,7 +380,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     }
     const coarse = window.matchMedia('(pointer: coarse)').matches;
     const portrait = window.matchMedia('(orientation: portrait)').matches;
-    const targetPx = (window.innerWidth * (coarse && portrait ? 55 : 25)) / 100;
+    const targetPx = (window.innerWidth * (coarse && portrait ? 55 : 20)) / 100;
     const columns = Math.max(1, Math.round(targetPx / itemSlot));
     this.elementRef.nativeElement.style.setProperty('--media-list-overlay-width', columns * itemSlot + 'px');
   }

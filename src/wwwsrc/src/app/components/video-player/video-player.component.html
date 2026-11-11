@@ -62,9 +62,14 @@
 <div id="bottom-controls" #bottomControls class="video-controls bottom-controls" [class.video-controls-visible]="controlsVisible" (touchstart)="showControls()">
   <div id="bottom-top-controls" class="bottom-top-controls">
     <div class="bottom-top-controls-buttons">
-      <button id="scriptStatusPlayerButton" class="video-control video-control-other" [class.button-down]="scriptStatusOpen" [class.disabled]="inputDeviceConnected" (click)="toggleScriptStatus()">
+      <button id="scriptStatusPlayerButton" class="video-control video-control-other video-control--action-script-status" [class.button-down]="scriptStatusOpen" [class.disabled]="inputDeviceConnected" (click)="toggleScriptStatus()">
         <svg class="player-button-icon">
           <use href="#equalizer"></use>
+        </svg>
+      </button>
+      <button id="motionProfilesPlayerButton" class="video-control video-control-other video-control--action-motion" [class.button-down]="motionProfilesOpen" [class.disabled]="inputDeviceConnected" (click)="toggleMotionProfiles()">
+        <svg class="player-button-icon">
+          <use href="#motion-profiles"></use>
         </svg>
       </button>
       <button data-title="Skip to next action (a)" class="video-control video-control-other video-control--action-begin" [class.disabled]="inputDeviceConnected" id="next-action" (click)="onSkipToNextAction()">
@@ -160,15 +165,25 @@
   </div>
 </div>
 
-<!-- Script status panel: pinned to the bottom of the video. It slides up
-     above the bottom controls while they are visible and back down to the
-     bottom edge when they auto-hide (see .script-status-panel). -->
-<app-script-status
-    class="script-status-panel"
-    width="100%"
-    [class.hidden]="!scriptStatusOpen"
-    [class.script-status-raised]="controlsVisible">
-</app-script-status>
+<!-- Bottom panels: pinned to the bottom of the video, holding the script
+     status (top) and motion profiles (bottom) stacked in a column - opening
+     the profiles pushes the script status up instead of overlapping it.
+     The wrapper slides up above the bottom controls while they are visible
+     and back down to the bottom edge when they auto-hide (see
+     .bottom-panels). -->
+<div class="bottom-panels" [class.bottom-panels-raised]="controlsVisible">
+  <app-script-status
+      class="script-status-panel"
+      width="100%"
+      [class.hidden]="!scriptStatusOpen">
+  </app-script-status>
+
+  <app-motion-profiles
+      class="motion-profiles-panel"
+      width="100%"
+      [class.hidden]="!motionProfilesOpen">
+  </app-motion-profiles>
+</div>
 
 <!-- <div class="bottom-controls" class="video-controls" [class.hidden]="!controlsVisible">
 <div class="progress-bar-container">

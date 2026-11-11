@@ -263,45 +263,63 @@ video {
     pointer-events: none;
 }
 
-/* Script status panel: pinned to the bottom of the video. While the bottom
-   controls are visible it sits above them (offset by the exact bar height,
-   tracked on #video-container - see trackControlsHeight); when the controls
-   auto-hide it slides down to the bottom edge. Centered 50vw on all screens
-   (matching the desktop controls); the fixed low-height mode spans its
-   narrower container like the controls do. The panel is capped at the
-   container's available height (the container clips overflow) and the
-   content scrolls inside - the component's own 500px default suits the
-   header usage, which floats in the page flow. */
-.script-status-panel {
+/* Bottom panels wrapper: pinned to the bottom of the video, holding the
+   script status (top) and motion profiles (bottom) stacked in a column -
+   opening the profiles pushes the script status up instead of overlapping
+   it. While the bottom controls are visible the wrapper sits above them
+   (offset by the exact bar height, tracked on #video-container - see
+   trackControlsHeight); when the controls auto-hide it slides down to the
+   bottom edge. Centered 50vw on all screens (matching the desktop
+   controls); the fixed low-height mode spans its narrower container like
+   the controls do. The wrapper is capped at the container's available
+   height and the script status scrolls inside when both panels are open. */
+.bottom-panels {
     position: absolute;
     bottom: 0;
     left: 25vw;
     width: 50vw;
     z-index: 10;
-    /* Flex column so the inner container (flex-basis: 100%, min-height: 0,
-       overflow-y: auto) shrinks and scrolls when the panel is capped. */
     display: flex;
     flex-direction: column;
     transition: bottom 0.3s ease-in-out, max-height 0.3s ease-in-out;
     max-height: 100%;
-    --script-status-max-height: none;
 }
 
-.script-status-panel.script-status-raised {
+.bottom-panels.bottom-panels-raised {
     bottom: var(--video-controls-height, 0px);
     max-height: calc(100% - var(--video-controls-height, 0px));
 }
 
-/* On mobile the video is full width, so the panel spans it too (the model
-   just fills the panel - see .script-status-model). */
+/* Script status: top of the stack. Absorbs the extra space when both
+   panels are open and the total exceeds the wrapper's cap (the inner
+   container scrolls). */
+.script-status-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    --script-status-max-height: none;
+}
+
+/* Motion profiles: bottom of the stack, keeps its natural height (the
+   script status absorbs any overflow - see .script-status-panel). */
+.motion-profiles-panel {
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    min-height: 0;
+    --motion-profiles-max-height: none;
+}
+
+/* On mobile the video is full width, so the wrapper spans it too. */
 @media (max-width: 768px), (pointer: coarse) {
-    .script-status-panel {
+    .bottom-panels {
         left: 0;
         width: 100%;
     }
 }
 
-.video-container-fixed .script-status-panel {
+.video-container-fixed .bottom-panels {
     left: 0;
     width: 100%;
 }
@@ -599,8 +617,15 @@ button.video-control-main {
     background-color: transparent;
 }
 button.video-control-other {
-    max-width: none;
+    max-width: none;  
 }
+
+button.video-control-other > svg {
+    fill: black;
+    stroke: black;
+    cursor: pointer;
+}
+
 button.video-control-other:not(:last-child) {
     margin-right: 4px;
 }
@@ -621,10 +646,19 @@ button.video-control-other:not(:last-child) {
     stroke: #fff;
     cursor: pointer;
 }
+
 /* .pip-button svg {
     width: 26px;
     height: 26px;
 } */
+
+.video-control--action-script-status {
+    background-color: plum !important;
+ }
+
+.video-control--action-motion {
+    background-color: lightskyblue !important;
+}
 
 .video-control--action-begin {
     background-color: aquamarine !important;

@@ -18,8 +18,12 @@
     --button-border-color: #333;
     --button-text-color: #e0e0e0;
     --button-hover-background: #16213e;
-    --button-background-down: rgba(128, 140, 255, 0.596);
+    --button-background-down: rgba(135, 206, 250, 0.596);
     --button-color-down: white;
+    /* Background for the motion buttons (motion profiles in both players,
+       script status in the external player) - pastel blue so they read as
+       "motion" against the other controls. */
+    --button-background-motion: lightskyblue;
 
     /* Control states */
     --control-disabled-background: #ccc;

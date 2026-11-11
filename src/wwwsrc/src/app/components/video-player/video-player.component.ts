@@ -13,10 +13,11 @@ import { MediaItemPropertiesComponent } from '../media-item-properties/media-ite
 import { MediaItemAltScriptsComponent } from '../media-item-alt-scripts/media-item-alt-scripts.component';
 import { MediaListOverlayService } from '../../services/media-list-overlay.service';
 import { ScriptStatusComponent } from '../script-status/script-status.component';
+import { MotionProfilesComponent } from '../motion-profiles/motion-profiles.component';
 
 @Component({
     selector: 'app-video-player',
-    imports: [FormsModule, MediaItemPropertiesComponent, MediaItemAltScriptsComponent, ScriptStatusComponent],
+    imports: [FormsModule, MediaItemPropertiesComponent, MediaItemAltScriptsComponent, ScriptStatusComponent, MotionProfilesComponent],
     templateUrl: './video-player.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './video-player.component.css'
@@ -58,6 +59,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   muted: boolean = false;
   m_progress = 0;
   scriptStatusOpen = false;
+  motionProfilesOpen = false;
   mediaSettingsOpen = false;
   altScriptsOpen = false;
   inputDeviceConnected = false;
@@ -377,6 +379,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   stop() {
     if(this.scriptStatusOpen)
       this.toggleScriptStatus();
+    if(this.motionProfilesOpen)
+      this.toggleMotionProfiles();
     this.setHeatmapSvg(null);
     this.videoService.stopVideo();
   }
@@ -490,6 +494,12 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   // (see .script-status-panel) - it just toggles its visibility here.
   toggleScriptStatus(): void {
     this.scriptStatusOpen = !this.scriptStatusOpen;
+  }
+
+  // The motion profiles panel is rendered in-flow inside the video container
+  // (see .motion-profiles-panel) - it just toggles its visibility here.
+  toggleMotionProfiles(): void {
+    this.motionProfilesOpen = !this.motionProfilesOpen;
   }
   
   getScriptPausedStatusImage() {

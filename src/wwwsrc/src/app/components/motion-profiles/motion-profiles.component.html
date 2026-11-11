@@ -1,0 +1,13 @@
+<div class="motion-profiles-container" [style.width]="width">
+  <div class="motion-profiles-model">
+    @if (profiles.length === 0) {
+      <div class="no-profiles">No motion profiles. Visit the settings &gt; motion tab to add some.</div>
+    }
+    @for (profile of profiles; track profile) {
+      <button
+        class="motion-profiles-button"
+        [class.selected]="profile === selectedProfile"
+        (click)="selectProfile(profile)">{{ profile }}</button>
+    }
+  </div>
+</div>
