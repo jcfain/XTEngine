@@ -63,7 +63,9 @@
   <div id="bottom-top-controls" class="bottom-top-controls">
     <div class="bottom-top-controls-buttons">
       <button id="scriptStatusPlayerButton" class="video-control video-control-other" [class.button-down]="scriptStatusOpen" [class.disabled]="inputDeviceConnected" (click)="toggleScriptStatus()">
-        <img class="player-button-icon" src="://images/icons/equalizer.svg" />
+        <svg class="player-button-icon">
+          <use href="#equalizer"></use>
+        </svg>
       </button>
       <button data-title="Skip to next action (a)" class="video-control video-control-other video-control--action-begin" [class.disabled]="inputDeviceConnected" id="next-action" (click)="onSkipToNextAction()">
         <img class="player-button-icon" src="://images/icons/skipToAction.png" />
@@ -163,6 +165,7 @@
      bottom edge when they auto-hide (see .script-status-panel). -->
 <app-script-status
     class="script-status-panel"
+    width="100%"
     [class.hidden]="!scriptStatusOpen"
     [class.script-status-raised]="controlsVisible">
 </app-script-status>

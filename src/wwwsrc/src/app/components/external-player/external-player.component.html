@@ -1,0 +1,64 @@
+<div id="external-player-container"
+  class="external-player-container"
+  [class.external-player-container-visible]="playerVisible">
+  @if (playerVisible) {
+  <div class="external-player-header">
+    <span class="header-title">Now playing externally</span>
+  </div>
+
+  <div class="external-player-info">
+    <div id="externalMediaName" class="video-media-name">{{ mediaItem?.name }}</div>
+  </div>
+  <div class="external-player-controls">
+    <button id="externalScriptStatusButton" class="video-control video-control-main" [class.button-down]="scriptStatusOpen" (click)="toggleScriptStatus()">
+      <svg class="player-button-icon">
+        <use href="#equalizer"></use>
+      </svg>
+    </button>
+    <!-- Skip to next action / money shot are hidden for now - they need
+          seeking in the external player (HereSphere/DeoVR), which doesn't
+          work yet. The component methods are kept for when it does.
+    <button data-title="Skip to next action (a)" class="video-control video-control-main" id="external-next-action" (click)="onSkipToNextAction()">
+      <img class="player-button-icon" src="://images/icons/skipToAction.png" />
+    </button>
+    <button data-title="Skip to moneyshot (c)" class="video-control video-control-main" id="external-money-shot" (click)="onSkipToMoneyShot()">
+      <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg" />
+    </button>
+    -->
+    <button data-title="Alternate scripts" class="video-control video-control-main" id="external-alternate-scripts-button" (click)="openAltScripts()">
+      <svg class="player-button-icon">
+        <use href="#funscript"></use>
+      </svg>
+    </button>
+    <button data-title="Media settings" class="video-control video-control-main" id="external-playing-media-settings-button" (click)="openMediaSettings()">
+      <svg class="player-button-icon media-settings-button">
+        <use href="#media-settings"></use>
+      </svg>
+    </button>
+  </div>
+
+  @if (showHeatmap) {
+    <div class="external-player-heatmap" [innerHTML]="heatmapSvgSafe"></div>
+  }
+
+  <!-- Script status: under the heat map, full view width with a static
+       10vh height that scrolls on y. Opening it pushes the media list down
+       by exactly 10vh; the fixed height keeps it from resizing as channel
+       bars are added/removed internally. -->
+  @if (scriptStatusOpen) {
+    <app-script-status class="script-status-embedded" width="100%"></app-script-status>
+  }
+
+  <app-media-item-properties
+      [class.hidden]="!mediaSettingsOpen"
+      [item]="mediaItem"
+      (close)="closeMediaSettings()">
+  </app-media-item-properties>
+
+  <app-media-item-alt-scripts
+      [class.hidden]="!altScriptsOpen"
+      [item]="mediaItem"
+      (close)="closeAltScripts()">
+  </app-media-item-alt-scripts>
+  }
+</div>

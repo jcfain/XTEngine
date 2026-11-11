@@ -1,4 +1,4 @@
-<div class="script-status-container">
+<div class="script-status-container" [style.width]="width">
   <div class="script-status-model">
     <div [class.hidden]="!noScriptInput" style="align-self: center; flex-basis: 100%;">No script input</div>
     @for (ch of channels; track ch) {

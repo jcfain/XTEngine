@@ -46,6 +46,7 @@
    only .app-body is allowed to shrink to make room for the video. */
 app-header,
 app-video-player,
+app-external-player,
 app-footer {
   flex-shrink: 0;
 }

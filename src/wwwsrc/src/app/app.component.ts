@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { VideoPlayerComponent } from './components/video-player/video-player.component';
+import { ExternalPlayerComponent } from './components/external-player/external-player.component';
 import { SettingsComponent } from './components/settings/settings.component';
 import { ScriptStatusComponent } from './components/script-status/script-status.component';
 import { MediaListComponent } from './components/media-list/media-list.component';
@@ -23,12 +24,14 @@ import { DeviceConnectionService } from './services/device-connection.service';
 import { MediaListService } from './services/media-list-service';
 import { VideoService } from './services/video.service';
 import { FullscreenOverlayContainerService } from './services/fullscreen-overlay-container.service';
+import { LocalSettingsService } from './services/local-settings.service';
 
 @Component({
     selector: 'app-root',
     imports: [
     FormsModule,
     VideoPlayerComponent,
+    ExternalPlayerComponent,
     SettingsComponent,
     ScriptStatusComponent,
     MediaListComponent,
@@ -46,6 +49,10 @@ export class AppComponent implements OnInit {
   scriptStatusOpen = false;
   mediaLoaded = false;
   connectionState = ConnectionState.Disconnected;
+  // "External player" local setting: media plays in a separate player
+  // instead of the in-page video player, so the compact external player
+  // component replaces the video player in the layout.
+  externalStreaming = false;
 
   constructor(
     private appStateService: AppStateService,
@@ -60,6 +67,7 @@ export class AppComponent implements OnInit {
     private keyboardService: KeyboardService,
     private connectionStateService: ConnectionStateService,
     private deviceConnectionService: DeviceConnectionService,
+    private localSettingsService: LocalSettingsService,
     // Injected for its side effect: keeps the CDK overlay container inside
     // the full screen element so modals render while the video is full screen.
     private fullscreenOverlayContainerService: FullscreenOverlayContainerService
@@ -86,6 +94,10 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.localSettingsService.externalStreaming$.subscribe(v => {
+      this.externalStreaming = v;
+    });
+
     this.connectionStateService.state$.subscribe(state => {
       this.connectionState = state;
       // Keep AppStateService in sync for any components that read it

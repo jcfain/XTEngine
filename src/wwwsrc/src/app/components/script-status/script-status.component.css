@@ -1,8 +1,8 @@
 /* Custom element hosts are inline by default - width on an inline element
    is ignored, which broke the inner percentage widths (the model shrank to
    its heading and the progress bars overflowed). Blockify the host so the
-   host width (50vw in the header, .script-status-panel in the video player)
-   resolves the width chain. */
+   host width (50vw in the header, .script-status-panel in the video player,
+   .script-status-embedded in the external player) resolves the width chain. */
 :host {
     display: block;
 }
@@ -15,7 +15,7 @@
        caps the panel's height. No effect in the header usage, where the
        host is a plain block. */
     min-height: 0;
-    width: 50vw;
+    /* Width is bound from the width input (each usage site sets it). */
 }
 .script-status-model {
     border-radius: 25px;
@@ -26,7 +26,9 @@
     flex-flow: column;
     gap: 4px;
     padding: 8px;
-    border: 1px solid aliceblue;
+    /* Usage sites can drop the border (the external player sets
+       --script-status-border-color: transparent on the host). */
+    border: 1px solid var(--script-status-border-color, aliceblue);
     max-height: var(--script-status-max-height, min(500px,calc(100vh - 200px)));  left: 50%;
     /* transform: translate(-50%, 0); */
 }

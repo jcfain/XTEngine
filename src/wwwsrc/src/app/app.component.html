@@ -22,7 +22,11 @@
       (scriptStatusClick)="toggleScriptStatus()"
       (logoutClick)="logout()">
     </app-header>
-    <app-video-player></app-video-player>
+    @if (externalStreaming) {
+      <app-external-player></app-external-player>
+    } @else {
+      <app-video-player></app-video-player>
+    }
 
     <div class="app-body">
       <ng-container #mediaListHost>

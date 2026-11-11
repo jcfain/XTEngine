@@ -11,9 +11,6 @@
 .media-toolbar {
     position: sticky;
     top: 0;
-    /* Above media list item context menus (z-index 10), below app modals
-       such as settings (z-index 15) */
-    z-index: 11;
     display: flex;
     flex-flow: row;
     align-items: center;

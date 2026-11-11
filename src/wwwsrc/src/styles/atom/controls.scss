@@ -263,10 +263,19 @@ input[type='range']::-moz-focus-outer {
     width: 16px;
     height: 16px;
 }
+/* Inline <svg> icons (e.g. the equalizer symbol) size like the <img> ones. */
+.icon-button>svg {
+    width: 16px;
+    height: 16px;
+}
 .icon-button--small {
     padding: 5px;
 }
 .icon-button--small>img {
+    width: 12px;
+    height: 12px;
+}
+.icon-button--small>svg {
     width: 12px;
     height: 12px;
 }

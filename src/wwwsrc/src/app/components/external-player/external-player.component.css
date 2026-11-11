@@ -1,0 +1,187 @@
+.hidden {
+    display: none !important;
+    opacity: 0 !important;
+}
+
+/* Compact player container: header + name/button row + heat map + script
+   status. Collapses to zero height (with the same fade as the video player)
+   when nothing is playing. */
+.external-player-container {
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    width: 100%;
+    background-color: black;
+    overflow: hidden;
+    visibility: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.25s ease-in-out, opacity 0.5s linear;
+}
+
+.external-player-container-visible {
+    visibility: visible;
+    max-height: 100%;
+    opacity: 1;
+}
+
+/* Header line: "Now playing externally" title. */
+.external-player-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 4px 15px;
+    color: #fff;
+    font-size: 1.59rem;
+    background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.1));
+    box-sizing: border-box;
+}
+
+/* Funscript heat map: spans the full view width. It is display only here
+   (no seek on click - seeking drives the media player directly). */
+.external-player-heatmap {
+    width: 100%;
+    height: 10vh;
+    background: black;
+    overflow: hidden;
+}
+
+.external-player-heatmap svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Second line: the playing item's name (ellipsized). */
+.external-player-info {
+    padding: 0px 15px;
+    color: #fff;
+    box-sizing: border-box;
+}
+
+.external-player-controls {
+    display: flex;
+    align-items: center;  
+    padding: 4px 15px;
+    /* justify-content: flex-end; */
+    gap: 7px;
+    color: #fff;
+}
+
+/* Player button styles (mirrors the video player's .video-controls button
+   styles so the external player looks and feels the same). */
+.external-player-container button {
+    cursor: pointer;
+    position: relative;
+    font-size: 12px;
+    padding: 2px;
+    border: none;
+    outline: none;
+}
+
+.external-player-container button > svg {
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.external-player-container button * {
+    pointer-events: none;
+}
+
+.external-player-container button:active:hover {
+    box-shadow: none;
+}
+
+.external-player-container button::before {
+    content: attr(data-title);
+    position: absolute;
+    display: none;
+    right: 0;
+    top: -50px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-weight: bold;
+    padding: 4px 6px;
+    word-break: keep-all;
+    white-space: pre;
+}
+
+.external-player-container button:hover::before {
+    display: inline-block;
+}
+
+button.video-control {
+    border-radius: 5px;
+    min-height: 16px;
+    min-width: 16px;
+    max-width: 32px;
+    max-height: 32px;
+    height: 100%;
+    width: 100%;
+}
+
+button.video-control-main {
+    background-color: transparent;
+}
+
+button.video-control-other {
+    max-width: none;
+}
+
+button.video-control-other:not(:last-child) {
+    margin-right: 4px;
+}
+
+.player-button-icon {
+    min-height: 8px;
+    min-width: 8px;
+    max-width: 16px;
+    max-height: 16px;
+    width: 100%;
+    height: 100%;
+}
+
+.external-player-container svg {
+    fill: #fff;
+    stroke: #fff;
+    cursor: pointer;
+}
+
+.video-control--action-begin {
+    background-color: aquamarine !important;
+}
+
+.video-control--money-shot {
+    background-color: white !important;
+}
+
+button.video-control:hover {
+    box-shadow: -1px 1px 5px 0px hotpink, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px hotpink;
+    background-color: plum;
+}
+
+.media-settings-button {
+    padding-top: 8px !important;
+    padding-left: 8px;
+}
+
+.video-media-name {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Script status: under the button row, spanning the full view width with a
+   static 10vh height that scrolls on y. Opening it grows the player by
+   exactly 10vh (pushing the media list down), but the fixed height means it
+   never resizes as the component adds/removes channel bars internally. The
+   border is dropped via the component's --script-status-border-color
+   variable. */
+.script-status-embedded {
+    width: 100%;
+    height: 20vh;
+    overflow-y: auto;
+    --script-status-border-color: transparent;
+}

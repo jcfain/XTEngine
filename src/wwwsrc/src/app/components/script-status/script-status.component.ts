@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { AvailableChannels, ChannelInfo, ChannelModel } from '../../models/interfaces';
@@ -35,6 +35,9 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
   isPaused = false;
   noScriptInput = true;
   channels: ChannelAnimationState[] = [];
+  // Width of the inner container, set by each usage site (the header uses
+  // the 50vw default, the players pass 100% to fill their own panel).
+  @Input() width: string = '50vw';
 
   private animationFrameId: number | null = null;
   private availableChannels: AvailableChannels | undefined = undefined;
