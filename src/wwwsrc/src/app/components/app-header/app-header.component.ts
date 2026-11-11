@@ -21,6 +21,9 @@ export class AppHeaderComponent implements OnInit {
   scriptStatusClick = new EventEmitter();
   @Output()
   logoutClick = new EventEmitter();
+  // WebXR VR media player (self-contained feature in components/xr-player)
+  @Output()
+  vrClick = new EventEmitter();
 
   get logoutVisible() {
     return this.authEnabled && this.isAuthenticated;
@@ -47,6 +50,10 @@ export class AppHeaderComponent implements OnInit {
 
   onSettingsClick($event: MouseEvent) {
     this.settingsClick.emit();
+  }
+
+  onVrClick() {
+    this.vrClick.emit();
   }
 
   onScriptStatusClick($event: MouseEvent) {

@@ -1,0 +1,16 @@
+<div class="xr-overlay" [class.in-session]="sessionActive">
+  <canvas #canvas class="xr-canvas"></canvas>
+
+  <div class="xr-ui" [class.in-session]="sessionActive">
+    <button class="xr-close" title="Close" (click)="exit()">&times;</button>
+    <h1 class="xr-title">VR Media Player</h1>
+    <p class="xr-status">{{ status }}</p>
+    @if (supported) {
+      <button class="xr-enter" (click)="enterVR()">Enter VR</button>
+    }
+    <p class="xr-hint">
+      Trigger: select &nbsp;&middot;&nbsp; Squeeze: grab &amp; move a panel
+      &nbsp;&middot;&nbsp; Thumbstick: rotate a grabbed panel
+    </p>
+  </div>
+</div>

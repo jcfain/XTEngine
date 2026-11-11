@@ -20,6 +20,7 @@
     <app-header 
       (settingsClick)="toggleSettings()" 
       (scriptStatusClick)="toggleScriptStatus()"
+      (vrClick)="vrPlayerOpen = true"
       (logoutClick)="logout()">
     </app-header>
     @if (externalStreaming) {
@@ -43,5 +44,8 @@
   }
   @if (scriptStatusOpen) {
     <app-script-status></app-script-status>
+  }
+  @if (vrPlayerOpen) {
+    <app-xr-player (close)="vrPlayerOpen = false"></app-xr-player>
   }
 }

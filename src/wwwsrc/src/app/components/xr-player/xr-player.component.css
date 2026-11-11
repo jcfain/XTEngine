@@ -1,0 +1,107 @@
+.xr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #05070d;
+  overflow: hidden;
+}
+
+.xr-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.xr-ui {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #cdd6ea;
+  font-family: sans-serif;
+  background: radial-gradient(ellipse at center, rgba(10, 15, 28, 0.25) 0%, rgba(5, 7, 13, 0.85) 100%);
+}
+
+.xr-ui.hidden {
+  display: none;
+}
+
+/* In-session: the DOM is composited over the XR view via the dom-overlay
+   feature. Everything must be transparent except the status line. */
+.xr-overlay.in-session {
+  background: none;
+}
+.xr-ui.in-session {
+  background: none;
+  justify-content: flex-end;
+  padding-bottom: 48px;
+}
+.xr-ui.in-session .xr-close,
+.xr-ui.in-session .xr-title,
+.xr-ui.in-session .xr-enter,
+.xr-ui.in-session .xr-hint {
+  display: none;
+}
+.xr-ui.in-session .xr-status {
+  font-size: 24px;
+  background: rgba(5, 7, 13, 0.7);
+  padding: 8px 20px;
+  border-radius: 12px;
+}
+
+.xr-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  font-size: 32px;
+  line-height: 1;
+  color: #9fb0d0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.xr-close:hover {
+  color: #ffffff;
+}
+
+.xr-title {
+  font-size: 32px;
+  margin: 0;
+  color: #ffffff;
+}
+
+.xr-status {
+  max-width: 640px;
+  min-height: 24px;
+  text-align: center;
+  margin: 0;
+  padding: 0 24px;
+  font-size: 18px;
+  color: #cdd6ea;
+}
+
+.xr-enter {
+  font-size: 20px;
+  padding: 14px 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(140, 180, 255, 0.7);
+  background: #3d6fd6;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.xr-enter:hover {
+  background: #4d8dff;
+}
+
+.xr-hint {
+  font-size: 13px;
+  color: #5a6a8a;
+  margin: 0;
+}

@@ -3,6 +3,7 @@ import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { VideoPlayerComponent } from './components/video-player/video-player.component';
 import { ExternalPlayerComponent } from './components/external-player/external-player.component';
+import { XrPlayerComponent } from './components/xr-player/xr-player.component';
 import { SettingsComponent } from './components/settings/settings.component';
 import { ScriptStatusComponent } from './components/script-status/script-status.component';
 import { MediaListComponent } from './components/media-list/media-list.component';
@@ -32,6 +33,7 @@ import { LocalSettingsService } from './services/local-settings.service';
     FormsModule,
     VideoPlayerComponent,
     ExternalPlayerComponent,
+    XrPlayerComponent,
     SettingsComponent,
     ScriptStatusComponent,
     MediaListComponent,
@@ -47,6 +49,10 @@ import { LocalSettingsService } from './services/local-settings.service';
 export class AppComponent implements OnInit {
   settingsOpen = false;
   scriptStatusOpen = false;
+  // WebXR VR media player overlay (self-contained feature in
+  // components/xr-player - remove it by deleting the folder and these
+  // two references).
+  vrPlayerOpen = false;
   mediaLoaded = false;
   connectionState = ConnectionState.Disconnected;
   // "External player" local setting: media plays in a separate player
