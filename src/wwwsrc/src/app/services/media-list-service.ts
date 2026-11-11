@@ -61,6 +61,27 @@ export class MediaListService {
         this.applyFilterAndSort();
     }
     
+    // Context menu: only one item's context menu may be open at a time. The
+    // open item's id is tracked here so opening one menu closes any other.
+    private contextMenuOpenSubject = new BehaviorSubject<string | null>(null);
+    contextMenuOpen$ = this.contextMenuOpenSubject.asObservable();
+
+    openContextMenu(itemId: string): void {
+        this.contextMenuOpenSubject.next(itemId);
+    }
+
+    closeContextMenu(): void {
+        this.contextMenuOpenSubject.next(null);
+    }
+
+    isContextMenuOpen(itemId: string): boolean {
+        return this.contextMenuOpenSubject.value === itemId;
+    }
+
+    hasOpenContextMenu(): boolean {
+        return this.contextMenuOpenSubject.value !== null;
+    }
+
     setSelectedMediaItem(item: MediaItem | null): void {
         this.selectedMediaItemSubject.next(item);
     }

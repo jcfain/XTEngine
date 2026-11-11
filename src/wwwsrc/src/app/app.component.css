@@ -72,3 +72,9 @@ app-media-list {
   width: 280px;
   flex-shrink: 0;
 }
+
+/* Header script status panel: the component fills its host, so pin the
+   previous 50vw width here (the video player sizes its own panel). */
+app-script-status {
+  width: 50vw;
+}

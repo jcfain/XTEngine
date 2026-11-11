@@ -22,6 +22,7 @@ import { ConnectionStateService, ConnectionState } from './services/connection-s
 import { DeviceConnectionService } from './services/device-connection.service';
 import { MediaListService } from './services/media-list-service';
 import { VideoService } from './services/video.service';
+import { FullscreenOverlayContainerService } from './services/fullscreen-overlay-container.service';
 
 @Component({
     selector: 'app-root',
@@ -58,7 +59,10 @@ export class AppComponent implements OnInit {
     private alertService: AlertService,
     private keyboardService: KeyboardService,
     private connectionStateService: ConnectionStateService,
-    private deviceConnectionService: DeviceConnectionService
+    private deviceConnectionService: DeviceConnectionService,
+    // Injected for its side effect: keeps the CDK overlay container inside
+    // the full screen element so modals render while the video is full screen.
+    private fullscreenOverlayContainerService: FullscreenOverlayContainerService
   ) {
     this.keyboardService.init();
   }

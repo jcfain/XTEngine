@@ -106,19 +106,22 @@
 
 /* Full screen overlay: the media list view is re-parented into the video
    container (the full screen element) and slides in from the right. The
-   width animates up to 35vw; it is shown/hidden with the player controls.
-   The container's overflow: hidden clips the panel while it is parked off
-   the right edge, so it never intercepts clicks on the video. */
+   width is set by the component (--media-list-overlay-width) to whole
+   columns of items at the current thumb size; it is shown/hidden with the
+   player controls. The container's overflow: hidden clips the panel while
+   it is parked off the right edge, so it never intercepts clicks on the
+   video. */
 :host(.media-list-overlay) {
     position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
-    width: 25vw;
-    max-width: 25vw;
+    width: var(--media-list-overlay-width, 25vw);
+    max-width: var(--media-list-overlay-width, 25vw);
     display: flex;
     flex-flow: column;
-    z-index: 100;
+    /* Same stacking level as the player controls (.video-controls) */
+    z-index: 10;
     background-color: rgba(0, 0, 0, 0.5);
     transform: translateX(100%);
     transition: transform 0.3s ease-in-out;
@@ -128,22 +131,14 @@
     transform: translateX(0);
 }
 
-/* Touch devices: the bottom controls are full width on mobile, so the
-   overlay stops above them (keeping the controls visible and tappable)
-   instead of running to the bottom edge. The bar height is exposed by the
-   video player as the --video-controls-height CSS variable (it wraps to
-   several lines depending on screen size). */
+/* Touch devices: the controls are full width on mobile, so the overlay
+   fits between the top and bottom controls (keeping both visible and
+   tappable) instead of running edge to edge. The bar heights are exposed
+   by the video player as CSS variables (they wrap to several lines
+   depending on screen size). */
 @media (pointer: coarse) {
     :host(.media-list-overlay) {
+        top: var(--video-top-controls-height, 48px);
         bottom: var(--video-controls-height, 96px);
-    }
-}
-
-/* Portrait phones get a wider panel (55vw) for easier thumb reach;
-   landscape keeps the slimmer 25vw panel. */
-@media (pointer: coarse) and (orientation: portrait) {
-    :host(.media-list-overlay) {
-        width: 55vw;
-        max-width: 55vw;
     }
 }

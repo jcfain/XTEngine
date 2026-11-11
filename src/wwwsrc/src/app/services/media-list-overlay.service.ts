@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { VideoService } from './video.service';
 import { LocalSettingsService } from './local-settings.service';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 /**
  * Moves the single media list element between its normal position in the app
@@ -26,6 +27,11 @@ export class MediaListOverlayService {
   // is never re-parented into the video container, even in full screen.
   private disabled = false;
   private overlayActive = false;
+  private overlayActiveSubject = new BehaviorSubject<boolean>(false);
+  /** Emits whenever the full-screen overlay state changes so portal hosts
+   *  (e.g. context menus) can re-parent themselves into/out of the
+   *  full-screen subtree. */
+  overlayActive$: Observable<boolean> = this.overlayActiveSubject.asObservable();
 
   constructor(
     private videoService: VideoService,
@@ -37,6 +43,7 @@ export class MediaListOverlayService {
         return;
       }
       this.overlayActive = active;
+      this.overlayActiveSubject.next(active);
       if (active) {
         this.moveToFullscreen();
       } else {
@@ -66,6 +73,19 @@ export class MediaListOverlayService {
     if (this.overlayActive) {
       this.moveToFullscreen();
     }
+  }
+
+  /**
+   * Returns the element the context-menu portal should be appended to.
+   * In full-screen overlay mode the video container is the full-screen
+   * element (only its subtree renders), so the portal must live there.
+   * In normal mode document.body is fine.
+   */
+  getPortalTarget(): HTMLElement {
+    if (this.overlayActive && this.fullscreenHost) {
+      return this.fullscreenHost;
+    }
+    return document.body;
   }
 
   registerFullscreenHost(el: HTMLElement): void {

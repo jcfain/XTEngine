@@ -209,6 +209,12 @@ video {
     padding: 10px;
     position: absolute;
     bottom: 0;
+    z-index: 10;
+    /* border-box so the padding is included in the 50vw max-width - with the
+       default content-box the padding adds 20px on top, and since the bar is
+       anchored at left: 25vw (right is over-constrained/ignored) the extra
+       width extends right, shifting the whole bar off-center. */
+    box-sizing: border-box;
     background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.8));
     max-width: 50vw;
     border-top-left-radius: 25px;
@@ -255,6 +261,49 @@ video {
 
 .video-controls.disable {
     pointer-events: none;
+}
+
+/* Script status panel: pinned to the bottom of the video. While the bottom
+   controls are visible it sits above them (offset by the exact bar height,
+   tracked on #video-container - see trackControlsHeight); when the controls
+   auto-hide it slides down to the bottom edge. Centered 50vw on all screens
+   (matching the desktop controls); the fixed low-height mode spans its
+   narrower container like the controls do. The panel is capped at the
+   container's available height (the container clips overflow) and the
+   content scrolls inside - the component's own 500px default suits the
+   header usage, which floats in the page flow. */
+.script-status-panel {
+    position: absolute;
+    bottom: 0;
+    left: 25vw;
+    width: 50vw;
+    z-index: 10;
+    /* Flex column so the inner container (flex-basis: 100%, min-height: 0,
+       overflow-y: auto) shrinks and scrolls when the panel is capped. */
+    display: flex;
+    flex-direction: column;
+    transition: bottom 0.3s ease-in-out, max-height 0.3s ease-in-out;
+    max-height: 100%;
+    --script-status-max-height: none;
+}
+
+.script-status-panel.script-status-raised {
+    bottom: var(--video-controls-height, 0px);
+    max-height: calc(100% - var(--video-controls-height, 0px));
+}
+
+/* On mobile the video is full width, so the panel spans it too (the model
+   just fills the panel - see .script-status-model). */
+@media (max-width: 768px), (pointer: coarse) {
+    .script-status-panel {
+        left: 0;
+        width: 100%;
+    }
+}
+
+.video-container-fixed .script-status-panel {
+    left: 0;
+    width: 100%;
 }
 
 .video-progress {

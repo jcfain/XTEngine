@@ -8,14 +8,14 @@ import { MediaListService } from '../../services/media-list-service';
 import { WebsocketService } from '../../services/websocket.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
-import { ScriptStatusService } from '../../services/script-status.service';
 import { MediaItemPropertiesComponent } from '../media-item-properties/media-item-properties.component';
 import { MediaItemAltScriptsComponent } from '../media-item-alt-scripts/media-item-alt-scripts.component';
 import { MediaListOverlayService } from '../../services/media-list-overlay.service';
+import { ScriptStatusComponent } from '../script-status/script-status.component';
 
 @Component({
     selector: 'app-video-player',
-    imports: [FormsModule, MediaItemPropertiesComponent, MediaItemAltScriptsComponent],
+    imports: [FormsModule, MediaItemPropertiesComponent, MediaItemAltScriptsComponent, ScriptStatusComponent],
     templateUrl: './video-player.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './video-player.component.css'
@@ -26,9 +26,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('progressTooltip', { static: false }) seekToolTipNodeRef!: ElementRef<HTMLVideoElement>;
   // Host for the media list overlay (re-parented here while full screen)
   @ViewChild('fullscreenMediaListHost', { static: false }) fullscreenMediaListHost?: ElementRef<HTMLDivElement>;
-  // The bottom controls only exist while the video is visible (inside an
-  // @if block), so track them with a ViewChildren query instead of a plain
+  // The controls only exist while the video is visible (inside an @if
+  // block), so track them with ViewChildren queries instead of plain
   // ViewChild.
+  @ViewChildren('topControls') topControlsQuery?: QueryList<ElementRef<HTMLElement>>;
   @ViewChildren('bottomControls') bottomControlsQuery?: QueryList<ElementRef<HTMLElement>>;
 
   isPlaying = false;
@@ -70,12 +71,11 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   private subscriptions: Subscription[] = [];
   private m_controlsVisible = false;
   private deviceIsPaused = false;
-  private controlsResizeObserver: ResizeObserver | null = null;
-  private observedControlsElement: HTMLElement | null = null;
+  private bottomControlsState: { el: HTMLElement | null; observer: ResizeObserver | null } = { el: null, observer: null };
+  private topControlsState: { el: HTMLElement | null; observer: ResizeObserver | null } = { el: null, observer: null };
 
   constructor(
     private localSettingsService: LocalSettingsService,
-    private scriptStatusService: ScriptStatusService,
     private webSocketService: WebsocketService,
     private messageHandlerService: MessageHandlerService, 
     private videoService: VideoService,
@@ -124,40 +124,49 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     if (this.fullscreenMediaListHost) {
       this.mediaListOverlayService.registerFullscreenHost(this.fullscreenMediaListHost.nativeElement);
     }
-    // The bottom controls are created/destroyed with the video visibility,
-    // so watch the query for changes and observe whichever instance exists.
-    this.bottomControlsQuery?.changes.subscribe(() => this.observeBottomControls());
-    this.observeBottomControls();
+    // The controls are created/destroyed with the video visibility, so watch
+    // the queries for changes and observe whichever instance exists.
+    this.bottomControlsQuery?.changes.subscribe(() =>
+      this.trackControlsHeight(this.bottomControlsQuery, this.bottomControlsState, '--video-controls-height'));
+    this.topControlsQuery?.changes.subscribe(() =>
+      this.trackControlsHeight(this.topControlsQuery, this.topControlsState, '--video-top-controls-height'));
+    this.trackControlsHeight(this.bottomControlsQuery, this.bottomControlsState, '--video-controls-height');
+    this.trackControlsHeight(this.topControlsQuery, this.topControlsState, '--video-top-controls-height');
   }
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(s => s.unsubscribe());
     this.videoService.setVideoNode(null);
-    this.controlsResizeObserver?.disconnect();
-    this.controlsResizeObserver = null;
+    this.bottomControlsState.observer?.disconnect();
+    this.bottomControlsState.observer = null;
+    this.topControlsState.observer?.disconnect();
+    this.topControlsState.observer = null;
   }
 
-  // Exposes the bottom controls bar height as the --video-controls-height CSS
-  // variable on the video container. The media list overlay sits above the
-  // (full width) bottom controls on touch devices and uses the variable to
-  // offset itself by exactly the bar height, which varies with screen size
-  // as the control buttons wrap.
-  private observeBottomControls(): void {
-    const el = this.bottomControlsQuery?.first?.nativeElement ?? null;
-    if (el === this.observedControlsElement) {
+  // Exposes a controls bar height as a CSS variable on the video container.
+  // The media list overlay sits between the top and bottom controls on touch
+  // devices and uses the variables to offset itself by exactly the bar
+  // heights, which vary with screen size as the control buttons wrap.
+  private trackControlsHeight(
+    query: QueryList<ElementRef<HTMLElement>> | undefined,
+    state: { el: HTMLElement | null; observer: ResizeObserver | null },
+    cssVar: string
+  ): void {
+    const el = query?.first?.nativeElement ?? null;
+    if (el === state.el) {
       return;
     }
-    this.controlsResizeObserver?.disconnect();
-    this.controlsResizeObserver = null;
-    this.observedControlsElement = el;
+    state.observer?.disconnect();
+    state.observer = null;
+    state.el = el;
     if (el) {
-      this.controlsResizeObserver = new ResizeObserver(() => {
+      state.observer = new ResizeObserver(() => {
         const h = el.offsetHeight;
         if (h > 0) {
-          document.getElementById('video-container')?.style.setProperty('--video-controls-height', h + 'px');
+          document.getElementById('video-container')?.style.setProperty(cssVar, h + 'px');
         }
       });
-      this.controlsResizeObserver.observe(el);
+      state.observer.observe(el);
     }
   }
 
@@ -345,7 +354,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   hideControlsDebounce(): void {
-    this.videoService.hideControlsDebounce(this.scriptStatusOpen);
+    this.videoService.hideControlsDebounce();
   }
 
   isVideoFixedLowHeight(): boolean {
@@ -374,11 +383,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.altScriptsOpen = false;
   }
 
-  toggleScriptStatus(bottomControls?: HTMLElement): void {
-    // The bottom controls element is passed in from the template so the overlay is
-    // aligned with the video player's bottom controls, not the button clicked.
-    this.scriptStatusOpen = this.scriptStatusService.toggleScriptStatusVideo(bottomControls);
-    this.videoService.setForceControlsVisible(this.scriptStatusOpen);
+  // The script status panel is rendered in-flow inside the video container
+  // (see .script-status-panel) - it just toggles its visibility here.
+  toggleScriptStatus(): void {
+    this.scriptStatusOpen = !this.scriptStatusOpen;
   }
   
   getScriptPausedStatusImage() {

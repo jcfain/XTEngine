@@ -1,42 +1,67 @@
+/* Custom element hosts are inline by default - width on an inline element
+   is ignored, which broke the inner percentage widths (the model shrank to
+   its heading and the progress bars overflowed). Blockify the host so the
+   host width (50vw in the header, .script-status-panel in the video player)
+   resolves the width chain. */
+:host {
+    display: block;
+}
+
 .script-status-container {  
     padding: 4px;
     overflow-y: auto;    
     flex-basis: 100%;
+    /* Lets the container shrink and scroll when a host (the video player)
+       caps the panel's height. No effect in the header usage, where the
+       host is a plain block. */
+    min-height: 0;
 }
 .script-status-model {
-    width: 50vw;
     border-radius: 25px;
     /* position: absolute; */
     /* z-index: 10; */
     display: flex;
     background-color: #0000007a;
-    flex-flow: column;padding: 16px;
+    flex-flow: column;
+    gap: 4px;
+    padding: 8px;
     border: 1px solid aliceblue;
-    max-height: min(500px,calc(100vh - 200px));  left: 50%;
+    max-height: var(--script-status-max-height, min(500px,calc(100vh - 200px)));  left: 50%;
     /* transform: translate(-50%, 0); */
 }
 .script-status-div {
-    display: flex;
-    flex-flow: column;
+    position: relative;
 }
-.script-status-label {
-    font-size: 0.7rem;
+/* Div-based bar instead of <progress>: the UA stylesheet paints the
+   <progress> fill with a fixed blue that author CSS can't reliably
+   override, so the fill is a plain div sized/colored by bindings. */
+.script-status-track {
+    width: 100%;
+    height: 14px;
+    border-radius: 7px;
+    background-color: rgba(255, 255, 255, 0.25);
+    overflow: hidden;
 }
-.script-status-progress {  
-    height: 8px;
-    position: inherit;
-    margin: auto;
-    --scrollbar-background: #ccc;
+.script-status-fill {
+    height: 100%;
+    border-radius: 7px;
 }
-.script-status-progress::-moz-progress-bar {
-    /* Fallback */
-    background-color: #ccc;
-    /* Dynamic value */
-    background-color: var(--scrollbar-background);
+/* Name and value are overlaid on the bar - name on the left, value on the
+   opposite (right) side. Both use the channel color (bound in the template);
+   the black shadow keeps them readable over the fill. */
+.script-status-name,
+.script-status-value {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    line-height: 1;
+    pointer-events: none;
+    text-shadow: 0 0 2px #000, 0 0 2px #000;
 }
-.script-status-progress::-webkit-progress-value {
-    /* Fallback */
-    background-color: #ccc;
-    /* Dynamic value */
-    background-color: var(--scrollbar-background);
+.script-status-name {
+    left: 6px;
+}
+.script-status-value {
+    right: 6px;
 }

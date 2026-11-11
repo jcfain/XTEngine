@@ -24,12 +24,18 @@ import { Roles } from '../../models/enums';
       // and hides with the player controls. Can be turned off in the local
       // settings (see overlayActive).
       '[class.media-list-overlay]': 'overlayActive',
-      '[class.media-list-overlay-visible]': 'overlayActive && controlsVisible',
-      // Touch devices don't fire mouseenter/mouseleave, so the overlay
-      // keep-alive is driven by touch events (see onMediaListTouch*).
+      '[class.media-list-overlay-visible]': 'overlayActive && overlayVisible',
+      // Keep-alive for the full screen overlay: it stays visible while any of
+      // these is active - mouse over the list, a finger on it, or focus in
+      // one of its filter inputs (typing). Touch devices don't fire
+      // mouseenter/mouseleave, so the touch events cover them.
+      '(mouseenter)': 'onMediaListMouseEnter()',
+      '(mouseleave)': 'onMediaListMouseLeave()',
       '(touchstart)': 'onMediaListTouchStart()',
       '(touchend)': 'onMediaListTouchEnd()',
       '(touchcancel)': 'onMediaListTouchEnd()',
+      '(focusin)': 'onMediaListFocusIn()',
+      '(focusout)': 'onMediaListFocusOut($event)',
     }
 })
 export class MediaListComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
@@ -70,7 +76,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
   mediaLoadingStatus = "Loading...";
   // Drives the full screen overlay host classes (see host bindings)
   isFullScreen = false;
-  controlsVisible = false;
+  overlayVisible = false;
   // Local setting: when checked the media list never overlays the video in
   // full screen and stays in its normal position in the app body.
   private fullScreenMediaListDisabled = false;
@@ -89,6 +95,18 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
   private resizeObserver: ResizeObserver | null = null;
   private resizeDebounce: ReturnType<typeof setTimeout> | null = null;
   private windowResizeHandler: (() => void) | null = null;
+  // Single document-level listener that closes the (single) open context menu
+  // when the user clicks/taps outside of it. Lives here (one instance) rather
+  // than in each item so it doesn't fire N times per click.
+  private contextMenuClickHandler = (event: MouseEvent) => {
+    // Ignore clicks inside a context menu (its own rows handle those).
+    if ((event.target as HTMLElement).closest('.media-context-portal')) {
+      return;
+    }
+    if (this.mediaListService.hasOpenContextMenu()) {
+      this.mediaListService.closeContextMenu();
+    }
+  };
 
   constructor(
     private mediaService: MediaService,
@@ -105,9 +123,15 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
   ngOnInit(): void {
     this.videoService.isFullScreen$.subscribe(v => {
       this.isFullScreen = v;
+      // The list is re-parented into/out of the video container on full
+      // screen changes, which changes its width. The ResizeObserver can miss
+      // the move (re-parent + resize land in the same frame), so force a
+      // rebuild once the new layout has settled - reading clientWidth in
+      // buildRows() forces a synchronous layout, so the width is current.
+      setTimeout(() => this.buildRows(), 0);
     });
-    this.videoService.controlsVisible$.subscribe(v => {
-      this.controlsVisible = v;
+    this.videoService.mediaListOverlayVisible$.subscribe(v => {
+      this.overlayVisible = v;
     });
     this.localSettingsService.disableFullScreenMediaList$.subscribe(v => {
       this.fullScreenMediaListDisabled = v;
@@ -142,6 +166,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     this.localSettingsService.thumbSize$.subscribe(() => {
       this.setDimensions();
       this.buildRows();
+      this.updateOverlayWidth();
     });
   }
 
@@ -158,8 +183,14 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     // Fallback: the ResizeObserver on the cdk viewport can miss width-only
     // changes in some browsers; a window resize listener guarantees the grid
     // re-flows when the viewport width changes.
-    this.windowResizeHandler = () => this.scheduleRebuild();
+    this.windowResizeHandler = () => {
+      this.updateOverlayWidth();
+      this.scheduleRebuild();
+    };
     window.addEventListener('resize', this.windowResizeHandler);
+    // Close the context menu when clicking/tapping outside of it.
+    document.addEventListener('click', this.contextMenuClickHandler);
+    this.updateOverlayWidth();
     this.buildRows();
   }
 
@@ -185,6 +216,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
       window.removeEventListener('resize', this.windowResizeHandler);
       this.windowResizeHandler = null;
     }
+    document.removeEventListener('click', this.contextMenuClickHandler);
     if (this.resizeDebounce) {
       clearTimeout(this.resizeDebounce);
       this.resizeDebounce = null;
@@ -273,21 +305,57 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     this.videoService.playVideo(item);
   }
 
-  // While a finger is on the list the controls (and with them the overlay)
-  // stay visible; when it lifts the auto-hide countdown starts. Only applies
-  // while the overlay is active - in the normal layout (or when the overlay
-  // is disabled in the local settings) touching the list shouldn't drive the
-  // player controls.
-  onMediaListTouchStart(): void {
+  // Keep-alive state for the full screen overlay: the controls (and with
+  // them the overlay) stay visible while any of these is active.
+  private listMouseOver = false;
+  private listTouchActive = false;
+  private listFocused = false;
+
+  private updateListKeepAlive(): void {
+    const active = this.listMouseOver || this.listTouchActive || this.listFocused;
     if (this.overlayActive) {
-      this.videoService.setMediaListTouchActive(true);
+      this.videoService.setMediaListActive(active);
+    } else if (active) {
+      this.videoService.showControls();
+    } else {
+      this.videoService.hideControlsDebounce();
     }
   }
 
+  onMediaListMouseEnter(): void {
+    this.listMouseOver = true;
+    this.updateListKeepAlive();
+  }
+
+  onMediaListMouseLeave(): void {
+    this.listMouseOver = false;
+    this.updateListKeepAlive();
+  }
+
+  onMediaListTouchStart(): void {
+    this.listTouchActive = true;
+    this.updateListKeepAlive();
+  }
+
   onMediaListTouchEnd(): void {
-    if (this.overlayActive) {
-      this.videoService.setMediaListTouchActive(false);
+    this.listTouchActive = false;
+    this.updateListKeepAlive();
+  }
+
+  onMediaListFocusIn(): void {
+    this.listFocused = true;
+    this.updateListKeepAlive();
+  }
+
+  onMediaListFocusOut(event: FocusEvent): void {
+    // Focus moving to another element inside the list (e.g. from the tag
+    // filter input to the search box) keeps the overlay alive.
+    const related = event.relatedTarget as Node | null;
+    if (related && this.elementRef.nativeElement.contains(related)) {
+      return;
     }
+    this.listFocused = false;
+    this.updateListKeepAlive();
   }
 
   private scrollToItem(item: MediaItem) {
@@ -299,6 +367,22 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
 
   getThumbSize(): number {
     return this.mediaListService.thumbSize;
+  }
+
+  // Sizes the full screen overlay to whole columns of items at the current
+  // thumb size: it aims for the default panel width (25vw, 55vw on portrait
+  // touch devices) and snaps to the nearest column count so items are never
+  // clipped. Exposed to the CSS via --media-list-overlay-width.
+  private updateOverlayWidth(): void {
+    const itemSlot = this.widthInt + 10; // .media-item margin 5px each side
+    if (!itemSlot) {
+      return;
+    }
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
+    const portrait = window.matchMedia('(orientation: portrait)').matches;
+    const targetPx = (window.innerWidth * (coarse && portrait ? 55 : 25)) / 100;
+    const columns = Math.max(1, Math.round(targetPx / itemSlot));
+    this.elementRef.nativeElement.style.setProperty('--media-list-overlay-width', columns * itemSlot + 'px');
   }
 
   updateMetadata(item: MediaItem) {

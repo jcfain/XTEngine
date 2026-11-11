@@ -9,6 +9,7 @@ import { LazySrcDirective } from '../../directives/lazy-src';
 import { MediaListItemContextMenuComponent } from '../media-list-item-context-menu/media-list-item-context-menu.component';
 import { GenericOverlayService } from '../../services/overlay.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
+import { MediaListService } from '../../services/media-list-service';
 import { MediaItemPropertiesComponent } from '../media-item-properties/media-item-properties.component';
 import { Subscription } from 'rxjs';
 
@@ -79,7 +80,7 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
     return (this.width / 2) + "px";
   }
   get contextMenuHidden(): boolean {
-    return this.m_contextMenuHidden;
+    return !this.mediaListService.isContextMenuOpen(this.item.id);
   }
   get headerButtonPX() {
     return this.scaleDim(this.thumbSize, 1.03 * this.mediaItemHeaderIconMultiplier, 20) + "px";
@@ -115,7 +116,6 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
   private playingMediaItem: MediaItem | null = null;
   private mediaItemHeaderIconMultiplier = 0.15;
   private mediaItemHeaderMultiplier = 0.2;
-  private m_contextMenuHidden = true;
   private subscriptions = new Subscription();
 
   // private mediaItemHeaderMultiplier: number = 0.15;
@@ -124,7 +124,8 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
   constructor(
     private videoService: VideoService,
     private overlayService: GenericOverlayService,
-    private localSettingsService: LocalSettingsService
+    private localSettingsService: LocalSettingsService,
+    private mediaListService: MediaListService
   ) {
     this.subscriptions.add(
       this.videoService.playingMediaItem$.subscribe(v => {
@@ -142,7 +143,6 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
     if (changes['item'] && this.item) {
       this.altScripts = [];
       this.filterAltScripts(this.item);
-      this.m_contextMenuHidden = true;
       this.tags = this.item.metaData?.tags ? [...this.item.metaData.tags] : [];
       this.overflowCount = 0;
       this.tagsMeasurePasses = 0;
@@ -351,7 +351,11 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
 	};
 
   toggleContextMenu() {
-    this.m_contextMenuHidden = !this.m_contextMenuHidden;
+    if (this.mediaListService.isContextMenuOpen(this.item.id)) {
+      this.mediaListService.closeContextMenu();
+    } else {
+      this.mediaListService.openContextMenu(this.item.id);
+    }
   }
 
   // Opens the media properties dialog on the Tags tab for this item - the

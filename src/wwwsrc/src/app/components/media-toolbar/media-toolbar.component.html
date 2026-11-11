@@ -1,13 +1,7 @@
 <div class="media-toolbar">
-  <div class="tcode-actions-wrapper">
-    <button #tcodeActionsButton title="TCode actions" name="tcodeActionsButton" class="tcode-actions-button icon-button" (click)="tcodeActionsInputHidden = !tcodeActionsInputHidden">
-      <img class="buttonImage" src="://images/icons/tcode.svg" />
-    </button>
-
-    @if (!tcodeActionsInputHidden) {
-      <app-tcode-commands></app-tcode-commands>
-    }
-  </div>
+  <button #tcodeActionsButton title="TCode actions" name="tcodeActionsButton" class="tcode-actions-button icon-button" [class.button-down]="!tcodeActionsInputHidden" (click)="tcodeActionsInputHidden = !tcodeActionsInputHidden">
+    <img class="buttonImage" src="://images/icons/tcode.svg" />
+  </button>
   <button #shuffleButton id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button" [class.button-down]="randomMode" (click)="toggleShufflePlay()">
     <img class="buttonImage" src="://images/icons/shuffle.svg" />
   </button>
@@ -23,11 +17,9 @@
         <span class="filter-count-badge">{{ activeFilterCount }}</span>
       </button>
     }
-    <div class="tag-filter-wrapper">
-      <button #tagButton id="tagButton" title="Filter tags" class="tag-media-button icon-button" [class.button-down]="!tagInputHidden" (click)="tagInputHidden = !tagInputHidden">
-        <img class="buttonImage" src="://images/icons/tag.svg" />
-      </button>
-    </div>
+    <button #tagButton id="tagButton" title="Filter tags" class="tag-media-button icon-button" [class.button-down]="!tagInputHidden" (click)="tagInputHidden = !tagInputHidden">
+      <img class="buttonImage" src="://images/icons/tag.svg" />
+    </button>
     <div class="toolbar-search">
       <input id="filterInput" class="toolbar-search-input" placeholder="Search" [ngModel]="filterText" (ngModelChange)="onFilterChange($event)" />
       <button class="side-action-filter-clear-button icon-button icon-button--small" (click)="clearFilterText()">
@@ -35,9 +27,22 @@
       </button>
     </div>
   </div>
+</div>
 
-  @if (!tagInputHidden) {
-    <div id="tagFilterOptions" class="tag-filter-overlay">
+<!-- TCode commands drawer: in-flow panel under the toolbar row. Collapses to
+     zero height when hidden; expanding pushes the tag drawer and the media
+     list down. Full width of the media list, scrolls when its content is
+     tall. -->
+<div class="toolbar-drawer" [class.open]="!tcodeActionsInputHidden">
+  <div class="drawer-inner">
+    <app-tcode-commands></app-tcode-commands>
+  </div>
+</div>
+
+<!-- Tag filter drawer: sits under the TCode drawer when both are open -->
+<div class="toolbar-drawer" [class.open]="!tagInputHidden">
+  <div class="drawer-inner">
+    <div id="tagFilterOptions" class="tag-filter-content">
       <div class="tag-filter-header">
         <input type="text" class="tag-filter-search" placeholder="Filter tags..." [(ngModel)]="tagFilterText" />
         <div class="system-tag-checkbox">
@@ -58,7 +63,7 @@
         }
       </div>
     </div>
-  }
+  </div>
 </div>
 
 @if (!scriptInputHidden) {

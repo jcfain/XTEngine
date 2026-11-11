@@ -1,11 +1,13 @@
 <div class="script-status-container">
   <div class="script-status-model">
-    <h3>Script Status</h3>
-      <div [class.hidden]="!noScriptInput" style="align-self: center; flex-basis: 100%;">No script input</div>
+    <div [class.hidden]="!noScriptInput" style="align-self: center; flex-basis: 100%;">No script input</div>
     @for (ch of channels; track ch) {
       <div class="script-status-div" [class.hidden]="ch.hidden">
-        <label [style.color]="getChannelColor(ch.channel.channel)">{{ ch.channel.friendlyName }}: {{ ch.progressValue | number:'1.0-2' }}</label>
-        <progress [value]="ch.progressValue" min="0" max="100" [style.color]="getChannelColor(ch.channel.channel)"></progress>
+        <div class="script-status-track">
+          <div class="script-status-fill" [style.width]="ch.progressValue + '%'" [style.background-color]="getChannelColor(ch.channel.channel)"></div>
+        </div>
+        <label class="script-status-name" [style.color]="getChannelColor(ch.channel.channel)">{{ ch.channel.friendlyName }}</label>
+        <label class="script-status-value" [style.color]="getChannelColor(ch.channel.channel)">{{ ch.progressValue | number:'1.0-0' }}</label>
       </div>
     }
   </div>

@@ -35,7 +35,7 @@
 </div> -->
 
 @if (videoVisible) {
-<div id="top-controls" class="video-controls top-controls" [class.video-controls-visible]="controlsVisible" (touchstart)="showControls()">
+<div id="top-controls" #topControls class="video-controls top-controls" [class.video-controls-visible]="controlsVisible" (touchstart)="showControls()">
   <div class="left-controls left-controls--top">
     <div id="videoMediaName" class="video-media-name">{{mediaItem?.name}}</div>
   </div>
@@ -55,7 +55,7 @@
 <div id="bottom-controls" #bottomControls class="video-controls bottom-controls" [class.video-controls-visible]="controlsVisible" (touchstart)="showControls()">
   <div id="bottom-top-controls" class="bottom-top-controls">
     <div class="bottom-top-controls-buttons">
-      <button id="scriptStatusPlayerButton" class="video-control video-control-other" [class.button-down]="scriptStatusOpen" [class.disabled]="inputDeviceConnected" (click)="toggleScriptStatus(bottomControls)">
+      <button id="scriptStatusPlayerButton" class="video-control video-control-other" [class.button-down]="scriptStatusOpen" [class.disabled]="inputDeviceConnected" (click)="toggleScriptStatus()">
         <img class="player-button-icon" src="://images/icons/equalizer.svg" />
       </button>
       <button data-title="Skip to next action (a)" class="video-control video-control-other video-control--action-begin" [class.disabled]="inputDeviceConnected" id="next-action" (click)="onSkipToNextAction()">
@@ -146,6 +146,15 @@
     </div>
   </div>
 </div>
+
+<!-- Script status panel: pinned to the bottom of the video. It slides up
+     above the bottom controls while they are visible and back down to the
+     bottom edge when they auto-hide (see .script-status-panel). -->
+<app-script-status
+    class="script-status-panel"
+    [class.hidden]="!scriptStatusOpen"
+    [class.script-status-raised]="controlsVisible">
+</app-script-status>
 
 <!-- <div class="bottom-controls" class="video-controls" [class.hidden]="!controlsVisible">
 <div class="progress-bar-container">

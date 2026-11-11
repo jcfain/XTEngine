@@ -1,6 +1,5 @@
-<div click-stop-propagation
-  class="media-context"
-  [class.hidden]="hidden" >
+<div class="media-context" [class.hidden]="hidden">
+  <ng-template #menuTemplate>
   <div class="media-context-menu"
     [style.font-size]="fontSize">
     <div class="media-context-menu-item"
@@ -46,6 +45,7 @@
       Cancel
     </div>
   </div>
+  </ng-template>
 </div>
 
 <!-- @if (deleteAlert) {

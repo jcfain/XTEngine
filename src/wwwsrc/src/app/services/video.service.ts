@@ -26,7 +26,12 @@ export class VideoService {
 
   private controlsVisibleSubject = new BehaviorSubject<boolean>(false);
   controlsVisible$: Observable<boolean> = this.controlsVisibleSubject.asObservable();
-
+  // Visibility of the full screen media list overlay: follows the controls,
+  // except while a keep-alive source outside the list (e.g. the script
+  // status modal) is holding the controls visible - then the overlay
+  // auto-hides on its own (see updateMediaListOverlayVisible).
+  private mediaListOverlayVisibleSubject = new BehaviorSubject<boolean>(false);
+  mediaListOverlayVisible$: Observable<boolean> = this.mediaListOverlayVisibleSubject.asObservable();
   private videoVisibleSubject = new BehaviorSubject<boolean>(false);
   videoVisible$: Observable<boolean> = this.videoVisibleSubject.asObservable();
 
@@ -40,8 +45,13 @@ export class VideoService {
   // controlsVisibleDebounce$: Observable<boolean> = this.controlsVisibleDebounceSubject.asObservable();
 
   private videoNode: HTMLVideoElement | null = null;
-  private forceControlsVisible = false;
-  private mediaListHover = false;
+  // Number of active "keep controls visible" sources (script status modal,
+  // media list interaction, ...). The controls auto-hide only when the last
+  // source releases, so overlapping sources can't cancel each other out.
+  private keepAliveCount = 0;
+  // Whether the media list wants the controls kept alive (it ORs its hover /
+  // touch / focus event streams into a single call - see setMediaListActive).
+  private mediaListActive = false;
   // iOS Safari has no element full screen API - full screen is faked with
   // CSS (see enterFakeFullScreen) and tracked with this flag.
   private fakeFullScreen = false;
@@ -56,11 +66,13 @@ export class VideoService {
     this.controlsHideDebounceSubject.pipe(
       debounceTime(3000))
       .subscribe(() => {
-        // While the mouse is over the full screen media list overlay the
-        // controls (and with them the overlay) stay visible; the countdown
-        // restarts when the mouse leaves the list (see setMediaListHover).
-        if(!this.forceControlsVisible && !this.mediaListHover)
+        // While any keep-alive source is active (script status modal, media
+        // list hover/touch/focus) the controls (and with them the full screen
+        // media list overlay) stay visible; the countdown restarts when the
+        // last source releases.
+        if (this.keepAliveCount === 0)
           this.controlsVisibleSubject.next(false);
+        this.updateMediaListOverlayVisible();
       });
     // Time-sync: send at most once per second. This is driven by the
     // timeupdate event (via onPositionChange -> playingMediaItemPosition$),
@@ -328,78 +340,88 @@ export class VideoService {
     this.isFullScreenSubject.next(false);
   }
 
-  setForceControlsVisible(forceVisible: boolean): void {
-    this.forceControlsVisible = forceVisible;
+  /** One keep-alive source starts wanting the controls visible. */
+  assertControlsAlive(): void {
+    this.keepAliveCount++;
+    this.showControls();
+  }
+
+  /**
+   * One keep-alive source stops wanting the controls visible. The controls
+   * only (start to) hide when the last source releases.
+   */
+  releaseControlsKeepAlive(): void {
+    this.keepAliveCount = Math.max(0, this.keepAliveCount - 1);
+    if (this.keepAliveCount === 0) {
+      this.hideControlsDebounce();
+    }
+    this.updateMediaListOverlayVisible();
   }
 
   showControls(forceVisible = false): void {
-    if(forceVisible)
-      this.forceControlsVisible = true;
+    if (forceVisible) {
+      this.assertControlsAlive();
+    }
     if (!this.controlsVisibleSubject.value) {
       this.controlsVisibleSubject.next(true);
     }
     this.controlsHideDebounceSubject.next();
+    this.updateMediaListOverlayVisible();
   }
 
   hideControls(forceHide = false): void {
     if (forceHide) {
-      this.forceControlsVisible = false;
+      this.releaseControlsKeepAlive();
     }
-    if(this.forceControlsVisible) return;
+    if (this.keepAliveCount > 0) return;
     this.controlsVisibleSubject.next(false);
+    this.updateMediaListOverlayVisible();
   }
 
   hideControlsDebounce(forceHide = false): void {
     if (forceHide) {
-      this.forceControlsVisible = false;
+      this.releaseControlsKeepAlive();
     }
-    if(this.forceControlsVisible) return;
+    if (this.keepAliveCount > 0) return;
     this.controlsHideDebounceSubject.next();
   }
 
   /**
-   * Tracks whether the mouse is over the media list overlay (full screen).
-   * While hovering, the auto-hide countdown is ignored so the overlay stays
-   * visible; when the mouse leaves, the countdown starts so the overlay
-   * auto-hides with the controls.
+   * Media list keep-alive (full screen overlay): the component reports
+   * whether any of its hover / touch / focus event streams is active - mouse
+   * over the list, a finger on it, or focus in one of its filter inputs
+   * (typing). While active the controls (and with them the overlay) stay
+   * visible; when it releases the auto-hide countdown starts.
    */
-  setMediaListHover(hover: boolean): void {
-    if (this.mediaListHover === hover) {
+  setMediaListActive(active: boolean): void {
+    if (this.mediaListActive === active) {
       return;
     }
-    this.mediaListHover = hover;
-    if (!hover) {
-      this.hideControlsDebounce();
+    this.mediaListActive = active;
+    if (active) {
+      this.assertControlsAlive();
+    } else {
+      this.releaseControlsKeepAlive();
     }
+    this.updateMediaListOverlayVisible();
   }
 
   /**
-   * Touch-based keep-alive for the media list overlay. Touch devices don't
-   * fire mouseenter/mouseleave, so the hover flag is managed explicitly:
-   * while a finger is on the list the controls (and with them the overlay)
-   * stay visible; when the finger lifts the auto-hide countdown starts.
+   * The full screen media list overlay follows the controls, except while a
+   * keep-alive source outside the list (e.g. the script status modal) is
+   * holding the controls visible - then the overlay auto-hides on its own
+   * so it doesn't sit over the video while the user is in the modal.
    */
-  setMediaListTouchActive(active: boolean): void {
-    if (this.mediaListHover === active) {
-      return;
-    }
-    this.mediaListHover = active;
-    if (active) {
-      this.showControls();
-    } else {
-      this.hideControlsDebounce();
+  private updateMediaListOverlayVisible(): void {
+    const visible = this.controlsVisibleSubject.value
+        && (this.mediaListActive || this.keepAliveCount === 0);
+    if (this.mediaListOverlayVisibleSubject.value !== visible) {
+      this.mediaListOverlayVisibleSubject.next(visible);
     }
   }
 
-  // hideControlsEvent(): void {
-  //   if (this.forceControlsVisible || this.videoNode?.paused) {
-  //     return;
-  //   }
-  //   this.hideControls();
-  // }
-
   disableForceControlsVisible(): void {
-    this.forceControlsVisible = false;
+    this.releaseControlsKeepAlive();
   }
 
   onPlay(): void {

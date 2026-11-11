@@ -27,9 +27,7 @@
     <div class="app-body">
       <ng-container #mediaListHost>
         <app-media-list
-          (rendered)="mediaLoaded = true"
-          (mouseenter)="videoService.setMediaListHover(true)"
-          (mouseleave)="videoService.setMediaListHover(false)">
+          (rendered)="mediaLoaded = true">
         </app-media-list>
       </ng-container>
     </div>
