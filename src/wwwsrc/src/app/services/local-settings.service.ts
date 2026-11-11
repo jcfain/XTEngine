@@ -72,6 +72,11 @@ export class LocalSettingsService {
     private disableFullScreenMediaListSubject = new BehaviorSubject<boolean>(this.disableFullScreenMediaListDefault);
     disableFullScreenMediaList$: Observable<boolean> = this.disableFullScreenMediaListSubject.asObservable();
 
+    readonly disableHeatmapDefault = false;
+    private disableHeatmapKey = "disableHeatmap";
+    private disableHeatmapSubject = new BehaviorSubject<boolean>(this.disableHeatmapDefault);
+    disableHeatmap$: Observable<boolean> = this.disableHeatmapSubject.asObservable();
+
     readonly enableTextToSpeechDefault = true;
     private enableTextToSpeechKey = "enableTextToSpeech";
     private enableTextToSpeechSubject = new BehaviorSubject<boolean>(this.enableTextToSpeechDefault);
@@ -115,6 +120,7 @@ export class LocalSettingsService {
         this.selectedOuputDeviceSubject.next(this.getFromLocalStorage(this.selectedOuputDeviceKey, this.selectedOuputDeviceDefault));
         this.externalStreamingSubject.next(this.getFromLocalStorage(this.externalStreamingKey, this.externalStreamingDefault));
         this.disableBrowserLazyLoadSubject.next(this.getFromLocalStorage(this.disableBrowserLazyLoadKey, this.externalStreamingDefault));
+        this.disableHeatmapSubject.next(this.getFromLocalStorage(this.disableHeatmapKey, this.disableHeatmapDefault));
         this.enableTextToSpeechSubject.next(this.getFromLocalStorage(this.enableTextToSpeechKey, this.enableTextToSpeechDefault));
         this.selectedVoiceIndexSubject.next(this.getFromLocalStorage(this.selectedVoiceIndexKey, this.selectedVoiceIndexDefault));
         this.speechPitchSubject.next(this.getFromLocalStorage(this.speechPitchKey, this.speechPitchDefault));
@@ -212,6 +218,11 @@ export class LocalSettingsService {
     setDisableFullScreenMediaList(value: boolean): void {
         this.setToLocalStorage(this.disableFullScreenMediaListKey, value);
         this.disableFullScreenMediaListSubject.next(value);
+    }
+
+    setDisableHeatmap(value: boolean): void {
+        this.setToLocalStorage(this.disableHeatmapKey, value);
+        this.disableHeatmapSubject.next(value);
     }
 
     setEnableTextToSpeech(value: boolean): void {

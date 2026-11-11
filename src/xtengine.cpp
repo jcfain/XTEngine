@@ -113,6 +113,7 @@ void XTEngine::init()
         connect(_httpHandler, &HttpHandler::settingChange, qOverload<QString, QVariant>(SettingsHandler::changeSetting));
         connect(syncHandler(), &SyncHandler::channelPositionChange, _httpHandler, &HttpHandler::channelPositionChange);
         connect(syncHandler(), &SyncHandler::togglePaused, _httpHandler, &HttpHandler::scriptTogglePaused);
+        connect(m_heatmap, &HeatMap::svgGenerated, _httpHandler, &HttpHandler::heatmapGenerated);
         connect(_httpHandler, &HttpHandler::mediaAction, settingsActionHandler(), &SettingsActionHandler::media_action);
         connect(settingsActionHandler(), &SettingsActionHandler::actionExecuted, httpHandler(), &HttpHandler::actionExecuted);
         connect(_httpHandler, &HttpHandler::swapScript, _syncHandler, QOverload<const ScriptInfo&>::of(&SyncHandler::swap));
@@ -164,6 +165,17 @@ void XTEngine::init()
     connect(_connectionHandler, &ConnectionHandler::inputMessageReceived, this, [](InputConnectionPacket packet) {
         XMediaStateHandler::updateDuration(packet.path, packet.currentTime, packet.duration);
     });
+    connect(_connectionHandler, &ConnectionHandler::inputMessageReceived, this, [this](InputConnectionPacket packet) {
+        // The web heat map can be waiting on the media duration (the
+        // funscript loaded before the player reported it) - let the heat map
+        // know once a duration is available.
+        if(packet.duration > 0) {
+            auto playingItem = XMediaStateHandler::getPlaying();
+            if(playingItem && playingItem->duration == 0)
+                playingItem->duration = packet.duration;
+            m_heatmap->durationReported(packet.path, packet.duration);
+        }
+    });
     connect(_connectionHandler, &ConnectionHandler::action, _settingsActionHandler, &SettingsActionHandler::media_action);
     connect(_connectionHandler, &ConnectionHandler::inputConnectionChange, this, [this](ConnectionChangedSignal event) {
         auto selectedInputDevice = _connectionHandler->getSelectedInputConnection();
@@ -199,6 +211,23 @@ void XTEngine::init()
                 return;
             m_heatmap->getMaxHeatAsync(funscript->actions);
         }
+    });
+    connect(_syncHandler, &SyncHandler::funscriptLoaded, this, [this](QString funscriptPath) {
+        // Generate the funscript heat map SVG for the web client. The media
+        // duration can arrive after the funscript loads (the player reports
+        // it in sync packets) - requestSvg() holds the actions pending until
+        // the duration is known (see the inputMessageReceived connection).
+        auto funscript = _syncHandler->getFunscript();
+        if(!funscript) {
+            LogHandler::Debug("Heatmap: funscriptLoaded but no funscript loaded - skipping svg");
+            return;
+        }
+        auto playingItem = XMediaStateHandler::getPlaying();
+        QString mediaPath = playingItem ? playingItem->path : QString();
+        qint64 duration = playingItem ? (qint64)playingItem->duration : 0;
+        LogHandler::Debug(QString("Heatmap: funscriptLoaded - playing: %1, duration: %2, actions: %3")
+            .arg(mediaPath).arg(duration).arg(funscript->actions.size()));
+        m_heatmap->requestSvg(mediaPath, funscript->actions, duration);
     });
     connect(_syncHandler, &SyncHandler::funscriptSearchResult, this, &XTEngine::onFunscriptSearchResult);
 

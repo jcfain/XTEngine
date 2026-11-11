@@ -69,6 +69,7 @@ export class SettingsLocalTabComponent implements OnInit {
     externalStreaming = false;
     disableLazyLoad = false;
     disableFullScreenMediaList = false;
+    disableHeatmap = false;
     userAgentIsHereSphere = false;
 
     // Text to speech
@@ -97,6 +98,7 @@ export class SettingsLocalTabComponent implements OnInit {
         this.localSettings.externalStreaming$.subscribe(v => this.externalStreaming = v);
         this.localSettings.disableBrowserLazyLoad$.subscribe(v => this.disableLazyLoad = v);
         this.localSettings.disableFullScreenMediaList$.subscribe(v => this.disableFullScreenMediaList = v);
+        this.localSettings.disableHeatmap$.subscribe(v => this.disableHeatmap = v);
         this.userAgentIsHereSphere = this.appState.userAgentIsHereSphere;
 
         this.setupTextToSpeech();
@@ -155,6 +157,10 @@ export class SettingsLocalTabComponent implements OnInit {
 
     onDisableFullScreenMediaListChange(checked: boolean): void {
         this.localSettings.setDisableFullScreenMediaList(checked);
+    }
+
+    onDisableHeatmapChange(checked: boolean): void {
+        this.localSettings.setDisableHeatmap(checked);
     }
 
     // Text to speech methods

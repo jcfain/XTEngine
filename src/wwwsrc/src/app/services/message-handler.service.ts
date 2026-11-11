@@ -53,6 +53,11 @@ export class MessageHandlerService {
   private skipToNextActionSubject = new BehaviorSubject<number | null>(null);
   skipToNextAction$: Observable<number | null> = this.skipToNextActionSubject.asObservable();
 
+  // Colored SVG heat map of the current funscript, sent by the server when a
+  // funscript is loaded (see HeatMap::drawSvg).
+  private heatmapSubject = new BehaviorSubject<string | null>(null);
+  heatmap$: Observable<string | null> = this.heatmapSubject.asObservable();
+
   private channelProfileChangedSubject = new BehaviorSubject<string | null>(null);
   channelProfileChanged$: Observable<string | null> = this.channelProfileChangedSubject.asObservable();
 
@@ -247,6 +252,12 @@ export class MessageHandlerService {
           // this.videoService.skipToMoneyShot();
           this.skipToMoneyShotEvent.next();
           break;
+
+        case 'heatmap': {
+          const messageObj = data['message'];
+          this.heatmapSubject.next(messageObj?.['svg'] ?? null);
+          break;
+        }
 
         case 'logout':
           // Server expired our session (idle timeout, no "remember me"). Clear

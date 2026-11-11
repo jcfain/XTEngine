@@ -295,6 +295,14 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _webSocketHandler->sendScriptPaused(paused);
     });
 
+    connect(this, &HttpHandler::heatmapGenerated, this, [this](QString svg){
+        if(svg.isEmpty())
+            return;
+        QJsonObject obj;
+        obj["svg"] = svg;
+        _webSocketHandler->sendCommand("heatmap", obj);
+    });
+
     connect(this, &HttpHandler::actionExecuted, this, [this](QString action, QString spokenText, QVariant value){
         QJsonObject obj;
         obj["mediaAction"] = action;

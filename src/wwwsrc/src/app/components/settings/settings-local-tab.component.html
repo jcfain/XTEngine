@@ -11,6 +11,12 @@
         <input id="disableFullScreenMediaListCheckbox" type="checkbox"
             [ngModel]="disableFullScreenMediaList" (ngModelChange)="onDisableFullScreenMediaListChange($event)" />
     </div>
+    <div class="formElement">
+        <label title="If checked, the video player will show the normal progress bar instead of the funscript heatmap."
+            for="disableHeatmapCheckbox">Disable heatmap</label>
+        <input id="disableHeatmapCheckbox" type="checkbox"
+            [ngModel]="disableHeatmap" (ngModelChange)="onDisableHeatmapChange($event)" />
+    </div>
     @if (externalStreaming) {
         <div class="formElement local-tab-help">
             <label></label>

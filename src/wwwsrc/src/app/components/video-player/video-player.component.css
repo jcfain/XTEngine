@@ -358,6 +358,52 @@ progress::-webkit-progress-value {
     margin: 0;
 }
 
+/* Hidden (not display:none - the seek tooltip math reads its width) while
+   the heat map is covering the progress bar. */
+.seek-hidden {
+    visibility: hidden;
+}
+
+/* Funscript heat map: replaces the plain progress bar (see the
+   "Disable heatmap" local setting). The SVG scales to fill the bar and the
+   blue line marks the current playback position. It is a bit taller than
+   the plain bar so the lines are easy to see and click. */
+.heatmap {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 28px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    border-radius: 2px;
+    background: black;
+    overflow: hidden;
+}
+
+.heatmap svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.heatmap-progress-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    height: 28px;
+    transform: translateY(-50%);
+    width: 2px;
+    margin-left: -1px;
+    background: #00bfff;
+    box-shadow: 0 0 4px #00bfff;
+    pointer-events: none;
+}
+
+.heatmap:hover ~ .seek-tooltip {
+    display: block;
+}
+
 .seek:hover+.seek-tooltip {
     display: block;
 }

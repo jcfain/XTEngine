@@ -1,5 +1,6 @@
 #include "heatmap.h"
 #include <QtConcurrent/QtConcurrent>
+#include <QUrl>
 
 HeatMap::HeatMap(QObject *parent)
     : QObject{parent}
@@ -47,6 +48,154 @@ QPixmap HeatMap::drawPixmap(int width, int height, FunscriptHandler* data, qint6
 
     _painter.end();
     return pixmap;
+}
+
+void HeatMap::drawSvgAsync(QHash<qint64, int> actions, qint64 duration) {
+    QtConcurrent::run([this](QHash<qint64, int> actions, qint64 duration) {
+        QString svg = drawSvg(actions, duration);
+        if(svg.isEmpty()) {
+            LogHandler::Debug(QString("Heatmap: svg generation produced no output (actions: %1, duration: %2)")
+                .arg(actions.size()).arg(duration));
+        } else {
+            LogHandler::Debug(QString("Heatmap: svg generated (%1 actions, duration %2 ms, %3 chars)")
+                .arg(actions.size()).arg(duration).arg(svg.size()));
+            emit svgGenerated(svg);
+        }
+    }, actions, duration);
+}
+
+void HeatMap::requestSvg(QString mediaPath, QHash<qint64, int> actions, qint64 duration) {
+    LogHandler::Debug(QString("Heatmap: requestSvg path: %1, actions: %2, duration: %3")
+        .arg(mediaPath).arg(actions.size()).arg(duration));
+    if(actions.isEmpty()) {
+        LogHandler::Debug("Heatmap: requestSvg with no actions - nothing to draw");
+        return;
+    }
+    if(duration > 0) {
+        drawSvgAsync(actions, duration);
+        return;
+    }
+    // The media duration has not been reported yet - hold the actions until
+    // durationReported() is called with the real length. The funscript's own
+    // length is NOT used as a fallback since it does not always match the
+    // video duration.
+    m_pendingMediaPath = mediaPath;
+    m_pendingActions = actions;
+}
+
+// The client's posted path and the library item path can differ (percent
+// encoding, prefix), so only compare the file name when deciding if a
+// reported duration belongs to the pending media.
+static QString heatMapBaseName(QString path) {
+    QString decoded = QUrl::fromPercentEncoding(path.toUtf8());
+    int idx = decoded.lastIndexOf('/');
+    return idx >= 0 ? decoded.mid(idx + 1) : decoded;
+}
+
+void HeatMap::durationReported(QString mediaPath, qint64 duration) {
+    if(m_pendingActions.isEmpty() || duration <= 0)
+        return;
+    if(!m_pendingMediaPath.isEmpty() && heatMapBaseName(m_pendingMediaPath) != heatMapBaseName(mediaPath)) {
+        // The media changed while waiting - the pending actions are stale.
+        LogHandler::Debug(QString("Heatmap: durationReported path mismatch - pending: %1, reported: %2 (discarding)")
+            .arg(m_pendingMediaPath, mediaPath));
+        m_pendingMediaPath.clear();
+        m_pendingActions.clear();
+        return;
+    }
+    LogHandler::Debug(QString("Heatmap: durationReported flushed pending svg (duration: %1)").arg(duration));
+    drawSvgAsync(m_pendingActions, duration);
+    m_pendingMediaPath.clear();
+    m_pendingActions.clear();
+}
+
+// Generates a scalable, colored SVG of the funscript heat map. The line
+// colors match the pixmap version (see paint()). The fixed viewBox keeps the
+// SVG small while letting the client scale it to any size.
+QString HeatMap::drawSvg(QHash<qint64, int> actions, qint64 duration) {
+    if(duration <= 0) {
+        LogHandler::Debug("Heatmap svg duration 0!");
+        return QString();
+    }
+
+    QMap<qint64, int> sortedActions;
+    sortHash(actions, &sortedActions);
+
+    if(sortedActions.empty()) {
+        LogHandler::Debug("Heatmap svg called without funscript!");
+        return QString();
+    }
+
+    const int width = 1000;
+    const int height = 40;
+    // Inset the drawing area so lines at pos 0/100 (and the first/last
+    // action) are not clipped at the SVG viewport edges.
+    const int xPadding = 1;
+    const int yPadding = 4;
+
+    // One path per color keeps the SVG compact.
+    QString darkRedPath;
+    QString redPath;
+    QString orangePath;
+    QString yellowPath;
+    QString greenPath;
+
+    auto atList = sortedActions.keys();
+    auto posList = sortedActions.values();
+    for(int i = 0; i < posList.count(); i ++)
+    {
+        if(i + 1 < posList.count())
+        {
+            if(atList[i] > duration)
+                continue;
+            // Match the pixmap orientation (paint()): position 0 at the
+            // bottom, position 100 at the top.
+            double y1 = XMath::mapRange(posList[i], 0, 100, height - yPadding, yPadding);
+            double x1 = XMath::mapRange(atList[i], (qint64)0, (qint64)duration, (qint64)xPadding, (qint64)(width - xPadding));
+            double y2 = XMath::mapRange(posList[i + 1], 0, 100, height - yPadding, yPadding);
+            double x2 = XMath::mapRange(atList[i + 1], (qint64)0, (qint64)duration, (qint64)xPadding, (qint64)(width - xPadding));
+            float velocity = XMath::calculateSpeed(atList[i], posList[i], atList[i + 1], posList[i + 1]);
+
+            QString segment = QString("M%1 %2 L%3 %4 ")
+                .arg(x1, 0, 'f', 2).arg(y1, 0, 'f', 2)
+                .arg(x2, 0, 'f', 2).arg(y2, 0, 'f', 2);
+
+            if(velocity > 45) {
+                darkRedPath += segment;
+            } else if(velocity > 35) {
+                redPath += segment;
+            } else if(velocity > 25) {
+                orangePath += segment;
+            } else if(velocity > 15) {
+                yellowPath += segment;
+            } else {
+                greenPath += segment;
+            }
+        }
+    }
+
+    QString svg = QString(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 %1 %2\" preserveAspectRatio=\"none\">"
+        "<rect x=\"0\" y=\"0\" width=\"%1\" height=\"%2\" fill=\"black\"/>")
+        .arg(width).arg(height);
+
+    auto appendPath = [&svg](const QString& path, const QString& color) {
+        if(!path.isEmpty()) {
+            // vector-effect keeps the stroke at 1 screen pixel even though
+            // preserveAspectRatio="none" stretches the viewBox non-uniformly
+            // (without it the lines get crushed to sub-pixel and vanish).
+            svg += QString("<path d=\"%1\" stroke=\"%2\" stroke-width=\"1\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"miter\" vector-effect=\"non-scaling-stroke\"/>")
+                .arg(path.trimmed()).arg(color);
+        }
+    };
+    appendPath(greenPath, "#00FF00");
+    appendPath(yellowPath, "#FFFF00");
+    appendPath(orangePath, "#FFA500");
+    appendPath(redPath, "#FF0000");
+    appendPath(darkRedPath, "#8B0000");
+
+    svg += "</svg>";
+    return svg;
 }
 
 void HeatMap::paint(QPainter* painter, int width, int height, qint64 duration, QMap<qint64, int> actions, int startPoint) {

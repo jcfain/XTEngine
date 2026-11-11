@@ -76,7 +76,11 @@
   </div>
   <div class="video-progress video-control">
     <progress id="progress-bar" min="0" [max]="durationSecs" [value]="progress" ></progress>
-    <input #progressInput class="seek" id="seek" min="0" [max]="durationSecs" type="range" step="0.01" [(ngModel)]="progress" (mousemove)="updateSeekTooltip($event)">
+    @if (showHeatmap) {
+      <div class="heatmap" [innerHTML]="heatmapSvgSafe" (click)="onHeatmapClick($event)" (mousemove)="updateSeekTooltip($event)"></div>
+      <div #heatmapLine class="heatmap-progress-line"></div>
+    }
+    <input #progressInput class="seek" [class.seek-hidden]="showHeatmap" id="seek" min="0" [max]="durationSecs" type="range" step="0.01" [(ngModel)]="progress" (mousemove)="updateSeekTooltip($event)">
     <div #progressTooltip class="seek-tooltip" id="seek-tooltip">{{ progressTooltipText }}</div>
   </div>
 

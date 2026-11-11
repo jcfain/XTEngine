@@ -14,12 +14,21 @@ class XTENGINE_EXPORT HeatMap : public QObject
 signals:
     void imageGenerated(QPixmap image);
     void maxHeat(qint64 at);
+    void svgGenerated(QString svg);
 
 public:
     explicit HeatMap(QObject *parent = nullptr);
 
     void drawPixmapAsync(int width, int height, FunscriptHandler* data, qint64 duration);
     QPixmap drawPixmap(int width, int height, FunscriptHandler* data, qint64 duration);
+    void drawSvgAsync(QHash<qint64, int> actions, qint64 duration);
+    QString drawSvg(QHash<qint64, int> actions, qint64 duration);
+    // Generates the SVG for the given funscript, or holds the actions
+    // pending if the media duration is not known yet (the player can report
+    // it after the funscript loads). durationReported() flushes the pending
+    // generation once the real duration arrives.
+    void requestSvg(QString mediaPath, QHash<qint64, int> actions, qint64 duration);
+    void durationReported(QString mediaPath, qint64 duration);
     void getMaxHeatAsync(QHash<qint64, int> actions);
     qint64 getMaxHeat(QHash<qint64, int> actions);
     void paint(QPainter *painter, int width, int height, qint64 duration, QMap<qint64, int> actions, int startPoint = 0);
@@ -54,6 +63,11 @@ private:
     QPen m_orangePen = QPen(QColor(255,165,0), 1, Qt::SolidLine, Qt::RoundCap, Qt::MiterJoin);
 
     void sortHash(QHash<qint64, int> actions, QMap<qint64, int>* sortedMap);
+
+    // Pending heat map generation, waiting on the media duration (see
+    // requestSvg / durationReported).
+    QString m_pendingMediaPath;
+    QHash<qint64, int> m_pendingActions;
 
     float calculateVelocity(qint64 timeStart, int posStart, qint64 timeEnd, int posEnd);
 };
