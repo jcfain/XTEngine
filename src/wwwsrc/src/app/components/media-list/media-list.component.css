@@ -142,3 +142,16 @@
         bottom: var(--video-controls-height, 96px);
     }
 }
+
+.media-list-status {  
+  background-color: transparent;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1;
+}
+
+.media-list-status-text {  
+  font-size: 1.3em;
+}

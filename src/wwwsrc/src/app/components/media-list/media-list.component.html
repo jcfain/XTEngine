@@ -1,10 +1,10 @@
 <div class="media-list-container">
   <app-media-toolbar></app-media-toolbar>
   @if (noMedia()) {
-    <div id="noMedia" class="media-list-status" style="text-align: center;">No media found</div>
+    <div id="noMedia" class="media-list-status"><span class="media-list-status-text">No media found</span></div>
   }
   @if (mediaLoading) {
-    <div class="media-list-status" >
+    <div class="loading-spinner-container" >
       <div class="loading-spinner"></div>
       <div style="padding-top: 10px;">{{mediaLoadingStatus}}</div>
     </div>

@@ -1,7 +1,7 @@
 
 /* Overlay so it doesn't take flex space - the virtual viewport must keep
    its full height (and start loading thumbs) while the spinner is shown */
-.media-list-status {
+.loading-spinner-container {
     position: absolute;
     top: 0;
     left: 0;
