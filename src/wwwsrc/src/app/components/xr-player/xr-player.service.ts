@@ -26,6 +26,18 @@ import {
 } from './xr-panels';
 import { XrSettingsService, XrPanelLayout } from './xr-settings.service';
 
+// DeoVR-style projection detected from the file name (case-insensitive, any
+// order). Equirectangular (180/360) and fisheye (180/190/200/220) are the
+// supported meshes; "flat" is a regular 2D plane.
+type VideoProjection =
+    | 'flat'
+    | 'equirect180'
+    | 'equirect360'
+    | 'fisheye180'
+    | 'fisheye190'
+    | 'fisheye200'
+    | 'fisheye220';
+
 interface InteractiveTarget {
     object: THREE.Object3D;
     button?: Button3D;
@@ -80,6 +92,9 @@ export class XrPlayerService implements OnDestroy {
     // updateLaserVisibility). They are hidden when no panel is open to reduce
     // clutter, and reappear on trigger press / while a panel is open.
     private laserLines: THREE.Line[] = [];
+    // Cursor dots at the end of each laser. Faded in/out together with the
+    // laser lines (see updateLaserVisibility) so they hide when the lasers do.
+    private laserDots: THREE.Mesh[] = [];
     // performance.now() of the last trigger press. The lasers stay lit for a
     // short window after a trigger even when no panel is open, so the user can
     // point at whatever is on screen, then fade out again.
@@ -147,8 +162,15 @@ export class XrPlayerService implements OnDestroy {
     // Stereo mode parsed from the file name (DeoVR convention). Stereo
     // videos render true 3D: one texture per eye, swapped per eye pass.
     private videoStereo: 'sbs' | 'tb' | null = null;
-    // Projection mode of the current video (drives the copy-loop layout).
-    private videoMode: 'flat' | '180' | '360' = 'flat';
+    // Projection mode of the current video (drives the copy-loop layout and
+    // which material/mesh is shown).
+    private videoMode: VideoProjection = 'flat';
+    // Shader material that maps a pre-lens-corrected equidistant fisheye frame
+    // onto the sphere (DeoVR _fisheye / _fisheye190 / _mkx200 / _vrca220).
+    private videoFisheyeMaterial: THREE.ShaderMaterial | null = null;
+    // The sphere's base material (equirect 180/360). Kept separately so it can
+    // be swapped out for the fisheye shader and back again.
+    private videoSphereMaterial: THREE.MeshBasicMaterial | null = null;
     private videoLeftCanvas: HTMLCanvasElement | null = null;
     private videoLeftTexture: THREE.CanvasTexture | null = null;
     private videoRightCanvas: HTMLCanvasElement | null = null;
@@ -271,6 +293,7 @@ export class XrPlayerService implements OnDestroy {
         this.panels = [];
         this.controllers = [];
         this.laserLines = [];
+        this.laserDots = [];
         this.hovered = [null, null];
         this.grabbing = null;
         this.draggingSlider = null;
@@ -281,6 +304,7 @@ export class XrPlayerService implements OnDestroy {
         this.mainPanel = null;
         this.videoScreen = null;
         this.videoSphere = null;
+        this.videoFisheyeMaterial = null;
         this.videoFrame = null;
         this.audio = null;
         this.videoTexture = null;
@@ -464,12 +488,15 @@ export class XrPlayerService implements OnDestroy {
             }
         });
 
-        // Video screen (regular media)
+        // Video screen (regular media). Placed BEHIND the panel arc (radius
+        // 5.0) so the wide 2D plane never sits in front of and occludes the
+        // control panel / other panels. Pulled closer to 4.5m so the 2D video
+        // feels nearer; the help panel sits just in front of it (radius 4.2).
         const screen = new THREE.Mesh(
             new THREE.PlaneGeometry(4.2, 2.36),
             new THREE.MeshBasicMaterial({ color: 0x000000 })
         );
-        screen.position.set(0, 1.6, -3.5);
+        screen.position.set(0, 1.6, -4.5);
         screen.visible = false;
         this.videoScreen = screen;
         this.worldRoot.add(screen);
@@ -513,18 +540,72 @@ export class XrPlayerService implements OnDestroy {
             new THREE.PlaneGeometry(4.35, 2.5),
             new THREE.MeshBasicMaterial({ color: 0x05070d })
         );
-        frame.position.set(0, 1.6, -3.51);
+        frame.position.set(0, 1.6, -4.51);
         frame.visible = false;
         this.videoFrame = frame;
         this.worldRoot.add(frame);
 
-        // 360 sphere (equirectangular media tagged "360")
+        // Sphere for equirect (180/360) and fisheye media. The equirect path
+        // uses a basic material; the fisheye path swaps in a shader material
+        // (see setupVideoMeshes).
+        this.videoSphereMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide });
         const sphere = new THREE.Mesh(
             new THREE.SphereGeometry(12, 60, 40),
-            new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide })
+            this.videoSphereMaterial
         );
         sphere.visible = false;
         this.videoSphere = sphere;
+        // Fisheye shader (equidistant fisheye -> equirectangular). DeoVR fisheye
+        // files are pre-lens-corrected to a clean equidistant fisheye in
+        // post-production, so the player only needs the standard equidistant
+        // mapping with the FOV from the file-name flag (uThetaMax).
+        this.videoFisheyeMaterial = new THREE.ShaderMaterial({
+            side: THREE.BackSide,
+            uniforms: {
+                'uMap': { value: this.videoTexture },
+                'uThetaMax': { value: 90 * Math.PI / 180 }
+            },
+            vertexShader: `
+                varying vec3 vDir;
+                void main() {
+                    // Local position on the unit sphere = the view direction in
+                    // the sphere's own space (so the image rotates with the
+                    // skybox when it is pitched/yawed/rolled).
+                    vDir = normalize(position);
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D uMap;
+                uniform float uThetaMax;
+                varying vec3 vDir;
+                // sRGB encode: the texture is uploaded as sRGB (decoded to
+                // linear on sample) and a ShaderMaterial does NOT get three.js'
+                // output-colorspace chunk, so encode back to sRGB ourselves.
+                vec3 srgbEncode(vec3 c) {
+                    vec3 lo = c * 12.92;
+                    vec3 hi = 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055;
+                    return mix(lo, hi, step(0.0031308, c));
+                }
+                void main() {
+                    vec3 d = normalize(vDir);
+                    // Optical axis points -z (straight ahead of the user).
+                    float theta = acos(clamp(-d.z, -1.0, 1.0));
+                    if (theta > uThetaMax) {
+                        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                        return;
+                    }
+                    // Equidistant fisheye: radial distance proportional to the
+                    // angle from the optical axis, normalized to 1 at the edge.
+                    float r = theta / uThetaMax;
+                    float phi = atan(d.x, d.y);
+                    float nx = r * sin(phi);
+                    float ny = r * cos(phi);
+                    vec2 uv = vec2(0.5 + nx * 0.5, 0.5 + ny * 0.5);
+                    gl_FragColor = vec4(srgbEncode(texture2D(uMap, uv).rgb), 1.0);
+                }
+            `
+        });
         // Grabbable: squeeze the skybox and drag up/down to tilt it on pitch.
         sphere.userData['skybox'] = sphere;
         // True stereo: onBeforeRender fires once per eye pass with that
@@ -534,8 +615,13 @@ export class XrPlayerService implements OnDestroy {
             const xrCam = this.renderer?.xr.getCamera();
             if (!xrCam) return;
             const isLeft = xrCam.cameras.length > 0 && camera === xrCam.cameras[0];
-            (sphere.material as THREE.MeshBasicMaterial).map =
-                isLeft ? this.videoLeftTexture : this.videoRightTexture;
+            const tex = isLeft ? this.videoLeftTexture : this.videoRightTexture;
+            const mat = sphere.material;
+            if (mat instanceof THREE.ShaderMaterial) {
+                mat.uniforms['uMap'].value = tex;
+            } else if (mat instanceof THREE.MeshBasicMaterial) {
+                mat.map = tex;
+            }
         };
         this.worldRoot.add(sphere);
 
@@ -569,7 +655,10 @@ export class XrPlayerService implements OnDestroy {
         // the skybox). The left-to-right order is preserved from the previous
         // layout: TCode, Media, Controls, Help, Settings, Script, Profiles.
         // The wide arc keeps the (wide) panels from overlapping each other.
-        this.placeOnArc(this.mainPanel, -25, 5.0, 1.5);
+        // The controls panel is pulled closer (radius 4.0) and lowered (y 1.3)
+        // so it sits "under" / in front of the media wall as the primary
+        // interaction surface.
+        this.placeOnArc(this.mainPanel, -25, 4.0, 1.3);
         // Hidden until button 4 is pressed (no auto-show, no idle timeout).
         this.mainPanel.visible = false;
         this.worldRoot.add(this.mainPanel);
@@ -622,8 +711,10 @@ export class XrPlayerService implements OnDestroy {
 
         // Help panel: the controller instructions. Hidden by default; open it
         // from the control panel's Help toggle, closed with its Close button.
+        // Placed at radius 4.2 (z=-4.2) so it sits slightly IN FRONT of the 2D
+        // video screen (z=-4.5) and is never hidden behind it.
         this.helpPanel = new HelpPanel(() => this.closeHelp());
-        this.placeOnArc(this.helpPanel, 0, 5.0, 1.5);
+        this.placeOnArc(this.helpPanel, 0, 4.2, 1.5);
         this.helpPanel.visible = false;
         this.worldRoot.add(this.helpPanel);
         this.panels.push(this.helpPanel);
@@ -891,26 +982,30 @@ export class XrPlayerService implements OnDestroy {
         });
 
         // DeoVR-style flags in the file name pick the projection
-        // (case-insensitive, any order): _180 / _360 select equirect
-        // sphere video. A stereo flag (SBS/LR/3DH or TB/3DV/OverUnder)
-        // crops one eye for mono display. The "360" tag is a fallback.
+        // (case-insensitive, any order): equirect (_180/_360) and fisheye
+        // (_fisheye/_fisheye190/_mkx200/_vrca220) select a sphere mesh; a
+        // stereo flag (SBS/LR/3DH or TB/3DV/OverUnder) crops one eye per
+        // texture. The "360" tag is a fallback.
         const flags = this.parseVideoFlags(item.name + ' ' + (item.relativePath || ''));
-        const mode: 'flat' | '180' | '360' =
-            flags.fov ?? (item.metaData?.tags?.includes('360') === true ? '360' : 'flat');
+        const mode: VideoProjection =
+            flags.projection ??
+            (item.metaData?.tags?.includes('360') === true ? 'equirect360' : 'flat');
         this.videoStereo = flags.stereo;
 
-        // Map the texture(s) for the projection. Sphere UVs: u=0 is -x,
-        // u=0.25 is +z (behind), u=0.5 is +x, u=0.75 is -z (in front).
-        // The shader samples texture at (uv * repeat + offset), so:
-        // Stereo: the per-eye textures are SEPARATE objects and need the
-        // same transform as the mono one.
+        // Map the texture(s) for the projection.
+        //  - equirect360: full equirect; the texture transform (repeat/offset)
+        //    orients the image so its center faces the user (-z).
+        //  - equirect180 / fisheye / flat: identity mapping. The 180 layout
+        //    (black back hemisphere, letterboxed band) is baked into the canvas
+        //    by the copy loop; the fisheye mapping is done in the shader.
         this.videoMode = mode;
+        const isEquirect360 = mode === 'equirect360';
         const texs = this.videoStereo
             ? [this.videoTexture, this.videoLeftTexture, this.videoRightTexture]
             : [this.videoTexture];
         for (const tex of texs) {
             if (!tex) continue;
-            if (mode === '360') {
+            if (isEquirect360) {
                 // Full equirect: image center faces the user (-z), image
                 // left of center on the viewer's left.
                 tex.wrapS = THREE.RepeatWrapping;
@@ -918,9 +1013,6 @@ export class XrPlayerService implements OnDestroy {
                 tex.repeat.set(-1, 1);
                 tex.offset.set(1.25, 0);
             } else {
-                // Flat and 180: identity mapping - the 180 layout (black
-                // back hemisphere, letterboxed band) is baked into the
-                // canvas by the copy loop.
                 tex.wrapS = THREE.ClampToEdgeWrapping;
                 tex.wrapT = THREE.ClampToEdgeWrapping;
                 tex.repeat.set(1, 1);
@@ -929,6 +1021,12 @@ export class XrPlayerService implements OnDestroy {
             // Anisotropic filtering keeps the sphere sharp at oblique angles.
             tex.anisotropy = this.renderer?.capabilities.getMaxAnisotropy() ?? 1;
             tex.needsUpdate = true;
+        }
+
+        // Set the fisheye shader's max half-FOV for this projection (the
+        // material is shared, so update its uniform each time we start a video).
+        if (this.videoFisheyeMaterial) {
+            this.videoFisheyeMaterial.uniforms['uThetaMax'].value = this.fisheyeThetaMax(mode);
         }
 
         // Defer showing the mesh until the video's dimensions are known so
@@ -947,23 +1045,70 @@ export class XrPlayerService implements OnDestroy {
         }
 
         this.startStateTimer();
-        this.setStatus(`Playing: ${item.name} [${mode === 'flat' ? '2D' : mode + ' sphere'}]` +
+        this.setStatus(`Playing: ${item.name} [${this.projectionLabel(mode)}]` +
             (flags.stereo ? ` (stereo ${flags.stereo.toUpperCase()} 3D)` : ''));
     }
 
-    // Parse DeoVR-style projection/stereo flags from a file name. Flags are
-    // case-insensitive and may appear in any order, e.g.
-    // "My_video_SBS_alpha_mkx200.mp4". The number flags match 180/360 as
-    // standalone tokens (any separator, not part of a longer number).
-    private parseVideoFlags(name: string): { fov: '180' | '360' | null; stereo: 'sbs' | 'tb' | null } {
+    // Parse DeoVR-style projection/stereo/alpha flags from a file name. Flags
+    // are case-insensitive and may appear in any order, e.g.
+    // "My_video_SBS_alpha_mkx200.mp4".
+    //
+    // Projection (first match wins, most specific first):
+    //   _vrca220 / _mkx220  -> fisheye 220
+    //   _mkx200             -> fisheye 200
+    //   _fisheye190         -> fisheye 190 (Canon VR lens)
+    //   _fisheye            -> fisheye 180
+    //   _180                -> equirectangular 180
+    //   _360                -> equirectangular 360
+    // The number flags match 180/360 as standalone tokens (any separator, not
+    // part of a longer number). The fisheye word flags are matched BEFORE the
+    // bare number flags so "fisheye190" is not mistaken for an equirect.
+    private parseVideoFlags(name: string):
+        { projection: VideoProjection | null; stereo: 'sbs' | 'tb' | null; alpha: boolean } {
         const n = name.toLowerCase();
-        let fov: '180' | '360' | null = null;
-        if (/(^|[^a-z0-9])180(?![0-9])/.test(n)) fov = '180';
-        else if (/(^|[^a-z0-9])360(?![0-9])/.test(n)) fov = '360';
+        let projection: VideoProjection | null = null;
+        // The fisheye word flags use a look-ahead (?![0-9]) on the RIGHT so a
+        // stereo suffix glued on (e.g. "mkx200tb", "fisheye190sbs") still
+        // matches - the old ([^a-z0-9]|$) boundary rejected the letter and the
+        // file fell back to flat/2D. The left boundary keeps "smkx200" out.
+        if (/(^|[^a-z0-9])(vrca220|mkx220)(?![0-9])/.test(n)) projection = 'fisheye220';
+        else if (/(^|[^a-z0-9])mkx200(?![0-9])/.test(n)) projection = 'fisheye200';
+        else if (/(^|[^a-z0-9])fisheye190(?![0-9])/.test(n)) projection = 'fisheye190';
+        else if (/(^|[^a-z0-9])fisheye(?![0-9])/.test(n)) projection = 'fisheye180';
+        else if (/(^|[^a-z0-9])180(?![0-9])/.test(n)) projection = 'equirect180';
+        else if (/(^|[^a-z0-9])360(?![0-9])/.test(n)) projection = 'equirect360';
         let stereo: 'sbs' | 'tb' | null = null;
         if (/(^|[^a-z0-9])(l-r|lr|3dh|sbs)([^a-z]|$)/.test(n)) stereo = 'sbs';
         else if (/(^|[^a-z0-9])(tb|3dv|overunder)([^a-z]|$)/.test(n)) stereo = 'tb';
-        return { fov, stereo };
+        const alpha = /(^|[^a-z0-9])alpha([^a-z0-9]|$)/.test(n);
+        return { projection, stereo, alpha };
+    }
+
+    // Max half-field-of-view (radians) for a fisheye projection, used by the
+    // equidistant fisheye shader. 180 -> 90°, 190 -> 95°, 200 -> 100°,
+    // 220 -> 110°.
+    private fisheyeThetaMax(mode: VideoProjection): number {
+        switch (mode) {
+            case 'fisheye190': return 95 * Math.PI / 180;
+            case 'fisheye200': return 100 * Math.PI / 180;
+            case 'fisheye220': return 110 * Math.PI / 180;
+            case 'fisheye180':
+            default: return 90 * Math.PI / 180;
+        }
+    }
+
+    // Human-readable label for the status line.
+    private projectionLabel(mode: VideoProjection): string {
+        switch (mode) {
+            case 'flat': return '2D';
+            case 'equirect180': return '180 equirect';
+            case 'equirect360': return '360 equirect';
+            case 'fisheye180': return '180 fisheye';
+            case 'fisheye190': return '190 fisheye';
+            case 'fisheye200': return '200 fisheye';
+            case 'fisheye220': return '220 fisheye';
+            default: return mode;
+        }
     }
 
     // Target copy-canvas size for the current video at NATIVE resolution
@@ -978,13 +1123,25 @@ export class XrPlayerService implements OnDestroy {
         const MAXW = 4096, MAXH = 2048;
         const st = this.videoStereo;
         let w: number, h: number;
-        if (this.videoMode === '360') {
+        const isFisheye = this.videoMode.startsWith('fisheye');
+        if (this.videoMode === 'equirect360' || isFisheye) {
+            // 360 equirect: the full frame IS the equirect. Fisheye: each eye
+            // is a square (SBS frame 2:1, TB frame 1:2, mono 1:1) - the same
+            // per-eye crop as 360, so it shares this branch.
             if (isEye) {
                 if (st === 'sbs') { w = vw / 2; h = vh; }
                 else if (st === 'tb') { w = vw; h = vh / 2; }
                 else { w = vw; h = vh; }
             } else { w = vw; h = vh; }
-        } else if (this.videoMode === '180') {
+            if (isFisheye) {
+                // The fisheye shader maps a SQUARE image (the fisheye circle
+                // fills the square). Force a square canvas so the circle maps
+                // correctly even when the per-eye frame is not exactly square
+                // (a stretched canvas is what squished the TB fisheye).
+                const s = Math.min(w, h);
+                w = s; h = s;
+            }
+        } else if (this.videoMode === 'equirect180') {
             if (isEye) {
                 if (st === 'sbs') { w = vw; h = vh; }          // eye=vw/2 wide, canvas=2*eye=vw
                 else if (st === 'tb') { w = vw * 2; h = vh / 2; } // eye=vw x vh/2, canvas=2*vw x vh/2
@@ -1023,14 +1180,33 @@ export class XrPlayerService implements OnDestroy {
         } else {
             resizeCanvas(this.videoCopyCanvas, false);
         }
+        // A canvas resize leaves the GPU texture at the stale size until it is
+        // re-uploaded - force it here so the FIRST frame after a video switch
+        // is correct (this is what caused the black screen when switching
+        // between fisheye videos).
+        if (this.videoTexture) this.videoTexture.needsUpdate = true;
+        if (this.videoLeftTexture) this.videoLeftTexture.needsUpdate = true;
+        if (this.videoRightTexture) this.videoRightTexture.needsUpdate = true;
         if (this.videoMode !== 'flat') {
-            const m = this.videoSphere!.material as THREE.MeshBasicMaterial;
-            // Stereo: onBeforeRender swaps this per eye pass.
-            m.map = this.videoStereo ? this.videoLeftTexture : this.videoTexture;
-            // The material starts black (blank screen) - the color
-            // MULTIPLIES the texture, so it must be white once a map is set.
-            m.color.set(0xffffff);
-            m.needsUpdate = true;
+            const isFisheye = this.videoMode.startsWith('fisheye');
+            if (isFisheye && this.videoFisheyeMaterial) {
+                // Fisheye: the shader maps the equidistant fisheye frame onto
+                // the sphere. Stereo: onBeforeRender swaps uMap per eye pass.
+                this.videoFisheyeMaterial.uniforms['uMap'].value =
+                    this.videoStereo ? this.videoLeftTexture : this.videoTexture;
+                this.videoFisheyeMaterial.uniforms['uThetaMax'].value =
+                    this.fisheyeThetaMax(this.videoMode);
+                this.videoSphere!.material = this.videoFisheyeMaterial;
+            } else {
+                const m = this.videoSphereMaterial!;
+                // Stereo: onBeforeRender swaps this per eye pass.
+                m.map = this.videoStereo ? this.videoLeftTexture : this.videoTexture;
+                // The material starts black (blank screen) - the color
+                // MULTIPLIES the texture, so it must be white once a map is set.
+                m.color.set(0xffffff);
+                m.needsUpdate = true;
+                this.videoSphere!.material = m;
+            }
             this.videoSphere!.visible = true;
             this.videoScreen!.visible = false;
             this.videoFrame!.visible = false;
@@ -1197,13 +1373,16 @@ export class XrPlayerService implements OnDestroy {
             controller.add(line);
             this.laserLines.push(line);
 
-            // Cursor dot
+            // Cursor dot. Transparent so it can be faded in/out together with
+            // the laser line (see updateLaserVisibility) - a hard on/off dot
+            // stayed visible after the laser had already faded away.
             const cursor = new THREE.Mesh(
                 new THREE.SphereGeometry(0.012, 12, 8),
-                new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }));
             cursor.visible = false;
             controller.add(cursor);
             this.ud(controller).cursor = cursor;
+            this.laserDots.push(cursor);
 
             controller.addEventListener('selectstart', () => this.onSelectStart(controller));
             controller.addEventListener('selectend', () => this.onSelectEnd(controller));
@@ -1336,6 +1515,12 @@ export class XrPlayerService implements OnDestroy {
         const ease = Math.min(1, dt * 8);
         for (const line of this.laserLines) {
             const mat = line.material as THREE.LineBasicMaterial;
+            mat.opacity = THREE.MathUtils.lerp(mat.opacity, target, ease);
+        }
+        // Fade the cursor dots in lockstep with the laser lines so they hide
+        // together (the dot's .visible is still gated on a raycast hit).
+        for (const dot of this.laserDots) {
+            const mat = dot.material as THREE.MeshBasicMaterial;
             mat.opacity = THREE.MathUtils.lerp(mat.opacity, target, ease);
         }
     }
@@ -1661,14 +1846,30 @@ export class XrPlayerService implements OnDestroy {
                             // (its left edge lands on the viewer's left),
                             // letterboxed to the equirectangular band so
                             // the top/bottom caps are black.
-                            const is180 = this.videoMode === '180';
+                            const is180 = this.videoMode === 'equirect180';
+                            const isFisheye = this.videoMode.startsWith('fisheye');
                             const drawSphere = (ctx: CanvasRenderingContext2D,
                                 sx: number, sy: number, sw: number, sh: number,
                                 shiftFrac = 0) => {
                                 const w = ctx.canvas.width, h = ctx.canvas.height;
                                 ctx.fillStyle = '#000';
                                 ctx.fillRect(0, 0, w, h);
-                                if (!is180) {
+                                if (isFisheye) {
+                                    // Fisheye: letterbox the per-eye image into
+                                    // the square canvas, preserving aspect, so
+                                    // the fisheye circle maps correctly. A
+                                    // non-square per-eye frame stretched into
+                                    // the canvas is what squished the TB fisheye.
+                                    const va = sw / sh;
+                                    const ca = w / h;
+                                    let dw: number, dh: number, dx: number, dy: number;
+                                    if (va > ca) {
+                                        dw = w; dh = w / va; dx = 0; dy = (h - dh) / 2;
+                                    } else {
+                                        dh = h; dw = h * va; dx = (w - dw) / 2; dy = 0;
+                                    }
+                                    ctx.drawImage(v, sx, sy, sw, sh, dx, dy, dw, dh);
+                                } else if (!is180) {
                                     const shift = Math.round(shiftFrac * w);
                                     if (shift === 0) {
                                         ctx.drawImage(v, sx, sy, sw, sh, 0, 0, w, h);
@@ -1708,7 +1909,13 @@ export class XrPlayerService implements OnDestroy {
                                     // 3D boost above full: pan each eye's 360
                                     // image apart (left eye left, right eye
                                     // right) to add parallax beyond full 3D.
-                                    const boost = Math.max(0, this.stereoStrength - 1.0) * 0.06;
+                                    // Disabled for fisheye: the shader assumes
+                                    // the fisheye center sits at the image
+                                    // center, so panning the frame would shift
+                                    // the whole projection off-axis.
+                                    const boost = isFisheye
+                                        ? 0
+                                        : Math.max(0, this.stereoStrength - 1.0) * 0.06;
                                     if (this.videoStereo === 'sbs') {
                                         drawSphere(lctx, 0, 0, lw / 2, lh, -boost);
                                         drawSphere(rctx, lw / 2, 0, lw / 2, lh, boost);

@@ -34,7 +34,10 @@ export class XrSettingsService {
     stereoStrength$: Observable<number> = this.stereoStrengthSubject.asObservable();
 
     readonly layoutDefault: XrPanelLayout = {};
-    private layoutKey = 'xtpXrLayout.v2';
+    // Bumped to v3: the default panel layout changed (controls panel pulled
+    // closer/lower, 2D screen moved nearer, help panel brought in front). The
+    // new key discards any stale saved layout so the new defaults apply.
+    private layoutKey = 'xtpXrLayout.v3';
     private layoutSubject = new BehaviorSubject<XrPanelLayout>(this.layoutDefault);
     layout$: Observable<XrPanelLayout> = this.layoutSubject.asObservable();
 
