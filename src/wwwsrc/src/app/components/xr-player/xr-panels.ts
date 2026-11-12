@@ -5,7 +5,7 @@
 // they receive plain data and fire callbacks, so all app logic stays in
 // xr-player.service.ts (which is the only file that touches app services).
 import * as THREE from 'three';
-import { Panel, Button3D, Slider3D, makeLabel, makeFaceTexture } from './xr-ui';
+import { Panel, Button3D, Slider3D, makeLabel, makeFaceTexture, makeTitleMesh } from './xr-ui';
 import { MediaItem, ChannelModel } from '../../models/interfaces';
 import { ThumbState } from '../../models/enums';
 import { getChannelColor } from '../../utils/utils';
@@ -32,18 +32,49 @@ export function getThumbPath(item: MediaItem): string {
 
 // Grid of media thumbnails. Point + trigger plays the item.
 export class MediaWallPanel extends Panel {
-    private static readonly MAX_ITEMS = 48;
-    private static readonly COLS = 8;
+    private static readonly MAX_ITEMS = 16;
+    private static readonly COLS = 4;
     private tiles: THREE.Group[] = [];
+    private items: MediaItem[] = [];
+    private page = 0;
     private playingId: string | null = null;
     private textureLoader = new THREE.TextureLoader();
+    private pageUpButton: Button3D;
+    private pageDownButton: Button3D;
+    private pageLabel: THREE.Mesh;
 
     constructor(private onItemSelect: (item: MediaItem) => void) {
         super('media', 'Media List', 2.5, 2.35);
+        this.pageUpButton = new Button3D('▲', 0.16, 0.1);
+        this.pageUpButton.position.set(-0.45, -1.02, 0);
+        this.pageUpButton.onClick = () => this.changePage(-1);
+        this.content.add(this.pageUpButton);
+        this.pageDownButton = new Button3D('▼', 0.16, 0.1);
+        this.pageDownButton.position.set(0.45, -1.02, 0);
+        this.pageDownButton.onClick = () => this.changePage(1);
+        this.content.add(this.pageDownButton);
+        this.pageLabel = makeLabel('1 / 1', 0.4, 0.07, '#9fb0d0', 0.5);
+        this.pageLabel.position.set(0, -1.02, 0);
+        this.content.add(this.pageLabel);
+    }
+
+    private pageCount(): number {
+        return Math.max(1, Math.ceil(this.items.length / MediaWallPanel.MAX_ITEMS));
+    }
+
+    private changePage(delta: number): void {
+        this.page = THREE.MathUtils.clamp(this.page + delta, 0, this.pageCount() - 1);
+        this.renderPage();
     }
 
     setItems(items: MediaItem[]): void {
-        // Clear old tiles
+        this.items = items;
+        this.page = 0;
+        this.renderPage();
+    }
+
+    private renderPage(): void {
+        // Clear old tiles (the page buttons stay)
         for (const tile of this.tiles) {
             this.content.remove(tile);
             tile.traverse(obj => {
@@ -58,16 +89,18 @@ export class MediaWallPanel extends Panel {
         }
         this.tiles = [];
 
-        const shown = items.slice(0, MediaWallPanel.MAX_ITEMS);
-        const tileW = 0.29;
-        const gapX = 0.015;
-        const gapY = 0.035;
+        const start = this.page * MediaWallPanel.MAX_ITEMS;
+        const shown = this.items.slice(start, start + MediaWallPanel.MAX_ITEMS);
+        const tileW = 0.55;
+        const gapX = 0.02;
+        const gapY = 0.04;
         const thumbH = tileW * 9 / 16;
-        const rowH = thumbH + 0.05 + gapY;
+        const labelH = 0.11;
+        const rowH = thumbH + 0.02 + labelH + gapY;
         const gridW = MediaWallPanel.COLS * tileW + (MediaWallPanel.COLS - 1) * gapX;
         const gridH = shown.length / MediaWallPanel.COLS * rowH;
         const startX = -gridW / 2 + tileW / 2;
-        const startY = gridH / 2 - thumbH / 2 - 0.05;
+        const startY = gridH / 2 - thumbH / 2 - 0.02 - labelH / 2;
 
         shown.forEach((item, i) => {
             const col = i % MediaWallPanel.COLS;
@@ -103,9 +136,9 @@ export class MediaWallPanel extends Panel {
             thumb.userData['tile'] = tile;
             tile.add(thumb);
 
-            // Name label
-            const label = makeLabel(item.name, tileW, 0.045, '#cdd6ea', 0.45);
-            label.position.set(0, -thumbH / 2 - 0.028, 0.002);
+            // Name label (fixed font size, wrapped to 2 lines, ellipsized)
+            const label = makeTitleMesh(item.name, tileW, labelH, '#cdd6ea', 2);
+            label.position.set(0, -thumbH / 2 - 0.02 - labelH / 2, 0.002);
             label.userData['tile'] = tile;
             tile.add(label);
 
@@ -115,7 +148,22 @@ export class MediaWallPanel extends Panel {
             this.tiles.push(tile);
         });
 
+        this.setPageLabel(`${this.page + 1} / ${this.pageCount()}`);
+        this.pageUpButton.setEnabled(this.page > 0);
+        this.pageDownButton.setEnabled(this.page < this.pageCount() - 1);
         this.setPlayingId(this.playingId);
+    }
+
+    private setPageLabel(text: string): void {
+        const mat = this.pageLabel.material as THREE.MeshBasicMaterial;
+        const old = mat.map;
+        mat.map = makeFaceTexture(text, {
+            width: Math.floor(128 * (0.4 / 0.07)),
+            height: 128,
+            color: '#9fb0d0',
+            font: 'bold 64px sans-serif'
+        });
+        old?.dispose();
     }
 
     setPlayingId(id: string | null): void {
@@ -130,10 +178,11 @@ export class MediaWallPanel extends Panel {
 // Live channel bars, driven by the same channelPositionChange stream as the
 // web script-status component.
 export class ScriptStatusPanel extends Panel {
+    private static readonly HEIGHT = 1.5;
     private bars: { channel: ChannelModel; fill: THREE.Mesh }[] = [];
 
     constructor() {
-        super('script', 'Script Status', 1.7, 1.5);
+        super('script', 'Script Status', 1.7, ScriptStatusPanel.HEIGHT);
     }
 
     setChannels(channels: ChannelModel[]): void {
@@ -146,7 +195,10 @@ export class ScriptStatusPanel extends Panel {
         }
         this.bars = [];
 
-        const rowH = 0.11;
+        // Fit all rows inside the panel: shrink the row height when there
+        // are many channels (the title takes the top ~0.2m).
+        const rowH = Math.min(0.11, (ScriptStatusPanel.HEIGHT - 0.2) / Math.max(1, channels.length));
+        const barH = Math.min(0.045, rowH * 0.45);
         const startY = (channels.length - 1) * rowH / 2;
         channels.forEach((channel, i) => {
             const y = startY - i * rowH;
@@ -156,7 +208,7 @@ export class ScriptStatusPanel extends Panel {
             this.content.add(label);
 
             const track = new THREE.Mesh(
-                new THREE.PlaneGeometry(1.1, 0.045),
+                new THREE.PlaneGeometry(1.1, barH),
                 new THREE.MeshBasicMaterial({ color: 0x33405e })
             );
             track.renderOrder = 10;
@@ -164,7 +216,7 @@ export class ScriptStatusPanel extends Panel {
             this.content.add(track);
 
             const fill = new THREE.Mesh(
-                new THREE.PlaneGeometry(1.1, 0.045),
+                new THREE.PlaneGeometry(1.1, barH),
                 new THREE.MeshBasicMaterial({ color: new THREE.Color(getChannelColor(channel.channel)) })
             );
             fill.renderOrder = 11;
@@ -241,6 +293,35 @@ export class TCodePanel extends Panel {
     }
 }
 
+// Help panel: the controller instructions. Shown on session start, closed
+// with the Close button, re-opened from the control panel's Help toggle.
+export class HelpPanel extends Panel {
+    constructor(onClose: () => void) {
+        super('help', 'Help', 1.9, 1.5);
+
+        const lines = [
+            'Trigger: select & play',
+            'Squeeze: grab & drag panels',
+            'Squeeze skybox: tilt the video',
+            'Button 3: re-center the world',
+            'Button 4: controls + media list',
+            'Settings: passthrough & 3D depth'
+        ];
+        const rowH = 0.15;
+        const startY = (lines.length - 1) * rowH / 2 + 0.1;
+        lines.forEach((line, i) => {
+            const label = makeLabel(line, 1.7, 0.13, '#cdd6ea', 0.5, 256);
+            label.position.set(0, startY - i * rowH, 0);
+            this.content.add(label);
+        });
+
+        const closeButton = new Button3D('Close', 0.5, 0.14);
+        closeButton.position.set(0, -0.55, 0);
+        closeButton.onClick = onClose;
+        this.content.add(closeButton);
+    }
+}
+
 export interface MainControlCallbacks {
     onPlayPause: () => void;
     onPrev: () => void;
@@ -295,11 +376,13 @@ export class MainControlPanel extends Panel {
             ['media', 'Media'],
             ['script', 'Script'],
             ['profiles', 'Profiles'],
-            ['tcode', 'TCode']
+            ['tcode', 'TCode'],
+            ['settings', 'Settings'],
+            ['help', 'Help']
         ];
         toggles.forEach(([id, label], i) => {
-            const btn = new Button3D(label, 0.34, 0.09);
-            btn.position.set(-0.72 + i * 0.4, 0.21, 0);
+            const btn = new Button3D(label, 0.32, 0.09);
+            btn.position.set(-0.9 + i * 0.36, 0.21, 0);
             btn.onClick = () => cb.onTogglePanel(id);
             this.content.add(btn);
             this.panelButtons[id] = btn;
@@ -402,5 +485,74 @@ export class MainControlPanel extends Panel {
             font: `bold ${Math.floor(heightPx * fontScale)}px sans-serif`
         });
         old?.dispose();
+    }
+}
+
+// Tabbed settings panel. Each tab is a group of controls; only the active
+// tab's content is visible. New settings are added as new tabs via addTab().
+export interface SettingsCallbacks {
+    onTogglePassthrough: () => void;
+    onStereoStrength: (value: number) => void;
+}
+
+export class SettingsPanel extends Panel {
+    private tabs: { id: string; label: string; content: THREE.Group; button: Button3D }[] = [];
+    private passthroughButton: Button3D;
+    readonly stereoSlider: Slider3D;
+
+    constructor(cb: SettingsCallbacks) {
+        super('settings', 'Settings', 2.0, 1.5);
+
+        // --- Display tab ---
+        const display = new THREE.Group();
+        this.passthroughButton = new Button3D('Passthrough', 0.6, 0.14);
+        this.passthroughButton.position.set(0, 0.35, 0);
+        this.passthroughButton.onClick = cb.onTogglePassthrough;
+        display.add(this.passthroughButton);
+
+        const stereoLabel = makeLabel('3D Depth', 0.8, 0.09, '#9fb0d0', 0.5);
+        stereoLabel.position.set(-0.35, 0.05, 0);
+        display.add(stereoLabel);
+
+        // Range 0..2: 1.0 (center) is full 3D; below reduces it, above
+        // adds parallax beyond full 3D.
+        this.stereoSlider = new Slider3D(1.3, cb.onStereoStrength, 0, 2);
+        this.stereoSlider.position.set(0, -0.15, 0);
+        this.stereoSlider.setValue(1.0, false);
+        display.add(this.stereoSlider);
+
+        this.addTab('display', 'Display', display);
+        this.switchTab(0);
+    }
+
+    private addTab(id: string, label: string, content: THREE.Group): void {
+        const index = this.tabs.length;
+        const button = new Button3D(label, 0.6, 0.12);
+        button.onClick = () => this.switchTab(index);
+        this.content.add(button);
+        content.position.set(0, -0.15, 0);
+        this.content.add(content);
+        this.tabs.push({ id, label, content, button });
+        this.layoutTabs();
+    }
+
+    private layoutTabs(): void {
+        const n = this.tabs.length;
+        const spacing = 0.68;
+        const startX = -(n - 1) * spacing / 2;
+        this.tabs.forEach((t, i) => {
+            t.button.position.set(startX + i * spacing, 0.55, 0);
+        });
+    }
+
+    private switchTab(index: number): void {
+        this.tabs.forEach((t, i) => {
+            t.content.visible = (i === index);
+            t.button.setActive(i === index);
+        });
+    }
+
+    setPassthroughActive(active: boolean): void {
+        this.passthroughButton.setActive(active);
     }
 }

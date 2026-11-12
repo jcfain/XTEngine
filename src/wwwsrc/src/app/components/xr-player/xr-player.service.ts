@@ -22,7 +22,7 @@ import {
 } from './xr-ui';
 import {
     MediaWallPanel, ScriptStatusPanel, MotionProfilesPanel, TCodePanel,
-    MainControlPanel
+    MainControlPanel, SettingsPanel, HelpPanel
 } from './xr-panels';
 
 interface InteractiveTarget {
@@ -31,6 +31,7 @@ interface InteractiveTarget {
     slider?: Slider3D;
     tile?: THREE.Group;
     panel?: Panel;
+    skybox?: THREE.Mesh;
 }
 
 // Typed view of the userData we attach to scene objects (the tsconfig
@@ -47,6 +48,7 @@ interface XrUserData {
     tile?: THREE.Group;
     tileData?: { item: MediaItem; highlight: THREE.Mesh };
     panel?: Panel;
+    skybox?: THREE.Mesh;
     onClick?: () => void;
 }
 
@@ -76,8 +78,22 @@ export class XrPlayerService implements OnDestroy {
     private hovered: (InteractiveTarget | null)[] = [null, null];
     private draggingSlider: { controller: THREE.Object3D; slider: Slider3D } | null = null;
     private grabbing: { controller: THREE.Object3D; panel: Panel; rayDist: number } | null = null;
+    private grabbingSkybox: { controller: THREE.Object3D; lastY: number } | null = null;
+    private btn3Down: boolean[] = [false, false];
+    private btn4Down: boolean[] = [false, false];
+    private controlsVisible = false;
     private lastInteraction = 0;
     private pinned = false;
+    // Passthrough (immersive-ar) support and state. When enabled and
+    // available, the scene background goes transparent so the headset's
+    // color passthrough (the room) shows through.
+    private passthroughAvailable = false;
+    private passthroughEnabled = false;
+    private envFog: THREE.Fog | null = null;
+    // 3D depth strength: 1 = full parallax. Below 1 each eye is blended
+    // toward the mono center (less 3D, no image shift). Above 1 the two
+    // eyes' 360 textures are panned apart to add parallax beyond full 3D.
+    private stereoStrength = 1.0;
     private onGlobalError: ((e: ErrorEvent) => void) | null = null;
     private onGlobalRejection: ((e: PromiseRejectionEvent) => void) | null = null;
 
@@ -87,6 +103,8 @@ export class XrPlayerService implements OnDestroy {
     private profilesPanel: MotionProfilesPanel | null = null;
     private tcodePanel: TCodePanel | null = null;
     private mainPanel: MainControlPanel | null = null;
+    private settingsPanel: SettingsPanel | null = null;
+    private helpPanel: HelpPanel | null = null;
 
     // Video
     private videoEl: HTMLVideoElement | null = null;
@@ -99,10 +117,28 @@ export class XrPlayerService implements OnDestroy {
     private lastVideoCopy = 0;
     private videoScreen: THREE.Mesh | null = null;
     private videoSphere: THREE.Mesh | null = null;
+    // Stereo mode parsed from the file name (DeoVR convention). Stereo
+    // videos render true 3D: one texture per eye, swapped per eye pass.
+    private videoStereo: 'sbs' | 'tb' | null = null;
+    // Projection mode of the current video (drives the copy-loop layout).
+    private videoMode: 'flat' | '180' | '360' = 'flat';
+    private videoLeftCanvas: HTMLCanvasElement | null = null;
+    private videoLeftTexture: THREE.CanvasTexture | null = null;
+    private videoRightCanvas: HTMLCanvasElement | null = null;
+    private videoRightTexture: THREE.CanvasTexture | null = null;
+    // Temp canvas holding the mono center (average of both eyes), used to
+    // blend down the 3D depth without shifting the image.
+    private videoMonoCanvas: HTMLCanvasElement | null = null;
     private videoFrame: THREE.Mesh | null = null;
+    // Opaque black background sphere: occludes the AR passthrough when
+    // passthrough is off (scene.background alone doesn't reliably occlude).
+    private bgSphere: THREE.Mesh | null = null;
     private audio: THREE.Audio | null = null;
     private previousVideoNode: HTMLVideoElement | null = null;
     private stateTimer: number | null = null;
+    // Auto-clear timer for transient status messages (so they don't linger
+    // in the camera-attached HUD in front of the user's face).
+    private statusClearTimer: number | null = null;
     private externalStreaming = false;
     private shuffleMode = false;
     private lastTimeLabelUpdate = 0;
@@ -115,6 +151,7 @@ export class XrPlayerService implements OnDestroy {
     private hudCanvas: HTMLCanvasElement | null = null;
     private hudCtx: CanvasRenderingContext2D | null = null;
     private hudTexture: THREE.CanvasTexture | null = null;
+    private hudMesh: THREE.Mesh | null = null;
     private hudText = '';
     private hudSubText = '';
     private statusText = '';
@@ -219,7 +256,7 @@ export class XrPlayerService implements OnDestroy {
         this.audio = null;
         this.videoTexture = null;
 
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.xr.enabled = true;
@@ -239,10 +276,12 @@ export class XrPlayerService implements OnDestroy {
         if (navigator.xr) {
             navigator.xr.isSessionSupported('immersive-vr').then(supported => {
                 this.supported$.next(supported);
-                this.status$.next(supported
-                    ? 'Ready [v23]. Put on your headset and press Enter VR.'
-                    : 'WebXR immersive-vr is not supported on this device/browser. ' +
-                      'The page must be served over HTTPS (or localhost).');
+                if (supported) {
+                    this.setStatus('Ready [v50]. Put on your headset and press Enter VR.');
+                } else {
+                    this.setStatus('WebXR immersive-vr is not supported on this device/browser. ' +
+                        'The page must be served over HTTPS (or localhost).', false);
+                }
             }).catch((e) => {
                 this.supported$.next(false);
                 this.status$.next('WebXR support check failed: ' + this.errorMessage(e));
@@ -275,31 +314,20 @@ export class XrPlayerService implements OnDestroy {
     }
 
     private buildEnvironment(): void {
-        this.scene.background = new THREE.Color(0x0a0e1a);
-        this.scene.fog = new THREE.Fog(0x0a0e1a, 12, 40);
+        // Black background by default. Passthrough (immersive-ar) makes it
+        // transparent so the room shows through - see applyPassthrough().
+        this.scene.background = new THREE.Color(0x000000);
+        this.scene.fog = new THREE.Fog(0x000000, 12, 40);
+        this.envFog = this.scene.fog;
 
-        // Gradient sky dome
-        const skyCanvas = document.createElement('canvas');
-        skyCanvas.width = 16;
-        skyCanvas.height = 256;
-        const skyCtx = skyCanvas.getContext('2d')!;
-        const grad = skyCtx.createLinearGradient(0, 0, 0, 256);
-        grad.addColorStop(0, '#1a2440');
-        grad.addColorStop(0.6, '#0d1322');
-        grad.addColorStop(1, '#05070d');
-        skyCtx.fillStyle = grad;
-        skyCtx.fillRect(0, 0, 16, 256);
-        const skyTex = new THREE.CanvasTexture(skyCanvas);
-        skyTex.colorSpace = THREE.SRGBColorSpace;
-        const sky = new THREE.Mesh(
-            new THREE.SphereGeometry(60, 32, 16),
-            new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false })
+        // Opaque black background sphere: reliably occludes the AR
+        // passthrough when passthrough is off (scene.background alone
+        // doesn't). Toggled in applyPassthrough().
+        this.bgSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(80, 32, 16),
+            new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide })
         );
-        this.worldRoot.add(sky);
-
-        // Floor grid
-        const grid = new THREE.PolarGridHelper(12, 16, 10, 64, 0x2a3550, 0x1a2133);
-        this.worldRoot.add(grid);
+        this.worldRoot.add(this.bgSphere);
 
         // Lights
         this.worldRoot.add(new THREE.HemisphereLight(0x8899cc, 0x223344, 1.0));
@@ -325,7 +353,11 @@ export class XrPlayerService implements OnDestroy {
         );
         hud.position.set(0, -0.35, -1);
         hud.renderOrder = 999;
+        // Start hidden: drawHud() shows it only while a message is active,
+        // so a cleared/transient status leaves no opaque bar in view.
+        hud.visible = false;
         this.camera.add(hud);
+        this.hudMesh = hud;
         this.hudCanvas = canvas;
         this.hudCtx = ctx;
         this.hudTexture = texture;
@@ -335,6 +367,11 @@ export class XrPlayerService implements OnDestroy {
     private drawHud(): void {
         const ctx = this.hudCtx;
         if (!ctx) return;
+        const hasText = this.hudText.length > 0 || this.hudSubText.length > 0;
+        // Hide the whole HUD (opaque background included) when the message
+        // is empty, so a cleared/transient status leaves no dark bar in view.
+        if (this.hudMesh) this.hudMesh.visible = hasText;
+        if (!hasText) return;
         ctx.fillStyle = '#05070d';
         ctx.fillRect(0, 0, 1280, 128);
         ctx.font = '40px sans-serif';
@@ -403,17 +440,39 @@ export class XrPlayerService implements OnDestroy {
         this.worldRoot.add(screen);
 
         // Frame copy for the video texture (see videoTexture field).
-        // FIXED size 960x540 (16:9, matching the screen mesh): resizing a
-        // canvas changes the GPU texture size, which on the Quest leaves the
-        // texture mapped at the stale size (video appears in a corner).
-        const copyCanvas = document.createElement('canvas');
-        copyCanvas.width = 960;
-        copyCanvas.height = 540;
-        this.videoCopyCanvas = copyCanvas;
-        this.videoCopyCtx = copyCanvas.getContext('2d');
-        const videoTexture = new THREE.CanvasTexture(copyCanvas);
-        videoTexture.colorSpace = THREE.SRGBColorSpace;
-        this.videoTexture = videoTexture;
+        // Created at a small default size; setupVideoMeshes resizes each
+        // canvas to the video's native resolution (capped) BEFORE the first
+        // texture upload - a mid-playback resize leaves the Quest texture
+        // mapped at the stale size (video appears in a corner).
+        // Mono uses one canvas; stereo gets one canvas per eye (true 3D).
+        const makeCopy = () => {
+            const c = document.createElement('canvas');
+            c.width = 960;
+            c.height = 540;
+            const t = new THREE.CanvasTexture(c);
+            t.colorSpace = THREE.SRGBColorSpace;
+            // Dynamic texture: regenerating mipmaps on every upload causes
+            // shimmer/flicker and costs GPU time - use plain linear filtering.
+            t.generateMipmaps = false;
+            t.minFilter = THREE.LinearFilter;
+            t.magFilter = THREE.LinearFilter;
+            return { c, t };
+        };
+        const mono = makeCopy();
+        this.videoCopyCanvas = mono.c;
+        this.videoCopyCtx = mono.c.getContext('2d');
+        this.videoTexture = mono.t;
+        const left = makeCopy();
+        this.videoLeftCanvas = left.c;
+        this.videoLeftTexture = left.t;
+        const right = makeCopy();
+        this.videoRightCanvas = right.c;
+        this.videoRightTexture = right.t;
+        // Temp canvas for the mono center (average of both eyes) used to
+        // blend down the 3D depth. Kept the same size as the eye canvases.
+        this.videoMonoCanvas = document.createElement('canvas');
+        this.videoMonoCanvas.width = 960;
+        this.videoMonoCanvas.height = 540;
 
         const frame = new THREE.Mesh(
             new THREE.PlaneGeometry(4.35, 2.5),
@@ -431,6 +490,18 @@ export class XrPlayerService implements OnDestroy {
         );
         sphere.visible = false;
         this.videoSphere = sphere;
+        // Grabbable: squeeze the skybox and drag up/down to tilt it on pitch.
+        sphere.userData['skybox'] = sphere;
+        // True stereo: onBeforeRender fires once per eye pass with that
+        // eye's camera, so swap the sphere's texture per eye.
+        sphere.onBeforeRender = (_renderer, _scene, camera) => {
+            if (!this.videoStereo) return;
+            const xrCam = this.renderer?.xr.getCamera();
+            if (!xrCam) return;
+            const isLeft = xrCam.cameras.length > 0 && camera === xrCam.cameras[0];
+            (sphere.material as THREE.MeshBasicMaterial).map =
+                isLeft ? this.videoLeftTexture : this.videoRightTexture;
+        };
         this.worldRoot.add(sphere);
 
         // Spatial audio
@@ -459,6 +530,8 @@ export class XrPlayerService implements OnDestroy {
             onExit: () => this.exitVR()
         });
         this.mainPanel.position.set(0, 1.4, -1.9);
+        // Hidden until button 4 is pressed (no auto-show, no idle timeout).
+        this.mainPanel.visible = false;
         this.worldRoot.add(this.mainPanel);
         this.panels.push(this.mainPanel);
 
@@ -491,6 +564,24 @@ export class XrPlayerService implements OnDestroy {
         this.worldRoot.add(this.tcodePanel);
         this.panels.push(this.tcodePanel);
 
+        this.settingsPanel = new SettingsPanel({
+            onTogglePassthrough: () => this.togglePassthrough(),
+            onStereoStrength: (v) => this.setStereoStrength(v)
+        });
+        this.settingsPanel.position.set(1.3, 1.5, -1.7);
+        this.settingsPanel.rotation.y = -0.4;
+        this.settingsPanel.visible = false;
+        this.worldRoot.add(this.settingsPanel);
+        this.panels.push(this.settingsPanel);
+
+        // Help panel: the controller instructions. Shown on session start
+        // (replaces the old long startup status message), closed with its
+        // Close button, re-opened from the control panel's Help toggle.
+        this.helpPanel = new HelpPanel(() => this.closeHelp());
+        this.helpPanel.position.set(0, 1.5, -1.7);
+        this.worldRoot.add(this.helpPanel);
+        this.panels.push(this.helpPanel);
+
         this.syncPanelToggleButtons();
     }
 
@@ -498,14 +589,26 @@ export class XrPlayerService implements OnDestroy {
 
     async enterVR(): Promise<void> {
         if (!this.renderer || !navigator.xr) return;
+        const xr = navigator.xr;
         let session: XRSession;
+        // Prefer immersive-ar: it exposes the headset's color passthrough so
+        // the "Passthrough" toggle can reveal the room. Fall back to
+        // immersive-vr (opaque) where AR isn't available - passthrough is
+        // then unavailable and the background stays black.
+        const requestSession = (mode: XRSessionMode) => xr.requestSession(mode, {
+            // dom-overlay keeps the status line readable inside the
+            // headset (the only way to surface errors in VR).
+            optionalFeatures: ['local-floor', 'bounded-floor', 'dom-overlay'],
+            domOverlay: { root: this.overlayRoot ?? document.body }
+        });
         try {
-            session = await navigator.xr.requestSession('immersive-vr', {
-                // dom-overlay keeps the status line readable inside the
-                // headset (the only way to surface errors in VR).
-                optionalFeatures: ['local-floor', 'bounded-floor', 'dom-overlay'],
-                domOverlay: { root: this.overlayRoot ?? document.body }
-            });
+            try {
+                session = await requestSession('immersive-ar');
+                this.passthroughAvailable = true;
+            } catch {
+                session = await requestSession('immersive-vr');
+                this.passthroughAvailable = false;
+            }
         } catch (e) {
             console.error('Failed to request WebXR session:', e);
             this.status$.next('Failed to start the VR session: ' + this.errorMessage(e) +
@@ -527,11 +630,15 @@ export class XrPlayerService implements OnDestroy {
         }
         this.lastInteraction = performance.now();
         this.sessionActive$.next(true);
-        // Visible status on session start: an empty status line is
-        // indistinguishable from a missing dom-overlay.
+        // Apply the current passthrough state (black background by default).
+        this.applyPassthrough();
+        // Show the help panel with the controller instructions (replaces the
+        // old long startup status message). A short status line remains so an
+        // empty line is indistinguishable from a missing dom-overlay.
+        if (this.helpPanel) this.helpPanel.visible = true;
         const feats = (session as any).enabledFeatures as string[] | undefined;
-        this.status$.next(
-            'In VR. Point + trigger to select. Squeeze a panel to drag (it follows your laser, faces your hand). Squeeze the SKY/FLOOR to re-center.' +
+        this.setStatus(
+            'In VR. See the Help panel for controls.' +
             (feats?.includes('dom-overlay') ? '' : ' [DOM overlay NOT granted]'));
         // The XR view renders to the XR layer, not the DOM canvas - hide the
         // canvas so the dom-overlay doesn't paint a blank rectangle over the
@@ -544,6 +651,47 @@ export class XrPlayerService implements OnDestroy {
         this.renderer?.xr.getSession()?.end();
     }
 
+    // Toggle between the opaque black background and the headset's color
+    // passthrough (room visible). Only works when the session was granted
+    // as immersive-ar.
+    togglePassthrough(): void {
+        if (!this.passthroughAvailable) {
+            this.setStatus('Passthrough is not available in this session (no AR support).');
+            return;
+        }
+        this.passthroughEnabled = !this.passthroughEnabled;
+        this.applyPassthrough();
+        this.settingsPanel?.setPassthroughActive(this.passthroughEnabled);
+        this.setStatus(this.passthroughEnabled
+            ? 'Passthrough ON (room visible).'
+            : 'Passthrough OFF (black background).');
+    }
+
+    private applyPassthrough(): void {
+        if (!this.renderer) return;
+        if (this.passthroughEnabled && this.passthroughAvailable) {
+            // Transparent: the headset's color passthrough shows through.
+            this.scene.background = null;
+            this.scene.fog = null;
+            if (this.bgSphere) this.bgSphere.visible = false;
+            this.renderer.setClearColor(0x000000, 0);
+        } else {
+            // Opaque black: the sphere occludes the passthrough.
+            this.scene.background = new THREE.Color(0x000000);
+            this.scene.fog = this.envFog;
+            if (this.bgSphere) this.bgSphere.visible = true;
+            this.renderer.setClearColor(0x000000, 1);
+        }
+    }
+
+    // Set the 3D depth strength (1 = full parallax, lower = reduced). The
+    // copy loop reads this each frame: below 1 it blends each eye toward
+    // the mono center by (1 - strength); above 1 it pans the eyes' 360
+    // images apart (left eye left, right eye right) to add parallax.
+    setStereoStrength(value: number): void {
+        this.stereoStrength = THREE.MathUtils.clamp(value, 0, 2);
+    }
+
     private onSessionEnd(): void {
         this.sessionActive$.next(false);
         if (this.canvas) this.canvas.style.visibility = '';
@@ -552,7 +700,7 @@ export class XrPlayerService implements OnDestroy {
         if (!hadVideo) {
             // Session ended without playback - say so, so an unexpected
             // early exit is visible on the overlay.
-            this.status$.next('VR session ended.');
+            this.setStatus('VR session ended.', false);
         }
     }
 
@@ -575,7 +723,7 @@ export class XrPlayerService implements OnDestroy {
             if (pos > 1) {
                 this.videoService.onSeek(pos);
             }
-            this.status$.next(`Continuing playback: ${item.name}`);
+            this.setStatus(`Continuing playback: ${item.name}`);
         }
     }
 
@@ -583,7 +731,7 @@ export class XrPlayerService implements OnDestroy {
 
     private startVideo(item: MediaItem): void {
         if (this.externalStreaming) {
-            this.status$.next('External streaming is enabled - disable it in Settings to play media in VR.');
+            this.setStatus('External streaming is enabled - disable it in Settings to play media in VR.', false);
             return;
         }
         // Re-selecting the playing item toggles pause
@@ -610,14 +758,147 @@ export class XrPlayerService implements OnDestroy {
         // silent (no promise, no event), so if the browser blocks it the
         // video would just sit there. play() gives us a catchable rejection.
         this.videoEl.play().catch(e => {
-            this.status$.next('Video playback was blocked: ' + this.errorMessage(e) +
-                '. Pull the trigger on a media item again.');
+            this.setStatus('Video playback was blocked: ' + this.errorMessage(e) +
+                '. Pull the trigger on a media item again.', false);
         });
 
-        const is360 = item.metaData?.tags?.includes('360') === true;
-        if (is360) {
+        // DeoVR-style flags in the file name pick the projection
+        // (case-insensitive, any order): _180 / _360 select equirect
+        // sphere video. A stereo flag (SBS/LR/3DH or TB/3DV/OverUnder)
+        // crops one eye for mono display. The "360" tag is a fallback.
+        const flags = this.parseVideoFlags(item.name + ' ' + (item.relativePath || ''));
+        const mode: 'flat' | '180' | '360' =
+            flags.fov ?? (item.metaData?.tags?.includes('360') === true ? '360' : 'flat');
+        this.videoStereo = flags.stereo;
+
+        // Map the texture(s) for the projection. Sphere UVs: u=0 is -x,
+        // u=0.25 is +z (behind), u=0.5 is +x, u=0.75 is -z (in front).
+        // The shader samples texture at (uv * repeat + offset), so:
+        // Stereo: the per-eye textures are SEPARATE objects and need the
+        // same transform as the mono one.
+        this.videoMode = mode;
+        const texs = this.videoStereo
+            ? [this.videoTexture, this.videoLeftTexture, this.videoRightTexture]
+            : [this.videoTexture];
+        for (const tex of texs) {
+            if (!tex) continue;
+            if (mode === '360') {
+                // Full equirect: image center faces the user (-z), image
+                // left of center on the viewer's left.
+                tex.wrapS = THREE.RepeatWrapping;
+                tex.wrapT = THREE.ClampToEdgeWrapping;
+                tex.repeat.set(-1, 1);
+                tex.offset.set(1.25, 0);
+            } else {
+                // Flat and 180: identity mapping - the 180 layout (black
+                // back hemisphere, letterboxed band) is baked into the
+                // canvas by the copy loop.
+                tex.wrapS = THREE.ClampToEdgeWrapping;
+                tex.wrapT = THREE.ClampToEdgeWrapping;
+                tex.repeat.set(1, 1);
+                tex.offset.set(0, 0);
+            }
+            // Anisotropic filtering keeps the sphere sharp at oblique angles.
+            tex.anisotropy = this.renderer?.capabilities.getMaxAnisotropy() ?? 1;
+            tex.needsUpdate = true;
+        }
+
+        // Defer showing the mesh until the video's dimensions are known so
+        // the canvas can be sized to NATIVE resolution BEFORE the first
+        // texture upload. A mid-playback canvas resize leaves the Quest
+        // texture mapped at the stale size (video appears in a corner), so
+        // the resize must happen before the mesh's first render.
+        this.videoSphere!.visible = false;
+        this.videoScreen!.visible = false;
+        this.videoFrame!.visible = false;
+        const v = this.videoEl!;
+        if (v.readyState >= 1) {
+            this.setupVideoMeshes();
+        } else {
+            v.addEventListener('loadedmetadata', () => this.setupVideoMeshes(), { once: true });
+        }
+
+        this.startStateTimer();
+        this.setStatus(`Playing: ${item.name} [${mode === 'flat' ? '2D' : mode + ' sphere'}]` +
+            (flags.stereo ? ` (stereo ${flags.stereo.toUpperCase()} 3D)` : ''));
+    }
+
+    // Parse DeoVR-style projection/stereo flags from a file name. Flags are
+    // case-insensitive and may appear in any order, e.g.
+    // "My_video_SBS_alpha_mkx200.mp4". The number flags match 180/360 as
+    // standalone tokens (any separator, not part of a longer number).
+    private parseVideoFlags(name: string): { fov: '180' | '360' | null; stereo: 'sbs' | 'tb' | null } {
+        const n = name.toLowerCase();
+        let fov: '180' | '360' | null = null;
+        if (/(^|[^a-z0-9])180(?![0-9])/.test(n)) fov = '180';
+        else if (/(^|[^a-z0-9])360(?![0-9])/.test(n)) fov = '360';
+        let stereo: 'sbs' | 'tb' | null = null;
+        if (/(^|[^a-z0-9])(l-r|lr|3dh|sbs)([^a-z]|$)/.test(n)) stereo = 'sbs';
+        else if (/(^|[^a-z0-9])(tb|3dv|overunder)([^a-z]|$)/.test(n)) stereo = 'tb';
+        return { fov, stereo };
+    }
+
+    // Target copy-canvas size for the current video at NATIVE resolution
+    // (capped for the Quest). isEye selects the per-eye canvas (stereo);
+    // otherwise the mono canvas. 180° uses a 2:1 canvas whose left half is
+    // black (the back hemisphere) and right half is the content, so it is
+    // 2x the content width.
+    private computeCanvasSize(isEye: boolean): { w: number; h: number } | null {
+        const v = this.videoEl;
+        if (!v || !v.videoWidth) return null;
+        const vw = v.videoWidth, vh = v.videoHeight;
+        const MAXW = 4096, MAXH = 2048;
+        const st = this.videoStereo;
+        let w: number, h: number;
+        if (this.videoMode === '360') {
+            if (isEye) {
+                if (st === 'sbs') { w = vw / 2; h = vh; }
+                else if (st === 'tb') { w = vw; h = vh / 2; }
+                else { w = vw; h = vh; }
+            } else { w = vw; h = vh; }
+        } else if (this.videoMode === '180') {
+            if (isEye) {
+                if (st === 'sbs') { w = vw; h = vh; }          // eye=vw/2 wide, canvas=2*eye=vw
+                else if (st === 'tb') { w = vw * 2; h = vh / 2; } // eye=vw x vh/2, canvas=2*vw x vh/2
+                else { w = vw * 2; h = vh; }
+            } else { w = vw * 2; h = vh; }
+        } else {
+            w = vw; h = vh;
+        }
+        const s = Math.min(1, MAXW / w, MAXH / h);
+        return { w: Math.max(2, Math.round(w * s)), h: Math.max(2, Math.round(h * s)) };
+    }
+
+    // Size the copy canvas(es) to the video's native resolution and show the
+    // correct mesh. Called from 'loadedmetadata' (or immediately if metadata
+    // is already present) so the resize happens BEFORE the first texture
+    // upload - the mesh is kept hidden until then.
+    private setupVideoMeshes(): void {
+        const v = this.videoEl;
+        if (!v || !v.videoWidth) return;
+        const resizeCanvas = (c: HTMLCanvasElement | null, isEye: boolean) => {
+            if (!c) return;
+            const size = this.computeCanvasSize(isEye);
+            if (size && (c.width !== size.w || c.height !== size.h)) {
+                c.width = size.w;
+                c.height = size.h;
+            }
+        };
+        if (this.videoStereo) {
+            resizeCanvas(this.videoLeftCanvas, true);
+            resizeCanvas(this.videoRightCanvas, true);
+            // Keep the mono-center canvas matched to the eye canvases.
+            if (this.videoMonoCanvas && this.videoLeftCanvas) {
+                this.videoMonoCanvas.width = this.videoLeftCanvas.width;
+                this.videoMonoCanvas.height = this.videoLeftCanvas.height;
+            }
+        } else {
+            resizeCanvas(this.videoCopyCanvas, false);
+        }
+        if (this.videoMode !== 'flat') {
             const m = this.videoSphere!.material as THREE.MeshBasicMaterial;
-            m.map = this.videoTexture;
+            // Stereo: onBeforeRender swaps this per eye pass.
+            m.map = this.videoStereo ? this.videoLeftTexture : this.videoTexture;
             // The material starts black (blank screen) - the color
             // MULTIPLIES the texture, so it must be white once a map is set.
             m.color.set(0xffffff);
@@ -634,9 +915,6 @@ export class XrPlayerService implements OnDestroy {
             this.videoFrame!.visible = true;
             this.videoSphere!.visible = false;
         }
-
-        this.startStateTimer();
-        this.status$.next(`Playing: ${item.name}`);
     }
 
     private stopVideo(): void {
@@ -645,7 +923,7 @@ export class XrPlayerService implements OnDestroy {
         this.stopStateTimer();
         this.videoService.clearVideo();
         this.hideVideoMeshes();
-        this.status$.next('Stopped.');
+        this.setStatus('Stopped.');
     }
 
     private hideVideoMeshes(): void {
@@ -713,6 +991,28 @@ export class XrPlayerService implements OnDestroy {
         }
     }
 
+    // Button 4: show/hide the control panel and the media wall together.
+    // When shown, the control panel stays visible (no auto-hide).
+    private toggleControlsAndMedia(): void {
+        if (!this.mainPanel) return;
+        this.controlsVisible = !this.controlsVisible;
+        this.mainPanel.visible = this.controlsVisible;
+        const media = this.panels.find(p => p.panelId === 'media');
+        if (media) media.visible = this.controlsVisible;
+        if (this.controlsVisible) this.markInteraction();
+        this.syncPanelToggleButtons();
+        this.saveLayout();
+    }
+
+    // Close the help panel (its Close button). Re-openable from the control
+    // panel's Help toggle (togglePanel('help')).
+    private closeHelp(): void {
+        if (!this.helpPanel) return;
+        this.helpPanel.visible = false;
+        this.syncPanelToggleButtons();
+        this.saveLayout();
+    }
+
     private formatTime(secs: number): string {
         if (!secs || isNaN(secs)) return '00:00';
         const h = Math.floor(secs / 3600);
@@ -766,12 +1066,10 @@ export class XrPlayerService implements OnDestroy {
 
     private markInteraction(): void {
         this.lastInteraction = performance.now();
-        if (this.mainPanel && !this.pinned) {
-            this.mainPanel.visible = true;
-        }
     }
 
     private onSelectStart(controller: THREE.Object3D): void {
+        // A button (trigger) brings up the control panel.
         this.markInteraction();
         const target = this.hovered[this.ud(controller).index!];
         if (target?.slider) {
@@ -795,7 +1093,7 @@ export class XrPlayerService implements OnDestroy {
 
     private onSqueezeStart(controller: THREE.Object3D): void {
         this.markInteraction();
-        if (this.grabbing) return;
+        if (this.grabbing || this.grabbingSkybox) return;
         const target = this.hovered[this.ud(controller).index!];
         if (target?.panel) {
             // Ray-follow grab: the panel goes wherever the laser pointer
@@ -807,11 +1105,26 @@ export class XrPlayerService implements OnDestroy {
                 panel: target.panel,
                 rayDist: controller.position.distanceTo(panelWorld)
             };
-        } else if (this.renderer?.xr.isPresenting) {
-            // Squeezing empty space re-centers the world under the user -
-            // the scene origin is frozen where the session started, so
-            // walking away makes panels feel far and drags feel sluggish.
-            this.recenterWorld();
+        } else if (target?.skybox) {
+            // Grab the skybox: dragging up/down rotates it on the pitch axis.
+            this.grabbingSkybox = { controller, lastY: controller.position.y };
+        }
+    }
+
+    // Set a status message. Transient messages (the default) auto-clear after
+    // a few seconds so they don't linger in the camera-attached HUD; pass
+    // transient=false for messages that should stay (errors, session state).
+    private setStatus(msg: string, transient = true): void {
+        this.status$.next(msg);
+        if (this.statusClearTimer) {
+            clearTimeout(this.statusClearTimer);
+            this.statusClearTimer = null;
+        }
+        if (transient) {
+            this.statusClearTimer = window.setTimeout(() => {
+                this.statusClearTimer = null;
+                this.status$.next('');
+            }, 4000);
         }
     }
 
@@ -821,15 +1134,18 @@ export class XrPlayerService implements OnDestroy {
         // Move the world TO the user: panels keep their local offsets, so
         // e.g. the media wall ends up 1.9m in front of the head again.
         this.worldRoot.position.set(head.x, 0, head.z);
-        this.status$.next(dist > 0.5
-            ? `Re-centered (you were ${dist.toFixed(1)}m from the scene). Squeeze empty space to re-center.`
-            : 'Scene is already in front of you. Squeeze empty space to re-center.');
+        this.setStatus(dist > 0.5
+            ? `Re-centered (you were ${dist.toFixed(1)}m from the scene).`
+            : 'Scene re-centered.');
     }
 
     private onSqueezeEnd(controller: THREE.Object3D): void {
         if (this.grabbing?.controller === controller) {
             this.grabbing = null;
             this.saveLayout();
+        }
+        if (this.grabbingSkybox?.controller === controller) {
+            this.grabbingSkybox = null;
         }
     }
 
@@ -880,6 +1196,7 @@ export class XrPlayerService implements OnDestroy {
             if (ud.slider) return { object: current, slider: ud.slider };
             if (ud.tile) return { object: current, tile: ud.tile };
             if (ud.panel) return { object: current, panel: ud.panel };
+            if (ud.skybox) return { object: current, skybox: ud.skybox };
             current = current.parent;
         }
         return null;
@@ -909,9 +1226,10 @@ export class XrPlayerService implements OnDestroy {
             if (data) data.highlight.visible = hovered;
         } else if (target.panel) {
             target.panel.setHovered(hovered);
-        } else if (target.slider) {
-            target.slider.scale.setScalar(hovered ? 1.15 : 1.0);
         }
+        // Sliders don't scale on hover: scaling a wide slider stretches the
+        // track and knob, making it hard to grab. The cursor dot is the
+        // hover feedback.
     }
 
     // ---- Layout persistence --------------------------------------------------
@@ -922,11 +1240,12 @@ export class XrPlayerService implements OnDestroy {
 
     private saveLayout(): void {
         try {
-            const data: Record<string, { pos: number[]; rotY: number; visible: boolean }> = {};
+            const data: Record<string, { pos: number[]; rotY: number; rotX: number; visible: boolean }> = {};
             for (const p of this.panels) {
                 data[p.panelId] = {
                     pos: [p.position.x, p.position.y, p.position.z],
                     rotY: p.rotation.y,
+                    rotX: p.rotation.x,
                     visible: p.visible
                 };
             }
@@ -948,6 +1267,7 @@ export class XrPlayerService implements OnDestroy {
                     p.position.set(entry.pos[0], entry.pos[1], entry.pos[2]);
                 }
                 if (typeof entry.rotY === 'number') p.rotation.y = entry.rotY;
+                if (typeof entry.rotX === 'number') p.rotation.x = entry.rotX;
                 if (typeof entry.visible === 'boolean') p.visible = entry.visible;
             }
             this.syncPanelToggleButtons();
@@ -991,10 +1311,38 @@ export class XrPlayerService implements OnDestroy {
 
             this.updateInteraction(dt);
 
+            // Controller button bindings (edge-detected per controller):
+            //   button 3 -> re-center the world under the user
+            //   button 4 -> show the control panel and toggle the media list
+            for (const controller of this.controllers) {
+                const index = this.ud(controller).index!;
+                const gamepad = this.ud(controller).inputSource?.gamepad;
+                if (gamepad && gamepad.buttons) {
+                    const b3 = !!gamepad.buttons[3]?.pressed;
+                    if (b3 && !this.btn3Down[index]) {
+                        this.recenterWorld();
+                    }
+                    this.btn3Down[index] = b3;
+                    const b4 = !!gamepad.buttons[4]?.pressed;
+                    if (b4 && !this.btn4Down[index]) {
+                        this.toggleControlsAndMedia();
+                    }
+                    this.btn4Down[index] = b4;
+                }
+            }
+
+            // Skybox grab: dragging the controller up/down tilts the 360
+            // sphere on the pitch axis (re-aims the video's vertical center).
+            if (this.grabbingSkybox && this.videoSphere) {
+                const dy = this.grabbingSkybox.controller.position.y - this.grabbingSkybox.lastY;
+                this.grabbingSkybox.lastY = this.grabbingSkybox.controller.position.y;
+                this.videoSphere.rotation.x += dy * 4.0;
+            }
+
             // Copy the current video frame into the texture canvas (~30fps).
             // The Quest's XR path does not upload VideoTextures directly.
-            // The canvas is FIXED at 960x540 (16:9 = the screen mesh); the
-            // video is letterboxed into it so the texture size never changes.
+            // The canvas is sized to the video's NATIVE resolution (capped)
+            // in setupVideoMeshes, before the first upload.
             {
                 const v = this.videoEl;
                 const cc = this.videoCopyCanvas;
@@ -1002,21 +1350,122 @@ export class XrPlayerService implements OnDestroy {
                 if (v && cc && cctx && this.videoTexture &&
                     (this.videoScreen?.visible || this.videoSphere?.visible) && !v.paused && v.videoWidth) {
                     const now = performance.now();
-                    if (now - this.lastVideoCopy > 33) {
+                    if (now - this.lastVideoCopy > 0) {
                         this.lastVideoCopy = now;
                         const W = cc.width, H = cc.height;
-                        const va = v.videoWidth / v.videoHeight;
-                        const ca = W / H;
-                        let dw: number, dh: number, dx: number, dy: number;
-                        if (va > ca) {
-                            dw = W; dh = W / va; dx = 0; dy = (H - dh) / 2;
+                        if (this.videoSphere?.visible) {
+                            // Sphere mode: bake the projection into a 2:1
+                            // canvas (matches the sphere UVs).
+                            // 360: the frame fills the canvas.
+                            // 180: left half black (behind the viewer),
+                            // right half = the frame flipped horizontally
+                            // (its left edge lands on the viewer's left),
+                            // letterboxed to the equirectangular band so
+                            // the top/bottom caps are black.
+                            const is180 = this.videoMode === '180';
+                            const drawSphere = (ctx: CanvasRenderingContext2D,
+                                sx: number, sy: number, sw: number, sh: number,
+                                shiftFrac = 0) => {
+                                const w = ctx.canvas.width, h = ctx.canvas.height;
+                                ctx.fillStyle = '#000';
+                                ctx.fillRect(0, 0, w, h);
+                                if (!is180) {
+                                    const shift = Math.round(shiftFrac * w);
+                                    if (shift === 0) {
+                                        ctx.drawImage(v, sx, sy, sw, sh, 0, 0, w, h);
+                                    } else {
+                                        // Shifted equirect with wrap: draw the
+                                        // image at the offset plus both wrap
+                                        // positions so the seam stays seamless.
+                                        ctx.drawImage(v, sx, sy, sw, sh, shift, 0, w, h);
+                                        ctx.drawImage(v, sx, sy, sw, sh, shift - w, 0, w, h);
+                                        ctx.drawImage(v, sx, sy, sw, sh, shift + w, 0, w, h);
+                                    }
+                                } else {
+                                    // Band height from the frame's equirect
+                                    // aspect: a 2:1 frame covers 90° (half
+                                    // the height), taller frames cover more.
+                                    const bandFrac = sw / sh >= 1 ? sh / sw : 1;
+                                    const dh = h * bandFrac;
+                                    ctx.save();
+                                    ctx.translate(w, 0);
+                                    ctx.scale(-1, 1);
+                                    // Flipped space: dest x=0..w/2 lands on the
+                                    // canvas RIGHT half (the front hemisphere);
+                                    // the source's left edge lands at canvas x=w
+                                    // (the viewer's left).
+                                    ctx.drawImage(v, sx, sy, sw, sh, 0, (h - dh) / 2, w / 2, dh);
+                                    ctx.restore();
+                                }
+                            };
+                            if (this.videoStereo &&
+                                this.videoLeftCanvas && this.videoRightCanvas &&
+                                this.videoLeftTexture && this.videoRightTexture) {
+                                // True stereo: one eye per canvas.
+                                const lw = v.videoWidth, lh = v.videoHeight;
+                                const lctx = this.videoLeftCanvas.getContext('2d');
+                                const rctx = this.videoRightCanvas.getContext('2d');
+                                if (lctx && rctx) {
+                                    // 3D boost above full: pan each eye's 360
+                                    // image apart (left eye left, right eye
+                                    // right) to add parallax beyond full 3D.
+                                    const boost = Math.max(0, this.stereoStrength - 1.0) * 0.06;
+                                    if (this.videoStereo === 'sbs') {
+                                        drawSphere(lctx, 0, 0, lw / 2, lh, -boost);
+                                        drawSphere(rctx, lw / 2, 0, lw / 2, lh, boost);
+                                    } else {
+                                        drawSphere(lctx, 0, 0, lw, lh / 2, -boost);
+                                        drawSphere(rctx, 0, lh / 2, lw, lh / 2, boost);
+                                    }
+                                    // Reduce 3D: blend each eye toward the mono
+                                    // center (average of both eyes). Overlaying
+                                    // the mono at alpha (1-strength) on top of
+                                    // each eye gives lerp(eye, mono, 1-s) with
+                                    // NO image shift - far more comfortable than
+                                    // shifting the textures.
+                                    const k = 1 - this.stereoStrength;
+                                    if (k > 0 && this.videoMonoCanvas) {
+                                        const mctx = this.videoMonoCanvas.getContext('2d');
+                                        const mw = this.videoLeftCanvas.width;
+                                        const mh = this.videoLeftCanvas.height;
+                                        if (mctx && this.videoMonoCanvas.width === mw &&
+                                            this.videoMonoCanvas.height === mh) {
+                                            // mono = (left + right) / 2
+                                            mctx.clearRect(0, 0, mw, mh);
+                                            mctx.globalAlpha = 0.5;
+                                            mctx.drawImage(this.videoLeftCanvas, 0, 0);
+                                            mctx.drawImage(this.videoRightCanvas, 0, 0);
+                                            mctx.globalAlpha = 1;
+                                            // Overlay mono on each eye: lerp(eye, mono, k).
+                                            lctx.globalAlpha = k;
+                                            lctx.drawImage(this.videoMonoCanvas, 0, 0);
+                                            lctx.globalAlpha = 1;
+                                            rctx.globalAlpha = k;
+                                            rctx.drawImage(this.videoMonoCanvas, 0, 0);
+                                            rctx.globalAlpha = 1;
+                                        }
+                                    }
+                                    this.videoLeftTexture.needsUpdate = true;
+                                    this.videoRightTexture.needsUpdate = true;
+                                }
+                            } else {
+                                drawSphere(cctx, 0, 0, v.videoWidth, v.videoHeight);
+                                this.videoTexture.needsUpdate = true;
+                            }
                         } else {
-                            dh = H; dw = H * va; dx = (W - dw) / 2; dy = 0;
+                            const va = v.videoWidth / v.videoHeight;
+                            const ca = W / H;
+                            let dw: number, dh: number, dx: number, dy: number;
+                            if (va > ca) {
+                                dw = W; dh = W / va; dx = 0; dy = (H - dh) / 2;
+                            } else {
+                                dh = H; dw = H * va; dx = (W - dw) / 2; dy = 0;
+                            }
+                            cctx.fillStyle = '#000';
+                            cctx.fillRect(0, 0, W, H);
+                            cctx.drawImage(v, dx, dy, dw, dh);
+                            this.videoTexture.needsUpdate = true;
                         }
-                        cctx.fillStyle = '#000';
-                        cctx.fillRect(0, 0, W, H);
-                        cctx.drawImage(v, dx, dy, dw, dh);
-                        this.videoTexture.needsUpdate = true;
                     }
                 }
             }
@@ -1029,14 +1478,6 @@ export class XrPlayerService implements OnDestroy {
                     this.hudText = this.statusText;
                     this.drawHud();
                 }
-            }
-
-            // Auto-hide the main control panel after idle (VR only - the
-            // preview always shows it, and it must never hide on frame one).
-            if (this.mainPanel && !this.pinned && this.renderer.xr.isPresenting) {
-                const idle = performance.now() - this.lastInteraction > 3000;
-                const interacting = !!(this.grabbing || this.draggingSlider);
-                this.mainPanel.visible = !idle || interacting;
             }
 
             this.renderer.render(this.scene, this.camera);
@@ -1053,26 +1494,36 @@ export class XrPlayerService implements OnDestroy {
                 this.worldRoot.worldToLocal(this.tempVec);
                 this.grabbing.panel.position.copy(this.tempVec);
 
-                // Rotate while dragging: the panel yaws to face the
-                // controller. The Quest exposes no thumbstick axes (both
-                // XRInputSource.gamepad and getGamepads report 0), so hand
-                // movement is the rotation input.
+                // Rotate while dragging: face the user's HEAD (not the
+                // hand) so the panel stays aimed at the user while the hand
+                // moves the laser - facing the hand made the panel spin
+                // around the user while dragging. Turning the head is the
+                // rotation input. Pitch is damped to half strength: full
+                // pitch made the panel swing hard when the hand crossed its
+                // height, and it was hard to level again.
                 const pw = this.grabbing.panel.getWorldPosition(this.tempVec);
-                const dx = this.grabbing.controller.position.x - pw.x;
-                const dz = this.grabbing.controller.position.z - pw.z;
-                if (dx * dx + dz * dz > 0.001) {
-                    const targetRot = Math.atan2(dx, dz);
-                    let diff = targetRot - this.grabbing.panel.rotation.y;
+                const dx = this.camera.position.x - pw.x;
+                const dy = this.camera.position.y - pw.y;
+                const dz = this.camera.position.z - pw.z;
+                if (dx * dx + dy * dy + dz * dz > 0.001) {
+                    const targetYaw = Math.atan2(dx, dz);
+                    // Pitch is damped to half strength: full pitch made the
+                    // panel swing hard whenever the hand crossed its height,
+                    // and it was hard to level again.
+                    const targetPitch = Math.atan2(-dy, dz) * 0.5;
+                    let diff = targetYaw - this.grabbing.panel.rotation.y;
                     while (diff > Math.PI) diff -= 2 * Math.PI;
                     while (diff < -Math.PI) diff += 2 * Math.PI;
-                    this.grabbing.panel.rotation.y += diff * Math.min(1, dt * 8);
+                    const ease = Math.min(1, dt * 8);
+                    this.grabbing.panel.rotation.y += diff * ease;
+                    this.grabbing.panel.rotation.x += (targetPitch - this.grabbing.panel.rotation.x) * ease;
                 }
             }
         } catch (e) {
             // An exception inside the XR frame loop can kill the session on
             // some headsets - log it and surface it on the overlay.
             console.error('XR render error:', e);
-            this.status$.next('Render error: ' + this.errorMessage(e));
+            this.setStatus('Render error: ' + this.errorMessage(e), false);
         }
     };
 
@@ -1080,6 +1531,10 @@ export class XrPlayerService implements OnDestroy {
 
     ngOnDestroy(): void {
         this.stopStateTimer();
+        if (this.statusClearTimer) {
+            clearTimeout(this.statusClearTimer);
+            this.statusClearTimer = null;
+        }
         if (this.onGlobalError) {
             window.removeEventListener('error', this.onGlobalError);
             this.onGlobalError = null;
@@ -1112,6 +1567,8 @@ export class XrPlayerService implements OnDestroy {
         this.profilesPanel = null;
         this.tcodePanel = null;
         this.mainPanel = null;
+        this.settingsPanel = null;
+        this.helpPanel = null;
         this.panels = [];
         this.controllers = [];
         this.supported$.next(false);

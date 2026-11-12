@@ -59,11 +59,11 @@ export function makeFaceTexture(
     return texture;
 }
 
-// A flat transparent label (no background).
+// A flat transparent label (no background). heightPx controls the canvas
+// resolution (higher = crisper text, more memory).
 export function makeLabel(text: string, widthM: number, heightM: number,
-    color = '#ffffff', fontScale = 0.5): THREE.Mesh {
+    color = '#ffffff', fontScale = 0.5, heightPx = 128): THREE.Mesh {
     const aspect = widthM / heightM;
-    const heightPx = 128;
     const mesh = new THREE.Mesh(
         new THREE.PlaneGeometry(widthM, heightM),
         new THREE.MeshBasicMaterial({
@@ -84,7 +84,110 @@ export function makeLabel(text: string, widthM: number, heightM: number,
     return mesh;
 }
 
-// A draggable/toggleable panel: semi-transparent rounded background + title.
+// Draw a title at a FIXED font size, word-wrapped to fit the width and
+// ellipsized if it exceeds maxLines. Unlike makeFaceTexture (which shrinks the
+// font until it fits), this keeps every title the same size so long names stay
+// legible.
+export function makeTitleTexture(
+    text: string,
+    widthPx: number,
+    heightPx: number,
+    fontSizePx: number,
+    color: string,
+    maxLines: number
+): THREE.CanvasTexture {
+    const canvas = document.createElement('canvas');
+    canvas.width = widthPx;
+    canvas.height = heightPx;
+    const ctx = canvas.getContext('2d')!;
+    ctx.clearRect(0, 0, widthPx, heightPx);
+    ctx.fillStyle = color;
+    ctx.font = `bold ${fontSizePx}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const maxWidth = widthPx - 16;
+    const lineHeight = Math.floor(fontSizePx * 1.2);
+
+    // Word-wrap into lines that fit the width (hard-break over-long words).
+    const words = text.split(/\s+/).filter(w => w.length > 0);
+    const lines: string[] = [];
+    let line = '';
+    for (const word of words) {
+        const test = line ? line + ' ' + word : word;
+        if (ctx.measureText(test).width <= maxWidth) {
+            line = test;
+        } else {
+            if (line) lines.push(line);
+            if (ctx.measureText(word).width > maxWidth) {
+                let chunk = '';
+                for (const ch of word) {
+                    if (ctx.measureText(chunk + ch).width > maxWidth) {
+                        lines.push(chunk);
+                        chunk = ch;
+                    } else {
+                        chunk += ch;
+                    }
+                }
+                line = chunk;
+            } else {
+                line = word;
+            }
+        }
+    }
+    if (line) lines.push(line);
+
+    // Ellipsize if it exceeds maxLines.
+    if (lines.length > maxLines) {
+        const kept = lines.slice(0, maxLines);
+        let last = kept[maxLines - 1];
+        while (last.length > 1 && ctx.measureText(last + '…').width > maxWidth) {
+            last = last.slice(0, -1);
+        }
+        kept[maxLines - 1] = last.replace(/\s+$/, '') + '…';
+        lines.length = 0;
+        lines.push(...kept);
+    }
+
+    // Center vertically.
+    const totalH = lines.length * lineHeight;
+    const startY = (heightPx - totalH) / 2 + lineHeight / 2;
+    lines.forEach((l, i) => {
+        ctx.fillText(l, widthPx / 2, startY + i * lineHeight);
+    });
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+}
+
+// A flat title label with a fixed font size, wrapped to maxLines and
+// ellipsized beyond that.
+export function makeTitleMesh(text: string, widthM: number, heightM: number,
+    color = '#ffffff', maxLines = 2): THREE.Mesh {
+    // High pixel density: the label is stretched to fill the 3D plane, so a
+    // low-res canvas (e.g. 128px) gets upscaled and the text goes fuzzy.
+    const heightPx = 384;
+    const widthPx = Math.max(512, Math.floor(heightPx * (widthM / heightM)));
+    const fontSizePx = Math.floor((heightPx / maxLines) * 0.8);
+    const tex = makeTitleTexture(text, widthPx, heightPx, fontSizePx, color, maxLines);
+    // Crisp text: the label is viewed near 1:1, so mipmapped minification
+    // (the default) is what softens the glyphs. Linear filtering + anisotropy
+    // keeps them sharp, especially at the media wall's ~31deg angle.
+    tex.generateMipmaps = false;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.anisotropy = 16;
+    const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(widthM, heightM),
+        new THREE.MeshBasicMaterial({
+            map: tex,
+            alphaTest: 0.5
+        })
+    );
+    mesh.renderOrder = 10;
+    return mesh;
+}
 // The background mesh is the "grab handle" (userData.panel points back here).
 export class Panel extends THREE.Group {
     readonly panelId: string;
@@ -226,20 +329,25 @@ export class Button3D extends THREE.Group {
     }
 }
 
-// A 3D slider (0..1). Raycast hits are converted to values via setFromPoint.
+// A 3D slider over [min, max] (default 0..1). Raycast hits are converted
+// to values via setFromPoint.
 export class Slider3D extends THREE.Group {
     value = 0;
     onValue?: (v: number) => void;
     enabled = true;
     private widthM: number;
+    private min: number;
+    private max: number;
     private track: THREE.Mesh;
     private fill: THREE.Mesh;
     private knob: THREE.Mesh;
 
-    constructor(widthM = 1.0, onValue?: (v: number) => void) {
+    constructor(widthM = 1.0, onValue?: (v: number) => void, min = 0, max = 1) {
         super();
         this.widthM = widthM;
         this.onValue = onValue;
+        this.min = min;
+        this.max = max;
 
         const track = new THREE.Mesh(
             new THREE.PlaneGeometry(widthM, 0.025),
@@ -255,8 +363,11 @@ export class Slider3D extends THREE.Group {
             new THREE.MeshBasicMaterial({ color: 0x4d8dff })
         );
         fill.renderOrder = 11;
-        // Anchor the fill at the left edge so scaling grows it rightward.
+        // Anchor the fill at the track's LEFT edge so scaling grows it
+        // rightward: translate puts the geometry's left edge at local x=0,
+        // then position the mesh at the track's left edge (-widthM/2).
         fill.geometry.translate(widthM / 2, 0, 0);
+        fill.position.x = -widthM / 2;
         fill.position.z = 0.002;
         this.fill = fill;
         this.add(fill);
@@ -274,9 +385,10 @@ export class Slider3D extends THREE.Group {
     }
 
     setValue(v: number, emit = true): void {
-        this.value = THREE.MathUtils.clamp(v, 0, 1);
-        this.fill.scale.x = Math.max(this.value, 0.0001);
-        this.knob.position.x = -this.widthM / 2 + this.value * this.widthM;
+        this.value = THREE.MathUtils.clamp(v, this.min, this.max);
+        const t = this.max > this.min ? (this.value - this.min) / (this.max - this.min) : 0;
+        this.fill.scale.x = Math.max(t, 0.0001);
+        this.knob.position.x = -this.widthM / 2 + t * this.widthM;
         if (emit && this.onValue) {
             this.onValue(this.value);
         }
@@ -285,6 +397,7 @@ export class Slider3D extends THREE.Group {
     // Convert a world-space raycast hit point to a slider value.
     setFromPoint(worldPoint: THREE.Vector3): void {
         const local = this.worldToLocal(worldPoint.clone());
-        this.setValue((local.x + this.widthM / 2) / this.widthM);
+        const t = (local.x + this.widthM / 2) / this.widthM;
+        this.setValue(this.min + t * (this.max - this.min));
     }
 }
