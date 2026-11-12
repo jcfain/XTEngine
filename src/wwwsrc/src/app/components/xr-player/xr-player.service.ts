@@ -22,8 +22,9 @@ import {
 } from './xr-ui';
 import {
     MediaWallPanel, ScriptStatusPanel, MotionProfilesPanel, TCodePanel,
-    MainControlPanel, SettingsPanel, HelpPanel
+    MainControlPanel, SettingsPanel, HelpPanel, ConfirmDialog
 } from './xr-panels';
+import { XrSettingsService, XrPanelLayout } from './xr-settings.service';
 
 interface InteractiveTarget {
     object: THREE.Object3D;
@@ -67,7 +68,7 @@ export class XrPlayerService implements OnDestroy {
     // re-centered under the user (the local-floor origin is frozen at the
     // spot where the session started - walking away makes panels feel far).
     private worldRoot = new THREE.Group();
-    private camera = new THREE.PerspectiveCamera(70, 16 / 9, 0.05, 200);
+    private camera = new THREE.PerspectiveCamera(70, 16 / 9, 0.1, 100);
     private raycaster = new THREE.Raycaster();
     private tempMatrix = new THREE.Matrix4();
     private tempVec = new THREE.Vector3();
@@ -75,13 +76,33 @@ export class XrPlayerService implements OnDestroy {
     private initialized = false;
 
     private controllers: THREE.Object3D[] = [];
+    // Controller laser lines, kept so they can be faded in/out (see
+    // updateLaserVisibility). They are hidden when no panel is open to reduce
+    // clutter, and reappear on trigger press / while a panel is open.
+    private laserLines: THREE.Line[] = [];
+    // performance.now() of the last trigger press. The lasers stay lit for a
+    // short window after a trigger even when no panel is open, so the user can
+    // point at whatever is on screen, then fade out again.
+    private lastTriggerAt = -Infinity;
     private hovered: (InteractiveTarget | null)[] = [null, null];
     private draggingSlider: { controller: THREE.Object3D; slider: Slider3D } | null = null;
     private grabbing: { controller: THREE.Object3D; panel: Panel; rayDist: number } | null = null;
-    private grabbingSkybox: { controller: THREE.Object3D; lastY: number } | null = null;
+    private rotatingSkybox: { controller: THREE.Object3D; lastQuat: THREE.Quaternion } | null = null;
+    // Skybox roll (radians). Applied to the CAMERA, not the sphere: rolling the
+    // view keeps the side-by-side split line vertical so the eyes stay aligned
+    // (rolling the sphere tilts the split line and cross-eyes). Heresphere-style.
+    private skyboxRoll = 0;
+    // Camera position offsets (meters, in the camera's local frame).
+    private camZoom = 0;  // surge: forward/backward along view direction
+    private camHeave = 0; // up/down (world Y)
+    private camSway = 0;  // left/right (camera local X)
     private btn3Down: boolean[] = [false, false];
     private btn4Down: boolean[] = [false, false];
     private controlsVisible = false;
+    // Panels the user has manually closed (via their X button). These are
+    // excluded from the Button-4 toggle until the user re-opens them, so a
+    // closed panel stays closed while the others toggle.
+    private userClosedPanels: Set<string> = new Set();
     private lastInteraction = 0;
     private pinned = false;
     // Passthrough (immersive-ar) support and state. When enabled and
@@ -105,6 +126,12 @@ export class XrPlayerService implements OnDestroy {
     private mainPanel: MainControlPanel | null = null;
     private settingsPanel: SettingsPanel | null = null;
     private helpPanel: HelpPanel | null = null;
+    // Transient confirmation dialog (not part of this.panels, so it is never
+    // persisted and never toggled by the main panel).
+    private confirmDialog: ConfirmDialog | null = null;
+    // Panel positions/visibility captured right after buildPanels() - the
+    // defaults that a "Clear XR settings" reset returns to.
+    private defaultLayout: XrPanelLayout = {};
 
     // Video
     private videoEl: HTMLVideoElement | null = null;
@@ -172,7 +199,8 @@ export class XrPlayerService implements OnDestroy {
         private serverService: ServerService,
         private messageHandlerService: MessageHandlerService,
         private localSettingsService: LocalSettingsService,
-        private appState: AppStateService
+        private appState: AppStateService,
+        private xrSettings: XrSettingsService
     ) {
         // Data subscriptions are established in init() (after the panels
         // exist), not here: the sources are BehaviorSubjects, so a
@@ -242,6 +270,7 @@ export class XrPlayerService implements OnDestroy {
         this.scene.add(this.worldRoot);
         this.panels = [];
         this.controllers = [];
+        this.laserLines = [];
         this.hovered = [null, null];
         this.grabbing = null;
         this.draggingSlider = null;
@@ -266,9 +295,13 @@ export class XrPlayerService implements OnDestroy {
         this.buildVideo();
         this.buildHud();
         this.buildPanels();
+        // Capture the default panel layout (positions/visibility set in
+        // buildPanels) before any persisted layout is applied, so a settings
+        // reset can return the panels to these defaults.
+        this.defaultLayout = this.collectLayout();
         this.subscribeToData();
         this.subs.push(this.status$.subscribe(t => this.statusText = t));
-        this.loadLayout();
+        this.subscribeToXrSettings();
         this.setupControllers();
         this.setupPreviewMouse(canvas);
 
@@ -277,7 +310,9 @@ export class XrPlayerService implements OnDestroy {
             navigator.xr.isSessionSupported('immersive-vr').then(supported => {
                 this.supported$.next(supported);
                 if (supported) {
-                    this.setStatus('Ready [v50]. Put on your headset and press Enter VR.');
+                    // Non-transient: this is the build/version confirmation the
+                    // user checks before putting on the headset - it must stay.
+                    this.setStatus('Ready [v52]. Put on your headset and press Enter VR.', false);
                 } else {
                     this.setStatus('WebXR immersive-vr is not supported on this device/browser. ' +
                         'The page must be served over HTTPS (or localhost).', false);
@@ -529,60 +564,108 @@ export class XrPlayerService implements OnDestroy {
             onPin: () => this.togglePin(),
             onExit: () => this.exitVR()
         });
-        this.mainPanel.position.set(0, 1.4, -1.9);
+        // Default panel layout: every panel sits on the SAME arc (radius 5.0m)
+        // around the user, all at eye height and facing the user (aligned to
+        // the skybox). The left-to-right order is preserved from the previous
+        // layout: TCode, Media, Controls, Help, Settings, Script, Profiles.
+        // The wide arc keeps the (wide) panels from overlapping each other.
+        this.placeOnArc(this.mainPanel, -25, 5.0, 1.5);
         // Hidden until button 4 is pressed (no auto-show, no idle timeout).
         this.mainPanel.visible = false;
         this.worldRoot.add(this.mainPanel);
         this.panels.push(this.mainPanel);
 
         this.mediaWall = new MediaWallPanel(item => this.startVideo(item));
-        this.mediaWall.position.set(-2.3, 1.6, -2.6);
-        this.mediaWall.rotation.y = 0.55;
+        this.placeOnArc(this.mediaWall, -55, 5.0, 1.5);
         this.worldRoot.add(this.mediaWall);
         this.panels.push(this.mediaWall);
 
         this.scriptPanel = new ScriptStatusPanel();
-        this.scriptPanel.position.set(2.1, 1.5, -2.3);
-        this.scriptPanel.rotation.y = -0.5;
+        this.placeOnArc(this.scriptPanel, 55, 5.0, 1.5);
         this.scriptPanel.visible = false;
         this.worldRoot.add(this.scriptPanel);
         this.panels.push(this.scriptPanel);
 
-        this.profilesPanel = new MotionProfilesPanel(profile =>
-            this.websocketService.setSelectedProfile(profile));
-        this.profilesPanel.position.set(2.7, 1.5, -1.1);
-        this.profilesPanel.rotation.y = -0.95;
+        this.profilesPanel = new MotionProfilesPanel(profile => this.selectProfile(profile));
+        this.placeOnArc(this.profilesPanel, 75, 5.0, 1.5);
         this.profilesPanel.visible = false;
         this.worldRoot.add(this.profilesPanel);
         this.panels.push(this.profilesPanel);
 
         this.tcodePanel = new TCodePanel(command =>
             this.websocketService.sendTCode(command));
-        this.tcodePanel.position.set(-2.9, 1.5, -1.1);
-        this.tcodePanel.rotation.y = 0.95;
+        this.placeOnArc(this.tcodePanel, -80, 5.0, 1.5);
         this.tcodePanel.visible = false;
         this.worldRoot.add(this.tcodePanel);
         this.panels.push(this.tcodePanel);
 
         this.settingsPanel = new SettingsPanel({
             onTogglePassthrough: () => this.togglePassthrough(),
-            onStereoStrength: (v) => this.setStereoStrength(v)
+            onStereoStrength: (v) => this.setStereoStrength(v),
+            onResetStereo: () => this.setStereoStrength(1.0),
+            onClearSettings: () => this.showClearSettingsDialog(),
+            onSkyboxPitch: (v) => this.setSkyboxAxis('pitch', v),
+            onSkyboxYaw: (v) => this.setSkyboxAxis('yaw', v),
+            onSkyboxRoll: (v) => this.setSkyboxAxis('roll', v),
+            onResetSkyboxPitch: () => this.resetSkyboxAxis('pitch'),
+            onResetSkyboxYaw: () => this.resetSkyboxAxis('yaw'),
+            onResetSkyboxRoll: () => this.resetSkyboxAxis('roll'),
+            onZoom: (v) => { this.camZoom = v; },
+            onHeight: (v) => { this.camHeave = -v; },
+            onSide: (v) => { this.camSway = -v; },
+            onResetPosition: () => { this.camZoom = 0; this.camHeave = 0; this.camSway = 0; }
         });
-        this.settingsPanel.position.set(1.3, 1.5, -1.7);
-        this.settingsPanel.rotation.y = -0.4;
+        this.placeOnArc(this.settingsPanel, 25, 5.0, 1.5);
         this.settingsPanel.visible = false;
         this.worldRoot.add(this.settingsPanel);
         this.panels.push(this.settingsPanel);
 
-        // Help panel: the controller instructions. Shown on session start
-        // (replaces the old long startup status message), closed with its
-        // Close button, re-opened from the control panel's Help toggle.
+        // Help panel: the controller instructions. Hidden by default; open it
+        // from the control panel's Help toggle, closed with its Close button.
         this.helpPanel = new HelpPanel(() => this.closeHelp());
-        this.helpPanel.position.set(0, 1.5, -1.7);
+        this.placeOnArc(this.helpPanel, 0, 5.0, 1.5);
+        this.helpPanel.visible = false;
         this.worldRoot.add(this.helpPanel);
         this.panels.push(this.helpPanel);
 
+        // Every panel's X button hides the panel; notify us so we can sync the
+        // main-panel toggle buttons and persist the new layout. A panel closed
+        // this way is also opted out of the Button-4 toggle (stays closed) -
+        // EXCEPT the controls panel, which is the main UI and must always
+        // toggle (otherwise the user loses access to the toggle buttons).
+        for (const p of this.panels) {
+            p.onClose = () => {
+                if (p.panelId !== 'controls') {
+                    this.userClosedPanels.add(p.panelId);
+                }
+                this.syncPanelToggleButtons();
+                this.saveLayout();
+            };
+        }
+
+        // Transient confirmation dialog for "Clear XR settings". Kept out of
+        // this.panels so it is never persisted or toggled by the main panel.
+        this.confirmDialog = new ConfirmDialog(
+            'This will reset all XR settings to their defaults.',
+            () => this.confirmClearSettings(),
+            () => this.hideClearSettingsDialog()
+        );
+        this.confirmDialog.position.set(0, 1.5, -1.8);
+        this.confirmDialog.visible = false;
+        this.worldRoot.add(this.confirmDialog);
+
         this.syncPanelToggleButtons();
+    }
+
+    // Place a panel on an arc of the given radius around the user, at the given
+    // angle (degrees) from the forward axis (left = negative, right = positive)
+    // and height, facing the user (yaw) and kept upright. All panels sharing the
+    // same radius sit at the same distance from the eyes, aligned to the skybox.
+    private placeOnArc(panel: Panel, angleDeg: number, radius: number, y: number): void {
+        const a = THREE.MathUtils.degToRad(angleDeg);
+        panel.position.set(radius * Math.sin(a), y, -radius * Math.cos(a));
+        panel.rotation.y = -a;
+        panel.rotation.x = 0;
     }
 
     // ---- Session lifecycle -------------------------------------------------
@@ -630,15 +713,18 @@ export class XrPlayerService implements OnDestroy {
         }
         this.lastInteraction = performance.now();
         this.sessionActive$.next(true);
-        // Apply the current passthrough state (black background by default).
+        // Apply the current passthrough state (persisted from the last session).
         this.applyPassthrough();
-        // Show the help panel with the controller instructions (replaces the
-        // old long startup status message). A short status line remains so an
-        // empty line is indistinguishable from a missing dom-overlay.
-        if (this.helpPanel) this.helpPanel.visible = true;
+        // Reflect the (persisted) passthrough state on the Settings button so
+        // it shows the right active/inactive state when the panel opens.
+        this.settingsPanel?.setPassthroughActive(
+            this.passthroughEnabled && this.passthroughAvailable);
+        // The help panel is hidden by default (open it from the control
+        // panel's Help toggle). A short status line remains so an empty line
+        // is indistinguishable from a missing dom-overlay.
         const feats = (session as any).enabledFeatures as string[] | undefined;
         this.setStatus(
-            'In VR. See the Help panel for controls.' +
+            'In VR. Press Button 4 for controls (Help toggle for instructions).' +
             (feats?.includes('dom-overlay') ? '' : ' [DOM overlay NOT granted]'));
         // The XR view renders to the XR layer, not the DOM canvas - hide the
         // canvas so the dom-overlay doesn't paint a blank rectangle over the
@@ -659,10 +745,9 @@ export class XrPlayerService implements OnDestroy {
             this.setStatus('Passthrough is not available in this session (no AR support).');
             return;
         }
-        this.passthroughEnabled = !this.passthroughEnabled;
-        this.applyPassthrough();
-        this.settingsPanel?.setPassthroughActive(this.passthroughEnabled);
-        this.setStatus(this.passthroughEnabled
+        const next = !this.passthroughEnabled;
+        this.xrSettings.setPassthrough(next);
+        this.setStatus(next
             ? 'Passthrough ON (room visible).'
             : 'Passthrough OFF (black background).');
     }
@@ -689,7 +774,50 @@ export class XrPlayerService implements OnDestroy {
     // the mono center by (1 - strength); above 1 it pans the eyes' 360
     // images apart (left eye left, right eye right) to add parallax.
     setStereoStrength(value: number): void {
-        this.stereoStrength = THREE.MathUtils.clamp(value, 0, 2);
+        this.xrSettings.setStereoStrength(THREE.MathUtils.clamp(value, 0, 2));
+    }
+
+    // ---- Skybox orientation (pitch / yaw / roll) -----------------------------
+    // The 360 sphere's rotation is the skybox orientation. The Settings panel
+    // exposes a slider + reset button per axis; dragging the skybox in VR
+    // updates the same values (synced back to the sliders via syncSkyboxSettings).
+
+    // Set one skybox axis from a slider value (degrees).
+    private setSkyboxAxis(axis: 'pitch' | 'yaw' | 'roll', degrees: number): void {
+        const rad = THREE.MathUtils.degToRad(degrees);
+        if (axis === 'roll') {
+            // Roll is applied to the camera in the render loop (heresphere-style).
+            this.skyboxRoll = rad;
+        } else {
+            if (!this.videoSphere) return;
+            if (axis === 'pitch') this.videoSphere.rotation.x = rad;
+            else this.videoSphere.rotation.y = rad;
+        }
+        this.syncSkyboxSettings();
+    }
+
+    // Reset one skybox axis to 0 (default).
+    private resetSkyboxAxis(axis: 'pitch' | 'yaw' | 'roll'): void {
+        if (axis === 'roll') {
+            this.skyboxRoll = 0;
+        } else {
+            if (!this.videoSphere) return;
+            if (axis === 'pitch') this.videoSphere.rotation.x = 0;
+            else this.videoSphere.rotation.y = 0;
+        }
+        this.syncSkyboxSettings();
+    }
+
+    // Push the current skybox angles (degrees) into the Settings panel sliders.
+    // Roll lives on the camera (not the sphere), so it must sync even when no
+    // video sphere exists yet.
+    private syncSkyboxSettings(): void {
+        if (!this.settingsPanel || !this.settingsPanel.visible) return;
+        this.settingsPanel.setSkyboxAngles(
+            THREE.MathUtils.radToDeg(this.videoSphere?.rotation.x ?? 0),
+            THREE.MathUtils.radToDeg(this.videoSphere?.rotation.y ?? 0),
+            THREE.MathUtils.radToDeg(this.skyboxRoll)
+        );
     }
 
     private onSessionEnd(): void {
@@ -978,6 +1106,11 @@ export class XrPlayerService implements OnDestroy {
         const panel = this.panels.find(p => p.panelId === id);
         if (!panel) return;
         panel.visible = !panel.visible;
+        if (panel.visible) {
+            // Re-opening a panel opts it back into the Button-4 toggle (it now
+            // toggles with the others until the user closes it again).
+            this.userClosedPanels.delete(id);
+        }
         this.syncPanelToggleButtons();
         this.saveLayout();
     }
@@ -996,21 +1129,44 @@ export class XrPlayerService implements OnDestroy {
     private toggleControlsAndMedia(): void {
         if (!this.mainPanel) return;
         this.controlsVisible = !this.controlsVisible;
-        this.mainPanel.visible = this.controlsVisible;
-        const media = this.panels.find(p => p.panelId === 'media');
-        if (media) media.visible = this.controlsVisible;
+        // Toggle every panel EXCEPT TCode, Profiles and Script Status (those are
+        // opened individually from the control panel's toggle row), and EXCEPT
+        // any panel the user has manually closed - a closed panel stays closed
+        // until the user re-opens it (which re-opts it into this toggle).
+        for (const p of this.panels) {
+            if (p.panelId === 'tcode' || p.panelId === 'profiles' || p.panelId === 'script') {
+                continue;
+            }
+            if (this.userClosedPanels.has(p.panelId)) {
+                continue;
+            }
+            p.visible = this.controlsVisible;
+        }
         if (this.controlsVisible) this.markInteraction();
         this.syncPanelToggleButtons();
         this.saveLayout();
     }
 
     // Close the help panel (its Close button). Re-openable from the control
-    // panel's Help toggle (togglePanel('help')).
+    // panel's Help toggle (togglePanel('help')). Closing it opts it out of the
+    // Button-4 toggle (stays closed until re-opened), like the other panels.
     private closeHelp(): void {
         if (!this.helpPanel) return;
         this.helpPanel.visible = false;
+        this.userClosedPanels.add('help');
         this.syncPanelToggleButtons();
         this.saveLayout();
+    }
+
+    // Select a motion profile: send the changeChannelProfile message (the same
+    // one the web Motion tab sends), optimistically mark the button active, and
+    // surface a status line so the click is confirmable in the headset. If the
+    // status line appears but the profile doesn't change on the device, the
+    // message is reaching the socket and the issue is downstream.
+    private selectProfile(profile: string): void {
+        this.websocketService.setSelectedProfile(profile);
+        this.profilesPanel?.setSelected(profile);
+        this.setStatus(`Profile: ${profile}`);
     }
 
     private formatTime(secs: number): string {
@@ -1039,6 +1195,7 @@ export class XrPlayerService implements OnDestroy {
                 new THREE.LineBasicMaterial({ color: 0x9fb0d0, transparent: true, opacity: 0.6 }));
             line.scale.z = 5;
             controller.add(line);
+            this.laserLines.push(line);
 
             // Cursor dot
             const cursor = new THREE.Mesh(
@@ -1071,9 +1228,20 @@ export class XrPlayerService implements OnDestroy {
     private onSelectStart(controller: THREE.Object3D): void {
         // A button (trigger) brings up the control panel.
         this.markInteraction();
+        // A trigger press lights the lasers for a short window (see
+        // updateLaserVisibility) so the user can point at any open panel.
+        this.lastTriggerAt = performance.now();
         const target = this.hovered[this.ud(controller).index!];
         if (target?.slider) {
             this.draggingSlider = { controller, slider: target.slider };
+        } else if (target?.skybox && !this.rotatingSkybox) {
+            // Trigger-and-rotate: hold the trigger and rotate the controller
+            // to tilt the skybox. The controller's orientation delta (pitch,
+            // yaw, roll) is applied to the skybox each frame (see render loop).
+            this.rotatingSkybox = {
+                controller,
+                lastQuat: controller.quaternion.clone()
+            };
         }
     }
 
@@ -1081,6 +1249,10 @@ export class XrPlayerService implements OnDestroy {
         this.markInteraction();
         if (this.draggingSlider?.controller === controller) {
             this.draggingSlider = null;
+            return;
+        }
+        if (this.rotatingSkybox?.controller === controller) {
+            this.rotatingSkybox = null;
             return;
         }
         const target = this.hovered[this.ud(controller).index!];
@@ -1093,7 +1265,7 @@ export class XrPlayerService implements OnDestroy {
 
     private onSqueezeStart(controller: THREE.Object3D): void {
         this.markInteraction();
-        if (this.grabbing || this.grabbingSkybox) return;
+        if (this.grabbing || this.rotatingSkybox) return;
         const target = this.hovered[this.ud(controller).index!];
         if (target?.panel) {
             // Ray-follow grab: the panel goes wherever the laser pointer
@@ -1105,9 +1277,6 @@ export class XrPlayerService implements OnDestroy {
                 panel: target.panel,
                 rayDist: controller.position.distanceTo(panelWorld)
             };
-        } else if (target?.skybox) {
-            // Grab the skybox: dragging up/down rotates it on the pitch axis.
-            this.grabbingSkybox = { controller, lastY: controller.position.y };
         }
     }
 
@@ -1144,8 +1313,30 @@ export class XrPlayerService implements OnDestroy {
             this.grabbing = null;
             this.saveLayout();
         }
-        if (this.grabbingSkybox?.controller === controller) {
-            this.grabbingSkybox = null;
+    }
+
+    // Fade the controller laser lines in/out. They stay lit while the control
+    // panel or the media wall is open (so the user can point at them); when
+    // both are closed they fade out to reduce clutter. A trigger press keeps
+    // them lit for a short window (LASER_TRIGGER_MS) so the user can interact
+    // with whatever is on screen, and an active slider drag / panel grab keeps
+    // them lit too. The opacity is eased each frame for a smooth fade.
+    private static readonly LASER_TRIGGER_MS = 2000;
+    private static readonly LASER_OPACITY = 0.6;
+
+    private updateLaserVisibility(dt: number): void {
+        if (this.laserLines.length === 0) return;
+        const now = performance.now();
+        const panelsOpen =
+            (this.mainPanel?.visible === true) || (this.mediaWall?.visible === true);
+        const triggerRecent = now - this.lastTriggerAt < XrPlayerService.LASER_TRIGGER_MS;
+        const interacting = this.draggingSlider !== null || this.grabbing !== null;
+        const target = (panelsOpen || triggerRecent || interacting)
+            ? XrPlayerService.LASER_OPACITY : 0;
+        const ease = Math.min(1, dt * 8);
+        for (const line of this.laserLines) {
+            const mat = line.material as THREE.LineBasicMaterial;
+            mat.opacity = THREE.MathUtils.lerp(mat.opacity, target, ease);
         }
     }
 
@@ -1232,48 +1423,102 @@ export class XrPlayerService implements OnDestroy {
         // hover feedback.
     }
 
-    // ---- Layout persistence --------------------------------------------------
-    // Panel positions/visibility are stored under a feature-private key so
-    // removing the feature leaves the rest of the app's storage untouched.
+    // ---- XR settings (via XrSettingsService) ---------------------------------
+    // All XR settings (panel layout, passthrough, stereo strength) live in the
+    // self-contained XrSettingsService, which namespaces its keys under "xtpXr"
+    // so they never touch the web app's local settings. We subscribe to its
+    // observables so any change (including a reset) is applied to the live scene.
 
-    private static readonly LAYOUT_KEY = 'xtpXrPlayerLayout';
-
-    private saveLayout(): void {
-        try {
-            const data: Record<string, { pos: number[]; rotY: number; rotX: number; visible: boolean }> = {};
-            for (const p of this.panels) {
-                data[p.panelId] = {
-                    pos: [p.position.x, p.position.y, p.position.z],
-                    rotY: p.rotation.y,
-                    rotX: p.rotation.x,
-                    visible: p.visible
-                };
-            }
-            localStorage.setItem(XrPlayerService.LAYOUT_KEY, JSON.stringify(data));
-        } catch {
-            // Storage unavailable - layout just won't persist.
-        }
+    private subscribeToXrSettings(): void {
+        this.subs.push(
+            this.xrSettings.passthrough$.subscribe(v => {
+                this.passthroughEnabled = v;
+                this.applyPassthrough();
+                this.settingsPanel?.setPassthroughActive(v && this.passthroughAvailable);
+            }),
+            this.xrSettings.stereoStrength$.subscribe(v => {
+                this.stereoStrength = v;
+                this.settingsPanel?.stereoSlider.setValue(v, false);
+            }),
+            this.xrSettings.layout$.subscribe(layout => this.applyLayout(layout))
+        );
     }
 
-    private loadLayout(): void {
-        try {
-            const raw = localStorage.getItem(XrPlayerService.LAYOUT_KEY);
-            if (!raw) return;
-            const data = JSON.parse(raw);
-            for (const p of this.panels) {
-                const entry = data[p.panelId];
-                if (!entry) continue;
-                if (Array.isArray(entry.pos) && entry.pos.length === 3) {
-                    p.position.set(entry.pos[0], entry.pos[1], entry.pos[2]);
-                }
-                if (typeof entry.rotY === 'number') p.rotation.y = entry.rotY;
-                if (typeof entry.rotX === 'number') p.rotation.x = entry.rotX;
-                if (typeof entry.visible === 'boolean') p.visible = entry.visible;
-            }
-            this.syncPanelToggleButtons();
-        } catch {
-            // Corrupt layout - fall back to defaults.
+    // Gather the current position/rotation/visibility of every panel.
+    private collectLayout(): XrPanelLayout {
+        const data: XrPanelLayout = {};
+        for (const p of this.panels) {
+            data[p.panelId] = {
+                pos: [p.position.x, p.position.y, p.position.z],
+                rotY: p.rotation.y,
+                rotX: p.rotation.x,
+                visible: p.visible
+            };
         }
+        return data;
+    }
+
+    private saveLayout(): void {
+        this.xrSettings.setLayout(this.collectLayout());
+    }
+
+    // Apply a persisted layout. Panels with no entry fall back to their default
+    // (captured in buildPanels), so a reset restores the defaults.
+    private applyLayout(layout: XrPanelLayout): void {
+        for (const p of this.panels) {
+            const entry = layout[p.panelId] ?? this.defaultLayout[p.panelId];
+            if (!entry) continue;
+            if (Array.isArray(entry.pos) && entry.pos.length === 3) {
+                p.position.set(entry.pos[0], entry.pos[1], entry.pos[2]);
+            }
+            p.rotation.y = entry.rotY;
+            p.rotation.x = entry.rotX;
+            p.visible = entry.visible;
+        }
+        this.syncPanelToggleButtons();
+    }
+
+    // ---- Clear XR settings ---------------------------------------------------
+    // "Clear XR settings" opens a confirmation dialog. On Confirm, every XR
+    // setting is reset to its default (only XR settings - the web app's local
+    // settings are untouched). The subscriptions above re-apply the defaults to
+    // the live scene (panels return to their default layout, passthrough off,
+    // stereo strength 1.0).
+
+    private showClearSettingsDialog(): void {
+        if (!this.confirmDialog) return;
+        this.recenterDialog();
+        this.confirmDialog.visible = true;
+    }
+
+    private hideClearSettingsDialog(): void {
+        if (this.confirmDialog) this.confirmDialog.visible = false;
+    }
+
+    private confirmClearSettings(): void {
+        this.hideClearSettingsDialog();
+        this.xrSettings.resetXrSettings();
+        this.setStatus('XR settings cleared.');
+    }
+
+    // Place the confirmation dialog ~1.8m in front of the user, at their height,
+    // facing them (yaw only, kept upright).
+    private recenterDialog(): void {
+        if (!this.confirmDialog) return;
+        const head = this.camera.position;
+        this.tempMatrix.identity().extractRotation(this.camera.matrixWorld);
+        const dir = new THREE.Vector3(0, 0, -1).applyMatrix4(this.tempMatrix);
+        dir.y = 0;
+        if (dir.lengthSq() < 0.001) dir.set(0, 0, -1);
+        dir.normalize();
+        const worldPos = head.clone().addScaledVector(dir, 1.8);
+        worldPos.y = head.y - 0.1;
+        const dx = head.x - worldPos.x;
+        const dz = head.z - worldPos.z;
+        this.confirmDialog.rotation.y = Math.atan2(dx, dz);
+        this.confirmDialog.rotation.x = 0;
+        this.worldRoot.worldToLocal(worldPos);
+        this.confirmDialog.position.copy(worldPos);
     }
 
     // ---- Non-VR preview -------------------------------------------------------
@@ -1307,9 +1552,49 @@ export class XrPlayerService implements OnDestroy {
                 this.camera.rotation.set(0, 0, 0);
                 this.camera.rotateY(this.previewYaw);
                 this.camera.rotateX(this.previewPitch);
+            } else if (this.skyboxRoll !== 0) {
+                // Apply the skybox roll to the XR camera's per-eye MATRICES
+                // (heresphere-style).  The renderer computes matrixWorld
+                // directly from camera.matrix in xr.updateCamera() — it never
+                // reads camera.quaternion — so we must multiply the roll into
+                // the matrix itself.
+                //
+                // CRITICAL: use premultiply (WORLD frame) around the camera's
+                // forward axis, NOT multiply (LOCAL frame).  multiply applies
+                // the roll AFTER the headset's pitch/yaw, so the roll axis
+                // tilts with the head — at extreme roll, head pitch couples
+                // into the view (gimbal lock).  premultiply applies the roll
+                // BEFORE the headset pose, keeping the roll axis locked to the
+                // camera's actual forward direction in world space.
+                const xrCam = this.renderer.xr.getCamera();
+                for (const cam of xrCam.cameras) {
+                    const forward = new THREE.Vector3(0, 0, -1)
+                        .transformDirection(cam.matrix).normalize();
+                    const rollM = new THREE.Matrix4().makeRotationAxis(forward, this.skyboxRoll);
+                    cam.matrix.premultiply(rollM);
+                }
+            }
+
+            // Apply camera position offsets (zoom/heave/sway) to the SKYBOX
+            // (video sphere), NOT the camera.  Moving the camera would shift
+            // the panels, controllers, and slider raycasts relative to the
+            // user's head, causing the sliders to jump and the UI to drift.
+            // Moving the skybox instead only shifts the video, keeping all UI
+            // elements anchored to the head.
+            if ((this.camZoom !== 0 || this.camHeave !== 0 || this.camSway !== 0) && this.videoSphere) {
+                const xrCam = this.renderer.xr.getCamera();
+                const cam = xrCam.cameras[0];
+                const rot = new THREE.Matrix4().extractRotation(cam.matrix);
+                const offset = new THREE.Vector3(
+                    this.camSway, this.camHeave, this.camZoom
+                ).applyMatrix4(rot);
+                this.videoSphere.position.copy(offset);
+            } else if (this.videoSphere) {
+                this.videoSphere.position.set(0, 0, 0);
             }
 
             this.updateInteraction(dt);
+            this.updateLaserVisibility(dt);
 
             // Controller button bindings (edge-detected per controller):
             //   button 3 -> re-center the world under the user
@@ -1331,12 +1616,26 @@ export class XrPlayerService implements OnDestroy {
                 }
             }
 
-            // Skybox grab: dragging the controller up/down tilts the 360
-            // sphere on the pitch axis (re-aims the video's vertical center).
-            if (this.grabbingSkybox && this.videoSphere) {
-                const dy = this.grabbingSkybox.controller.position.y - this.grabbingSkybox.lastY;
-                this.grabbingSkybox.lastY = this.grabbingSkybox.controller.position.y;
-                this.videoSphere.rotation.x += dy * 4.0;
+            // Skybox trigger-and-rotate: while the trigger is held on the
+            // skybox, the controller's orientation delta (pitch, yaw, roll)
+            // is applied to the skybox. This follows the controller's actual
+            // rotation (not its position), so there's no surge/sway drift.
+            if (this.rotatingSkybox && this.videoSphere) {
+                const { controller, lastQuat } = this.rotatingSkybox;
+                // Delta rotation from last frame's controller orientation to
+                // the current one, in the controller's local frame.
+                const deltaQuat = new THREE.Quaternion()
+                    .copy(controller.quaternion)
+                    .multiply(lastQuat.clone().invert());
+                const euler = new THREE.Euler().setFromQuaternion(deltaQuat, 'YXZ');
+                // Sensitivity: 1.0 = 1:1 tracking; lower = more damped.
+                const sens = 1.0;
+                this.videoSphere.rotation.x += euler.x * sens;
+                this.videoSphere.rotation.y += euler.y * sens;
+                this.skyboxRoll += euler.z * sens;
+                // Store this frame's orientation as the new baseline.
+                lastQuat.copy(controller.quaternion);
+                this.syncSkyboxSettings();
             }
 
             // Copy the current video frame into the texture canvas (~30fps).
@@ -1506,11 +1805,13 @@ export class XrPlayerService implements OnDestroy {
                 const dy = this.camera.position.y - pw.y;
                 const dz = this.camera.position.z - pw.z;
                 if (dx * dx + dy * dy + dz * dz > 0.001) {
+                    const distH = Math.sqrt(dx * dx + dz * dz);
                     const targetYaw = Math.atan2(dx, dz);
-                    // Pitch is damped to half strength: full pitch made the
-                    // panel swing hard whenever the hand crossed its height,
-                    // and it was hard to level again.
-                    const targetPitch = Math.atan2(-dy, dz) * 0.5;
+                    // Pitch about the horizontal distance (not dz) so the panel
+                    // faces the user at the correct angle. With the panel's YXZ
+                    // rotation order this tilts up/down without any roll, keeping
+                    // the top aligned with the skybox / world up.
+                    const targetPitch = Math.atan2(-dy, distH);
                     let diff = targetYaw - this.grabbing.panel.rotation.y;
                     while (diff > Math.PI) diff -= 2 * Math.PI;
                     while (diff < -Math.PI) diff += 2 * Math.PI;

@@ -53,7 +53,7 @@ export class MediaWallPanel extends Panel {
         this.pageDownButton.position.set(0.45, -1.02, 0);
         this.pageDownButton.onClick = () => this.changePage(1);
         this.content.add(this.pageDownButton);
-        this.pageLabel = makeLabel('1 / 1', 0.4, 0.07, '#9fb0d0', 0.5);
+        this.pageLabel = makeLabel('1 / 1', 0.4, 0.07, '#9fb0d0', 0.65);
         this.pageLabel.position.set(0, -1.02, 0);
         this.content.add(this.pageLabel);
     }
@@ -203,7 +203,7 @@ export class ScriptStatusPanel extends Panel {
         channels.forEach((channel, i) => {
             const y = startY - i * rowH;
             const label = makeLabel(
-                channel.friendlyName || channel.channel, 0.45, 0.06, '#cdd6ea', 0.5);
+                channel.friendlyName || channel.channel, 0.45, 0.06, '#cdd6ea', 0.65);
             label.position.set(-0.55, y, 0);
             this.content.add(label);
 
@@ -264,6 +264,14 @@ export class MotionProfilesPanel extends Panel {
             this.buttons.push(btn);
         });
     }
+
+    // Optimistically mark a profile button as active right after the selection
+    // is sent, so the UI reflects the choice immediately (mirrors the web tab).
+    setSelected(profile: string): void {
+        for (const btn of this.buttons) {
+            btn.setActive(btn.label === profile);
+        }
+    }
 }
 
 // TCode command buttons (same action as the web TCode dialog).
@@ -310,7 +318,7 @@ export class HelpPanel extends Panel {
         const rowH = 0.15;
         const startY = (lines.length - 1) * rowH / 2 + 0.1;
         lines.forEach((line, i) => {
-            const label = makeLabel(line, 1.7, 0.13, '#cdd6ea', 0.5, 256);
+            const label = makeLabel(line, 1.7, 0.13, '#cdd6ea', 0.65, 256);
             label.position.set(0, startY - i * rowH, 0);
             this.content.add(label);
         });
@@ -357,7 +365,7 @@ export class MainControlPanel extends Panel {
         super('controls', 'Player Controls', 2.3, 1.0);
 
         // Row 1: media name + pin/exit
-        this.mediaName = makeLabel('', 1.5, 0.08, '#ffffff', 0.5);
+        this.mediaName = makeLabel('', 1.5, 0.08, '#ffffff', 0.65, 192);
         this.mediaName.position.set(-0.3, 0.36, 0);
         this.content.add(this.mediaName);
 
@@ -389,11 +397,11 @@ export class MainControlPanel extends Panel {
         });
 
         // Row 3: seek slider + time
-        this.seekSlider = new Slider3D(1.7, cb.onSeek);
-        this.seekSlider.position.set(-0.15, 0.04, 0);
+        this.seekSlider = new Slider3D(1.5, cb.onSeek);
+        this.seekSlider.position.set(-0.25, 0.04, 0);
         this.content.add(this.seekSlider);
 
-        this.timeLabel = makeLabel('00:00 / 00:00', 0.5, 0.06, '#9fb0d0', 0.45);
+        this.timeLabel = makeLabel('00:00 / 00:00', 0.6, 0.09, '#9fb0d0', 0.7, 192);
         this.timeLabel.position.set(0.85, 0.04, 0);
         this.content.add(this.timeLabel);
 
@@ -432,11 +440,11 @@ export class MainControlPanel extends Panel {
     }
 
     setMediaName(name: string): void {
-        this.setLabelMesh(this.mediaName, name || 'No media playing', 1.5, 0.08, '#ffffff', 0.5);
+        this.setLabelMesh(this.mediaName, name || 'No media playing', 1.5, 0.08, '#ffffff', 0.65);
     }
 
     setTimeText(elapsed: string, duration: string): void {
-        this.setLabelMesh(this.timeLabel, `${elapsed} / ${duration}`, 0.5, 0.06, '#9fb0d0', 0.45);
+        this.setLabelMesh(this.timeLabel, `${elapsed} / ${duration}`, 0.6, 0.09, '#9fb0d0', 0.7);
     }
 
     setPlaying(playing: boolean): void {
@@ -476,7 +484,7 @@ export class MainControlPanel extends Panel {
         w: number, h: number, color: string, fontScale: number): void {
         const mat = mesh.material as THREE.MeshBasicMaterial;
         const aspect = w / h;
-        const heightPx = 128;
+        const heightPx = 192;
         const old = mat.map;
         mat.map = makeFaceTexture(text, {
             width: Math.max(256, Math.floor(heightPx * aspect)),
@@ -493,12 +501,25 @@ export class MainControlPanel extends Panel {
 export interface SettingsCallbacks {
     onTogglePassthrough: () => void;
     onStereoStrength: (value: number) => void;
+    onResetStereo: () => void;
+    onClearSettings: () => void;
+    onSkyboxPitch: (value: number) => void;
+    onSkyboxYaw: (value: number) => void;
+    onSkyboxRoll: (value: number) => void;
+    onResetSkyboxPitch: () => void;
+    onResetSkyboxYaw: () => void;
+    onResetSkyboxRoll: () => void;
+    onZoom: (value: number) => void;
+    onHeight: (value: number) => void;
+    onSide: (value: number) => void;
+    onResetPosition: () => void;
 }
 
 export class SettingsPanel extends Panel {
     private tabs: { id: string; label: string; content: THREE.Group; button: Button3D }[] = [];
     private passthroughButton: Button3D;
     readonly stereoSlider: Slider3D;
+    private skyboxSliders: { name: string; label: THREE.Mesh; slider: Slider3D; last: number }[] = [];
 
     constructor(cb: SettingsCallbacks) {
         super('settings', 'Settings', 2.0, 1.5);
@@ -510,24 +531,92 @@ export class SettingsPanel extends Panel {
         this.passthroughButton.onClick = cb.onTogglePassthrough;
         display.add(this.passthroughButton);
 
-        const stereoLabel = makeLabel('3D Depth', 0.8, 0.09, '#9fb0d0', 0.5);
+        const stereoLabel = makeLabel('3D Depth', 0.8, 0.09, '#9fb0d0', 0.65);
         stereoLabel.position.set(-0.35, 0.05, 0);
         display.add(stereoLabel);
 
         // Range 0..2: 1.0 (center) is full 3D; below reduces it, above
         // adds parallax beyond full 3D.
         this.stereoSlider = new Slider3D(1.3, cb.onStereoStrength, 0, 2);
-        this.stereoSlider.position.set(0, -0.15, 0);
+        this.stereoSlider.position.set(-0.15, -0.15, 0);
         this.stereoSlider.setValue(1.0, false);
         display.add(this.stereoSlider);
 
+        // Reset the 3D depth back to full (1.0).
+        const stereoReset = new Button3D('R', 0.18, 0.12);
+        stereoReset.position.set(0.78, -0.15, 0);
+        stereoReset.onClick = cb.onResetStereo;
+        display.add(stereoReset);
+
+        // "Clear XR settings": resets every XR setting to its default (with a
+        // confirmation dialog). Only XR settings are affected.
+        const clearButton = new Button3D('Clear XR settings', 1.2, 0.14);
+        clearButton.position.set(0, -0.45, 0);
+        clearButton.onClick = cb.onClearSettings;
+        display.add(clearButton);
+
         this.addTab('display', 'Display', display);
+
+        // --- Skybox tab ---
+        // One row per axis: a live "Name  N°" label, a -180..180 slider, and a
+        // reset button (R) that snaps the axis back to 0.
+        const skybox = new THREE.Group();
+        const axes: { name: string; onSet: (v: number) => void; onReset: () => void }[] = [
+            { name: 'Pitch', onSet: cb.onSkyboxPitch, onReset: cb.onResetSkyboxPitch },
+            { name: 'Yaw', onSet: cb.onSkyboxYaw, onReset: cb.onResetSkyboxYaw },
+            { name: 'Roll', onSet: cb.onSkyboxRoll, onReset: cb.onResetSkyboxRoll }
+        ];
+        axes.forEach((axis, i) => {
+            const y = 0.22 - i * 0.24;
+            const label = makeLabel(`${axis.name} 0°`, 0.6, 0.09, '#9fb0d0', 0.65);
+            label.position.set(-0.72, y, 0);
+            skybox.add(label);
+            const slider = new Slider3D(0.95, v => axis.onSet(v), -180, 180);
+            slider.position.set(0.12, y, 0);
+            slider.setValue(0, false);
+            skybox.add(slider);
+            const reset = new Button3D('R', 0.18, 0.12);
+            reset.position.set(0.82, y, 0);
+            reset.onClick = axis.onReset;
+            skybox.add(reset);
+            this.skyboxSliders.push({ name: axis.name, label, slider, last: 0 });
+        });
+        this.addTab('skybox', 'Skybox', skybox);
+
+        // --- Position tab ---
+        // Skybox position offsets (in the camera's local frame):
+        //   Zoom:   forward/backward along the view direction
+        //   Height: up/down (drag right = up)
+        //   Side:   left/right (drag right = right)
+        // Range -2..2 meters.
+        const position = new THREE.Group();
+        const posAxes: { name: string; onSet: (v: number) => void }[] = [
+            { name: 'Zoom', onSet: cb.onZoom },
+            { name: 'Height', onSet: cb.onHeight },
+            { name: 'Side', onSet: cb.onSide }
+        ];
+        posAxes.forEach((axis, i) => {
+            const y = 0.22 - i * 0.24;
+            const label = makeLabel(`${axis.name} 0.0m`, 0.6, 0.09, '#9fb0d0', 0.65);
+            label.position.set(-0.72, y, 0);
+            position.add(label);
+            const slider = new Slider3D(0.95, v => axis.onSet(v), -2, 2);
+            slider.position.set(0.12, y, 0);
+            slider.setValue(0, false);
+            position.add(slider);
+        });
+        const posReset = new Button3D('Reset', 0.4, 0.12);
+        posReset.position.set(0, -0.55, 0);
+        posReset.onClick = cb.onResetPosition;
+        position.add(posReset);
+        this.addTab('position', 'Position', position);
+
         this.switchTab(0);
     }
 
     private addTab(id: string, label: string, content: THREE.Group): void {
         const index = this.tabs.length;
-        const button = new Button3D(label, 0.6, 0.12);
+        const button = new Button3D(label, 0.52, 0.12);
         button.onClick = () => this.switchTab(index);
         this.content.add(button);
         content.position.set(0, -0.15, 0);
@@ -538,7 +627,7 @@ export class SettingsPanel extends Panel {
 
     private layoutTabs(): void {
         const n = this.tabs.length;
-        const spacing = 0.68;
+        const spacing = 0.58;
         const startX = -(n - 1) * spacing / 2;
         this.tabs.forEach((t, i) => {
             t.button.position.set(startX + i * spacing, 0.55, 0);
@@ -554,5 +643,49 @@ export class SettingsPanel extends Panel {
 
     setPassthroughActive(active: boolean): void {
         this.passthroughButton.setActive(active);
+    }
+
+    // Update the Skybox tab sliders + value labels from the current angles
+    // (degrees). Called after a skybox drag / slider move / reset so the UI
+    // always reflects the sphere's orientation. The label texture is only
+    // rebuilt when the rounded value changes (avoids per-frame canvas work).
+    setSkyboxAngles(pitchDeg: number, yawDeg: number, rollDeg: number): void {
+        const values = [pitchDeg, yawDeg, rollDeg];
+        this.skyboxSliders.forEach((s, i) => {
+            s.slider.setValue(values[i], false);
+            const v = Math.round(values[i]);
+            if (v !== s.last) {
+                s.last = v;
+                const mat = s.label.material as THREE.MeshBasicMaterial;
+                const old = mat.map;
+                mat.map = makeFaceTexture(`${s.name} ${v}°`, {
+                    width: 256, height: 64, color: '#9fb0d0', font: 'bold 32px sans-serif'
+                });
+                old?.dispose();
+            }
+        });
+    }
+}
+
+// A small modal confirmation dialog: a message plus Cancel / Confirm buttons.
+// The panel's own X button (from the Panel base) acts as Cancel.
+export class ConfirmDialog extends Panel {
+    constructor(message: string, onConfirm: () => void, onCancel: () => void) {
+        super('confirm', 'Confirm', 1.7, 1.0);
+        this.onClose = onCancel; // X button behaves like Cancel
+
+        const label = makeLabel(message, 1.5, 0.3, '#ffffff', 0.65, 256);
+        label.position.set(0, 0.15, 0);
+        this.content.add(label);
+
+        const cancel = new Button3D('Cancel', 0.5, 0.14);
+        cancel.position.set(-0.35, -0.28, 0);
+        cancel.onClick = onCancel;
+        this.content.add(cancel);
+
+        const confirm = new Button3D('Confirm', 0.5, 0.14);
+        confirm.position.set(0.35, -0.28, 0);
+        confirm.onClick = onConfirm;
+        this.content.add(confirm);
     }
 }

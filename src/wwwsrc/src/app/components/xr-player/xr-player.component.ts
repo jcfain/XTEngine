@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { XrPlayerService } from './xr-player.service';
+import { BUILD_VERSION } from '../../build-info';
 
 @Component({
     selector: 'app-xr-player',
@@ -28,6 +29,7 @@ export class XrPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     supported = false;
     sessionActive = false;
     status = '';
+    buildVersion = BUILD_VERSION;
 
     private sub?: Subscription;
     private wasInSession = false;

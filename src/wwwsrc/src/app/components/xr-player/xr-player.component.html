@@ -4,6 +4,7 @@
   <div class="xr-ui" [class.in-session]="sessionActive">
     <button class="xr-close" title="Close" (click)="exit()">&times;</button>
     <h1 class="xr-title">VR Media Player</h1>
+    <p class="xr-version">Build {{ buildVersion }}</p>
     <p class="xr-status">{{ status }}</p>
     @if (supported) {
       <button class="xr-enter" (click)="enterVR()">Enter VR</button>

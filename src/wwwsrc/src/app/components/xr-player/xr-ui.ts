@@ -62,7 +62,7 @@ export function makeFaceTexture(
 // A flat transparent label (no background). heightPx controls the canvas
 // resolution (higher = crisper text, more memory).
 export function makeLabel(text: string, widthM: number, heightM: number,
-    color = '#ffffff', fontScale = 0.5, heightPx = 128): THREE.Mesh {
+    color = '#ffffff', fontScale = 0.65, heightPx = 192): THREE.Mesh {
     const aspect = widthM / heightM;
     const mesh = new THREE.Mesh(
         new THREE.PlaneGeometry(widthM, heightM),
@@ -169,7 +169,7 @@ export function makeTitleMesh(text: string, widthM: number, heightM: number,
     // low-res canvas (e.g. 128px) gets upscaled and the text goes fuzzy.
     const heightPx = 384;
     const widthPx = Math.max(512, Math.floor(heightPx * (widthM / heightM)));
-    const fontSizePx = Math.floor((heightPx / maxLines) * 0.8);
+    const fontSizePx = Math.floor((heightPx / maxLines) * 0.95);
     const tex = makeTitleTexture(text, widthPx, heightPx, fontSizePx, color, maxLines);
     // Crisp text: the label is viewed near 1:1, so mipmapped minification
     // (the default) is what softens the glyphs. Linear filtering + anisotropy
@@ -194,10 +194,18 @@ export class Panel extends THREE.Group {
     readonly bg: THREE.Mesh;
     readonly content = new THREE.Group();
     private hovered = false;
+    // Called after the panel's X button hides it, so the owning service can
+    // sync the main-panel toggle buttons and persist the new layout.
+    onClose?: () => void;
 
     constructor(id: string, title: string, widthM: number, heightM: number) {
         super();
         this.panelId = id;
+        // YXZ Euler order: yaw (face the user horizontally) is applied before
+        // pitch (tilt up/down). This keeps the panel facing the user while its
+        // top stays aligned with world up (the skybox) - no roll/tilt while
+        // dragging. The default XYZ order combined pitch+yaw into a roll.
+        this.rotation.order = 'YXZ';
 
         const bg = new THREE.Mesh(
             new THREE.PlaneGeometry(widthM, heightM),
@@ -212,9 +220,29 @@ export class Panel extends THREE.Group {
         this.bg = bg;
         this.add(bg);
 
-        const titleLabel = makeLabel(title, widthM * 0.9, heightM * 0.09);
-        titleLabel.position.set(0, heightM / 2 - heightM * 0.06, 0.005);
+        const titleLabel = makeLabel(title, widthM * 0.9, heightM * 0.06, '#cdd6ea', 0.65);
+        // Shifted left so it does not collide with the close (X) button.
+        titleLabel.position.set(-widthM * 0.05, heightM / 2 - heightM * 0.05, 0.005);
         this.add(titleLabel);
+
+        // Close (X) button, top-right: hides this panel. Styled to blend into
+        // the panel - no background in the resting state (just a muted glyph),
+        // with a subtle highlight on hover.
+        const close = new Button3D('\u00d7', 0.12, 0.12, {
+            bg: null,
+            border: null,
+            color: '#8b95ad',
+            bgHover: 'rgba(90, 130, 220, 0.6)',
+            borderHover: null,
+            bgActive: 'rgba(90, 130, 220, 0.75)',
+            borderActive: null
+        });
+        close.position.set(widthM / 2 - 0.1, heightM / 2 - 0.09, 0.02);
+        close.onClick = () => {
+            this.visible = false;
+            this.onClose?.();
+        };
+        this.add(close);
 
         this.content.position.set(0, 0, 0.01);
         this.add(this.content);
@@ -247,6 +275,18 @@ export class Panel extends THREE.Group {
     }
 }
 
+// Per-state color overrides for a Button3D. Omitted values fall back to the
+// default blue button colors; null explicitly removes the background/border.
+export interface Button3DStyle {
+    bg?: string | null;
+    border?: string | null;
+    color?: string;
+    bgHover?: string | null;
+    borderHover?: string | null;
+    bgActive?: string | null;
+    borderActive?: string | null;
+}
+
 // A 3D push button with hover/pressed/active states.
 export class Button3D extends THREE.Group {
     label = '';
@@ -257,12 +297,14 @@ export class Button3D extends THREE.Group {
     private face: THREE.Mesh;
     private widthM: number;
     private heightM: number;
+    private style: Button3DStyle;
 
-    constructor(label: string, widthM = 0.28, heightM = 0.09) {
+    constructor(label: string, widthM = 0.28, heightM = 0.09, style: Button3DStyle = {}) {
         super();
         this.label = label;
         this.widthM = widthM;
         this.heightM = heightM;
+        this.style = style;
         this.face = new THREE.Mesh(
             new THREE.PlaneGeometry(widthM, heightM),
             new THREE.MeshBasicMaterial({ alphaTest: 0.5 })
@@ -299,19 +341,25 @@ export class Button3D extends THREE.Group {
     }
 
     private refresh(): void {
-        let bg = '#33456b';
-        let border: string | null = 'rgba(130, 170, 255, 0.85)';
-        let color = '#ffffff';
+        let bg: string | null;
+        let border: string | null;
+        let color: string;
         if (!this.enabled) {
             bg = '#1c2436';
             border = null;
             color = '#7a869c';
         } else if (this.active) {
-            bg = '#3d6fd6';
-            border = 'rgba(180, 210, 255, 0.9)';
+            bg = this.style.bgActive ?? '#3d6fd6';
+            border = this.style.borderActive ?? 'rgba(180, 210, 255, 0.9)';
+            color = this.style.color ?? '#ffffff';
         } else if (this.hovered) {
-            bg = '#2c3d63';
-            border = 'rgba(140, 180, 255, 0.9)';
+            bg = this.style.bgHover ?? '#2c3d63';
+            border = this.style.borderHover ?? 'rgba(140, 180, 255, 0.9)';
+            color = this.style.color ?? '#ffffff';
+        } else {
+            bg = this.style.bg ?? '#33456b';
+            border = this.style.border ?? 'rgba(130, 170, 255, 0.85)';
+            color = this.style.color ?? '#ffffff';
         }
         const aspect = this.widthM / this.heightM;
         const heightPx = 96;

@@ -4,8 +4,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
-    "deploy": "ng build --configuration production && rm -f ../www/*.js && rm -f ../www/*.css && rm -f ../www/*.html && cp -r dist/xtp-web/browser/* ../www/",
+    "set-version": "node scripts/set-build-version.js",
+    "build": "npm run set-version && ng build",
+    "deploy": "npm run set-version && ng build --configuration production && rm -f ../www/*.js && rm -f ../www/*.css && rm -f ../www/*.html && cp -r dist/xtp-web/browser/* ../www/ && cd /home/jay/git/XTPlayer && bash deploy-debug-www.sh",
     "watch": "ng build --watch --configuration development"
   },
   "private": true,
