@@ -1022,7 +1022,8 @@ export class XrPlayerService implements OnDestroy {
         this.videoMode = this.resolveProjection(flags, item);
         this.videoStereo = this.resolveStereo(flags);
         this.applyVideoFormat();
-        this.mainPanel?.setFormat(this.formatProjection, this.formatStereo);
+        this.mainPanel?.setFormat(this.formatProjection, this.formatStereo,
+            this.projectionLabel(this.videoMode), this.resolvedStereoLabel());
 
         this.startStateTimer();
         this.setStatus(`Playing: ${item.name} [${this.projectionLabel(this.videoMode)}]` +
@@ -1121,7 +1122,8 @@ export class XrPlayerService implements OnDestroy {
         this.videoMode = this.resolveProjection(flags, item);
         this.videoStereo = this.resolveStereo(flags);
         this.applyVideoFormat();
-        this.mainPanel?.setFormat(this.formatProjection, this.formatStereo);
+        this.mainPanel?.setFormat(this.formatProjection, this.formatStereo,
+            this.projectionLabel(this.videoMode), this.resolvedStereoLabel());
         this.setStatus(`Format: ${this.projectionLabel(this.videoMode)} / ${this.stereoWord()}`);
     }
 
@@ -1129,6 +1131,14 @@ export class XrPlayerService implements OnDestroy {
         if (this.formatStereo === 'auto') return 'Auto';
         if (this.formatStereo === 'mono') return 'Mono';
         return this.formatStereo.toUpperCase();
+    }
+
+    // The stereo layout actually resolved for the current clip (used to label
+    // the "Auto" option, e.g. "Auto (SBS)").
+    private resolvedStereoLabel(): string {
+        if (this.videoStereo === 'sbs') return 'SBS';
+        if (this.videoStereo === 'tb') return 'TB';
+        return 'Mono';
     }
 
     // Parse DeoVR-style projection/stereo/alpha flags from a file name. Flags

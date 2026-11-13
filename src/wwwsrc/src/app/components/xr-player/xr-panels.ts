@@ -449,7 +449,7 @@ export class MainControlPanel extends Panel {
         // returns to detection from the file name. The list grows upward into
         // the panel body, so the boxes sit on the bottom row.
         this.formatBox = new ComboBox3D(0.6, 0.08, cb.onSetProjection);
-        this.formatBox.position.set(-0.55, -0.46, 0);
+        this.formatBox.position.set(-0.55, -0.46, 0.05);
         this.formatBox.setOptions([
             { value: 'auto', label: 'Auto' },
             { value: 'flat', label: '2D' },
@@ -463,7 +463,7 @@ export class MainControlPanel extends Panel {
         this.content.add(this.formatBox);
 
         this.stereoBox = new ComboBox3D(0.6, 0.08, cb.onSetStereo);
-        this.stereoBox.position.set(0.35, -0.46, 0);
+        this.stereoBox.position.set(0.35, -0.46, 0.05);
         this.stereoBox.setOptions([
             { value: 'auto', label: 'Auto' },
             { value: 'mono', label: 'Mono' },
@@ -502,9 +502,16 @@ export class MainControlPanel extends Panel {
     }
 
     // Update the manual format override combo boxes (projection + stereo).
-    setFormat(formatValue: string, stereoValue: string): void {
+    // When "Auto" is selected, the resolved value for the current clip is
+    // appended (e.g. "Auto (SBS)") so the user can see what was detected.
+    setFormat(formatValue: string, stereoValue: string,
+        resolvedFormatLabel?: string, resolvedStereoLabel?: string): void {
         this.formatBox.setValue(formatValue);
         this.stereoBox.setValue(stereoValue);
+        this.formatBox.setOptionLabel('auto',
+            formatValue === 'auto' && resolvedFormatLabel ? `Auto (${resolvedFormatLabel})` : 'Auto');
+        this.stereoBox.setOptionLabel('auto',
+            stereoValue === 'auto' && resolvedStereoLabel ? `Auto (${resolvedStereoLabel})` : 'Auto');
     }
 
     setDevicePaused(paused: boolean): void {

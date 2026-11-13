@@ -447,6 +447,16 @@ export class ComboBox3D extends THREE.Group {
         this.refresh();
     }
 
+    // Update the label of an existing option (e.g. "Auto" -> "Auto (SBS)"),
+    // refreshing both the dropdown row and the collapsed button if selected.
+    setOptionLabel(value: string, label: string): void {
+        const idx = this.options.findIndex(o => o.value === value);
+        if (idx < 0) return;
+        this.options[idx].label = label;
+        this.optionButtons[idx]?.setLabel(label);
+        this.refresh();
+    }
+
     private refresh(): void {
         const opt = this.options.find(o => o.value === this.value);
         this.button.setLabel((opt ? opt.label : this.value) + ' \u25be');
