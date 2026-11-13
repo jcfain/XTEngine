@@ -5,7 +5,7 @@
 // they receive plain data and fire callbacks, so all app logic stays in
 // xr-player.service.ts (which is the only file that touches app services).
 import * as THREE from 'three';
-import { Panel, Button3D, Slider3D, makeLabel, makeFaceTexture, makeTitleMesh } from './xr-ui';
+import { Panel, Button3D, Slider3D, ComboBox3D, makeLabel, makeFaceTexture, makeTitleMesh } from './xr-ui';
 import { MediaItem, ChannelModel } from '../../models/interfaces';
 import { ThumbState } from '../../models/enums';
 import { getChannelColor } from '../../utils/utils';
@@ -341,6 +341,8 @@ export interface MainControlCallbacks {
     onVolume: (value: number) => void;
     onMute: () => void;
     onRate: () => void;
+    onSetProjection: (value: string) => void;
+    onSetStereo: (value: string) => void;
     onTogglePanel: (panelId: string) => void;
     onPin: () => void;
     onExit: () => void;
@@ -353,6 +355,8 @@ export class MainControlPanel extends Panel {
     private mediaName: THREE.Mesh;
     private timeLabel: THREE.Mesh;
     private rateButton: Button3D;
+    private formatBox: ComboBox3D;
+    private stereoBox: ComboBox3D;
     private playButton!: Button3D;
     private muteButton: Button3D;
     private pinButton: Button3D;
@@ -362,7 +366,7 @@ export class MainControlPanel extends Panel {
     readonly volumeSlider: Slider3D;
 
     constructor(cb: MainControlCallbacks) {
-        super('controls', 'Player Controls', 2.3, 1.0);
+        super('controls', 'Player Controls', 2.3, 1.1);
 
         // Row 1: media name + pin/exit
         this.mediaName = makeLabel('', 1.5, 0.08, '#ffffff', 0.65, 192);
@@ -437,6 +441,34 @@ export class MainControlPanel extends Panel {
         this.rateButton.position.set(0.14, -0.32, 0);
         this.rateButton.onClick = cb.onRate;
         this.content.add(this.rateButton);
+
+        // Row 6: manual format override (for mis-named files). Each combo box
+        // lets the user pick the projection / stereo layout directly; "Auto"
+        // returns to detection from the file name. The list grows upward into
+        // the panel body, so the boxes sit on the bottom row.
+        this.formatBox = new ComboBox3D(0.6, 0.08, cb.onSetProjection);
+        this.formatBox.position.set(-0.55, -0.46, 0);
+        this.formatBox.setOptions([
+            { value: 'auto', label: 'Auto' },
+            { value: 'flat', label: '2D' },
+            { value: 'equirect180', label: 'Equirect 180' },
+            { value: 'equirect360', label: 'Equirect 360' },
+            { value: 'fisheye180', label: 'Fisheye 180' },
+            { value: 'fisheye190', label: 'Fisheye 190' },
+            { value: 'fisheye200', label: 'Fisheye 200' },
+            { value: 'fisheye220', label: 'Fisheye 220' }
+        ]);
+        this.content.add(this.formatBox);
+
+        this.stereoBox = new ComboBox3D(0.6, 0.08, cb.onSetStereo);
+        this.stereoBox.position.set(0.35, -0.46, 0);
+        this.stereoBox.setOptions([
+            { value: 'auto', label: 'Auto' },
+            { value: 'mono', label: 'Mono' },
+            { value: 'sbs', label: 'SBS' },
+            { value: 'tb', label: 'TB' }
+        ]);
+        this.content.add(this.stereoBox);
     }
 
     setMediaName(name: string): void {
@@ -465,6 +497,12 @@ export class MainControlPanel extends Panel {
 
     setRate(rate: number): void {
         this.rateButton.setLabel(`Rate: ${rate}x`);
+    }
+
+    // Update the manual format override combo boxes (projection + stereo).
+    setFormat(formatValue: string, stereoValue: string): void {
+        this.formatBox.setValue(formatValue);
+        this.stereoBox.setValue(stereoValue);
     }
 
     setDevicePaused(paused: boolean): void {

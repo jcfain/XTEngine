@@ -165,6 +165,15 @@ export class XrPlayerService implements OnDestroy {
     // Projection mode of the current video (drives the copy-loop layout and
     // which material/mesh is shown).
     private videoMode: VideoProjection = 'flat';
+    // Manual format override (the "Format"/"Stereo" combo boxes on the control
+    // panel). 'auto' = detect from the file name; anything else forces that
+    // projection/stereo for the current video. This fixes mis-named files
+    // (e.g. a fisheye200 with no stereo flag, or a fisheye190 the name
+    // doesn't describe). Each new video resets the override to Auto, so
+    // detection is the default and the user re-applies a manual format per
+    // video when needed.
+    private formatProjection: VideoProjection | 'auto' = 'auto';
+    private formatStereo: 'sbs' | 'tb' | 'mono' | 'auto' = 'auto';
     // Shader material that maps a pre-lens-corrected equidistant fisheye frame
     // onto the sphere (DeoVR _fisheye / _fisheye190 / _mkx200 / _vrca220).
     private videoFisheyeMaterial: THREE.ShaderMaterial | null = null;
@@ -646,6 +655,8 @@ export class XrPlayerService implements OnDestroy {
             onVolume: (v) => this.videoService.onSetVolume(v),
             onMute: () => this.videoService.toggleMute(),
             onRate: () => this.cyclePlayRate(),
+            onSetProjection: (v) => this.setProjection(v),
+            onSetStereo: (v) => this.setStereo(v),
             onTogglePanel: (id) => this.togglePanel(id),
             onPin: () => this.togglePin(),
             onExit: () => this.exitVR()
@@ -985,20 +996,28 @@ export class XrPlayerService implements OnDestroy {
         // (case-insensitive, any order): equirect (_180/_360) and fisheye
         // (_fisheye/_fisheye190/_mkx200/_vrca220) select a sphere mesh; a
         // stereo flag (SBS/LR/3DH or TB/3DV/OverUnder) crops one eye per
-        // texture. The "360" tag is a fallback.
+        // texture. The "360" tag is a fallback. A manual override (the
+        // Format/Stereo buttons) wins over detection for mis-named files.
+        // Each new video resets the override to Auto so detection is the
+        // default; the user can re-apply a manual format per video.
+        this.formatProjection = 'auto';
+        this.formatStereo = 'auto';
         const flags = this.parseVideoFlags(item.name + ' ' + (item.relativePath || ''));
-        const mode: VideoProjection =
-            flags.projection ??
-            (item.metaData?.tags?.includes('360') === true ? 'equirect360' : 'flat');
-        this.videoStereo = flags.stereo;
+        this.videoMode = this.resolveProjection(flags, item);
+        this.videoStereo = this.resolveStereo(flags);
+        this.applyVideoFormat();
+        this.mainPanel?.setFormat(this.formatProjection, this.formatStereo);
 
-        // Map the texture(s) for the projection.
-        //  - equirect360: full equirect; the texture transform (repeat/offset)
-        //    orients the image so its center faces the user (-z).
-        //  - equirect180 / fisheye / flat: identity mapping. The 180 layout
-        //    (black back hemisphere, letterboxed band) is baked into the canvas
-        //    by the copy loop; the fisheye mapping is done in the shader.
-        this.videoMode = mode;
+        this.startStateTimer();
+        this.setStatus(`Playing: ${item.name} [${this.projectionLabel(this.videoMode)}]` +
+            (this.videoStereo ? ` (stereo ${this.videoStereo.toUpperCase()} 3D)` : ''));
+    }
+
+    // Apply the current videoMode/videoStereo to the textures and mesh.
+    // Shared by startVideo (after detection) and the manual format override
+    // (cycleProjection/cycleStereo), so both paths configure identically.
+    private applyVideoFormat(): void {
+        const mode = this.videoMode;
         const isEquirect360 = mode === 'equirect360';
         const texs = this.videoStereo
             ? [this.videoTexture, this.videoLeftTexture, this.videoRightTexture]
@@ -1022,13 +1041,12 @@ export class XrPlayerService implements OnDestroy {
             tex.anisotropy = this.renderer?.capabilities.getMaxAnisotropy() ?? 1;
             tex.needsUpdate = true;
         }
-
         // Set the fisheye shader's max half-FOV for this projection (the
-        // material is shared, so update its uniform each time we start a video).
+        // material is shared, so update its uniform each time the format
+        // changes).
         if (this.videoFisheyeMaterial) {
             this.videoFisheyeMaterial.uniforms['uThetaMax'].value = this.fisheyeThetaMax(mode);
         }
-
         // Defer showing the mesh until the video's dimensions are known so
         // the canvas can be sized to NATIVE resolution BEFORE the first
         // texture upload. A mid-playback canvas resize leaves the Quest
@@ -1043,10 +1061,58 @@ export class XrPlayerService implements OnDestroy {
         } else {
             v.addEventListener('loadedmetadata', () => this.setupVideoMeshes(), { once: true });
         }
+    }
 
-        this.startStateTimer();
-        this.setStatus(`Playing: ${item.name} [${this.projectionLabel(mode)}]` +
-            (flags.stereo ? ` (stereo ${flags.stereo.toUpperCase()} 3D)` : ''));
+    // Resolve the projection: the manual override wins, otherwise the
+    // detected flag (with the "360" tag as a fallback, then flat).
+    private resolveProjection(flags: { projection: VideoProjection | null }, item: MediaItem): VideoProjection {
+        if (this.formatProjection !== 'auto') return this.formatProjection;
+        return flags.projection ??
+            (item.metaData?.tags?.includes('360') === true ? 'equirect360' : 'flat');
+    }
+
+    // Resolve the stereo mode: the manual override wins, otherwise the
+    // detected flag. 'mono' forces no stereo.
+    private resolveStereo(flags: { stereo: 'sbs' | 'tb' | null }): 'sbs' | 'tb' | null {
+        if (this.formatStereo === 'auto') return flags.stereo;
+        if (this.formatStereo === 'mono') return null;
+        return this.formatStereo;
+    }
+
+    // Set the manual projection override (from the Format combo box) and
+    // re-apply it to the current video (no restart - the texture mapping and
+    // mesh update in place).
+    setProjection(value: string): void {
+        if (!this.videoEl) return;
+        this.formatProjection = value as VideoProjection | 'auto';
+        this.reapplyFormat();
+    }
+
+    // Set the manual stereo override (from the Stereo combo box) and re-apply
+    // it to the current video.
+    setStereo(value: string): void {
+        if (!this.videoEl) return;
+        this.formatStereo = value as 'auto' | 'sbs' | 'tb' | 'mono';
+        this.reapplyFormat();
+    }
+
+    // Re-derive the effective projection/stereo from the override (or the
+    // detected flags when auto) and re-apply it to the current video.
+    private reapplyFormat(): void {
+        const item = this.videoService.playingMediaItem;
+        if (!item || !this.videoEl) return;
+        const flags = this.parseVideoFlags(item.name + ' ' + (item.relativePath || ''));
+        this.videoMode = this.resolveProjection(flags, item);
+        this.videoStereo = this.resolveStereo(flags);
+        this.applyVideoFormat();
+        this.mainPanel?.setFormat(this.formatProjection, this.formatStereo);
+        this.setStatus(`Format: ${this.projectionLabel(this.videoMode)} / ${this.stereoWord()}`);
+    }
+
+    private stereoWord(): string {
+        if (this.formatStereo === 'auto') return 'Auto';
+        if (this.formatStereo === 'mono') return 'Mono';
+        return this.formatStereo.toUpperCase();
     }
 
     // Parse DeoVR-style projection/stereo/alpha flags from a file name. Flags
@@ -1143,8 +1209,16 @@ export class XrPlayerService implements OnDestroy {
             }
         } else if (this.videoMode === 'equirect180') {
             if (isEye) {
-                if (st === 'sbs') { w = vw; h = vh; }          // eye=vw/2 wide, canvas=2*eye=vw
-                else if (st === 'tb') { w = vw * 2; h = vh / 2; } // eye=vw x vh/2, canvas=2*vw x vh/2
+                // The per-eye canvas MUST be 4:1 (same as mono) so the sphere
+                // UV mapping is identical for every stereo layout. The per-eye
+                // frame is drawn into the right half (2:1) and stretched to
+                // fill it, so a non-2:1 per-eye (e.g. a 4:1 eye from a 2:1
+                // landscape TB frame) is normalized to the same 2:1 equirect
+                // the sphere expects. Sizing the canvas to the eye's own aspect
+                // (the old vh/2) made an 8:1 canvas that stretched the sphere
+                // mapping and squished the TB image.
+                if (st === 'sbs') { w = vw; h = vw / 4; }         // eye=vw/2 wide, canvas=4:1
+                else if (st === 'tb') { w = vw * 2; h = vw / 2; } // eye=vw wide, canvas=4:1
                 else { w = vw * 2; h = vh; }
             } else { w = vw * 2; h = vh; }
         } else {
@@ -1179,6 +1253,23 @@ export class XrPlayerService implements OnDestroy {
             }
         } else {
             resizeCanvas(this.videoCopyCanvas, false);
+        }
+        // Clear the canvases so a stale frame from a PREVIOUS video does not
+        // linger on the skybox. A same-sized canvas is not cleared by the
+        // resize above (only a dimension change wipes it), so the old video's
+        // last frame would otherwise show until the copy loop catches up -
+        // this is what left the previous video "stuck" on the sphere. The copy
+        // loop fills them with the new video on the next frame.
+        const clearCanvas = (c: HTMLCanvasElement | null) => {
+            if (!c) return;
+            const ctx = c.getContext('2d');
+            if (ctx) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, c.width, c.height); }
+        };
+        if (this.videoStereo) {
+            clearCanvas(this.videoLeftCanvas);
+            clearCanvas(this.videoRightCanvas);
+        } else {
+            clearCanvas(this.videoCopyCanvas);
         }
         // A canvas resize leaves the GPU texture at the stale size until it is
         // re-uploaded - force it here so the FIRST frame after a video switch
@@ -1831,6 +1922,14 @@ export class XrPlayerService implements OnDestroy {
                 const v = this.videoEl;
                 const cc = this.videoCopyCanvas;
                 const cctx = this.videoCopyCtx;
+                // Recovery: if the video should be playing (per the video
+                // service) but the element is paused (e.g. a TB frame stalled
+                // the decoder), nudge it back to playing so the skybox doesn't
+                // stay black for the rest of the session.
+                if (v && this.videoService.isPlaying && v.paused && v.videoWidth) {
+                    v.play().catch(() => { /* ignore */ });
+                }
+                try {
                 if (v && cc && cctx && this.videoTexture &&
                     (this.videoScreen?.visible || this.videoSphere?.visible) && !v.paused && v.videoWidth) {
                     const now = performance.now();
@@ -1973,6 +2072,13 @@ export class XrPlayerService implements OnDestroy {
                             this.videoTexture.needsUpdate = true;
                         }
                     }
+                }
+                } catch (e) {
+                    // A bad canvas/texture state (e.g. a TB frame that throws in
+                    // drawImage) can leave the skybox black for the rest of the
+                    // session. Log it and re-setup the meshes to recover.
+                    console.error('Video copy error:', e);
+                    this.setupVideoMeshes();
                 }
             }
 

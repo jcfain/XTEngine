@@ -377,6 +377,100 @@ export class Button3D extends THREE.Group {
     }
 }
 
+// A 3D combo box (dropdown). The face shows the current value plus a caret;
+// clicking it opens a vertical list of options ABOVE the face. Selecting an
+// option fires onValue and closes the list; clicking the face again (or the
+// transparent backdrop behind the list) closes it. The backdrop makes the
+// dropdown modal: while open, any click outside the options closes it.
+//
+// The list grows upward from the face, so it should be placed near the BOTTOM
+// of its panel (the options have room to expand into the panel body).
+export class ComboBox3D extends THREE.Group {
+    onValue?: (value: string) => void;
+    private button: Button3D;
+    private dropdown: THREE.Group;
+    private optionButtons: Button3D[] = [];
+    private options: { value: string; label: string }[] = [];
+    private value = '';
+    private widthM: number;
+    private heightM: number;
+    private open = false;
+
+    constructor(widthM = 0.6, heightM = 0.08, onValue?: (value: string) => void) {
+        super();
+        this.widthM = widthM;
+        this.heightM = heightM;
+        this.onValue = onValue;
+
+        this.button = new Button3D('', widthM, heightM);
+        this.button.onClick = () => this.toggle();
+        this.add(this.button);
+
+        this.dropdown = new THREE.Group();
+        this.dropdown.visible = false;
+        this.add(this.dropdown);
+
+        // Modal backdrop: a fully-transparent button behind the options.
+        // bg/border null + empty label => no pixels drawn, but the geometry is
+        // still raycastable, so a click anywhere on it closes the list. Sized
+        // to cover the options list (not the whole view) and with hover
+        // disabled, so the laser pointer entering/leaving it does not rescale
+        // or redraw the face (that constant rescale/redraw was the flicker).
+        const backdrop = new Button3D('', 1.5, 1.0, { bg: null, border: null });
+        backdrop.setHovered = () => { /* no hover effect: prevents flicker */ };
+        backdrop.position.y = 0.4; // centered above the face, over the options
+        backdrop.onClick = () => this.close();
+        this.dropdown.add(backdrop);
+    }
+
+    setOptions(options: { value: string; label: string }[]): void {
+        this.options = options;
+        for (const btn of this.optionButtons) this.dropdown.remove(btn);
+        this.optionButtons = [];
+        const rowH = this.heightM * 0.78;
+        options.forEach((opt, i) => {
+            const btn = new Button3D(opt.label, this.widthM, rowH);
+            btn.position.set(0, this.heightM + 0.015 + i * (rowH + 0.008), 0.01);
+            btn.onClick = () => {
+                this.value = opt.value;
+                this.close();
+                this.onValue?.(opt.value);
+            };
+            this.dropdown.add(btn);
+            this.optionButtons.push(btn);
+        });
+        this.refresh();
+    }
+
+    setValue(value: string): void {
+        this.value = value;
+        this.refresh();
+    }
+
+    private refresh(): void {
+        const opt = this.options.find(o => o.value === this.value);
+        this.button.setLabel((opt ? opt.label : this.value) + ' \u25be');
+    }
+
+    toggle(): void {
+        if (this.open) this.close();
+        else this.openDropdown();
+    }
+
+    private openDropdown(): void {
+        this.open = true;
+        this.dropdown.visible = true;
+        this.button.setActive(true);
+    }
+
+    close(): void {
+        if (!this.open) return;
+        this.open = false;
+        this.dropdown.visible = false;
+        this.button.setActive(false);
+    }
+}
+
 // A 3D slider over [min, max] (default 0..1). Raycast hits are converted
 // to values via setFromPoint.
 export class Slider3D extends THREE.Group {
