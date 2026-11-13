@@ -646,6 +646,7 @@ export class XrPlayerService implements OnDestroy {
         // Main control panel (the hub)
         this.mainPanel = new MainControlPanel({
             onPlayPause: () => this.videoService.togglePause(),
+            onStop: () => this.stopVideo(),
             onPrev: () => this.mediaListService.playPreviousVideo(),
             onNext: () => this.mediaListService.playNextVideo(),
             onMoneyShot: () => this.websocketService.sendSkipToMoneyShot(),
@@ -926,7 +927,7 @@ export class XrPlayerService implements OnDestroy {
         this.sessionActive$.next(false);
         if (this.canvas) this.canvas.style.visibility = '';
         const hadVideo = this.videoService.isMediaItemPlaying();
-        this.handoffToWebPlayer();
+        this.stopPlaybackForExit();
         if (!hadVideo) {
             // Session ended without playback - say so, so an unexpected
             // early exit is visible on the overlay.
@@ -934,27 +935,39 @@ export class XrPlayerService implements OnDestroy {
         }
     }
 
-    // When the VR session ends, hand playback back to the normal in-page
-    // player so the video keeps playing on the home page.
-    private handoffToWebPlayer(): void {
-        const item = this.videoService.playingMediaItem;
-        const pos = this.videoEl?.currentTime || 0;
-        if (this.videoEl) this.videoEl.pause();
+    // When the VR session ends, STOP playback and return the page to the state
+    // it was in when XR launched (no video playing, page player hidden). The
+    // video is NOT handed back to the web player - the old handoff left the
+    // clip audible/visible in the background after exit.
+    private stopPlaybackForExit(): void {
+        if (this.videoEl) {
+            this.videoEl.pause();
+            // Mute the element directly: its audio is routed through a WebAudio
+            // MediaElementSourceNode, and in the Quest browser pausing/clearing
+            // the element does not always silence that graph - muting the source
+            // element guarantees no background audio.
+            this.videoEl.muted = true;
+            this.videoEl.volume = 0;
+            // Fully stop and HIDE the element so it is neither visible nor
+            // audible on the web page after exit.
+            this.videoEl.removeAttribute('src');
+            this.videoEl.load();
+            this.videoEl.style.display = 'none';
+        }
+        // Silence the spatial-audio node as well (belt and suspenders).
+        if (this.audio) this.audio.setVolume(0);
         this.stopStateTimer();
         this.hideVideoMeshes();
+        // Point the video service back at the page player (so future web
+        // playback works) but do NOT resume it.
         if (this.previousVideoNode) {
             this.videoService.setVideoNode(this.previousVideoNode);
         }
-        if (item && this.previousVideoNode) {
-            // clearVideo() resets the playing item so playVideo() below will
-            // actually load the source into the page player.
+        if (this.videoService.isMediaItemPlaying()) {
             this.videoService.clearVideo();
-            this.videoService.playVideo(item);
-            if (pos > 1) {
-                this.videoService.onSeek(pos);
-            }
-            this.setStatus(`Continuing playback: ${item.name}`);
+            this.videoService.hideVideo();
         }
+        this.setStatus('VR session ended.', false);
     }
 
     // ---- Video -------------------------------------------------------------
@@ -983,6 +996,9 @@ export class XrPlayerService implements OnDestroy {
         // playVideo() calls showVideo(), which makes the PAGE's video
         // element visible - hide it again: the VR screen is the display.
         this.videoService.hideVideo();
+        // Re-show our element (it is hidden after an XR exit) so the Quest
+        // compositor produces frames for it.
+        this.videoEl.style.display = '';
 
         // Explicitly start playback: the autoplay attribute's failure is
         // silent (no promise, no event), so if the browser blocks it the

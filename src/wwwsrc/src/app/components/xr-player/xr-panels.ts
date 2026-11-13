@@ -332,6 +332,7 @@ export class HelpPanel extends Panel {
 
 export interface MainControlCallbacks {
     onPlayPause: () => void;
+    onStop: () => void;
     onPrev: () => void;
     onNext: () => void;
     onMoneyShot: () => void;
@@ -413,14 +414,15 @@ export class MainControlPanel extends Panel {
         const transport: [string, () => void][] = [
             ['Prev', cb.onPrev],
             ['Play', cb.onPlayPause],
+            ['Stop', cb.onStop],
             ['Next', cb.onNext],
             ['Money Shot', cb.onMoneyShot],
             ['Next Action', cb.onNextAction],
             ['Dev Pause', cb.onDevicePause]
         ];
         transport.forEach(([label, action], i) => {
-            const btn = new Button3D(label, 0.3, 0.09);
-            btn.position.set(-0.84 + i * 0.33, -0.14, 0);
+            const btn = new Button3D(label, 0.28, 0.09);
+            btn.position.set(-0.945 + i * 0.29, -0.14, 0);
             btn.onClick = action;
             this.content.add(btn);
             if (label === 'Play') this.playButton = btn;
