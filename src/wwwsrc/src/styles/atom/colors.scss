@@ -18,7 +18,8 @@
     --button-border-color: #333;
     --button-text-color: #e0e0e0;
     --button-hover-background: #16213e;
-    --button-background-down: rgba(135, 206, 250, 0.596);
+    --button-background-down: #8DA1BF;
+    //  rgba(135, 206, 250, 0.596);
     --button-color-down: white;
     /* Background for the motion buttons (motion profiles in both players,
        script status in the external player) - pastel blue so they read as
@@ -39,6 +40,9 @@
     --alert-color-info: lightblue;
     --alert-color-warning: yellow;
     --alert-color-debug: grey;
+
+    /* Generic semantic colors (state that isn't tied to a specific control) */
+    --color-negative: #BF5E5E;
 }
 
 .background-color-caution {

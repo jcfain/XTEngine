@@ -242,17 +242,26 @@ export class MediaListService {
         }
 
         // Filter by tags
+        // selectedTags is a flat array. 'OR' is a mode flag for the include
+        // set. Exclude (NOT) tags are encoded with a '!' prefix (e.g. '!audio').
+        // A media item must match the include set (AND/OR) AND not contain any
+        // excluded tag.
         let tags: string[] = JSON.parse(JSON.stringify(this.selectedTags));
         const orIndex = tags.findIndex(x => x === 'OR');
         const orMode = orIndex > -1;
-        if(orMode) {
+        if (orMode) {
             tags.splice(orIndex, 1);
         }
-        if (tags.length > 0) {
-            if(orMode)
-                list = list.filter(m => tags.some(t => m.metaData.tags?.includes(t)));
+        const includeTags = tags.filter(t => !t.startsWith('!'));
+        const excludeTags = tags.filter(t => t.startsWith('!')).map(t => t.slice(1));
+        if (includeTags.length > 0) {
+            if (orMode)
+                list = list.filter(m => includeTags.some(t => m.metaData.tags?.includes(t)));
             else
-                list = list.filter(m => tags.every(t => m.metaData.tags?.includes(t)));
+                list = list.filter(m => includeTags.every(t => m.metaData.tags?.includes(t)));
+        }
+        if (excludeTags.length > 0) {
+            list = list.filter(m => excludeTags.every(t => !m.metaData.tags?.includes(t)));
         }
 
         // Sort

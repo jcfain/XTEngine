@@ -188,9 +188,47 @@
 }
 
 .tag-toggle--active {
-    background: #8DA1BF;
-    border-color: #8DA1BF;
-    color: #000;
+    background: var(--button-background-down);
+    border-color: var(--button-background-down);
+    color: var(--button-color-down);
+    font-weight: bold;
+}
+
+/* Exclude (NOT) tag: red state, distinct from the blue include state. A tag
+   is never both, so this and --active are mutually exclusive. */
+.tag-toggle--exclude {
+    background: var(--color-negative);
+    border-color: var(--color-negative);
+    color: var(--button-color-down);
+    font-weight: bold;
+}
+
+/* Include / Exclude segmented control in the tag filter header */
+.tag-mode-toggle {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--control-border-color, #333);
+    border-radius: 6px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.tag-mode-toggle button {
+    background: transparent;
+    border: none;
+    color: var(--control-text-color, #aaa);
+    padding: 6px 12px;
+    font-size: var(--font-size-control, 0.9rem);
+    cursor: pointer;
+}
+
+.tag-mode-toggle button + button {
+    border-left: 1px solid var(--control-border-color, #333);
+}
+
+.tag-mode-toggle button.active {
+    background: var(--button-background-down);
+    color: var(--button-color-down);
     font-weight: bold;
 }
 

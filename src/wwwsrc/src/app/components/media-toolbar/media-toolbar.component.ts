@@ -48,6 +48,9 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
   tcodeActionsInputHidden: boolean = true;
   scriptInputHidden: boolean = true;
   tagFilterText: string = '';
+  // UI-only selection mode for the tag grid: which set a clicked tag is added
+  // to. Not persisted - the color coding already shows each tag's state.
+  tagSelectMode: 'include' | 'exclude' = 'include';
   allTags: string[] = [];
   selectedTags: string[] = [];
   totalMediaItems: number = 0;
@@ -144,14 +147,34 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
   }
 
   onTagToggle(tag: string) {
-    if (this.isTagSelected(tag))
-      this.localSettingsService.removeFromSelectedTags(tag);
-    else
-      this.localSettingsService.addToSelectedTags(tag);
+    const includeKey = tag;
+    const excludeKey = '!' + tag;
+    const inInclude = this.isTagSelected(includeKey);
+    const inExclude = this.isTagSelected(excludeKey);
+    const activeKey = this.tagSelectMode === 'exclude' ? excludeKey : includeKey;
+
+    if (this.isTagSelected(activeKey)) {
+      // Clicking a tag already in the active set removes it
+      this.localSettingsService.removeFromSelectedTags(activeKey);
+      return;
+    }
+    // Adding to the active set: remove from the other set first so a tag is
+    // never both included and excluded, then add.
+    if (this.tagSelectMode === 'exclude') {
+      if (inInclude) this.localSettingsService.removeFromSelectedTags(includeKey);
+      this.localSettingsService.addToSelectedTags(excludeKey);
+    } else {
+      if (inExclude) this.localSettingsService.removeFromSelectedTags(excludeKey);
+      this.localSettingsService.addToSelectedTags(includeKey);
+    }
   }
 
   isTagSelected(tag: string): boolean {
     return this.selectedTags.findIndex(x => x === tag) > -1;
+  }
+
+  isTagExcluded(tag: string): boolean {
+    return this.isTagSelected('!' + tag);
   }
 
   onTagClick($event: Event) {
