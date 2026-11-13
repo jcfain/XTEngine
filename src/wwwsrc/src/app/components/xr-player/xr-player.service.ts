@@ -150,6 +150,9 @@ export class XrPlayerService implements OnDestroy {
 
     // Video
     private videoEl: HTMLVideoElement | null = null;
+    // One-shot guard so the "video not decoding" diagnostic (below) is only
+    // surfaced once per clip, not every XR frame.
+    private videoDiagShown = false;
     // The Quest's XR render path does not upload VideoTextures (the screen
     // stays black while the element plays fine). Copying frames to a 2D
     // canvas and uploading a CanvasTexture works reliably.
@@ -495,6 +498,19 @@ export class XrPlayerService implements OnDestroy {
             } else {
                 this.stopVideo();
             }
+        });
+        // Surface a media load/decode error on the headset. A non-zero code
+        // here (especially 4 = FORMAT/codec not supported) means the browser
+        // on this headset cannot decode the clip - the element never produces
+        // frames, so the skybox stays black (the "only passthrough" symptom).
+        video.addEventListener('error', () => {
+            const e = video.error;
+            const names: Record<number, string> = {
+                1: 'ABORTED', 2: 'NETWORK', 3: 'DECODE', 4: 'FORMAT/codec not supported'
+            };
+            this.setStatus('Video will not play: ' +
+                (e ? `${names[e.code] || e.code} (code ${e.code})` : 'unknown error') +
+                '. This headset/browser may not support the clip\'s codec.', false);
         });
 
         // Video screen (regular media). Placed BEHIND the panel arc (radius
@@ -983,6 +999,7 @@ export class XrPlayerService implements OnDestroy {
             return;
         }
         if (!this.videoEl) return;
+        this.videoDiagShown = false;
 
         // Register our video element with VideoService so playVideo() and the
         // media state posts operate on it. Remember the original (page) node
@@ -1954,6 +1971,19 @@ export class XrPlayerService implements OnDestroy {
                 // stay black for the rest of the session.
                 if (v && this.videoService.isPlaying && v.paused && v.videoWidth) {
                     v.play().catch(() => { /* ignore */ });
+                }
+                // Diagnostic: the service thinks a clip is playing but the
+                // element has no frames (videoWidth 0). Surface the element
+                // state on the headset so a broken load (unsupported codec,
+                // network, etc.) is visible - this is the "only passthrough"
+                // symptom on headsets that can't decode the clip.
+                if (v && this.videoService.isPlaying && v.videoWidth === 0 &&
+                    !this.videoDiagShown) {
+                    this.videoDiagShown = true;
+                    const ec = v.error ? v.error.code : 0;
+                    this.setStatus(`Video not decoding (readyState=${v.readyState} ` +
+                        `network=${v.networkState} err=${ec} paused=${v.paused}). ` +
+                        'This headset may not support the clip\'s codec/format.', false);
                 }
                 try {
                 if (v && cc && cctx && this.videoTexture &&
