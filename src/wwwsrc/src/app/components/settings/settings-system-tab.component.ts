@@ -13,6 +13,7 @@ import { capitalizeFirstLetter } from '../../utils/utils';
 import { WebsocketService } from '../../services/websocket.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { AuthService } from '../../services/auth.service';
+import { BUILD_VERSION } from '../../build-info';
 
 interface SettingGroup {
     name: string;
@@ -41,7 +42,7 @@ export class SettingsSystemTabComponent implements OnInit {
 
     groups: SettingGroup[] = [];
     xteVersion = '';
-    webVersion = 'v0.6.8b';
+    webVersion = `v0.6.8b (${BUILD_VERSION})`;
     userAgent = navigator.userAgent;
     userAgentIsDeo = false;
     userAgentIsHereSphere = false;

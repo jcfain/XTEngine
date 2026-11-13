@@ -18,11 +18,13 @@
       <button title="Settings" id="settingsButton" class="icon-button icon-button--group" (click)="onSettingsClick($event)">
         <img class="buttonImage" src="://images/icons/settings-black.png" />
       </button>
-      <button title="VR Media Player" id="vrPlayerButton" class="icon-button icon-button--group" (click)="onVrClick()">
-        <svg class="buttonImage" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h4.58a2 2 0 0 0 1.6-.8l1.86-2.5a1 1 0 0 1 1.62 0l1.86 2.5a2 2 0 0 0 1.6.8H21a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H3Zm1.5 2h5v4.2l-1.2 1.6a.5.5 0 0 1-.8 0L6.3 13.2V9Zm8.5 0h5v4.2l-1.2 1.6a.5.5 0 0 1-.8 0L16.3 13.2V9Z" fill="#030D45"/>
-        </svg>
-      </button>
+      @if (xrPlayerEnabled) {
+        <button title="VR Media Player" id="vrPlayerButton" class="icon-button icon-button--group" (click)="onVrClick()">
+          <svg class="buttonImage" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h4.58a2 2 0 0 0 1.6-.8l1.86-2.5a1 1 0 0 1 1.62 0l1.86 2.5a2 2 0 0 0 1.6.8H21a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H3Zm1.5 2h5v4.2l-1.2 1.6a.5.5 0 0 1-.8 0L6.3 13.2V9Zm8.5 0h5v4.2l-1.2 1.6a.5.5 0 0 1-.8 0L16.3 13.2V9Z" fill="#030D45"/>
+          </svg>
+        </button>
+      }
     </div>
   </div>
   <div id="logoutSection" class="headerSection toolBar" style="margin-right:32px;">

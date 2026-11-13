@@ -240,6 +240,29 @@ export class XrPlayerService implements OnDestroy {
         // exist), not here: the sources are BehaviorSubjects, so a
         // constructor-time subscription fires while mediaWall & co are
         // still null and the rebuilt panels would never receive data.
+        //
+        // WebXR support is checked HERE (not in init()) so the header's VR
+        // button can show/hide based on support before the player is ever
+        // opened. init() only runs once the player component is created, so
+        // the check must not live there - that was a chicken-and-egg deadlock:
+        // the button was hidden until supported$ was set, but supported$ was
+        // only set after the button was clicked to open the player.
+        this.checkXrSupport();
+    }
+
+    // Check WebXR immersive-vr support and publish it on supported$. Safe to
+    // run at construction: it only reads navigator.xr.
+    private checkXrSupport(): void {
+        if (navigator.xr) {
+            navigator.xr.isSessionSupported('immersive-vr')
+                .then(supported => this.supported$.next(supported))
+                .catch((e) => {
+                    this.supported$.next(false);
+                    this.status$.next('WebXR support check failed: ' + this.errorMessage(e));
+                });
+        } else {
+            this.supported$.next(false);
+        }
     }
 
     // Wire the app services to the 3D panels. Called from init() once the
@@ -341,25 +364,16 @@ export class XrPlayerService implements OnDestroy {
         this.setupControllers();
         this.setupPreviewMouse(canvas);
 
-        // Check WebXR support
-        if (navigator.xr) {
-            navigator.xr.isSessionSupported('immersive-vr').then(supported => {
-                this.supported$.next(supported);
-                if (supported) {
-                    // Non-transient: this is the build/version confirmation the
-                    // user checks before putting on the headset - it must stay.
-                    this.setStatus('Ready [v52]. Put on your headset and press Enter VR.', false);
-                } else {
-                    this.setStatus('WebXR immersive-vr is not supported on this device/browser. ' +
-                        'The page must be served over HTTPS (or localhost).', false);
-                }
-            }).catch((e) => {
-                this.supported$.next(false);
-                this.status$.next('WebXR support check failed: ' + this.errorMessage(e));
-            });
+        // WebXR support was already checked in the constructor (checkXrSupport)
+        // so the header button can appear before the player opens. Here we just
+        // reflect the result in the player's status line now that it's visible.
+        if (this.supported$.value) {
+            // Non-transient: this is the build/version confirmation the
+            // user checks before putting on the headset - it must stay.
+            this.setStatus('Ready [v52]. Put on your headset and press Enter VR.', false);
         } else {
-            this.supported$.next(false);
-            this.status$.next('WebXR is not available in this browser.');
+            this.setStatus('WebXR immersive-vr is not supported on this device/browser. ' +
+                'The page must be served over HTTPS (or localhost).', false);
         }
 
         // Surface unexpected errors on the overlay so they are readable on

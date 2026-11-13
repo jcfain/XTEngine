@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { ScriptStatusService } from '../../services/script-status.service';
 import { AuthService } from '../../services/auth.service';
 import { ServerService } from '../../services/server.service';
+import { XrPlayerService } from '../xr-player/xr-player.service';
 
 @Component({
     selector: 'app-header',
@@ -25,6 +26,8 @@ export class AppHeaderComponent implements OnInit {
   @Output()
   vrClick = new EventEmitter();
 
+  xrPlayerEnabled = false;
+
   get logoutVisible() {
     return this.authEnabled && this.isAuthenticated;
   }
@@ -36,7 +39,8 @@ export class AppHeaderComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private serverService: ServerService,
-    private scriptStatusService: ScriptStatusService
+    private scriptStatusService: ScriptStatusService,
+    private xrService: XrPlayerService
   ) {
     this.authService.isAuthenticated$.subscribe(v => {
       this.isAuthenticated = v;
@@ -44,6 +48,7 @@ export class AppHeaderComponent implements OnInit {
     this.serverService.remoteUserSettings$.subscribe(v => {
       this.authEnabled = v?.hasWebPass;
     })
+    this.xrService.supported$.subscribe(v => this.xrPlayerEnabled = v);
   }
 
   ngOnInit(): void { }
