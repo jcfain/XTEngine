@@ -175,7 +175,7 @@ QString HeatMap::drawSvg(QHash<qint64, int> actions, qint64 duration) {
     }
 
     QString svg = QString(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 %1 %2\" preserveAspectRatio=\"none\">"
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 %1 %2\" preserveAspectRatio=\"none\">"
         "<rect x=\"0\" y=\"0\" width=\"%1\" height=\"%2\" fill=\"black\"/>")
         .arg(width).arg(height);
 
