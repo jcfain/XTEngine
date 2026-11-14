@@ -146,13 +146,15 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
         this.videoVisibleEmbedded = !v;
       }),
       this.videoService.controlsVisible$.subscribe(v => this.m_controlsVisible = v),
-      this.videoService.mediaSheetVisible$.subscribe(v => {
-        // The sheet covers the controls while open; reveal them as it closes
-        // so the exit (x) button is reachable without an extra tap.
-        if (!v) {
-          this.videoService.showControls();
-        }
-      }),
+      // this.videoService.mediaSheetVisible$.subscribe(v => {
+      //   // The sheet covers the controls while open; reveal them as it closes
+      //   // so the exit (x) button is reachable without an extra tap.
+      //   if (v) {
+      //     this.videoService.hideControls(true);
+      //   } else {
+      //     this.videoService.showControls();
+      //   }
+      // }),
       this.videoService.videoVisible$.subscribe(v => this.videoVisible = v),
       this.videoService.playingMediaItem$.subscribe(v => {
         const previous = this.mediaItem;

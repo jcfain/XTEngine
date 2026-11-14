@@ -95,14 +95,32 @@ export class MediaListOverlayService {
   private moveToFullscreen(): void {
     if (this.mediaListEl && this.fullscreenHost
         && this.mediaListEl.parentElement !== this.fullscreenHost) {
-      this.fullscreenHost.appendChild(this.mediaListEl);
+      // Defer the (large) subtree move to the next frame so the browser can
+      // composite the full screen transition first - moving it synchronously
+      // in the transition's first frame janks it. The overlay is parked
+      // off-screen (translateY(100%)) until the sheet opens, so the one-frame
+      // delay is invisible. Re-check in the callback in case the state changed
+      // before the frame ran.
+      requestAnimationFrame(() => {
+        if (this.mediaListEl && this.fullscreenHost
+            && this.mediaListEl.parentElement !== this.fullscreenHost) {
+          this.fullscreenHost.appendChild(this.mediaListEl);
+        }
+      });
     }
   }
 
   private moveToDefault(): void {
     if (this.mediaListEl && this.originalParent
         && this.mediaListEl.parentElement !== this.originalParent) {
-      this.originalParent.appendChild(this.mediaListEl);
+      // Same one-frame deferral as moveToFullscreen so the exit transition
+      // isn't janked by the subtree move.
+      requestAnimationFrame(() => {
+        if (this.mediaListEl && this.originalParent
+            && this.mediaListEl.parentElement !== this.originalParent) {
+          this.originalParent.appendChild(this.mediaListEl);
+        }
+      });
     }
   }
 }

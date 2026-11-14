@@ -126,9 +126,11 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
       // The list is re-parented into/out of the video container on full
       // screen changes, which changes its width. The ResizeObserver can miss
       // the move (re-parent + resize land in the same frame), so force a
-      // rebuild once the new layout has settled - reading clientWidth in
-      // buildRows() forces a synchronous layout, so the width is current.
-      setTimeout(() => this.buildRows(), 0);
+      // rebuild once the new layout has settled. Deferring to the next frame
+      // keeps the heavy re-chunk off the full screen transition's first tick;
+      // buildRows() is a no-op when the column count is unchanged, so this
+      // never double-rebuilds.
+      requestAnimationFrame(() => this.buildRows());
     });
     this.videoService.mediaSheetVisible$.subscribe(v => {
       this.overlayVisible = v;
@@ -240,10 +242,20 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
   private buildRows() {
     const containerWidth = this.mediaListContainer?.elementRef.nativeElement.clientWidth || window.innerWidth;
     const itemWidth = this.widthInt + 10; // .media-item margin 5px each side
-    this.columns = Math.max(1, Math.floor(containerWidth / itemWidth));
+    const columns = Math.max(1, Math.floor(containerWidth / itemWidth));
+    // The rows depend only on the column count and the list, so if neither
+    // changed the re-chunk is a no-op. Skipping it also avoids forcing the
+    // virtual scroller to re-diff every visible row (trackRow keys include the
+    // column count). This drops the redundant rebuild that fires right after
+    // the full screen re-parent, which was janking the transition.
+    if (columns === this.columns
+        && this.rows.length === Math.ceil(this.mediaList.length / this.columns)) {
+      return;
+    }
+    this.columns = columns;
     const rows: MediaItem[][] = [];
-    for (let i = 0; i < this.mediaList.length; i += this.columns) {
-      rows.push(this.mediaList.slice(i, i + this.columns));
+    for (let i = 0; i < this.mediaList.length; i += columns) {
+      rows.push(this.mediaList.slice(i, i + columns));
     }
     this.rows = rows;
   }
