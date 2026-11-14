@@ -1,0 +1,75 @@
+:host {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.menu-toggle {
+  color: var(--foreground-color);
+}
+
+/* Dropdown anchored to the hamburger. Sits above the media list (z-index
+   well above the toolbar's sticky row and the video controls). */
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 210px;
+  background: var(--control-background);
+  border: 1px solid var(--control-border-color);
+  border-radius: var(--control-border-radius);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  z-index: 200;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--control-text-color);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  text-align: left;
+  min-height: auto;
+  min-width: auto;
+  white-space: nowrap;
+}
+
+.menu-item:hover {
+  background: var(--control-hover-background);
+}
+
+.menu-item-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+/* Inline <svg> icons (settings / tcode) take the menu item's colour via
+   currentColor, so they match the body foreground colour. */
+.menu-item-icon {
+  fill: currentColor;
+}
+/* The "#" glyph used as the TCode menu icon - sized like the other icons and
+   inherits the menu item colour. */
+.hash-icon {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+/* The TCode wordmark replaces the "TCode" text label. Scaled to roughly the
+   same height as the menu text; inherits the menu item colour. */
+.tcode-wordmark {
+  height: 16px;
+  width: 52px;
+  fill: currentColor;
+  flex-shrink: 0;
+}

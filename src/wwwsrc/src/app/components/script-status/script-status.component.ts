@@ -48,7 +48,7 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
     private videoService: VideoService,
     private cdr: ChangeDetectorRef
   ) {
-    this.serverService.remoteUserSettings$.subscribe(v => {
+    this.serverService.serverChannels$.subscribe(v => {
       this.availableChannels = v?.availableChannels;
     });
     this.messageHandlerService.channelPositionChange$.subscribe(v => {

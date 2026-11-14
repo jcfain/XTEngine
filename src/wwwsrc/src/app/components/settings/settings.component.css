@@ -80,10 +80,6 @@
     overflow-y: auto;
 }
 
-.restart-required {
-    color: yellow;
-}
-
 @media (max-width: 768px) {
     .settings-modal-footer .toolBarGroup {
         flex-wrap: nowrap;
@@ -124,4 +120,56 @@
 
 .footer-popup button:hover {
     background: var(--button-hover-background);
+}
+
+/* Pulsing yellow shadow on the save button while the form is dirty (unsaved).
+   A 3px yellow ring with a soft gradient glow that pulses; stops once the
+   form is saved (formDirty -> false removes the class). */
+.save-button--dirty {
+    animation: save-button-pulse 1.5s ease-in-out infinite;
+}
+
+.save-button--clean {
+    animation: save-button-clean 1.5s ease-in-out;
+}
+.save-success {
+    color: var(--alert-color-success);
+}
+.save-fail {
+    color: var(--alert-color-fail);
+}
+.save-button-success {
+    background-color: var(--alert-color-success);
+}
+.save-button-fail {
+    background-color: var(--alert-color-fail);
+}
+
+.save-state {
+    align-self: center;
+    font-size: 0.8rem;
+    margin-right: 8px;
+}
+
+.restart-required {
+    color: var(--alert-color-warning);
+}
+
+@keyframes save-button-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 3px rgba(0, 255, 0, 0.203);
+    }
+    50% {
+        box-shadow: 0 0 10px 4px rgb(0, 255, 0);
+        background-color: rgba(0, 255, 0, 0.436);
+    }
+}
+@keyframes save-button-clean {
+    0%, 100% {
+        box-shadow: 0 0 0 3px rgba(0, 255, 0, 0.203);
+    }
+    50% {
+        box-shadow: 0 0 10px 4px rgb(0, 255, 0);
+        background-color: rgba(0, 255, 0, 0.436);
+    }
 }

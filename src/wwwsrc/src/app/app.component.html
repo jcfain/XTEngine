@@ -17,12 +17,6 @@
 } @else {
   <div class="app-content">
 
-    <app-header 
-      (settingsClick)="toggleSettings()" 
-      (scriptStatusClick)="toggleScriptStatus()"
-      (vrClick)="vrPlayerOpen = true"
-      (logoutClick)="logout()">
-    </app-header>
     @if (externalStreaming) {
       <app-external-player></app-external-player>
     } @else {

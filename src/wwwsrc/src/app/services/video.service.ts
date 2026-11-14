@@ -32,6 +32,12 @@ export class VideoService {
   // auto-hides on its own (see updateMediaListOverlayVisible).
   private mediaListOverlayVisibleSubject = new BehaviorSubject<boolean>(false);
   mediaListOverlayVisible$: Observable<boolean> = this.mediaListOverlayVisibleSubject.asObservable();
+  // Full screen media sheet: an explicit on/off state the user drives with the
+  // sheet gestures (wheel / mouse drag / touch drag) and Esc. Unlike the
+  // controls it does NOT auto-hide - it stays open until closed, and covers
+  // the whole video (including the controls) while open.
+  private mediaSheetVisibleSubject = new BehaviorSubject<boolean>(false);
+  mediaSheetVisible$: Observable<boolean> = this.mediaSheetVisibleSubject.asObservable();
   private videoVisibleSubject = new BehaviorSubject<boolean>(false);
   videoVisible$: Observable<boolean> = this.videoVisibleSubject.asObservable();
 
@@ -98,6 +104,13 @@ export class VideoService {
         this.isFullScreenSubject.next(!!document.fullscreenElement);
       }
     });
+    // The media sheet only exists in full screen - close it when full screen
+    // exits (via the UI, the phone back button, or the system edge gesture).
+    this.isFullScreen$.subscribe(v => {
+      if (!v) {
+        this.mediaSheetVisibleSubject.next(false);
+      }
+    });
   }
 
   postMediaState(state: XTPWebMediaState): Observable<any> {
@@ -149,6 +162,10 @@ export class VideoService {
 
   get controlsVisible(): boolean {
     return this.controlsVisibleSubject.value;
+  }
+
+  get mediaSheetVisible(): boolean {
+    return this.mediaSheetVisibleSubject.value;
   }
 
   get videoVisible(): boolean {
@@ -422,6 +439,24 @@ export class VideoService {
 
   disableForceControlsVisible(): void {
     this.releaseControlsKeepAlive();
+  }
+
+  /** Open the full screen media sheet (no-op if already open). */
+  openMediaSheet(): void {
+    if (!this.mediaSheetVisibleSubject.value) {
+      this.mediaSheetVisibleSubject.next(true);
+    }
+  }
+
+  /** Close the full screen media sheet (no-op if already closed). */
+  closeMediaSheet(): void {
+    if (this.mediaSheetVisibleSubject.value) {
+      this.mediaSheetVisibleSubject.next(false);
+    }
+  }
+
+  toggleMediaSheet(): void {
+    this.mediaSheetVisibleSubject.next(!this.mediaSheetVisibleSubject.value);
   }
 
   onPlay(): void {

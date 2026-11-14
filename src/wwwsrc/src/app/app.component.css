@@ -42,9 +42,8 @@
   color: #fff;
 } */
 
-/* Keep the header, video player and footer at their natural size;
+/* Keep the video player and footer at their natural size;
    only .app-body is allowed to shrink to make room for the video. */
-app-header,
 app-video-player,
 app-external-player,
 app-footer {

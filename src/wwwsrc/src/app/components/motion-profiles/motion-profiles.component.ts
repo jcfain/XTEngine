@@ -31,7 +31,7 @@ export class MotionProfilesComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit(): void {
-        this.subscription = this.serverService.remoteUserSettings$.subscribe(settings => {
+        this.subscription = this.serverService.serverChannels$.subscribe(settings => {
             if (!settings) {
                 return;
             }

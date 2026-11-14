@@ -105,42 +105,26 @@
 }
 
 /* Full screen overlay: the media list view is re-parented into the video
-   container (the full screen element) and slides in from the right. The
-   width is set by the component (--media-list-overlay-width) to whole
-   columns of items at the current thumb size; it is shown/hidden with the
-   player controls. The container's overflow: hidden clips the panel while
-   it is parked off the right edge, so it never intercepts clicks on the
-   video. */
+   container (the full screen element) and slides up as a full-width bottom
+   sheet that covers the entire video (including the controls) while open.
+   It is shown/hidden by the sheet gestures (see the video player) and does
+   NOT auto-hide. The container's overflow: hidden clips the sheet while it is
+   parked off the bottom edge, so it never intercepts clicks on the video. */
 :host(.media-list-overlay) {
     position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: var(--media-list-overlay-width, 25vw);
-    max-width: var(--media-list-overlay-width, 25vw);
+    inset: 0;
     display: flex;
     flex-flow: column;
-    /* Same stacking level as the player controls (.video-controls) */
-    z-index: 10;
+    /* Above the player controls (.video-controls, z-index 10) so the sheet
+       covers them entirely while open */
+    z-index: 11;
     background-color: rgba(0, 0, 0, 0.5);
-    transform: translateX(100%);
+    transform: translateY(100%);
     transition: transform 0.3s ease-in-out;
 }
 
 :host(.media-list-overlay.media-list-overlay-visible) {
-    transform: translateX(0);
-}
-
-/* Touch devices: the controls are full width on mobile, so the overlay
-   fits between the top and bottom controls (keeping both visible and
-   tappable) instead of running edge to edge. The bar heights are exposed
-   by the video player as CSS variables (they wrap to several lines
-   depending on screen size). */
-@media (pointer: coarse) {
-    :host(.media-list-overlay) {
-        top: var(--video-top-controls-height, 48px);
-        bottom: var(--video-controls-height, 96px);
-    }
+    transform: translateY(0);
 }
 
 .media-list-status {  

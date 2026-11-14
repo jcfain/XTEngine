@@ -29,7 +29,7 @@
     /* Control states */
     --control-disabled-background: #ccc;
     --control-disabled-text-color: #888;
-    --control-invalid-border-color: red;
+    --control-invalid-border-color: crimson;
 
     /* Tabs */
     --tab-background: #5E6B7F;
@@ -40,6 +40,8 @@
     --alert-color-info: lightblue;
     --alert-color-warning: yellow;
     --alert-color-debug: grey;
+    --alert-color-success: rgb(1, 145, 1);
+    --alert-color-fail: crimson;
 
     /* Generic semantic colors (state that isn't tied to a specific control) */
     --color-negative: #BF5E5E;

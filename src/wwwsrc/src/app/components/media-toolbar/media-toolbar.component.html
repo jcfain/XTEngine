@@ -1,31 +1,43 @@
-<div class="media-toolbar">
-  <button #tcodeActionsButton title="TCode actions" name="tcodeActionsButton" class="tcode-actions-button icon-button" [class.button-down]="!tcodeActionsInputHidden" (click)="tcodeActionsInputHidden = !tcodeActionsInputHidden">
-    <img class="buttonImage" src="://images/icons/tcode.svg" />
-  </button>
-  <button #shuffleButton id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button" [class.button-down]="randomMode" (click)="toggleShufflePlay()">
-    <img class="buttonImage" src="://images/icons/shuffle.svg" />
-  </button>
-  @if (randomMode) {
-    <button #randomizeButton id="randomizeButton" title="Randomize media playlist" class="random-media-button icon-button" (click)="randomize()">
-      <img class="buttonImage" src="://images/icons/reload.svg" />
-    </button>
-  }
+<div class="media-toolbar"
+     (mousedown)="onSheetDragStart($event)"
+     (mousemove)="onSheetDragMove($event)"
+     (mouseup)="onSheetDragEnd()"
+     (touchstart)="onSheetDragStart($event)"
+     (touchmove)="onSheetDragMove($event)"
+     (touchend)="onSheetDragEnd()">
+  <div class="toolbar-left">
+    <app-menu (tcodeClick)="tcodeActionsInputHidden = !tcodeActionsInputHidden"></app-menu>
+    <img class="toolbar-brand" src="://images/icons/XTPWeb-logo.png" alt="XTP" />
+  </div>
   <div class="toolbar-right">
+    <button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button icon-button--dark" [class.button-down]="randomMode" (click)="toggleShufflePlay()">
+      <svg class="buttonImage"><use href="#shuffle"></use></svg>
+    </button>
+    @if (randomMode) {
+      <button id="randomizeButton" title="Randomize media playlist" class="random-media-button icon-button icon-button--dark" (click)="randomize()">
+        <svg class="buttonImage"><use href="#reload"></use></svg>
+      </button>
+    }
     @if (activeFilterCount > 0) {
-      <button id="clearFiltersButton" class="clear-filters-button icon-button" title="Clear all filters" (click)="clearAllFilters()">
-        <img class="buttonImage" src="://images/icons/x.svg" />
+      <button id="clearFiltersButton" class="clear-filters-button icon-button icon-button--dark" title="Clear all filters" (click)="clearAllFilters()">
+        <svg class="buttonImage"><use href="#x"></use></svg>
         <span class="filter-count-badge">{{ activeFilterCount }}</span>
       </button>
     }
-    <button #tagButton id="tagButton" title="Filter tags" class="tag-media-button icon-button" [class.button-down]="!tagInputHidden" (click)="tagInputHidden = !tagInputHidden">
-      <img class="buttonImage" src="://images/icons/tag.svg" />
+    <button id="tagButton" title="Filter tags" class="tag-media-button icon-button icon-button--dark" [class.button-down]="!tagInputHidden" (click)="tagInputHidden = !tagInputHidden">
+      <svg class="buttonImage"><use href="#tag"></use></svg>
     </button>
     <div class="toolbar-search">
       <input id="filterInput" class="toolbar-search-input" placeholder="Search" [ngModel]="filterText" (ngModelChange)="onFilterChange($event)" />
       <button class="side-action-filter-clear-button icon-button icon-button--small" (click)="clearFilterText()">
-        <img class="buttonImage" src="://images/icons/x.svg" />
+        <svg class="buttonImage"><use href="#x"></use></svg>
       </button>
     </div>
+    @if (isFullScreen) {
+      <button id="closeSheetButton" class="close-sheet-button icon-button icon-button--dark" title="Close media list" (click)="closeSheet()">
+        <svg class="buttonImage"><use href="#x"></use></svg>
+      </button>
+    }
   </div>
 </div>
 
@@ -35,7 +47,7 @@
      tall. -->
 <div class="toolbar-drawer" [class.open]="!tcodeActionsInputHidden">
   <div class="drawer-inner">
-    <app-tcode-commands></app-tcode-commands>
+    <app-tcode-commands (close)="tcodeActionsInputHidden = true"></app-tcode-commands>
   </div>
 </div>
 

@@ -125,8 +125,8 @@ input:where(:not([type='checkbox']):not([type='range']):not([type='radio']):not(
 
 select:not(:disabled):not([readonly]):hover,
 select:not(:disabled):not([readonly]):focus,
-input:not(:disabled):not([readonly]):hover,
-input:not(:disabled):not([readonly]):focus {
+input:not(:disabled):not([readonly]):not([type='range']):hover,
+input:not(:disabled):not([readonly]):not([type='range']):focus {
     background: var(--control-hover-background);
 }
 
@@ -259,14 +259,26 @@ input[type='range']::-moz-focus-outer {
     text-overflow: ellipsis;
     text-wrap: nowrap; */
 }
+.icon-button--dark {
+    border-style: none;
+    background-color: transparent;
+    /* The icon (fill: currentColor) takes this colour. Default to the app
+       foreground so the icon matches the body text; override per-button to
+       recolour. */
+    color: var(--foreground-color);
+}
 .icon-button>img {
     width: 16px;
     height: 16px;
 }
-/* Inline <svg> icons (e.g. the equalizer symbol) size like the <img> ones. */
+/* Inline <svg> icons (e.g. the equalizer symbol) size like the <img> ones.
+   fill: currentColor so the icon takes the button's `color` (an SVG path with
+   no fill defaults to black, not currentColor) - this is what lets the dark
+   button style recolour the icon. */
 .icon-button>svg {
     width: 16px;
     height: 16px;
+    fill: currentColor;
 }
 .icon-button--small {
     padding: 5px;
@@ -278,6 +290,7 @@ input[type='range']::-moz-focus-outer {
 .icon-button--small>svg {
     width: 12px;
     height: 12px;
+    fill: currentColor;
 }
 .icon-button--no-border {
     border: none;

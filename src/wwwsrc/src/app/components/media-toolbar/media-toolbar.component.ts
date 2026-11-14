@@ -7,13 +7,15 @@ import { debounceTime, distinctUntilChanged, Subject, Subscription } from 'rxjs'
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { ServerService } from '../../services/server.service';
 import { TCodeCommandsComponent } from '../tcode-commands/tcode-commands.component';
+import { AppMenuComponent } from '../app-menu/app-menu.component';
 import { MediaListService } from '../../services/media-list-service';
 import { AppStateService } from '../../services/app-state.service';
+import { VideoService } from '../../services/video.service';
 
 
 @Component({
     selector: 'app-media-toolbar',
-    imports: [FormsModule, TCodeCommandsComponent],
+    imports: [FormsModule, TCodeCommandsComponent, AppMenuComponent],
     templateUrl: './media-toolbar.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './media-toolbar.component.css'
@@ -34,7 +36,8 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
     private serverService: ServerService,
     private messageHandlerService: MessageHandlerService,
     private appState: AppStateService,
-    private mediaListService: MediaListService
+    private mediaListService: MediaListService,
+    private videoService: VideoService
   ) {
     this.filtertextChanged.pipe(
       debounceTime(400),
@@ -42,6 +45,54 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
       .subscribe(value => {
         this.localSettingsService.setFilter(value);
       });
+  }
+
+  // Full screen: the toolbar doubles as the media sheet's header. The close
+  // button is only shown then, and dragging the header down closes the sheet
+  // (pull-to-close).
+  isFullScreen = false;
+  private sheetDragStartY = 0;
+  private sheetDragging = false;
+
+  closeSheet(): void {
+    this.videoService.closeMediaSheet();
+  }
+
+  // Y coordinate of a touch or mouse event.
+  private eventY(event: TouchEvent | MouseEvent): number {
+    if (event instanceof TouchEvent) {
+      return event.touches[0].clientY;
+    }
+    return event.clientY;
+  }
+
+  onSheetDragStart(event: TouchEvent | MouseEvent): void {
+    if (!this.isFullScreen) {
+      return;
+    }
+    // Only start a drag from the header chrome, not from an interactive
+    // control (button / input) so those keep working normally.
+    if (event.target instanceof Element && event.target.closest('button, input')) {
+      return;
+    }
+    this.sheetDragStartY = this.eventY(event);
+    this.sheetDragging = true;
+  }
+
+  onSheetDragMove(event: TouchEvent | MouseEvent): void {
+    if (!this.isFullScreen || !this.sheetDragging) {
+      return;
+    }
+    const dy = this.eventY(event) - this.sheetDragStartY;
+    // Dragging down past the threshold closes the sheet.
+    if (dy > 40) {
+      this.sheetDragging = false;
+      this.videoService.closeMediaSheet();
+    }
+  }
+
+  onSheetDragEnd(): void {
+    this.sheetDragging = false;
   }
 
   tagInputHidden: boolean = true;
@@ -72,6 +123,7 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
   private tagCountGeneration = 0;
 
   ngOnInit(): void {
+    this.subscriptions.add(this.videoService.isFullScreen$.subscribe(v => this.isFullScreen = v));
     this.subscriptions.add(this.localSettingsService.filterCriteria$.subscribe(f => this.filterText = f));
     this.subscriptions.add(this.localSettingsService.show$.subscribe(s => {
       this.currentShow = s

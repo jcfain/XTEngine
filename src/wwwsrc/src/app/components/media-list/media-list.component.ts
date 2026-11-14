@@ -130,7 +130,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
       // buildRows() forces a synchronous layout, so the width is current.
       setTimeout(() => this.buildRows(), 0);
     });
-    this.videoService.mediaListOverlayVisible$.subscribe(v => {
+    this.videoService.mediaSheetVisible$.subscribe(v => {
       this.overlayVisible = v;
     });
     this.localSettingsService.disableFullScreenMediaList$.subscribe(v => {
@@ -166,7 +166,6 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     this.localSettingsService.thumbSize$.subscribe(() => {
       this.setDimensions();
       this.buildRows();
-      this.updateOverlayWidth();
     });
   }
 
@@ -184,13 +183,11 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     // changes in some browsers; a window resize listener guarantees the grid
     // re-flows when the viewport width changes.
     this.windowResizeHandler = () => {
-      this.updateOverlayWidth();
       this.scheduleRebuild();
     };
     window.addEventListener('resize', this.windowResizeHandler);
     // Close the context menu when clicking/tapping outside of it.
     document.addEventListener('click', this.contextMenuClickHandler);
-    this.updateOverlayWidth();
     this.buildRows();
   }
 
@@ -303,6 +300,9 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
 
   onItemClick(item: MediaItem) {
     this.videoService.playVideo(item);
+    // Selecting a video closes the full screen media sheet so the new video is
+    // the focus.
+    this.videoService.closeMediaSheet();
   }
 
   // Keep-alive state for the full screen overlay: the controls (and with
@@ -367,22 +367,6 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
 
   getThumbSize(): number {
     return this.mediaListService.thumbSize;
-  }
-
-  // Sizes the full screen overlay to whole columns of items at the current
-  // thumb size: it aims for the default panel width (25vw, 55vw on portrait
-  // touch devices) and snaps to the nearest column count so items are never
-  // clipped. Exposed to the CSS via --media-list-overlay-width.
-  private updateOverlayWidth(): void {
-    const itemSlot = this.widthInt + 10; // .media-item margin 5px each side
-    if (!itemSlot) {
-      return;
-    }
-    const coarse = window.matchMedia('(pointer: coarse)').matches;
-    const portrait = window.matchMedia('(orientation: portrait)').matches;
-    const targetPx = (window.innerWidth * (coarse && portrait ? 55 : 20)) / 100;
-    const columns = Math.max(1, Math.round(targetPx / itemSlot));
-    this.elementRef.nativeElement.style.setProperty('--media-list-overlay-width', columns * itemSlot + 'px');
   }
 
   updateMetadata(item: MediaItem) {

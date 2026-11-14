@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { AppStateService } from '../../services/app-state.service';
@@ -24,6 +24,10 @@ export class TCodeCommandsComponent implements OnInit {
   newCommandValue = '';
   showSetup = false;
   filterText = '';
+
+  // Emitted when the close (X) button is clicked so the host can collapse the
+  // drawer.
+  @Output() close = new EventEmitter<void>();
 
   get filteredCommands(): TCodeCommand[] {
     const filter = this.filterText.trim().toLowerCase();

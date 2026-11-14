@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { SettingsService } from './settings.service';
-import { RemoteUserSettings, TCodeCommand, ActiveSession } from '../models/interfaces';
+import { RemoteUserSettings, TCodeCommand, ActiveSession, ServerChannels } from '../models/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -24,7 +24,13 @@ export class ServerService {
   private remoteUserSettingsSubject = new BehaviorSubject<RemoteUserSettings | null>(null);
   remoteUserSettings$: Observable<RemoteUserSettings | null> = this.remoteUserSettingsSubject.asObservable();
 
+  // Remote settings
+  private serverChannelsSubject = new BehaviorSubject<ServerChannels | null>(null);
+  serverChannels$: Observable<ServerChannels | null> = this.serverChannelsSubject.asObservable();
+
   get remoteUserSettings(): RemoteUserSettings | null { return this.remoteUserSettingsSubject.value; }
+
+  get serverChannels(): ServerChannels | null { return this.serverChannelsSubject.value; }
 
   constructor(
     private http: HttpClient,
@@ -87,15 +93,16 @@ export class ServerService {
   }
 
   getServerChannels(): void {
-    this.http.get<any>('/channels').subscribe({
+    this.http.get<ServerChannels>('/channels').subscribe({
       next: (response) => {
-        const settings = this.remoteUserSettingsSubject.value;
-        if (settings) {
-          settings.availableChannels = response.availableChannels;
-          settings.selectedChannelProfile = response.selectedChannelProfile;
-          settings.allChannelProfileNames = response.allChannelProfileNames;
-          this.remoteUserSettingsSubject.next(settings);
-        }
+        // const settings = this.remoteUserSettingsSubject.value;
+        // if (settings) {
+        //   settings.availableChannels = response.availableChannels;
+        //   settings.selectedChannelProfile = response.selectedChannelProfile;
+        //   settings.allChannelProfileNames = response.allChannelProfileNames;
+        //   this.remoteUserSettingsSubject.next(settings);
+        // }
+        this.serverChannelsSubject.next(response);
       },
       error: (err) => {
         console.error('Error getting channels:', err);
@@ -117,6 +124,14 @@ export class ServerService {
 
   saveServerSettings(): Observable<any> {
     return this.http.post<any>('/settings', this.remoteUserSettingsSubject.value);
+  }
+
+  saveServerChannels(): Observable<any> {
+    const channels = this.serverChannelsSubject.value;
+    return this.http.post<any>('/channels', {
+      availableChannels: channels?.availableChannels,
+      multiplierEnabled: channels?.multiplierEnabled
+    });
   }
 
   getActiveSessions(): Observable<ActiveSession[]> {

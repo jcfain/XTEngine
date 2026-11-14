@@ -65,6 +65,13 @@ export class KeyboardService {
       case 'x':
         this.videoService.stopVideo();
         break;
+      case 'Escape':
+        // Close the full screen media sheet first; if it's already closed the
+        // browser's own Escape handling exits full screen.
+        if (this.videoService.mediaSheetVisible) {
+          this.videoService.closeMediaSheet();
+        }
+        break;
     }
   }
 }

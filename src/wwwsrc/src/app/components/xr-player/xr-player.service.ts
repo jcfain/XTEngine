@@ -291,7 +291,7 @@ export class XrPlayerService implements OnDestroy {
             }),
             this.localSettingsService.externalStreaming$.subscribe(v => this.externalStreaming = v),
             this.appState.shufflePlayMode$.subscribe(v => this.shuffleMode = v),
-            this.serverService.remoteUserSettings$.subscribe(settings => {
+            this.serverService.serverChannels$.subscribe(settings => {
                 if (!settings) return;
                 const channels = settings.availableChannels
                     ? Object.values(settings.availableChannels)

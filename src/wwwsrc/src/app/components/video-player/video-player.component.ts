@@ -14,6 +14,7 @@ import { MediaItemAltScriptsComponent } from '../media-item-alt-scripts/media-it
 import { MediaListOverlayService } from '../../services/media-list-overlay.service';
 import { ScriptStatusComponent } from '../script-status/script-status.component';
 import { MotionProfilesComponent } from '../motion-profiles/motion-profiles.component';
+import { ServerService } from '../../services/server.service';
 
 @Component({
     selector: 'app-video-player',
@@ -90,6 +91,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     return String(this.m_progress);
   }
 
+  private hasMotionProfiles = false;
   private subscriptions: Subscription[] = [];
   private m_controlsVisible = false;
   private deviceIsPaused = false;
@@ -99,6 +101,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   constructor(
     private localSettingsService: LocalSettingsService,
+    private serverService: ServerService,
     private webSocketService: WebsocketService,
     private messageHandlerService: MessageHandlerService, 
     private videoService: VideoService,
@@ -108,19 +111,25 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     private ngZone: NgZone
   ) {
     this.subscriptions.push(
+      this.serverService.serverChannels$.subscribe(settings => {
+          if (!settings) {
+              return;
+          }
+          this.hasMotionProfiles = settings.allChannelProfileNames?.length > 1 || false;
+      }),
       this.messageHandlerService.stopAllMedia$.subscribe(() => {
         this.stop()
       }),
-        this.messageHandlerService.skipToNextAction$.subscribe(v => {
-          if(v)
-            this.skipToNextAction(v);
-        }),
-        this.messageHandlerService.skipToMoneyShot$.subscribe(v => {
-            this.skipToMoneyShot();
-        }),
-        this.messageHandlerService.scriptTogglePaused$.subscribe(v => {
-          this.deviceIsPaused = v;
-        })
+      this.messageHandlerService.skipToNextAction$.subscribe(v => {
+        if(v)
+          this.skipToNextAction(v);
+      }),
+      this.messageHandlerService.skipToMoneyShot$.subscribe(v => {
+          this.skipToMoneyShot();
+      }),
+      this.messageHandlerService.scriptTogglePaused$.subscribe(v => {
+        this.deviceIsPaused = v;
+      })
     );
   }
 
@@ -137,6 +146,13 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
         this.videoVisibleEmbedded = !v;
       }),
       this.videoService.controlsVisible$.subscribe(v => this.m_controlsVisible = v),
+      this.videoService.mediaSheetVisible$.subscribe(v => {
+        // The sheet covers the controls while open; reveal them as it closes
+        // so the exit (x) button is reachable without an extra tap.
+        if (!v) {
+          this.videoService.showControls();
+        }
+      }),
       this.videoService.videoVisible$.subscribe(v => this.videoVisible = v),
       this.videoService.playingMediaItem$.subscribe(v => {
         const previous = this.mediaItem;
@@ -357,11 +373,40 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   // devices a tap fires touchstart followed by a synthetic click, so we record
   // the touch time and ignore the click if a touch just happened.
   private lastVideoTouchTime = 0;
+  // Set after a sheet drag gesture so the trailing synthetic click (mouse drag
+  // release) isn't misread as a pause.
+  private lastSheetGestureTime = 0;
 
-  // Tapping the video toggles the controls: show them if hidden, hide them if
-  // shown (unless forceControlsVisible is set, in which case hideControls is a no-op).
-  onVideoTouch(): void {
-    this.lastVideoTouchTime = Date.now();
+  // Full screen media sheet gesture state. The gestures are attached to the
+  // video container (the full screen element) so they work over both the video
+  // (sheet closed) and the sheet itself (sheet open). A vertical drag past the
+  // threshold opens (up) / closes (down) the sheet; a tap (no movement) toggles
+  // the controls. The threshold keeps taps from being read as drags.
+  private static readonly SHEET_DRAG_THRESHOLD = 40; // px
+  private sheetTouchStartY = 0;
+  private sheetTouchDragged = false;
+  private sheetMouseStartY = 0;
+  private sheetMouseDragging = false;
+  // True while a touch that started on the player controls is in flight, so the
+  // container-level tap handler doesn't double-toggle the controls on top of the
+  // control's own touchstart handler.
+  private touchOnControls = false;
+
+  // Gestures that start on the player controls (buttons, sliders) are left to
+  // the controls - they must not drive the sheet.
+  private isOnControls(target: EventTarget | null): boolean {
+    return !!(target as HTMLElement | null)?.closest?.('.video-controls');
+  }
+
+  // The media list's scroll element. The "down" (close) gesture only fires when
+  // the list is scrolled to the top, so scrolling the list down doesn't
+  // accidentally close the sheet (standard pull-to-close behaviour).
+  private mediaListAtTop(): boolean {
+    const list = document.querySelector('.media-list') as HTMLElement | null;
+    return !list || list.scrollTop <= 0;
+  }
+
+  private toggleControlsOnTap(): void {
     if (this.controlsVisible) {
       this.videoService.hideControls();
     } else {
@@ -369,8 +414,101 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
+  // Touch: a tap toggles the controls; a vertical drag past the threshold
+  // opens (up) / closes (down) the full screen media sheet. We deliberately do
+  // NOT preventDefault() here so the browser's system gestures (e.g. Android's
+  // edge-swipe to exit full screen) keep working.
+  onVideoTouchStart(event: TouchEvent): void {
+    this.lastVideoTouchTime = Date.now();
+    this.touchOnControls = this.isOnControls(event.target);
+    if (this.touchOnControls) {
+      return; // let the control's own handler deal with it
+    }
+    if (!this.isFullScreen || !this.videoVisible) {
+      // Not full screen: a tap toggles the controls (existing behaviour).
+      this.toggleControlsOnTap();
+      return;
+    }
+    this.sheetTouchStartY = event.touches[0].clientY;
+    this.sheetTouchDragged = false;
+  }
+
+  onVideoTouchMove(event: TouchEvent): void {
+    if (!this.isFullScreen || !this.videoVisible || this.sheetTouchDragged) {
+      return;
+    }
+    const deltaY = this.sheetTouchStartY - event.touches[0].clientY; // + = up
+    if (Math.abs(deltaY) > VideoPlayerComponent.SHEET_DRAG_THRESHOLD) {
+      this.sheetTouchDragged = true;
+      this.lastSheetGestureTime = Date.now();
+      if (deltaY > 0) {
+        this.videoService.openMediaSheet();
+      } else if (this.mediaListAtTop()) {
+        this.videoService.closeMediaSheet();
+      }
+    }
+  }
+
+  onVideoTouchEnd(): void {
+    if (this.touchOnControls) {
+      this.touchOnControls = false;
+      return;
+    }
+    if (!this.isFullScreen || !this.videoVisible) {
+      return;
+    }
+    if (this.sheetTouchDragged) {
+      // It was a drag, not a tap - don't toggle the controls.
+      this.sheetTouchDragged = false;
+      return;
+    }
+    this.toggleControlsOnTap();
+  }
+
+  // Open the full screen media sheet (from the media list button on the
+  // controls).
+  openMediaSheet(): void {
+    this.videoService.openMediaSheet();
+  }
+
+  // Desktop: a vertical mouse drag past the threshold opens (up) / closes
+  // (down) the full screen media sheet.
+  onSheetMouseDown(event: MouseEvent): void {
+    if (!this.isFullScreen || !this.videoVisible) {
+      return;
+    }
+    if (this.isOnControls(event.target)) {
+      return;
+    }
+    this.sheetMouseStartY = event.clientY;
+    this.sheetMouseDragging = true;
+  }
+
+  onSheetMouseMove(event: MouseEvent): void {
+    if (!this.sheetMouseDragging) {
+      return;
+    }
+    const deltaY = this.sheetMouseStartY - event.clientY; // + = up
+    if (Math.abs(deltaY) > VideoPlayerComponent.SHEET_DRAG_THRESHOLD) {
+      this.sheetMouseDragging = false;
+      this.lastSheetGestureTime = Date.now();
+      if (deltaY > 0) {
+        this.videoService.openMediaSheet();
+      } else if (this.mediaListAtTop()) {
+        this.videoService.closeMediaSheet();
+      }
+    }
+  }
+
+  onSheetMouseUp(): void {
+    this.sheetMouseDragging = false;
+  }
+
   onVideoClick(): void {
     if (Date.now() - this.lastVideoTouchTime < 500) {
+      return;
+    }
+    if (Date.now() - this.lastSheetGestureTime < 500) {
       return;
     }
     this.togglePause();

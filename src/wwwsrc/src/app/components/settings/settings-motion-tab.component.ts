@@ -71,7 +71,10 @@ export class SettingsMotionTabComponent implements OnInit {
     private relatedOptionsCache: Map<string, ChannelModel[]> = new Map();
 
     ngOnInit(): void {
-        this.serverService.remoteUserSettings$.subscribe(settings => {
+        this.messageHandlerService.channelProfileChanged$.subscribe(v => {
+            this.serverService.getServerChannels();
+        });
+        this.serverService.serverChannels$.subscribe(settings => {
             if (!settings) {
                 return;
             }
@@ -84,9 +87,6 @@ export class SettingsMotionTabComponent implements OnInit {
             const wholeChannels = available.filter(c => c.type !== ChannelType.HalfOscillate);
             this.channels = this.sortChannels(wholeChannels);
             this.channelRanges = this.channels.map(c => ({ channel: c, userMin: c.userMin, userMax: c.userMax }));
-        });
-        this.messageHandlerService.channelProfileChanged$.subscribe(v => {
-            this.serverService.getServerChannels();
         });
     }
 
@@ -198,9 +198,9 @@ export class SettingsMotionTabComponent implements OnInit {
     }
 
     onMultiplierEnabledChange(value: boolean): void {
-        const settings = this.serverService.remoteUserSettings;
-        if (settings) {
-            settings.multiplierEnabled = value;
+        const channels = this.serverService.serverChannels;
+        if (channels) {
+            channels.multiplierEnabled = value;
             this.multiplierEnabled = value;
             this.onDirty.emit();
         }

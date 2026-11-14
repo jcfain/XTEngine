@@ -125,9 +125,3 @@
     flex: 1;
     min-width: 0;
 }
-
-.save-state {
-    align-self: center;
-    font-size: 0.8rem;
-    color: #8DA1BF;
-}

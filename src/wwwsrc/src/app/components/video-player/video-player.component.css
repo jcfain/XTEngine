@@ -65,6 +65,35 @@
   background: linear-gradient(transparent, rgba(0,0,0,0.7));
 }
 
+/* Small affordance poking up from the top-centre of the bottom controls,
+   hinting that dragging up opens the full screen media list. Clicking it
+   opens the list directly. Only shown in full screen. */
+.media-list-hint {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.media-list-hint:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.media-list-hint .hint-arrow {
+  width: 14px;
+  height: 14px;
+}
+
 .top-controls.hide,
 .bottom-controls.hide {
   opacity: 0;
@@ -466,7 +495,7 @@ progress::-webkit-progress-value {
     color: #fff;
 }
 .left-controls--top {
-    flex-basis: 85%;
+    flex-basis: 75%;
     overflow: hidden;
 }
 .left-controls button {
@@ -481,7 +510,7 @@ progress::-webkit-progress-value {
     color: #fff;
 }
 .right-controls--top {
-    flex-basis: 15%;
+    flex-basis: 25%;
     pointer-events: all;
 }
 /* Center the icons inside the top bar buttons - the buttons stretch to

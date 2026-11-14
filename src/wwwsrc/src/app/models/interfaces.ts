@@ -140,7 +140,6 @@ export interface RemoteUserSettings {
     os: string;
     xteVersion: string;
     webSocketServerPort: number;
-    multiplierEnabled: boolean;
     connection: ConnectionInfo;
     hasLaunchPass: boolean;
     hasWebPass: boolean;
@@ -149,15 +148,24 @@ export interface RemoteUserSettings {
     smartTags: string[];
     settings: Setting[];
     args: string[];
-    availableChannels: AvailableChannels;
-    selectedChannelProfile: string;
-    allChannelProfileNames: string[];
-    availableChannelsArray?: ChannelModel[];
+    // availableChannels: AvailableChannels;
+    // selectedChannelProfile: string;
+    // allChannelProfileNames: string[];
+    // availableChannelsArray?: ChannelModel[];
     // Pending tag changes, applied on save
     tagsToAdd?: string[];
     tagsToRemove?: string[];
     smartTagsToAdd?: string[];
     smartTagsToRemove?: string[];
+}
+
+
+export interface ServerChannels {
+    availableChannels: AvailableChannels;
+    selectedChannelProfile: string;
+    allChannelProfileNames: string[];
+    multiplierEnabled: boolean;
+    availableChannelsArray?: ChannelModel[];
 }
 
 export interface TCodeCommand {

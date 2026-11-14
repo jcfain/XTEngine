@@ -5,7 +5,13 @@
   [class.video-container-fixed]="isVideoFixedLowHeight()"
   (mousemove)="showControls()"
   (mouseleave)="hideControls()"
-  (fullscreenchange)="onFullScreenChange()">
+  (fullscreenchange)="onFullScreenChange()"
+  (mousedown)="onSheetMouseDown($event)"
+  (mousemove)="onSheetMouseMove($event)"
+  (mouseup)="onSheetMouseUp()"
+  (touchstart)="onVideoTouchStart($event)"
+  (touchmove)="onVideoTouchMove($event)"
+  (touchend)="onVideoTouchEnd()">
   <video playsinline
     autoplay
     #videoNode
@@ -17,7 +23,6 @@
     (play)="onPlay()"
     (pause)="onPause()"
     (click)="onVideoClick()"
-    (touchstart)="onVideoTouch()"
     (loadedmetadata)="onLoadedMetadata()"
     (timeupdate)="onTimeUpdate()"
     (ended)="onVideoEnd()"
@@ -42,9 +47,26 @@
   <div class="middle-controls middle-controls--top">
   </div>
   <div class="right-controls right-controls--top">
+    @if(isFullScreen) {
+      <button data-title="Media list" class="video-control video-control-main" id="media-list-button" (click)="openMediaSheet()">
+        <svg class="player-button-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M1 3h2v2H1V3zm4 0h10v2H5V3zM1 7h2v2H1V7zm4 0h10v2H5V7zM1 11h2v2H1v-2zm4 0h10v2H5v-2z"/>
+        </svg>
+      </button>
+    }
     <button data-title="Pin controls (keep visible)" class="video-control video-control-main" id="pin-controls-button" [class.pinned]="controlsPinned" (click)="toggleControlsPin()">
       <svg class="player-button-icon">
         <use href="#pin"></use>
+      </svg>
+    </button>
+    <button data-title="Full screen (f)" class="fullscreen-button video-control video-control-main" id="fullscreen-button" (click)="toggleFullScreen()">
+      <svg class="player-button-icon">
+        @if (!isFullScreen) {
+          <use href="#fullscreen"></use>
+        }
+        @if (isFullScreen) {
+          <use href="#fullscreen-exit"></use>
+        }
       </svg>
     </button>
     <button data-title="Exit (x)" class="video-control video-control--action-end video-control-main" id="exit-action" (click)="stop()">
@@ -60,6 +82,14 @@
 </div>
 
 <div id="bottom-controls" #bottomControls class="video-controls bottom-controls" [class.video-controls-visible]="controlsVisible" (touchstart)="showControls()">
+  @if (isFullScreen) {
+    <div class="media-list-hint" title="Open media list" (click)="openMediaSheet()">
+      <svg class="hint-arrow" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 3.5l5.5 6.5h-11L8 3.5z"/>
+      </svg>
+      <span>Drag up for media list</span>
+    </div>
+  }
   <div id="bottom-top-controls" class="bottom-top-controls">
     <div class="bottom-top-controls-buttons">
       <button id="scriptStatusPlayerButton" class="video-control video-control-other video-control--action-script-status" [class.button-down]="scriptStatusOpen" [class.disabled]="inputDeviceConnected" (click)="toggleScriptStatus()">
@@ -67,11 +97,13 @@
           <use href="#equalizer"></use>
         </svg>
       </button>
-      <button id="motionProfilesPlayerButton" class="video-control video-control-other video-control--action-motion" [class.button-down]="motionProfilesOpen" [class.disabled]="inputDeviceConnected" (click)="toggleMotionProfiles()">
-        <svg class="player-button-icon">
-          <use href="#motion-profiles"></use>
-        </svg>
-      </button>
+      @if(hasMotionProfiles) {
+        <button id="motionProfilesPlayerButton" class="video-control video-control-other video-control--action-motion" [class.button-down]="motionProfilesOpen" [class.disabled]="inputDeviceConnected" (click)="toggleMotionProfiles()">
+          <svg class="player-button-icon">
+            <use href="#motion-profiles"></use>
+          </svg>
+        </button>
+      }
       <button data-title="Skip to next action (a)" class="video-control video-control-other video-control--action-begin" [class.disabled]="inputDeviceConnected" id="next-action" (click)="onSkipToNextAction()">
         <img class="player-button-icon" src="://images/icons/skipToAction.png" />
       </button>
@@ -149,16 +181,6 @@
       <button data-title="Media settings" class="video-control video-control-main" id="playing-media-settings-button" (click)="openMediaSettings()">
         <svg class="player-button-icon media-settings-button">
           <use href="#media-settings"></use>
-        </svg>
-      </button>
-      <button data-title="Full screen (f)" class="fullscreen-button video-control video-control-main" id="fullscreen-button" (click)="toggleFullScreen()">
-        <svg class="player-button-icon">
-          @if (!isFullScreen) {
-            <use href="#fullscreen"></use>
-          }
-          @if (isFullScreen) {
-            <use href="#fullscreen-exit"></use>
-          }
         </svg>
       </button>
     </div>

@@ -10,7 +10,6 @@ import { MediaListComponent } from './components/media-list/media-list.component
 import { ServerService } from './services/server.service';
 import { MediaService } from './services/media.service';
 import { AuthService } from './services/auth.service';
-import { AppHeaderComponent } from './components/app-header/app-header.component';
 import { AppFooterComponent } from './components/app-footer/app-footer.component';
 import { AuthComponent } from './components/auth/auth.component';
 import { AlertsComponent } from './components/alerts/alerts.component';
@@ -26,6 +25,7 @@ import { MediaListService } from './services/media-list-service';
 import { VideoService } from './services/video.service';
 import { FullscreenOverlayContainerService } from './services/fullscreen-overlay-container.service';
 import { LocalSettingsService } from './services/local-settings.service';
+import { AppMenuService } from './services/app-menu.service';
 
 @Component({
     selector: 'app-root',
@@ -37,7 +37,6 @@ import { LocalSettingsService } from './services/local-settings.service';
     SettingsComponent,
     ScriptStatusComponent,
     MediaListComponent,
-    AppHeaderComponent,
     AppFooterComponent,
     AuthComponent,
     AlertsComponent
@@ -76,7 +75,8 @@ export class AppComponent implements OnInit {
     private localSettingsService: LocalSettingsService,
     // Injected for its side effect: keeps the CDK overlay container inside
     // the full screen element so modals render while the video is full screen.
-    private fullscreenOverlayContainerService: FullscreenOverlayContainerService
+    private fullscreenOverlayContainerService: FullscreenOverlayContainerService,
+    private appMenuService: AppMenuService
   ) {
     this.keyboardService.init();
   }
@@ -103,6 +103,11 @@ export class AppComponent implements OnInit {
     this.localSettingsService.externalStreaming$.subscribe(v => {
       this.externalStreaming = v;
     });
+
+    // The hamburger menu (inside the media list toolbar) drives these
+    // app-level dialogs/actions via the AppMenuService.
+    this.appMenuService.settingsToggle$.subscribe(() => this.toggleSettings());
+    this.appMenuService.vrOpen$.subscribe(() => this.vrPlayerOpen = true);
 
     this.connectionStateService.state$.subscribe(state => {
       this.connectionState = state;

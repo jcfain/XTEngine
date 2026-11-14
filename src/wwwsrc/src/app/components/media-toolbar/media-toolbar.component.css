@@ -7,10 +7,13 @@
 }
 
 /* Horizontal toolbar that sits at the top of the media list.
-   Sticky so it stays pinned to the top of the list while scrolling. */
+   Sticky so it stays pinned to the top of the list while scrolling.
+   z-index keeps the sticky bar (and the hamburger dropdown that hangs off it)
+   above the absolutely positioned media list thumbnails. */
 .media-toolbar {
     position: sticky;
     top: 0;
+    z-index: 10;
     display: flex;
     flex-flow: row;
     align-items: center;
@@ -22,6 +25,31 @@
     min-width: 0;
     background-color: black;
     border-bottom: 1px solid #333;
+}
+
+/* Left group: hamburger menu + compact brand mark */
+.toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.toolbar-brand {
+    height: 26px;
+    max-width: fit-content;
+}
+
+/* Right group: filter buttons + search. A flex row so the buttons and the
+   search box sit on the same line (a plain block would let the search <div>
+   drop below the inline buttons). margin-left: auto pushes the group to the
+   right edge of the toolbar. */
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    min-width: 0;
 }
 
 .filter-count-badge {
@@ -118,17 +146,6 @@
     padding: 12px 16px;
     border-bottom: 1px solid #333;
     box-sizing: border-box;
-}
-
-/* Right-hand group (clear filters + tags + search) pinned to the right edge */
-.toolbar-right {
-    margin-left: auto;
-    /* Allow the group (and the search box inside it) to shrink in narrow
-       panels instead of overflowing */
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 .tag-filter-header {
@@ -238,12 +255,20 @@
     padding: 8px;
 }
 
-/* Compact the toolbar on small / mobile screens - the search box shrinks
-   to a narrow sliver to keep everything on one line */
+/* Compact the toolbar on small / mobile screens. The search box shrinks to
+   fit but stays on the same line as the buttons. */
 @media (max-width: 640px) {
     .media-toolbar {
         padding: 6px 8px;
         gap: 4px;
+    }
+
+    .toolbar-left {
+        gap: 4px;
+    }
+
+    .toolbar-brand {
+        height: 22px;
     }
 
     .toolbar-right {
@@ -251,11 +276,17 @@
     }
 
     .toolbar-search {
-        min-width: 40px;
+        flex-basis: 120px;
+        min-width: 60px;
         padding-left: 10px;
     }
 
     .toolbar-search-input {
         font-size: var(--font-size-small);
     }
+}
+
+/* Close button for the full screen media sheet (the toolbar's header). */
+.close-sheet-button {
+    flex-shrink: 0;
 }

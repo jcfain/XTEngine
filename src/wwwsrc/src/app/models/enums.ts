@@ -161,6 +161,13 @@ export enum AuthResult {
     Success
 }
 
+export enum SaveState {
+    Idle,
+    Saving,
+    Success,
+    Fail
+}
+
 
 
 export class MediaActions {

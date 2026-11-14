@@ -1,6 +1,11 @@
 <div class="tcode-commands-modal">
-  <div class="tcode-filter">
-    <input type="text" placeholder="Filter commands..." [(ngModel)]="filterText" />
+  <div class="tcode-header">
+    <div class="tcode-filter">
+      <input type="text" placeholder="Filter commands..." [(ngModel)]="filterText" />
+    </div>
+    <button class="tcode-close-button icon-button icon-button--dark" title="Close TCode commands" (click)="close.emit()">
+      <svg class="buttonImage"><use href="#x"></use></svg>
+    </button>
   </div>
 
   <div class="tcode-commands-container">

@@ -35,7 +35,7 @@
             </div>
             <div class="toolBarGroup toolBarGroupEnd">
                 <span class="restart-required" [class.hidden]="!restartRequired">Restart required</span>
-                <span class="save-state" [class.hidden]="!saveState">{{ saveState }}</span>
+                <span class="save-state" [class.save-success]="saveSuccess()" [class.save-fail]="saveFail()" [class.hidden]="!saveState">{{ saveState }}</span>
                 <div class="footer-popup-wrap icon-button--group">
                     <button class="icon-button" title="More actions" (click)="showMoreActions = !showMoreActions">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
@@ -48,7 +48,7 @@
                         </div>
                     }
                 </div>
-                <button class="icon-button" title="Save to XTP" [disabled]="!formDirty" (click)="onSaveToXTP()">
+                <button class="icon-button save-button" [class.save-button-success]="saveSuccess()" [class.save-button-fail]="saveFail()" [class.save-button--dirty]="formDirty" title="Save to XTP" [disabled]="!formDirty" (click)="onSaveToXTP()">
                     <img class="buttonImage" src="://images/icons/save.svg" />
                 </button>
             </div>

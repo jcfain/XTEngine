@@ -12,14 +12,27 @@
     box-sizing: border-box;
 }
 
-.tcode-filter {
+.tcode-header {
     /* Sticky inside the drawer's scroll area: the commands scroll under it.
-       Padding (not margin) so the background covers the gap too */
+       Holds the filter (left) and the close button (right). Padding (not
+       margin) so the background covers the gap too. */
     position: sticky;
     top: 0;
     z-index: 1;
     background-color: #000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     padding-bottom: 12px;
+}
+
+.tcode-filter {
+    flex: 1;
+    min-width: 0;
+}
+
+.tcode-close-button {
+    flex-shrink: 0;
 }
 
 .tcode-filter input {
