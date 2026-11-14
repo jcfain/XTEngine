@@ -7,12 +7,10 @@
 
   @if (menuOpen) {
     <div class="menu-dropdown">
-      @if (settingsVisible) {
-        <button class="menu-item" (click)="onSettings()">
-          <svg class="menu-item-icon" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg"><use href="#settings"></use></svg>
-          <span>Settings</span>
-        </button>
-      }
+      <button class="menu-item" (click)="onSettings()">
+        <svg class="menu-item-icon" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg"><use href="#settings"></use></svg>
+        <span>Settings</span>
+      </button>
       <button class="menu-item" (click)="onTcode()">
         <span class="menu-item-icon hash-icon" aria-hidden="true">#</span>
         <svg class="tcode-wordmark" viewBox="0 0 357 109" xmlns="http://www.w3.org/2000/svg"><use href="#tcode"></use></svg>

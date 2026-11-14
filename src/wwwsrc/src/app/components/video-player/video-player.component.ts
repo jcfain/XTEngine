@@ -15,10 +15,12 @@ import { MediaListOverlayService } from '../../services/media-list-overlay.servi
 import { ScriptStatusComponent } from '../script-status/script-status.component';
 import { MotionProfilesComponent } from '../motion-profiles/motion-profiles.component';
 import { ServerService } from '../../services/server.service';
+import { SettingsComponent } from '../settings/settings.component';
+import { AppMenuService } from '../../services/app-menu.service';
 
 @Component({
     selector: 'app-video-player',
-    imports: [FormsModule, MediaItemPropertiesComponent, MediaItemAltScriptsComponent, ScriptStatusComponent, MotionProfilesComponent],
+    imports: [FormsModule, MediaItemPropertiesComponent, MediaItemAltScriptsComponent, ScriptStatusComponent, MotionProfilesComponent, SettingsComponent],
     templateUrl: './video-player.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './video-player.component.css'
@@ -63,6 +65,12 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   motionProfilesOpen = false;
   mediaSettingsOpen = false;
   altScriptsOpen = false;
+  // Settings modal (rendered inside the video container so it also shows in
+  // full screen). mediaLoaded mirrors the old app-level gate: the modal
+  // binds to the server settings, which are only fetched once the media list
+  // has loaded.
+  settingsOpen = false;
+  mediaLoaded = false;
   inputDeviceConnected = false;
   heatmapSvg: string | null = null;
   controlsPinned = false;
@@ -108,7 +116,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     private mediaListService: MediaListService,
     private mediaListOverlayService: MediaListOverlayService,
     private sanitizer: DomSanitizer,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private appMenuService: AppMenuService
   ) {
     this.subscriptions.push(
       this.serverService.serverChannels$.subscribe(settings => {
@@ -169,7 +178,18 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
       this.localSettingsService.volume$.subscribe(v => this.m_volume = v),
       this.localSettingsService.mute$.subscribe(v => this.muted = v),
       this.localSettingsService.disableHeatmap$.subscribe(v => this.disableHeatmap = v),
-      this.messageHandlerService.heatmap$.subscribe(v => this.setHeatmapSvg(v))
+      this.messageHandlerService.heatmap$.subscribe(v => this.setHeatmapSvg(v)),
+      this.mediaListService.mediaListDisplayed$.subscribe(list => {
+        // undefined until the first load - the same gate the old app-level
+        // modal used (the media list's rendered event).
+        this.mediaLoaded = list !== undefined;
+      }),
+      this.appMenuService.settingsToggle$.subscribe(() => {
+        if (!this.mediaLoaded) {
+          return;
+        }
+        this.settingsOpen = !this.settingsOpen;
+      })
     );
   }
 

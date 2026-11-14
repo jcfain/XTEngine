@@ -9,6 +9,10 @@
     height: 100dvh;
     overflow: hidden;
     background-color: rgba(0, 0, 0, 0.4);
+    /* The modal is rendered inside the player container, which is
+       visibility: hidden while no video is playing - assert visibility so
+       the modal shows regardless of the video's state. */
+    visibility: visible;
 }
 
 .settings-modal-content {

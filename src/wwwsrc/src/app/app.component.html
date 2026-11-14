@@ -34,8 +34,11 @@
     <app-footer></app-footer>
   </div>
 
-  @if (mediaLoaded && settingsOpen) {
-    <app-settings [isOpen]="true" (toggle)="toggleSettings()"></app-settings>
+  <!-- Settings modal for external player mode, where there is no video
+       player to host it (the video player renders its own instance inside
+       the video container so it also shows in full screen). -->
+  @if (externalStreaming && mediaLoaded && settingsOpen) {
+    <app-settings [isOpen]="true" (toggle)="settingsOpen = false"></app-settings>
   }
   @if (scriptStatusOpen) {
     <app-script-status></app-script-status>

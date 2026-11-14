@@ -48,13 +48,18 @@ import { AppMenuService } from './services/app-menu.service';
     styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit {
-  settingsOpen = false;
   scriptStatusOpen = false;
+  // Settings modal for external player mode only - in normal mode the video
+  // player renders its own instance inside the video container (so it also
+  // shows in full screen). mediaLoaded is the same gate the modal always
+  // had: the settings tabs bind to the server settings, which are only
+  // fetched once the media list has loaded.
+  settingsOpen = false;
+  mediaLoaded = false;
   // WebXR VR media player overlay (self-contained feature in
   // components/xr-player - remove it by deleting the folder and these
   // two references).
   vrPlayerOpen = false;
-  mediaLoaded = false;
   connectionState = ConnectionState.Disconnected;
   // "External player" local setting: media plays in a separate player
   // instead of the in-page video player, so the compact external player
@@ -108,7 +113,15 @@ export class AppComponent implements OnInit {
 
     // The hamburger menu (inside the media list toolbar) drives these
     // app-level dialogs/actions via the AppMenuService.
-    this.appMenuService.settingsToggle$.subscribe(() => this.toggleSettings());
+    this.appMenuService.settingsToggle$.subscribe(() => {
+      // In normal mode the video player owns the settings modal and handles
+      // the toggle itself - only the external player mode (no video player
+      // in the page) uses this app-level instance.
+      if (!this.externalStreaming || !this.mediaLoaded) {
+        return;
+      }
+      this.settingsOpen = !this.settingsOpen;
+    });
     this.appMenuService.vrOpen$.subscribe(() => this.vrPlayerOpen = true);
 
     this.connectionStateService.state$.subscribe(state => {
@@ -140,10 +153,6 @@ export class AppComponent implements OnInit {
 
   onAuth(result: AuthResult) {
     // Auth state changes are handled by the state machine via isAuthenticated$
-  }
-
-  toggleSettings(): void {
-    this.settingsOpen = !this.settingsOpen;
   }
 
   toggleScriptStatus(): void {

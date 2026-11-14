@@ -27,12 +27,6 @@ export class AppMenuComponent implements OnInit, OnDestroy {
   get logoutVisible() {
     return this.authEnabled && this.isAuthenticated;
   }
-  // Settings and the VR player render in the root component (outside the full
-  // screen element's subtree), so they can't be shown while the video is full
-  // screen - hide those items in that case.
-  get settingsVisible() {
-    return !this.isFullScreen;
-  }
   get vrVisible() {
     return this.xrPlayerEnabled && !this.isFullScreen;
   }

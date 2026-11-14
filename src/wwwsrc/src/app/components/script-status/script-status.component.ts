@@ -1,12 +1,9 @@
 import { Component, Input, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
 import { AvailableChannels, ChannelInfo, ChannelModel } from '../../models/interfaces';
-import { getChannelColor, scale, lerp, round } from '../../utils/utils';
+import { getChannelColor, scale, lerp } from '../../utils/utils';
 import { VideoService } from '../../services/video.service';
-import { AppStateService } from '../../services/app-state.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
-import { GenericOverlayService } from '../../services/overlay.service';
 import { ServerService } from '../../services/server.service';
 
 interface ChannelAnimationState {

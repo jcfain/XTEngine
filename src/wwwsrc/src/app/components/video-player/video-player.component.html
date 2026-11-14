@@ -264,4 +264,13 @@
      the host has no box of its own - the absolutely positioned media list
      is laid out against .video-container directly. -->
 <div #fullscreenMediaListHost class="fullscreen-media-list-host"></div>
+
+<!-- Settings modal: rendered inside the video container (the full screen
+     element) so it shows in both default and full screen modes. It is
+     position: fixed, so in full screen the full screen element becomes its
+     containing block and it covers the whole screen. -->
+<app-settings
+    [isOpen]="settingsOpen"
+    (toggle)="settingsOpen = false">
+</app-settings>
 </div>
