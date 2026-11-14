@@ -239,17 +239,23 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     return row && row.length ? `${row[0].id}:${this.columns}` : index;
   };
 
+  // The item id sequence the current rows were chunked from. buildRows() skips
+  // re-chunking only when both the column count and this sequence are unchanged.
+  // Comparing ids (not object references) keeps the in-place item swap in
+  // updateItem() from forcing a full re-diff, while a re-sorted or re-filtered
+  // list (same length, new order) still rebuilds.
+  private rowsBuiltForIds: string[] = [];
+
   private buildRows() {
     const containerWidth = this.mediaListContainer?.elementRef.nativeElement.clientWidth || window.innerWidth;
     const itemWidth = this.widthInt + 10; // .media-item margin 5px each side
     const columns = Math.max(1, Math.floor(containerWidth / itemWidth));
-    // The rows depend only on the column count and the list, so if neither
-    // changed the re-chunk is a no-op. Skipping it also avoids forcing the
-    // virtual scroller to re-diff every visible row (trackRow keys include the
-    // column count). This drops the redundant rebuild that fires right after
-    // the full screen re-parent, which was janking the transition.
-    if (columns === this.columns
-        && this.rows.length === Math.ceil(this.mediaList.length / this.columns)) {
+    // The rows depend only on the column count and the list order, so if
+    // neither changed the re-chunk is a no-op. Skipping it also avoids forcing
+    // the virtual scroller to re-diff every visible row (trackRow keys include
+    // the column count). This drops the redundant rebuild that fires right
+    // after the full screen re-parent, which was janking the transition.
+    if (columns === this.columns && this.listOrderUnchanged()) {
       return;
     }
     this.columns = columns;
@@ -258,6 +264,22 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
       rows.push(this.mediaList.slice(i, i + columns));
     }
     this.rows = rows;
+    this.rowsBuiltForIds = this.mediaList.map(m => m.id);
+  }
+
+  // True when mediaList holds the same items in the same order as the list the
+  // rows were last chunked from.
+  private listOrderUnchanged(): boolean {
+    const list = this.mediaList;
+    if (list.length !== this.rowsBuiltForIds.length) {
+      return false;
+    }
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].id !== this.rowsBuiltForIds[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   setDimensions() {

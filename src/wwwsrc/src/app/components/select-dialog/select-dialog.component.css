@@ -1,3 +1,13 @@
-.select-dialog-radio {
-    margin-right: 4px;
+/* The global .formElement .radio-group--select-model rule makes this a flex
+   column, but its rows are left-aligned at the edge of the 75% control
+   column, which looks off-centre in the narrow dialog. Centre each radio +
+   label row, and align the radio with its text. */
+.radio-group--select-model {
+    align-items: center;
+}
+
+.radio-group--select-model label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
