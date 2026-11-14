@@ -1,0 +1,24 @@
+@if (dialog) {
+  <div click-stop-propagation class="confirm-dialog x-modal x-modal--alert">
+    <div class="x-modal-content x-modal-content--alert">
+      <div class="x-modal-header">
+        <span class="x-modal-title">{{ dialog.header }}</span>
+      </div>
+      <div class="x-modal-body x-modal-body--alert">
+        <p class="confirm-dialog-message">{{ dialog.message }}</p>
+      </div>
+      <div class="x-modal-footer">
+        <div class="x-modal-footer-content">
+          <button class="confirm-dialog-button" [disabled]="dialog.saving" (click)="confirm()">
+            @if (dialog.saving) {
+              <span class="loading-spinner loading-spinner--button-icon" aria-label="Saving"></span>
+            } @else {
+              {{ dialog.confirmText }}
+            }
+          </button>
+          <button class="confirm-dialog-button" [disabled]="dialog.saving" (click)="cancel()">{{ dialog.cancelText }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

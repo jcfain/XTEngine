@@ -38,6 +38,14 @@ export class SettingsService {
       settings.push(x);
     });
     this.settingsSubject.next(settings);
+
+    // Sync mediaManagementEnabled from the initial server settings so the
+    // context menu "Delete..." option is visible without requiring the user
+    // to visit the settings page first.
+    const mmSetting = allSettings['settings'].find(s => s.key === 'enableMediaManagement');
+    if (mmSetting) {
+      this.mediaManagementEnabledSubject.next(mmSetting.value);
+    }
   }
 
   getSetting(key: string): Setting | undefined {

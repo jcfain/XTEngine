@@ -13,6 +13,7 @@ import { AuthService } from './services/auth.service';
 import { AppFooterComponent } from './components/app-footer/app-footer.component';
 import { AuthComponent } from './components/auth/auth.component';
 import { AlertsComponent } from './components/alerts/alerts.component';
+import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { WebsocketService } from './services/websocket.service';
 import { MessageHandlerService } from './services/message-handler.service';
 import { AlertService } from './services/alert.service';
@@ -39,7 +40,8 @@ import { AppMenuService } from './services/app-menu.service';
     MediaListComponent,
     AppFooterComponent,
     AuthComponent,
-    AlertsComponent
+    AlertsComponent,
+    ConfirmDialogComponent
 ],
     templateUrl: './app.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,

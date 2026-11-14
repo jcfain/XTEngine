@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, Observable } from 'rxjs';
 import { ServerService } from '../../services/server.service';
 import { GenericOverlayService } from '../../services/overlay.service';
 import { AlertComponent } from '../alert-model/alert.component';
@@ -14,6 +14,13 @@ import { WebsocketService } from '../../services/websocket.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { SaveState } from '../../models/enums';
 import { AlertService } from '../../services/alert.service';
+
+export enum Tabs {
+    Local,
+    Connections,
+    Motion,
+    System
+}
 
 @Component({
     selector: 'app-settings',
@@ -33,7 +40,7 @@ export class SettingsComponent {
     @Input() isOpen = false;
     @Output() toggle = new EventEmitter<void>();
 
-    formDirty = false;
+    // formDirty = false;
     saveState = '';
     tabs = ['Local', 'Connections', 'Motion', 'System'];
     activeTab = 0;
@@ -47,19 +54,55 @@ export class SettingsComponent {
         private localSettingsService: LocalSettingsService,
         private websocketService: WebsocketService,
         private serverService: ServerService, 
-        private alertService: AlertService,
-        private overlayService: GenericOverlayService) {
+        private alertService: AlertService) {
             this.serverService.remoteUserSettings$.subscribe(v => {
                 this.hasLaunchPass = v?.hasLaunchPass;
             });
         }
 
-    onToggle(): void {
-        this.toggle.emit();
+    onClose(): void {
+        if(!this.dirtyCheck(() => { this.toggle.emit(); })) {
+            this.toggle.emit();
+        }
     }
 
     tabClick(tabNumber: number): void {
-        this.activeTab = tabNumber;
+        if(!this.dirtyCheck(() => { this.activeTab = tabNumber; })) {
+            this.activeTab = tabNumber;
+        }
+//         if(this.isDirty()) {
+//             const id = this.alertService.confirm(
+//             {
+//                 message: `You have unsaved changes, 
+// Save them now?`, 
+//                 header: "Warning!", 
+//                 confirmText: "Save", 
+//                 cancelText: "Discard",
+//                 onConfirm: () => {
+//                     this.onSaveToXTP(() => {
+//                         this.activeTab = tabNumber;
+//                         this.alertService.closeConfirm(id);
+//                     });
+//                 },
+//                 onCancel: () => {
+//                     if(this.activeTab == Tabs.Motion) {
+//                         this.serverService.getServerChannels().add(() => {
+//                             this.activeTab = tabNumber;
+//                             this.markClean();
+//                         });
+//                     } else {
+//                         this.serverService.initServerSettings().subscribe(v => {
+//                             this.activeTab = tabNumber;
+//                             this.markClean();
+//                         });
+//                     }
+//                 }
+//             }
+//             //, $event 
+//             );
+//         } else {
+//             this.activeTab = tabNumber;
+//         }
     }
 
     onRestartRequiredChange(required: boolean): void {
@@ -67,16 +110,15 @@ export class SettingsComponent {
     }
 
     defaultLocalSettings(): void {
-        const nameID = 'defaultLocalSettingsAlert';
-        this.overlayService.open(nameID, AlertComponent, {
-            content: 'Are you sure you want to reset ALL local settings to default? Note: This only resets the settings in this browser. Your settings stored in XTP will remain.',
-            titleText: 'Warning',
-            acceptText: 'Reset',
-            rejectText: 'Cancel',
-            onAccept: () => {
+        const id = this.alertService.confirm({
+            message: 'Are you sure you want to reset ALL local settings to default? Note: This only resets the settings in this browser. Your settings stored in XTP will remain.',
+            header: 'Warning',
+            confirmText: 'Reset',
+            cancelText: 'Cancel',
+            onConfirm: () => {
                 this.localSettingsService.reset()
             },
-            onClose: () => this.overlayService.close(nameID)
+            onCancel: () => this.alertService.closeConfirm(id)
         });
     }
 
@@ -88,18 +130,17 @@ export class SettingsComponent {
     }
 
     restartXTP(): void {
-        const nameID = 'restartXTPAlert';
-        this.overlayService.open(nameID, AlertComponent, {
-            content: `Are you sure you want restart XTP? 
+            const id = this.alertService.confirm({
+            message: `Are you sure you want restart XTP? 
 ${this.hasLaunchPass ? `PLEASE NOTE: XTP is protected by a launch password.
 You will need to go to the pc and enter the password manually for now.` : ''}`,
-            titleText: 'Confirm',
-            acceptText: 'Restart XTP',
-            rejectText: 'Cancel',
-            onAccept: () => {
+            header: 'Confirm',
+            confirmText: 'Restart XTP',
+            cancelText: 'Cancel',
+            onConfirm: () => {
                 this.websocketService.restartXTP();
             },
-            onClose: () => this.overlayService.close(nameID)
+            onCancel: () => this.alertService.closeConfirm(id)
         });
     }
 
@@ -107,11 +148,21 @@ You will need to go to the pc and enter the password manually for now.` : ''}`,
         this.websocketService.refreshXTPLibrary();
     }
 
+    isDirty(): boolean {
+        return this.serverService.remoteUserSettingsDirty;
+        // this.formDirty = true;
+    }
     markDirty(): void {
-        this.formDirty = true;
+        this.serverService.remoteUserSettingsDirty = true;
+        // this.formDirty = true;
+    }
+    markClean(): void {
+        this.serverService.remoteUserSettingsDirty = false;
+        // this.formDirty = false;
     }
 
-    onSaveToXTP(): void {
+
+    onSaveToXTP(onSucess?: Function, onFail?: Function): void {
         this.saveState = 'Saving...';
         this.saveStateEnum = SaveState.Saving;
         forkJoin([
@@ -124,18 +175,61 @@ You will need to go to the pc and enter the password manually for now.` : ''}`,
         ).subscribe({
             next: () => {
                 this.saveStateEnum = SaveState.Success;
-                this.formDirty = false;
+                this.markClean();
                 this.saveState = 'Saved';
                 setTimeout(() => {
                     this.saveState = ''; 
                     this.saveStateEnum = SaveState.Idle;
+                    if(onSucess)
+                        onSucess();
                 }, 2000);
             },
             error: (err) => {
                 this.saveStateEnum = SaveState.Fail;
                 console.error('Error saving settings:', err);
                 this.saveState = 'Save failed';
+                if(onFail)
+                    onFail();
             }
         });
+    }
+
+    private dirtyCheck(onDone: Function): boolean {
+        if(this.isDirty()) {
+            const id = this.alertService.confirm(
+            {
+                message: `You have unsaved changes, 
+Save them now?`, 
+                header: "Warning!", 
+                confirmText: "Save", 
+                cancelText: "Discard",
+                onConfirm: () => {
+                    this.alertService.savingConfirm(id);
+                    this.onSaveToXTP(() => {
+                        onDone();
+                        this.alertService.closeConfirm(id);
+                    });
+                },
+                onCancel: () => {
+                    this.alertService.savingConfirm(id);
+                    if(this.activeTab == Tabs.Motion) {
+                        this.serverService.getServerChannels().add(() => {
+                            onDone();
+                            this.markClean();
+                        });
+                    } else {
+                        this.serverService.initServerSettings().subscribe(v => {
+                            onDone();
+                            this.markClean();
+                        });
+                    }
+                }
+            }
+            //, $event 
+            );
+            return true;
+        } else {
+            return false;
+        }
     }
 }

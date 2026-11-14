@@ -12,6 +12,7 @@ import { MediaItemPropertiesComponent } from '../media-item-properties/media-ite
 import { MediaItemAltScriptsComponent } from '../media-item-alt-scripts/media-item-alt-scripts.component';
 import { MediaListOverlayService } from '../../services/media-list-overlay.service';
 import { Subscription } from 'rxjs';
+import { AlertService } from '../../services/alert.service';
 
 @Component({
     selector: 'app-media-list-item-context-menu',
@@ -47,11 +48,12 @@ export class MediaListItemContextMenuComponent implements OnInit, OnChanges, Aft
   mediaManagementEnabled: boolean = false;
 
   private playingMediaItem: MediaItem | null = null;
-  private deleteAlertNameID = "deleteAlertID";
+  private deleteAlertNameID: number = -1;
   private overlaySub?: Subscription;
 
   constructor(
     private settingsService: SettingsService,
+    private alertService: AlertService,
     private overlayService: GenericOverlayService,
     private videoService: VideoService,
     private websocketService: WebsocketService,
@@ -64,7 +66,8 @@ export class MediaListItemContextMenuComponent implements OnInit, OnChanges, Aft
       this.playingMediaItem = v;
     });
     this.messageService.deleteItem$.subscribe(v => {
-      this.overlayService.close(this.deleteAlertNameID);
+        this.alertService.closeConfirm(this.deleteAlertNameID );
+        this.deleteAlertNameID = -1;
     });
     this.settingsService.mediaManagementEnabled$.subscribe(v => {
       this.mediaManagementEnabled = v;
@@ -252,19 +255,24 @@ export class MediaListItemContextMenuComponent implements OnInit, OnChanges, Aft
   }
 
   deleteEvent($event: MouseEvent) {
-    this.overlayService.open(
-      this.deleteAlertNameID, 
-      AlertComponent, 
+    if(this.deleteAlertNameID != -1)
+      return;
+    this.deleteAlertNameID = this.alertService.confirm(
       {
-        content: `Are you sure you wish to delete the media? 
+        message: `Are you sure you wish to delete the media? 
               '${this.item.name}'
 THIS ACTION CANNOT BE UNDONE!`, 
-        titleText: "Warning!", 
-        acceptText: "DELETE", 
-        rejectText: "NO WAY!",
-        onAccept: () => {this.confirmDeleteEvent();},
-        onReject: () => {this.rejectDeleteEvent();},
-        onClose:  () => {this.overlayService.close(this.deleteAlertNameID);},
+        header: "Warning!", 
+        confirmText: "DELETE", 
+        cancelText: "NO WAY!",
+        onConfirm: () => {
+          this.confirmDeleteEvent();
+        },
+        onCancel: () => {
+          this.rejectDeleteEvent();
+          this.alertService.closeConfirm(this.deleteAlertNameID );
+          this.deleteAlertNameID = -1;
+        }
       }
       //, $event 
     );
@@ -276,7 +284,7 @@ THIS ACTION CANNOT BE UNDONE!`,
   }
 
   rejectDeleteEvent() {
-    this.overlayService.close(this.deleteAlertNameID);
+    this.alertService.closeConfirm(this.deleteAlertNameID);
   }
 
   closeEvent() {

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, tap } from 'rxjs';
 import { SettingsService } from './settings.service';
 import { RemoteUserSettings, TCodeCommand, ActiveSession, ServerChannels } from '../models/interfaces';
 
@@ -31,6 +31,9 @@ export class ServerService {
   get remoteUserSettings(): RemoteUserSettings | null { return this.remoteUserSettingsSubject.value; }
 
   get serverChannels(): ServerChannels | null { return this.serverChannelsSubject.value; }
+  
+  remoteUserSettingsDirty = false;
+  serverChannelsDirty = false;
 
   constructor(
     private http: HttpClient,
@@ -92,8 +95,8 @@ export class ServerService {
     return this.http.post<any>('/tcodeCommands', commands);
   }
 
-  getServerChannels(): void {
-    this.http.get<ServerChannels>('/channels').subscribe({
+  getServerChannels(): Subscription {
+    return this.http.get<ServerChannels>('/channels').subscribe({
       next: (response) => {
         // const settings = this.remoteUserSettingsSubject.value;
         // if (settings) {

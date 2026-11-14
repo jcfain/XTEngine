@@ -1,0 +1,27 @@
+/* Sit above the toast overlay (z-index 1000) and the video player */
+.confirm-dialog {
+    z-index: 1100;
+}
+
+.confirm-dialog-message {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.confirm-dialog-button {
+    background: var(--button-background);
+    border: 1px solid var(--button-border-color);
+    color: var(--button-text-color);
+    padding: 6px 14px;
+    margin-left: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.confirm-dialog-button:hover {
+    background: var(--button-hover-background);
+}
+.confirm-dialog-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}

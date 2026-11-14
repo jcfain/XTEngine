@@ -3,7 +3,7 @@
     <div class="settings-modal-content">
         <div class="settings-modal-header">
             <span class="settings-modal-title">Settings</span>
-            <button class="close-btn" (click)="onToggle()">&times;</button>
+            <button class="close-btn" (click)="onClose()">&times;</button>
         </div>
         <div class="tab-body">
             <div class="tab-row">
@@ -48,7 +48,7 @@
                         </div>
                     }
                 </div>
-                <button class="icon-button save-button" [class.save-button-success]="saveSuccess()" [class.save-button-fail]="saveFail()" [class.save-button--dirty]="formDirty" title="Save to XTP" [disabled]="!formDirty" (click)="onSaveToXTP()">
+                <button class="icon-button save-button" [class.save-button-success]="saveSuccess()" [class.save-button-fail]="saveFail()" [class.save-button--dirty]="isDirty()" title="Save to XTP" [disabled]="!isDirty()" (click)="onSaveToXTP()">
                     <img class="buttonImage" src="://images/icons/save.svg" />
                 </button>
             </div>
