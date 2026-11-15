@@ -124,6 +124,10 @@ private:
     // void onSaveThumb(QString itemID, bool vrMode, QString errorMessage = nullptr);
     void setThumbPath(LibraryListItem27 &item);
     bool setLocalThumbPath(LibraryListItem27 &item);
+    // Assigns the thumb file and (re)computes the animatedThumb flag from the
+    // file header. All thumbFile assignments go through this so the flag is
+    // always in sync (also used by the XTP Qt widget).
+    void applyThumbFile(LibraryListItem27 &item, const QString &thumbFile);
     void setThumbState(ThumbState state, LibraryListItem27 &item);
     // void saveNewThumbs(bool vrMode = false);
     // void saveThumb(LibraryListItem27 &item, qint64 position = 0, bool vrMode = false);

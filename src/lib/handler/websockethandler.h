@@ -56,7 +56,7 @@ public:
     void sendError(QString message);
     void sendWarning(QString message);
     void sendDeviceConnectionStatus(ConnectionChangedSignal status, QWebSocket* client = 0);
-    void sendUpdateThumb(QString id, QString thumb, QString error = nullptr);
+    void sendUpdateThumb(QString id, QString thumb, QString error = nullptr, bool animated = false);
     void sendUpdateItem(QString itemJson, QString rolesList, QString error = nullptr);
     void sendAddItem(QString itemJson, QString error = nullptr);
     void sendScriptPaused(bool isPaused);

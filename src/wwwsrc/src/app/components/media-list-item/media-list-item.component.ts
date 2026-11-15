@@ -117,6 +117,11 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
   private mediaItemHeaderIconMultiplier = 0.15;
   private mediaItemHeaderMultiplier = 0.2;
   private subscriptions = new Subscription();
+  // Hover state for animated thumbs: while not hovered they show a static
+  // first frame (see thumbPath()).
+  private thumbHovered = false;
+  // Local setting: animate GIF/WebP thumbs only on hover (default) or always.
+  private animateGifsOnHover = true;
 
   // private mediaItemHeaderMultiplier: number = 0.15;
   // private mediaItemHeaderIconMultiplier: number = 0.10;
@@ -130,6 +135,11 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
     this.subscriptions.add(
       this.videoService.playingMediaItem$.subscribe(v => {
         this.playingMediaItem = v;
+      })
+    );
+    this.subscriptions.add(
+      this.localSettingsService.animateGifsOnHover$.subscribe(v => {
+        this.animateGifsOnHover = v;
       })
     );
   }
@@ -147,6 +157,9 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
       this.overflowCount = 0;
       this.tagsMeasurePasses = 0;
       this.tagsDirty = true;
+      // The component is recycled, so a stale hover state from the previous
+      // item would keep the new item's animated thumb playing.
+      this.thumbHovered = false;
     }
     // The tag row is measured in pixels, so any change to the item's size
     // (e.g. the user changing the thumb size) needs a re-measure.
@@ -254,9 +267,13 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
     return this.playingMediaItem?.id === item.id;
   }
 
-  getThumbPath(item: MediaItem): string {
+  getThumbPath(item: MediaItem, staticFrame = false): string {
       const thumbFile = "/thumb/";
       const cacheBust = item.thumbVersion ? `?v=${item.thumbVersion}` : "";
+      // "static=1" asks the server for a static (first frame) version of
+      // animated thumbs. Only applied to the real thumb paths - the
+      // loading/error placeholders are static images.
+      const staticParam = staticFrame ? (item.thumbVersion ? "&static=1" : "?static=1") : "";
       switch(item.thumbState)
       {
         case ThumbState.Waiting:
@@ -266,13 +283,31 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
         case ThumbState.Loading:
           return thumbFile + item.thumbFileLoadingCurrent;
         case ThumbState.Ready:
-          return thumbFile + item.relativeThumb + cacheBust;
+          return thumbFile + item.relativeThumb + cacheBust + staticParam;
         case ThumbState.Unknown:
           return thumbFile + item.thumbFileUnknown;
         default:
-				  return thumbFile + item.relativeThumb + cacheBust;
+				  return thumbFile + item.relativeThumb + cacheBust + staticParam;
 
       }
+  }
+
+  // Thumb src for the <img>: animated (GIF/WebP) thumbs show a static first
+  // frame until the item is hovered, unless the local setting restores the
+  // old always-animate behavior.
+  thumbPath(): string {
+    if (this.animateGifsOnHover && this.item?.animatedThumb && !this.thumbHovered) {
+      return this.getThumbPath(this.item, true);
+    }
+    return this.getThumbPath(this.item);
+  }
+
+  onThumbMouseEnter(): void {
+    this.thumbHovered = true;
+  }
+
+  onThumbMouseLeave(): void {
+    this.thumbHovered = false;
   }
 
   getItemClass(item: MediaItem): string {

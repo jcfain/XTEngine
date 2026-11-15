@@ -43,6 +43,8 @@ export interface MediaItem {
     loaded: boolean;
     playing: boolean;
     managedThumb: boolean;
+    // True when the thumb file contains animation (GIF, animated WebP, ...)
+    animatedThumb: boolean;
     metaData: MediaItemMetaData;
 }
 

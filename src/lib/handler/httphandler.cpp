@@ -1,6 +1,7 @@
 #include "httphandler.h"
 #include <QUuid>
 #include <QNetworkCookie>
+#include <QUrlQuery>
 #include "../tool/imagefactory.h"
 #include "settingshandler.h"
 #include "funscripthandler.h"
@@ -215,7 +216,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         QString relativeThumb;
         if(thumbFile.startsWith(SettingsHandler::getSelectedThumbsDir())) {
             relativeThumb = thumbFile.replace(SettingsHandler::getSelectedThumbsDir(), "");
-            _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb);
+            _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb, QString(), item.animatedThumb);
             return;
         }
         auto selectLibraryPaths = SettingsHandler::mediaLibrarySettings->get(LibraryType::MAIN);
@@ -226,7 +227,7 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
                 break;
             }
         }
-        _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb);
+        _webSocketHandler->sendUpdateThumb(item.ID, relativeThumb, QString(), item.animatedThumb);
     });
     connect(_mediaLibraryHandler, &MediaLibraryHandler::itemUpdated, this, [this](int index, QVector<int> roles) {
         if(_mediaLibraryHandler->isLibraryProcessing() || index < 0)
@@ -1149,6 +1150,7 @@ QJsonObject HttpHandler::createMediaObject(const LibraryListItem27& item, QStrin
     object["loaded"] = false;
     object["playing"] = false;
     object["managedThumb"] = item.managedThumb;
+    object["animatedThumb"] = item.animatedThumb;
     // Metadata
 
     QJsonObject metadata = LibraryListItemMetaData258::toJson(item.metadata);
@@ -1358,6 +1360,11 @@ QHttpServerResponse HttpHandler::handleThumbFile(const QHttpServerRequest &reque
         return QHttpServerResponse(QHttpServerResponse::StatusCode::Forbidden);
     }
 
+    // "static=1" requests a static (first frame) version of animated thumbs
+    // (GIF/WebP) so the web front-end can show them un-animated until hover.
+    const QUrlQuery query(request.url().query());
+    const bool staticFrame = query.hasQueryItem("static") && query.queryItemValue("static") == "1";
+
     QString thumbToSend;
     if(thumbName.startsWith(":"))
         thumbToSend = thumbName;
@@ -1390,9 +1397,30 @@ QHttpServerResponse HttpHandler::handleThumbFile(const QHttpServerRequest &reque
 //        thumbToSend = thumbDirFile;
 //    }
     int quality = SettingsHandler::getHttpThumbQuality();
+    if(staticFrame)
+    {
+        // Re-encode the first frame so the web front-end can show animated
+        // thumbs un-animated until hover. If the image can't be decoded,
+        // fall back to the original (animated) file - never a broken image.
+        QByteArray bytes = ImageFactory::staticFirstFrameJpeg(thumbToSend, quality > -1 ? quality : 90);
+        if(!bytes.isEmpty())
+        {
+            // Note: QHttpServerResponse(bytes) sets Content-Length itself;
+            // appending it here too produces a duplicate header which makes
+            // reverse proxies (e.g. the Angular dev-server proxy) reject the
+            // response with a 502 Bad Gateway.
+            QHttpHeaders headers;
+            headers.append(QHttpHeaders::WellKnownHeader::ContentType, "image/jpeg");
+            auto response = QHttpServerResponse(bytes);
+            response.setHeaders(headers);
+            return response;
+        }
+        LogHandler::Warn("Static first-frame encode failed, serving original animated thumb: " + thumbToSend);
+        return sendFile(thumbToSend);
+    }
     if(quality > -1)
     {
-        QPixmap pixmap = ImageFactory::resize(thumbToSend, {500, 500});
+        QPixmap pixmap = ImageFactory::resizeCache(thumbToSend, thumbToSend, {500, 500});
         QByteArray bytes;
         QBuffer buffer(&bytes);
         if(!buffer.open(QIODevice::ReadWrite) || pixmap.isNull()) {
@@ -1408,7 +1436,8 @@ QHttpServerResponse HttpHandler::handleThumbFile(const QHttpServerRequest &reque
         QHttpHeaders headers;
         // QString mimeType = mimeDatabase.mimeTypeForFile(thumbToSend, QMimeDatabase::MatchExtension).name();
         headers.append(QHttpHeaders::WellKnownHeader::ContentType, "image/jpeg");
-        headers.append(QHttpHeaders::WellKnownHeader::ContentLength, QString::number(bytes.length()));
+        // Content-Length is set automatically by QHttpServerResponse(bytes);
+        // appending it manually duplicates the header and breaks proxies (502).
         // responder.write(newObj, headers, QHttpServerResponse::StatusCode::Ok);
         auto response = QHttpServerResponse(bytes);
         response.setHeaders(headers);

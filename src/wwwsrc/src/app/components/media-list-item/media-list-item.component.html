@@ -2,7 +2,9 @@
   [style.width]="widthPX"
   [style.height]="heightPX"
   [class]="getItemClass(item)"
-  (click)="onItemClick(item)">
+  (click)="onItemClick(item)"
+  (mouseenter)="onThumbMouseEnter()"
+  (mouseleave)="onThumbMouseLeave()">
   <app-media-list-item-context-menu 
     [item]="item"
     [fontSize]="fontSize"
@@ -13,7 +15,7 @@
 
   <!-- Large thumbnail on top (YouTube style) with corner status badges -->
   <div class="media-thumb" [style.height]="thumbHeightPX" [style.width]="widthPX">
-    <img [lazySrc]="getThumbPath(item)" [alt]="item.name" class="media-thumb-nail" />
+    <img [lazySrc]="thumbPath()" [alt]="item.name" class="media-thumb-nail" />
     <div class="media-overlay">
       <span class="play-icon">&#9654;</span>
     </div>

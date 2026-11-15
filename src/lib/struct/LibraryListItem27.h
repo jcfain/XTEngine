@@ -57,6 +57,9 @@ public:
     ThumbState thumbState = ThumbState::Waiting;
     bool thumbFileExists = false;
     bool managedThumb = false;
+    // True when the thumb file contains animation (GIF, animated WebP, ...).
+    // Set wherever thumbFile is assigned (see MediaLibraryHandler::applyThumbFile).
+    bool animatedThumb = false;
     bool forceProcessMetadata = false;
     bool error = false;
 
@@ -126,6 +129,7 @@ public:
         thumbState = from.thumbState;
         thumbFileExists = from.thumbFileExists;
         managedThumb = from.managedThumb;
+        animatedThumb = from.animatedThumb;
         forceProcessMetadata = from.forceProcessMetadata;
         metadata = LibraryListItemMetaData258(from.metadata);
     }
@@ -159,6 +163,7 @@ public:
         obj["thumbState"] = (int)item.thumbState;
         obj["thumbFileExists"] = item.thumbFileExists;
         obj["managedThumb"] = item.managedThumb;
+        obj["animatedThumb"] = item.animatedThumb;
         obj["forceProcessMetadata"] = item.forceProcessMetadata;
         obj["metadata"] = LibraryListItemMetaData258::toJson(item.metadata);
         return obj;
@@ -194,6 +199,7 @@ public:
         newItem.script = obj["script"].toString();
         newItem.pathNoExtension = obj["scriptNoExtension"].toString();
         newItem.thumbFile = obj["thumbFile"].toString();
+        newItem.animatedThumb = obj["animatedThumb"].toBool();
         newItem.type = (LibraryListItemType)obj["type"].toInt();
         newItem.zipFile = obj["zipFile"].toString();
         return newItem;

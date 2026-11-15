@@ -77,6 +77,15 @@ export class LocalSettingsService {
     private disableHeatmapSubject = new BehaviorSubject<boolean>(this.disableHeatmapDefault);
     disableHeatmap$: Observable<boolean> = this.disableHeatmapSubject.asObservable();
 
+    // Animated (GIF/WebP) media item thumbs only animate while hovered.
+    // Unchecked restores the old behavior of animating as soon as shown.
+    // Touch devices (headsets, phones) have no hover - tapping an item plays
+    // the media - so the default there is to always animate.
+    readonly animateGifsOnHoverDefault = !window.matchMedia("(hover: none)").matches;
+    private animateGifsOnHoverKey = "animateGifsOnHover";
+    private animateGifsOnHoverSubject = new BehaviorSubject<boolean>(this.animateGifsOnHoverDefault);
+    animateGifsOnHover$: Observable<boolean> = this.animateGifsOnHoverSubject.asObservable();
+
     readonly enableTextToSpeechDefault = true;
     private enableTextToSpeechKey = "enableTextToSpeech";
     private enableTextToSpeechSubject = new BehaviorSubject<boolean>(this.enableTextToSpeechDefault);
@@ -126,6 +135,7 @@ export class LocalSettingsService {
         this.externalStreamingSubject.next(this.getFromLocalStorage(this.externalStreamingKey, this.externalStreamingDefault));
         this.disableBrowserLazyLoadSubject.next(this.getFromLocalStorage(this.disableBrowserLazyLoadKey, this.externalStreamingDefault));
         this.disableHeatmapSubject.next(this.getFromLocalStorage(this.disableHeatmapKey, this.disableHeatmapDefault));
+        this.animateGifsOnHoverSubject.next(this.getFromLocalStorage(this.animateGifsOnHoverKey, this.animateGifsOnHoverDefault));
         this.enableTextToSpeechSubject.next(this.getFromLocalStorage(this.enableTextToSpeechKey, this.enableTextToSpeechDefault));
         this.selectedVoiceIndexSubject.next(this.getFromLocalStorage(this.selectedVoiceIndexKey, this.selectedVoiceIndexDefault));
         this.speechPitchSubject.next(this.getFromLocalStorage(this.speechPitchKey, this.speechPitchDefault));
@@ -229,6 +239,11 @@ export class LocalSettingsService {
     setDisableHeatmap(value: boolean): void {
         this.setToLocalStorage(this.disableHeatmapKey, value);
         this.disableHeatmapSubject.next(value);
+    }
+
+    setAnimateGifsOnHover(value: boolean): void {
+        this.setToLocalStorage(this.animateGifsOnHoverKey, value);
+        this.animateGifsOnHoverSubject.next(value);
     }
 
     setEnableTextToSpeech(value: boolean): void {

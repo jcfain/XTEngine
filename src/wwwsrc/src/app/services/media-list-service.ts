@@ -163,6 +163,7 @@ export class MediaListService {
             item.thumbState = message.errorMessage ? ThumbState.Error : ThumbState.Ready;
             item.thumbFileExists = !message.errorMessage;
             item.thumbVersion = Date.now();
+            item.animatedThumb = !message.errorMessage && !!message.animated;
         }
     }
 

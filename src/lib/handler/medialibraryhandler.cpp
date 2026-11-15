@@ -250,7 +250,7 @@ void MediaLibraryHandler::on_load_library(QStringList paths, bool vrMode)
 #endif
                 ;
             item.mediaExtension = mediaExtension;
-            item.thumbFile = nullptr;
+            applyThumbFile(item, nullptr);
 #if BUILD_QT5
             item.zipFile = zipFile;
 #endif
@@ -923,7 +923,7 @@ void MediaLibraryHandler::saveSingleThumb(QString id, qint64 position)
             // generation is written as webp even if the item currently has a
             // legacy jpg. setThumbPath (called in processThumb) will then
             // prefer the new webp over the legacy jpg.
-            item->thumbFile = SettingsHandler::getManagedThumbPathNoExtension(item) + "." + SettingsHandler::getThumbFormatExtension();
+            applyThumbFile(*item, SettingsHandler::getManagedThumbPathNoExtension(item) + "." + SettingsHandler::getThumbFormatExtension());
             // This will not play in a NON GUI thread.
             processThumb(extractor, *item, position);
         }
@@ -1446,12 +1446,12 @@ void MediaLibraryHandler::lockThumb(LibraryListItem27 &item)
         bool success = file.rename(newName);
         if(success) {
             LogHandler::Debug("File renamed: "+ newName);
-            item.thumbFile = newName;
+            applyThumbFile(item, newName);
             int index = findItemIndexByID(item.ID);
             if(index > -1) {
                 m_mediaLibraryCache.lockForWrite();
                 LibraryListItem27* item = m_mediaLibraryCache.value(index);
-                item->thumbFile = newName;
+                applyThumbFile(*item, newName);
                 m_mediaLibraryCache.unlock();
                 emit itemUpdated(index, {Qt::DecorationRole});
             }
@@ -1475,12 +1475,12 @@ void MediaLibraryHandler::unlockThumb(LibraryListItem27 &item)
         bool success = file.rename(newName);
         if(success) {
             LogHandler::Debug("File renamed: "+ newName);
-            item.thumbFile = newName;
+            applyThumbFile(item, newName);
             int index = findItemIndexByID(item.ID);
             if(index > -1) {
                 m_mediaLibraryCache.lockForWrite();
                 LibraryListItem27* item = m_mediaLibraryCache.value(index);
-                item->thumbFile = newName;
+                applyThumbFile(*item, newName);
                 m_mediaLibraryCache.unlock();
                 emit itemUpdated(index, {Qt::DecorationRole});
             }
@@ -1498,20 +1498,26 @@ void MediaLibraryHandler::setThumbState(ThumbState state, LibraryListItem27 &ite
     emit itemUpdated(index, {Qt::DecorationRole});
 }
 
+void MediaLibraryHandler::applyThumbFile(LibraryListItem27 &item, const QString &thumbFile)
+{
+    item.thumbFile = thumbFile;
+    item.animatedThumb = ImageFactory::isAnimatedImageFile(thumbFile);
+}
+
 void MediaLibraryHandler::setThumbPath(LibraryListItem27 &item)
 {
     if(item.type == LibraryListItemType::Audio)
     {
         if(setLocalThumbPath(item))
             return;
-        item.thumbFile = "://images/icons/audio.png";
+        applyThumbFile(item, "://images/icons/audio.png");
         item.thumbFileExists = true;
         item.managedThumb = true;
         return;
     }
     else if(item.type == LibraryListItemType::PlaylistInternal)
     {
-        item.thumbFile = "://images/icons/playlist.png";
+        applyThumbFile(item, "://images/icons/playlist.png");
         item.thumbFileExists = true;
         item.managedThumb = true;
         return;
@@ -1520,7 +1526,7 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &item)
     {
         if(setLocalThumbPath(item))
             return;
-        item.thumbFile = "://images/icons/funscript.png";
+        applyThumbFile(item, "://images/icons/funscript.png");
         item.thumbFileExists = true;
         item.managedThumb = true;
         return;
@@ -1532,7 +1538,7 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &item)
     {
         item.thumbFileExists = true;
         item.managedThumb = true;
-        item.thumbFile = filepathGlobal;
+        applyThumbFile(item, filepathGlobal);
         return;
     }
     QString filepathGlobalLocked = globalPath + ".lock." + SettingsHandler::getThumbFormatExtension();
@@ -1540,7 +1546,7 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &item)
     {
         item.thumbFileExists = true;
         item.managedThumb = true;
-        item.thumbFile = filepathGlobalLocked;
+        applyThumbFile(item, filepathGlobalLocked);
         return;
     }
 
@@ -1550,7 +1556,7 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &item)
     {
         item.thumbFileExists = true;
         item.managedThumb = true;
-        item.thumbFile = filepathGlobalLegacy;
+        applyThumbFile(item, filepathGlobalLegacy);
         return;
     }
     QString filepathGlobalLockedLegacy = SettingsHandler::getSelectedThumbsDir() + item.name  + ".lock.jpg";
@@ -1558,7 +1564,7 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &item)
     {
         item.thumbFileExists = true;
         item.managedThumb = true;
-        item.thumbFile = filepathGlobalLockedLegacy;
+        applyThumbFile(item, filepathGlobalLockedLegacy);
         return;
     }
     ////////////////////////
@@ -1589,14 +1595,14 @@ void MediaLibraryHandler::setThumbPath(LibraryListItem27 &item)
     if(SettingsHandler::getUseMediaDirForThumbs())// Not exposed in any UI
     {
         QFileInfo mediaInfo(item.path);
-        item.thumbFile = mediaInfo.absolutePath() + item.nameNoExtension + "." + SettingsHandler::getThumbFormatExtension();
+        applyThumbFile(item, mediaInfo.absolutePath() + item.nameNoExtension + "." + SettingsHandler::getThumbFormatExtension());
         item.thumbFileExists = QFileInfo::exists(item.thumbFile);
         item.managedThumb = true;
         return;
     }
 
     item.managedThumb = true;
-    item.thumbFile = SettingsHandler::getManagedThumbPathNoExtension(&item) + "." + SettingsHandler::getThumbFormatExtension();
+    applyThumbFile(item, SettingsHandler::getManagedThumbPathNoExtension(&item) + "." + SettingsHandler::getThumbFormatExtension());
     item.thumbFileExists = QFileInfo::exists(item.thumbFile);
 
 }
@@ -1613,7 +1619,7 @@ bool MediaLibraryHandler::setLocalThumbPath(LibraryListItem27 &item)
         {
             item.thumbFileExists = true;
             item.managedThumb = false;
-            item.thumbFile = filepathLocked;
+            applyThumbFile(item, filepathLocked);
             return true;
         }
         QString filepath = absolutePath + "." + ext;
@@ -1621,7 +1627,7 @@ bool MediaLibraryHandler::setLocalThumbPath(LibraryListItem27 &item)
         {
             item.thumbFileExists = true;
             item.managedThumb = false;
-            item.thumbFile = filepath;
+            applyThumbFile(item, filepath);
             return true;
         }
     }
@@ -1877,7 +1883,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
                     if(item)
                     {
                         m_mediaLibraryCache.lockForWrite();
-                        item->thumbFile = hasLocal;
+                        applyThumbFile(*item, hasLocal);
                         m_mediaLibraryCache.unlock();
                     }
                 } else if(!hasLocalLocked.isEmpty()) {
@@ -1885,7 +1891,7 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
                     if(item)
                     {
                         m_mediaLibraryCache.lockForWrite();
-                        item->thumbFile = hasLocalLocked;
+                        applyThumbFile(*item, hasLocalLocked);
                         m_mediaLibraryCache.unlock();
                     }
                 }

@@ -79,6 +79,7 @@ export class SettingsLocalTabComponent implements OnInit {
     disableLazyLoad = false;
     disableFullScreenMediaList = false;
     disableHeatmap = false;
+    animateGifsOnHover = true;
     userAgentIsHereSphere = false;
 
     // Text to speech
@@ -108,6 +109,7 @@ export class SettingsLocalTabComponent implements OnInit {
         this.localSettings.disableBrowserLazyLoad$.subscribe(v => this.disableLazyLoad = v);
         this.localSettings.disableFullScreenMediaList$.subscribe(v => this.disableFullScreenMediaList = v);
         this.localSettings.disableHeatmap$.subscribe(v => this.disableHeatmap = v);
+        this.localSettings.animateGifsOnHover$.subscribe(v => this.animateGifsOnHover = v);
         this.localSettings.theme$.subscribe(v => this._theme = v);
         this.userAgentIsHereSphere = this.appState.userAgentIsHereSphere;
 
@@ -190,6 +192,10 @@ export class SettingsLocalTabComponent implements OnInit {
 
     onDisableHeatmapChange(checked: boolean): void {
         this.localSettings.setDisableHeatmap(checked);
+    }
+
+    onAnimateGifsOnHoverChange(checked: boolean): void {
+        this.localSettings.setAnimateGifsOnHover(checked);
     }
 
     // Text to speech methods

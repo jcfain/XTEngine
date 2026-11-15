@@ -26,6 +26,12 @@
             [ngModel]="disableHeatmap" (ngModelChange)="onDisableHeatmapChange($event)" />
     </div>
     <div class="formElement">
+        <label title="If checked, media items with animated (GIF/WebP) thumbnails only animate while hovered. Uncheck to animate them as soon as they are shown."
+            for="animateGifsOnHoverCheckbox">Animate GIFs on hover</label>
+        <input id="animateGifsOnHoverCheckbox" type="checkbox"
+            [ngModel]="animateGifsOnHover" (ngModelChange)="onAnimateGifsOnHoverChange($event)" />
+    </div>
+    <div class="formElement">
         <label for="showSelect"><span class="formLabel">Show</span></label>
         @if (userAgentIsHereSphere) {
             <button id="showSelect" (click)="openShowSelect()">{{ showModeLabel() }}</button>

@@ -322,13 +322,14 @@ void  WebSocketHandler::sendDeviceConnectionStatus(ConnectionChangedSignal statu
         sendCommand("inputDeviceStatus", messageJson, client);
     }
 }
-void  WebSocketHandler::sendUpdateThumb(QString id, QString thumb, QString errorMessage)
+void  WebSocketHandler::sendUpdateThumb(QString id, QString thumb, QString errorMessage, bool animated)
 {
     QString messageJson;
+    QString animatedJson = QString(animated ? ", \"animated\": true" : ", \"animated\": false");
     if(errorMessage.isEmpty())
-        messageJson = "{ \"id\": \""+id+"\", \"thumb\": \""+thumb+"\"}";
+        messageJson = "{ \"id\": \""+id+"\", \"thumb\": \""+thumb+"\""+animatedJson+"}";
     else
-        messageJson = "{ \"id\": \""+id+"\", \"thumb\": \""+thumb+"\", \"errorMessage\": \""+errorMessage+"\"}";
+        messageJson = "{ \"id\": \""+id+"\", \"thumb\": \""+thumb+"\", \"errorMessage\": \""+errorMessage+"\""+animatedJson+"}";
     sendCommand("updateThumb", messageJson);
 }
 
