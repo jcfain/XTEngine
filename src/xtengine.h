@@ -4,6 +4,7 @@
 #include "XTEngine_global.h"
 #include <QObject>
 #include <QCoreApplication>
+#include <QElapsedTimer>
 
 #include "lib/handler/loghandler.h"
 #include "lib/handler/settingshandler.h"
@@ -75,6 +76,9 @@ private:
     TCodeFactory *_tcodeFactory = 0;
     HeatMap* m_heatmap;
     Scheduler* m_scheduler;
+    // Throttles the externalMediaPosition websocket message (see the
+    // inputMessageReceived connection in init()).
+    QElapsedTimer m_mediaPositionTimer;
 
 //    XMediaStateHandler* m_xMediaStateHandler;
 

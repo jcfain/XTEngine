@@ -39,6 +39,10 @@ signals:
     void channelPositionChange(QString channel, int position, int time, ChannelTimeType timeType);
     void scriptTogglePaused(bool paused);
     void heatmapGenerated(QString svg);
+    // Current playback position of the external player (HereSphere/DeoVR),
+    // forwarded from the sync packets so the web external player UI can show
+    // a position indicator on the heat map.
+    void externalMediaPosition(qint64 time, qint64 duration, bool playing, double playbackSpeed);
     void swapScript(ScriptInfo script);
     void clean1024();
     void updateMetadata(LibraryListItemMetaData258 value);

@@ -42,16 +42,37 @@
 /* Funscript heat map: spans the full view width. It is display only here
    (no seek on click - seeking drives the media player directly). */
 .external-player-heatmap {
+    position: relative;
     width: 100%;
     height: 20vh;
     background: black;
     overflow: hidden;
 }
 
-.external-player-heatmap > svg {
+.external-player-heatmap-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.external-player-heatmap-svg > svg {
     display: block;
     width: 100%;
     height: 100%;
+}
+
+/* Blue progress line: mirrors the video player's .heatmap-progress-line. Its
+   left offset is driven by the external player's reported time (see
+   startPositionLineUpdates). */
+.external-player-heatmap-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 2px;
+    margin-left: -1px;
+    background: #00bfff;
+    box-shadow: 0 0 4px #00bfff;
+    pointer-events: none;
 }
 
 /* Second line: the playing item's name (ellipsized). */

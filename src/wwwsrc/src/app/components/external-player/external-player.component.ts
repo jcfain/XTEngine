@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ElementRef, NgZone, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 import { Subscription } from 'rxjs';
@@ -42,6 +42,13 @@ export class ExternalPlayerComponent implements OnInit, OnDestroy {
     get showHeatmap(): boolean {
         return !this.disableHeatmap && this.heatmapSvg !== null;
     }
+    // Blue progress line over the heat map (see .external-player-heatmap-line).
+    @ViewChild('heatmapLine') heatmapLineRef: ElementRef | null = null;
+    private positionLineRafId: number | null = null;
+    // Latest position reported by the external player (see
+    // externalMediaPosition$) plus the local arrival time, so the rAF loop can
+    // extrapolate smoothly between the ~10 Hz updates.
+    private m_position = {time: 0, duration: 0, playing: false, playbackSpeed: 1, updatedAt: 0};
 
     private subscriptions: Subscription[] = [];
 
@@ -50,7 +57,8 @@ export class ExternalPlayerComponent implements OnInit, OnDestroy {
         private webSocketService: WebsocketService,
         private messageHandlerService: MessageHandlerService,
         private videoService: VideoService,
-        private sanitizer: DomSanitizer
+        private sanitizer: DomSanitizer,
+        private ngZone: NgZone
     ) {
         this.subscriptions.push(
             this.messageHandlerService.stopAllMedia$.subscribe(() => {
@@ -70,20 +78,82 @@ export class ExternalPlayerComponent implements OnInit, OnDestroy {
                 // just arrived.
                 if (!v || !previous || v.id !== previous.id) {
                     this.setHeatmapSvg(null);
+                    this.resetPosition();
                 }
             }),
             this.localSettingsService.disableHeatmap$.subscribe(v => this.disableHeatmap = v),
-            this.messageHandlerService.heatmap$.subscribe(v => this.setHeatmapSvg(v))
+            this.messageHandlerService.heatmap$.subscribe(v => this.setHeatmapSvg(v)),
+            this.messageHandlerService.externalMediaPosition$.subscribe(v => {
+                if (!v) {
+                    return;
+                }
+                this.m_position = {
+                    time: v.time,
+                    duration: v.duration,
+                    playing: v.playing,
+                    playbackSpeed: v.playbackSpeed,
+                    updatedAt: performance.now()
+                };
+            })
         );
+        this.startPositionLineUpdates();
     }
 
     ngOnDestroy(): void {
         this.subscriptions.forEach(s => s.unsubscribe());
+        this.stopPositionLineUpdates();
     }
 
     setHeatmapSvg(svg: string | null): void {
         this.heatmapSvg = svg;
         this.heatmapSvgSafe = svg ? this.sanitizer.bypassSecurityTrustHtml(svg) : null;
+    }
+
+    // The external player's position arrives in ~10 Hz websocket updates. Move
+    // the heat map's blue progress line with requestAnimationFrame,
+    // extrapolating between updates while playing (mirrors the video player's
+    // startHeatmapLineUpdates). The style is written directly to the DOM
+    // outside the Angular zone so it costs nothing per frame.
+    private startPositionLineUpdates(): void {
+        if (this.positionLineRafId !== null) {
+            return;
+        }
+        this.ngZone.runOutsideAngular(() => {
+            const tick = (): void => {
+                this.positionLineRafId = requestAnimationFrame(tick);
+                const line = this.heatmapLineRef?.nativeElement;
+                const p = this.m_position;
+                if (line && p.duration > 0) {
+                    let current = p.time;
+                    if (p.playing) {
+                        current += (performance.now() - p.updatedAt) * p.playbackSpeed;
+                    }
+                    if (current < 0)
+                        current = 0;
+                    if (current > p.duration)
+                        current = p.duration;
+                    line.style.left = (current / p.duration) * 100 + '%';
+                }
+            };
+            this.positionLineRafId = requestAnimationFrame(tick);
+        });
+    }
+
+    private stopPositionLineUpdates(): void {
+        if (this.positionLineRafId !== null) {
+            cancelAnimationFrame(this.positionLineRafId);
+            this.positionLineRafId = null;
+        }
+    }
+
+    // Drop the reported position (a new video started or playback stopped) so
+    // the line parks at 0 until the external player reports again.
+    private resetPosition(): void {
+        this.m_position = {time: 0, duration: 0, playing: false, playbackSpeed: 1, updatedAt: 0};
+        const line = this.heatmapLineRef?.nativeElement;
+        if (line) {
+            line.style.left = '0%';
+        }
     }
 
     // Hidden in the template for now (they need seeking in the external
@@ -138,6 +208,7 @@ export class ExternalPlayerComponent implements OnInit, OnDestroy {
         if (this.motionProfilesOpen)
             this.toggleMotionProfiles();
         this.setHeatmapSvg(null);
+        this.resetPosition();
         this.videoService.stopVideo();
     }
 }

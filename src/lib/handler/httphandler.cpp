@@ -303,6 +303,15 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         _webSocketHandler->sendCommand("heatmap", obj);
     });
 
+    connect(this, &HttpHandler::externalMediaPosition, this, [this](qint64 time, qint64 duration, bool playing, double playbackSpeed){
+        QJsonObject obj;
+        obj["time"] = (qint64)time;
+        obj["duration"] = (qint64)duration;
+        obj["playing"] = playing;
+        obj["playbackSpeed"] = playbackSpeed;
+        _webSocketHandler->sendCommand("externalMediaPosition", obj);
+    });
+
     connect(this, &HttpHandler::actionExecuted, this, [this](QString action, QString spokenText, QVariant value){
         QJsonObject obj;
         obj["mediaAction"] = action;

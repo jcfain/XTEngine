@@ -43,7 +43,10 @@
   </div>
 
   @if (showHeatmap) {
-    <div class="external-player-heatmap" [innerHTML]="heatmapSvgSafe"></div>
+    <div class="external-player-heatmap">
+      <div class="external-player-heatmap-svg" [innerHTML]="heatmapSvgSafe"></div>
+      <div #heatmapLine class="external-player-heatmap-line"></div>
+    </div>
   }
 
   <!-- Script status: under the heat map, full view width with a static

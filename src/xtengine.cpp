@@ -176,6 +176,26 @@ void XTEngine::init()
             m_heatmap->durationReported(packet.path, packet.duration);
         }
     });
+    connect(_connectionHandler, &ConnectionHandler::inputMessageReceived, this, [this](InputConnectionPacket packet) {
+        // Forward the external player's (HereSphere/DeoVR) playback position
+        // to the web client so the external player UI can show a position
+        // indicator on the heat map. Sync packets arrive much faster than a
+        // position line needs, so throttle to ~10 Hz.
+        if(!_httpHandler)
+            return;
+        if(packet.stopped) {
+            // Playback ended - release the throttle so the next video's first
+            // position update is sent immediately.
+            m_mediaPositionTimer.invalidate();
+            return;
+        }
+        if(packet.duration <= 0)
+            return;
+        if(m_mediaPositionTimer.isValid() && m_mediaPositionTimer.elapsed() < 100)
+            return;
+        m_mediaPositionTimer.start();
+        _httpHandler->externalMediaPosition(packet.currentTime, packet.duration, packet.playing, packet.playbackSpeed);
+    });
     connect(_connectionHandler, &ConnectionHandler::action, _settingsActionHandler, &SettingsActionHandler::media_action);
     connect(_connectionHandler, &ConnectionHandler::inputConnectionChange, this, [this](ConnectionChangedSignal event) {
         auto selectedInputDevice = _connectionHandler->getSelectedInputConnection();

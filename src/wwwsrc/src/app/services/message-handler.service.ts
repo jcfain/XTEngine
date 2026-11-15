@@ -58,6 +58,12 @@ export class MessageHandlerService {
   private heatmapSubject = new BehaviorSubject<string | null>(null);
   heatmap$: Observable<string | null> = this.heatmapSubject.asObservable();
 
+  // Current playback position of the external player (HereSphere/DeoVR),
+  // reported in the player's sync packets and throttled to ~10 Hz by the
+  // server (see HttpHandler::externalMediaPosition).
+  private externalMediaPositionSubject = new BehaviorSubject<{time: number, duration: number, playing: boolean, playbackSpeed: number} | null>(null);
+  externalMediaPosition$: Observable<{time: number, duration: number, playing: boolean, playbackSpeed: number} | null> = this.externalMediaPositionSubject.asObservable();
+
   private channelProfileChangedSubject = new BehaviorSubject<string | null>(null);
   channelProfileChanged$: Observable<string | null> = this.channelProfileChangedSubject.asObservable();
 
@@ -256,6 +262,17 @@ export class MessageHandlerService {
         case 'heatmap': {
           const messageObj = data['message'];
           this.heatmapSubject.next(messageObj?.['svg'] ?? null);
+          break;
+        }
+
+        case 'externalMediaPosition': {
+          const messageObj = data['message'];
+          this.externalMediaPositionSubject.next({
+            time: messageObj?.['time'] ?? 0,
+            duration: messageObj?.['duration'] ?? 0,
+            playing: messageObj?.['playing'] ?? false,
+            playbackSpeed: messageObj?.['playbackSpeed'] ?? 1
+          });
           break;
         }
 
