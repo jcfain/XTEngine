@@ -1,14 +1,18 @@
 .device-status-disconnected {
     background-color: crimson;
+    color: black;
     cursor: pointer;
 }
 .device-status-connecting {
     background-color: yellow;
+    color: black;
 }
 .device-status-connected {
     background-color: chartreuse;
+    color: black;
 }
 .device-status-error {
     background-color: red;
+    color: black;
     cursor: pointer;
 }

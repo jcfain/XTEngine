@@ -49,7 +49,7 @@
                     }
                 </div>
                 <button class="icon-button save-button" [class.save-button-success]="saveSuccess()" [class.save-button-fail]="saveFail()" [class.save-button--dirty]="isDirty()" title="Save to XTP" [disabled]="!isDirty()" (click)="onSaveToXTP()">
-                    <img class="buttonImage" src="://images/icons/save.svg" />
+                    <svg class="buttonImage"><use href="#save"></use></svg>
                 </button>
             </div>
         </div>

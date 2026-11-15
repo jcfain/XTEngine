@@ -107,6 +107,11 @@ export class LocalSettingsService {
     private lastSelectedPropertiesTabSubject = new BehaviorSubject<number>(this.lastSelectedPropertiesTabDefault);
     lastSelectedPropertiesTab$: Observable<number> = this.lastSelectedPropertiesTabSubject.asObservable();
 
+    readonly themeDefault = "dark";
+    private themeKey = "theme";
+    private themeSubject = new BehaviorSubject<string>(this.themeDefault);
+    theme$: Observable<string> = this.themeSubject.asObservable();
+
     constructor( ) {
         this.storedHashSubject.next(this.getStoredHash());
         this.sortSubject.next(this.getFromLocalStorage(this.sortKey, this.sortDefault));
@@ -127,6 +132,7 @@ export class LocalSettingsService {
         this.speechRateSubject.next(this.getFromLocalStorage(this.speechRateKey, this.speechRateDefault));
         this.speechVolumeSubject.next(this.getFromLocalStorage(this.speechVolumeKey, this.speechVolumeDefault));
         this.lastSelectedPropertiesTabSubject.next(this.getFromLocalStorage(this.lastSelectedPropertiesTabKey, this.lastSelectedPropertiesTabDefault));
+        this.themeSubject.next(this.getFromLocalStorage(this.themeKey, this.themeDefault).toLowerCase());
     }
 
     setStoredHash(value: string | null): void {
@@ -253,6 +259,15 @@ export class LocalSettingsService {
     setLastSelectedPropertiesTab(value: number): void {
         this.setToLocalStorage(this.lastSelectedPropertiesTabKey, value);
         this.lastSelectedPropertiesTabSubject.next(value);
+    }
+
+    setTheme(value: string): void {
+        // Theme names are stored/applied lowercase: they map directly to the
+        // CSS :root[data-theme="..."] selectors, which are case-sensitive.
+        // Display names (capitalized) live in the settings UI only.
+        const theme = value.toLowerCase();
+        this.setToLocalStorage(this.themeKey, theme);
+        this.themeSubject.next(theme);
     }
 
     reset() {

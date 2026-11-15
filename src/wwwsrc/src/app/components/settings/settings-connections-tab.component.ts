@@ -172,19 +172,12 @@ export class SettingsConnectionsTabComponent {
         }
     }
 
-    statusImage(deviceType: ConnectionInterface): string {
-        const status = this.deviceConnectionService.getStatus(deviceType);
-        switch(status) {
-        case ConnectionStatus.Connected:
-            return "://images/icons/check-mark-black.png";
-        case ConnectionStatus.Connecting:
-            return "://images/icons/reload.svg";
-        case ConnectionStatus.Disconnected:
-            return "://images/icons/x.svg";
-        default:
-            return "://images/icons/error-black.png";
-        }
-  }
+    // Exposed to the template so the status icon @switch can compare against
+    // the enum values.
+    readonly ConnectionStatus = ConnectionStatus;
+    getStatus(deviceType: ConnectionInterface): ConnectionStatus | undefined {
+        return this.deviceConnectionService.getStatus(deviceType);
+    }
 
     statusText(deviceType: ConnectionInterface): string {
         const status = this.deviceConnectionService.getStatus(deviceType);

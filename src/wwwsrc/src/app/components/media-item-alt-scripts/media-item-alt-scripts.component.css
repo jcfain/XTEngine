@@ -7,7 +7,7 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: var(--overlay-color);
 }
 
 .alt-scripts-modal-content {
@@ -15,10 +15,10 @@
     flex-flow: column;
     flex-wrap: nowrap;
     align-items: stretch;
-    background-color: black;
+    background-color: var(--background-color);
     margin: auto;
     padding: 20px;
-    border: 1px solid #888;
+    border: 1px solid var(--modal-border-color);
     border-radius: 25px;
     width: 480px;
     max-width: 95vw;
@@ -42,7 +42,7 @@
 .close-btn {
     background: none;
     border: none;
-    color: #aaa;
+    color: var(--foreground-color-muted);
     font-size: 1.5rem;
     cursor: pointer;
     min-width: 44px;
@@ -52,8 +52,8 @@
 }
 
 .close-btn:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
+    color: var(--foreground-color);
+    background: var(--hover-highlight-color);
 }
 
 .alt-scripts-modal-body {
@@ -74,12 +74,12 @@
     padding: 10px 12px;
     border-radius: 8px;
     cursor: pointer;
-    color: #eee;
+    color: var(--foreground-color);
     transition: background-color 0.15s ease;
 }
 
 .alt-script-row:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--hover-highlight-color);
 }
 
 .alt-script-name {
@@ -87,7 +87,7 @@
 }
 
 .alt-scripts-empty {
-    color: #aaa;
+    color: var(--foreground-color-muted);
     padding: 20px;
     text-align: center;
 }

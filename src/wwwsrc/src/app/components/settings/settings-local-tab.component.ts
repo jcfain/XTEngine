@@ -66,6 +66,15 @@ export class SettingsLocalTabComponent implements OnInit {
         this.localSettings.setThumbSize(valueNum);
         this._thumbSize = valueNum;
     }
+    themes = ['Dark', 'Light', 'Midnight'];
+    private _theme = 'dark';
+    public get theme(): string {
+        return this._theme;
+    }
+    public set theme(value: string) {
+        this.localSettings.setTheme(value);
+        this._theme = value.toLowerCase();
+    }
     externalStreaming = false;
     disableLazyLoad = false;
     disableFullScreenMediaList = false;
@@ -99,6 +108,7 @@ export class SettingsLocalTabComponent implements OnInit {
         this.localSettings.disableBrowserLazyLoad$.subscribe(v => this.disableLazyLoad = v);
         this.localSettings.disableFullScreenMediaList$.subscribe(v => this.disableFullScreenMediaList = v);
         this.localSettings.disableHeatmap$.subscribe(v => this.disableHeatmap = v);
+        this.localSettings.theme$.subscribe(v => this._theme = v);
         this.userAgentIsHereSphere = this.appState.userAgentIsHereSphere;
 
         this.setupTextToSpeech();
@@ -144,6 +154,25 @@ export class SettingsLocalTabComponent implements OnInit {
             selectedValue: this.thumbSize,
             onAccept: (value: number) => this.thumbSize = value,
             onClose: () => this.overlayService.close('localThumbSizeSelect')
+        }, true);
+    }
+
+    themeLabel(): string {
+        // this.theme is stored lowercase; the display names are capitalized.
+        const theme = this.themes.find(t => t.toLowerCase() === this.theme);
+        return theme ?? '';
+    }
+
+    openThemeSelect(): void {
+        this.overlayService.open('localThemeSelect', SelectDialogComponent, {
+            titleText: 'Theme',
+            message: 'Select the app theme',
+            // Values are lowercase (they map to the data-theme attribute);
+            // labels are the capitalized display names.
+            options: this.themes.map(t => ({ value: t.toLowerCase(), label: t })),
+            selectedValue: this.theme,
+            onAccept: (value: string) => this.theme = value,
+            onClose: () => this.overlayService.close('localThemeSelect')
         }, true);
     }
 

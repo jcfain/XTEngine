@@ -5,7 +5,7 @@
 .tab-content-header-main {
     font-size: 1.1rem;
     font-weight: bold;
-    color: #8DA1BF;
+    color: var(--foreground-color-header);
 }
 
 .motion-tab .radio-group {

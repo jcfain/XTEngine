@@ -6,13 +6,29 @@
     [class.device-status-error]="isDeviceError()"
     [class.device-status-connecting]="isDeviceConnecting()"
     (click)="tcodeDeviceConnectRetry()">
-    <img name="connectionStatusIconImage" class="buttonImage" [src]="getStatusImage()" />
+    <svg class="buttonImage" name="connectionStatusIconImage">
+      @if (isDeviceConnected()) {
+        <use href="#check"></use>
+      } @else if (isDeviceConnecting()) {
+        <use href="#reload"></use>
+      } @else if (isDeviceError()) {
+        <use href="#error"></use>
+      } @else {
+        <use href="#x"></use>
+      }
+    </svg>
 </button>
 <button title="TCode device pause toggle" name="devicePauseStatusButton" class="icon-button icon-button--group script-status"  [class.background-color-caution]="!deviceIsPaused" [class.background-color-go]="deviceIsPaused" (click)="togglePauseAllDeviceActions()">
-    <img name="devicePauseStatusIconImage" class="buttonImage" [src]="getScriptPausedStatusImage()" />
+    <svg class="buttonImage" name="devicePauseStatusIconImage">
+      @if (deviceIsPaused) {
+        <use href="#play-icon"></use>
+      } @else {
+        <use href="#pause"></use>
+      }
+    </svg>
 </button>
 <button  title="Send TCode home" name="deviceHomeButton" class="icon-button icon-button--group" (click)="sendDeviceHome()">
-    <img name="deviceHomeButtonImage" class="buttonImage" src="://images/icons/home.svg" />
+    <svg class="buttonImage" name="deviceHomeButtonImage"><use href="#home"></use></svg>
 </button>
 @if(!getDeviceLinkHidden()) {
 <a [href]="getDeviceLink()" target="_blank">TCode device settings</a>

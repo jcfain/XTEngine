@@ -111,7 +111,14 @@
         <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg" />
       </button>
       <button data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control-other" [class.background-color-caution]="!deviceIsPaused" [class.background-color-go]="deviceIsPaused" (click)="togglePauseAllDeviceActions()">
-        <img class="player-button-icon" name="devicePauseStatusIconImage" [src]=getScriptPausedStatusImage() />
+        <svg class="player-button-icon" name="devicePauseStatusIconImage">
+          @if (deviceIsPaused) {
+            <use href="#play-icon"></use>
+          }
+          @if (!deviceIsPaused) {
+            <use href="#pause"></use>
+          }
+        </svg>
       </button>
     </div>
   </div>

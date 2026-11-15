@@ -12,8 +12,17 @@
     cursor: not-allowed;
 }
 
+.background-color-caution {
+    background-color: var(--alert-color-warning) !important;
+    color: black !important;
+}
+.background-color-go {
+    background-color: var(--alert-color-success) !important;
+    color: black !important;
+}
+
 [readonly] {
-    background-color: rgb(23, 23, 23);
+    background-color: var(--control-readonly-background);
 }
 
 input:invalid,
@@ -75,7 +84,7 @@ input[type='radio']:disabled {
    checkboxes. Exclusions use :where() so the theme keeps the lowest
    possible specificity (element level) and any component, form or
    state rule can override it. Colors come from the theme variables
-   in styles/atom/colors.scss. */
+   in styles/theme/theme-dark.scss. */
 
 button:where(:not(.icon-button):not(.tab-section-tab):not(.video-control):not(.media-context):not(.side-action-tcode-action-button)) {
     background: var(--button-background);
@@ -110,6 +119,109 @@ button.button--small {
 .button-down {
     background-color: var(--button-background-down) !important;
     color: var(--button-color-down);
+}
+
+/* Pill buttons: rounded toggle-style buttons shared by the tag filters,
+   motion profiles and TCode commands. */
+button.button--pill {
+    background: var(--pill-background);
+    border: 1px solid var(--pill-border-color);
+    color: var(--pill-text-color);
+    min-height: var(--pill-min-height);
+    padding: var(--pill-padding);
+    border-radius: var(--pill-border-radius);
+    font-size: var(--font-size-small);
+    transition: .15s ease;
+}
+
+button.button--pill:hover {
+    border-color: var(--pill-hover-border-color);
+    color: var(--pill-hover-text-color);
+}
+
+/* Selected / included state */
+button.button--pill--active {
+    background: var(--button-background-down);
+    border-color: var(--button-background-down);
+    color: var(--button-color-down);
+    font-weight: bold;
+}
+
+/* Excluded (NOT) state: red, distinct from the blue included state. A pill
+   is never both, so this and --active are mutually exclusive. */
+button.button--pill--exclude {
+    background: var(--color-negative);
+    border-color: var(--color-negative);
+    color: var(--button-color-down);
+    font-weight: bold;
+}
+
+/* Wrap layout for a set of pill buttons */
+.pill-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-small);
+}
+
+/* Bordered scroll panel wrapping a pill/command list */
+.pill-scroll {
+    border: 1px solid var(--panel-border-color);
+    border-radius: var(--panel-border-radius);
+    padding: 10px;
+}
+
+/* Empty state text for a filtered list */
+.list-empty {
+    color: var(--list-empty-text-color);
+    font-style: italic;
+    padding: var(--spacing-small);
+}
+
+/* Segmented control (e.g. Include / Exclude in the tag filter header) */
+.segmented-control {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--control-border-color);
+    border-radius: var(--panel-border-radius);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.segmented-control button {
+    background: transparent;
+    border: none;
+    color: var(--control-text-color);
+    padding: 6px 12px;
+    font-size: var(--font-size-control);
+    cursor: pointer;
+}
+
+.segmented-control button + button {
+    border-left: 1px solid var(--control-border-color);
+}
+
+.segmented-control button.active {
+    background: var(--button-background-down);
+    color: var(--button-color-down);
+    font-weight: bold;
+}
+
+/* Count badge positioned on a button (e.g. active filter count). The
+   button must be position: relative (icon-button already is). */
+.button-badge {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    min-width: var(--badge-size);
+    height: var(--badge-size);
+    padding: 0 4px;
+    border-radius: calc(var(--badge-size) / 2);
+    background: var(--badge-background);
+    color: var(--badge-text-color);
+    font-size: 11px;
+    font-weight: bold;
+    line-height: var(--badge-size);
+    text-align: center;
 }
 
 input:where(:not([type='checkbox']):not([type='range']):not([type='radio']):not(.video-control)) {
@@ -248,7 +360,8 @@ input[type='range']::-moz-focus-outer {
     /* align-content: center; */
     border-style: solid;
     position: relative;
-    background-color: rgba(255, 255, 255, 0.8);
+    background-color: var(--icon-button-background);
+    color: var(--icon-button-foreground);
     transition: background-color 0.25s 0s cubic-bezier(0, 1, 1, 1);
     cursor: pointer;
     /* font-size: 11px;  

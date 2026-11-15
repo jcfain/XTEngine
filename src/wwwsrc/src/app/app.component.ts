@@ -114,6 +114,17 @@ export class AppComponent implements OnInit {
       this.externalStreaming = v;
     });
 
+    // Apply the theme to <html> so the theme files' :root[data-theme]
+    // overrides take effect. The BehaviorSubject emits the stored value
+    // immediately on subscribe, so this also applies the theme on load.
+    this.localSettingsService.theme$.subscribe(theme => {
+      if (theme !== 'midnight') {
+        document.documentElement.dataset['theme'] = theme;
+      } else {
+        delete document.documentElement.dataset['theme'];
+      }
+    });
+
     // The hamburger menu (inside the media list toolbar) drives these
     // app-level dialogs/actions via the AppMenuService.
     this.appMenuService.settingsToggle$.subscribe(() => {

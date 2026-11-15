@@ -22,4 +22,11 @@
     --spacing-small: 8px;
     --spacing-base: 12px;
     --spacing-large: 16px;
+
+    /* Pill buttons (tag filters, motion profiles, TCode commands) */
+    --pill-min-height: var(--control-height);
+    --pill-padding: 10px 18px;
+    --pill-border-radius: 22px;
+    --panel-border-radius: 6px;
+    --badge-size: 16px;
 }

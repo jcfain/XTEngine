@@ -8,7 +8,7 @@
     height: 100%;
     height: 100dvh;
     overflow: hidden;
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: var(--overlay-color);
     /* The modal is rendered inside the player container, which is
        visibility: hidden while no video is playing - assert visibility so
        the modal shows regardless of the video's state. */
@@ -20,10 +20,10 @@
     flex-flow: column;
     flex-wrap: nowrap;
     align-items: center;
-    background-color: black;
+    background-color: var(--background-color);
     margin: auto;
     padding: 20px;
-    border: 1px solid #888;
+    border: 1px solid var(--modal-border-color);
     border-radius: 25px;
     width: 80vw;
     height: 80vh;
@@ -57,14 +57,14 @@
 .close-btn {
     background: none;
     border: none;
-    color: #aaa;
+    color: var(--foreground-color-muted);
     font-size: 1.5rem;
     cursor: pointer;
     padding: 0 8px;
 }
 
 .close-btn:hover {
-    color: #fff;
+    color: var(--foreground-color);
 }
 
 .settings-modal-footer {
@@ -98,8 +98,8 @@
     position: absolute;
     bottom: calc(100% + 8px);
     right: 0;
-    background: #222;
-    border: 1px solid #555;
+    background: var(--control-background);
+    border: 1px solid var(--control-border-color);
     border-radius: 8px;
     padding: 8px;
     display: flex;

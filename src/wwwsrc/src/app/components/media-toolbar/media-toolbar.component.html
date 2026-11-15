@@ -21,7 +21,7 @@
     @if (activeFilterCount > 0) {
       <button id="clearFiltersButton" class="clear-filters-button icon-button icon-button--dark" title="Clear all filters" (click)="clearAllFilters()">
         <svg class="buttonImage"><use href="#x"></use></svg>
-        <span class="filter-count-badge">{{ activeFilterCount }}</span>
+        <span class="button-badge">{{ activeFilterCount }}</span>
       </button>
     }
     <button id="tagButton" title="Filter tags" class="tag-media-button icon-button icon-button--dark" [class.button-down]="!tagInputHidden" (click)="tagInputHidden = !tagInputHidden">
@@ -61,21 +61,21 @@
           <input title="If checked, the selected tags will be inclusive." id="tagFilterORChk" type="checkbox" value="OR" (click)="onTagClick($event)" [ngModel]="isTagSelected('OR')" />
           <label for="tagFilterORChk">OR</label>
         </div>
-        <div class="tag-mode-toggle">
+        <div class="segmented-control">
           <button type="button" [class.active]="tagSelectMode === 'include'" (click)="tagSelectMode = 'include'">Include</button>
           <button type="button" [class.active]="tagSelectMode === 'exclude'" (click)="tagSelectMode = 'exclude'">Exclude</button>
         </div>
       </div>
-      <div class="tags-scroll">
-        <div class="tags-grid">
+      <div class="pill-scroll">
+        <div class="pill-grid">
           @for (tag of filteredTags; track tag) {
-            <button class="tag-toggle" [class.tag-toggle--active]="isTagSelected(tag)" [class.tag-toggle--exclude]="isTagExcluded(tag)" (click)="onTagToggle(tag)">{{ isTagExcluded(tag) ? '✗ ' : '' }}{{ tag }} ({{
+            <button class="button--pill" [class.button--pill--active]="isTagSelected(tag)" [class.button--pill--exclude]="isTagExcluded(tag)" (click)="onTagToggle(tag)">{{ isTagExcluded(tag) ? '✗ ' : '' }}{{ tag }} ({{
               getTagCount(tag) == getTagTotal(tag) ? getTagCount(tag) : getTagCount(tag)+'/'+getTagTotal(tag)
             }})</button>
           }
         </div>
         @if (!filteredTags.length) {
-          <div class="tags-empty">No tags match your filter.</div>
+          <div class="list-empty">No tags match your filter.</div>
         }
       </div>
     </div>

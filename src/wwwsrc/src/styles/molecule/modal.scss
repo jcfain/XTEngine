@@ -9,7 +9,7 @@
     height: 100%;
     overflow: hidden;
     background-color: rgb(0, 0, 0);
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: var(--overlay-color);
     // opacity: 0;
     // visibility: hidden;
     -webkit-transition: opacity 250ms, visibility 250ms linear;
@@ -28,10 +28,10 @@
     flex-flow: column;
     flex-wrap: nowrap;
     align-items: center;
-    background-color: black;
+    background-color: var(--background-color);
     margin: auto;
     padding: 20px;
-    border: 1px solid #888;
+    border: 1px solid var(--modal-border-color);
     border-radius: 25px;
     width: 80%;
     height: 90%;

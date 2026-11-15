@@ -118,7 +118,7 @@
     /* Above the player controls (.video-controls, z-index 10) so the sheet
        covers them entirely while open */
     z-index: 11;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: var(--media-list-overlay-background);
     transform: translateY(100%);
     transition: transform 0.3s ease-in-out;
 }

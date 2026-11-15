@@ -16,7 +16,7 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    background-color: black;
+    background-color: var(--background-color);
     display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;

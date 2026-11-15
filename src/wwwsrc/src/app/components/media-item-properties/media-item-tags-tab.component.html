@@ -5,16 +5,16 @@
             [(ngModel)]="filterText" />
     </div>
 
-    <div class="tags-scroll">
-        <div class="tags-grid">
+    <div class="pill-scroll">
+        <div class="pill-grid">
             @for (tag of filteredTags; track tag) {
-                <button class="tag-toggle"
-                    [class.tag-toggle--active]="hasTag(tag)"
+                <button class="button--pill"
+                    [class.button--pill--active]="hasTag(tag)"
                     (click)="toggleTag(tag)">{{ tag }}</button>
             }
         </div>
         @if (!filteredTags.length) {
-            <div class="tags-empty">No tags match your filter.</div>
+            <div class="list-empty">No tags match your filter.</div>
         }
     </div>
 </div>

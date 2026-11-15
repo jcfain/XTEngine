@@ -68,19 +68,6 @@ export class OutputDeviceToolsComponent implements OnInit {
     return this.deviceConnectionStatus === ConnectionStatus.Error;
   }
 
-  getStatusImage(): string {
-    switch(this.deviceConnectionStatus) {
-      case ConnectionStatus.Connected:
-        return "://images/icons/check-mark-black.png";
-      case ConnectionStatus.Connecting:
-        return "://images/icons/reload.svg";
-      case ConnectionStatus.Disconnected:
-        return "://images/icons/x.svg";
-      default:
-        return "://images/icons/error-black.png";
-    }
-  }
-
   getStatusTitle(): string {
     switch(this.deviceConnectionStatus) {
       case ConnectionStatus.Connected:
@@ -92,13 +79,6 @@ export class OutputDeviceToolsComponent implements OnInit {
       default:
         return "Error: Check your devices connection and click this to retry";
     }
-  }
-
-  getScriptPausedStatusImage() {
-    if(this.deviceIsPaused)
-      return "://images/icons/play.svg";
-    else
-    return "://images/icons/pause.svg";
   }
 
   sendDeviceHome() {

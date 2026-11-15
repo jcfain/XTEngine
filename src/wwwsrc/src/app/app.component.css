@@ -3,7 +3,7 @@
   flex-flow: column;
   height: 100svh;
   overflow: hidden;
-  background-color: black;
+  background-color: var(--background-color);
 }
 /* 
 .app-header {

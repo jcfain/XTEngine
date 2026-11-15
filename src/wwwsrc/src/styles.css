@@ -1,6 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
 
-@import url('styles/atom/colors.scss');
+@import url('styles/theme/theme-midnight.scss');
+@import url('styles/theme/theme-dark.scss');
+@import url('styles/theme/theme-light.scss');
 @import url('styles/atom/dimensions.scss');
 @import url('styles/atom/controls.scss');
 @import url('styles/atom/icon.scss');

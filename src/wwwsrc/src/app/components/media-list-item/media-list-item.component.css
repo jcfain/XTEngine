@@ -85,7 +85,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--media-list-overlay-background);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -108,6 +108,7 @@
     flex-flow: column;
     text-align: left;
     align-items: stretch;
+    background-color: var(--media-item-background);
 }
 
 .media-item:hover {
@@ -201,21 +202,21 @@
     border-radius: 4px;
 }
 .media-item-tags:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--hover-highlight-color);
 }
 .media-item-tag {
     flex: 0 0 auto;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #d8d8e8;
-    background: rgba(255, 255, 255, 0.12);
+    color: var(--foreground-color);
+    background: var(--chip-background);
     border-radius: 4px;
     padding: 1px 6px;
 }
 .media-item-tag--overflow {
-    color: #c8c8e0;
-    background: rgba(255, 255, 255, 0.18);
+    color: var(--foreground-color);
+    background: var(--chip-background);
     font-weight: bold;
 }
 
@@ -226,7 +227,7 @@
     border-radius: 20px;
 }
 .media-context:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--hover-highlight-color);
     border: none;
 }
 
@@ -234,7 +235,7 @@
     display: flex;
     flex-flow: column nowrap;
     align-items: center;
-    color: white;
+    color: var(--foreground-color);
 }
 
 .media-item .name {
@@ -250,105 +251,105 @@
 }
 
 .media-item:not(.media-item-playing):hover {
-    color: plum;
-    box-shadow: -1px 1px 5px 0px hotpink, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px hotpink;
+    color: var(--media-item-hover-color);
+    box-shadow: var(--media-item-glow-hover);
 }
 
 .media-item:not(.media-item-playing):hover .name {
-    color: plum;
+    color: var(--media-item-hover-color);
 }
 
 .media-item-noscript:not(.media-item-playing):hover {
-    color: lightgrey;
-    box-shadow: -1px 1px 5px 0px lightgrey, 1px -1px 5px 0px lightgrey, 1px 1px 5px 0px lightgrey, -1px -1px 5px 0px lightgrey;
+    color: var(--media-item-noscript-hover-color);
+    box-shadow: var(--media-item-glow-noscript);
 }
 
 .media-item-noscript:not(.media-item-playing) .name {
-    color: grey;
+    color: var(--media-item-noscript-color);
 }
 
 .media-item-noscript:not(.media-item-playing):hover .name {
-    color: lightgrey;
+    color: var(--media-item-noscript-hover-color);
 }
 
 .media-item-mfs:not(.media-item-playing):hover {
-    color: gold;
-    box-shadow: -1px 1px 5px 0px gold, 1px -1px 5px 0px orange, 1px 1px 5px 0px red, -1px -1px 5px 0px gold;
+    color: var(--media-item-mfs-hover-color);
+    box-shadow: var(--media-item-glow-mfs);
 }
 
 .media-item-mfs:not(.media-item-playing) .name {
-    color: chartreuse;
+    color: var(--media-item-mfs-color);
 }
 
 .media-item-mfs:not(.media-context):not(.media-item-playing):hover .name {
-    color: gold;
+    color: var(--media-item-mfs-hover-color);
 }
 .media-item-mfs.media-item-playing {
-    color: cornflowerblue;
-    box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
+    color: var(--media-item-playing-color);
+    box-shadow: var(--media-item-glow-playing-scripted);
 }
 
 .media-item-mfs-noscript:not(.media-item-playing) .name {
-    color: cyan;
+    color: var(--media-item-mfs-noscript-color);
 }
 
 .media-item-mfs-noscript:not(.media-context):not(.media-item-playing):hover a {
-    color: lightcyan;
+    color: var(--media-item-mfs-noscript-hover-color);
 }
 
 .media-item-mfs-noscript.media-item-playing {
-    color: cornflowerblue;
-    box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
+    color: var(--media-item-playing-color);
+    box-shadow: var(--media-item-glow-playing-scripted);
 }
 
 .media-item-sfma:not(.media-item-playing):hover {
-    color: yellow;
-    box-shadow: -1px 1px 5px 0px yellow, 1px -1px 5px 0px orange, 1px 1px 5px 0px red, -1px -1px 5px 0px yellow;
+    color: var(--media-item-sfma-color);
+    box-shadow: var(--media-item-glow-sfma);
 }
 
 .media-item-sfma:not(.media-item-playing) .name {
-    color: yellow;
+    color: var(--media-item-sfma-color);
 }
 
 .media-item-sfma:not(.media-context):not(.media-item-playing):hover .name {
-    color: yellow;
+    color: var(--media-item-sfma-color);
 }
 .media-item-sfma.media-item-playing {
-    color: cornflowerblue;
-    box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
+    color: var(--media-item-playing-color);
+    box-shadow: var(--media-item-glow-playing-scripted);
 }
 
 .media-item-sfma-noscript:not(.media-item-playing) .name {
-    color: cyan;
+    color: var(--media-item-mfs-noscript-color);
 }
 
 .media-item-sfma-noscript:not(.media-context):not(.media-item-playing):hover .name {
-    color: lightcyan;
+    color: var(--media-item-mfs-noscript-hover-color);
 }
 
 .media-item-sfma-noscript.media-item-playing {
-    color: cornflowerblue;
-    box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px cornflowerblue, -1px -1px 5px 0px cornflowerblue;
+    color: var(--media-item-playing-color);
+    box-shadow: var(--media-item-glow-playing-scripted);
 }
 
 .media-item-alt-noscript:not(.media-item-playing):hover {
-    color: darkcyan;
-    box-shadow: -1px 1px 5px 0px yellow, 1px -1px 5px 0px orange, 1px 1px 5px 0px red, -1px -1px 5px 0px yellow;
+    color: var(--media-item-alt-noscript-color);
+    box-shadow: var(--media-item-glow-sfma);
 }
 
 .media-item-alt-noscript:not(.media-item-playing) .name {
-    color: darkcyan;
+    color: var(--media-item-alt-noscript-color);
 }
 
 .media-item-alt-noscript:not(.media-context):not(.media-item-playing):hover .name {
-    color: darkcyan;
+    color: var(--media-item-alt-noscript-color);
 }
 
 .media-item-playing {
-    color: cornflowerblue;
-    box-shadow: -1px 1px 5px 0px cornflowerblue, 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px cornflowerblue;
+    color: var(--media-item-playing-color);
+    box-shadow: var(--media-item-glow-playing);
 }
 
 .media-item-playing .name {
-    color: cornflowerblue;
+    color: var(--media-item-playing-color);
 }

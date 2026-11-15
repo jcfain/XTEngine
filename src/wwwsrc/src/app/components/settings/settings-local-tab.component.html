@@ -64,6 +64,20 @@
             </select>
         }
     </div>
+    <div class="formElement">
+        <label for="themeSelect"><span class="formLabel">Theme</span></label>
+        @if (userAgentIsHereSphere) {
+            <button id="themeSelect" (click)="openThemeSelect()">{{ themeLabel() }}</button>
+        } @else {
+            <select id="themeSelect" title="Change the app theme"
+                [(ngModel)]="theme">
+                @for (value of themes; track value) {
+                    <!-- Value is lowercase (maps to data-theme); display is capitalized -->
+                    <option [value]="value.toLowerCase()">{{ value }}</option>
+                }
+            </select>
+        }
+    </div>
     <!-- <div class="formElement">
         <label title="If checked, the thumb nails may load in all at once. This could reduce performance with a lot of images. Only check if having issues with loading thumbs in this browser."
             for="disableLazyLoadCheckbox">Alternate lazy load thumbnails</label>

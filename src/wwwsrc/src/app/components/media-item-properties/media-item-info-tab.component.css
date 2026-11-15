@@ -15,7 +15,7 @@
 }
 
 .info-value {
-    color: #ccc;
+    color: var(--foreground-color);
     word-break: break-word;
 }
 
@@ -24,7 +24,7 @@
 }
 
 .info-script {
-    color: #ccc;
+    color: var(--foreground-color);
     padding: 2px 0;
     word-break: break-word;
 }

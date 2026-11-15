@@ -10,11 +10,25 @@
                 <input [id]="'connectionOutput' + device.type" type="radio"
                     name="outputConnection" [value]="device.type"
                     [(ngModel)]="selectedOutputDevice" (ngModelChange)="onOutputDeviceChange($event)" />
-                    <img [alt]="statusText(device.type)" 
+                    <svg [attr.alt]="statusText(device.type)" 
                         class="sync-device-status icon-small" 
                         [title]="statusText(device.type)" 
-                        [src]="statusImage(device.type)" 
                         [style.background-color]="statusColor(device.type)">
+                        @switch (getStatus(device.type)) {
+                            @case (ConnectionStatus.Connected) {
+                                <use href="#check"></use>
+                            }
+                            @case (ConnectionStatus.Connecting) {
+                                <use href="#reload"></use>
+                            }
+                            @case (ConnectionStatus.Disconnected) {
+                                <use href="#x"></use>
+                            }
+                            @default {
+                                <use href="#error"></use>
+                            }
+                        }
+                    </svg>
                 @if (device.type === ConnectionInterface.Network) {
                     <div class="form-group-control">
                         <label>Address</label>
@@ -52,11 +66,25 @@
                 <input [id]="'connectionInput' + device.type" type="radio"
                     name="inputConnection" [value]="device.type"
                     [(ngModel)]="selectedInputDevice" (ngModelChange)="onInputDeviceChange($event)" />
-                <img [alt]="statusText(device.type)" 
+                <svg [attr.alt]="statusText(device.type)" 
                     class="sync-device-status icon-small" 
                     [title]="statusText(device.type)" 
-                    [src]="statusImage(device.type)" 
                     [style.background-color]="statusColor(device.type)">
+                    @switch (getStatus(device.type)) {
+                        @case (ConnectionStatus.Connected) {
+                            <use href="#check"></use>
+                        }
+                        @case (ConnectionStatus.Connecting) {
+                            <use href="#reload"></use>
+                        }
+                        @case (ConnectionStatus.Disconnected) {
+                            <use href="#x"></use>
+                        }
+                        @default {
+                            <use href="#error"></use>
+                        }
+                    }
+                </svg>
                 @if (device.type === ConnectionInterface.HereSphere) {
                     <div class="form-group-control">
                         <label>Address</label>
@@ -75,11 +103,25 @@
         <section class="form-group-section">
             <input id="connectionGamepad" type="checkbox"
                 [(ngModel)]="gamePadEnabled" (ngModelChange)="onGamePadChange($event)" />
-                <img [alt]="statusText(ConnectionInterface.Gamepad)" 
+                <svg [attr.alt]="statusText(ConnectionInterface.Gamepad)" 
                     class="sync-device-status icon-small" 
                     [title]="statusText(ConnectionInterface.Gamepad)" 
-                    [src]="statusImage(ConnectionInterface.Gamepad)" 
                     [style.background-color]="statusColor(ConnectionInterface.Gamepad)">
+                    @switch (getStatus(ConnectionInterface.Gamepad)) {
+                        @case (ConnectionStatus.Connected) {
+                            <use href="#check"></use>
+                        }
+                        @case (ConnectionStatus.Connecting) {
+                            <use href="#reload"></use>
+                        }
+                        @case (ConnectionStatus.Disconnected) {
+                            <use href="#x"></use>
+                        }
+                        @default {
+                            <use href="#error"></use>
+                        }
+                    }
+                </svg>
         </section>
     </div>
 </div>

@@ -673,13 +673,6 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.motionProfilesOpen = !this.motionProfilesOpen;
   }
   
-  getScriptPausedStatusImage() {
-    if(this.deviceIsPaused)
-      return "://images/icons/play.svg";
-    else
-    return "://images/icons/pause.svg";
-  }
-
   private formatTime(timeInSeconds: number): { hours: string; minutes: string; seconds: string } {
     if (!timeInSeconds) {
       return { hours: '00', minutes: '00', seconds: '00' };

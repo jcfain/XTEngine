@@ -9,7 +9,7 @@
     flex-flow: column;  
     flex-basis: 45%;
     min-width: 0; /* allow shrinking below content width so the body scrolls on x */
-    border: 2px solid white;
+    border: 2px solid var(--modal-border-color);
     border-radius: 25px;
     margin: 8px;
     padding: 12px;
@@ -80,11 +80,11 @@
 
 .exported-table tr,
 .exported-table > thead {
-    border-bottom: 1px solid aliceblue;
+    border-bottom: 1px solid var(--foreground-color);
 }
 
 .exported-table td:not(:last-child) {
-    border-right: 1px solid aliceblue;
+    border-right: 1px solid  var(--foreground-color);
 }
 
 .exported-download-link {
@@ -111,13 +111,19 @@
     flex-basis: 100%;
 }
 
-.session-info-table,
-.session-info-table td,
-.session-info-table th {
-    border: 1px solid white;
+.session-info-table {
     border-collapse: collapse;
-    padding: 4px 8px;
+    width: 100%;  
     text-align: center;
+}
+
+.session-info-table tr,
+.session-info-table > thead {
+    border-bottom: 1px solid var(--foreground-color);
+}
+
+.session-info-table td:not(:last-child) {
+    border-right: 1px solid  var(--foreground-color);
 }
 
 .session-info-table td button {

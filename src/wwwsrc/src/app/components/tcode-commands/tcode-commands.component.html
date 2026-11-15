@@ -8,9 +8,9 @@
     </button>
   </div>
 
-  <div class="tcode-commands-container">
+  <div class="pill-scroll">
     @if (filteredCommands.length === 0) {
-      <div class="no-commands">
+      <div class="list-empty">
         @if (commands.length === 0) {
           No TCode commands found. Visit the settings > system tab to add some.
         } @else {
@@ -20,7 +20,7 @@
     }
     @for (cmd of filteredCommands; track cmd) {
       <button
-        class="tcode-commands-button"
+        class="button--pill"
         [class.hidden]="cmd.hidden"
         [title]="cmd.command"
         (click)="sendCommand(cmd)">{{ cmd.name }}</button>
