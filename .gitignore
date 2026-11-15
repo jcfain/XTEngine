@@ -35,6 +35,7 @@ build-*
 src/www/.vscode/settings.json
 /src/build
 /build
+/src/tests/build
 .DS_Store
 /src/.qtc_clangd
 /src/wwwsrc/.angular
