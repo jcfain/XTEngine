@@ -183,12 +183,6 @@ void XTEngine::init()
         // position line needs, so throttle to ~10 Hz.
         if(!_httpHandler)
             return;
-        if(packet.stopped) {
-            // Playback ended - release the throttle so the next video's first
-            // position update is sent immediately.
-            m_mediaPositionTimer.invalidate();
-            return;
-        }
         if(packet.duration <= 0)
             return;
         if(m_mediaPositionTimer.isValid() && m_mediaPositionTimer.elapsed() < 100)

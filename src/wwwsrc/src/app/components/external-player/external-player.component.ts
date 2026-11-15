@@ -7,6 +7,7 @@ import { MediaItem } from '../../models/interfaces';
 import { WebsocketService } from '../../services/websocket.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
+import { MediaListService } from '../../services/media-list-service';
 import { MediaItemPropertiesComponent } from '../media-item-properties/media-item-properties.component';
 import { MediaItemAltScriptsComponent } from '../media-item-alt-scripts/media-item-alt-scripts.component';
 import { ScriptStatusComponent } from '../script-status/script-status.component';
@@ -49,6 +50,13 @@ export class ExternalPlayerComponent implements OnInit, OnDestroy {
     // externalMediaPosition$) plus the local arrival time, so the rAF loop can
     // extrapolate smoothly between the ~10 Hz updates.
     private m_position = {time: 0, duration: 0, playing: false, playbackSpeed: 1, updatedAt: 0};
+    // Auto-advance: when the external player reaches the last few seconds of
+    // the video, start the next item in the displayed media list. The
+    // threshold pre-loads the next video so there is no gap at the end.
+    private static readonly autoAdvanceThresholdMs = 2000;
+    // One-shot guard: armed when a new video starts, disarmed on stop and
+    // after advancing, so the ~10 Hz updates can't trigger multiple advances.
+    private autoAdvanceArmed = false;
 
     private subscriptions: Subscription[] = [];
 
@@ -57,6 +65,7 @@ export class ExternalPlayerComponent implements OnInit, OnDestroy {
         private webSocketService: WebsocketService,
         private messageHandlerService: MessageHandlerService,
         private videoService: VideoService,
+        private mediaListService: MediaListService,
         private sanitizer: DomSanitizer,
         private ngZone: NgZone
     ) {
@@ -79,6 +88,9 @@ export class ExternalPlayerComponent implements OnInit, OnDestroy {
                 if (!v || !previous || v.id !== previous.id) {
                     this.setHeatmapSvg(null);
                     this.resetPosition();
+                    // A new video starts playing (or playback stops): (re)arm
+                    // the auto-advance for it.
+                    this.autoAdvanceArmed = v != null;
                 }
             }),
             this.localSettingsService.disableHeatmap$.subscribe(v => this.disableHeatmap = v),
@@ -94,6 +106,14 @@ export class ExternalPlayerComponent implements OnInit, OnDestroy {
                     playbackSpeed: v.playbackSpeed,
                     updatedAt: performance.now()
                 };
+                // Auto-advance: near the end of the video, start the next
+                // displayed media list item. Requires playing (a pause near
+                // the end must not advance) and is one-shot per video.
+                if (this.autoAdvanceArmed && this.mediaItem && v.playing && v.duration > 0
+                    && v.time >= v.duration - ExternalPlayerComponent.autoAdvanceThresholdMs) {
+                    this.autoAdvanceArmed = false;
+                    this.mediaListService.playNextVideo();
+                }
             })
         );
         this.startPositionLineUpdates();

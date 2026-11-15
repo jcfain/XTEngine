@@ -62,6 +62,10 @@ export class VideoService {
   // CSS (see enterFakeFullScreen) and tracked with this flag.
   private fakeFullScreen = false;
   private externalStreaming = false;
+  // Tab/window that plays the media in external streaming mode. It is kept
+  // open and navigated for subsequent videos so that auto-advance (which has
+  // no user gesture) is not blocked by the pop-up blocker.
+  private externalPlayerWindow: Window | null = null;
   private isMuted = false;
 
   constructor(
@@ -212,8 +216,7 @@ export class VideoService {
 
     // External streaming
     if (this.externalStreaming) {
-      const filePath = '/media' + item.relativePath;
-      window.open(filePath);
+      this.openExternalMedia('/media' + item.relativePath);
       return;
     }
 
@@ -229,6 +232,18 @@ export class VideoService {
     // per-second updates are driven by the timeupdate event.)
     this.isPausedSubject.next(false);
     this.sendMediaState();
+  }
+
+  // Opens the media in the external player. The first video opens a new tab
+  // (triggered by a user gesture); subsequent videos navigate the same tab so
+  // they work without a gesture (auto-advance). If the user closed the tab,
+  // fall back to opening a new one.
+  openExternalMedia(url: string): void {
+    if (this.externalPlayerWindow && !this.externalPlayerWindow.closed) {
+      this.externalPlayerWindow.location.href = url;
+    } else {
+      this.externalPlayerWindow = window.open(url);
+    }
   }
 
   clearVideo(): void {
