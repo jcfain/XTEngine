@@ -12,7 +12,6 @@ import { SelectDialogComponent } from '../select-dialog/select-dialog.component'
 import { GetTextDialogComponent } from '../get-text-dialog/get-text-dialog.component';
 import { AlertComponent } from '../alert-model/alert.component';
 import { WebsocketService } from '../../services/websocket.service';
-import { MessageHandlerService } from '../../services/message-handler.service';
 
 interface ChannelRange {
     channel: ChannelModel;
@@ -62,7 +61,6 @@ export class SettingsMotionTabComponent implements OnInit {
         private appState: AppStateService,
         private serverService: ServerService,
         private websocketService: WebsocketService,
-        private messageHandlerService: MessageHandlerService,
         private overlayService: GenericOverlayService
     ) {
         this.userAgentIsHereSphere = this.appState.userAgentIsHereSphere;
@@ -71,15 +69,13 @@ export class SettingsMotionTabComponent implements OnInit {
     private relatedOptionsCache: Map<string, ChannelModel[]> = new Map();
 
     ngOnInit(): void {
-        this.messageHandlerService.channelProfileChanged$.subscribe(v => {
-            this.serverService.getServerChannels();
-        });
         this.serverService.serverChannels$.subscribe(settings => {
             if (!settings) {
                 return;
             }
             this.profiles = settings.allChannelProfileNames || [];
             this.selectedProfile = settings.selectedChannelProfile || '';
+            this.serverService.setSelectedChannelProfile(this.selectedProfile);
             this.multiplierEnabled = settings.multiplierEnabled || false;
             const available = settings.availableChannelsArray || Object.values(settings.availableChannels || {});
             this.allChannels = available;
@@ -102,6 +98,7 @@ export class SettingsMotionTabComponent implements OnInit {
             selectedValue: this.selectedProfile,
             onAccept: (value: string) => { 
                 this.selectedProfile = value;
+                this.serverService.setSelectedChannelProfile(value);
                 this.onProfileChange(value);
             },
             onClose: () => this.overlayService.close(this.profileSelectNameID)

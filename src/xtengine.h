@@ -78,7 +78,7 @@ private:
     Scheduler* m_scheduler;
     // Throttles the externalMediaPosition websocket message (see the
     // inputMessageReceived connection in init()).
-    QElapsedTimer m_mediaPositionTimer;
+    QElapsedTimer m_externalMediaPositionTimer;
 
 //    XMediaStateHandler* m_xMediaStateHandler;
 

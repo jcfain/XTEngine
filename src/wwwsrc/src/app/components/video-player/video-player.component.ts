@@ -82,6 +82,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   get showHeatmap(): boolean {
     return !this.disableHeatmap && this.heatmapSvg !== null;
   }
+  disableFullscreenMediaList = false;
 
   private playRateFocusedAndPinned = false;
 
@@ -102,6 +103,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   private hasMotionProfiles = false;
   private subscriptions: Subscription[] = [];
   private m_controlsVisible = false;
+  // The full screen media sheet covers the whole video (controls included),
+  // so the cursor must stay visible while it is open even though the
+  // controls are hidden (see the .hide-cursor binding in the template).
+  mediaSheetVisible = false;
   private deviceIsPaused = false;
   private heatmapRafId: number | null = null;
   private bottomControlsState: { el: HTMLElement | null; observer: ResizeObserver | null } = { el: null, observer: null };
@@ -155,15 +160,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
         this.videoVisibleEmbedded = !v;
       }),
       this.videoService.controlsVisible$.subscribe(v => this.m_controlsVisible = v),
-      // this.videoService.mediaSheetVisible$.subscribe(v => {
-      //   // The sheet covers the controls while open; reveal them as it closes
-      //   // so the exit (x) button is reachable without an extra tap.
-      //   if (v) {
-      //     this.videoService.hideControls(true);
-      //   } else {
-      //     this.videoService.showControls();
-      //   }
-      // }),
+      this.videoService.mediaSheetVisible$.subscribe(v => this.mediaSheetVisible = v),
       this.videoService.videoVisible$.subscribe(v => this.videoVisible = v),
       this.videoService.playingMediaItem$.subscribe(v => {
         const previous = this.mediaItem;
@@ -178,6 +175,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
       this.localSettingsService.volume$.subscribe(v => this.m_volume = v),
       this.localSettingsService.mute$.subscribe(v => this.muted = v),
       this.localSettingsService.disableHeatmap$.subscribe(v => this.disableHeatmap = v),
+      this.localSettingsService.disableFullScreenMediaList$.subscribe(v => this.disableFullscreenMediaList = v),
       this.messageHandlerService.heatmap$.subscribe(v => this.setHeatmapSvg(v)),
       this.mediaListService.mediaListDisplayed$.subscribe(list => {
         // undefined until the first load - the same gate the old app-level
@@ -189,6 +187,19 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
           return;
         }
         this.settingsOpen = !this.settingsOpen;
+        if (this.settingsOpen) {
+          // The app-level modal (external player mode) may still be open from
+          // a mode switch - close it so only one settings modal shows.
+          this.appMenuService.closeAppSettings();
+        }
+      }),
+      this.localSettingsService.externalStreaming$.subscribe(v => {
+        // Switching to external player mode removes this component (and its
+        // settings modal) from the DOM. If the settings were open, hand off
+        // to the app-level modal so they stay open.
+        if (v && this.settingsOpen) {
+          this.appMenuService.openAppSettings();
+        }
       })
     );
   }

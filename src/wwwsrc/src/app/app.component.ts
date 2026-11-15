@@ -49,11 +49,14 @@ import { AppMenuService } from './services/app-menu.service';
 })
 export class AppComponent implements OnInit {
   scriptStatusOpen = false;
-  // Settings modal for external player mode only - in normal mode the video
+  // Settings modal for external player mode - in normal mode the video
   // player renders its own instance inside the video container (so it also
-  // shows in full screen). mediaLoaded is the same gate the modal always
-  // had: the settings tabs bind to the server settings, which are only
-  // fetched once the media list has loaded.
+  // shows in full screen). It is intentionally not gated on externalStreaming
+  // in the template: when the user toggles the "External player" checkbox
+  // from within the modal, the mode switches and the modal must survive it.
+  // mediaLoaded is the same gate the modal always had: the settings tabs
+  // bind to the server settings, which are only fetched once the media list
+  // has loaded.
   settingsOpen = false;
   mediaLoaded = false;
   // WebXR VR media player overlay (self-contained feature in
@@ -121,6 +124,16 @@ export class AppComponent implements OnInit {
         return;
       }
       this.settingsOpen = !this.settingsOpen;
+    });
+    // Handoff signals so the modal's open state survives a mode switch
+    // triggered by the "External player" checkbox (see app.component.html).
+    this.appMenuService.settingsOpen$.subscribe(() => {
+      if (this.mediaLoaded) {
+        this.settingsOpen = true;
+      }
+    });
+    this.appMenuService.settingsClose$.subscribe(() => {
+      this.settingsOpen = false;
     });
     this.appMenuService.vrOpen$.subscribe(() => this.vrPlayerOpen = true);
 

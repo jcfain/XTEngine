@@ -1,7 +1,7 @@
 <div id="video-container"
   class="video-container"
   [class.video-container-visible]="videoVisible"
-  [class.hide-cursor]="videoVisible && !controlsVisible"
+  [class.hide-cursor]="videoVisible && !controlsVisible && !mediaSheetVisible"
   [class.video-container-fixed]="isVideoFixedLowHeight()"
   (mousemove)="showControls()"
   (mouseleave)="hideControls()"
@@ -47,7 +47,7 @@
   <div class="middle-controls middle-controls--top">
   </div>
   <div class="right-controls right-controls--top">
-    @if(isFullScreen) {
+    @if(!disableFullscreenMediaList && isFullScreen) {
       <button data-title="Media list" class="video-control video-control-main" id="media-list-button" (click)="openMediaSheet()">
         <svg class="player-button-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
           <path d="M1 3h2v2H1V3zm4 0h10v2H5V3zM1 7h2v2H1V7zm4 0h10v2H5V7zM1 11h2v2H1v-2zm4 0h10v2H5v-2z"/>
@@ -82,7 +82,7 @@
 </div>
 
 <div id="bottom-controls" #bottomControls class="video-controls bottom-controls" [class.video-controls-visible]="controlsVisible" (touchstart)="showControls()">
-  @if (isFullScreen) {
+  @if (!disableFullscreenMediaList && isFullScreen) {
     <div class="media-list-hint" title="Open media list" (click)="openMediaSheet()">
       <svg class="hint-arrow" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
         <path d="M8 3.5l5.5 6.5h-11L8 3.5z"/>

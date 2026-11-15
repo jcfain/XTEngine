@@ -185,9 +185,9 @@ void XTEngine::init()
             return;
         if(packet.duration <= 0)
             return;
-        if(m_mediaPositionTimer.isValid() && m_mediaPositionTimer.elapsed() < 100)
+        if(m_externalMediaPositionTimer.isValid() && m_externalMediaPositionTimer.elapsed() < 100)
             return;
-        m_mediaPositionTimer.start();
+        m_externalMediaPositionTimer.start();
         _httpHandler->externalMediaPosition(packet.currentTime, packet.duration, packet.playing, packet.playbackSpeed);
     });
     connect(_connectionHandler, &ConnectionHandler::action, _settingsActionHandler, &SettingsActionHandler::media_action);

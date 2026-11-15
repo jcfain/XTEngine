@@ -25,17 +25,6 @@ import { Roles } from '../../models/enums';
       // settings (see overlayActive).
       '[class.media-list-overlay]': 'overlayActive',
       '[class.media-list-overlay-visible]': 'overlayActive && overlayVisible',
-      // Keep-alive for the full screen overlay: it stays visible while any of
-      // these is active - mouse over the list, a finger on it, or focus in
-      // one of its filter inputs (typing). Touch devices don't fire
-      // mouseenter/mouseleave, so the touch events cover them.
-      '(mouseenter)': 'onMediaListMouseEnter()',
-      '(mouseleave)': 'onMediaListMouseLeave()',
-      '(touchstart)': 'onMediaListTouchStart()',
-      '(touchend)': 'onMediaListTouchEnd()',
-      '(touchcancel)': 'onMediaListTouchEnd()',
-      '(focusin)': 'onMediaListFocusIn()',
-      '(focusout)': 'onMediaListFocusOut($event)',
     }
 })
 export class MediaListComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
@@ -337,59 +326,6 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     // Selecting a video closes the full screen media sheet so the new video is
     // the focus.
     this.videoService.closeMediaSheet();
-  }
-
-  // Keep-alive state for the full screen overlay: the controls (and with
-  // them the overlay) stay visible while any of these is active.
-  private listMouseOver = false;
-  private listTouchActive = false;
-  private listFocused = false;
-
-  private updateListKeepAlive(): void {
-    const active = this.isFullScreen &&  (this.listMouseOver || this.listTouchActive || this.listFocused);
-    if (this.overlayActive) {
-      this.videoService.setMediaListActive(active);
-    } else if (active) {
-      this.videoService.showControls();
-    } else {
-      this.videoService.hideControlsDebounce();
-    }
-  }
-
-  onMediaListMouseEnter(): void {
-    this.listMouseOver = true;
-    this.updateListKeepAlive();
-  }
-
-  onMediaListMouseLeave(): void {
-    this.listMouseOver = false;
-    this.updateListKeepAlive();
-  }
-
-  onMediaListTouchStart(): void {
-    this.listTouchActive = true;
-    this.updateListKeepAlive();
-  }
-
-  onMediaListTouchEnd(): void {
-    this.listTouchActive = false;
-    this.updateListKeepAlive();
-  }
-
-  onMediaListFocusIn(): void {
-    this.listFocused = true;
-    this.updateListKeepAlive();
-  }
-
-  onMediaListFocusOut(event: FocusEvent): void {
-    // Focus moving to another element inside the list (e.g. from the tag
-    // filter input to the search box) keeps the overlay alive.
-    const related = event.relatedTarget as Node | null;
-    if (related && this.elementRef.nativeElement.contains(related)) {
-      return;
-    }
-    this.listFocused = false;
-    this.updateListKeepAlive();
   }
 
   private scrollToItem(item: MediaItem) {

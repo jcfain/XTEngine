@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, Subscription, tap } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, tap, defer, switchMap } from 'rxjs';
 import { SettingsService } from './settings.service';
+import { MessageHandlerService } from './message-handler.service';
 import { RemoteUserSettings, TCodeCommand, ActiveSession, ServerChannels } from '../models/interfaces';
 
 @Injectable({
@@ -28,6 +29,12 @@ export class ServerService {
   private serverChannelsSubject = new BehaviorSubject<ServerChannels | null>(null);
   serverChannels$: Observable<ServerChannels | null> = this.serverChannelsSubject.asObservable();
 
+  // The channel profile the user is currently viewing (kept in sync by the
+  // Motion tab). Used to detect a stale cache at save time (profile switched but
+  // the refetch hasn't landed yet).
+  private selectedChannelProfileSubject = new BehaviorSubject<string | null>(null);
+  selectedChannelProfile$: Observable<string | null> = this.selectedChannelProfileSubject.asObservable();
+
   get remoteUserSettings(): RemoteUserSettings | null { return this.remoteUserSettingsSubject.value; }
 
   get serverChannels(): ServerChannels | null { return this.serverChannelsSubject.value; }
@@ -37,8 +44,23 @@ export class ServerService {
 
   constructor(
     private http: HttpClient,
-    private settingsService: SettingsService
+    private settingsService: SettingsService,
+    private messageHandlerService: MessageHandlerService
   ) {
+    // Keep the channel cache in sync with profile switches, regardless of which
+    // tab is open. The server also emits channelProfileChanged ~100ms after a
+    // save (setAxis) where the profile is unchanged; only refetch when the
+    // profile actually changed so we don't clobber the user's in-flight edits
+    // (which live in the same object refs as the cache).
+    this.messageHandlerService.channelProfileChanged$.subscribe(profile => {
+      if (profile && this.serverChannelsSubject.value?.selectedChannelProfile !== profile) {
+        this.getServerChannels();
+      }
+    });
+  }
+
+  setSelectedChannelProfile(profile: string): void {
+    this.selectedChannelProfileSubject.next(profile);
   }
 
   ping(): Observable<any> {
@@ -95,18 +117,15 @@ export class ServerService {
     return this.http.post<any>('/tcodeCommands', commands);
   }
 
+  // Observable variant of getServerChannels() for chaining (e.g., fetch-then-save).
+  fetchServerChannels(): Observable<ServerChannels> {
+    return this.http.get<ServerChannels>('/channels').pipe(
+      tap(response => this.serverChannelsSubject.next(response))
+    );
+  }
+
   getServerChannels(): Subscription {
-    return this.http.get<ServerChannels>('/channels').subscribe({
-      next: (response) => {
-        // const settings = this.remoteUserSettingsSubject.value;
-        // if (settings) {
-        //   settings.availableChannels = response.availableChannels;
-        //   settings.selectedChannelProfile = response.selectedChannelProfile;
-        //   settings.allChannelProfileNames = response.allChannelProfileNames;
-        //   this.remoteUserSettingsSubject.next(settings);
-        // }
-        this.serverChannelsSubject.next(response);
-      },
+    return this.fetchServerChannels().subscribe({
       error: (err) => {
         console.error('Error getting channels:', err);
       }
@@ -130,10 +149,27 @@ export class ServerService {
   }
 
   saveServerChannels(): Observable<any> {
-    const channels = this.serverChannelsSubject.value;
-    return this.http.post<any>('/channels', {
-      availableChannels: channels?.availableChannels,
-      multiplierEnabled: channels?.multiplierEnabled
+    return defer(() => {
+      const cached = this.serverChannelsSubject.value;
+      const intended = this.selectedChannelProfileSubject.value;
+      // Refresh before saving if the cache is empty (init fetch missed) or is for
+      // a different profile than the one the user is viewing (stale after a
+      // profile switch whose refetch hasn't landed). Safe: no in-flight edits
+      // exist when the cache is empty, and stale edits belong to the profile the
+      // user switched away from.
+      const stale = !cached || (intended !== null && cached.selectedChannelProfile !== intended);
+      if (stale) {
+        return this.fetchServerChannels().pipe(
+          switchMap(() => this.http.post<any>('/channels', {
+            availableChannels: this.serverChannelsSubject.value?.availableChannels,
+            multiplierEnabled: this.serverChannelsSubject.value?.multiplierEnabled
+          }))
+        );
+      }
+      return this.http.post<any>('/channels', {
+        availableChannels: cached.availableChannels,
+        multiplierEnabled: cached.multiplierEnabled
+      });
     });
   }
 

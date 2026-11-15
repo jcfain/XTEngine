@@ -36,8 +36,13 @@
 
   <!-- Settings modal for external player mode, where there is no video
        player to host it (the video player renders its own instance inside
-       the video container so it also shows in full screen). -->
-  @if (externalStreaming && mediaLoaded && settingsOpen) {
+       the video container so it also shows in full screen). It is not
+       gated on externalStreaming so it survives the mode switch when the
+       user toggles the "External player" checkbox from within it.
+       mediaLoaded is the same gate the modal always had: the settings tabs
+       bind to the server settings, which are only fetched once the media
+       list has loaded. -->
+  @if (mediaLoaded && settingsOpen) {
     <app-settings [isOpen]="true" (toggle)="settingsOpen = false"></app-settings>
   }
   @if (scriptStatusOpen) {

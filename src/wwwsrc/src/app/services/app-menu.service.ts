@@ -13,6 +13,17 @@ export class AppMenuService {
   private settingsToggleSubject = new Subject<void>();
   settingsToggle$: Observable<void> = this.settingsToggleSubject.asObservable();
 
+  // Open/close the app-level settings modal (the instance rendered by the
+  // root component, used in external player mode). These let the modal's
+  // open state be handed between the video player's instance and the
+  // app-level one when the "External player" setting is toggled, so the
+  // modal stays open across the mode switch.
+  private settingsOpenSubject = new Subject<void>();
+  settingsOpen$: Observable<void> = this.settingsOpenSubject.asObservable();
+
+  private settingsCloseSubject = new Subject<void>();
+  settingsClose$: Observable<void> = this.settingsCloseSubject.asObservable();
+
   private vrOpenSubject = new Subject<void>();
   vrOpen$: Observable<void> = this.vrOpenSubject.asObservable();
 
@@ -20,6 +31,14 @@ export class AppMenuService {
 
   openSettings(): void {
     this.settingsToggleSubject.next();
+  }
+
+  openAppSettings(): void {
+    this.settingsOpenSubject.next();
+  }
+
+  closeAppSettings(): void {
+    this.settingsCloseSubject.next();
   }
 
   openVr(): void {

@@ -5,6 +5,14 @@
         <input id="externalStreamingCheckbox" type="checkbox"
             [ngModel]="externalStreaming" (ngModelChange)="onExternalStreamingChange($event)" />
     </div>
+    @if (externalStreaming) {
+        <div class="formElement local-tab-help">
+            <label></label>
+            <p>For <span class="local-tab-highlight">External player</span>, make sure to select the correct
+                player sync option on the <span class="local-tab-highlight">Connections</span> tab under
+                <span class="local-tab-highlight">Input connections</span>.</p>
+        </div>
+    }
     <div class="formElement">
         <label title="If checked, the media list will not overlay the video in full screen."
             for="disableFullScreenMediaListCheckbox">Disable full screen media list</label>
@@ -17,14 +25,6 @@
         <input id="disableHeatmapCheckbox" type="checkbox"
             [ngModel]="disableHeatmap" (ngModelChange)="onDisableHeatmapChange($event)" />
     </div>
-    @if (externalStreaming) {
-        <div class="formElement local-tab-help">
-            <label></label>
-            <p>For <span class="local-tab-highlight">External player</span>, make sure to select the correct
-                player sync option on the <span class="local-tab-highlight">Connections</span> tab under
-                <span class="local-tab-highlight">Input connections</span>.</p>
-        </div>
-    }
     <div class="formElement">
         <label for="showSelect"><span class="formLabel">Show</span></label>
         @if (userAgentIsHereSphere) {

@@ -35,7 +35,6 @@
 /* TCode-action style toggle buttons - only the selected profile is toggled. */
 .motion-profiles-button {
     display: block;
-    width: 100%;
     margin: 4px 0;
     background: #16213e;
     border: 1px solid #333;

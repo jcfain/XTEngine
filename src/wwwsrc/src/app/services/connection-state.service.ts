@@ -145,6 +145,10 @@ export class ConnectionStateService {
         }
       },
     });
+    // Populate the channel cache on connect so it is never null before the user
+    // interacts (fire-and-forget; a failure is non-fatal and the cache is
+    // refreshed on profile change and again at save time).
+    this.serverService.getServerChannels();
   }
 
   private doConnectWebSocket(): void {
