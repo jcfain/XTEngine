@@ -4,7 +4,6 @@
 #include <QPair>
 #include <QMutex>
 
-#include "connectionhandler.h"
 #include "../struct/Funscript.h"
 #include "../struct/ChannelModel33.h"
 #include "XTEngine_global.h"
@@ -45,7 +44,7 @@ private:
     QMap<QString, int> channelValueTracker;
     QHash<Track, bool> multiplierEnabledTracker;
     int getDistance(int current, int last);
-    int calculateGradient(int previous, int current, int next, qint64 previousAt, qint64 nextAt);
+    int calculateGradient(int lastPos, int currentPos, int nextPos, qint64 lastAtMilli, qint64 currentAtMilli, qint64 nextAtMilli);
     QList<XDelayedFunscriptAction> m_delayedFunscriptActions;
 };
 

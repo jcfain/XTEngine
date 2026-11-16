@@ -71,7 +71,7 @@ private:
     static inline QHash<Track, Funscript> m_funscripts;
     static inline const QString m_sfmaJSONObjectName = "channels";
     bool m_loaded = false;
-    bool _firstActionExecuted;
+    bool _firstActionExecuted = false;
     static inline int m_offset;
     static inline int m_globalOffset;
     static inline int m_globalOffsetWeb;
@@ -87,8 +87,6 @@ private:
 
     bool destinationEnd(const Funscript* funscript, const int& index);
     void actionSequence(const Funscript* funscript, const int &destinationIndex, FunscriptActionSequence& future);
-
-    // int calculateGradient(int previous, int current, int next, qint64 previousAt, qint64 nextAt);
 };
 
 #endif // FUNSCRIPTHANDLER_H

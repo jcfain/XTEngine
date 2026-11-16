@@ -5,7 +5,8 @@
 
 #include <QObject>
 #include "../struct/LibraryListItem27.h"
-#include "medialibraryhandler.h"
+
+class MediaLibraryHandler;
 
 class XTENGINE_EXPORT XMediaStateHandler// : public QObject
 {

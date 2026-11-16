@@ -276,8 +276,52 @@ void FunscriptHandler::setFunscriptSettings(const Track& channelName, Funscript 
         if(value > 0)
         {
             funscript.settings.min = value;
-            return;
+            break;
         }
+    }
+
+    // Compute the scale center for each action: the midpoint of the turning points
+    // (strict local min/max, plus the first and last points) bracketing that action in
+    // time. The amplitude modifier scales each action around its own local center, so
+    // each oscillation band expands/contracts independently of the others.
+    funscript.settings.centerList.clear();
+    int actionCount = funscript.settings.atList.length();
+    if(actionCount == 0)
+        return;
+    QList<int> positions;
+    positions.reserve(actionCount);
+    foreach(qint64 at, funscript.settings.atList)
+        positions.append(funscript.actions.value(at));
+    if(actionCount == 1)
+    {
+        funscript.settings.centerList.append((double)positions.first());
+        return;
+    }
+    QList<int> turning;
+    turning.append(0);
+    for(int i = 1; i < actionCount - 1; i++)
+    {
+        // A turning point is a strict local max (higher than both neighbors)
+        // or a strict local min (lower than both neighbors). Flat runs (equal
+        // positions) produce no turning points, so they scale as one band.
+        bool isMax = positions[i] > positions[i-1] && positions[i] > positions[i+1];
+        bool isMin = positions[i] < positions[i-1] && positions[i] < positions[i+1];
+        if(isMax || isMin)
+            turning.append(i);
+    }
+    turning.append(actionCount - 1);
+    funscript.settings.centerList.reserve(actionCount);
+    int t = 0;
+    for(int i = 0; i < actionCount; i++)
+    {
+        // Advance t while the turning point after t is strictly before i, so a
+        // point that is itself a turning point belongs to the band where it is
+        // the right endpoint (the last point scales with the last band).
+        while(t + 1 < turning.length() && turning.value(t + 1) < i)
+            t++;
+        int prevT = turning.value(t);
+        int nextT = (t + 1 < turning.length()) ? turning.value(t + 1) : prevT;
+        funscript.settings.centerList.append(((double)positions.value(prevT) + (double)positions.value(nextT)) / 2.0);
     }
 }
 
@@ -358,12 +402,13 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
 
 
         qint64 currentDestinationIndex = _firstActionExecuted ? closestIndex +1 : closestIndex;
+        if(currentDestinationIndex >= atList.length())
+            return nullptr; // Past the last point of the script
         qint64 nextIndex = destinationEnd(funscript, currentDestinationIndex + 1) ? -1 : currentDestinationIndex + 1;
-        if(nextIndex == -1)
-            return nullptr;
         FunscriptActionSequence currentDestinationSequence;
         actionSequence(funscript, currentDestinationIndex, currentDestinationSequence);
-        qint64 currentDestinationMillis = _firstActionExecuted ? atList[nextIndex] : XMath::constrain(closestMillis, 1000, 2500);
+        // The last point has no next point: it arrives at its own time.
+        qint64 currentDestinationMillis = _firstActionExecuted ? atList[nextIndex > -1 ? nextIndex : currentDestinationIndex] : XMath::constrain(closestMillis, 1000, 2500);
         int currentDestinationPos = currentDestinationSequence.currentDestinationPos;
         int currentDestinationInterval = _firstActionExecuted ? currentDestinationSequence.currentDestinationInterval : closestMillis;
         funscript->settings.nextActionPos = currentDestinationSequence.nextDestinationPos;
@@ -375,52 +420,20 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
         // LogHandler::Debug("currentDestinationInterval: "+ QString::number(currentDestinationInterval));
         // LogHandler::Debug("currentDestinationPos: "+ QString::number(currentDestinationPos));
 
-        if(funscript->settings.lastActionIndex > -1 && funscript->settings.modifier != 1)
+        // Amplitude modifier: scale each action around its own local band center
+        // (midpoint of the bracketing turning points, precomputed at load time).
+        // 100% = script as-is, 0% = no oscillation (flat at the band center),
+        // clamped to the funscript spec range 0-100.
+        if(funscript->settings.modifier != 1 && currentDestinationIndex < funscript->settings.centerList.length())
         {
-            if(currentDestinationPos == funscript->settings.lastActionPos && funscript->settings.lastActionPosModified)
+            int ogPos = currentDestinationPos;
+            double center = funscript->settings.centerList.value((int)currentDestinationIndex);
+            currentDestinationPos = XMath::constrain(qRound(center + (currentDestinationPos - center) * funscript->settings.modifier), 0, 100);
+            if(funscript->settings.channel == Track::Stroke)
             {
-                currentDestinationPos = funscript->settings.lastActionPosModified;
-                if(funscript->settings.channel == Track::Stroke)
-                    LogHandler::Debug(funscript->settings.trackName + " Modified pos unchanged: "+QString::number(currentDestinationPos));
-            }
-            else
-            {
-                int ogPos = currentDestinationPos;
-                double distance = currentDestinationPos - funscript->settings.lastActionPos;
-                double amplitude = distance / 2.0;
-                if(funscript->settings.modifier > 1)
-                {
-                    currentDestinationPos = qRound(currentDestinationPos + (amplitude * (funscript->settings.modifier - 1)));
-                }
-                else if(funscript->settings.modifier > 0)
-                {
-                    currentDestinationPos = qRound(currentDestinationPos - (amplitude * (1 - funscript->settings.modifier)));
-                }
-                // double modifier = funscript->settings.modifier;
-                // if(modifier > 1 )
-                // {
-                //     modifier = funscript->settings.modifier - 1;
-                // }
-                // bool downstroke = distance < 0;
-                // if(downstroke)
-                // {
-                //     pos = qRound(pos + (modifier * 100));// Add % to the bottom end (current position)
-                // }
-                // else
-                // {
-                //     pos = qRound(pos - (modifier * 100));// Subtract % from the top end (current position)
-                // }
-                currentDestinationPos = XMath::constrain(currentDestinationPos, 0, 100);
-                funscript->settings.lastActionPosModified = currentDestinationPos;
-                if(funscript->settings.channel == Track::Stroke)
-                {
-                    LogHandler::Debug(funscript->settings.trackName + " Modifier: "+QString::number(funscript->settings.modifier));
-                    LogHandler::Debug(funscript->settings.trackName + " last pos: "+QString::number(funscript->settings.lastActionPos));
-                    LogHandler::Debug(funscript->settings.trackName + " pos: "+QString::number(ogPos));
-                    LogHandler::Debug(funscript->settings.trackName + " distance: "+QString::number(distance));
-                    // LogHandler::Debug(funscript->settings.trackName + " amplitude: "+QString::number(amplitude));
-                    LogHandler::Debug(funscript->settings.trackName + " Modified pos: "+QString::number(currentDestinationPos));
-                }
+                LogHandler::Debug(funscript->settings.trackName + " Modifier: "+QString::number(funscript->settings.modifier));
+                LogHandler::Debug(funscript->settings.trackName + " pos: "+QString::number(ogPos));
+                LogHandler::Debug(funscript->settings.trackName + " Modified pos: "+QString::number(currentDestinationPos));
             }
         }
         calculateSpeedModifier(currentDestinationInterval);
@@ -446,7 +459,6 @@ std::shared_ptr<FunscriptAction> FunscriptHandler::getPosition(const Track& chan
         if(_firstActionExecuted)
         {
             funscript->settings.lastActionIndex = currentDestinationIndex;
-            funscript->settings.lastActionPos = currentDestinationPos;
             funscript->settings.lastActionInterval = currentDestinationInterval;
             funscript->settings.lastActionAt = currentDestinationMillis;
         }
@@ -603,22 +615,6 @@ bool FunscriptHandler::destinationEnd(const Funscript* funscript, const int& des
 {
     return destinationIndex >= funscript->settings.atList.length();
 }
-
-// int FunscriptHandler::calculateGradient(int posA, int posB, int posC, qint64 atA, qint64 atC)
-// {
-//     if((posB-posA)*(posC-posB) < 0)
-//         return 0;
-//     // Guard aginst dividing by 0
-//     double differencePos = (double)posC - (double)posA;
-//     if(!differencePos)
-//         return 0;
-//     if(atC == -1 || atA == -1)// -1 means we are at the end or begining
-//         return 0;
-//     double differenceAt = ((double)atC - (double)atA)/1000;
-//     if(!differenceAt)
-//         return 0;
-//     return (10*differencePos)/differenceAt;
-// }
 
 //static
 

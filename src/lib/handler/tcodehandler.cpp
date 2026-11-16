@@ -24,7 +24,6 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
     QMutexLocker locker(&mutex);
     QString tcode = nullptr;
     std::shared_ptr<FunscriptAction> mainAction = 0;
-    int mainActionGradient = 0;
     QList<QString> tcodeChannelNames = actions.keys();
 
     foreach(auto tcodeChannelName, tcodeChannelNames)
@@ -58,16 +57,19 @@ QString TCodeHandler::funscriptToTCode(QMap<QString, std::shared_ptr<FunscriptAc
         if(channelModel->Gradient)
         {
             tcode += "G";
-            int previousDestinationTCode = calculateRange(channelNameUtf8, axisAction->currentSequence.lastDestinationPos);
-            int nextDestinationTCode = calculateRange(channelNameUtf8, axisAction->currentSequence.nextDestinationPos);
-            gradient = calculateGradient(previousDestinationTCode, currentDestinationTCode, nextDestinationTCode, axisAction->currentSequence.lastDestinationAt, axisAction->currentSequence.nextDestinationAt);
+            // Invert last/next exactly like current so the slope is computed from
+            // consistently inverted positions.
+            auto invertPos = [channelModel](int p)
+            {
+                return (p > -1 && channelModel->FunscriptInverted) ? XMath::reverseNumber(p, 0, 100) : p;
+            };
+            int previousDestinationTCode = calculateRange(channelNameUtf8, invertPos(axisAction->currentSequence.lastDestinationPos));
+            int nextDestinationTCode = calculateRange(channelNameUtf8, invertPos(axisAction->currentSequence.nextDestinationPos));
+            gradient = calculateGradient(previousDestinationTCode, currentDestinationTCode, nextDestinationTCode, axisAction->currentSequence.lastDestinationAt, axisAction->currentSequence.currentDestinationAt, axisAction->currentSequence.nextDestinationAt);
             tcode += QString::number(gradient);
         }
         if (channelModel->Channel == TCodeChannelLookup::Stroke())
-        {
             mainAction = axisAction;
-            mainActionGradient = gradient;
-        }
     }
     if(!mainAction && !actions.empty())
     {
@@ -172,7 +174,7 @@ QString TCodeHandler::getMotionModifierTCode(ChannelModel33* channel, std::share
                 int seqA = calculateRange(channelNameUtf8, linkedActionSequence->lastDestinationPos);
                 int seqB = calculateRange(channelNameUtf8, linkedActionSequence->currentDestinationPos);
                 int seqC = calculateRange(channelNameUtf8, linkedActionSequence->nextDestinationPos);
-                gcode = calculateGradient(seqA, seqB, seqC, linkedActionSequence->lastDestinationAt, linkedActionSequence->nextDestinationAt);
+                gcode = calculateGradient(seqA, seqB, seqC, linkedActionSequence->lastDestinationAt, linkedActionSequence->currentDestinationAt, linkedActionSequence->nextDestinationAt);
             }
         } else
             return QString();
@@ -411,19 +413,28 @@ int TCodeHandler::getDistance(int current, int last)
     return current >= last ? current - last : last - current;
 }
 
-int TCodeHandler::calculateGradient(int lastPos, int currentPos, int nextPos, qint64 lastAtMilli, qint64 nextAtMilli)
+int TCodeHandler::calculateGradient(int lastPos, int currentPos, int nextPos, qint64 lastAtMilli, qint64 currentAtMilli, qint64 nextAtMilli)
 {
+    // Reversal point: motion stops and changes direction -> arrive at rest.
     if((currentPos-lastPos)*(nextPos-currentPos) < 0)
         return 0;
-    // Guard aginst dividing by 0
-    double differencePos = (double)nextPos - (double)lastPos;
-    if(!differencePos)
+    // -1 means we are at the beginning or end of the script -> arrive at rest.
+    if(lastAtMilli == -1 || currentAtMilli == -1 || nextAtMilli == -1)
         return 0;
-    if(nextAtMilli == -1 || lastAtMilli == -1)// -1 means we are at the end or begining
+    // TCode spec: at an intermediate point the arrival velocity is the average of the
+    // straight-line gradients of the two segments meeting at that point.
+    double gradient1 = 0;
+    double gradient2 = 0;
+    if(currentAtMilli != lastAtMilli)
+        gradient1 = (double)(currentPos - lastPos) / ((double)(currentAtMilli - lastAtMilli) / 1000.0);
+    if(nextAtMilli != currentAtMilli)
+        gradient2 = (double)(nextPos - currentPos) / ((double)(nextAtMilli - currentAtMilli) / 1000.0);
+    double unitsPerSec = (gradient1 + gradient2) / 2.0;
+    if(!unitsPerSec)
         return 0;
-    double differenceAtSec = ((double)nextAtMilli - (double)lastAtMilli)/1000;
-    if(!differenceAtSec)
-        return 0;
-    // LogHandler::Debug("TCodeHandler::calculateGradient: lastPos: "+ QString::number(lastPos) +" currentPos: "+ QString::number(currentPos) +" nextPos: "+ QString::number(nextPos) +" lastAtMilli: "+ QString::number(lastAtMilli) +" nextAtMilli: "+ QString::number(nextAtMilli)+" differenceAtSec: "+ QString::number(differenceAtSec)+" differencePos/differenceAtSec: "+ QString::number((differencePos/10)/differenceAtSec));
-    return (differencePos/10)/differenceAtSec;
+    // G is in the same units as S: a speed of 1000 runs one axis length in one second.
+    // The axis length is 10^padding TCode units (10000 for 4-digit, 1000 for 3-digit),
+    // so divide units/sec by 10^(padding-3).
+    int divisor = SettingsHandler::getTCodePadding() >= 4 ? 10 : 1;
+    return qRound(unitsPerSec / divisor);
 }

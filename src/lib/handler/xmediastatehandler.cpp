@@ -1,4 +1,5 @@
 #include "xmediastatehandler.h"
+#include "medialibraryhandler.h"
 #include "settingshandler.h"
 #include "funscripthandler.h"
 

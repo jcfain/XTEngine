@@ -1,0 +1,66 @@
+#ifndef T_FUNSCRIPTHANDLER_H
+#define T_FUNSCRIPTHANDLER_H
+
+#include <QObject>
+#include <QList>
+#include <QPair>
+#include <QTemporaryDir>
+
+// Unit tests for FunscriptHandler's amplitude modifier (local-center scaling)
+// and the getPosition() action stream.
+//
+// Scripts are written to temporary files and played back by stepping
+// getPosition() forward in small increments, mimicking the player's timer
+// loop. Expected values are computed by hand from the scaling formula:
+//     modified = clamp(center + (pos - center) * modifier, 0, 100)
+// where center is the midpoint of the two turning points bracketing the
+// point (or the point itself at the script edges).
+class T_FunscriptHandler : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void initTestCase();
+
+    // 100% modifier is the identity: every raw position is emitted unchanged.
+    void identityAt100Percent();
+
+    // Regression: the last point of a script must be emitted (it used to be
+    // dropped because nextIndex was -1 for it).
+    void finalPointEmitted();
+
+    // 150% expands each oscillation band around its own center.
+    void amplitude150ExpandsBand();
+
+    // 50% contracts each band toward its center.
+    void amplitude50ContractsBand();
+
+    // 0% rests at the band center: a 40-60 oscillation becomes a flat 50.
+    void amplitude0IsFlat();
+
+    // Expansion of a full-range (0-100) script must stay within 0-100.
+    void clampedToSpecRange();
+
+    // A roaming script (bands at different positions of the range) scales
+    // each band independently without clipping (user's roaming example).
+    void roamingBandsScaleIndependently();
+
+    // Repeated positions (flat runs) must scale together, not oscillate.
+    void flatSectionStaysFlat();
+
+    // A script with a single action emits that (modified) position once.
+    void singleActionScript();
+
+private:
+    // Writes the given (at, pos) pairs as a funscript JSON file and returns
+    // its path.
+    QString writeScript(const QList<QPair<qint64, int>> &actions) const;
+
+    // Steps getPosition() from 0 to duration in step-ms increments and
+    // collects the positions of every emitted action.
+    static QList<int> playScript(class FunscriptHandler &handler, qint64 duration, qint64 step = 10);
+
+    QTemporaryDir m_tempDir;
+};
+
+#endif // T_FUNSCRIPTHANDLER_H

@@ -64,17 +64,19 @@ struct XFunscript {
     double modifier = 1;
     qint64 lastActionIndex = -1;
     qint64 nextActionIndex = 0;
-    int lastActionPos = 0;
     qint64 lastActionAt = 0;
-    int lastActionPosModified = 0;
     int lastActionInterval = 0;
     int nextActionPos = 0;
     qint64 nextActionAt = 0;
-    int nextActionPosModified = 0;
     int nextActionInterval = 0;
     qint64 min = -1;
     qint64 max = -1;
     QList<qint64> atList;
+    // Per-action scale center (parallel to atList): the midpoint of the turning points
+    // (local min/max) bracketing that action in time. The amplitude modifier scales each
+    // action around its own local center so each oscillation band expands/contracts
+    // independently of the others.
+    QList<double> centerList;
 };
 
 struct Funscript {

@@ -6,6 +6,7 @@
 // #include <QtCompress/qzipwriter.h>
 // #include <QtCompress/qzipreader.h>
 #include "tcodehandler.h"
+#include "connectionhandler.h"
 #include "funscripthandler.h"
 #include "lib/lookup/XMedia.h"
 #include "lib/tool/funscriptsearch.h"

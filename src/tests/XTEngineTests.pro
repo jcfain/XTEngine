@@ -1,9 +1,9 @@
 # XTEngine unit tests.
 #
-# Standalone test app: the sources under test are compiled directly (so far
-# just imagefactory.cpp), so the full library and its heavy Qt module
-# dependencies (multimedia, bluetooth, serialport, ...) are not required.
-# To test another class, add its .cpp to SOURCES below.
+# Standalone test app: the sources under test are compiled directly, so the
+# full library and its heavy Qt module dependencies (multimedia, bluetooth,
+# serialport, ...) are not required. To test another class, add its .cpp to
+# SOURCES below (plus any real dependencies it links against).
 #
 # Build & run (Linux/macOS):
 #     cd build && qmake ../XTEngineTests.pro && make && ./XTEngineTests
@@ -11,7 +11,7 @@
 #     ../run_tests.sh
 # Windows / Qt Creator: open this .pro as a project and run.
 
-QT += core gui testlib
+QT += core gui concurrent testlib
 
 TEMPLATE = app
 TARGET = XTEngineTests
@@ -38,7 +38,30 @@ DEFINES += TEST_DATA_DIR=\\\"$$PWD/data\\\"
 SOURCES += \
     main.cpp \
     t_imagefactory.cpp \
-    ../lib/tool/imagefactory.cpp
+    t_funscripthandler.cpp \
+    t_tcodehandler.cpp \
+    stubs.cpp \
+    ../lib/tool/imagefactory.cpp \
+    ../lib/handler/funscripthandler.cpp \
+    ../lib/handler/tcodehandler.cpp \
+    ../lib/handler/settingshandler.cpp \
+    ../lib/handler/loghandler.cpp \
+    ../lib/lookup/tcodechannellookup.cpp \
+    ../lib/lookup/MediaActions.cpp \
+    ../lib/tool/xmath.cpp \
+    ../lib/tool/migration.cpp \
+    ../lib/tool/qsettings_json.cpp \
+    ../lib/settings/medialibrarysettings.cpp \
+    ../lib/settings/settingsbase.cpp
 
 HEADERS += \
-    t_imagefactory.h
+    t_imagefactory.h \
+    t_funscripthandler.h \
+    t_tcodehandler.h \
+    ../lib/handler/funscripthandler.h \
+    ../lib/handler/tcodehandler.h \
+    ../lib/handler/settingshandler.h \
+    ../lib/handler/xmediastatehandler.h \
+    ../lib/lookup/tcodechannellookup.h \
+    ../lib/settings/medialibrarysettings.h \
+    ../lib/settings/settingsbase.h
