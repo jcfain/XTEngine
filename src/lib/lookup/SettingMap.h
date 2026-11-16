@@ -80,6 +80,7 @@ struct SettingKeys {
     static inline const QString disableAutoThumbGeneration = "disableAutoThumbGeneration";
     static inline const QString enableMediaManagement = "enableMediaManagement";
     static inline const QString useSystemMediaBackend = "useSystemMediaBackend";
+    static inline const QString useHardwareDecoding = "useHardwareDecoding";
     static inline const QString globalOffset = "globalOffset";
     static inline const QString globalOffsetWeb = "globalOffsetWeb";
     static inline const QString viewedThreshold = "viewedThreshold";
@@ -177,6 +178,7 @@ public:
         {SettingProfile::System, SettingGroups::media, SettingKeys::disableAutoThumbGeneration, FormControlTypes::Checkbox, false, "Disable automatic thumb generation", "If checked, when a new media item has been found, no thumb will be automattically generated. Manual generation will still be attemped..", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::enableMediaManagement, FormControlTypes::Checkbox, false, "Enable media management", "If checked, certain media management options like delete will become available", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::useSystemMediaBackend, FormControlTypes::Checkbox, false, "Use the media backend of the OS", "If checked, XTP will use the OS media backend. Requires restart...", false, true},
+        {SettingProfile::System, SettingGroups::media, SettingKeys::useHardwareDecoding, FormControlTypes::Checkbox, false, "Use hardware video decoding", "If checked, XTP will use GPU hardware acceleration (e.g. CUDA/VA-API) for video decoding in the FFmpeg backend. Leave OFF if AV1 (or other codecs) fail to play: many GPUs lack AV1 hardware support and the FFmpeg backend does not fall back to software automatically. OFF uses the bundled software decoders (dav1d for AV1). Requires restart.", false, true},
         {SettingProfile::System, SettingGroups::media, SettingKeys::globalOffset, FormControlTypes::Int, 0, "Global offset", "Offest specified in milliseconds", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::globalOffsetWeb, FormControlTypes::Int, 0, "Global offset (web)", "Offset for scripts played from web ONLY. Offest specified in milliseconds", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::viewedThreshold, FormControlTypes::Int, 90, "Auto mark viewed %", "When the current playing media reaches the percentage of time specified here\nThe metadata will automattically have the viewed tag appended and the unviewed tag removed.", false, false},

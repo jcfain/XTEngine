@@ -2,6 +2,7 @@
 
 #include "../tool/file-util.h"
 #include "../tool/migration.h"
+#include "../tool/mediaformat.h"
 
 const int SettingsHandler::XTEVersionMajor = VERSION_MAJOR;
 const int SettingsHandler::XTEVersionMinor = VERSION_MINOR;
@@ -192,6 +193,50 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         setenv("QT_MEDIA_BACKEND", backend, 1);
 #endif
         LogHandler::Info("Using media backend: "+QString(backend));
+    }
+    else
+    {
+        // FFmpeg backend (Qt default): report codec availability so
+        // unsupported-codec situations (e.g. AV1) are visible in the log.
+        LogHandler::Info("Using media backend: ffmpeg");
+
+        // Control hardware-accelerated decoding. Qt's FFmpeg backend auto-selects
+        // a GPU hwaccel (e.g. CUDA) and, when the GPU lacks support (common for
+        // AV1), the decode fails hard instead of falling back to the software
+        // decoder. Default is OFF so AV1 reliably uses the bundled dav1d decoder.
+        // The env var is read once (statically cached) by the plugin, so a
+        // restart is required for changes to take effect.
+        bool useHardwareDecoding = getSetting(SettingKeys::useHardwareDecoding, settingsToLoadFrom).toBool();
+        if(useHardwareDecoding)
+        {
+            // Unset -> Qt auto-detects available HW backends.
+            unsetenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES");
+            LogHandler::Info("FFmpeg hardware decoding: enabled (auto-detect GPU backends)");
+        }
+        else
+        {
+            // Empty list -> no HW acceleration -> software decoders (dav1d for AV1).
+            setenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES", "", 1);
+            LogHandler::Info("FFmpeg hardware decoding: disabled (using software decoders)");
+        }
+
+        const CodecProbeResult probe = MediaFormat::probeFFmpegCodecs();
+        if(probe.ffmpegAvailable)
+        {
+            QStringList codecList;
+            for (auto it = probe.codecs.constBegin(); it != probe.codecs.constEnd(); ++it)
+                codecList << (it.value() ? it.key() : it.key() + "(NO)");
+            LogHandler::Info("FFmpeg " + probe.ffmpegVersion + " from " + probe.libraryPath
+                             + " - decoders: " + codecList.join(", "));
+            if(!probe.codecs.value("AV1", false))
+                LogHandler::Warn("AV1 decoding is not available in the FFmpeg backend. "
+                                 "AV1 videos will play audio only. Install the XTPlayer codec pack "
+                                 "(see helper_scripts) or enable 'Use the media backend of the OS'.");
+        }
+        else
+        {
+            LogHandler::Warn("FFmpeg library not found - the FFmpeg media backend may not be available.");
+        }
     }
     // Unsure about this...
     //setenv("QT_ENABLE_EXPERIMENTAL_CODECS", "1", 1);
