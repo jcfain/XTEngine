@@ -38,7 +38,7 @@
                                 <select [id]="setting.key"
                                     [ngModel]="setting.value" (ngModelChange)="onValueChange(setting, $event)"
                                     [title]="setting.description">
-                                    @for (option of setting.value; track option) {
+                                    @for (option of setting.options ?? []; track option.value) {
                                         <option [value]="option.value">{{ option.key }}</option>
                                     }
                                 </select>
@@ -51,6 +51,9 @@
                                     [max]="getControlProps(setting).max"
                                     [step]="getControlProps(setting).step" />
                             }
+                        }
+                        @if (setting.status) {
+                            <div class="setting-status" [title]="setting.status">{{ setting.status }}</div>
                         }
                     </div>
                 }

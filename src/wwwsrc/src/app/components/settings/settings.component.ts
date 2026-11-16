@@ -139,6 +139,7 @@ You will need to go to the pc and enter the password manually for now.` : ''}`,
             cancelText: 'Cancel',
             onConfirm: () => {
                 this.websocketService.restartXTP();
+                this.alertService.closeConfirm(id);
             },
             onCancel: () => this.alertService.closeConfirm(id)
         });

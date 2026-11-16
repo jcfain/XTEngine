@@ -6,6 +6,17 @@
 #include <QMediaFormat>
 #include <QString>
 #include <QMap>
+#include <QList>
+
+// A hardware acceleration backend that the FFmpeg build is compiled with,
+// and which video codecs it can accelerate.
+struct HwAccelBackend
+{
+    QString name;   // e.g. "cuda", "vaapi", "d3d11va"
+    bool h264 = false;
+    bool hevc = false;
+    bool av1 = false;
+};
 
 // Result of probing the FFmpeg library used by the Qt FFmpeg media backend.
 struct CodecProbeResult
@@ -14,6 +25,7 @@ struct CodecProbeResult
     QString ffmpegVersion;        // e.g. "9.0.1"
     QString libraryPath;          // the library that was loaded
     QMap<QString, bool> codecs;   // "AV1" -> true, "HEVC" -> false, ...
+    QList<HwAccelBackend> hwAccel; // HW backends compiled into this FFmpeg
 };
 
 class MediaFormat : public QObject

@@ -157,6 +157,9 @@
 
 .restart-required {
     color: var(--alert-color-warning);
+    align-self: center;
+    font-size: 0.8rem;
+    margin-right: 8px;
 }
 
 @keyframes save-button-pulse {

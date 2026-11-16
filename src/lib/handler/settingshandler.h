@@ -107,6 +107,24 @@ public:
     static const QString XTEVersionPhase;
     static bool getSettingsChanged();
 
+    // Human-readable hardware-decode status for the FFmpeg backend: the user's
+    // preference, the GPU backends the FFmpeg build is compiled with, and the
+    // effective decode mode for AV1. Cached (the probe + preference don't change
+    // at runtime - the preference requires a restart). Exposed to the WebUI as a
+    // "status" field on the useHardwareDecoding setting.
+    static QString hardwareDecodeStatus();
+
+    // The user's hardware-decode preference as a normalized string: "disabled",
+    // "auto", or a specific backend name (e.g. "cuda"). Normalizes the legacy
+    // boolean value (true -> "auto", false -> "disabled") so old settings files
+    // keep working now that the control is a combo, not a checkbox.
+    static QString hardwareDecodePreference();
+
+    // The hardware-decode options to offer: always "disabled" and "auto", plus
+    // the specific backends the FFmpeg build is compiled with (filtered, so no
+    // dead options). Shared by the WebUI (via the API) and the desktop dialog.
+    static QStringList hardwareDecodeOptions();
+
     static inline MediaLibrarySettings* mediaLibrarySettings = 0;
 
     static bool getHideWelcomeScreen();

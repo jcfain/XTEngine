@@ -766,6 +766,24 @@ void HttpHandler::handleSettings(const QHttpServerRequest &request, QHttpServerR
         QJsonObject value;
         SettingsHandler::getSetting(map.key, value);
         settingsObj["value"] = value[map.key];
+        // For the hardware-decode combo: normalize the value (legacy bool ->
+        // string), expose the available options, and the live status (preference
+        // + compiled-in backends + effective AV1 mode) so the WebUI can show the
+        // true state next to the control.
+        if (map.key == SettingKeys::useHardwareDecoding)
+        {
+            settingsObj["value"] = SettingsHandler::hardwareDecodePreference();
+            QJsonArray options;
+            foreach (const QString& opt, SettingsHandler::hardwareDecodeOptions())
+            {
+                QJsonObject option;
+                option["key"] = opt;
+                option["value"] = opt;
+                options.append(option);
+            }
+            settingsObj["options"] = options;
+            settingsObj["status"] = SettingsHandler::hardwareDecodeStatus();
+        }
         settingsArray.append(settingsObj);
     }
     root["settings"] = settingsArray;

@@ -213,6 +213,8 @@ export interface Setting {
     profile: SettingProfile;
     internal?: boolean;
     requiresRestart?: boolean;
+    status?: string;
+    options?: { key: string; value: string }[];
 }
 
 export interface AllSettings {

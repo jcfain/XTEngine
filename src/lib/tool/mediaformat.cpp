@@ -140,6 +140,56 @@ CodecProbeResult MediaFormat::probeFFmpegCodecs()
                         || (dlsym(handle, "aom_codec_init") != nullptr);
 #endif
 
+    // --- Hardware acceleration backends ---
+    // Report which HW device types this FFmpeg build is compiled with. This
+    // reflects the system's actual capability (not the user's preference), so
+    // the UI/log can show the true state. We use av_hwdevice_iterate_types
+    // (cheap, no device init) rather than creating device contexts (which can
+    // be slow, e.g. CUDA).
+    //
+    // Note: per-codec HW support (H.264/HEVC/AV1) is not queryable here -
+    // av_hwdevice_get_type_support does not exist in this FFmpeg build - so the
+    // per-codec flags are left at their default (false). The backend is still
+    // listed; the user can force it and the GPU decides at decode time.
+    typedef int (*hw_iterate_fn)(int);
+    typedef const char* (*hw_name_fn)(int);
+    hw_iterate_fn hwIterate = nullptr;
+    hw_name_fn hwName = nullptr;
+#ifdef Q_OS_WIN
+    hwIterate = reinterpret_cast<hw_iterate_fn>(GetProcAddress(static_cast<HMODULE>(handle), "av_hwdevice_iterate_types"));
+    hwName = reinterpret_cast<hw_name_fn>(GetProcAddress(static_cast<HMODULE>(handle), "av_hwdevice_get_type_name"));
+#else
+    hwIterate = reinterpret_cast<hw_iterate_fn>(dlsym(handle, "av_hwdevice_iterate_types"));
+    hwName = reinterpret_cast<hw_name_fn>(dlsym(handle, "av_hwdevice_get_type_name"));
+#endif
+    if (hwIterate && hwName)
+    {
+        int type = -1; // AV_HWDEVICE_TYPE_NONE
+        int count = 0;
+        // Safety: av_hwdevice_iterate_types takes the current type BY VALUE and
+        // returns the next one (matching the ffmpeg CLI's show_hwaccels()). In
+        // this FFmpeg build the iterator does not terminate cleanly (it loops),
+        // so we stop on a repeated backend name AND cap the iteration count to
+        // guarantee startup can never hang.
+        while ((type = hwIterate(type)) >= 0 && count < 32)
+        {
+            const char* n = hwName(type);
+            if (n && *n)
+            {
+                const QString name = QString::fromUtf8(n);
+                bool seen = false;
+                for (const HwAccelBackend& b : result.hwAccel)
+                    if (b.name == name) { seen = true; break; }
+                if (seen)
+                    break; // iterator is looping - stop
+                HwAccelBackend backend;
+                backend.name = name;
+                result.hwAccel.append(backend);
+            }
+            count++;
+        }
+    }
+
     // Keep the library loaded: the FFmpeg plugin uses the same copy.
     return result;
 }

@@ -4,6 +4,9 @@
 #include "../tool/migration.h"
 #include "../tool/mediaformat.h"
 
+// Forward declaration: defined below, used in Load().
+static QString normalizeHardwareDecodeValue(const QVariant& v);
+
 const int SettingsHandler::XTEVersionMajor = VERSION_MAJOR;
 const int SettingsHandler::XTEVersionMinor = VERSION_MINOR;
 const int SettingsHandler::XTEVersionRevision = VERSION_REVISION;
@@ -200,26 +203,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         // unsupported-codec situations (e.g. AV1) are visible in the log.
         LogHandler::Info("Using media backend: ffmpeg");
 
-        // Control hardware-accelerated decoding. Qt's FFmpeg backend auto-selects
-        // a GPU hwaccel (e.g. CUDA) and, when the GPU lacks support (common for
-        // AV1), the decode fails hard instead of falling back to the software
-        // decoder. Default is OFF so AV1 reliably uses the bundled dav1d decoder.
-        // The env var is read once (statically cached) by the plugin, so a
-        // restart is required for changes to take effect.
-        bool useHardwareDecoding = getSetting(SettingKeys::useHardwareDecoding, settingsToLoadFrom).toBool();
-        if(useHardwareDecoding)
-        {
-            // Unset -> Qt auto-detects available HW backends.
-            unsetenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES");
-            LogHandler::Info("FFmpeg hardware decoding: enabled (auto-detect GPU backends)");
-        }
-        else
-        {
-            // Empty list -> no HW acceleration -> software decoders (dav1d for AV1).
-            setenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES", "", 1);
-            LogHandler::Info("FFmpeg hardware decoding: disabled (using software decoders)");
-        }
-
         const CodecProbeResult probe = MediaFormat::probeFFmpegCodecs();
         if(probe.ffmpegAvailable)
         {
@@ -236,6 +219,65 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         else
         {
             LogHandler::Warn("FFmpeg library not found - the FFmpeg media backend may not be available.");
+        }
+
+        // Control hardware-accelerated decoding. Qt's FFmpeg backend auto-selects
+        // a GPU hwaccel (e.g. CUDA) and, when the GPU lacks support (common for
+        // AV1), the decode fails hard instead of falling back to the software
+        // decoder. Default is OFF so AV1 reliably uses the bundled dav1d decoder.
+        // The env var is read once (statically cached) by the plugin, so a
+        // restart is required for changes to take effect.
+        const QString hwPref = normalizeHardwareDecodeValue(getSetting(SettingKeys::useHardwareDecoding, settingsToLoadFrom));
+        if (hwPref == "disabled")
+        {
+            // Empty list -> no HW acceleration -> software decoders (dav1d for AV1).
+            setenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES", "", 1);
+            LogHandler::Info("FFmpeg hardware decoding preference: disabled (software decoders)");
+        }
+        else if (hwPref == "auto")
+        {
+            // Unset -> Qt auto-detects available HW backends.
+            unsetenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES");
+            LogHandler::Info("FFmpeg hardware decoding preference: auto (auto-detect GPU backends)");
+        }
+        else
+        {
+            // Force a specific backend (comma-separated list of device names).
+            setenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES", qPrintable(hwPref), 1);
+            LogHandler::Info("FFmpeg hardware decoding preference: forced backend '" + hwPref + "'");
+        }
+
+        // Report the TRUE hardware-decode state. The preference alone is
+        // misleading: a checked box on a GPU without AV1 HW still ends up in
+        // software. So also show the backends FFmpeg is compiled with and the
+        // effective mode for AV1.
+        if(probe.hwAccel.isEmpty())
+        {
+            LogHandler::Info("FFmpeg HW backends compiled in: none (all video decodes in software)");
+        }
+        else
+        {
+            QStringList parts;
+            bool av1Hw = false;
+            for (const HwAccelBackend& b : probe.hwAccel)
+            {
+                if (b.av1) av1Hw = true;
+                parts << QString("%1[AV1:%2 H264:%3 HEVC:%4]")
+                    .arg(b.name, b.av1 ? "y" : "n", b.h264 ? "y" : "n", b.hevc ? "y" : "n");
+            }
+            LogHandler::Info("FFmpeg HW backends compiled in: " + parts.join(", "));
+            if (hwPref == "disabled")
+                LogHandler::Info("AV1 decode: software (dav1d) - hardware decoding disabled by preference");
+            else if (hwPref == "auto")
+            {
+                if (av1Hw)
+                    LogHandler::Info("AV1 decode: hardware (auto-detect) - backend depends on the GPU; "
+                                     "if the GPU lacks AV1 support the decode will fail (no software fallback)");
+                else
+                    LogHandler::Info("AV1 decode: software (dav1d) - no compiled-in backend supports AV1 HW");
+            }
+            else
+                LogHandler::Info("AV1 decode: forced backend '" + hwPref + "' (falls back to software if the GPU/codec lacks support)");
         }
     }
     // Unsure about this...
@@ -936,6 +978,78 @@ QVariant SettingsHandler::getSetting(const QString &settingName, const QSettings
 {
     const SettingMap settingMap = XSettingsMap::SettingsMap.value(settingName);
     return getFrom->value(getSettingPath(settingMap), settingMap.defaultValue);
+}
+
+// Normalizes the raw stored hardware-decode value to a preference string.
+// Handles the legacy boolean (true -> "auto", false -> "disabled") as well as
+// the new string values, so old settings files keep working.
+static QString normalizeHardwareDecodeValue(const QVariant& v)
+{
+    if (v.type() == QMetaType::Bool)
+        return v.toBool() ? QStringLiteral("auto") : QStringLiteral("disabled");
+    const QString s = v.toString();
+    if (s == QLatin1String("true"))
+        return QStringLiteral("auto");
+    if (s == QLatin1String("false") || s.isEmpty())
+        return QStringLiteral("disabled");
+    return s;
+}
+
+QString SettingsHandler::hardwareDecodePreference()
+{
+    return normalizeHardwareDecodeValue(getSetting(SettingKeys::useHardwareDecoding));
+}
+
+QStringList SettingsHandler::hardwareDecodeOptions()
+{
+    // C++11 magic static: thread-safe one-time initialization. Both the UI thread
+    // (SettingsDialog) and the HTTP server thread (/settings) can call this at
+    // startup; a manual "probed" flag would race and corrupt the heap.
+    static const CodecProbeResult probe = MediaFormat::probeFFmpegCodecs();
+    QStringList options;
+    options << "disabled" << "auto";
+    if (probe.ffmpegAvailable)
+    {
+        for (const HwAccelBackend& b : probe.hwAccel)
+            if (!options.contains(b.name))
+                options << b.name;
+    }
+    return options;
+}
+
+QString SettingsHandler::hardwareDecodeStatus()
+{
+    // C++11 magic static: thread-safe one-time initialization (see
+    // hardwareDecodeOptions). The preference is re-read each call so the status
+    // reflects the current setting (it takes effect after a restart).
+    static const CodecProbeResult probe = MediaFormat::probeFFmpegCodecs();
+
+    if (!probe.ffmpegAvailable)
+        return "FFmpeg backend not available";
+
+    const QString pref = hardwareDecodePreference();
+    QStringList parts;
+    bool av1Hw = false;
+    for (const HwAccelBackend& b : probe.hwAccel)
+    {
+        if (b.av1) av1Hw = true;
+        parts << QString("%1[AV1:%2 H264:%3 HEVC:%4]")
+            .arg(b.name, b.av1 ? "y" : "n", b.h264 ? "y" : "n", b.hevc ? "y" : "n");
+    }
+    const QString backends = parts.isEmpty() ? "none" : parts.join(", ");
+    if (pref == "disabled")
+        return "Software decoding (disabled) · backends: " + backends;
+    if (pref == "auto")
+        return QString(av1Hw ? "Hardware decoding (auto; backend depends on GPU)"
+                             : "Software decoding (auto; no AV1-capable backend)")
+               + " · backends: " + backends;
+    // A specific backend was requested.
+    bool compiledIn = false;
+    for (const HwAccelBackend& b : probe.hwAccel)
+        if (b.name == pref) compiledIn = true;
+    return (compiledIn ? "Hardware decoding (forced: " + pref + ")"
+                       : "Requested backend '" + pref + "' is not compiled in; will fall back")
+           + " · backends: " + backends;
 }
 
 void SettingsHandler::getSetting(const QString& settingName, QJsonObject& json)

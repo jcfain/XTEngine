@@ -47,6 +47,14 @@
     word-break: break-all;
 }
 
+/* Live status line shown under a setting (e.g. hardware-decode state) */
+.setting-status {
+    font-size: 0.8rem;
+    opacity: 0.75;
+    margin-top: 2px;
+    word-break: break-word;
+}
+
 /* Media Library tags */
 .system-tags {
     display: flex;
