@@ -7,6 +7,8 @@
 #include <QVideoFrame>
 #include <QImage>
 #include <QTimer>
+#include <QMutex>
+#include <QAtomicInt>
 
 #include "mediaformat.h"
 
@@ -28,12 +30,14 @@ signals:
     void stopPlaying();
     void pausePlaying();
     void setPosition(qint64 value);
+    void setMediaSource(QUrl url);
     void frameExtracted(QImage frame);
     void frameExtractionError(QString error);
 
 private:
     static constexpr int m_defaultTimeout = 5000;
-    bool m_extracting = false;
+    // Atomic: written by the worker thread (extract), read by the GUI thread (videoFrameChanged)
+    QAtomicInt m_extracting = 0;
     bool m_fileChanged = false;
     QString m_file;
     QMediaPlayer* m_mediaPlayer;
@@ -41,6 +45,10 @@ private:
     QImage m_lastImage;
     QString m_lastError;
     qint64 m_lastTime;
+    // Guards m_lastImage, m_lastError, m_file, m_fileChanged, m_lastTime and m_lastTimeout,
+    // which are written by the GUI thread (videoFrameChanged/on_mediaError/reset) and by the
+    // worker thread (extract) concurrently. QImage/QString are not thread-safe.
+    QMutex m_stateMutex;
     qint64 m_lastTimeout;
     qint64 m_lastDuration = -1;
     QTimer m_debouncer;

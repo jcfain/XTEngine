@@ -16,9 +16,20 @@ ThumbExtractor::ThumbExtractor(QObject *parent)
     createMediaPlayer();
     m_debouncer.setSingleShot(true);
     connect(&m_debouncer, &QTimer::timeout, this, [this]() {
-        QThreadPool::globalInstance()->start([this](){
+        // Snapshot the request under the lock and pass it by value to the pool job:
+        // extractDebounce() may be called from any thread.
+        QString file;
+        qint64 time = 0;
+        qint64 timeout = 0;
+        {
+            QMutexLocker locker(&m_stateMutex);
+            file = m_file;
+            time = m_lastTime;
+            timeout = m_lastTimeout;
+        }
+        QThreadPool::globalInstance()->start([this, file, time, timeout](){
             LogHandler::Debug("[ThumbExtractor::m_debouncer] Extract");
-            QImage image = extract(m_file, m_lastTime, m_lastTimeout);
+            QImage image = extract(file, time, timeout);
             if(!image.isNull())
             {
                 emit frameExtracted(image.copy());
@@ -26,8 +37,13 @@ ThumbExtractor::ThumbExtractor(QObject *parent)
             }
             else
             {
-                emit frameExtractionError(m_lastError);
-                m_lastError.clear();
+                QString error;
+                {
+                    QMutexLocker locker(&m_stateMutex);
+                    error = m_lastError;
+                    m_lastError.clear();
+                }
+                emit frameExtractionError(error);
             }
         });
     });
@@ -42,12 +58,15 @@ ThumbExtractor::ThumbExtractor(QObject *parent)
 void ThumbExtractor::extractDebounce(QString file, qint64 time, qint64 timeout)
 {
     LogHandler::Debug("[ThumbExtractor::extractDebounce] at: " + QString::number(time) + " from: "+ file);
-    if(!m_fileChanged)
-        m_fileChanged = m_file != file;
-    if(m_fileChanged)
-        m_file = file;
-    m_lastTime = time;
-    m_lastTimeout = timeout;
+    {
+        QMutexLocker locker(&m_stateMutex);
+        if(!m_fileChanged)
+            m_fileChanged = m_file != file;
+        if(m_fileChanged)
+            m_file = file;
+        m_lastTime = time;
+        m_lastTimeout = timeout;
+    }
     m_debouncer.start(100);
 }
 
@@ -62,32 +81,48 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
 {
     LogHandler::Debug("[ThumbExtractor::extract] at: " + QString::number(time) + " from: "+ file);
     auto currentTime = QTime::currentTime().msecsSinceStartOfDay();
-    m_lastError = "";
-    m_lastImage = QImage();
+    {
+        QMutexLocker locker(&m_stateMutex);
+        m_lastError = "";
+        m_lastImage = QImage();
+    }
     if(file.isNull())
     {
+        QMutexLocker locker(&m_stateMutex);
         m_lastError = "Invalid file path.";
         return QImage();
     }
     if(!QFile::exists(file))
     {
+        QMutexLocker locker(&m_stateMutex);
         m_lastError = "File: "+file+" does not exist.";
         return QImage();
     }
-    if(!m_fileChanged)
-        m_fileChanged = file != m_file;
-    if(m_fileChanged)
-        m_file = file;
-    m_lastTime = time;
-    m_lastTimeout = timeout;
-
-    if(m_fileChanged)
+    bool fileChanged;
+    QString currentFile;
     {
-        LogHandler::Debug("[ThumbExtractor::extract] File changed: " + m_file);
-        QUrl mediaUrl = QUrl::fromLocalFile(m_file);
-        m_mediaPlayer->setSource(mediaUrl);
+        QMutexLocker locker(&m_stateMutex);
+        if(!m_fileChanged)
+            m_fileChanged = file != m_file;
+        if(m_fileChanged)
+            m_file = file;
+        m_lastTime = time;
+        m_lastTimeout = timeout;
+        fileChanged = m_fileChanged;
+        currentFile = m_file;
+    }
+
+    if(fileChanged)
+    {
+        LogHandler::Debug("[ThumbExtractor::extract] File changed: " + currentFile);
+        QUrl mediaUrl = QUrl::fromLocalFile(currentFile);
+        // QMediaPlayer lives on the GUI thread - route the call through a queued signal
+        emit setMediaSource(mediaUrl);
         m_lastDuration = -1;
-        m_fileChanged = false;
+        {
+            QMutexLocker locker(&m_stateMutex);
+            m_fileChanged = false;
+        }
         while(m_mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia)
         {
             if(mediaHasError())
@@ -97,6 +132,7 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
             }
             if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
             {
+                QMutexLocker locker(&m_stateMutex);
                 m_lastError = "Load timeout";
                 return QImage();
             }
@@ -105,6 +141,7 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
     }
     if(!m_mediaPlayer->hasVideo())
     {
+        QMutexLocker locker(&m_stateMutex);
         m_lastError = "No video";
         return QImage();
     }
@@ -130,7 +167,10 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
             m_lastDuration = duration > 0 ? duration : -1;
             if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
             {
-                m_lastError = "Duration load timeout";
+                {
+                    QMutexLocker locker(&m_stateMutex);
+                    m_lastError = "Duration load timeout";
+                }
                 stopAndWait();
                 return QImage();
             }
@@ -146,7 +186,10 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
         // LogHandler::Debug("[ThumbExtractor::extract] Waiting for seek: " + QString::number(m_mediaPlayer->position()));
         if(!m_mediaPlayer->isSeekable())
         {
-            m_lastError = "Cant seek media";
+            {
+                QMutexLocker locker(&m_stateMutex);
+                m_lastError = "Cant seek media";
+            }
             stopAndWait();
             return QImage();
         }
@@ -157,53 +200,70 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
         }
         if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
         {
-            m_lastError = "Seek timeout";
+            {
+                QMutexLocker locker(&m_stateMutex);
+                m_lastError = "Seek timeout";
+            }
             stopAndWait();
             return QImage();
         }
         QThread::msleep(100);
     }
-    m_extracting = true;
+    m_extracting.storeRelease(true);
     currentTime = QTime::currentTime().msecsSinceStartOfDay();
-    while(m_lastImage.isNull())
+    while(true)
     {
+        // Copy the frame under the lock: videoFrameChanged() (GUI thread) may replace
+        // m_lastImage at any moment and QImage is not thread-safe.
+        QImage image;
+        {
+            QMutexLocker locker(&m_stateMutex);
+            if(!m_lastImage.isNull())
+                image = m_lastImage.copy();
+        }
+        if(!image.isNull())
+        {
+            m_extracting.storeRelease(false);
+            stopAndWait();
+            return image;
+        }
         if(mediaHasError())
         {
+            m_extracting.storeRelease(false);
             stopAndWait();
             return QImage();
         }
         if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= timeout)
         {
             LogHandler::Debug("[ThumbExtractor::extractSync] Timeout mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
-            m_lastError = "Image extraction timeout";
-            m_extracting = false;
+            {
+                QMutexLocker locker(&m_stateMutex);
+                m_lastError = "Image extraction timeout";
+            }
+            m_extracting.storeRelease(false);
             stopAndWait();
             return QImage();
         }
         QThread::msleep(100);
     }
-    m_extracting = false;
-//    disconnect(&m_videoSink, &QVideoSink::videoFrameChanged, this, &ThumbExtractor::videoFrameChanged);
-    if(!stopAndWait() || m_lastImage.isNull())
-    {
-        LogHandler::Debug("[ThumbExtractor::extractSync] Race condition: " + QString::number(m_mediaPlayer->mediaStatus()));
-        return QImage();
-    }
-    return m_lastImage.copy();
 }
 
 QString ThumbExtractor::lastError()
 {
+    QMutexLocker locker(&m_stateMutex);
     return m_lastError;
 }
 
 void ThumbExtractor::reset()
 {
-    m_lastImage = QImage();
-    m_extracting = false;
-    m_lastError = "";
+    {
+        QMutexLocker locker(&m_stateMutex);
+        m_lastImage = QImage();
+        m_lastError = "";
+    }
+    m_extracting.storeRelease(false);
     stopAndWait();
-    m_mediaPlayer->setSource(QUrl());
+    emit setMediaSource(QUrl());
     // createMediaPlayer(); Doesnt seem to help much with memory
 }
 
@@ -216,10 +276,15 @@ void ThumbExtractor::createMediaPlayer()
     m_mediaPlayer = new QMediaPlayer(this);
     m_mediaPlayer->setVideoSink(&m_videoSink);
     connect(m_mediaPlayer, &QMediaPlayer::errorOccurred, this, &ThumbExtractor::on_mediaError);
-    connect(this, &ThumbExtractor::startPlaying, m_mediaPlayer, &QMediaPlayer::play);
-    connect(this, &ThumbExtractor::stopPlaying, m_mediaPlayer, &QMediaPlayer::stop);
-    connect(this, &ThumbExtractor::pausePlaying, m_mediaPlayer, &QMediaPlayer::pause);
-    connect(this, &ThumbExtractor::setPosition, m_mediaPlayer, &QMediaPlayer::setPosition);
+    // Explicit Qt::QueuedConnection: these signals are emitted from the worker thread
+    // (extract()) and QMediaPlayer must only be touched from the GUI thread. With the
+    // default AutoConnection both objects have GUI-thread affinity, which would make
+    // these DirectConnections and run the QMediaPlayer slots on the worker thread.
+    connect(this, &ThumbExtractor::startPlaying, m_mediaPlayer, &QMediaPlayer::play, Qt::QueuedConnection);
+    connect(this, &ThumbExtractor::stopPlaying, m_mediaPlayer, &QMediaPlayer::stop, Qt::QueuedConnection);
+    connect(this, &ThumbExtractor::pausePlaying, m_mediaPlayer, &QMediaPlayer::pause, Qt::QueuedConnection);
+    connect(this, &ThumbExtractor::setPosition, m_mediaPlayer, &QMediaPlayer::setPosition, Qt::QueuedConnection);
+    connect(this, &ThumbExtractor::setMediaSource, m_mediaPlayer, &QMediaPlayer::setSource, Qt::QueuedConnection);
     connect(&m_videoSink, &QVideoSink::videoFrameChanged, this, &ThumbExtractor::videoFrameChanged);
     m_mediaFormat = new MediaFormat(m_mediaPlayer, m_mediaPlayer);
 }
@@ -233,6 +298,7 @@ bool ThumbExtractor::stopAndWait()
         if(QTime::currentTime().msecsSinceStartOfDay() - currentTime >= 2000)
         {
             LogHandler::Debug("[ThumbExtractor::extractSync] Timeout media stop: " + QString::number(m_mediaPlayer->playbackState()));
+            QMutexLocker locker(&m_stateMutex);
             m_lastError = tr("Timed out waiting for media to stop");
             return false;
         }
@@ -245,6 +311,7 @@ bool ThumbExtractor::mediaHasError()
 {
     if(m_mediaPlayer->error() != QMediaPlayer::Error::NoError)
     {
+        QMutexLocker locker(&m_stateMutex);
         m_lastError = m_mediaPlayer->errorString();
         return true;
     }
@@ -254,16 +321,22 @@ bool ThumbExtractor::mediaHasError()
 // Private
 void ThumbExtractor::videoFrameChanged(const QVideoFrame &frame)
 {
-    if(m_extracting) {
+    if(m_extracting.loadAcquire()) {
 //        LogHandler::Debug("[ThumbExtractor::videoFrameChanged]: "+ m_file);
         QImage temp = frame.toImage();
         if(!temp.isNull())
+        {
+            // Runs on the GUI thread - m_lastImage is read by the worker thread in
+            // extract(), so the assignment must be synchronized.
+            QMutexLocker locker(&m_stateMutex);
             m_lastImage = temp;
+        }
     }
 }
 
 void ThumbExtractor::on_mediaError(QMediaPlayer::Error error, const QString &errorString)
 {
     LogHandler::Error("[ThumbExtractor::on_mediaError] "+ m_file);
+    QMutexLocker locker(&m_stateMutex);
     m_lastError = errorString;
 }
