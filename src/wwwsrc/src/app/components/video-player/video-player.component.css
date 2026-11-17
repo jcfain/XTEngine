@@ -682,19 +682,19 @@ button.video-control-other:not(:last-child) {
 } */
 
 .video-control--action-script-status {
-    background-color: plum !important;
+    background-color: plum;
  }
 
 .video-control--action-motion {
-    background-color: lightskyblue !important;
+    background-color: lightskyblue;
 }
 
 .video-control--action-begin {
-    background-color: aquamarine !important;
+    background-color: aquamarine;
 }
 
 .video-control--money-shot {
-    background-color: white !important;
+    background-color: white;
 }
 
 button.video-control:hover {

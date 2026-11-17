@@ -17,6 +17,16 @@ export class DeviceConnectionService {
   selectedInputDevice = ConnectionInterface.None;
   selectedOutputDevice = ConnectionInterface.None;
 
+  get selectedInputConnected(): boolean  {
+    return this.getStatus(this.selectedInputDevice) == ConnectionStatus.Connected;
+  }
+  get selectedOutputConnected(): boolean {
+    return this.getStatus(this.selectedOutputDevice) == ConnectionStatus.Connected;
+  }
+  get gamepadConnected(): boolean {
+    return this.getStatus(ConnectionInterface.Gamepad) == ConnectionStatus.Connected;
+  }
+
   constructor(
     private websocketService: WebsocketService,
     private messageHandlerService: MessageHandlerService,
@@ -105,6 +115,8 @@ export class DeviceConnectionService {
   }
 
   getStatus(device: ConnectionInterface): ConnectionStatus | undefined {
+    if(device == ConnectionInterface.None)
+      return ConnectionStatus.Disconnected;
     let status = this.inputDeviceStatus[device];
     if (status == undefined)
       status = this.outputDeviceStatus[device];

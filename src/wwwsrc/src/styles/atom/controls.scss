@@ -7,9 +7,10 @@
 }
 
 .disabled {
-    background-color: lightgray;
-    pointer-events: none;
-    cursor: not-allowed;
+    background-color: lightgray !important;
+    color: rdba(0,0,0,0.4) !important;
+    pointer-events: none !important;
+    cursor: not-allowed !important;
 }
 
 .background-color-caution {

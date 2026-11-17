@@ -145,10 +145,15 @@ export class MediaListItemContextMenuComponent implements OnInit, OnChanges, Aft
     s.position = 'fixed';
     s.zIndex = '1000';
     if (window.matchMedia('(pointer: coarse)').matches) {
+      // Inset 0 (not 100vw/100vh): the host must match the *visible* area
+      // exactly. In full screen the containing block is the full screen
+      // element; on iOS (fake full screen) 100vh is the large viewport,
+      // which extends below the visible browser area and would cut off the
+      // bottom menu rows (with nothing left to scroll to reach them).
       s.top = '0';
       s.left = '0';
-      s.width = '100vw';
-      s.height = '100vh';
+      s.right = '0';
+      s.bottom = '0';
       return;
     }
     const itemEl = this.elementRef.nativeElement.closest('.media-item') || this.elementRef.nativeElement;

@@ -92,22 +92,22 @@
   }
   <div id="bottom-top-controls" class="bottom-top-controls">
     <div class="bottom-top-controls-buttons">
-      <button id="scriptStatusPlayerButton" class="video-control video-control-other video-control--action-script-status" [class.button-down]="scriptStatusOpen" [class.disabled]="inputDeviceConnected" (click)="toggleScriptStatus()">
+      <button id="scriptStatusPlayerButton" class="video-control--action-script-status video-control video-control-other" [class.button-down]="scriptStatusOpen" (click)="toggleScriptStatus()">
         <svg class="player-button-icon">
           <use href="#equalizer"></use>
         </svg>
       </button>
       @if(hasMotionProfiles) {
-        <button id="motionProfilesPlayerButton" class="video-control video-control-other video-control--action-motion" [class.button-down]="motionProfilesOpen" [class.disabled]="inputDeviceConnected" (click)="toggleMotionProfiles()">
+        <button id="motionProfilesPlayerButton" class="video-control--action-motion video-control video-control-other" [class.button-down]="motionProfilesOpen" (click)="toggleMotionProfiles()">
           <svg class="player-button-icon">
             <use href="#motion-profiles"></use>
           </svg>
         </button>
       }
-      <button data-title="Skip to next action (a)" class="video-control video-control-other video-control--action-begin" [class.disabled]="inputDeviceConnected" id="next-action" (click)="onSkipToNextAction()">
+      <button data-title="Skip to next action (a)" class="video-control--action-begin video-control video-control-other" [class.disabled]="!inputDeviceConnected" id="next-action" (click)="onSkipToNextAction()">
         <img class="player-button-icon" src="://images/icons/skipToAction.png" />
       </button>
-      <button data-title="Skip to moneyshot (c)" class="video-control video-control-other video-control--money-shot" id="money-shot" [class.disabled]="inputDeviceConnected" (click)="onSkipToMoneyShot()">
+      <button data-title="Skip to moneyshot (c)" class="video-control--money-shot video-control video-control-other" id="money-shot" [class.disabled]="!inputDeviceConnected" (click)="onSkipToMoneyShot()">
         <img class="player-button-icon" src="://images/icons/skipToMoneyShot.svg" />
       </button>
       <button data-title="TCode device pause toggle" name="devicePauseStatusButton" class="video-control video-control-other" [class.background-color-caution]="!deviceIsPaused" [class.background-color-go]="deviceIsPaused" (click)="togglePauseAllDeviceActions()">

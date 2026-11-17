@@ -69,14 +69,20 @@
 }
 
 /* Touch devices: the portal host is full-screen (see positionMenu), so the
-   menu fills it; keep the rows compact and top-aligned (no stretching) with a
-   comfortable touch height, scrolling if there are many items. */
+   menu fills it; stretch the rows to fill the screen height and use larger
+   text (em scales with the bound fontSize) for comfortable touch targets.
+   If the menu ever grows too many rows for a short screen, switch
+   flex-grow back to 0 to make it a scrollable list instead. */
 @media (pointer: coarse) {
     .media-context-menu {
         border-radius: 0;
+        /* Explicitly allow vertical panning so the menu can scroll by touch
+           if the rows ever overflow a short (e.g. landscape) screen. */
+        touch-action: pan-y;
     }
     .media-context-menu-item {
-        flex-grow: 0;
+        flex-grow: 1;
         min-height: 48px;
+        font-size: 1.5em;
     }
 }
