@@ -109,6 +109,12 @@
     text-align: left;
     align-items: stretch;
     background-color: var(--media-item-background);
+    /* Suppress the browser's built-in long-press callout / text selection
+       menu on touch devices (Android + iOS) so a tap-and-hold opens the
+       item's own context menu instead (see onItemTouchStart). */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .media-item:hover {

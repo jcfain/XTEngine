@@ -23,10 +23,14 @@
     border-radius: 25px;
     width: 860px;
     height: 500px;
+    max-width: 95vw;
+    max-height: calc(100dvh - 3rem);
     overflow: hidden;
 }
 
-@media (max-width: 768px) {
+/* Applies to portrait phones (narrow) and landscape phones (short),
+   so the dialog never overflows the viewport in either orientation. */
+@media (max-width: 768px), (max-height: 500px) {
     .properties-modal-content {
         width: 95vw;
         height: calc(100vh - 3rem);

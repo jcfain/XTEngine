@@ -123,6 +123,18 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
   // Local setting: animate GIF/WebP thumbs only on hover (default) or always.
   private animateGifsOnHover = true;
 
+  // Long-press opens the item's context menu on touch devices - the touch
+  // equivalent of desktop right-click. The browser's built-in long-press
+  // callout is suppressed by CSS on .media-item (see -webkit-touch-callout).
+  private static readonly LONG_PRESS_MS = 500;
+  private static readonly LONG_PRESS_SLOP_PX = 10;
+  private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  private longPressStartX = 0;
+  private longPressStartY = 0;
+  // Set when the long-press fires: the gesture ends with a synthetic click
+  // (and a contextmenu event) that must not be treated as a tap / right-click.
+  private lastLongPressTime = 0;
+
   // private mediaItemHeaderMultiplier: number = 0.15;
   // private mediaItemHeaderIconMultiplier: number = 0.10;
 
@@ -256,10 +268,21 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
 
 
   ngOnDestroy(): void {
+    if (this.longPressTimer !== null) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
     this.subscriptions.unsubscribe();
   }
 
-  onItemClick(item: MediaItem): void {
+  onItemClick(event: Event, item: MediaItem): void {
+    // A long-press ends with a synthetic click - ignore it and stop it from
+    // reaching the document-level handler that would close the context menu
+    // the long-press just opened.
+    if (Date.now() - this.lastLongPressTime < MediaListItemComponent.LONG_PRESS_MS) {
+      event.stopPropagation();
+      return;
+    }
     this.click.emit(item);
   }
 
@@ -391,6 +414,61 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
     } else {
       this.mediaListService.openContextMenu(this.item.id);
     }
+  }
+
+  // Long-press gesture: a single touch held still for LONG_PRESS_MS opens the
+  // context menu. NOT preventDefault() on touchstart so scrolling and the
+  // browser's system gestures (e.g. Android edge swipes) keep working.
+  onItemTouchStart(event: TouchEvent): void {
+    if (event.touches.length !== 1) {
+      return;
+    }
+    this.longPressStartX = event.touches[0].clientX;
+    this.longPressStartY = event.touches[0].clientY;
+    if (this.longPressTimer !== null) {
+      clearTimeout(this.longPressTimer);
+    }
+    this.longPressTimer = setTimeout(() => {
+      this.longPressTimer = null;
+      this.lastLongPressTime = Date.now();
+      // Haptic feedback (Android only, no-op elsewhere).
+      navigator.vibrate?.(10);
+      if (!this.mediaListService.isContextMenuOpen(this.item.id)) {
+        this.mediaListService.openContextMenu(this.item.id);
+      }
+    }, MediaListItemComponent.LONG_PRESS_MS);
+  }
+
+  onItemTouchMove(event: TouchEvent): void {
+    if (this.longPressTimer === null || event.touches.length !== 1) {
+      return;
+    }
+    const dx = event.touches[0].clientX - this.longPressStartX;
+    const dy = event.touches[0].clientY - this.longPressStartY;
+    if (Math.hypot(dx, dy) > MediaListItemComponent.LONG_PRESS_SLOP_PX) {
+      // The finger moved - it's a scroll, not a long-press.
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+  }
+
+  onItemTouchEnd(): void {
+    if (this.longPressTimer !== null) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+  }
+
+  onItemContextMenu(event: MouseEvent): void {
+    // Suppress the browser's system context menu (fires on desktop right-click
+    // and after a long-press on touch devices).
+    event.preventDefault();
+    // Android fires contextmenu right after a long-press; the touch timer
+    // already handled it, so ignore the event here.
+    if (Date.now() - this.lastLongPressTime < MediaListItemComponent.LONG_PRESS_MS) {
+      return;
+    }
+    this.toggleContextMenu();
   }
 
   // Opens the media properties dialog on the Tags tab for this item - the

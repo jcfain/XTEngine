@@ -2,9 +2,14 @@
   [style.width]="widthPX"
   [style.height]="heightPX"
   [class]="getItemClass(item)"
-  (click)="onItemClick(item)"
+  (click)="onItemClick($event, item)"
   (mouseenter)="onThumbMouseEnter()"
-  (mouseleave)="onThumbMouseLeave()">
+  (mouseleave)="onThumbMouseLeave()"
+  (touchstart)="onItemTouchStart($event)"
+  (touchmove)="onItemTouchMove($event)"
+  (touchend)="onItemTouchEnd()"
+  (touchcancel)="onItemTouchEnd()"
+  (contextmenu)="onItemContextMenu($event)">
   <app-media-list-item-context-menu 
     [item]="item"
     [fontSize]="fontSize"

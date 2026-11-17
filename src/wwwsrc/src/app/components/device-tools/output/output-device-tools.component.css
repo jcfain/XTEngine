@@ -1,3 +1,31 @@
+/* Lay the buttons out as flex items of the host element instead of inline
+   boxes. As inline boxes, the whitespace between the buttons in the template
+   becomes collapsed spaces whose width depends on font metrics, and the
+   automatic min-size of this element (a flex item of .toolBarGroup with
+   min-width: auto) is computed differently by Blink and Gecko for inline
+   content - so the group wrapped in Firefox on narrow screens while
+   overflowing (appearing unwrapped) in Chromium. Flex layout is deterministic
+   in both engines, and whitespace-only text nodes between flex items do not
+   generate boxes. */
+:host {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* On narrow screens the footer section (33% of the viewport) is only
+   ~119px wide at a 360px viewport, while the three 34px buttons plus
+   3x8px margins need 126px - right at the container edge, where
+   sub-pixel rounding of the 33% basis decides (differently per engine)
+   whether the row wraps. Tighten the spacing on mobile so the row fits
+   with room to spare (114px), keeping the layout deterministic in both
+   Blink and Gecko. */
+@media (max-width: 600px) {
+    :host .icon-button--group {
+        margin-right: 4px;
+    }
+}
+
 .device-status-disconnected {
     background-color: crimson;
     color: black;
