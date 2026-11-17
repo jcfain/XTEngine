@@ -1,0 +1,35 @@
+@if (selectedInputDevice !== undefined && selectedInputDevice !== ConnectionInterface.None) {
+    <button [title]="getStatusTitle()"
+        name="inputDeviceStatusButton"
+        class="icon-button icon-button--group"
+        [class.device-status-disconnected]="isDeviceDisconnected()"
+        [class.device-status-connected]="isDeviceConnected()"
+        [class.device-status-error]="isDeviceError()"
+        [class.device-status-connecting]="isDeviceConnecting()"
+        (click)="inputDeviceConnectRetry()">
+        <svg class="buttonImage" name="inputConnectionStatusIconImage">
+            @if (isDeviceConnected()) {
+                <use href="#check"></use>
+            } @else if (isDeviceConnecting()) {
+                <use href="#reload"></use>
+            } @else if (isDeviceError()) {
+                <use href="#error"></use>
+            } @else {
+                <use href="#x"></use>
+            }
+        </svg>
+    </button>
+}
+@if (isGamepadActive()) {
+    <button [title]="getGamepadStatusTitle()"
+        name="gamepadStatusButton"
+        class="icon-button icon-button--group gamepad-status"
+        [class.device-status-disconnected]="isGamepadDisconnected()"
+        [class.device-status-connected]="isGamepadConnected()"
+        [class.device-status-error]="isGamepadError()"
+        [class.device-status-connecting]="isGamepadConnecting()">
+        <svg class="buttonImage" name="gamepadStatusIconImage">
+            <use href="#gamepad"></use>
+        </svg>
+    </button>
+}

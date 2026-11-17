@@ -1,16 +1,18 @@
+@if (progressMessage) {
+    <div class="status-output-bar">
+        <label id="statusOutputLabel" for="statusOutput">{{ progressValue | number: '1.0-0' }}% {{ progressMessage }}</label>
+        <progress id="statusOutput" class="progress-status" [value]="progressValue" min="0" max="100"></progress>
+    </div>
+}
 <div class="footer">
-    <div class="footerSection headerActionSection toolBar">
+    <div class="footerSection toolBar">
         <div class="toolBarGroup toolBarGroupStart">
             <output-device-tools></output-device-tools>
         </div>
     </div>
-    <div id="progressSection" class="footerSection toolBar">
+    <div class="footerSection toolBar">
         <div class="toolBarGroup toolBarGroupEnd">
-            <!-- <div id="statusOutput"></div> -->
-             @if(progressMessage) {
-                <label id="statusOutputLabel" for="statusOutput" style="font-size: 0.7rem;">{{ progressValue | number: '1.0-0'  }}% {{ progressMessage }}</label>
-                <progress id="statusOutput" class="progress-status" [value]="progressValue" min="0" max="100"></progress>
-             }
+            <input-device-tools></input-device-tools>
         </div>
     </div>
 </div>

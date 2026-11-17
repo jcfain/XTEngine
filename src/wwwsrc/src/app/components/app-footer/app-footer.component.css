@@ -10,8 +10,32 @@
     flex-basis: 33%;
 }
 
+/* Backend/long process progress, centred above the footer toolbar.
+   Spans 50vw on desktop and mobile landscape, 75vw on mobile portrait. */
+.status-output-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 50vw;
+    margin: 0 auto;
+}
+
+@media (orientation: portrait) {
+    .status-output-bar {
+        width: 75vw;
+    }
+}
+
+.status-output-bar label {
+    font-size: 0.7rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .progress-status {
     height: 10px;
-    position: inherit;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
 }

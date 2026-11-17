@@ -1,0 +1,33 @@
+/* Lay the buttons out as flex items of the host element (same
+   rationale as the output device tools: flex layout is deterministic across
+   Blink and Gecko where inline boxes are not). */
+:host {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.device-status-disconnected {
+    background-color: crimson;
+    color: black;
+    cursor: pointer;
+}
+.device-status-connecting {
+    background-color: yellow;
+    color: black;
+}
+.device-status-connected {
+    background-color: chartreuse;
+    color: black;
+}
+.device-status-error {
+    background-color: red;
+    color: black;
+    cursor: pointer;
+}
+
+/* The gamepad button is a visible status only - clicking it does nothing,
+   so it gets a default cursor (overrides the pointer cursor above). */
+.gamepad-status {
+    cursor: default;
+}
