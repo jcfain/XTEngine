@@ -27,6 +27,25 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
   filtertextChanged: Subject < string > = new Subject < string > (); 
   currentShow: ShowMode = this.localSettingsService.showDefault;
   currentSort: SortMode = this.localSettingsService.sortDefault;
+  // Pill drawer options - same values/labels as the old settings tab selects.
+  // Single selection: clicking a pill sets the mode, the active one is highlighted.
+  sortOptions = [
+    { value: SortMode.Name, label: 'Name (asc)' },
+    { value: SortMode.NameDesc, label: 'Name (desc)' },
+    { value: SortMode.Date, label: 'Date (asc)' },
+    { value: SortMode.DateDesc, label: 'Date (desc)' },
+    { value: SortMode.DateAdded, label: 'Added (asc)' },
+    { value: SortMode.DateAddedDesc, label: 'Added (desc)' },
+    { value: SortMode.Random, label: 'Random' }
+  ];
+  showOptions = [
+    { value: ShowMode.All, label: 'All' },
+    { value: ShowMode.ThreeD, label: '3D only' },
+    { value: ShowMode.TwoD, label: '2D and audio only' }
+  ];
+  currentThumbSize: number = this.localSettingsService.thumbSizeDefault;
+  // 50-500px in 25px steps, same range as the old settings tab select.
+  thumbSizeOptions: number[] = Array.from({ length: 20 }, (_, i) => 50 + i * 25);
   randomMode = false;
 
   // private nonRandomSort: SortMode = this.localSettingsService.sortDefault;
@@ -96,6 +115,9 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
   }
 
   tagInputHidden: boolean = true;
+  sortInputHidden: boolean = true;
+  showInputHidden: boolean = true;
+  thumbSizeInputHidden: boolean = true;
   tcodeActionsInputHidden: boolean = true;
   scriptInputHidden: boolean = true;
   tagFilterText: string = '';
@@ -131,6 +153,9 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
     this.subscriptions.add(this.localSettingsService.sort$.subscribe(s => {
       this.currentSort = s;
     }));
+    this.subscriptions.add(this.localSettingsService.thumbSize$.subscribe(s => {
+      this.currentThumbSize = s;
+    }));
     this.subscriptions.add(this.localSettingsService.selectedTags$.subscribe(s => {
       this.selectedTags = s;
     }));
@@ -162,6 +187,10 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
 
   onSortChange(value: SortMode): void {
     this.localSettingsService.setSort(value);
+  }
+
+  onThumbSizeChange(value: number): void {
+    this.localSettingsService.setThumbSize(value);
   }
 
   randomize() {

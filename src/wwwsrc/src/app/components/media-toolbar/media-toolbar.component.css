@@ -132,6 +132,14 @@
     box-sizing: border-box;
 }
 
+/* Sort / show drawer content: same chrome as the tag drawer, but the pill
+   lists are short (7 / 3 items) so no scroll cap is needed. */
+.pill-drawer-content {
+    padding: 12px 16px;
+    border-bottom: 1px solid #333;
+    box-sizing: border-box;
+}
+
 .tag-filter-header {
     display: flex;
     align-items: center;

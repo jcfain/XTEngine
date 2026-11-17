@@ -24,6 +24,15 @@
         <span class="button-badge">{{ activeFilterCount }}</span>
       </button>
     }
+    <button id="thumbSizeButton" title="Thumbnail size" class="thumb-size-button icon-button icon-button--dark" [class.button-down]="!thumbSizeInputHidden" (click)="thumbSizeInputHidden = !thumbSizeInputHidden">
+      <svg class="buttonImage"><use href="#grid"></use></svg>
+    </button>
+    <button id="sortButton" title="Sort media" class="sort-media-button icon-button icon-button--dark" [class.button-down]="!sortInputHidden" (click)="sortInputHidden = !sortInputHidden">
+      <svg class="buttonImage"><use href="#sort"></use></svg>
+    </button>
+    <button id="showButton" title="Show mode" class="show-media-button icon-button icon-button--dark" [class.button-down]="!showInputHidden" (click)="showInputHidden = !showInputHidden">
+      <svg class="buttonImage"><use href="#eye"></use></svg>
+    </button>
     <button id="tagButton" title="Filter tags" class="tag-media-button icon-button icon-button--dark" [class.button-down]="!tagInputHidden" (click)="tagInputHidden = !tagInputHidden">
       <svg class="buttonImage"><use href="#tag"></use></svg>
     </button>
@@ -77,6 +86,51 @@
         @if (!filteredTags.length) {
           <div class="list-empty">No tags match your filter.</div>
         }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sort drawer: single selection, mirrors the old settings tab sort select -->
+<div class="toolbar-drawer" [class.open]="!sortInputHidden">
+  <div class="drawer-inner">
+    <div class="pill-drawer-content">
+      <div class="pill-scroll">
+        <div class="pill-grid">
+          @for (option of sortOptions; track option.value) {
+            <button class="button--pill" [class.button--pill--active]="currentSort === option.value" (click)="onSortChange(option.value)">{{ option.label }}</button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Show drawer: single selection, mirrors the old settings tab show select -->
+<div class="toolbar-drawer" [class.open]="!showInputHidden">
+  <div class="drawer-inner">
+    <div class="pill-drawer-content">
+      <div class="pill-scroll">
+        <div class="pill-grid">
+          @for (option of showOptions; track option.value) {
+            <button class="button--pill" [class.button--pill--active]="currentShow === option.value" (click)="onShowChange(option.value)">{{ option.label }}</button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Thumb size drawer: single selection, mirrors the old settings tab thumb size select -->
+<div class="toolbar-drawer" [class.open]="!thumbSizeInputHidden">
+  <div class="drawer-inner">
+    <div class="pill-drawer-content">
+      <div class="pill-scroll">
+        <div class="pill-grid">
+          @for (size of thumbSizeOptions; track size) {
+            <button class="button--pill" [class.button--pill--active]="currentThumbSize === size" (click)="onThumbSizeChange(size)">{{ size }}px</button>
+          }
+        </div>
       </div>
     </div>
   </div>
