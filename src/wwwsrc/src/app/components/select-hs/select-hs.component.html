@@ -1,0 +1,7 @@
+<select [attr.id]="userAgentIsHereSphere ? null : id" [disabled]="disabled"
+    [class.hidden]="userAgentIsHereSphere" [ngModel]="value" (ngModelChange)="onNativeChange($event)">
+    <ng-content></ng-content>
+</select>
+@if (userAgentIsHereSphere) {
+    <button [id]="id" [disabled]="disabled" (click)="openSelectDialog()">{{ selectedLabel }}</button>
+}

@@ -2,14 +2,12 @@ import { Component, OnInit, ChangeDetectionStrategy, Input } from '@angular/core
 import { FormsModule } from '@angular/forms';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { SpeechSynthesisService } from '../../services/speech-synthesis.service';
-import { GenericOverlayService } from '../../services/overlay.service';
 import { ShowMode, SortMode } from '../../models/enums';
-import { SelectDialogComponent } from '../select-dialog/select-dialog.component';
-import { AppStateService } from '../../services/app-state.service';
+import { SelectHsComponent } from '../select-hs/select-hs.component';
 
 @Component({
     selector: 'app-settings-local-tab',
-    imports: [FormsModule],
+    imports: [FormsModule, SelectHsComponent],
     templateUrl: './settings-local-tab.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './settings-local-tab.component.css'
@@ -80,7 +78,6 @@ export class SettingsLocalTabComponent implements OnInit {
     disableFullScreenMediaList = false;
     disableHeatmap = false;
     animateGifsOnHover = true;
-    userAgentIsHereSphere = false;
 
     // Text to speech
     enableTextToSpeech = true;
@@ -92,10 +89,8 @@ export class SettingsLocalTabComponent implements OnInit {
     speechVolume = 0.5;
 
     constructor(
-        private appState: AppStateService,
         private localSettings: LocalSettingsService,
-        private speechSynthesis: SpeechSynthesisService,
-        private overlayService: GenericOverlayService
+        private speechSynthesis: SpeechSynthesisService
     ) {}
 
     ngOnInit(): void {
@@ -111,71 +106,8 @@ export class SettingsLocalTabComponent implements OnInit {
         this.localSettings.disableHeatmap$.subscribe(v => this.disableHeatmap = v);
         this.localSettings.animateGifsOnHover$.subscribe(v => this.animateGifsOnHover = v);
         this.localSettings.theme$.subscribe(v => this._theme = v);
-        this.userAgentIsHereSphere = this.appState.userAgentIsHereSphere;
 
         this.setupTextToSpeech();
-    }
-
-    showModeLabel(): string {
-        const mode = this.showModes.find(m => m.mode === this.showMode);
-        return mode ? mode.label : '';
-    }
-
-    sortModeLabel(): string {
-        const mode = this.sortModes.find(m => m.mode === this.sortMode);
-        return mode ? mode.label : '';
-    }
-
-    openShowSelect(): void {
-        this.overlayService.open('localShowSelect', SelectDialogComponent, {
-            titleText: 'Show',
-            message: 'Select what to show',
-            options: this.showModes.map(m => ({ value: m.mode, label: m.label })),
-            selectedValue: this.showMode,
-            onAccept: (value: ShowMode) => this.showMode = value,
-            onClose: () => this.overlayService.close('localShowSelect')
-        }, true);
-    }
-
-    openSortSelect(): void {
-        this.overlayService.open('localSortSelect', SelectDialogComponent, {
-            titleText: 'Sort by',
-            message: 'Select sort order',
-            options: this.sortModes.map(m => ({ value: m.mode, label: m.label })),
-            selectedValue: this.sortMode,
-            onAccept: (value: SortMode) => this.sortMode = value,
-            onClose: () => this.overlayService.close('localSortSelect')
-        }, true);
-    }
-
-    openThumbSizeSelect(): void {
-        this.overlayService.open('localThumbSizeSelect', SelectDialogComponent, {
-            titleText: 'Thumb size',
-            message: 'Select thumb size',
-            options: this.thumbSizes.map(size => ({ value: size, label: size + 'px' })),
-            selectedValue: this.thumbSize,
-            onAccept: (value: number) => this.thumbSize = value,
-            onClose: () => this.overlayService.close('localThumbSizeSelect')
-        }, true);
-    }
-
-    themeLabel(): string {
-        // this.theme is stored lowercase; the display names are capitalized.
-        const theme = this.themes.find(t => t.toLowerCase() === this.theme);
-        return theme ?? '';
-    }
-
-    openThemeSelect(): void {
-        this.overlayService.open('localThemeSelect', SelectDialogComponent, {
-            titleText: 'Theme',
-            message: 'Select the app theme',
-            // Values are lowercase (they map to the data-theme attribute);
-            // labels are the capitalized display names.
-            options: this.themes.map(t => ({ value: t.toLowerCase(), label: t })),
-            selectedValue: this.theme,
-            onAccept: (value: string) => this.theme = value,
-            onClose: () => this.overlayService.close('localThemeSelect')
-        }, true);
     }
 
     onExternalStreamingChange(checked: boolean): void {
@@ -255,25 +187,5 @@ export class SettingsLocalTabComponent implements OnInit {
     private disableTextToSpeech(message?: string): void {
         this.enableTextToSpeech = false;
         this.localSettings.setEnableTextToSpeech(false);
-    }
-
-    voiceLabel(): string {
-        const voices = this.systemVoices;
-        if (voices.length > 0 && voices[this.selectedVoiceIndex]) {
-            const voice = voices[this.selectedVoiceIndex];
-            return voice.label;
-        }
-        return 'Default';
-    }
-
-    openVoiceSelect(): void {
-        this.overlayService.open('localVoiceSelect', SelectDialogComponent, {
-            titleText: 'Voice',
-            message: 'Select a voice',
-            options: this.systemVoices,
-            selectedValue: this.selectedVoiceIndex,
-            onAccept: (value: number) => this.onVoiceSelectChange(value),
-            onClose: () => this.overlayService.close('localVoiceSelect')
-        }, true);
     }
 }

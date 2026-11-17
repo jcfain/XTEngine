@@ -1,0 +1,49 @@
+/* The host is a layout-transparent wrapper: with display: contents the inner
+   button/select takes the host's place in the parent grid/flex layout, so the
+   existing control styling (widths, flex sizing, theming) applies exactly as
+   it did to a native select. (:host is required - a plain element selector
+   here would be scoped to the component and never match the host element.) */
+:host {
+    display: contents;
+}
+
+/* HereSphere button: mimic the native select's appearance so the control
+   looks identical in both branches - full width, left-aligned text, and a
+   down chevron where the native dropdown arrow would be. */
+button {
+    position: relative;
+    width: 100%;
+    flex: 1 1 0;
+    min-width: 0;
+    box-sizing: border-box;
+    min-height: var(--control-height);
+    padding: var(--control-padding);
+    padding-right: 36px; /* leave room for the chevron */
+    font-size: var(--font-size-control);
+    text-align: start;
+    border: 1px solid var(--control-border-color);
+    border-radius: var(--control-border-radius);
+    background-color: var(--control-background);
+    color: var(--control-text-color);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+    background-color: var(--control-hover-background);
+}
+
+/* Down chevron drawn with borders so it picks up the theme's text color
+   (an SVG data URI can't use CSS variables / currentColor). */
+button::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid var(--control-text-color);
+    border-bottom: 2px solid var(--control-text-color);
+    transform: translateY(-60%) rotate(45deg);
+    pointer-events: none;
+}

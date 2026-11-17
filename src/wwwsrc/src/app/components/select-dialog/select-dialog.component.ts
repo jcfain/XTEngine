@@ -25,7 +25,7 @@ export interface SelectDialogData {
 })
 export class SelectDialogComponent {
     titleText = 'Select';
-    message = 'Select value';
+    message = '';
     options: SelectDialogOption[] = [];
     selected: any = null;
 

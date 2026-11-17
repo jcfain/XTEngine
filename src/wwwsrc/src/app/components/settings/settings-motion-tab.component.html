@@ -12,19 +12,13 @@
         </div>
     </div>
     <div class="formElement">
-        @if (userAgentIsHereSphere) {
-            <label for="profileNamesSelect">Select Profile</label>
-            <button id="profileNamesSelect" (click)="openProfileSelect()">{{ selectedProfile }}</button>
-        } @else {
-            <label for="profileNamesSelect">Select Profile</label>
-            <select id="profileNamesSelect" title="Change the loaded motion profile"
-                [(ngModel)]="selectedProfile"
-                (ngModelChange)="onProfileChange(selectedProfile)">
-                @for (profile of profiles; track profile) {
-                    <option [value]="profile">{{ profile }}</option>
-                }
-            </select>
-        }
+        <label for="profileNamesSelect">Select Profile</label>
+        <select-hs id="profileNamesSelect" title="Change the loaded motion profile"
+            [(ngModel)]="selectedProfile" (ngModelChange)="onProfileChange(selectedProfile)">
+            @for (profile of profiles; track profile) {
+                <option [value]="profile">{{ profile }}</option>
+            }
+        </select-hs>
     </div>
     <div class="tab-content-header">
         <div class="tab-content-header-main">Range Limits</div>
@@ -77,18 +71,12 @@
                     <input type="checkbox" [title]="linkToHelpText"
                         [(ngModel)]="channel.linkToRelatedMFS" [disabled]="!multiplierEnabled"
                         (ngModelChange)="onChannelChange(channel)" />
-                    @if (userAgentIsHereSphere) {
-                        <button [title]="linkToHelpText" [disabled]="!multiplierEnabled"
-                            (click)="openRelatedChannelSelect(channel)">{{ relatedChannelName(channel) }}</button>
-                    } @else {
-                        <select [title]="linkToHelpText"
-                            [(ngModel)]="channel.relatedChannel" [disabled]="!multiplierEnabled"
-                            (ngModelChange)="onChannelChange(channel)">
-                            @for (option of relatedChannelOptions(channel); track option.axisName) {
-                                <option [value]="option.axisName">{{ option.friendlyName }}</option>
-                            }
-                        </select>
-                    }
+                    <select-hs [title]="linkToHelpText" [disabled]="!multiplierEnabled"
+                        [(ngModel)]="channel.relatedChannel" (ngModelChange)="onChannelChange(channel)">
+                        @for (option of relatedChannelOptions(channel); track option.axisName) {
+                            <option [value]="option.axisName">{{ option.friendlyName }}</option>
+                        }
+                    </select-hs>
                     <input type="checkbox" [title]="linkInvertedHelpText"
                         [(ngModel)]="channel.linkedInverted" [disabled]="!multiplierEnabled"
                         (ngModelChange)="onChannelChange(channel)" />

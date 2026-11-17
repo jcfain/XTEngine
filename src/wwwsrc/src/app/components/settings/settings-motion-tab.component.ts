@@ -1,13 +1,13 @@
 import { Component, OnInit, ChangeDetectionStrategy, Output, EventEmitter, Input } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { AppStateService } from '../../services/app-state.service';
 import { ServerService } from '../../services/server.service';
 import { GenericOverlayService } from '../../services/overlay.service';
 import { ChannelModel } from '../../models/interfaces';
 import { ChannelType, Track } from '../../models/enums';
 import { round } from '../../utils/utils';
 import { RangeSliderComponent, RangeValue } from '../range-slider/range-slider.component';
+import { SelectHsComponent } from '../select-hs/select-hs.component';
 import { SelectDialogComponent } from '../select-dialog/select-dialog.component';
 import { GetTextDialogComponent } from '../get-text-dialog/get-text-dialog.component';
 import { AlertComponent } from '../alert-model/alert.component';
@@ -21,7 +21,7 @@ interface ChannelRange {
 
 @Component({
     selector: 'app-settings-motion-tab',
-    imports: [FormsModule, RangeSliderComponent],
+    imports: [FormsModule, RangeSliderComponent, SelectHsComponent],
     templateUrl: './settings-motion-tab.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './settings-motion-tab.component.css'
@@ -38,10 +38,7 @@ export class SettingsMotionTabComponent implements OnInit {
 
     multiplierEnabled = false;
     channels: ChannelModel[] = [];
-    userAgentIsHereSphere = false;
 
-    private profileSelectNameID = 'motionProfileSelect';
-    private relatedChannelSelectNameID = 'motionRelatedChannelSelect';
     private addProfileTextNameID = 'motionAddProfileText';
     private copyToProfileTextNameID = 'motionCopyToProfileText';
     private copyFromProfileSelectNameID = 'motionCopyFromProfileSelect';
@@ -58,12 +55,10 @@ export class SettingsMotionTabComponent implements OnInit {
     private rangeDebounceTimeout = 1000;
 
     constructor(
-        private appState: AppStateService,
         private serverService: ServerService,
         private websocketService: WebsocketService,
         private overlayService: GenericOverlayService
     ) {
-        this.userAgentIsHereSphere = this.appState.userAgentIsHereSphere;
     }
 
     private relatedOptionsCache: Map<string, ChannelModel[]> = new Map();
@@ -87,22 +82,8 @@ export class SettingsMotionTabComponent implements OnInit {
     }
 
     onProfileChange(profile: string): void {
+        this.serverService.setSelectedChannelProfile(profile);
         this.websocketService.setSelectedProfile(profile);
-    }
-
-    openProfileSelect(): void {
-        this.overlayService.open(this.profileSelectNameID, SelectDialogComponent, {
-            titleText: 'Channel profile',
-            message: 'Select a channel profile',
-            options: this.profiles.map(p => ({ value: p, label: p })),
-            selectedValue: this.selectedProfile,
-            onAccept: (value: string) => { 
-                this.selectedProfile = value;
-                this.serverService.setSelectedChannelProfile(value);
-                this.onProfileChange(value);
-            },
-            onClose: () => this.overlayService.close(this.profileSelectNameID)
-        }, true);
     }
 
     onAddProfile(): void {
@@ -209,25 +190,6 @@ export class SettingsMotionTabComponent implements OnInit {
             this.relatedOptionsCache.set(key, this.allChannels.filter(c => c.channel !== key));
         }
         return this.relatedOptionsCache.get(key)!;
-    }
-
-    relatedChannelName(channel: ChannelModel): string {
-        const related = this.channels.find(x => x.axisName === channel.relatedChannel);
-        return related ? related.friendlyName : '';
-    }
-
-    openRelatedChannelSelect(channel: ChannelModel): void {
-        this.overlayService.open(this.relatedChannelSelectNameID, SelectDialogComponent, {
-            titleText: 'Link channel to',
-            message: 'Select channel',
-            options: this.relatedChannelOptions(channel).map(c => ({ value: c.axisName, label: c.friendlyName })),
-            selectedValue: channel.relatedChannel,
-            onAccept: (value: string) => {
-                channel.relatedChannel = value;
-                this.onDirty.emit();
-            },
-            onClose: () => this.overlayService.close(this.relatedChannelSelectNameID)
-        }, true);
     }
 
     onChannelChange(channel: ChannelModel): void {

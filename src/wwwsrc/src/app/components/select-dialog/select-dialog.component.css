@@ -1,9 +1,15 @@
-/* The global .formElement .radio-group--select-model rule makes this a flex
-   column, but its rows are left-aligned at the edge of the 75% control
-   column, which looks off-centre in the narrow dialog. Centre each radio +
-   label row, and align the radio with its text. */
+/* Size the dialog to its content (the longest option label) instead of the
+   fixed 30vw text-modal width, with a conservative cap so long labels wrap
+   instead of stretching the dialog. */
+.x-modal-content {
+    width: fit-content;
+    max-width: 400px;
+}
+
+/* Left-align each radio + label row so the radios line up with each other
+   (the global rule centres them within the 75% control column). */
 .radio-group--select-model {
-    align-items: center;
+    align-items: flex-start;
 }
 
 .radio-group--select-model label {

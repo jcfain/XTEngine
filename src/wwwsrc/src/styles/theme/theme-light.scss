@@ -90,7 +90,7 @@
     /* Media item state colors - the bright dark-theme values (yellow,
        chartreuse, cyan, lightgrey...) are unreadable on a light background,
        so each gets a darker light-mode counterpart. */
-    --media-list-overlay-background: rgba(255,255,255,0.7);
+    --media-list-overlay-background: rgba(255,255,255,0.2);
     --media-item-background: rgba(0,0,0,0.25);
     --media-item-hover-color: mediumorchid;
     --media-item-noscript-color: grey;

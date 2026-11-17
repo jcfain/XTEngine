@@ -86,7 +86,7 @@ export class LocalSettingsService {
     private animateGifsOnHoverSubject = new BehaviorSubject<boolean>(this.animateGifsOnHoverDefault);
     animateGifsOnHover$: Observable<boolean> = this.animateGifsOnHoverSubject.asObservable();
 
-    readonly enableTextToSpeechDefault = true;
+    readonly enableTextToSpeechDefault = false;
     private enableTextToSpeechKey = "enableTextToSpeech";
     private enableTextToSpeechSubject = new BehaviorSubject<boolean>(this.enableTextToSpeechDefault);
     enableTextToSpeech$: Observable<boolean> = this.enableTextToSpeechSubject.asObservable();
