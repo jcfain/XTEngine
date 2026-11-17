@@ -89,7 +89,7 @@ export class SettingsMotionTabComponent implements OnInit {
     onAddProfile(): void {
         this.overlayService.open(this.addProfileTextNameID, GetTextDialogComponent, {
             titleText: 'Add new profile',
-            message: 'Enter the name of the new profile',
+            message: 'Name',
             onAccept: (value: string) => {
                 if (value) {
                     this.websocketService.addChannelProfile(value);
@@ -119,7 +119,7 @@ export class SettingsMotionTabComponent implements OnInit {
     onCopyToProfile(): void {
         this.overlayService.open(this.copyToProfileTextNameID, GetTextDialogComponent, {
             titleText: 'Copy profile to new',
-            message: 'Enter the name of the new profile',
+            message: 'Name',
             onAccept: (value: string) => {
                 if (value) {
                     this.websocketService.cloneChannelProfile(this.selectedProfile, value);

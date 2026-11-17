@@ -166,12 +166,14 @@
     white-space: nowrap;
 }
 
-/* Compact the toolbar on small / mobile screens. The search box shrinks to
-   fit but stays on the same line as the buttons. */
+/* Compact the toolbar on small / mobile screens. The right group unwraps:
+   its icon buttons join the logo row (pushed to the right edge) and the
+   search box drops to its own full-width row. */
 @media (max-width: 640px) {
     .media-toolbar {
         padding: 6px 8px;
         gap: 4px;
+        flex-wrap: wrap;
     }
 
     .toolbar-left {
@@ -182,13 +184,21 @@
         height: 22px;
     }
 
+    /* Dissolve the wrapper so its children become direct flex items of the
+       toolbar row - this is what lets the search box span the full width. */
     .toolbar-right {
-        gap: 4px;
+        display: contents;
+    }
+
+    /* .toolbar-right's margin-left: auto disappears with display: contents,
+       so the first (always-present) button pushes the icon row to the right. */
+    #shuffleButton {
+        margin-left: auto;
     }
 
     .toolbar-search {
-        flex-basis: 120px;
-        min-width: 60px;
+        flex: 1 1 100%;
+        max-width: none;
         padding-left: 10px;
     }
 
