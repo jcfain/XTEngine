@@ -11,7 +11,15 @@
 #     ../run_tests.sh
 # Windows / Qt Creator: open this .pro as a project and run.
 
-QT += core gui concurrent testlib
+# settingshandler.cpp includes mediaformat.h (QMediaPlayer), so the
+# multimedia module is required at compile/link time even though the tests
+# never create media objects. Qt6Network (a multimedia dependency) carries
+# undefined gssapi symbols that are not installed on minimal systems; the
+# tests never exercise network code, so allow them to stay unresolved.
+QT += core gui concurrent testlib multimedia
+QMAKE_LFLAGS += -Wl,--allow-shlib-undefined
+# mediaformat.cpp probes FFmpeg via dlopen (no FFmpeg linkage required).
+LIBS += -ldl
 
 TEMPLATE = app
 TARGET = XTEngineTests
@@ -39,9 +47,11 @@ SOURCES += \
     main.cpp \
     t_imagefactory.cpp \
     t_funscripthandler.cpp \
+    t_scriptinfo.cpp \
     t_tcodehandler.cpp \
     stubs.cpp \
     ../lib/tool/imagefactory.cpp \
+    ../lib/tool/mediaformat.cpp \
     ../lib/handler/funscripthandler.cpp \
     ../lib/handler/tcodehandler.cpp \
     ../lib/handler/settingshandler.cpp \
@@ -57,6 +67,7 @@ SOURCES += \
 HEADERS += \
     t_imagefactory.h \
     t_funscripthandler.h \
+    t_scriptinfo.h \
     t_tcodehandler.h \
     ../lib/handler/funscripthandler.h \
     ../lib/handler/tcodehandler.h \
@@ -64,4 +75,5 @@ HEADERS += \
     ../lib/handler/xmediastatehandler.h \
     ../lib/lookup/tcodechannellookup.h \
     ../lib/settings/medialibrarysettings.h \
-    ../lib/settings/settingsbase.h
+    ../lib/settings/settingsbase.h \
+    ../lib/tool/mediaformat.h

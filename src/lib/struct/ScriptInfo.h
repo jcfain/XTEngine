@@ -5,7 +5,9 @@
 #include <QString>
 #include <QMetaType>
 #include <QJsonObject>
+#include <QJsonDocument>
 #include <QDataStream>
+#include "Funscript.h"
 
 enum class ScriptType {
     MAIN,
@@ -36,9 +38,29 @@ struct ScriptInfo {
     /// \brief track Mfs track is exists. Empty otherwise
     ///
     QString track;
-    ScriptType type;
-    ScriptContainerType containerType;
+    ScriptType type = ScriptType::MAIN;
+    ScriptContainerType containerType = ScriptContainerType::BASE;
     QString containerTypeName;
+    ///
+    /// \brief version Funscript version from the script file. Empty if not present
+    ///
+    QString version;
+    ///
+    /// \brief inverted True if the script is marked as inverted
+    ///
+    bool inverted = false;
+    ///
+    /// \brief hasInverted True if the inverted property exists in the script file
+    ///
+    bool hasInverted = false;
+    ///
+    /// \brief metadata Funscript metadata from the script file
+    ///
+    FunscriptMetadata metadata;
+    ///
+    /// \brief hasMetadata True if the metadata object exists in the script file
+    ///
+    bool hasMetadata = false;
 
     friend bool operator==(const ScriptInfo &object1 , const ScriptInfo &object2 )
     {
@@ -46,7 +68,12 @@ struct ScriptInfo {
             && object1.type == object2.type
             && object1.name == object2.name
             && object1.path == object2.path
-            && object1.track == object2.track;
+            && object1.track == object2.track
+            && object1.version == object2.version
+            && object1.inverted == object2.inverted
+            && object1.hasInverted == object2.hasInverted
+            && object1.metadata == object2.metadata
+            && object1.hasMetadata == object2.hasMetadata;
     }
     friend bool operator!=(const ScriptInfo &object1 , const ScriptInfo &object2 )
     {
@@ -54,7 +81,12 @@ struct ScriptInfo {
                || object1.type != object2.type
                || object1.name != object2.name
                || object1.path != object2.path
-               || object1.track != object2.track;
+               || object1.track != object2.track
+               || object1.version != object2.version
+               || object1.inverted != object2.inverted
+               || object1.hasInverted != object2.hasInverted
+               || object1.metadata != object2.metadata
+               || object1.hasMetadata != object2.hasMetadata;
     }
 
     friend QDataStream & operator<<(QDataStream &dataStream, const ScriptInfo &object )
@@ -66,6 +98,11 @@ struct ScriptInfo {
         dataStream << (qint8&)object.type;
         dataStream << (qint8&)object.containerType;
         dataStream << object.containerTypeName;
+        dataStream << object.version;
+        dataStream << object.inverted;
+        dataStream << object.hasInverted;
+        dataStream << QJsonDocument(object.metadata.toJson()).toJson(QJsonDocument::Compact);
+        dataStream << object.hasMetadata;
         return dataStream;
     }
 
@@ -75,9 +112,23 @@ struct ScriptInfo {
         dataStream >> object.filename;
         dataStream >> object.path;
         dataStream >> object.track;
-        dataStream >> (qint8&)object.type;
-        dataStream >> (qint8&)object.containerType;
+        // Read the enums through a qint8 and assign: the stream carries one
+        // byte, and writing it straight into the (4 byte) enum would leave
+        // the remaining bytes uninitialized.
+        qint8 type = 0;
+        dataStream >> type;
+        object.type = (ScriptType)type;
+        qint8 containerType = 0;
+        dataStream >> containerType;
+        object.containerType = (ScriptContainerType)containerType;
         dataStream >> object.containerTypeName;
+        dataStream >> object.version;
+        dataStream >> object.inverted;
+        dataStream >> object.hasInverted;
+        QByteArray metadataJson;
+        dataStream >> metadataJson;
+        object.metadata = FunscriptMetadata::fromJson(QJsonDocument::fromJson(metadataJson).object());
+        dataStream >> object.hasMetadata;
         return dataStream;
     }
 
@@ -91,6 +142,11 @@ struct ScriptInfo {
         obj["type"] = (qint8)item.type;
         obj["containerType"] = (qint8)item.containerType;
         obj["containerTypeName"] = item.containerTypeName;
+        obj["version"] = item.version;
+        obj["inverted"] = item.inverted;
+        obj["hasInverted"] = item.hasInverted;
+        obj["metadata"] = item.metadata.toJson();
+        obj["hasMetadata"] = item.hasMetadata;
         return obj;
     }
 
@@ -114,6 +170,11 @@ struct ScriptInfo {
             typeName = "(ZIP)";
         }
         newItem.containerTypeName = typeName;
+        newItem.version = obj["version"].toString();
+        newItem.inverted = obj["inverted"].toBool();
+        newItem.hasInverted = obj["hasInverted"].toBool();
+        newItem.metadata = FunscriptMetadata::fromJson(obj["metadata"].toObject());
+        newItem.hasMetadata = obj["hasMetadata"].toBool();
         return newItem;
     }
 };

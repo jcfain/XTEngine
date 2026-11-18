@@ -29,6 +29,79 @@
     word-break: break-word;
 }
 
+/* Per-script pull-out drawer. Same 0fr -> 1fr grid animation as the toolbar
+   drawers so the body expands/collapses to its content's actual size. */
+.script-drawer {
+    border: 1px solid #333;
+    border-radius: 4px;
+    margin-top: 4px;
+}
+
+.script-drawer-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+}
+
+/* Transparent +/- toggle: + expands the drawer, - contracts it */
+.script-drawer-toggle {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--foreground-color);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.script-drawer-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.script-drawer-title {
+    color: var(--foreground-color);
+    word-break: break-word;
+}
+
+.script-drawer-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease-in-out;
+}
+
+.script-drawer-body.open {
+    grid-template-rows: 1fr;
+}
+
+/* The grid child must be allowed to shrink to zero for the animation */
+.script-drawer-body .drawer-inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.script-drawer-content {
+    padding: 8px 8px 8px 36px;
+    border-top: 1px solid #333;
+}
+
+.script-drawer-content .info-row:last-child {
+    margin-bottom: 0;
+}
+
+.info-link {
+    color: var(--accent-color, #4da6ff);
+    word-break: break-all;
+    text-decoration: none;
+}
+
+.info-link:hover {
+    text-decoration: underline;
+}
+
 
 @media (max-width: 768px) {
     .info-row {

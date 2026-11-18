@@ -715,6 +715,7 @@ void MediaLibraryHandler::processMetadata(LibraryListItem27 &item, bool &metadat
             auto ogScripts = item.metadata.scripts;
             m_mediaLibraryCache.unlock();
             findAlternateFunscripts(item);
+            updateScriptMetadata(item);
             if(item.metadata.scripts != ogScripts)
                 metadataChanged = true;
 
@@ -2007,6 +2008,23 @@ void MediaLibraryHandler::findAlternateFunscripts(LibraryListItem27& item)
         }
     }
     item.metadata.scripts = funscriptsWithMedia;
+}
+
+///
+/// \brief MediaLibraryHandler::updateScriptMetadata Parses the version, inverted and metadata
+/// properties from each script file of the media item and stores them on the ScriptInfo objects.
+/// Only runs as part of the metadata process, so the values are persisted with the item metadata.
+/// \param item Media item to update
+///
+void MediaLibraryHandler::updateScriptMetadata(LibraryListItem27& item)
+{
+    LogHandler::Debug("[MediaLibraryHandler::updateScriptMetadata] Parse script metadata for: " + item.path);
+    for(auto& script : item.metadata.scripts)
+    {
+        if(script.containerType == ScriptContainerType::ZIP)
+            continue;
+        FunscriptHandler::parseScriptInfo(script);
+    }
 }
 
 QList<ScriptInfo> MediaLibraryHandler::filterAlternateFunscriptsForMediaItem(const LibraryListItem27* item)

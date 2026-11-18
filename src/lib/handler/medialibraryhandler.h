@@ -140,6 +140,7 @@ private:
     void stopMetadataProcess();
     bool updateToolTip(LibraryListItem27 &item);
     bool discoverMultiAxis(LibraryListItem27 &item);
+    void updateScriptMetadata(LibraryListItem27 &item);
 };
 
 #endif // MEDIALIBRARYHANDLER_H

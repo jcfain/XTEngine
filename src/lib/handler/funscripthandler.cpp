@@ -183,13 +183,11 @@ void FunscriptHandler::jsonToFunscript(const QJsonObject &json, Funscript &funsc
 {
     // if (json.contains("range"))
     //     funscript.range = json["range"].toInt();
-    if (json.contains("version") && json["version"].isString())
-        funscript.version = json["version"].toString();
-    if (json.contains("inverted") && json["inverted"].isBool())
-    {
-        funscript.inverted = json["inverted"].toBool();
-    }
-    jsonToFunscript(json, funscript.metadata);
+    ScriptInfo scriptInfo;
+    parseScriptInfo(json, scriptInfo);
+    funscript.version = scriptInfo.version;
+    funscript.inverted = scriptInfo.inverted;
+    funscript.metadata = scriptInfo.metadata;
     jsonToFunscript(json, funscript.actions);
 }
 
@@ -253,12 +251,68 @@ void FunscriptHandler::jsonToFunscript(const QJsonObject& json, FunscriptMetadat
             }
         }
         if (metaDataJson.contains("paid") && metaDataJson["paid"].isBool())
+        {
             metadata.paid = metaDataJson["paid"].toBool();
+            metadata.hasPaid = true;
+        }
         if (metaDataJson.contains("comment") && metaDataJson["comment"].isString())
             metadata.comment = metaDataJson["comment"].toString();
         if (metaDataJson.contains("original_total_duration_ms"))
             metadata.original_total_duration_ms = metaDataJson["original_total_duration_ms"].toString().toLongLong();
     }
+}
+
+///
+/// \brief FunscriptHandler::readScriptJson Reads a funscript file and parses it into a JSON object.
+/// \param scriptPath Full path to the funscript file
+/// \return Parsed JSON object. Empty if the file could not be read or parsed
+///
+QJsonObject FunscriptHandler::readScriptJson(QString scriptPath)
+{
+    return readJson(readFile(scriptPath));
+}
+
+///
+/// \brief FunscriptHandler::parseScriptInfo Parses the version, inverted and metadata properties
+/// from a funscript JSON object into a ScriptInfo. Properties that do not exist in the JSON
+/// keep their default values and their has* flags stay false.
+/// \param json Funscript JSON object (root of a regular funscript or a single SFMA track)
+/// \param script Script info object to fill
+///
+void FunscriptHandler::parseScriptInfo(const QJsonObject& json, ScriptInfo& script)
+{
+    if (json.contains("version") && json["version"].isString())
+        script.version = json["version"].toString();
+    if (json.contains("inverted") && json["inverted"].isBool())
+    {
+        script.inverted = json["inverted"].toBool();
+        script.hasInverted = true;
+    }
+    if (json.contains("metadata") && json["metadata"].isObject())
+    {
+        script.hasMetadata = true;
+        jsonToFunscript(json, script.metadata);
+    }
+}
+
+///
+/// \brief FunscriptHandler::parseScriptInfo Reads the script file of a ScriptInfo and parses the
+/// version, inverted and metadata properties into it. For SFMA files the properties of the
+/// script's track are used.
+/// \param script Script info object. The path (and track for SFMA files) must be set
+///
+void FunscriptHandler::parseScriptInfo(ScriptInfo& script)
+{
+    QJsonObject json = readScriptJson(script.path);
+    if(json.isEmpty())
+        return;
+    if(json[m_sfmaJSONObjectName].isObject() && !script.track.isEmpty())
+    {
+        QJsonObject tracks = json[m_sfmaJSONObjectName].toObject();
+        if(tracks.contains(script.track))
+            json = tracks[script.track].toObject();
+    }
+    parseScriptInfo(json, script);
 }
 
 void FunscriptHandler::setFunscriptSettings(const Track& channelName, Funscript &funscript)

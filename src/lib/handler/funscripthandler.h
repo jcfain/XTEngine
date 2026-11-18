@@ -64,7 +64,10 @@ public:
     static QList<ScriptInfo> getSFMATracks(QString libraryItemMediaPath);
     static bool isMFS(QString libraryItemMediaPath);
     static QList<ScriptInfo> getMFSTracks(QString libraryItemMediaPath);
-
+    static QJsonObject readScriptJson(QString scriptPath);
+    static void parseScriptInfo(const QJsonObject& json, ScriptInfo& script);
+    static void parseScriptInfo(ScriptInfo& script);
+    static void jsonToFunscript(const QJsonObject& json, FunscriptMetadata& metadata);
 
 private:
     static inline QMutex mutex;
@@ -79,7 +82,6 @@ private:
     static QJsonObject readJson(QByteArray data);
     void jsonToFunscript(QJsonObject json);
     void jsonToFunscript(const QJsonObject& json, Funscript& funscript);
-    void jsonToFunscript(const QJsonObject& json, FunscriptMetadata& metadata);
     void jsonToFunscript(const QJsonObject& json, QHash<qint64, int>& actions);
     void setFunscriptSettings(const Track& channelName, Funscript& funscript);
     qint64 findClosest(const qint64& value, const QList<qint64>& a);

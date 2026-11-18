@@ -13,6 +13,8 @@ export class MediaItemInfoTabComponent {
     @Input() item!: MediaItem;
     @Input() isVisible = false;
 
+    private expandedScripts = new Set<number>();
+
     get name(): string {
         return this.item?.name || '';
     }
@@ -44,5 +46,40 @@ export class MediaItemInfoTabComponent {
         return (this.item?.metaData?.MFSTracks || []);
         // return (this.item?.metaData?.scripts || [])
         //     .map(s => s.filename + (s.track ? '.' + s.track : ''));
+    }
+
+    isExpanded(index: number): boolean {
+        return this.expandedScripts.has(index);
+    }
+
+    toggleScript(index: number): void {
+        if (this.expandedScripts.has(index)) {
+            this.expandedScripts.delete(index);
+        } else {
+            this.expandedScripts.add(index);
+        }
+    }
+
+    formatTime(ms: string): string {
+        const value = Number(ms);
+        if (!Number.isFinite(value) || value < 0) {
+            return '';
+        }
+        const totalSeconds = Math.floor(value / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return hours > 0
+            ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+            : `${minutes}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    formatOriginalDuration(script: ScriptInfo): string {
+        const raw = script.metadata?.original_total_duration_ms;
+        const value = Number(raw);
+        if (raw === undefined || raw === null || raw === '' || !Number.isFinite(value) || value < 0) {
+            return 'Unknown';
+        }
+        return `${raw} (${this.formatTime(raw)})`;
     }
 }

@@ -29,8 +29,104 @@
         <span class="info-label">Scripts:</span>
         <div class="info-value">
             @if (scripts.length) {
-                @for (script of scripts; track script) {
-                    <div class="info-script">{{ script.filename }} {{ script.track }}</div>
+                @for (script of scripts; track script.path; let i = $index) {
+                    <div class="script-drawer">
+                        <div class="script-drawer-header">
+                            <button class="script-drawer-toggle"
+                                [class.expanded]="isExpanded(i)"
+                                [title]="isExpanded(i) ? 'Collapse' : 'Expand'"
+                                (click)="toggleScript(i)">
+                                {{ isExpanded(i) ? '−' : '+' }}
+                            </button>
+                            <span class="script-drawer-title">{{ script.filename }} {{ script.track }}</span>
+                        </div>
+                        <div class="script-drawer-body" [class.open]="isExpanded(i)">
+                            <div class="drawer-inner">
+                                <div class="script-drawer-content">
+                                    <div class="info-row">
+                                        <span class="info-label">Version:</span>
+                                        <span class="info-value">{{ script.version || 'Unknown' }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Inverted:</span>
+                                        <span class="info-value">{{ script.hasInverted ? (script.inverted ? 'Yes' : 'No') : 'Unknown' }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Creator:</span>
+                                        <span class="info-value">{{ script.metadata.creator || 'Unknown' }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Original name:</span>
+                                        <span class="info-value">{{ script.metadata.original_name || 'Unknown' }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">URL:</span>
+                                        <span class="info-value">
+                                            @if (script.metadata.url) {
+                                                <a class="info-link" [href]="script.metadata.url" target="_blank" rel="noopener">{{ script.metadata.url }}</a>
+                                            } @else {
+                                                Unknown
+                                            }
+                                        </span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Video URL:</span>
+                                        <span class="info-value">
+                                            @if (script.metadata.url_video) {
+                                                <a class="info-link" [href]="script.metadata.url_video" target="_blank" rel="noopener">{{ script.metadata.url_video }}</a>
+                                            } @else {
+                                                Unknown
+                                            }
+                                        </span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Performers:</span>
+                                        <span class="info-value">{{ script.metadata.performers.length ? script.metadata.performers.join(', ') : 'Unknown' }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Tags:</span>
+                                        <span class="info-value">{{ script.metadata.tags.length ? script.metadata.tags.join(', ') : 'Unknown' }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Paid:</span>
+                                        <span class="info-value">{{ script.metadata.hasPaid ? (script.metadata.paid ? 'Yes' : 'No') : 'Unknown' }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Comment:</span>
+                                        <span class="info-value">{{ script.metadata.comment || 'Unknown' }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Original duration:</span>
+                                        <span class="info-value">{{ formatOriginalDuration(script) }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Bookmarks:</span>
+                                        <div class="info-value">
+                                            @if (script.metadata.bookmarks.length) {
+                                                @for (bookmark of script.metadata.bookmarks; track bookmark.time) {
+                                                    <div class="info-script">{{ bookmark.name }} — {{ formatTime(bookmark.time) }}</div>
+                                                }
+                                            } @else {
+                                                <div class="info-script">Unknown</div>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Chapters:</span>
+                                        <div class="info-value">
+                                            @if (script.metadata.chapters.length) {
+                                                @for (chapter of script.metadata.chapters; track chapter.startTime) {
+                                                    <div class="info-script">{{ chapter.name }} — {{ formatTime(chapter.startTime) }} to {{ formatTime(chapter.endTime) }}</div>
+                                                }
+                                            } @else {
+                                                <div class="info-script">Unknown</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 }
             } @else {
                 <div class="info-script">No scripts</div>

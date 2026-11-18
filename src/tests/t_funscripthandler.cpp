@@ -42,6 +42,17 @@ QString T_FunscriptHandler::writeScript(const QList<QPair<qint64, int>> &actions
     return path;
 }
 
+QString T_FunscriptHandler::writeScriptFile(const QJsonObject &root) const
+{
+    const QString path = m_tempDir.filePath(QUuid::createUuid().toString(QUuid::WithoutBraces) + ".funscript");
+    QFile file(path);
+    if(!file.open(QIODevice::WriteOnly))
+        return QString();
+    file.write(QJsonDocument(root).toJson());
+    file.close();
+    return path;
+}
+
 QList<int> T_FunscriptHandler::playScript(FunscriptHandler &handler, qint64 duration, qint64 step)
 {
     QList<int> positions;
@@ -199,4 +210,269 @@ void T_FunscriptHandler::singleActionScript()
     FunscriptHandler::resetModifier(Track::Stroke);
 
     QCOMPARE(positions, QList<int>({60}));
+}
+
+// ---------------------------------------------------------------------------
+// Script metadata parsing (parseScriptInfo / readScriptJson)
+// ---------------------------------------------------------------------------
+
+QJsonObject T_FunscriptHandler::fullMetadataJson() const
+{
+    QJsonObject metadata;
+    metadata["creator"] = "creator";
+    metadata["original_name"] = "original name";
+    metadata["url"] = "https://example.com/script";
+    metadata["url_video"] = "https://example.com/video";
+    QJsonArray tags;
+    tags.append("tag one");
+    tags.append("tag two");
+    metadata["tags"] = tags;
+    QJsonArray performers;
+    performers.append("performer one");
+    metadata["performers"] = performers;
+    metadata["paid"] = true;
+    metadata["comment"] = "a comment";
+    metadata["original_total_duration_ms"] = "123456";
+    QJsonArray bookmarks;
+    QJsonObject bookmark;
+    bookmark["name"] = "bookmark one";
+    bookmark["time"] = "00:01:30.500";
+    bookmarks.append(bookmark);
+    metadata["bookmarks"] = bookmarks;
+    QJsonArray chapters;
+    QJsonObject chapter;
+    chapter["name"] = "chapter one";
+    chapter["startTime"] = "00:00:00.000";
+    chapter["endTime"] = "00:02:00.000";
+    chapters.append(chapter);
+    metadata["chapters"] = chapters;
+
+    QJsonObject root;
+    root["version"] = "1.1";
+    root["inverted"] = true;
+    root["metadata"] = metadata;
+    return root;
+}
+
+void T_FunscriptHandler::fullMetadataParsed()
+{
+    ScriptInfo script;
+    FunscriptHandler::parseScriptInfo(fullMetadataJson(), script);
+
+    QCOMPARE(script.version, QString("1.1"));
+    QCOMPARE(script.inverted, true);
+    QVERIFY(script.hasInverted);
+    QVERIFY(script.hasMetadata);
+    QCOMPARE(script.metadata.creator, QString("creator"));
+    QCOMPARE(script.metadata.original_name, QString("original name"));
+    QCOMPARE(script.metadata.url, QString("https://example.com/script"));
+    QCOMPARE(script.metadata.url_video, QString("https://example.com/video"));
+    QCOMPARE(script.metadata.tags, QList<QString>({"tag one", "tag two"}));
+    QCOMPARE(script.metadata.performers, QList<QString>({"performer one"}));
+    QCOMPARE(script.metadata.paid, true);
+    QVERIFY(script.metadata.hasPaid);
+    QCOMPARE(script.metadata.comment, QString("a comment"));
+    QCOMPARE(script.metadata.original_total_duration_ms, qint64(123456));
+    QCOMPARE(script.metadata.bookmarks, QList<FunscriptBookmark>({{"bookmark one", 90500}}));
+    QCOMPARE(script.metadata.chapters, QList<FunscriptChapter>({{"chapter one", 0, 120000}}));
+}
+
+void T_FunscriptHandler::absentPropertiesKeepDefaults()
+{
+    ScriptInfo script;
+    FunscriptHandler::parseScriptInfo(QJsonObject(), script);
+
+    QCOMPARE(script.version, QString());
+    QCOMPARE(script.inverted, false);
+    QVERIFY(!script.hasInverted);
+    QVERIFY(!script.hasMetadata);
+    QCOMPARE(script.metadata, FunscriptMetadata());
+}
+
+void T_FunscriptHandler::invertedFalseIsPresent()
+{
+    QJsonObject root;
+    root["inverted"] = false;
+
+    ScriptInfo script;
+    FunscriptHandler::parseScriptInfo(root, script);
+
+    // The property exists with a false value: the flag must be set so the
+    // UI can show "false" instead of "Unknown".
+    QCOMPARE(script.inverted, false);
+    QVERIFY(script.hasInverted);
+}
+
+void T_FunscriptHandler::paidFalseIsPresent()
+{
+    QJsonObject metadata;
+    metadata["paid"] = false;
+    QJsonObject root;
+    root["metadata"] = metadata;
+
+    ScriptInfo script;
+    FunscriptHandler::parseScriptInfo(root, script);
+
+    QVERIFY(script.hasMetadata);
+    QCOMPARE(script.metadata.paid, false);
+    QVERIFY(script.metadata.hasPaid);
+}
+
+void T_FunscriptHandler::wrongTypesIgnored()
+{
+    QJsonObject root;
+    root["version"] = 1.1;          // number, not string
+    root["inverted"] = "true";      // string, not bool
+    root["metadata"] = QJsonArray(); // array, not object
+
+    ScriptInfo script;
+    FunscriptHandler::parseScriptInfo(root, script);
+
+    QCOMPARE(script.version, QString());
+    QVERIFY(!script.hasInverted);
+    QVERIFY(!script.hasMetadata);
+    QCOMPARE(script.metadata, FunscriptMetadata());
+}
+
+void T_FunscriptHandler::durationParsedFromString()
+{
+    // Per the funscript spec original_total_duration_ms is a string; it is
+    // read through toString(), so a string value must parse.
+    QJsonObject metadataString;
+    metadataString["original_total_duration_ms"] = "654321";
+    QJsonObject rootString;
+    rootString["metadata"] = metadataString;
+
+    ScriptInfo scriptString;
+    FunscriptHandler::parseScriptInfo(rootString, scriptString);
+    QCOMPARE(scriptString.metadata.original_total_duration_ms, qint64(654321));
+}
+
+void T_FunscriptHandler::parsesRegularScriptFile()
+{
+    const QString path = writeScriptFile(fullMetadataJson());
+    QVERIFY(!path.isEmpty());
+
+    ScriptInfo script;
+    script.path = path;
+    FunscriptHandler::parseScriptInfo(script);
+
+    QCOMPARE(script.version, QString("1.1"));
+    QVERIFY(script.hasInverted);
+    QVERIFY(script.hasMetadata);
+    QCOMPARE(script.metadata.creator, QString("creator"));
+}
+
+void T_FunscriptHandler::sfmaUsesTrackProperties()
+{
+    QJsonObject stroke;
+    stroke["version"] = "1.0";
+
+    QJsonObject twistMetadata;
+    twistMetadata["creator"] = "twist creator";
+    QJsonObject twist;
+    twist["version"] = "1.1";
+    twist["inverted"] = true;
+    twist["metadata"] = twistMetadata;
+
+    QJsonObject channels;
+    channels["stroke"] = stroke;
+    channels["twist"] = twist;
+    QJsonObject root;
+    root["channels"] = channels;
+
+    const QString path = writeScriptFile(root);
+    QVERIFY(!path.isEmpty());
+
+    ScriptInfo script;
+    script.path = path;
+    script.track = "twist";
+    FunscriptHandler::parseScriptInfo(script);
+
+    // The twist track's properties, not the stroke track's.
+    QCOMPARE(script.version, QString("1.1"));
+    QVERIFY(script.hasInverted);
+    QVERIFY(script.hasMetadata);
+    QCOMPARE(script.metadata.creator, QString("twist creator"));
+}
+
+void T_FunscriptHandler::sfmaMissingTrackFallsBackToRoot()
+{
+    QJsonObject stroke;
+    stroke["version"] = "1.0";
+    QJsonObject channels;
+    channels["stroke"] = stroke;
+    QJsonObject root;
+    root["channels"] = channels;
+
+    const QString path = writeScriptFile(root);
+    QVERIFY(!path.isEmpty());
+
+    ScriptInfo script;
+    script.path = path;
+    script.track = "twist"; // not present in the channels object
+    FunscriptHandler::parseScriptInfo(script);
+
+    // Falls back to the root object, which has no properties of its own.
+    QCOMPARE(script.version, QString());
+    QVERIFY(!script.hasInverted);
+    QVERIFY(!script.hasMetadata);
+}
+
+void T_FunscriptHandler::missingFileLeavesScriptUnchanged()
+{
+    ScriptInfo script;
+    script.path = m_tempDir.filePath("does-not-exist.funscript");
+    FunscriptHandler::parseScriptInfo(script);
+
+    QCOMPARE(script.version, QString());
+    QVERIFY(!script.hasInverted);
+    QVERIFY(!script.hasMetadata);
+    QCOMPARE(script.metadata, FunscriptMetadata());
+}
+
+void T_FunscriptHandler::invalidJsonLeavesScriptUnchanged()
+{
+    const QString path = m_tempDir.filePath(QUuid::createUuid().toString(QUuid::WithoutBraces) + ".funscript");
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("this is not json {");
+    file.close();
+
+    ScriptInfo script;
+    script.path = path;
+    FunscriptHandler::parseScriptInfo(script);
+
+    QCOMPARE(script.version, QString());
+    QVERIFY(!script.hasInverted);
+    QVERIFY(!script.hasMetadata);
+    QCOMPARE(script.metadata, FunscriptMetadata());
+}
+
+void T_FunscriptHandler::readScriptJsonValidFile()
+{
+    const QString path = writeScriptFile(fullMetadataJson());
+    QVERIFY(!path.isEmpty());
+
+    QJsonObject json = FunscriptHandler::readScriptJson(path);
+    QCOMPARE(json["version"].toString(), QString("1.1"));
+    QVERIFY(json["metadata"].isObject());
+}
+
+void T_FunscriptHandler::readScriptJsonMissingFile()
+{
+    QJsonObject json = FunscriptHandler::readScriptJson(m_tempDir.filePath("does-not-exist.funscript"));
+    QVERIFY(json.isEmpty());
+}
+
+void T_FunscriptHandler::readScriptJsonInvalidFile()
+{
+    const QString path = m_tempDir.filePath(QUuid::createUuid().toString(QUuid::WithoutBraces) + ".funscript");
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("this is not json {");
+    file.close();
+
+    QJsonObject json = FunscriptHandler::readScriptJson(path);
+    QVERIFY(json.isEmpty());
 }

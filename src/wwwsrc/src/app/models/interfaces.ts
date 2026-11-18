@@ -258,6 +258,32 @@ export interface Bookmark {
     channelProfile: string;
 }
 
+export interface FunscriptBookmark {
+    name: string;
+    time: string; // long
+}
+
+export interface FunscriptChapter {
+    name: string;
+    startTime: string; // long
+    endTime: string; // long
+}
+
+export interface FunscriptMetadata {
+    creator: string;
+    original_name: string;
+    url: string;
+    url_video: string;
+    tags: string[];
+    performers: string[];
+    paid: boolean;
+    hasPaid: boolean;
+    comment: string;
+    original_total_duration_ms: string; // long
+    bookmarks: FunscriptBookmark[];
+    chapters: FunscriptChapter[];
+}
+
 export interface ScriptInfo {
     ///
     /// \brief name User friendly name
@@ -278,6 +304,26 @@ export interface ScriptInfo {
     type: ScriptType;
     containerType: ScriptContainerType;
     containerTypeName: string;
+    ///
+    /// \brief version Funscript version from the script file. Empty if not present
+    ///
+    version: string;
+    ///
+    /// \brief inverted True if the script is marked as inverted
+    ///
+    inverted: boolean;
+    ///
+    /// \brief hasInverted True if the inverted property exists in the script file
+    ///
+    hasInverted: boolean;
+    ///
+    /// \brief metadata Funscript metadata from the script file
+    ///
+    metadata: FunscriptMetadata;
+    ///
+    /// \brief hasMetadata True if the metadata object exists in the script file
+    ///
+    hasMetadata: boolean;
 }
 
 export interface XTPWebMediaState {

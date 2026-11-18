@@ -3,6 +3,7 @@
 
 #include "t_imagefactory.h"
 #include "t_funscripthandler.h"
+#include "t_scriptinfo.h"
 #include "t_tcodehandler.h"
 
 int main(int argc, char *argv[])
@@ -16,6 +17,8 @@ int main(int argc, char *argv[])
     exitCode |= QTest::qExec(&imageFactoryTests, argc, argv);
     T_FunscriptHandler funscriptTests;
     exitCode |= QTest::qExec(&funscriptTests, argc, argv);
+    T_ScriptInfo scriptInfoTests;
+    exitCode |= QTest::qExec(&scriptInfoTests, argc, argv);
     T_TCodeHandler tcodeTests;
     exitCode |= QTest::qExec(&tcodeTests, argc, argv);
     return exitCode;

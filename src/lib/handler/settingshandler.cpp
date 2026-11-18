@@ -680,6 +680,18 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             migrated = true;
             locker.relock();
         }
+        //if(settingsVersion < 0.611f)
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 6, 11, "b"))
+        {
+            locker.unlock();
+            // Script metadata (version, inverted, funscript metadata) is now parsed
+            // into the ScriptInfo objects, so force a full metadata process to fill it.
+            setForceMetaDataFullProcess(true);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
         if(!migrated && versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase))
         {
             locker.unlock();
