@@ -42,7 +42,7 @@ export class SettingsSystemTabComponent implements OnInit {
 
     groups: SettingGroup[] = [];
     xteVersion = '';
-    webVersion = `v0.6.8b (${BUILD_VERSION})`;
+    webVersion = `v0.6.10b (${BUILD_VERSION})`;
     userAgent = navigator.userAgent;
     userAgentIsDeo = false;
     userAgentIsHereSphere = false;
@@ -226,6 +226,8 @@ export class SettingsSystemTabComponent implements OnInit {
                 return { min: '00:00', max: '23:59' };
             case 'viewedThreshold':
                 return { min: '1', max: '99', step: '1' };
+            case 'videoIncrement':
+                return { min: '1', step: '1' };
             default:
                 return {};
         }

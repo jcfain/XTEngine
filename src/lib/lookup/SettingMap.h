@@ -106,7 +106,7 @@ struct SettingKeys {
     // static inline const QString selectedLibrarySortMode = "selectedLibrarySortMode";
     // static inline const QString thumbSize = "thumbSize";
     // static inline const QString thumbSizeList = "thumbSizeList";
-    // static inline const QString videoIncrement = "videoIncrement";
+    static inline const QString videoIncrement = "videoIncrement";
     // static inline const QString deoDnlaFunscriptLookup = "deoDnlaFunscriptLookup";
     // static inline const QString gamePadEnabled = "gamePadEnabled";
     // static inline const QString multiplierEnabled = "multiplierEnabled";
@@ -175,6 +175,7 @@ public:
         {SettingProfile::System, SettingGroups::serial, SettingKeys::useDTRAndRTS, FormControlTypes::Checkbox, false, "Disable serial RTS/DTS", "Disable serial RTS/DTS when connecting via serial.", false, false},
         {SettingProfile::System, SettingGroups::web, SettingKeys::httpChunkSizeMB, FormControlTypes::Double, 26.214400, "Media streaming chunk size", "The chunk sise the web browser should ask for when steaming media.", true, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::playbackRateStep, FormControlTypes::Double, 0.01, "Playback rate step", "The amount to change the playback rate by when using gamepad or input scroller.", false, false},
+        {SettingProfile::System, SettingGroups::media, SettingKeys::videoIncrement, FormControlTypes::Int, 10, "Video seek increment", "The number of seconds to seek forward (double click/tap the right side of the video) or backward (left side).", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::disableAutoThumbGeneration, FormControlTypes::Checkbox, false, "Disable automatic thumb generation", "If checked, when a new media item has been found, no thumb will be automattically generated. Manual generation will still be attemped..", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::enableMediaManagement, FormControlTypes::Checkbox, false, "Enable media management", "If checked, certain media management options like delete will become available", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::useSystemMediaBackend, FormControlTypes::Checkbox, false, "Use the media backend of the OS", "If checked, XTP will use the OS media backend. Requires restart...", false, true},

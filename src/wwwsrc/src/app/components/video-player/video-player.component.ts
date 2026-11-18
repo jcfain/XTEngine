@@ -15,6 +15,7 @@ import { MediaListOverlayService } from '../../services/media-list-overlay.servi
 import { ScriptStatusComponent } from '../script-status/script-status.component';
 import { MotionProfilesComponent } from '../motion-profiles/motion-profiles.component';
 import { ServerService } from '../../services/server.service';
+import { SettingsService } from '../../services/settings.service';
 import { SettingsComponent } from '../settings/settings.component';
 import { AppMenuService } from '../../services/app-menu.service';
 import { DeviceConnectionService } from '../../services/device-connection.service';
@@ -66,6 +67,14 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   motionProfilesOpen = false;
   mediaSettingsOpen = false;
   altScriptsOpen = false;
+  // Seconds to seek on a double click/tap (left half = backward, right half =
+  // forward). Kept in sync with the server "videoIncrement" setting.
+  videoIncrementSecs = 10;
+  // Double gesture detection: the single click/tap action is delayed so a
+  // double gesture can cancel it before it fires.
+  private lastTapTime = 0;
+  private pendingTapTimer: any = null;
+  private pendingClickTimer: any = null;
   // Settings modal (rendered inside the video container so it also shows in
   // full screen). mediaLoaded mirrors the old app-level gate: the modal
   // binds to the server settings, which are only fetched once the media list
@@ -126,7 +135,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     private mediaListOverlayService: MediaListOverlayService,
     private sanitizer: DomSanitizer,
     private ngZone: NgZone,
-    private appMenuService: AppMenuService
+    private appMenuService: AppMenuService,
+    private settingsService: SettingsService
   ) {
     this.subscriptions.push(
       this.serverService.serverChannels$.subscribe(settings => {
@@ -134,6 +144,18 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
               return;
           }
           this.hasMotionProfiles = settings.allChannelProfileNames?.length > 1 || false;
+      }),
+      this.settingsService.settings$.subscribe(settings => {
+        const setting = settings.find(s => s.key === 'videoIncrement');
+        if (setting) {
+          this.videoIncrementSecs = setting.value;
+        }
+      }),
+      // Live update when the setting is changed from another client/tab.
+      this.messageHandlerService.settingChange$.subscribe(v => {
+        if (v && v.key === 'videoIncrement') {
+          this.videoIncrementSecs = v.value;
+        }
       }),
       this.messageHandlerService.stopAllMedia$.subscribe(() => {
         this.stop()
@@ -226,6 +248,11 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(s => s.unsubscribe());
+    this.cancelPendingTap();
+    if (this.pendingClickTimer) {
+      clearTimeout(this.pendingClickTimer);
+      this.pendingClickTimer = null;
+    }
     this.videoService.setVideoNode(null);
     this.bottomControlsState.observer?.disconnect();
     this.bottomControlsState.observer = null;
@@ -459,11 +486,13 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.lastVideoTouchTime = Date.now();
     this.touchOnControls = this.isOnControls(event.target);
     if (this.touchOnControls) {
+      this.cancelPendingTap();
       return; // let the control's own handler deal with it
     }
     if (!this.isFullScreen || !this.videoVisible) {
-      // Not full screen: a tap toggles the controls (existing behaviour).
-      this.toggleControlsOnTap();
+      // Not full screen: a tap toggles the controls (existing behaviour),
+      // delayed so a double tap can cancel it and seek instead.
+      this.onTapGesture(event.touches[0].clientX, event.touches[0].clientY);
       return;
     }
     this.sheetTouchStartY = event.touches[0].clientY;
@@ -478,6 +507,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     if (Math.abs(deltaY) > VideoPlayerComponent.SHEET_DRAG_THRESHOLD) {
       this.sheetTouchDragged = true;
       this.lastSheetGestureTime = Date.now();
+      this.cancelPendingTap();
       if (deltaY > 0) {
         this.videoService.openMediaSheet();
       } else if (this.mediaListAtTop()) {
@@ -486,9 +516,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  onVideoTouchEnd(): void {
+  onVideoTouchEnd(event: TouchEvent): void {
     if (this.touchOnControls) {
       this.touchOnControls = false;
+      this.cancelPendingTap();
       return;
     }
     if (!this.isFullScreen || !this.videoVisible) {
@@ -497,9 +528,42 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     if (this.sheetTouchDragged) {
       // It was a drag, not a tap - don't toggle the controls.
       this.sheetTouchDragged = false;
+      this.cancelPendingTap();
       return;
     }
-    this.toggleControlsOnTap();
+    const touch = event.changedTouches[0];
+    if (touch) {
+      this.onTapGesture(touch.clientX, touch.clientY);
+    }
+  }
+
+  // A tap on the video (outside the controls): a single tap toggles the
+  // controls, a double tap seeks by the video increment (left half backward,
+  // right half forward). The single tap action is delayed so the double tap
+  // can cancel it.
+  private onTapGesture(clientX: number, clientY: number): void {
+    const now = Date.now();
+    if (now - this.lastTapTime < 300) {
+      // Second tap of a double tap: cancel the pending single tap action and
+      // seek.
+      this.cancelPendingTap();
+      this.lastTapTime = 0;
+      this.seekByTapSide(clientX, clientY);
+      return;
+    }
+    this.lastTapTime = now;
+    this.cancelPendingTap();
+    this.pendingTapTimer = setTimeout(() => {
+      this.pendingTapTimer = null;
+      this.toggleControlsOnTap();
+    }, 300);
+  }
+
+  private cancelPendingTap(): void {
+    if (this.pendingTapTimer) {
+      clearTimeout(this.pendingTapTimer);
+      this.pendingTapTimer = null;
+    }
   }
 
   // Open the full screen media sheet (from the media list button on the
@@ -541,14 +605,53 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.sheetMouseDragging = false;
   }
 
-  onVideoClick(): void {
+  onVideoClick(event: MouseEvent): void {
     if (Date.now() - this.lastVideoTouchTime < 500) {
       return;
     }
     if (Date.now() - this.lastSheetGestureTime < 500) {
       return;
     }
-    this.togglePause();
+    // Delay the single click action so a double click can cancel it and seek
+    // instead (see onVideoDblClick).
+    if (this.pendingClickTimer) {
+      clearTimeout(this.pendingClickTimer);
+      this.pendingClickTimer = null;
+    }
+    this.pendingClickTimer = setTimeout(() => {
+      this.pendingClickTimer = null;
+      this.togglePause();
+    }, 250);
+  }
+
+  onVideoDblClick(event: MouseEvent): void {
+    if (Date.now() - this.lastVideoTouchTime < 500) {
+      return;
+    }
+    if (Date.now() - this.lastSheetGestureTime < 500) {
+      return;
+    }
+    if (this.pendingClickTimer) {
+      clearTimeout(this.pendingClickTimer);
+      this.pendingClickTimer = null;
+    }
+    this.seekByTapSide(event.clientX, event.clientY);
+  }
+
+  // Seek by the video increment: left half of the video = backward,
+  // right half = forward.
+  seekByTapSide(clientX: number, clientY: number): void {
+    const video = this.videoService.video;
+    if (!video || !video.duration) {
+      return;
+    }
+    const rect = video.getBoundingClientRect();
+    if (rect.width <= 0) {
+      return;
+    }
+    const direction = clientX < rect.left + rect.width / 2 ? -1 : 1;
+    const newTime = Math.max(0, Math.min(video.duration, video.currentTime + direction * this.videoIncrementSecs));
+    this.videoService.onSeek(newTime);
   }
 
   stop() {

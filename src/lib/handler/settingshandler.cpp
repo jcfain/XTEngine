@@ -325,7 +325,6 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
     _librarySortMode = settingsToLoadFrom->value("selectedLibrarySortMode").toInt();
     thumbSize = settingsToLoadFrom->value("thumbSize", 150).toInt();
     thumbSizeList = settingsToLoadFrom->value("thumbSizeList", 50).toInt();
-    videoIncrement = settingsToLoadFrom->value("videoIncrement", 10).toInt();
     deoDnlaFunscriptLookup = settingsToLoadFrom->value("deoDnlaFunscriptLookup").toHash();
 
     _gamePadEnabled = settingsToLoadFrom->value("gamePadEnabled").toBool();
@@ -672,6 +671,15 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             migrated = true;
             locker.relock();
         }
+        if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase, 0, 6, 10, "b"))
+        {
+            locker.unlock();
+            Migration::MigrateTo610(settingsToLoadFrom);
+            Save();
+            Load();
+            migrated = true;
+            locker.relock();
+        }
         if(!migrated && versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase))
         {
             locker.unlock();
@@ -738,7 +746,6 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
 
         settingsToSaveTo->setValue("thumbSize", thumbSize);
         settingsToSaveTo->setValue("thumbSizeList", thumbSizeList);
-        settingsToSaveTo->setValue("videoIncrement", videoIncrement);
 
         settingsToSaveTo->setValue("deoDnlaFunscriptLookup", deoDnlaFunscriptLookup);
 
@@ -2929,13 +2936,11 @@ QSize SettingsHandler::getMaxThumbnailSize()
 
 int SettingsHandler::getVideoIncrement()
 {
-    QMutexLocker locker(&mutex);
-    return videoIncrement;
+    return getSetting(SettingKeys::videoIncrement).toInt();
 }
 void SettingsHandler::setVideoIncrement(int value)
 {
-    videoIncrement = value;
-    settingsChangedEvent(true);
+    changeSetting(SettingKeys::videoIncrement, value);
 }
 
 void SettingsHandler::setLinkedVRFunscript(QString key, QString value)
@@ -3489,7 +3494,6 @@ QList<TCodeCommand> SettingsHandler::m_customTCodeCommands;
 int SettingsHandler::libraryView = LibraryView::Thumb;
 int SettingsHandler::thumbSize = 175;
 int SettingsHandler::thumbSizeList = 50;
-int SettingsHandler::videoIncrement = 10;
 
 bool SettingsHandler::_gamePadEnabled;
 QMap<QString, QStringList> SettingsHandler::_gamepadButtonMap;

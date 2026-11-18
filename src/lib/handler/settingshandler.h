@@ -587,7 +587,6 @@ private:
     static int _librarySortMode;
     static int thumbSize;
     static int thumbSizeList;
-    static int videoIncrement;
 
     static QList<DecoderModel> decoderPriority;
     static XVideoRenderer _selectedVideoRenderer;

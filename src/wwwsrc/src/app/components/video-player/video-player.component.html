@@ -11,7 +11,7 @@
   (mouseup)="onSheetMouseUp()"
   (touchstart)="onVideoTouchStart($event)"
   (touchmove)="onVideoTouchMove($event)"
-  (touchend)="onVideoTouchEnd()">
+  (touchend)="onVideoTouchEnd($event)">
   <video playsinline
     autoplay
     #videoNode
@@ -22,7 +22,8 @@
     [muted]="muted"
     (play)="onPlay()"
     (pause)="onPause()"
-    (click)="onVideoClick()"
+    (click)="onVideoClick($event)"
+    (dblclick)="onVideoDblClick($event)"
     (loadedmetadata)="onLoadedMetadata()"
     (timeupdate)="onTimeUpdate()"
     (ended)="onVideoEnd()"

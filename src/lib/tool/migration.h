@@ -16,6 +16,7 @@ public:
     static void MigrateTo61(QSettings* settingsToLoadFromm, int& major, int& minor, int& rev, QString& phase);
     static void MigrateTo62(QSettings* settingsToLoadFromm);
     static void MigrateTo63(QSettings* settingsToLoadFromm, XTags& xtags);
+    static void MigrateTo610(QSettings* settingsToLoadFrom);
 
     static void RenameChannelDamperToSpeed(QSettings* settingsToLoadFrom);
 };

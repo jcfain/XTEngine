@@ -121,6 +121,17 @@ void Migration::MigrateTo63(QSettings *settingsToLoadFromm, XTags& xtags)
     xtags.prependTag(XTags::FAVORITE);
 }
 
+void Migration::MigrateTo610(QSettings* settingsToLoadFrom)
+{
+    // videoIncrement moved from the root level into the settings map
+    // (it is now stored under media/videoIncrement).
+    if (settingsToLoadFrom->contains("videoIncrement") && !settingsToLoadFrom->contains("media/videoIncrement"))
+    {
+        settingsToLoadFrom->setValue("media/videoIncrement", settingsToLoadFrom->value("videoIncrement").toInt());
+        settingsToLoadFrom->remove("videoIncrement");
+    }
+}
+
 void Migration::RenameChannelDamperToSpeed(QSettings *settingsToLoadFrom)
 {
     QVariantMap availableChannelVariant = settingsToLoadFrom->value("availableChannels").toMap();
