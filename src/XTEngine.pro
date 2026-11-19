@@ -230,7 +230,7 @@ unix:mac {
 #QMAKE_LFLAGS_PLUGIN += -bundle
 #LIBS += -L$$PWD/../../qtgamepadlegacy/build/Qt_6_11_0_for_macOS-Minimum-Size-Release -lqtgamepadlegacy
 #INCLUDEPATH += $$PWD/../../qtgamepadlegacy/build/Qt_6_11_0_for_macOS-Minimum-Size-Release/include
-QMAKE_APPLE_DEVICE_ARCHS = x86_64 x86_64h# arm64
+QMAKE_APPLE_DEVICE_ARCHS = arm64 x86_64
 CONFIG += shared
     #QMAKE_PREFIX_SHLIB = so
     #QMAKE_RPATHDIR += ../lib
