@@ -239,7 +239,8 @@ export class MediaListService {
         // Filter by text
         const filter = this.filterCriteria.toLowerCase();
         if (filter) {
-            list = list.filter(m => m.name.toLowerCase().includes(filter));
+            list = list.filter(m => m.name.toLowerCase().includes(filter)
+                || (m.metaData?.creator || '').toLowerCase().includes(filter));
         }
 
         // Filter by tags

@@ -48,6 +48,17 @@ export class MediaItemSettingsTabComponent implements OnInit {
             this.onDirty.emit();
         }
     }
+    private _creator = '';
+    public get creator() {
+        return this._creator;
+    }
+    public set creator(value) {
+        this._creator = value;
+        if (this.item?.metaData) {
+            this.item.metaData.creator = this.creator;
+            this.onDirty.emit();
+        }
+    }
 
     ngOnInit(): void {
         const meta = this.item?.metaData;
@@ -59,6 +70,7 @@ export class MediaItemSettingsTabComponent implements OnInit {
         this._moneyShotMillis = (meta.moneyShotMillis === undefined || meta.moneyShotMillis === null)
             ? -1
             : Number(meta.moneyShotMillis);
+        this._creator = meta.creator ?? '';
     }
 
     // onOffsetChange(): void {

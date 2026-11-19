@@ -66,6 +66,7 @@ export interface MediaItemMetaData {
     rating: number;
     toolTip: string;
     subtitle: string;
+    creator: string;
     isMFS: boolean;
     isSFMA: boolean;
     hasAlternate: boolean;
