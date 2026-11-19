@@ -1,19 +1,37 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectionStrategy } from '@angular/core';
 
+import { FormsModule } from '@angular/forms';
 import { MediaItem, ScriptInfo } from '../../models/interfaces';
 
 @Component({
     selector: 'app-media-item-info-tab',
-    imports: [],
+    imports: [FormsModule],
     templateUrl: './media-item-info-tab.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './media-item-info-tab.component.css'
 })
-export class MediaItemInfoTabComponent {
+export class MediaItemInfoTabComponent implements OnInit {
     @Input() item!: MediaItem;
     @Input() isVisible = false;
+    @Output() onDirty = new EventEmitter<void>();
 
     private expandedScripts = new Set<number>();
+
+    private _creator = '';
+    public get creator() {
+        return this._creator;
+    }
+    public set creator(value) {
+        this._creator = value;
+        if (this.item?.metaData) {
+            this.item.metaData.creator = this.creator;
+            this.onDirty.emit();
+        }
+    }
+
+    ngOnInit(): void {
+        this._creator = this.item?.metaData?.creator ?? '';
+    }
 
     get name(): string {
         return this.item?.name || '';

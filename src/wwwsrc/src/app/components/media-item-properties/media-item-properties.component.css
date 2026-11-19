@@ -53,6 +53,12 @@
     font-weight: bold;
 }
 
+.properties-modal-eyebrow {  
+    font-size: 0.8rem;
+    color: var(--foreground-color-header-eyebrow);
+    margin: 0px 0px 4px 1px;
+}
+
 .close-btn {
     background: none;
     border: none;

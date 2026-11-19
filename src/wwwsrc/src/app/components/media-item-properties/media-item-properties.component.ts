@@ -36,6 +36,10 @@ export class MediaItemPropertiesComponent {
     tabs = ['Settings', 'Tags', 'Info'];
     activeTab = 0;
 
+    get itemName(): string {
+        return this.item?.displayName || 'Unknown name';
+    }
+
     get isDirty() {
         return this._isDirty || this._isDirty && !this._isSaving;
     }
