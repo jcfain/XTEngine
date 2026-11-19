@@ -133,6 +133,7 @@ button.button--pill {
     border-radius: var(--pill-border-radius);
     font-size: var(--font-size-small);
     transition: .15s ease;
+    min-width: fit-content;
 }
 
 button.button--pill:hover {

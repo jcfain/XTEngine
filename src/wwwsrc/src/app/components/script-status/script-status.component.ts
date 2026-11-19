@@ -132,6 +132,7 @@ export class ScriptStatusComponent implements OnInit, OnDestroy {
       if(this.channels.length == 0) {
         this.noScriptInput = true;
       }
+      state.timeout = undefined;
     }, 10000);
   }
 

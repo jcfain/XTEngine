@@ -30,6 +30,7 @@
        --motion-profiles-border-color: transparent on the host). */
     border: 1px solid var(--motion-profiles-border-color, aliceblue);
     max-height: var(--motion-profiles-max-height, min(500px,calc(100vh - 200px)));
+    overflow-x: auto;
 }
 
 /* TCode-action style toggle buttons - only the selected profile is toggled.

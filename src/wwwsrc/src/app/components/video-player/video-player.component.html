@@ -186,11 +186,30 @@
           <use href="#funscript"></use>
         </svg>
       </button>
-      <button data-title="Media settings" class="video-control video-control-main" id="playing-media-settings-button" (click)="openMediaSettings()">
-        <svg class="player-button-icon media-settings-button">
-          <use href="#media-settings"></use>
-        </svg>
-      </button>
+      <div class="media-popover">
+        <button data-title="Media options: properties, subtitles" class="video-control video-control-main" id="media-popover-button" (click)="toggleMediaPopover()">
+          <svg class="player-button-icon">
+            <use href="#chevron-up"></use>
+          </svg>
+        </button>
+        @if (mediaPopoverOpen) {
+        <div class="media-popover-menu">
+          <button class="media-popover-item" (click)="openMediaSettings()">
+            <svg class="player-button-icon"><use href="#media-settings"></use></svg>
+            <span>Properties</span>
+          </button>
+          <button class="media-popover-item media-popover-item--separator" [class.media-popover-item--disabled]="!hasSubtitle" (click)="toggleSubtitles()">
+            <span class="subtitle-checkbox" [class.subtitle-checkbox--checked]="subtitleEnabled">
+              @if (subtitleEnabled) {
+              <svg class="subtitle-check"><use href="#check"></use></svg>
+              }
+            </span>
+            <svg class="subtitle-cc-icon"><use href="#cc"></use></svg>
+            <span>Subtitles</span>
+          </button>
+        </div>
+        }
+      </div>
     </div>
   </div>
 </div>

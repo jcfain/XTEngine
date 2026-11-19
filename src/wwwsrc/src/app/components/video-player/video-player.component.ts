@@ -25,7 +25,8 @@ import { DeviceConnectionService } from '../../services/device-connection.servic
     imports: [FormsModule, MediaItemPropertiesComponent, MediaItemAltScriptsComponent, ScriptStatusComponent, MotionProfilesComponent, SettingsComponent],
     templateUrl: './video-player.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
-    styleUrl: './video-player.component.css'
+    styleUrl: './video-player.component.css',
+    host: { '(document:click)': 'onDocumentClick($event)' }
 })
 export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('videoNode', { static: false }) videoNodeRef!: ElementRef<HTMLVideoElement>;
@@ -64,9 +65,18 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   muted: boolean = false;
   m_progress = 0;
   scriptStatusOpen = false;
-  motionProfilesOpen = false;
+  get motionProfilesOpen() {
+    return this.m_motionProfilesOpen && this.m_pinMotionProfilesOpen || 
+      this.m_motionProfilesOpen && !this.m_pinMotionProfilesOpen && this.controlsVisible;
+  };
   mediaSettingsOpen = false;
   altScriptsOpen = false;
+  // Media popover (properties + subtitles toggle).
+  mediaPopoverOpen = false;
+  subtitleEnabled = false;
+  get hasSubtitle(): boolean {
+    return !!this.mediaItem?.subtitle;
+  }
   // Seconds to seek on a double click/tap (left half = backward, right half =
   // forward). Kept in sync with the server "videoIncrement" setting.
   videoIncrementSecs = 10;
@@ -75,6 +85,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   private lastTapTime = 0;
   private pendingTapTimer: any = null;
   private pendingClickTimer: any = null;
+  private m_motionProfilesOpen = false;
+  private m_pinMotionProfilesOpen = false;
   // Settings modal (rendered inside the video container so it also shows in
   // full screen). mediaLoaded mirrors the old app-level gate: the modal
   // binds to the server settings, which are only fetched once the media list
@@ -191,6 +203,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
       this.videoService.playingMediaItem$.subscribe(v => {
         const previous = this.mediaItem;
         this.mediaItem = v;
+        // A new item starts with subtitles on when it has a sidecar (the
+        // video service adds the <track> element with default = true).
+        this.subtitleEnabled = !!v?.subtitle;
+        this.mediaPopoverOpen = false;
         // Only drop the heat map when a *different* video starts (or none).
         // The playing item is re-emitted on metadata updates for the same
         // item, and those must not wipe a heat map that just arrived.
@@ -201,6 +217,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
       this.localSettingsService.volume$.subscribe(v => this.m_volume = v),
       this.localSettingsService.mute$.subscribe(v => this.muted = v),
       this.localSettingsService.disableHeatmap$.subscribe(v => this.disableHeatmap = v),
+      this.localSettingsService.pinMotionProfilesOnVideoControls$.subscribe(v => this.m_pinMotionProfilesOpen = v),
       this.localSettingsService.disableFullScreenMediaList$.subscribe(v => this.disableFullscreenMediaList = v),
       this.messageHandlerService.heatmap$.subscribe(v => this.setHeatmapSvg(v)),
       this.mediaListService.mediaListDisplayed$.subscribe(list => {
@@ -655,10 +672,6 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   stop() {
-    if(this.scriptStatusOpen)
-      this.toggleScriptStatus();
-    if(this.motionProfilesOpen)
-      this.toggleMotionProfiles();
     this.setHeatmapSvg(null);
     this.videoService.stopVideo();
   }
@@ -750,11 +763,41 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!this.mediaItem) {
       return;
     }
+    this.mediaPopoverOpen = false;
     this.mediaSettingsOpen = true;
   }
 
   closeMediaSettings(): void {
     this.mediaSettingsOpen = false;
+  }
+
+  toggleMediaPopover(): void {
+    this.mediaPopoverOpen = !this.mediaPopoverOpen;
+  }
+
+  // Closes the media popover when clicking anywhere outside of it.
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.mediaPopoverOpen) {
+      return;
+    }
+    const target = event.target as HTMLElement | null;
+    if (target && !target.closest('.media-popover')) {
+      this.mediaPopoverOpen = false;
+    }
+  }
+
+  // Toggles the <track> element added by the video service for items that
+  // have a subtitle sidecar.
+  toggleSubtitles(): void {
+    if (!this.hasSubtitle) {
+      return;
+    }
+    this.subtitleEnabled = !this.subtitleEnabled;
+    const video = this.videoNodeRef?.nativeElement;
+    const track = video?.textTracks?.[0];
+    if (track) {
+      track.mode = this.subtitleEnabled ? 'showing' : 'hidden';
+    }
   }
 
   openAltScripts(): void {
@@ -777,7 +820,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   // The motion profiles panel is rendered in-flow inside the video container
   // (see .motion-profiles-panel) - it just toggles its visibility here.
   toggleMotionProfiles(): void {
-    this.motionProfilesOpen = !this.motionProfilesOpen;
+    this.m_motionProfilesOpen = !this.m_motionProfilesOpen;
   }
   
   private formatTime(timeInSeconds: number): { hours: string; minutes: string; seconds: string } {

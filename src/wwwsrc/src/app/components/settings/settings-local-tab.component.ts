@@ -28,6 +28,7 @@ export class SettingsLocalTabComponent implements OnInit {
     disableLazyLoad = false;
     disableFullScreenMediaList = false;
     disableHeatmap = false;
+    pinMotionProfilesOnVideoControls = false;
     animateGifsOnHover = true;
 
     // Text to speech
@@ -49,6 +50,8 @@ export class SettingsLocalTabComponent implements OnInit {
         this.localSettings.disableBrowserLazyLoad$.subscribe(v => this.disableLazyLoad = v);
         this.localSettings.disableFullScreenMediaList$.subscribe(v => this.disableFullScreenMediaList = v);
         this.localSettings.disableHeatmap$.subscribe(v => this.disableHeatmap = v);
+        this.localSettings.pinMotionProfilesOnVideoControls$.subscribe(v => this.pinMotionProfilesOnVideoControls = v);
+        
         this.localSettings.animateGifsOnHover$.subscribe(v => this.animateGifsOnHover = v);
         this.localSettings.theme$.subscribe(v => this._theme = v);
 
@@ -69,6 +72,10 @@ export class SettingsLocalTabComponent implements OnInit {
 
     onDisableHeatmapChange(checked: boolean): void {
         this.localSettings.setDisableHeatmap(checked);
+    }
+
+    onPinMotionProfilesOnVideoControls(checked: boolean): void {
+        this.localSettings.setPinMotionProfilesOnVideoControls(checked);
     }
 
     onAnimateGifsOnHoverChange(checked: boolean): void {

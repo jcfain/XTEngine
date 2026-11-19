@@ -849,3 +849,88 @@ button.video-control.pinned {
     white-space: nowrap;
     text-overflow: ellipsis;
 }
+
+/* Media popover (properties + subtitles toggle). The menu is positioned
+   above the button, right aligned with its right edge. */
+.media-popover {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.media-popover-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 170px;
+    padding: 4px;
+    background: rgba(15, 15, 15, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    z-index: 20;
+}
+
+.media-popover-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.media-popover-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.media-popover-item--separator {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0 0 4px 4px;
+}
+
+.media-popover-item--disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.media-popover-item .player-button-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.subtitle-checkbox {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.subtitle-checkbox--checked {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.subtitle-check {
+    width: 10px;
+    height: 10px;
+}
+
+.subtitle-cc-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
