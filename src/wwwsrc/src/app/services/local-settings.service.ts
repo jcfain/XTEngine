@@ -47,7 +47,17 @@ export class LocalSettingsService {
     private selectedTagsSubject = new BehaviorSubject<string[]>(this.selectedTagsDefault);
     selectedTags$: Observable<string[]> = this.selectedTagsSubject.asObservable();
 
-    readonly selectedInputDeviceDefault = ConnectionInterface.None;
+    // The HereSphere and DeoVR browsers play the stream themselves, so the
+    // external player and the HereSphere/DeoVR input connection are the
+    // defaults there (Local and Connections settings tabs).
+    private static isExternalPlayerBrowser(): boolean {
+        const ua = navigator.userAgent;
+        return ua.indexOf('Deo VR') !== -1 || ua.indexOf('HereSphere') !== -1;
+    }
+
+    readonly selectedInputDeviceDefault = LocalSettingsService.isExternalPlayerBrowser()
+        ? ConnectionInterface.HereSphere
+        : ConnectionInterface.None;
     private selectedInputDeviceKey = "selectedInputDevice";
     private selectedInputDeviceSubject = new BehaviorSubject<ConnectionInterface>(this.selectedInputDeviceDefault);
     selectedInputDevice$: Observable<ConnectionInterface> = this.selectedInputDeviceSubject.asObservable();
@@ -57,15 +67,10 @@ export class LocalSettingsService {
     private selectedOuputDeviceSubject = new BehaviorSubject<ConnectionInterface>(this.selectedOuputDeviceDefault);
     selectedOuputDevice$: Observable<ConnectionInterface> = this.selectedOuputDeviceSubject.asObservable();
 
-    readonly externalStreamingDefault = false;
+    readonly externalStreamingDefault = LocalSettingsService.isExternalPlayerBrowser();
     private externalStreamingKey = "externalStreaming";
     private externalStreamingSubject = new BehaviorSubject<boolean>(this.externalStreamingDefault);
     externalStreaming$: Observable<boolean> = this.externalStreamingSubject.asObservable();
-
-    readonly disableBrowserLazyLoadDefault = false;
-    private disableBrowserLazyLoadKey = "disableBrowserLazyLoad";
-    private disableBrowserLazyLoadSubject = new BehaviorSubject<boolean>(this.disableBrowserLazyLoadDefault);
-    disableBrowserLazyLoad$: Observable<boolean> = this.disableBrowserLazyLoadSubject.asObservable();
 
     readonly disableFullScreenMediaListDefault = false;
     private disableFullScreenMediaListKey = "disableFullScreenMediaList";
@@ -138,7 +143,6 @@ export class LocalSettingsService {
         this.selectedInputDeviceSubject.next(this.getFromLocalStorage(this.selectedInputDeviceKey, this.selectedInputDeviceDefault));
         this.selectedOuputDeviceSubject.next(this.getFromLocalStorage(this.selectedOuputDeviceKey, this.selectedOuputDeviceDefault));
         this.externalStreamingSubject.next(this.getFromLocalStorage(this.externalStreamingKey, this.externalStreamingDefault));
-        this.disableBrowserLazyLoadSubject.next(this.getFromLocalStorage(this.disableBrowserLazyLoadKey, this.externalStreamingDefault));
         this.disableHeatmapSubject.next(this.getFromLocalStorage(this.disableHeatmapKey, this.disableHeatmapDefault));
         this.pinMotionProfilesOnVideoControlsSubject.next(this.getFromLocalStorage(this.pinMotionProfilesOnVideoControlsKey, this.pinMotionProfilesOnVideoControlsDefault));
         this.animateGifsOnHoverSubject.next(this.getFromLocalStorage(this.animateGifsOnHoverKey, this.animateGifsOnHoverDefault));
@@ -231,11 +235,6 @@ export class LocalSettingsService {
     setExternalStreamingDefault(value: boolean): void {
         this.setToLocalStorage(this.externalStreamingKey, value);
         this.externalStreamingSubject.next(value);
-    }
-
-    setDisableBrowserLazyLoad(value: boolean): void {
-        this.setToLocalStorage(this.disableBrowserLazyLoadKey, value);
-        this.disableBrowserLazyLoadSubject.next(value);
     }
 
     setDisableFullScreenMediaList(value: boolean): void {

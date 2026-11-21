@@ -1,7 +1,5 @@
 import { Directive, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { SimpleChanges } from "@angular/core";
-import { Subscription } from "rxjs";
-import { LocalSettingsService } from "../services/local-settings.service";
 
 /**
  * Defers setting the img src until the element is near the viewport.
@@ -28,12 +26,10 @@ export class LazySrcDirective implements OnInit, OnDestroy {
 
     private observer: IntersectionObserver | null = null;
     private loaded = false;
-    private subscription = new Subscription();
     loading = false;
 
     constructor(
-        private el: ElementRef<HTMLImageElement>,
-        private localSettingsService: LocalSettingsService
+        private el: ElementRef<HTMLImageElement>
     ) { }
 
     ngOnInit(): void {
@@ -42,14 +38,6 @@ export class LazySrcDirective implements OnInit, OnDestroy {
         }
         this.loading = true;
         this.el.nativeElement.classList.add("lazy-src-loading");
-        // Honor the "disable lazy load" local setting
-        this.subscription.add(
-            this.localSettingsService.disableBrowserLazyLoad$.subscribe(disabled => {
-                if (disabled) {
-                    this.load();
-                }
-            })
-        );
         if (this.loaded) {
             return;
         }
@@ -78,7 +66,6 @@ export class LazySrcDirective implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
-        this.subscription.unsubscribe();
         this.observer?.disconnect();
         this.observer = null;
     }

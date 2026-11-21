@@ -25,7 +25,6 @@ export class SettingsLocalTabComponent implements OnInit {
         this._theme = value.toLowerCase();
     }
     externalStreaming = false;
-    disableLazyLoad = false;
     disableFullScreenMediaList = false;
     disableHeatmap = false;
     pinMotionProfilesOnVideoControls = false;
@@ -47,7 +46,6 @@ export class SettingsLocalTabComponent implements OnInit {
 
     ngOnInit(): void {
         this.localSettings.externalStreaming$.subscribe(v => this.externalStreaming = v);
-        this.localSettings.disableBrowserLazyLoad$.subscribe(v => this.disableLazyLoad = v);
         this.localSettings.disableFullScreenMediaList$.subscribe(v => this.disableFullScreenMediaList = v);
         this.localSettings.disableHeatmap$.subscribe(v => this.disableHeatmap = v);
         this.localSettings.pinMotionProfilesOnVideoControls$.subscribe(v => this.pinMotionProfilesOnVideoControls = v);
@@ -60,10 +58,6 @@ export class SettingsLocalTabComponent implements OnInit {
 
     onExternalStreamingChange(checked: boolean): void {
         this.localSettings.setExternalStreamingDefault(checked);
-    }
-
-    onDisableLazyLoadChange(checked: boolean): void {
-        this.localSettings.setDisableBrowserLazyLoad(checked);
     }
 
     onDisableFullScreenMediaListChange(checked: boolean): void {
