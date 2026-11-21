@@ -231,19 +231,22 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         if (hwPref == "disabled")
         {
             // Empty list -> no HW acceleration -> software decoders (dav1d for AV1).
-            setenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES", "", 1);
+            // qputenv/qUnsetenv: portable (setenv/unsetenv are POSIX and not
+            // declared by MinGW); qputenv(name, "") sets an empty value, same
+            // as setenv(name, "", 1).
+            qputenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES", "");
             LogHandler::Info("FFmpeg hardware decoding preference: disabled (software decoders)");
         }
         else if (hwPref == "auto")
         {
             // Unset -> Qt auto-detects available HW backends.
-            unsetenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES");
+            qUnsetenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES");
             LogHandler::Info("FFmpeg hardware decoding preference: auto (auto-detect GPU backends)");
         }
         else
         {
             // Force a specific backend (comma-separated list of device names).
-            setenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES", qPrintable(hwPref), 1);
+            qputenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES", hwPref.toUtf8());
             LogHandler::Info("FFmpeg hardware decoding preference: forced backend '" + hwPref + "'");
         }
 
