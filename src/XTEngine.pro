@@ -243,7 +243,10 @@ CONFIG += shared
         #DESTDIR = $$shell_path($$OUT_PWD/release)
     }
     RPATHDIR *= @loader_path/../Frameworks @executable_path/../Frameworks
-    QMAKE_LFLAGS_SONAME = -W1,-install_name,@rpath,
+    # -Wl (not -W1): the capital-i typo made clang treat the whole flag as an
+    # unknown warning option, so the dylib was stamped with its default
+    # install name (the absolute build/install path) instead of @rpath.
+    QMAKE_LFLAGS_SONAME = -Wl,-install_name,@rpath,
     isEmpty(QMAKE_LFLAGS_RPATH): QMAKE_LFLAGS_RPATH=-Wl,-rpath,
     for(R,RPATHDIR) {
         QMAKE_LFLAGS *= \'$${QMAKE_LFLAGS_RPATH}$$R\'
