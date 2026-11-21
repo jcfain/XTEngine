@@ -294,7 +294,10 @@ win32 {
 # deletes, so old bundles (e.g. main-XXXX.js / styles-XXXX.css) would linger and
 # the served page could go stale. Wiping makes $$DESTDIR/www an exact mirror.
 win32 {
-    rmDir = rmdir /s /q
+    # rm -rf (not `rmdir /s /q`): works under BOTH cmd.exe (Qt's MinGW
+    # ships rm.exe) and Git Bash / MSYS shells, where mingw32-make runs
+    # recipes through POSIX sh and `rmdir /s /q` fails.
+    rmDir = rm -rf
     copydata.commands = $$rmDir $$shell_quote($$shell_path($$DESTDIR/www)) && $(COPY_DIR) $$shell_quote($$shell_path($$PWD/www)) $$shell_quote($$shell_path($$DESTDIR))
 } else: {
     rmDir = rm -rf
