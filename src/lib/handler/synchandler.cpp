@@ -106,6 +106,7 @@ SyncLoadState SyncHandler::load(const LibraryListItem27 &libraryItem, bool reset
 
 SyncLoadState SyncHandler::load(const QString& funscript) {
     LibraryListItem27 item;
+    item.metadata = LibraryListItemMetaData258();
     buildScriptItem(item, funscript);
     return load(item);
 }
@@ -284,6 +285,7 @@ void SyncHandler::playStandAlone() {
                     {
                         _standAloneFunscriptCurrentTime += ((elapsedNS/1000000) * XMediaStateHandler::getPlaybackSpeed());
                     }
+                    // LogHandler::Debug("_standAloneFunscriptCurrentTime: "+QString::number(_standAloneFunscriptCurrentTime));
                     QString tcode = buildChannelActions(_standAloneFunscriptCurrentTime);
                     if(_funscriptStandAloneFuture.isCanceled())
                         break;
@@ -781,4 +783,5 @@ void SyncHandler::buildScriptItem(LibraryListItem27 &item, QString altScript)
     item.script = altScript;
     item.nameNoExtension = XFileUtil::getNameNoExtension(altScript);
     item.pathNoExtension = XFileUtil::getPathNoExtension(altScript);
+    item.metadata.offset = 0;
 }
