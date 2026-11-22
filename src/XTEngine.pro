@@ -244,9 +244,14 @@ CONFIG += shared
     }
     RPATHDIR *= @loader_path/../Frameworks @executable_path/../Frameworks
     # -Wl (not -W1): the capital-i typo made clang treat the whole flag as an
-    # unknown warning option, so the dylib was stamped with its default
-    # install name (the absolute build/install path) instead of @rpath.
-    QMAKE_LFLAGS_SONAME = -Wl,-install_name,@rpath,
+    # unknown warning option. The trailing char must be a SLASH, not a comma:
+    # clang splits -Wl,a,b on commas, so -Wl,-install_name,@rpath,NAME passes
+    # "-install_name @rpath NAME" to ld (NAME becomes a bogus input file).
+    # With the slash, ld gets one argument: @rpath/NAME.
+    QMAKE_LFLAGS_SONAME = -Wl,-install_name,@rpath/
+    # Force the deployment target: qmake's mkspec default (14.4) overrides
+    # the MACOSX_DEPLOYMENT_TARGET env var; 11.0 is Qt 6.12's minimum.
+    QMAKE_MACOSX_DEPLOYMENT_TARGET = 11.0
     isEmpty(QMAKE_LFLAGS_RPATH): QMAKE_LFLAGS_RPATH=-Wl,-rpath,
     for(R,RPATHDIR) {
         QMAKE_LFLAGS *= \'$${QMAKE_LFLAGS_RPATH}$$R\'
