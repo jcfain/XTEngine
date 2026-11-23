@@ -161,6 +161,15 @@ public:
             // settingGroup.insert(setting.group, settingKey);
             // SettingsGroupMap.insert(setting.profile, settingGroup);
         }
+#if defined(Q_OS_LINUX)
+        // The "Use the media backend of the OS" option (GStreamer) never worked
+        // in the Linux AppImage: the bundled GStreamer plugin is ABI-incompatible
+        // with the bundled glib and crashes at startup. The FFmpeg backend (with
+        // AV1) is the self-contained primary on Linux, so hide the option there.
+        // It stays available on Windows/macOS, where the OS backend works.
+        if (SettingsMap.contains(SettingKeys::useSystemMediaBackend))
+            SettingsMap[SettingKeys::useSystemMediaBackend].internal = true;
+#endif
     }
     const static inline QList<SettingMap> SettingsList =
     {
