@@ -1,6 +1,7 @@
 #include "thumbextractor.h"
 #include <QThread>
 #include <QThreadPool>
+#include <QPainter>
 
 #include "../handler/loghandler.h"
 #include "xmath.h"
@@ -322,12 +323,16 @@ bool ThumbExtractor::mediaHasError()
 void ThumbExtractor::videoFrameChanged(const QVideoFrame &frame)
 {
     if(m_extracting.loadAcquire()) {
-        LogHandler::Debug("[ThumbExtractor::videoFrameChanged] valid=" + QString::number(frame.isValid())
-            + " size=" + QString::number(frame.width()) + "x" + QString::number(frame.height())
-            + " pixelFormat=" + QString::number(static_cast<int>(frame.pixelFormat())));
-        QImage temp = frame.toImage();
-        if(temp.isNull())
-            LogHandler::Debug("[ThumbExtractor::videoFrameChanged] toImage() returned null");
+        if(!frame.isValid())
+            return;
+        // toImage() returns null for 10-bit formats (P010 etc).
+        // QPainter handles the 10-bit -> 8-bit conversion automatically.
+        QImage temp(frame.size(), QImage::Format_RGB32);
+        temp.fill(Qt::black);
+        {
+            QPainter painter(&temp);
+            frame.paint(&painter, QRectF(temp.rect()));
+        }
         if(!temp.isNull())
         {
             // Runs on the GUI thread - m_lastImage is read by the worker thread in
