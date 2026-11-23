@@ -63,6 +63,11 @@ private:
     bool mediaHasError();
     void videoFrameChanged(const QVideoFrame &thumb);
     void on_mediaError(QMediaPlayer::Error error, const QString &errorString);
+    // Converts a YUV 4:2:0 QVideoFrame (8-bit or 10-bit, semi-planar or planar)
+    // to an 8-bit RGB32 QImage. Handles NV12, NV21, YUV420P, P010, and
+    // YUV420P10 with BT.601/BT.709 auto-detect by resolution.
+    // Returns a null QImage if the frame cannot be converted.
+    static QImage convertYuvFrameToImage(const QVideoFrame &frame);
 };
 
 #endif // THUMBEXTRACTOR_H
