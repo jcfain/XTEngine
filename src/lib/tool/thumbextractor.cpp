@@ -322,11 +322,12 @@ bool ThumbExtractor::mediaHasError()
 void ThumbExtractor::videoFrameChanged(const QVideoFrame &frame)
 {
     if(m_extracting.loadAcquire()) {
-        // Force RGB32: 10-bit AV1 frames (yuv420p10le) fail with plain toImage()
-        // on some backends (no RHI -> CPU conversion path drops 10-bit).
-        QImage temp = frame.toImage(QVideoFrame::Format::RGB32);
+        LogHandler::Debug("[ThumbExtractor::videoFrameChanged] valid=" + QString::number(frame.isValid())
+            + " size=" + QString::number(frame.width()) + "x" + QString::number(frame.height())
+            + " pixelFormat=" + QString::number(static_cast<int>(frame.pixelFormat())));
+        QImage temp = frame.toImage();
         if(temp.isNull())
-            temp = frame.toImage(); // fallback for backends that reject explicit format
+            LogHandler::Debug("[ThumbExtractor::videoFrameChanged] toImage() returned null");
         if(!temp.isNull())
         {
             // Runs on the GUI thread - m_lastImage is read by the worker thread in
