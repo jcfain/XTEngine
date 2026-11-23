@@ -30,7 +30,8 @@ export class SettingsConnectionsTabComponent {
 
     outputDevices: { type: ConnectionInterface; name: string }[] = [
         { type: ConnectionInterface.Serial, name: 'Serial' },
-        { type: ConnectionInterface.Network, name: 'Network' }
+        { type: ConnectionInterface.Network, name: 'Network' },
+        { type: ConnectionInterface.BLE, name: 'BLE (Bluetooth)' }
     ];
 
     get selectedInputDevice(): ConnectionInterface {
