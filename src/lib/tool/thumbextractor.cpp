@@ -344,12 +344,24 @@ void ThumbExtractor::videoFrameChanged(const QVideoFrame &frame)
 
             if(planes >= 2)
             {
-                // YUV 4:2:0 (P010 / NV12 / YUV420P)
+                // YUV 4:2:0 (P010 / NV12 / NV21 / YUV420P)
+                const auto pixFmt = mutableFrame.surfaceFormat().pixelFormat();
+                const bool isNV21 = (pixFmt == QVideoFrameFormat::Format_NV21);
+                const bool isPlanar = (planes >= 3); // YUV420P: separate U/V planes
                 const uchar* yData  = mutableFrame.bits(0);
-                const uchar* uvData = mutableFrame.bits(1);
+                const uchar* uData  = mutableFrame.bits(1);
+                const uchar* vData  = isPlanar ? mutableFrame.bits(2) : nullptr;
                 const int yStride  = mutableFrame.bytesPerLine(0);
-                const int uvStride = mutableFrame.bytesPerLine(1);
+                const int uStride  = mutableFrame.bytesPerLine(1);
+                const int vStride  = isPlanar ? mutableFrame.bytesPerLine(2) : 0;
                 const bool is10bit = (yStride == w * 2); // 16-bit samples
+                // BT.709 for 720p+, BT.601 for 480p/576p
+                const bool isBT709 = (h >= 720);
+                const int kr = 298, kg = 298, kb = 298;
+                const int kv = isBT709 ? 459 : 409;
+                const int ku1 = isBT709 ? 55 : 100;
+                const int kv1 = isBT709 ? 136 : 208;
+                const int ku2 = isBT709 ? 541 : 516;
 
                 for(int y = 0; y < h; ++y)
                 {
@@ -359,27 +371,42 @@ void ThumbExtractor::videoFrameChanged(const QVideoFrame &frame)
                         int yv, u, v;
                         if(is10bit)
                         {
-                            // P010: 10-bit values in 16-bit containers, >>2 to get 8-bit
                             yv = (reinterpret_cast<const quint16*>(yData)[y * yStride / 2 + x]) >> 2;
-                            int uvIdx = (y / 2) * (uvStride / 2) + (x / 2) * 2;
-                            u = (reinterpret_cast<const quint16*>(uvData)[uvIdx])     >> 2;
-                            v = (reinterpret_cast<const quint16*>(uvData)[uvIdx + 1]) >> 2;
+                            if(isPlanar)
+                            {
+                                u = (reinterpret_cast<const quint16*>(uData)[(y/2) * uStride/2 + x/2]) >> 2;
+                                v = (reinterpret_cast<const quint16*>(vData)[(y/2) * vStride/2 + x/2]) >> 2;
+                            }
+                            else
+                            {
+                                int uvIdx = (y / 2) * (uStride / 2) + (x / 2) * 2;
+                                auto uv = reinterpret_cast<const quint16*>(uData);
+                                u = isNV21 ? uv[uvIdx + 1] >> 2 : uv[uvIdx] >> 2;
+                                v = isNV21 ? uv[uvIdx] >> 2     : uv[uvIdx + 1] >> 2;
+                            }
                         }
                         else
                         {
-                            // 8-bit YUV 4:2:0
                             yv = yData[y * yStride + x];
-                            int uvIdx = (y / 2) * uvStride + (x / 2) * 2;
-                            u = uvData[uvIdx];
-                            v = uvData[uvIdx + 1];
+                            if(isPlanar)
+                            {
+                                u = uData[(y/2) * uStride + x/2];
+                                v = vData[(y/2) * vStride + x/2];
+                            }
+                            else
+                            {
+                                int uvIdx = (y / 2) * uStride + (x / 2) * 2;
+                                u = isNV21 ? uData[uvIdx + 1] : uData[uvIdx];
+                                v = isNV21 ? uData[uvIdx]     : uData[uvIdx + 1];
+                            }
                         }
-                        // YUV (BT.709) -> RGB (1080p video)
+                        // YUV -> RGB
                         int c = yv - 16;
                         int d = u - 128;
                         int e = v - 128;
-                        int r = (298 * c + 459 * e + 128) >> 8;
-                        int g = (298 * c -  55 * d - 136 * e + 128) >> 8;
-                        int b = (298 * c + 541 * d + 128) >> 8;
+                        int r = (kr * c + kv * e + 128) >> 8;
+                        int g = (kg * c - ku1 * d - kv1 * e + 128) >> 8;
+                        int b = (kb * c + ku2 * d + 128) >> 8;
                         row[x] = qRgb(
                             qBound(0, r, 255),
                             qBound(0, g, 255),
