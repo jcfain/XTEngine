@@ -40,7 +40,7 @@ private:
     // seek+decode. Non-AV1 formats extract in <1s so the longer timeout is
     // harmless for them. The proper fix is RK3588S MPP hwaccel in FFmpeg,
     // but the rkmpp hwaccel in FFmpeg 6.1 does not support AV1 on this kernel.
-    static constexpr int m_defaultTimeout = 120000; // 120s: slow SBCs (RK3588S) need this for software AV1 decode
+    static constexpr int m_defaultTimeout = 300000; // 300s: diagnostic - rule out timing issue on slow SBCs
     // Atomic: written by the worker thread (extract), read by the GUI thread (videoFrameChanged)
     QAtomicInt m_extracting = 0;
     bool m_fileChanged = false;
