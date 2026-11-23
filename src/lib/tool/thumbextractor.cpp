@@ -346,6 +346,11 @@ void ThumbExtractor::videoFrameChanged(const QVideoFrame &frame)
             {
                 // YUV 4:2:0 (P010 / NV12 / NV21 / YUV420P)
                 const auto pixFmt = mutableFrame.surfaceFormat().pixelFormat();
+                LogHandler::Debug("[ThumbExtractor] planes=" + QString::number(planes)
+                    + " pixFmt=" + QString::number(static_cast<int>(pixFmt))
+                    + " size=" + QString::number(w) + "x" + QString::number(h)
+                    + " yStride=" + QString::number(mutableFrame.bytesPerLine(0))
+                    + " uStride=" + QString::number(mutableFrame.bytesPerLine(1)));
                 const bool isNV21 = (pixFmt == QVideoFrameFormat::Format_NV21);
                 const bool isPlanar = (planes >= 3); // YUV420P: separate U/V planes
                 const uchar* yData  = mutableFrame.bits(0);
