@@ -331,7 +331,7 @@ void ThumbExtractor::videoFrameChanged(const QVideoFrame &frame)
         temp.fill(Qt::black);
         {
             QPainter painter(&temp);
-            frame.paint(&painter, QRectF(temp.rect()));
+            frame.paint(&painter, QRectF(temp.rect()), QVideoFrame::PaintOptions());
         }
         if(!temp.isNull())
         {
