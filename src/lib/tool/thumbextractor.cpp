@@ -373,13 +373,13 @@ void ThumbExtractor::videoFrameChanged(const QVideoFrame &frame)
                             u = uvData[uvIdx];
                             v = uvData[uvIdx + 1];
                         }
-                        // YUV (BT.601) -> RGB
+                        // YUV (BT.709) -> RGB (1080p video)
                         int c = yv - 16;
                         int d = u - 128;
                         int e = v - 128;
-                        int r = (298 * c + 409 * e + 128) >> 8;
-                        int g = (298 * c - 100 * d - 208 * e + 128) >> 8;
-                        int b = (298 * c + 516 * d + 128) >> 8;
+                        int r = (298 * c + 459 * e + 128) >> 8;
+                        int g = (298 * c -  55 * d - 136 * e + 128) >> 8;
+                        int b = (298 * c + 541 * d + 128) >> 8;
                         row[x] = qRgb(
                             qBound(0, r, 255),
                             qBound(0, g, 255),
