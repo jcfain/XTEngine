@@ -30,7 +30,8 @@
 *.exe
 *.out
 *.app
-build-*
+# Build directories only (trailing slash) - never matches build-* files
+build-*/
 *.user
 src/www/.vscode/settings.json
 /src/build
