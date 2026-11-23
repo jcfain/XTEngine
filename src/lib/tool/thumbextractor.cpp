@@ -331,60 +331,64 @@ void ThumbExtractor::videoFrameChanged(const QVideoFrame &frame)
 
     // 2) Fallback: manual YUV->RGB for 10-bit (P010) and other formats
     //    where toImage() returns null (no RHI -> CPU path drops 10-bit).
-    if(temp.isNull() && frame.map(QVideoFrame::ReadOnly))
+    if(temp.isNull())
     {
-        const int w = frame.width();
-        const int h = frame.height();
-        const int planes = frame.planeCount();
-        temp = QImage(w, h, QImage::Format_RGB32);
-        temp.fill(Qt::black);
-
-        if(planes >= 2)
+        QVideoFrame mutableFrame = frame; // map() is non-const
+        if(mutableFrame.map(QVideoFrame::ReadOnly))
         {
-            // YUV 4:2:0 (P010 / NV12 / YUV420P)
-            const uchar* yData  = frame.bits(0);
-            const uchar* uvData = frame.bits(1);
-            const int yStride  = frame.bytesPerLine(0);
-            const int uvStride = frame.bytesPerLine(1);
-            const bool is10bit = (yStride == w * 2); // 16-bit samples
+            const int w = mutableFrame.width();
+            const int h = mutableFrame.height();
+            const int planes = mutableFrame.planeCount();
+            temp = QImage(w, h, QImage::Format_RGB32);
+            temp.fill(Qt::black);
 
-            for(int y = 0; y < h; ++y)
+            if(planes >= 2)
             {
-                QRgb* row = reinterpret_cast<QRgb*>(temp.scanLine(y));
-                for(int x = 0; x < w; ++x)
+                // YUV 4:2:0 (P010 / NV12 / YUV420P)
+                const uchar* yData  = mutableFrame.bits(0);
+                const uchar* uvData = mutableFrame.bits(1);
+                const int yStride  = mutableFrame.bytesPerLine(0);
+                const int uvStride = mutableFrame.bytesPerLine(1);
+                const bool is10bit = (yStride == w * 2); // 16-bit samples
+
+                for(int y = 0; y < h; ++y)
                 {
-                    int yv, u, v;
-                    if(is10bit)
+                    QRgb* row = reinterpret_cast<QRgb*>(temp.scanLine(y));
+                    for(int x = 0; x < w; ++x)
                     {
-                        // P010: 16-bit samples, upper 6 bits are zero
-                        yv = (reinterpret_cast<const quint16*>(yData)[y * yStride / 2 + x]) >> 6;
-                        int uvIdx = (y / 2) * (uvStride / 2) + (x / 2) * 2;
-                        u = (reinterpret_cast<const quint16*>(uvData)[uvIdx])     >> 6;
-                        v = (reinterpret_cast<const quint16*>(uvData)[uvIdx + 1]) >> 6;
+                        int yv, u, v;
+                        if(is10bit)
+                        {
+                            // P010: 16-bit samples, upper 6 bits are zero
+                            yv = (reinterpret_cast<const quint16*>(yData)[y * yStride / 2 + x]) >> 6;
+                            int uvIdx = (y / 2) * (uvStride / 2) + (x / 2) * 2;
+                            u = (reinterpret_cast<const quint16*>(uvData)[uvIdx])     >> 6;
+                            v = (reinterpret_cast<const quint16*>(uvData)[uvIdx + 1]) >> 6;
+                        }
+                        else
+                        {
+                            // 8-bit YUV 4:2:0
+                            yv = yData[y * yStride + x];
+                            int uvIdx = (y / 2) * uvStride + (x / 2) * 2;
+                            u = uvData[uvIdx];
+                            v = uvData[uvIdx + 1];
+                        }
+                        // YUV (BT.601) -> RGB
+                        int c = yv - 16;
+                        int d = u - 128;
+                        int e = v - 128;
+                        int r = (298 * c + 409 * e + 128) >> 8;
+                        int g = (298 * c - 100 * d - 208 * e + 128) >> 8;
+                        int b = (298 * c + 516 * d + 128) >> 8;
+                        row[x] = qRgb(
+                            qBound(0, r, 255),
+                            qBound(0, g, 255),
+                            qBound(0, b, 255));
                     }
-                    else
-                    {
-                        // 8-bit YUV 4:2:0
-                        yv = yData[y * yStride + x];
-                        int uvIdx = (y / 2) * uvStride + (x / 2) * 2;
-                        u = uvData[uvIdx];
-                        v = uvData[uvIdx + 1];
-                    }
-                    // YUV (BT.601) -> RGB
-                    int c = yv - 16;
-                    int d = u - 128;
-                    int e = v - 128;
-                    int r = (298 * c + 409 * e + 128) >> 8;
-                    int g = (298 * c - 100 * d - 208 * e + 128) >> 8;
-                    int b = (298 * c + 516 * d + 128) >> 8;
-                    row[x] = qRgb(
-                        qBound(0, r, 255),
-                        qBound(0, g, 255),
-                        qBound(0, b, 255));
                 }
             }
+            mutableFrame.unmap();
         }
-        frame.unmap();
     }
 
     if(!temp.isNull())
