@@ -359,11 +359,11 @@ void ThumbExtractor::videoFrameChanged(const QVideoFrame &frame)
                         int yv, u, v;
                         if(is10bit)
                         {
-                            // P010: 16-bit samples, upper 6 bits are zero
-                            yv = (reinterpret_cast<const quint16*>(yData)[y * yStride / 2 + x]) >> 6;
+                            // P010: 10-bit values in 16-bit containers, >>2 to get 8-bit
+                            yv = (reinterpret_cast<const quint16*>(yData)[y * yStride / 2 + x]) >> 2;
                             int uvIdx = (y / 2) * (uvStride / 2) + (x / 2) * 2;
-                            u = (reinterpret_cast<const quint16*>(uvData)[uvIdx])     >> 6;
-                            v = (reinterpret_cast<const quint16*>(uvData)[uvIdx + 1]) >> 6;
+                            u = (reinterpret_cast<const quint16*>(uvData)[uvIdx])     >> 2;
+                            v = (reinterpret_cast<const quint16*>(uvData)[uvIdx + 1]) >> 2;
                         }
                         else
                         {
