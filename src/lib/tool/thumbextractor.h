@@ -35,11 +35,12 @@ signals:
     void frameExtractionError(QString error);
 
 private:
-    // 30s: AV1 software decode on SBCs (Orange Pi 5 / RK3588S, no HW accel in
+    // 60s: AV1 software decode on SBCs (Orange Pi 5 / RK3588S, no HW accel in
     // the bundled FFmpeg) is slow enough that the default 5s times out during
     // seek+decode. Non-AV1 formats extract in <1s so the longer timeout is
-    // harmless for them. The proper fix is RK3588S MPP hwaccel in FFmpeg.
-    static constexpr int m_defaultTimeout = 30000;
+    // harmless for them. The proper fix is RK3588S MPP hwaccel in FFmpeg,
+    // but the rkmpp hwaccel in FFmpeg 6.1 does not support AV1 on this kernel.
+    static constexpr int m_defaultTimeout = 60000;
     // Atomic: written by the worker thread (extract), read by the GUI thread (videoFrameChanged)
     QAtomicInt m_extracting = 0;
     bool m_fileChanged = false;
