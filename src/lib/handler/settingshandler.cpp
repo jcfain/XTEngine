@@ -1474,6 +1474,17 @@ void SettingsHandler::Quit(bool restart)
 
 void SettingsHandler::Restart()
 {
+    // Flatpak + systemd: when running as a user service (flatpak/xtplayer.service
+    // sets XTP_SYSTEMD=1), a startDetached() child would orphan itself from
+    // systemd's process tracking (the unit would show "exited" while the child
+    // keeps running unmanaged). Exit instead: the unit's Restart=always
+    // respawns us, keeping the service state consistent.
+    if(qgetenv("XTP_SYSTEMD") == "1")
+    {
+        LogHandler::Debug("Restart requested under systemd - exiting for service respawn");
+        QCoreApplication::quit();
+        return;
+    }
 
 #if defined(Q_OS_WIN) || defined(Q_OS_MAC)
     // emit instance()->messageSend("Restarting: "+QCoreApplication::applicationFilePath(), XLogLevel::Information);
