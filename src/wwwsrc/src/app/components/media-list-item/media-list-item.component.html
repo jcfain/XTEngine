@@ -20,7 +20,7 @@
 
   <!-- Large thumbnail on top (YouTube style) with corner status badges -->
   <div class="media-thumb" [style.height]="thumbHeightPX" [style.width]="widthPX">
-    <img [lazySrc]="thumbPath()" [alt]="item.name" class="media-thumb-nail" />
+    <img [lazySrc]="thumbPath()" [alt]="item.name" class="media-thumb-nail" [style.object-fit]="thumbObjectFitCss" (load)="onThumbLoad($event)" />
     <div class="media-overlay">
       <span class="play-icon">&#9654;</span>
     </div>

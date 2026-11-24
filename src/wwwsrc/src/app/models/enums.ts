@@ -156,6 +156,16 @@ export enum ShowMode {
     ThreeD
 }
 
+// Mirrors the backend MediaThumbObjectFit enum (src/lib/lookup/enum.h) - keep
+// the values in sync. The CSS object-fit translation lives in the front end
+// only (see MediaListItemComponent.thumbObjectFitCss).
+export enum ThumbObjectFit {
+    Cover = 0,
+    ScaleDown = 1,
+    Contain = 2,
+    Smart = 3
+}
+
 export enum AuthResult {
     Fail,
     Success

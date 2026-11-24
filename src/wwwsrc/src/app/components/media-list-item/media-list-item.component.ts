@@ -2,13 +2,14 @@ import { Component, AfterViewChecked, ElementRef, EventEmitter, input, Input, On
 import { SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, ScriptInfo } from '../../models/interfaces';
-import { ScriptContainerType, ScriptType, ThumbState } from '../../models/enums';
+import { ScriptContainerType, ScriptType, ThumbObjectFit, ThumbState } from '../../models/enums';
 import { VideoService } from '../../services/video.service';
 import { ClickStopPropagation } from '../../directives/stop-propegation';
 import { LazySrcDirective } from '../../directives/lazy-src';
 import { MediaListItemContextMenuComponent } from '../media-list-item-context-menu/media-list-item-context-menu.component';
 import { GenericOverlayService } from '../../services/overlay.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
+import { SettingsService } from '../../services/settings.service';
 import { MediaListService } from '../../services/media-list-service';
 import { MediaItemPropertiesComponent } from '../media-item-properties/media-item-properties.component';
 import { Subscription } from 'rxjs';
@@ -82,6 +83,16 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
   get contextMenuHidden(): boolean {
     return !this.mediaListService.isContextMenuOpen(this.item.id);
   }
+  // Translates the front end agnostic enum to the CSS object-fit value.
+  get thumbObjectFitCss(): string {
+    switch (this.thumbObjectFit) {
+      case ThumbObjectFit.ScaleDown: return 'scale-down';
+      case ThumbObjectFit.Contain: return 'contain';
+      // Smart: resolved per image once it loads (see onThumbLoad).
+      case ThumbObjectFit.Smart: return this.smartFit;
+      default: return 'cover';
+    }
+  }
   get headerButtonPX() {
     return this.scaleDim(this.thumbSize, 1.03 * this.mediaItemHeaderIconMultiplier, 20) + "px";
   }
@@ -122,6 +133,14 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
   private thumbHovered = false;
   // Local setting: animate GIF/WebP thumbs only on hover (default) or always.
   private animateGifsOnHover = true;
+  // Server setting: how the thumbnail image is scaled to fit its frame.
+  // Stored as the front end agnostic ThumbObjectFit enum (mirrors the backend
+  // MediaThumbObjectFit); see thumbObjectFitCss for the CSS translation.
+  private thumbObjectFit = ThumbObjectFit.Cover;
+  // Smart fit resolved per image once it loads (see onThumbLoad): images
+  // narrower than the frame are shown whole (contain), wider ones fill it
+  // (cover). Defaults to cover until the first load.
+  private smartFit = 'cover';
 
   // Long-press opens the item's context menu on touch devices - the touch
   // equivalent of desktop right-click. The browser's built-in long-press
@@ -142,7 +161,8 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
     private videoService: VideoService,
     private overlayService: GenericOverlayService,
     private localSettingsService: LocalSettingsService,
-    private mediaListService: MediaListService
+    private mediaListService: MediaListService,
+    private settingsService: SettingsService
   ) {
     this.subscriptions.add(
       this.videoService.playingMediaItem$.subscribe(v => {
@@ -152,6 +172,11 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
     this.subscriptions.add(
       this.localSettingsService.animateGifsOnHover$.subscribe(v => {
         this.animateGifsOnHover = v;
+      })
+    );
+    this.subscriptions.add(
+      this.settingsService.thumbObjectFit$.subscribe(v => {
+        this.thumbObjectFit = v;
       })
     );
   }
@@ -331,6 +356,24 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
 
   onThumbMouseLeave(): void {
     this.thumbHovered = false;
+  }
+
+  // Smart object fit: once the thumb image is loaded its natural dimensions
+  // are known, so compare the image aspect ratio with the frame's (16:9).
+  // A narrower image (e.g. portrait) would be cropped heavily by cover, so
+  // it is shown whole (contain); an image as wide as or wider than the frame
+  // fills it (cover).
+  onThumbLoad(event: Event): void {
+    if (this.thumbObjectFit !== ThumbObjectFit.Smart) {
+      return;
+    }
+    const img = event.target as HTMLImageElement;
+    if (!img.naturalWidth || !img.naturalHeight || !this.width || !this.thumbHeight) {
+      return;
+    }
+    const imageAR = img.naturalWidth / img.naturalHeight;
+    const frameAR = this.width / this.thumbHeight;
+    this.smartFit = imageAR < frameAR ? 'contain' : 'cover';
   }
 
   getItemClass(item: MediaItem): string {

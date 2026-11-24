@@ -13,6 +13,7 @@ import { capitalizeFirstLetter } from '../../utils/utils';
 import { WebsocketService } from '../../services/websocket.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { AuthService } from '../../services/auth.service';
+import { SelectHsComponent } from '../select-hs/select-hs.component';
 import { BUILD_VERSION } from '../../build-info';
 
 interface SettingGroup {
@@ -27,7 +28,7 @@ interface ExportedFile {
 
 @Component({
     selector: 'app-settings-system-tab',
-    imports: [FormsModule],
+    imports: [FormsModule, SelectHsComponent],
     templateUrl: './settings-system-tab.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './settings-system-tab.component.css'
@@ -190,6 +191,13 @@ export class SettingsSystemTabComponent implements OnInit {
         this.browserName = browserName;
         this.browserFullVersion = fullVersion;
         this.browserMajorVersion = majorVersion;
+    }
+
+    // DOM <option> values are always strings while the server sends enum
+    // settings (e.g. mediaThumbObjectFit) as numbers, so bind the string form
+    // to the select model for the options to match.
+    getSelectValue(setting: Setting): string {
+        return setting.value === null || setting.value === undefined ? '' : String(setting.value);
     }
 
     getControlType(type: FormControlType): string {

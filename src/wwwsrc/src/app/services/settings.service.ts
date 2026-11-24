@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Setting, AllSettings } from '../models/interfaces';
-import { FormControlType, SettingProfile } from '../models/enums';
+import { FormControlType, SettingProfile, ThumbObjectFit } from '../models/enums';
 import { WebsocketService } from './websocket.service';
 import { MessageHandlerService } from './message-handler.service';
 
@@ -17,6 +17,12 @@ export class SettingsService {
 
   private mediaManagementEnabledSubject = new BehaviorSubject<boolean>(false);
   mediaManagementEnabled$: Observable<boolean> = this.mediaManagementEnabledSubject.asObservable();
+
+  // Server setting (mediaThumbObjectFit): how media list thumbnails are scaled.
+  // The backend stores the front end agnostic ThumbObjectFit enum; the CSS
+  // object-fit translation happens in the media list item component.
+  private thumbObjectFitSubject = new BehaviorSubject<ThumbObjectFit>(ThumbObjectFit.Cover);
+  thumbObjectFit$: Observable<ThumbObjectFit> = this.thumbObjectFitSubject.asObservable();
 
   constructor(private websocketService: WebsocketService,
     private messageHandlerService: MessageHandlerService
@@ -46,6 +52,12 @@ export class SettingsService {
     if (mmSetting) {
       this.mediaManagementEnabledSubject.next(mmSetting.value);
     }
+
+    // Sync the media thumb object fit from the initial server settings.
+    const thumbFitSetting = allSettings['settings'].find(s => s.key === 'mediaThumbObjectFit');
+    if (thumbFitSetting) {
+      this.thumbObjectFitSubject.next(Number(thumbFitSetting.value) as ThumbObjectFit);
+    }
   }
 
   getSetting(key: string): Setting | undefined {
@@ -67,6 +79,9 @@ export class SettingsService {
       case 'enableMediaManagement':
         this.mediaManagementEnabledSubject.next(value);
         break;
+      case 'mediaThumbObjectFit':
+        this.thumbObjectFitSubject.next(Number(value) as ThumbObjectFit);
+        break;
     }
     this.websocketService.settingChange(key, value);
   }
@@ -76,6 +91,11 @@ export class SettingsService {
     switch (key) {
       case 'settingsBackupDirectory':
         // getExported();
+        break;
+      case 'mediaThumbObjectFit':
+        // The server broadcasts the change to every connected client, so this
+        // keeps all front ends in sync (not just the one that made the change).
+        this.thumbObjectFitSubject.next(Number(value) as ThumbObjectFit);
         break;
     }
   }

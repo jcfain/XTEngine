@@ -58,4 +58,17 @@ enum class LibraryType
     EXCLUSION
 };
 
+// Front end agnostic: the web front end mirrors this enum (ThumbObjectFit in
+// wwwsrc/src/app/models/enums.ts) and translates the value to the CSS
+// object-fit property itself. Keep the values in sync with the TS enum.
+// Smart is resolved per image by the front end: images narrower than the
+// frame are shown whole (contain), wider ones fill the frame (cover).
+enum class MediaThumbObjectFit
+{
+    Cover = 0,
+    ScaleDown = 1,
+    Contain = 2,
+    Smart = 3
+};
+
 #endif // ENUM_H

@@ -35,13 +35,13 @@
                                     [title]="setting.description" />
                             }
                             @case ('select') {
-                                <select [id]="setting.key"
-                                    [ngModel]="setting.value" (ngModelChange)="onValueChange(setting, $event)"
+                                <select-hs [id]="setting.key"
+                                    [ngModel]="getSelectValue(setting)" (ngModelChange)="onValueChange(setting, $event)"
                                     [title]="setting.description">
                                     @for (option of setting.options ?? []; track option.value) {
                                         <option [value]="option.value">{{ option.key }}</option>
                                     }
-                                </select>
+                                </select-hs>
                             }
                             @default {
                                 <input [id]="setting.key" [type]="getControlType(setting.type)"

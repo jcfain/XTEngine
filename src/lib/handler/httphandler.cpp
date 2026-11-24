@@ -784,6 +784,28 @@ void HttpHandler::handleSettings(const QHttpServerRequest &request, QHttpServerR
             settingsObj["options"] = options;
             settingsObj["status"] = SettingsHandler::hardwareDecodeStatus();
         }
+        if (map.key == SettingKeys::mediaThumbObjectFit)
+        {
+            // The stored value is the front end agnostic MediaThumbObjectFit
+            // enum; the options carry its int values and the web front end
+            // translates them to CSS object-fit.
+            struct FitOption { MediaThumbObjectFit fit; const char* label; };
+            const FitOption fits[] = {
+                {MediaThumbObjectFit::Cover, "Cover"},
+                {MediaThumbObjectFit::ScaleDown, "Scale down"},
+                {MediaThumbObjectFit::Contain, "Contain"},
+                {MediaThumbObjectFit::Smart, "Smart"},
+            };
+            QJsonArray options;
+            for (const auto& fit : fits)
+            {
+                QJsonObject option;
+                option["key"] = fit.label;
+                option["value"] = QString::number(static_cast<int>(fit.fit));
+                options.append(option);
+            }
+            settingsObj["options"] = options;
+        }
         settingsArray.append(settingsObj);
     }
     root["settings"] = settingsArray;
