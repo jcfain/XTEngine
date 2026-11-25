@@ -803,6 +803,11 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     this.mediaSettingsOpen = true;
   }
 
+  onSettings(): void {
+    this.mediaPopoverOpen = false;
+    this.appMenuService.openSettings();
+  }
+
   closeMediaSettings(): void {
     this.mediaSettingsOpen = false;
   }

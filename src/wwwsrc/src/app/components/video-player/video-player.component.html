@@ -201,10 +201,6 @@
         </button>
         @if (mediaPopoverOpen) {
         <div class="media-popover-menu">
-          <button class="media-popover-item" (click)="openMediaSettings()">
-            <svg class="player-button-icon"><use href="#media-settings"></use></svg>
-            <span>Properties</span>
-          </button>
           <button class="media-popover-item media-popover-item--separator" [class.media-popover-item--disabled]="!hasSubtitle" (click)="toggleSubtitles()">
             <span class="subtitle-checkbox" [class.subtitle-checkbox--checked]="subtitleEnabled">
               @if (subtitleEnabled) {
@@ -213,6 +209,14 @@
             </span>
             <svg class="subtitle-cc-icon"><use href="#cc"></use></svg>
             <span>Subtitles</span>
+          </button>
+          <button class="media-popover-item" (click)="openMediaSettings()">
+            <svg class="player-button-icon"><use href="#media-settings"></use></svg>
+            <span>Properties</span>
+          </button>
+          <button class="media-popover-item" (click)="onSettings()">
+            <svg class="player-button-icon" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg"><use href="#settings"></use></svg>
+            <span>Settings</span>
           </button>
         </div>
         }
