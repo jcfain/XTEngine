@@ -30,12 +30,17 @@ CodecProbeResult MediaFormat::probeFFmpegCodecs()
 
     // Candidate library names, newest SONAME first. The Qt 6.12 FFmpeg
     // plugin is linked against FFmpeg 9.0.x (libavcodec.so.63 /
-    // avcodec-63.dll / avcodec.63.dylib).
+    // avcodec-63.dll / libavcodec.63.dylib).
+    // NOTE: on macOS the dylib carries the "lib" prefix (Qt ships
+    // lib/libavcodec.63.dylib and the custom AV1 build produces the same
+    // name), so the candidate must be "libavcodec.63.dylib" - a bare
+    // "avcodec.63.dylib" is never found and the probe reports the FFmpeg
+    // backend as missing even though the plugin loads it fine.
     QStringList candidates;
 #ifdef Q_OS_WIN
     candidates << "avcodec-63.dll" << "avcodec-62.dll" << "avcodec-61.dll" << "avcodec-60.dll";
 #elif defined(Q_OS_MACOS)
-    candidates << "avcodec.63.dylib" << "avcodec.62.dylib" << "avcodec.61.dylib" << "avcodec.60.dylib";
+    candidates << "libavcodec.63.dylib" << "libavcodec.62.dylib" << "libavcodec.61.dylib" << "libavcodec.60.dylib";
 #else
     candidates << "libavcodec.so.63" << "libavcodec.so.62" << "libavcodec.so.61" << "libavcodec.so.60";
 #endif
