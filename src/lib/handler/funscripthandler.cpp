@@ -49,6 +49,7 @@ bool FunscriptHandler::load(const Track &channelName, const QString &funscriptPa
     jsonToFunscript(obj, funscript);
     setFunscriptSettings(channelName, funscript);
     SettingsHandler::setFunscriptLoaded(TCodeChannelLookup::ToString(channelName), true);
+    m_loaded = true;
     m_funscripts[channelName] = funscript;
     return true;
 }

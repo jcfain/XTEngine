@@ -7,6 +7,7 @@ import { XrPlayerComponent } from './components/xr-player/xr-player.component';
 import { SettingsComponent } from './components/settings/settings.component';
 import { ScriptStatusComponent } from './components/script-status/script-status.component';
 import { MediaListComponent } from './components/media-list/media-list.component';
+import { VideoSuggestionsComponent } from './components/video-suggestions/video-suggestions.component';
 import { ServerService } from './services/server.service';
 import { MediaService } from './services/media.service';
 import { AuthService } from './services/auth.service';
@@ -38,6 +39,7 @@ import { AppMenuService } from './services/app-menu.service';
     SettingsComponent,
     ScriptStatusComponent,
     MediaListComponent,
+    VideoSuggestionsComponent,
     AppFooterComponent,
     AuthComponent,
     AlertsComponent,
@@ -68,6 +70,10 @@ export class AppComponent implements OnInit {
   // instead of the in-page video player, so the compact external player
   // component replaces the video player in the layout.
   externalStreaming = false;
+  // True while a video is on screen. Drives the landscape split layout:
+  // with no video the media list takes the full width, and a playing video
+  // pushes the media list into a narrower column.
+  videoVisible = false;
 
   constructor(
     private appStateService: AppStateService,
@@ -112,6 +118,12 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     this.localSettingsService.externalStreaming$.subscribe(v => {
       this.externalStreaming = v;
+    });
+
+    // Track video visibility so the landscape layout can switch between a
+    // full-width media list (no video) and a split view (video playing).
+    this.videoService.videoVisible$.subscribe(v => {
+      this.videoVisible = v;
     });
 
     // Apply the theme to <html> so the theme files' :root[data-theme]

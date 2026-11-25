@@ -2,7 +2,6 @@
   class="video-container"
   [class.video-container-visible]="videoVisible"
   [class.hide-cursor]="videoVisible && !controlsVisible && !mediaSheetVisible"
-  [class.video-container-fixed]="isVideoFixedLowHeight()"
   (mousemove)="showControls()"
   (mouseleave)="hideControls()"
   (fullscreenchange)="onFullScreenChange()"

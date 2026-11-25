@@ -1,4 +1,29 @@
 import { MediaItem } from "../models/interfaces";
+import { ThumbState } from "../models/enums";
+
+// Thumb <img> src for a media item, resolved from its thumb state. Shared by
+// the media list and the video suggestions panel. "static=1" asks the server
+// for a static (first frame) version of animated thumbs - only applied to the
+// real thumb paths (the loading/error placeholders are already static).
+export function getMediaThumbPath(item: MediaItem, staticFrame = false): string {
+    const thumbFile = "/thumb/";
+    const cacheBust = item.thumbVersion ? `?v=${item.thumbVersion}` : "";
+    const staticParam = staticFrame ? (item.thumbVersion ? "&static=1" : "?static=1") : "";
+    switch (item.thumbState) {
+        case ThumbState.Waiting:
+            return thumbFile + item.thumbFileLoading;
+        case ThumbState.Error:
+            return thumbFile + item.thumbFileError;
+        case ThumbState.Loading:
+            return thumbFile + item.thumbFileLoadingCurrent;
+        case ThumbState.Ready:
+            return thumbFile + item.relativeThumb + cacheBust + staticParam;
+        case ThumbState.Unknown:
+            return thumbFile + item.thumbFileUnknown;
+        default:
+            return thumbFile + item.relativeThumb + cacheBust + staticParam;
+    }
+}
 
 export function scale(number: number, inMin: number, inMax: number, outMin: number, outMax: number): number {
     return (((number - inMin) * (outMax - outMin)) / (inMax - inMin)) + outMin;

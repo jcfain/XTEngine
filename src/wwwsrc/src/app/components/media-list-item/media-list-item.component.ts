@@ -2,7 +2,7 @@ import { Component, AfterViewChecked, ElementRef, EventEmitter, input, Input, On
 import { SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, ScriptInfo } from '../../models/interfaces';
-import { ScriptContainerType, ScriptType, ThumbObjectFit, ThumbState } from '../../models/enums';
+import { ScriptContainerType, ScriptType, ThumbObjectFit } from '../../models/enums';
 import { VideoService } from '../../services/video.service';
 import { ClickStopPropagation } from '../../directives/stop-propegation';
 import { LazySrcDirective } from '../../directives/lazy-src';
@@ -12,6 +12,7 @@ import { LocalSettingsService } from '../../services/local-settings.service';
 import { SettingsService } from '../../services/settings.service';
 import { MediaListService } from '../../services/media-list-service';
 import { MediaItemPropertiesComponent } from '../media-item-properties/media-item-properties.component';
+import { getMediaThumbPath } from '../../utils/utils';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -316,28 +317,7 @@ export class MediaListItemComponent implements OnInit, OnChanges, AfterViewCheck
   }
 
   getThumbPath(item: MediaItem, staticFrame = false): string {
-      const thumbFile = "/thumb/";
-      const cacheBust = item.thumbVersion ? `?v=${item.thumbVersion}` : "";
-      // "static=1" asks the server for a static (first frame) version of
-      // animated thumbs. Only applied to the real thumb paths - the
-      // loading/error placeholders are static images.
-      const staticParam = staticFrame ? (item.thumbVersion ? "&static=1" : "?static=1") : "";
-      switch(item.thumbState)
-      {
-        case ThumbState.Waiting:
-          return thumbFile + item.thumbFileLoading;
-        case ThumbState.Error:
-          return thumbFile + item.thumbFileError;
-        case ThumbState.Loading:
-          return thumbFile + item.thumbFileLoadingCurrent;
-        case ThumbState.Ready:
-          return thumbFile + item.relativeThumb + cacheBust + staticParam;
-        case ThumbState.Unknown:
-          return thumbFile + item.thumbFileUnknown;
-        default:
-				  return thumbFile + item.relativeThumb + cacheBust + staticParam;
-
-      }
+      return getMediaThumbPath(item, staticFrame);
   }
 
   // Thumb src for the <img>: animated (GIF/WebP) thumbs show a static first

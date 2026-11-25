@@ -112,7 +112,14 @@
    parked off the bottom edge, so it never intercepts clicks on the video. */
 :host(.media-list-overlay) {
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    /* Cap the sheet width on very wide (e.g. 32:9 ultrawide) monitors and
+       center it, so the column count stays bounded and rendering stays fast. */
+    max-width: var(--media-list-max-width, 1920px);
+    margin: 0 auto;
     display: flex;
     flex-flow: column;
     /* Above the player controls (.video-controls, z-index 10) so the sheet
@@ -125,6 +132,14 @@
 
 :host(.media-list-overlay.media-list-overlay-visible) {
     transform: translateY(0);
+}
+
+/* Host for the suggestions drawer (re-parented here while full screen). It is
+   a flex item between the toolbar and the list; the re-parented suggestions
+   fill it and push the list down by their own height. Empty = zero height. */
+.suggestions-host {
+    flex-shrink: 0;
+    min-height: 0;
 }
 
 .media-list-status {  

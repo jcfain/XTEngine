@@ -1,9 +1,80 @@
 .app-content {
-  display: flex;
-  flex-flow: column;
+  display: grid;
   height: 100svh;
   overflow: hidden;
   background-color: var(--background-color);
+  /* Portrait (default): video, suggestions drawer, media list, footer stacked. */
+  grid-template-areas:
+    "video"
+    "panel"
+    "list"
+    "foot";
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-columns: 1fr;
+}
+
+.app-content app-video-player,
+.app-content app-external-player {
+  grid-area: video;
+  min-height: 0;
+}
+.app-content app-video-suggestions {
+  grid-area: panel;
+  min-height: 0;
+  min-width: 0;
+}
+.app-content .app-body {
+  grid-area: list;
+  min-height: 0;
+  min-width: 0;
+}
+.app-content app-footer {
+  grid-area: foot;
+}
+
+/* Mobile landscape: the video sits top-left with the Similar drawer directly
+   beneath it (filling the space under the 16:9 frame); the media list owns the
+   full right column. With no video the left column collapses and the media list
+   takes the full width. */
+@media (orientation: landscape) and (max-width: 1099px) {
+  .app-content {
+    grid-template-areas:
+      "video list"
+      "panel list"
+      "foot foot";
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 0 1fr;
+  }
+
+  .app-content.app-content-video-visible {
+    grid-template-columns: 3fr 2fr;
+  }
+}
+
+/* Desktop: a vertical suggestions panel to the right of the video, media list
+   full width below. */
+@media (min-width: 1100px) {
+  .app-content {
+    grid-template-areas:
+      "video panel"
+      "list list"
+      "foot foot";
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr 40vw;
+  }
+}
+
+/* External player mode: always the stacked layout (the compact player is too
+   short for a side panel). Defined last so it wins over the media queries
+   above (equal specificity, later source order). */
+.app-content-external {
+  grid-template-areas:
+    "video"
+    "panel"
+    "list"
+    "foot";
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-columns: 1fr;
 }
 /* 
 .app-header {

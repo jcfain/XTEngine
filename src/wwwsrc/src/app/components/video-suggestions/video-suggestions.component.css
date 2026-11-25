@@ -1,0 +1,177 @@
+:host {
+    display: flex;
+    flex-flow: column;
+    min-height: 0;
+    min-width: 0;
+    background-color: var(--background-color);
+}
+
+.suggestions-container {
+    display: flex;
+    flex-flow: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+}
+
+.suggestions-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    flex-shrink: 0;
+}
+
+.suggestions-title {
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: var(--foreground-color);
+}
+
+.suggestions-reshuffle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    color: var(--foreground-color);
+    opacity: 0.7;
+}
+.suggestions-reshuffle:hover {
+    opacity: 1;
+}
+.suggestions-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.suggestions-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--foreground-color);
+    opacity: 0.6;
+    font-size: 0.9rem;
+    padding: 20px;
+    text-align: center;
+}
+
+/* ---- Side (vertical, virtualized) ---- */
+.suggestions-list--side {
+    flex: 1;
+    min-height: 0;
+}
+
+.suggestion-row {
+    display: flex;
+    flex-flow: row;
+    align-items: center;
+    gap: 10px;
+    height: 105px;
+    box-sizing: border-box;
+    padding: 5px 8px;
+    cursor: pointer;
+}
+.suggestion-row:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+.suggestion-row--playing {
+    background-color: rgba(83, 52, 131, 0.25);
+}
+
+.suggestion-thumb {
+    width: 168px;
+    height: 95px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #000;
+}
+.suggestion-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.suggestion-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-flow: column;
+    gap: 4px;
+    overflow: hidden;
+}
+.suggestion-name {
+    font-size: 0.9rem;
+    /* Wrap long titles, clamping to 2 lines with an ellipsis on the last
+       line if the title is still too long. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--foreground-color);
+}
+.suggestion-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    overflow: hidden;
+}
+.suggestion-tag {
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--foreground-color);
+    white-space: nowrap;
+}
+
+/* ---- Drawer (horizontal strip) ---- */
+.suggestions-list--drawer {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-flow: row;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 8px 8px;
+}
+.suggestion-card {
+    width: 160px;
+    flex-shrink: 0;
+    cursor: pointer;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.suggestion-card:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+.suggestion-card--playing {
+    outline: 2px solid #533483;
+}
+.suggestion-card .suggestion-thumb {
+    width: 160px;
+    height: 90px;
+    border-radius: 0;
+}
+.suggestion-card .suggestion-name {
+    padding: 4px 6px;
+    font-size: 0.8rem;
+}
+
+/* ---- Hidden when nothing is playing (no suggestions to show) ---- */
+:host(.suggestions-hidden) {
+    display: none;
+}
+
+/* ---- In the full screen media sheet: a flex item between the toolbar and
+   the list. It takes its natural (drawer) height and pushes the list down by
+   that amount. It moves with the sheet, so it is only visible while the sheet
+   is open. ---- */
+:host(.suggestions-in-sheet) {
+    flex-shrink: 0;
+    background-color: var(--media-list-overlay-background);
+}

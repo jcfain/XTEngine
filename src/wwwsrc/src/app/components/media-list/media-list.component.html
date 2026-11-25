@@ -1,5 +1,10 @@
 <div class="media-list-container">
   <app-media-toolbar></app-media-toolbar>
+  <!-- Host for the suggestions drawer: re-parented here by SuggestionsOverlayService
+       while full screen so it sits between the toolbar and the media list (a flex
+       item, so it pushes the list down by its own height). Empty (zero height)
+       when the suggestions are in their normal grid position. -->
+  <div #suggestionsHost class="suggestions-host"></div>
   @if (noMedia()) {
     <div id="noMedia" class="media-list-status"><span class="media-list-status-text">No media found</span></div>
   }

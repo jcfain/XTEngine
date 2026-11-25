@@ -10,6 +10,7 @@ import { MessageHandlerService } from '../../services/message-handler.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { MediaService } from '../../services/media.service';
 import { MediaListOverlayService } from '../../services/media-list-overlay.service';
+import { SuggestionsOverlayService } from '../../services/suggestions-overlay.service';
 import { Roles } from '../../models/enums';
 
 @Component({
@@ -30,6 +31,8 @@ import { Roles } from '../../models/enums';
 export class MediaListComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
   // @ViewChildren(MediaListItemComponent) mediaNodes: QueryList<MediaListItemComponent> = new QueryList();
   @ViewChild('mediaListContainer') mediaListContainer?: CdkVirtualScrollViewport;
+  // Host for the suggestions drawer (re-parented here while full screen).
+  @ViewChild('suggestionsHost') suggestionsHostRef?: ElementRef<HTMLElement>;
 
   mediaList: MediaItem[] = [];
   // The list chunked into rows of `columns` items - cdk-virtual-scroll is
@@ -104,6 +107,7 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     private videoService: VideoService,
     private mediaListService: MediaListService,
     private mediaListOverlayService: MediaListOverlayService,
+    private suggestionsOverlayService: SuggestionsOverlayService,
     private elementRef: ElementRef<HTMLElement>
   ) {
     this.setDimensions();
@@ -119,6 +123,17 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
       // keeps the heavy re-chunk off the full screen transition's first tick;
       // buildRows() is a no-op when the column count is unchanged, so this
       // never double-rebuilds.
+      requestAnimationFrame(() => this.buildRows());
+    });
+    // Mobile landscape: opening/closing the video reflows the app grid
+    // (0 1fr <-> 3fr 2fr), which resizes the list. The ResizeObserver can
+    // miss that reflow (the class toggle and the resize land in the same
+    // frame, and the video's max-height transition keeps the auto row
+    // animating), so force a rebuild once the new layout has settled.
+    // buildRows() is a no-op when the column count is unchanged, so this
+    // never double-rebuilds and is harmless in the stacked layouts, where
+    // the list width doesn't change with the video.
+    this.videoService.videoVisible$.subscribe(() => {
       requestAnimationFrame(() => this.buildRows());
     });
     this.videoService.mediaSheetVisible$.subscribe(v => {
@@ -164,6 +179,11 @@ export class MediaListComponent implements OnInit, AfterViewInit, AfterViewCheck
     // Register this element with the overlay service: while full screen it is
     // re-parented into the video container and back again when it exits.
     this.mediaListOverlayService.registerMediaListElement(this.elementRef.nativeElement);
+    // Expose the suggestions host so the suggestions drawer can be re-parented
+    // here (between the toolbar and the list) while full screen.
+    if (this.suggestionsHostRef) {
+      this.suggestionsOverlayService.registerSheetHost(this.suggestionsHostRef.nativeElement);
+    }
     if (this.mediaListContainer) {
       // Debounced - resizes fire continuously (window drag, video player
       // open/close) and each rebuild re-chunks the whole list
