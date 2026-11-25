@@ -3,6 +3,7 @@ import { CdkFixedSizeVirtualScroll, CdkVirtualScrollViewport } from '@angular/cd
 import { MediaItem } from '../../models/interfaces';
 import { VideoService } from '../../services/video.service';
 import { VideoSuggestionsService } from '../../services/video-suggestions.service';
+import { MediaListService } from '../../services/media-list-service';
 import { SuggestionsOverlayService } from '../../services/suggestions-overlay.service';
 import { LocalSettingsService } from '../../services/local-settings.service';
 import { LazySrcDirective } from '../../directives/lazy-src';
@@ -56,6 +57,7 @@ export class VideoSuggestionsComponent implements OnInit, AfterViewInit, OnDestr
     constructor(
         private videoService: VideoService,
         private videoSuggestionsService: VideoSuggestionsService,
+        private mediaListService: MediaListService,
         private suggestionsOverlayService: SuggestionsOverlayService,
         private localSettingsService: LocalSettingsService,
         private elementRef: ElementRef<HTMLElement>,
@@ -125,6 +127,8 @@ export class VideoSuggestionsComponent implements OnInit, AfterViewInit, OnDestr
 
     play(item: MediaItem): void {
         this.videoService.playVideo(item);
+        // Scroll the media list to the item so the user can see where it is.
+        this.mediaListService.scrollToItem(item);
     }
 
     reshuffle(): void {

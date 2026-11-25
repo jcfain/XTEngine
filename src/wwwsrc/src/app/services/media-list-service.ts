@@ -114,6 +114,12 @@ export class MediaListService {
     private scrollToItemSubject = new Subject<MediaItem>();
     scrollToItem$: Observable<MediaItem> = this.scrollToItemSubject.asObservable();
 
+    // Ask the media list to scroll to the given item (no-op if the item is
+    // not in the currently displayed list, e.g. filtered out).
+    scrollToItem(item: MediaItem): void {
+        this.scrollToItemSubject.next(item);
+    }
+
     playNextVideo(): void {
         const list = this.mediaListDisplayed;
         if (!list || list.length === 0) return;

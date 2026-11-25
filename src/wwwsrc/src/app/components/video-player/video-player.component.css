@@ -190,7 +190,6 @@
 }
 
 .video-container {
-    border-radius: 4px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -199,7 +198,11 @@
     top: 0;
     z-index: 14;
     visibility: hidden;
-    overflow: hidden;
+    overflow: hidden;  
+    border-radius: 15px;
+    margin-left: 8px;
+    margin-top: 8px;
+    margin-right: 8px;
 }
 /* No box of its own - the re-parented media list (position: absolute) is
    laid out against .video-container directly. */
@@ -345,6 +348,12 @@ video {
     }
     .video-visible-embeded {
         height: 35vh;
+    }
+    .video-container {
+        border-radius: 0px;
+        margin-left: 0px;
+        margin-top: 0px;
+        margin-right: 0px;
     }
 }
 
