@@ -66,8 +66,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   m_progress = 0;
   scriptStatusOpen = false;
   get motionProfilesOpen() {
-    return this.m_motionProfilesOpen && this.m_pinMotionProfilesOpen || 
-      this.m_motionProfilesOpen && !this.m_pinMotionProfilesOpen && this.controlsVisible;
+    return this.m_motionProfilesOpen && this.controlsVisible;
   };
   mediaSettingsOpen = false;
   altScriptsOpen = false;
@@ -86,7 +85,6 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   private pendingTapTimer: any = null;
   private pendingClickTimer: any = null;
   private m_motionProfilesOpen = false;
-  private m_pinMotionProfilesOpen = false;
   // Settings modal (rendered inside the video container so it also shows in
   // full screen). mediaLoaded mirrors the old app-level gate: the modal
   // binds to the server settings, which are only fetched once the media list
@@ -217,7 +215,6 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
       this.localSettingsService.volume$.subscribe(v => this.m_volume = v),
       this.localSettingsService.mute$.subscribe(v => this.muted = v),
       this.localSettingsService.disableHeatmap$.subscribe(v => this.disableHeatmap = v),
-      this.localSettingsService.pinMotionProfilesOnVideoControls$.subscribe(v => this.m_pinMotionProfilesOpen = v),
       this.localSettingsService.disableFullScreenMediaList$.subscribe(v => this.disableFullscreenMediaList = v),
       this.messageHandlerService.heatmap$.subscribe(v => this.setHeatmapSvg(v)),
       this.mediaListService.mediaListDisplayed$.subscribe(list => {
@@ -255,10 +252,10 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     // The controls are created/destroyed with the video visibility, so watch
     // the queries for changes and observe whichever instance exists.
     this.bottomControlsQuery?.changes.subscribe(() =>
-      this.trackControlsHeight(this.bottomControlsQuery, this.bottomControlsState, '--video-controls-height'));
+      this.trackControlsHeight(this.bottomControlsQuery, this.bottomControlsState, '--video-controls-height', VideoPlayerComponent.bottomControlsVisualHeight));
     this.topControlsQuery?.changes.subscribe(() =>
       this.trackControlsHeight(this.topControlsQuery, this.topControlsState, '--video-top-controls-height'));
-    this.trackControlsHeight(this.bottomControlsQuery, this.bottomControlsState, '--video-controls-height');
+    this.trackControlsHeight(this.bottomControlsQuery, this.bottomControlsState, '--video-controls-height', VideoPlayerComponent.bottomControlsVisualHeight);
     this.trackControlsHeight(this.topControlsQuery, this.topControlsState, '--video-top-controls-height');
     this.startHeatmapLineUpdates();
   }
@@ -306,6 +303,20 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
+  // The full screen "drag up for media list" hint pokes above the bottom
+  // bar (top: -30px), so the bar's offsetHeight under-reports its visual
+  // height. Add the hint's overflow so --video-controls-height covers the
+  // full extent (the script status wrapper offsets itself by this
+  // variable).
+  private static bottomControlsVisualHeight(el: HTMLElement): number {
+    const hint = el.querySelector<HTMLElement>('.media-list-hint');
+    if (!hint) {
+      return el.offsetHeight;
+    }
+    const overflow = el.getBoundingClientRect().top - hint.getBoundingClientRect().top;
+    return el.offsetHeight + Math.max(0, overflow);
+  }
+
   // Exposes a controls bar height as a CSS variable on the video container.
   // The media list overlay sits between the top and bottom controls on touch
   // devices and uses the variables to offset itself by exactly the bar
@@ -313,7 +324,8 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
   private trackControlsHeight(
     query: QueryList<ElementRef<HTMLElement>> | undefined,
     state: { el: HTMLElement | null; observer: ResizeObserver | null },
-    cssVar: string
+    cssVar: string,
+    measure: (el: HTMLElement) => number = (el) => el.offsetHeight
   ): void {
     const el = query?.first?.nativeElement ?? null;
     if (el === state.el) {
@@ -324,7 +336,7 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     state.el = el;
     if (el) {
       state.observer = new ResizeObserver(() => {
-        const h = el.offsetHeight;
+        const h = measure(el);
         if (h > 0) {
           document.getElementById('video-container')?.style.setProperty(cssVar, h + 'px');
         }
@@ -333,8 +345,32 @@ export class VideoPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
+  // Re-measures a tracked bar's height (see trackControlsHeight) without
+  // re-attaching the observer. Used when the bar's visual height changes
+  // without its own box changing - e.g. the full screen media list hint
+  // appearing/disappearing above the bottom bar.
+  private updateControlsHeight(
+    state: { el: HTMLElement | null; observer: ResizeObserver | null },
+    cssVar: string,
+    measure: (el: HTMLElement) => number
+  ): void {
+    const el = state.el;
+    if (!el) {
+      return;
+    }
+    const h = measure(el);
+    if (h > 0) {
+      document.getElementById('video-container')?.style.setProperty(cssVar, h + 'px');
+    }
+  }
+
   onFullScreenChange() {
     this.videoService.onFullScreenChange();
+    // The full screen media list hint is added/removed with full screen and
+    // pokes above the bottom bar, but the bar's own box doesn't change, so
+    // the ResizeObserver won't fire - re-measure once the view has updated.
+    setTimeout(() =>
+      this.updateControlsHeight(this.bottomControlsState, '--video-controls-height', VideoPlayerComponent.bottomControlsVisualHeight));
   }
 
   onPlayNext(): void {

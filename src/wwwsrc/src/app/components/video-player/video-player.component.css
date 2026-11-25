@@ -233,21 +233,14 @@ video {
 }
 
 .video-controls {
+    left: 0;
     right: 0;
-    left: 25vw;
     padding: 10px;
     position: absolute;
     bottom: 0;
     z-index: 10;
-    /* border-box so the padding is included in the 50vw max-width - with the
-       default content-box the padding adds 20px on top, and since the bar is
-       anchored at left: 25vw (right is over-constrained/ignored) the extra
-       width extends right, shifting the whole bar off-center. */
     box-sizing: border-box;
     background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.8));
-    max-width: 50vw;
-    border-top-left-radius: 25px;
-    border-top-right-radius: 25px;
     opacity: 0;
     transform: translateY(100%);
     transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
@@ -255,18 +248,6 @@ video {
 .video-controls.video-controls-visible {
     opacity: 1;
     transform: translateY(0);
-}
-
-/* On mobile the video is full width, so the controls should span the whole
-   container instead of the desktop 25vw/50vw offset. Keyed on pointer: coarse
-   as well as viewport width so it also applies to phones in landscape, where
-   the viewport is wider than 768px. */
-@media (max-width: 768px), (pointer: coarse) {
-    .video-controls {
-        left: 0;
-        right: 0;
-        max-width: 100%;
-    }
 }
 
 .top-controls {
@@ -277,10 +258,6 @@ video {
     flex-flow: row;
     pointer-events: none;
     background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.1));
-    border-bottom-left-radius: 25px;
-    border-bottom-right-radius: 25px;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
     transform: translateY(-100%);
 }
 
@@ -293,63 +270,81 @@ video {
 }
 
 /* Bottom panels wrapper: pinned to the bottom of the video, holding the
-   script status (top) and motion profiles (bottom) stacked in a column -
-   opening the profiles pushes the script status up instead of overlapping
-   it. While the bottom controls are visible the wrapper sits above them
-   (offset by the exact bar height, tracked on #video-container - see
-   trackControlsHeight); when the controls auto-hide it slides down to the
-   bottom edge. Centered 50vw on all screens (matching the desktop
-   controls); the fixed low-height mode spans its narrower container like
-   the controls do. The wrapper is capped at the container's available
-   height and the script status scrolls inside when both panels are open. */
+   script status panel. Its bottom edge tracks the exact bar height (tracked
+   on #video-container - see trackControlsHeight) with no transition, so it
+   follows frame-accurately while the bar's height animates (profiles row
+   opening). The show/hide slide is done with a transform instead: when the
+   controls hide the bar slides down (translateY(100%)) and the wrapper
+   mirrors that slide with translateY(bar height) - the two cancel, leaving
+   the wrapper at the bottom edge. Full width like the controls; the script
+   status panel itself stays centred at 50vw. The wrapper is capped at the
+   container's available height and the script status scrolls inside when it
+   overflows. */
 .bottom-panels {
     position: absolute;
-    bottom: 0;
-    left: 25vw;
-    width: 50vw;
+    bottom: var(--video-controls-height, 0px);
+    left: 0;
+    width: 100%;
     z-index: 10;
     display: flex;
     flex-direction: column;
-    transition: bottom 0.3s ease-in-out, max-height 0.3s ease-in-out;
-    max-height: 100%;
+    max-height: calc(100% - var(--video-controls-height, 0px));
+    transform: translateY(var(--video-controls-height, 0px));
+    transition: transform 0.3s ease-in-out;
 }
 
 .bottom-panels.bottom-panels-raised {
-    bottom: var(--video-controls-height, 0px);
-    max-height: calc(100% - var(--video-controls-height, 0px));
+    transform: translateY(0);
 }
 
-/* Script status: top of the stack. Absorbs the extra space when both
-   panels are open and the total exceeds the wrapper's cap (the inner
-   container scrolls). */
+/* Explicit width (not just max-width): auto cross-axis margins disable the
+   flex stretch, so without it the host shrinks to content width and the
+   inner percentage widths collapse. */
 .script-status-panel {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
+    width: 50vw;
+    margin: 0 auto;
     --script-status-max-height: none;
 }
 
-/* Motion profiles: bottom of the stack, keeps its natural height (the
-   script status absorbs any overflow - see .script-status-panel). */
-.motion-profiles-panel {
-    display: flex;
-    flex-direction: column;
-    flex: none;
+/* Motion profiles: a row inside the bottom controls bar (see the template)
+   that expands/collapses with the same 0.3s easing as the bar's show/hide
+   animation and rides the bar's slide/fade since it shares the parent. The
+   grid-rows 0fr -> 1fr trick animates the row to its natural (auto)
+   height; the bar's height tracker picks up the growth so the script
+   status wrapper follows. */
+.motion-profiles-row {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.motion-profiles-row.motion-profiles-row-visible {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.motion-profiles-row-inner {
+    overflow: hidden;
     min-height: 0;
+}
+
+.motion-profiles-panel {
     --motion-profiles-max-height: none;
 }
 
-/* On mobile the video is full width, so the wrapper spans it too. */
+/* On mobile the video is full width, so the script status spans it too. */
 @media (max-width: 768px), (pointer: coarse) {
-    .bottom-panels {
-        left: 0;
+    .script-status-panel {
         width: 100%;
     }
 }
 
-.video-container-fixed .bottom-panels {
-    left: 0;
+.video-container-fixed .script-status-panel {
     width: 100%;
 }
 

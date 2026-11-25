@@ -26,12 +26,6 @@
             [ngModel]="disableHeatmap" (ngModelChange)="onDisableHeatmapChange($event)" />
     </div>
     <div class="formElement">
-        <label title="If checked, the motion profiles over the internal video player will stay open when toggled visible."
-            for="pinMotionControlsCheckbox">Pin motion profiles on video</label>
-        <input id="pinMotionControlsCheckbox" type="checkbox"
-            [ngModel]="pinMotionProfilesOnVideoControls" (ngModelChange)="onPinMotionProfilesOnVideoControls($event)" />
-    </div>
-    <div class="formElement">
         <label title="If checked, media items with animated (GIF/WebP) thumbnails only animate while hovered. Uncheck to animate them as soon as they are shown."
             for="animateGifsOnHoverCheckbox">Animate GIFs on hover</label>
         <input id="animateGifsOnHoverCheckbox" type="checkbox"

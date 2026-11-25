@@ -9,6 +9,10 @@
 
 .script-status-container {  
     padding: 4px;
+    /* width is bound as 100% (content-box would add the padding on top and
+       overflow the panel, clipping the model's right border) - border-box
+       keeps the padding inside the 100%. */
+    box-sizing: border-box;
     overflow-y: auto;    
     flex-basis: 100%;
     /* Lets the container shrink and scroll when a host (the video player)

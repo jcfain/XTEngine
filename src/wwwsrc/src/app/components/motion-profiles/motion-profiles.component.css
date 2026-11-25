@@ -1,13 +1,17 @@
 /* Custom element hosts are inline by default - width on an inline element
    is ignored, which broke the inner percentage widths. Blockify the host so
-   the host width (50vw in the video player, .motion-profiles-embedded in
-   the external player) resolves the width chain. */
+   the host width (full width in the video player, .motion-profiles-embedded
+   in the external player) resolves the width chain. */
 :host {
     display: block;
 }
 
 .motion-profiles-container {
     padding: 4px;
+    /* width is bound as 100% (content-box would add the padding on top and
+       overflow the row, clipping the model's right border) - border-box keeps
+       the padding inside the 100%. */
+    box-sizing: border-box;
     overflow-y: auto;
     flex-basis: 100%;
     /* Lets the container shrink and scroll when a host (the video player)
@@ -20,15 +24,16 @@
 /* Mirrors .script-status-model so the panel looks like the script status
    in both players. */
 .motion-profiles-model {
-    border-radius: 25px;
+    /* border-radius: 25px; */
     display: flex;
-    background-color: #0000007a;
+    align-items: center;
+    /* background-color: #0000007a; */
     /* flex-flow: column; */
     gap: 4px;
     padding: 8px;
     /* Usage sites can drop the border (the external player sets
        --motion-profiles-border-color: transparent on the host). */
-    border: 1px solid var(--motion-profiles-border-color, aliceblue);
+    /* border: 1px solid var(--motion-profiles-border-color, aliceblue); */
     max-height: var(--motion-profiles-max-height, min(500px,calc(100vh - 200px)));
     overflow-x: auto;
 }

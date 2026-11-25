@@ -91,6 +91,13 @@
       <span>Drag up for media list</span>
     </div>
   }
+  @if (hasMotionProfiles) {
+    <div class="motion-profiles-row" [class.motion-profiles-row-visible]="motionProfilesOpen">
+      <div class="motion-profiles-row-inner">
+        <app-motion-profiles class="motion-profiles-panel" width="100%"></app-motion-profiles>
+      </div>
+    </div>
+  }
   <div id="bottom-top-controls" class="bottom-top-controls">
     <div class="bottom-top-controls-buttons">
       <button id="scriptStatusPlayerButton" class="video-control--action-script-status video-control video-control-other" [class.button-down]="scriptStatusOpen" (click)="toggleScriptStatus()">
@@ -215,23 +222,15 @@
 </div>
 
 <!-- Bottom panels: pinned to the bottom of the video, holding the script
-     status (top) and motion profiles (bottom) stacked in a column - opening
-     the profiles pushes the script status up instead of overlapping it.
-     The wrapper slides up above the bottom controls while they are visible
-     and back down to the bottom edge when they auto-hide (see
-     .bottom-panels). -->
+     status panel. The wrapper slides up above the bottom controls while
+     they are visible and back down to the bottom edge when they auto-hide
+     (see .bottom-panels). -->
 <div class="bottom-panels" [class.bottom-panels-raised]="controlsVisible">
   <app-script-status
       class="script-status-panel"
       width="100%"
       [class.hidden]="!scriptStatusOpen">
   </app-script-status>
-
-  <app-motion-profiles
-      class="motion-profiles-panel"
-      width="100%"
-      [class.hidden]="!motionProfilesOpen">
-  </app-motion-profiles>
 </div>
 
 <!-- <div class="bottom-controls" class="video-controls" [class.hidden]="!controlsVisible">

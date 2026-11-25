@@ -82,11 +82,6 @@ export class LocalSettingsService {
     private disableHeatmapSubject = new BehaviorSubject<boolean>(this.disableHeatmapDefault);
     disableHeatmap$: Observable<boolean> = this.disableHeatmapSubject.asObservable();
 
-    readonly pinMotionProfilesOnVideoControlsDefault = true;
-    private pinMotionProfilesOnVideoControlsKey = "pinMotionProfilesOnVideoControls";
-    private pinMotionProfilesOnVideoControlsSubject = new BehaviorSubject<boolean>(this.pinMotionProfilesOnVideoControlsDefault);
-    pinMotionProfilesOnVideoControls$: Observable<boolean> = this.pinMotionProfilesOnVideoControlsSubject.asObservable();
-
     // Animated (GIF/WebP) media item thumbs only animate while hovered.
     // Unchecked restores the old behavior of animating as soon as shown.
     // Touch devices (headsets, phones) have no hover - tapping an item plays
@@ -144,7 +139,6 @@ export class LocalSettingsService {
         this.selectedOuputDeviceSubject.next(this.getFromLocalStorage(this.selectedOuputDeviceKey, this.selectedOuputDeviceDefault));
         this.externalStreamingSubject.next(this.getFromLocalStorage(this.externalStreamingKey, this.externalStreamingDefault));
         this.disableHeatmapSubject.next(this.getFromLocalStorage(this.disableHeatmapKey, this.disableHeatmapDefault));
-        this.pinMotionProfilesOnVideoControlsSubject.next(this.getFromLocalStorage(this.pinMotionProfilesOnVideoControlsKey, this.pinMotionProfilesOnVideoControlsDefault));
         this.animateGifsOnHoverSubject.next(this.getFromLocalStorage(this.animateGifsOnHoverKey, this.animateGifsOnHoverDefault));
         this.enableTextToSpeechSubject.next(this.getFromLocalStorage(this.enableTextToSpeechKey, this.enableTextToSpeechDefault));
         this.selectedVoiceIndexSubject.next(this.getFromLocalStorage(this.selectedVoiceIndexKey, this.selectedVoiceIndexDefault));
@@ -245,11 +239,6 @@ export class LocalSettingsService {
     setDisableHeatmap(value: boolean): void {
         this.setToLocalStorage(this.disableHeatmapKey, value);
         this.disableHeatmapSubject.next(value);
-    }
-
-    setPinMotionProfilesOnVideoControls(value: boolean): void {
-        this.setToLocalStorage(this.pinMotionProfilesOnVideoControlsKey, value);
-        this.pinMotionProfilesOnVideoControlsSubject.next(value);
     }
 
     setAnimateGifsOnHover(value: boolean): void {
