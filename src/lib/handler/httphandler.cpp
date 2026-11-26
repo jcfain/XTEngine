@@ -712,6 +712,8 @@ void HttpHandler::handleSettings(const QHttpServerRequest &request, QHttpServerR
     root["OS"] = "LINUX";
 #endif
     root["xteVersion"] = SettingsHandler::XTEVersion;
+    root["xteBuildTimeStamp"] = SettingsHandler::XTEBuildTimeStamp;
+
     root["webSocketServerPort"] = _webSocketHandler->getServerPort();
 
     QJsonObject connectionSettingsJson;

@@ -101,6 +101,8 @@ public:
     static QString getSettingPath(const QString &settingName);
     static const QString XTEVersion;
     static const QString XTEVersionTimeStamp;
+    static const QString XTEBuildTimeStamp;
+
     static const int XTEVersionMajor;
     static const int XTEVersionMinor;
     static const int XTEVersionRevision;
@@ -124,6 +126,13 @@ public:
     // the specific backends the FFmpeg build is compiled with (filtered, so no
     // dead options). Shared by the WebUI (via the API) and the desktop dialog.
     static QStringList hardwareDecodeOptions();
+
+    // __DATE__ is "Mmm DD YYYY" (e.g. "Nov 25 2026") and __TIME__ is "HH:MM:SS".
+    // Reformat them into ISO 8601 ("YYYY-MM-DDTHH:MM:SS") so the WebUI can build a
+    // valid JS Date with a plain `new Date(...)` and display it like BUILD_VERSION.
+    // (The old "%1T%2" form, e.g. "Nov 25 2026T01:41:23", is not a valid ISO date
+    // and `new Date(...)` returns Invalid Date in most browsers.)
+    static QString buildTimeStampFromMacros(const char* date, const char* time);
 
     static inline MediaLibrarySettings* mediaLibrarySettings = 0;
 

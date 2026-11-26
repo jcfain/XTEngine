@@ -7,12 +7,34 @@
 // Forward declaration: defined below, used in Load().
 static QString normalizeHardwareDecodeValue(const QVariant& v);
 
+
+QString SettingsHandler::buildTimeStampFromMacros(const char* date, const char* time)
+{
+    static const QHash<QString, int> monthMap = {
+        {"Jan", 1}, {"Feb", 2}, {"Mar", 3}, {"Apr", 4}, {"May", 5}, {"Jun", 6},
+        {"Jul", 7}, {"Aug", 8}, {"Sep", 9}, {"Oct", 10}, {"Nov", 11}, {"Dec", 12}
+    };
+    // SkipEmptyParts: single-digit days are space-padded ("Nov  5 2026"),
+    // which would otherwise yield an empty token.
+    const QStringList parts = QString::fromLatin1(date).split(' ', Qt::SkipEmptyParts);
+    if (parts.size() != 3)
+        return QString();
+    const int month = monthMap.value(parts[0], 1);
+    const int day = parts[1].toInt();
+    return QString("%1-%2-%3T%4")
+        .arg(parts[2])
+        .arg(month, 2, 10, QChar('0'))
+        .arg(day, 2, 10, QChar('0'))
+        .arg(QString::fromLatin1(time));
+}
+
 const int SettingsHandler::XTEVersionMajor = VERSION_MAJOR;
 const int SettingsHandler::XTEVersionMinor = VERSION_MINOR;
 const int SettingsHandler::XTEVersionRevision = VERSION_REVISION;
 const QString SettingsHandler::XTEVersionPhase = STRINGIFY(VERSION_PHASE);
 const QString SettingsHandler::XTEVersion = VERSION_STRING;
-const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1T%2").arg(__DATE__).arg(__TIME__);
+const QString SettingsHandler::XTEBuildTimeStamp = buildTimeStampFromMacros(__DATE__, __TIME__);
+const QString SettingsHandler::XTEVersionTimeStamp = QString(XTEVersion +" %1").arg(XTEBuildTimeStamp);
 
 SettingsHandler::SettingsHandler(){
     m_settingsChangedNotificationDebounce.setSingleShot(true);

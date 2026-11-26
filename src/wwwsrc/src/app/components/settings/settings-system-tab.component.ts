@@ -43,7 +43,7 @@ export class SettingsSystemTabComponent implements OnInit {
 
     groups: SettingGroup[] = [];
     xteVersion = '';
-    webVersion = `v0.6.10b (${BUILD_VERSION})`;
+    webVersion = `v0.7.0b (${BUILD_VERSION})`;
     userAgent = navigator.userAgent;
     userAgentIsDeo = false;
     userAgentIsHereSphere = false;
@@ -95,7 +95,16 @@ export class SettingsSystemTabComponent implements OnInit {
 
         this.serverService.remoteUserSettings$.subscribe(settings => {
             if (settings) {
-                this.xteVersion = settings.xteVersion || '';
+                this.xteVersion = settings.xteVersion || 'Unknown';
+                if(this.xteVersion.length && settings.xteBuildTimeStamp) {
+                    const xteBuildTimeStamp = new Date(settings.xteBuildTimeStamp);
+                    if (!isNaN(xteBuildTimeStamp.getTime())) {
+                        // Format as "YYYY-MM-DD HH:MM" to match the web BUILD_VERSION.
+                        const pad = (n: number) => n.toString().padStart(2, '0');
+                        const stamp = `${xteBuildTimeStamp.getFullYear()}-${pad(xteBuildTimeStamp.getMonth() + 1)}-${pad(xteBuildTimeStamp.getDate())} ${pad(xteBuildTimeStamp.getHours())}:${pad(xteBuildTimeStamp.getMinutes())}`;
+                        this.xteVersion += ` (${stamp})`;
+                    }
+                }
                 this.userTags = settings.userTags || [];
                 this.smartTags = settings.smartTags || [];
             }

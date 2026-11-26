@@ -142,6 +142,7 @@ export interface ChannelModel {
 export interface RemoteUserSettings {
     os: string;
     xteVersion: string;
+    xteBuildTimeStamp: string;
     webSocketServerPort: number;
     connection: ConnectionInfo;
     hasLaunchPass: boolean;
