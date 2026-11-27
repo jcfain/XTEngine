@@ -192,7 +192,7 @@
 
     /* .toolbar-right's margin-left: auto disappears with display: contents,
        so the first (always-present) button pushes the icon row to the right. */
-    #shuffleButton {
+    .toolbar-right > button:first-child {
         margin-left: auto;
     }
 

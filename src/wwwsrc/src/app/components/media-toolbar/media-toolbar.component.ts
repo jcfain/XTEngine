@@ -11,6 +11,7 @@ import { AppMenuComponent } from '../app-menu/app-menu.component';
 import { MediaListService } from '../../services/media-list-service';
 import { AppStateService } from '../../services/app-state.service';
 import { VideoService } from '../../services/video.service';
+import { MediaToolbarStateService, MediaToolbarState } from '../../services/media-toolbar-state.service';
 
 
 @Component({
@@ -56,7 +57,8 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
     private messageHandlerService: MessageHandlerService,
     private appState: AppStateService,
     private mediaListService: MediaListService,
-    private videoService: VideoService
+    private videoService: VideoService,
+    private toolbarStateService: MediaToolbarStateService
   ) {
     this.filtertextChanged.pipe(
       debounceTime(400),
@@ -114,6 +116,41 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
     this.sheetDragging = false;
   }
 
+  // The toolbar is rendered twice (top of the page + full screen sheet
+  // header), so its UI-only state lives in MediaToolbarStateService and both
+  // instances mirror it (see the state$ subscription in ngOnInit).
+  private updateState(partial: Partial<MediaToolbarState>): void {
+    this.toolbarStateService.update(partial);
+  }
+
+  toggleTagDrawer(): void {
+    this.updateState({ tagInputHidden: !this.tagInputHidden });
+  }
+
+  toggleSortDrawer(): void {
+    this.updateState({ sortInputHidden: !this.sortInputHidden });
+  }
+
+  toggleShowDrawer(): void {
+    this.updateState({ showInputHidden: !this.showInputHidden });
+  }
+
+  toggleThumbSizeDrawer(): void {
+    this.updateState({ thumbSizeInputHidden: !this.thumbSizeInputHidden });
+  }
+
+  toggleTcodeDrawer(): void {
+    this.updateState({ tcodeActionsInputHidden: !this.tcodeActionsInputHidden });
+  }
+
+  onTagFilterTextChange(value: string): void {
+    this.updateState({ tagFilterText: value });
+  }
+
+  setTagSelectMode(mode: 'include' | 'exclude'): void {
+    this.updateState({ tagSelectMode: mode });
+  }
+
   tagInputHidden: boolean = true;
   sortInputHidden: boolean = true;
   showInputHidden: boolean = true;
@@ -121,8 +158,9 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
   tcodeActionsInputHidden: boolean = true;
   scriptInputHidden: boolean = true;
   tagFilterText: string = '';
-  // UI-only selection mode for the tag grid: which set a clicked tag is added
-  // to. Not persisted - the color coding already shows each tag's state.
+  // Shared with the other toolbar instance via the state service - which set
+  // a clicked tag is added to. Not persisted - the color coding already shows
+  // each tag's state.
   tagSelectMode: 'include' | 'exclude' = 'include';
   allTags: string[] = [];
   selectedTags: string[] = [];
@@ -146,6 +184,23 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.subscriptions.add(this.videoService.isFullScreen$.subscribe(v => this.isFullScreen = v));
+    // Mirror the shared toolbar UI state (open drawers, tag filter text, tag
+    // select mode) so both toolbar instances stay in sync.
+    this.subscriptions.add(this.toolbarStateService.state$.subscribe(s => {
+      this.tagInputHidden = s.tagInputHidden;
+      this.sortInputHidden = s.sortInputHidden;
+      this.showInputHidden = s.showInputHidden;
+      this.thumbSizeInputHidden = s.thumbSizeInputHidden;
+      this.tcodeActionsInputHidden = s.tcodeActionsInputHidden;
+      this.tagFilterText = s.tagFilterText;
+      this.tagSelectMode = s.tagSelectMode;
+    }));
+    // Shuffle state is shared app state (the media list service and the XR
+    // player read it too) - mirror it so both toolbar instances' buttons
+    // agree.
+    this.subscriptions.add(this.appState.shufflePlayMode$.subscribe(v => {
+      this.randomMode = v;
+    }));
     this.subscriptions.add(this.localSettingsService.filterCriteria$.subscribe(f => this.filterText = f));
     this.subscriptions.add(this.localSettingsService.show$.subscribe(s => {
       this.currentShow = s
@@ -199,8 +254,9 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
   }
 
   toggleShufflePlay() {
-    this.randomMode = !this.randomMode;
-    this.appState.setShufflePlayMode(this.randomMode);
+    // Shared app state - the shufflePlayMode$ subscription mirrors the result
+    // back into randomMode on both toolbar instances.
+    this.appState.setShufflePlayMode(!this.randomMode);
     // this.setRandom();
   }
 

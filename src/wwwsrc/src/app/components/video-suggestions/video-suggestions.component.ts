@@ -43,6 +43,11 @@ export class VideoSuggestionsComponent implements OnInit, AfterViewInit, OnDestr
     playingItemId: string | null = null;
     // side = vertical panel next to the video; drawer = horizontal strip.
     isSide = false;
+    // Drawer mode (mobile / external / full screen sheet): collapsed by
+    // default so the video can take the full height; tapping the header
+    // toggles the strip (the chevron is the affordance). Side mode (desktop)
+    // is always open.
+    expanded = false;
     // True while re-parented into the full screen media sheet.
     overlayActive = false;
 
@@ -133,5 +138,17 @@ export class VideoSuggestionsComponent implements OnInit, AfterViewInit, OnDestr
 
     reshuffle(): void {
         this.videoSuggestionsService.reshuffle();
+    }
+
+    // Header tap toggles the drawer (drawer mode only). Clicks on interactive
+    // controls (the reshuffle button) don't toggle.
+    onHeaderClick(event: MouseEvent): void {
+        if (this.isSide) {
+            return;
+        }
+        if (event.target instanceof Element && event.target.closest('button')) {
+            return;
+        }
+        this.expanded = !this.expanded;
     }
 }

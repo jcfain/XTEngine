@@ -90,6 +90,17 @@
     position: relative;
 }
 
+/* The toolbar's normal home is the top of the page (see app.component.html);
+   this in-list instance only shows while full screen, where it is the media
+   sheet's header. */
+.media-list-container app-media-toolbar {
+    display: none;
+}
+
+.media-list-container app-media-toolbar.media-toolbar-in-sheet {
+    display: flex;
+}
+
 /* cdk-virtual-scroll container - must be the scroll element with a
    determinate height (flex: 1 in the .app-content column) */
 .media-list {

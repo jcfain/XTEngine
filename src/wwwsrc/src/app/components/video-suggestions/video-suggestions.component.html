@@ -1,44 +1,70 @@
 <div class="suggestions-container">
-  <div class="suggestions-header">
-    <span class="suggestions-title">Similar</span>
-    @if (hasPlaying) {
-      <button class="suggestions-reshuffle" data-title="Shuffle suggestions" (click)="reshuffle()">
-        <svg class="suggestions-icon"><use href="#shuffle"></use></svg>
-      </button>
+  <!-- Drawer mode (mobile / external / full screen sheet): the header is
+       tappable and collapses/expands the strip below it (the chevron is the
+       affordance). Side mode (desktop) is always expanded. -->
+  <div class="suggestions-header"
+       [class.suggestions-header--collapsed]="!isSide && !expanded"
+       [class.suggestions-header--toggleable]="!isSide"
+       (click)="onHeaderClick($event)">
+    @if (!isSide && !expanded) {
+      <!-- Collapsed: a centred hint like the full screen "drag up for media
+           list" - the label above a triangle, so it reads as tappable. -->
+      <span class="suggestions-title">Similar</span>
+      <svg class="suggestions-triangle suggestions-triangle--down" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 3.5l5.5 6.5h-11L8 3.5z"/>
+      </svg>
+    } @else {
+      <span class="suggestions-title">Similar</span>
+      <div class="suggestions-header-actions">
+        @if (hasPlaying) {
+          <button class="suggestions-reshuffle" data-title="Shuffle suggestions" (click)="reshuffle()">
+            <svg class="suggestions-icon"><use href="#reload"></use></svg>
+          </button>
+        }
+        @if (!isSide) {
+          <svg class="suggestions-triangle" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 3.5l5.5 6.5h-11L8 3.5z"/>
+          </svg>
+        }
+      </div>
     }
   </div>
 
-  @if (suggestions.length === 0) {
-    <div class="suggestions-empty">No similar videos found</div>
-  } @else if (isSide) {
-    <cdk-virtual-scroll-viewport class="suggestions-list suggestions-list--side"
-      [itemSize]="rowHeight" [minBufferPx]="rowHeight * 4" [maxBufferPx]="rowHeight * 8">
-      @for (item of suggestions; track item.id) {
-        <div class="suggestion-row" [class.suggestion-row--playing]="isPlaying(item)" (click)="play(item)">
-          <div class="suggestion-thumb">
-            <img [lazySrc]="thumbPath(item)" [alt]="item.name" />
-          </div>
-          <div class="suggestion-info">
-            <div class="suggestion-name">{{ item.name }}</div>
-            <div class="suggestion-tags">
-              @for (tag of visibleTags(item); track tag) {
-                <span class="suggestion-tag">{{ tag }}</span>
-              }
+  <div class="suggestions-body" [class.suggestions-body--open]="isSide || expanded">
+    <div class="suggestions-body-inner">
+      @if (suggestions.length === 0) {
+        <div class="suggestions-empty">No similar videos found</div>
+      } @else if (isSide) {
+        <cdk-virtual-scroll-viewport class="suggestions-list suggestions-list--side"
+          [itemSize]="rowHeight" [minBufferPx]="rowHeight * 4" [maxBufferPx]="rowHeight * 8">
+          @for (item of suggestions; track item.id) {
+            <div class="suggestion-row" [class.suggestion-row--playing]="isPlaying(item)" (click)="play(item)">
+              <div class="suggestion-thumb">
+                <img [lazySrc]="thumbPath(item)" [alt]="item.name" />
+              </div>
+              <div class="suggestion-info">
+                <div class="suggestion-name">{{ item.name }}</div>
+                <div class="suggestion-tags">
+                  @for (tag of visibleTags(item); track tag) {
+                    <span class="suggestion-tag">{{ tag }}</span>
+                  }
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      }
-    </cdk-virtual-scroll-viewport>
-  } @else {
-    <div class="suggestions-list suggestions-list--drawer">
-      @for (item of drawerItems; track item.id) {
-        <div class="suggestion-card" [class.suggestion-card--playing]="isPlaying(item)" (click)="play(item)">
-          <div class="suggestion-thumb">
-            <img [lazySrc]="thumbPath(item)" [alt]="item.name" />
-          </div>
-          <div class="suggestion-name">{{ item.name }}</div>
+          }
+        </cdk-virtual-scroll-viewport>
+      } @else {
+        <div class="suggestions-list suggestions-list--drawer">
+          @for (item of drawerItems; track item.id) {
+            <div class="suggestion-card" [class.suggestion-card--playing]="isPlaying(item)" (click)="play(item)">
+              <div class="suggestion-thumb">
+                <img [lazySrc]="thumbPath(item)" [alt]="item.name" />
+              </div>
+              <div class="suggestion-name">{{ item.name }}</div>
+            </div>
+          }
         </div>
       }
     </div>
-  }
+  </div>
 </div>

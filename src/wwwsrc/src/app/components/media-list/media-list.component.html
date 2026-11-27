@@ -1,5 +1,8 @@
 <div class="media-list-container">
-  <app-media-toolbar></app-media-toolbar>
+  <!-- The toolbar's normal home is the top of the page (see app.component.html).
+       This instance only renders while full screen, where the re-parented
+       media sheet uses it as its header (close button + drag down to close). -->
+  <app-media-toolbar [class.media-toolbar-in-sheet]="isFullScreen"></app-media-toolbar>
   <!-- Host for the suggestions drawer: re-parented here by SuggestionsOverlayService
        while full screen so it sits between the toolbar and the media list (a flex
        item, so it pushes the list down by its own height). Empty (zero height)

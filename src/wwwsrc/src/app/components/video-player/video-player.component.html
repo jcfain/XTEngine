@@ -1,6 +1,7 @@
 <div id="video-container"
   class="video-container"
   [class.video-container-visible]="videoVisible"
+  [class.video-container-fullscreen]="isFullScreen"
   [class.hide-cursor]="videoVisible && !controlsVisible && !mediaSheetVisible"
   (mousemove)="showControls()"
   (mouseleave)="hideControls()"

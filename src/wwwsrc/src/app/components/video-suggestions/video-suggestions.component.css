@@ -22,6 +22,78 @@
     flex-shrink: 0;
 }
 
+/* Drawer mode: the header is the toggle - pointer cursor, no text selection
+   while tapping. */
+.suggestions-header--toggleable {
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Collapsed drawer: a centred hint like the full screen "drag up for media
+   list" - chevron above the label, theme-coloured, brightening on hover so
+   it reads as tappable. */
+.suggestions-header--collapsed {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 8px;
+    color: var(--foreground-color);
+    opacity: 0.75;
+}
+.suggestions-header--collapsed:hover {
+    opacity: 1;
+}
+.suggestions-header--collapsed .suggestions-title {
+    font-size: 0.7rem;
+    font-weight: normal;
+    text-align: center;
+}
+
+.suggestions-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Triangle: the same shape as the full screen "drag up for media list"
+   hint. Points down when collapsed (tap to expand), up when open (tap to
+   collapse). */
+.suggestions-triangle {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+    color: var(--foreground-color);
+    flex-shrink: 0;
+    transition: transform 0.25s ease-in-out;
+}
+.suggestions-triangle--down {
+    transform: rotate(180deg);
+}
+
+/* Collapsible body: the 0fr -> 1fr grid row animates to the content's
+   natural height (same trick as the toolbar drawers). Side mode is always
+   open. When collapsed the host is just the header row, so in mobile
+   landscape the video takes the full height. */
+.suggestions-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease-in-out;
+    flex: 1;
+    min-height: 0;
+}
+.suggestions-body--open {
+    grid-template-rows: 1fr;
+}
+/* The grid child must be able to shrink to zero for the animation; a flex
+   column so the list keeps its flex: 1 sizing. */
+.suggestions-body-inner {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-flow: column;
+    flex: 1;
+}
+
 .suggestions-title {
     font-size: 0.95rem;
     font-weight: bold;
@@ -160,6 +232,42 @@
 .suggestion-card .suggestion-name {
     padding: 4px 6px;
     font-size: 0.8rem;
+}
+
+/* ---- Mobile (portrait + landscape): compact header ---- */
+@media (max-width: 1099px) {
+    .suggestions-header {
+        padding: 3px 8px;
+    }
+    /* The collapsed hint keeps a taller tap target (the rule above would
+       otherwise win on source order). */
+    .suggestions-header--collapsed {
+        padding: 6px 8px;
+    }
+    .suggestions-title {
+        font-size: 0.8rem;
+    }
+    .suggestions-icon {
+        width: 13px;
+        height: 13px;
+    }
+}
+
+/* ---- Mobile landscape: compact cards too. The drawer row shares the
+   limited height with the video, so smaller thumbs keep the strip from
+   getting clipped. ---- */
+@media (orientation: landscape) and (max-width: 1099px) {
+    .suggestion-card {
+        width: 120px;
+    }
+    .suggestion-card .suggestion-thumb {
+        width: 120px;
+        height: 68px;
+    }
+    .suggestion-card .suggestion-name {
+        padding: 3px 5px;
+        font-size: 0.7rem;
+    }
 }
 
 /* ---- Hidden when nothing is playing (no suggestions to show) ---- */

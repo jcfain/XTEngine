@@ -18,6 +18,12 @@
 } @else {
   <div class="app-content" [class.app-content-external]="externalStreaming" [class.app-content-video-visible]="videoVisible">
 
+    <!-- Top of page toolbar (YouTube style). The media list renders a second
+         instance that only shows while full screen, where it is the media
+         sheet's header - both share their UI state via
+         MediaToolbarStateService. -->
+    <app-media-toolbar class="app-toolbar" [class.app-toolbar-hidden]="isFullScreen"></app-media-toolbar>
+
     @if (externalStreaming) {
       <app-external-player></app-external-player>
     } @else {

@@ -7,6 +7,7 @@ import { XrPlayerComponent } from './components/xr-player/xr-player.component';
 import { SettingsComponent } from './components/settings/settings.component';
 import { ScriptStatusComponent } from './components/script-status/script-status.component';
 import { MediaListComponent } from './components/media-list/media-list.component';
+import { MediaToolbarComponent } from './components/media-toolbar/media-toolbar.component';
 import { VideoSuggestionsComponent } from './components/video-suggestions/video-suggestions.component';
 import { ServerService } from './services/server.service';
 import { MediaService } from './services/media.service';
@@ -39,6 +40,7 @@ import { AppMenuService } from './services/app-menu.service';
     SettingsComponent,
     ScriptStatusComponent,
     MediaListComponent,
+    MediaToolbarComponent,
     VideoSuggestionsComponent,
     AppFooterComponent,
     AuthComponent,
@@ -74,6 +76,11 @@ export class AppComponent implements OnInit {
   // with no video the media list takes the full width, and a playing video
   // pushes the media list into a narrower column.
   videoVisible = false;
+  // Hides the top of page toolbar while the video is full screen (in native
+  // full screen it is outside the full screen element's subtree and not
+  // rendered at all; in the iOS fake full screen the fixed video container
+  // covers it - hiding it keeps focus and keyboard state clean).
+  isFullScreen = false;
 
   constructor(
     private appStateService: AppStateService,
@@ -124,6 +131,11 @@ export class AppComponent implements OnInit {
     // full-width media list (no video) and a split view (video playing).
     this.videoService.videoVisible$.subscribe(v => {
       this.videoVisible = v;
+    });
+
+    // Hide the top of page toolbar while full screen (see isFullScreen).
+    this.videoService.isFullScreen$.subscribe(v => {
+      this.isFullScreen = v;
     });
 
     // Apply the theme to <html> so the theme files' :root[data-theme]

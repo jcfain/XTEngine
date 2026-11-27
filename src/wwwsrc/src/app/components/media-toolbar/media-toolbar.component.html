@@ -6,44 +6,44 @@
      (touchmove)="onSheetDragMove($event)"
      (touchend)="onSheetDragEnd()">
   <div class="toolbar-left">
-    <app-menu (tcodeClick)="tcodeActionsInputHidden = !tcodeActionsInputHidden"></app-menu>
+    <app-menu (tcodeClick)="toggleTcodeDrawer()"></app-menu>
     <img class="toolbar-brand" src="://images/icons/XTP-icon.png" alt="XTP" />
   </div>
   <div class="toolbar-right">
-    <button id="shuffleButton" title="Shuffle media play" class="shuffle-media-button icon-button icon-button--dark" [class.button-down]="randomMode" (click)="toggleShufflePlay()">
+    <button title="Shuffle media play" class="shuffle-media-button icon-button icon-button--dark" [class.button-down]="randomMode" (click)="toggleShufflePlay()">
       <svg class="buttonImage"><use href="#shuffle"></use></svg>
     </button>
     @if (randomMode) {
-      <button id="randomizeButton" title="Randomize media playlist" class="random-media-button icon-button icon-button--dark" (click)="randomize()">
+      <button title="Randomize media playlist" class="random-media-button icon-button icon-button--dark" (click)="randomize()">
         <svg class="buttonImage"><use href="#reload"></use></svg>
       </button>
     }
     @if (activeFilterCount > 0) {
-      <button id="clearFiltersButton" class="clear-filters-button icon-button icon-button--dark" title="Clear all filters" (click)="clearAllFilters()">
+      <button class="clear-filters-button icon-button icon-button--dark" title="Clear all filters" (click)="clearAllFilters()">
         <svg class="buttonImage"><use href="#x"></use></svg>
         <span class="button-badge">{{ activeFilterCount }}</span>
       </button>
     }
-    <button id="thumbSizeButton" title="Thumbnail size" class="thumb-size-button icon-button icon-button--dark" [class.button-down]="!thumbSizeInputHidden" (click)="thumbSizeInputHidden = !thumbSizeInputHidden">
+    <button title="Thumbnail size" class="thumb-size-button icon-button icon-button--dark" [class.button-down]="!thumbSizeInputHidden" (click)="toggleThumbSizeDrawer()">
       <svg class="buttonImage"><use href="#grid"></use></svg>
     </button>
-    <button id="sortButton" title="Sort media" class="sort-media-button icon-button icon-button--dark" [class.button-down]="!sortInputHidden" (click)="sortInputHidden = !sortInputHidden">
+    <button title="Sort media" class="sort-media-button icon-button icon-button--dark" [class.button-down]="!sortInputHidden" (click)="toggleSortDrawer()">
       <svg class="buttonImage"><use href="#sort"></use></svg>
     </button>
-    <button id="showButton" title="Show mode" class="show-media-button icon-button icon-button--dark" [class.button-down]="!showInputHidden" (click)="showInputHidden = !showInputHidden">
+    <button title="Show mode" class="show-media-button icon-button icon-button--dark" [class.button-down]="!showInputHidden" (click)="toggleShowDrawer()">
       <svg class="buttonImage"><use href="#eye"></use></svg>
     </button>
-    <button id="tagButton" title="Filter tags" class="tag-media-button icon-button icon-button--dark" [class.button-down]="!tagInputHidden" (click)="tagInputHidden = !tagInputHidden">
+    <button title="Filter tags" class="tag-media-button icon-button icon-button--dark" [class.button-down]="!tagInputHidden" (click)="toggleTagDrawer()">
       <svg class="buttonImage"><use href="#tag"></use></svg>
     </button>
     <div class="toolbar-search">
-      <input id="filterInput" class="toolbar-search-input" placeholder="Search" [ngModel]="filterText" (ngModelChange)="onFilterChange($event)" />
+      <input class="toolbar-search-input" placeholder="Search" [ngModel]="filterText" (ngModelChange)="onFilterChange($event)" />
       <button class="side-action-filter-clear-button icon-button icon-button--small" (click)="clearFilterText()">
         <svg class="buttonImage"><use href="#x"></use></svg>
       </button>
     </div>
     @if (isFullScreen) {
-      <button id="closeSheetButton" class="close-sheet-button icon-button icon-button--dark" title="Close media list" (click)="closeSheet()">
+      <button class="close-sheet-button icon-button icon-button--dark" title="Close media list" (click)="closeSheet()">
         <svg class="buttonImage"><use href="#x"></use></svg>
       </button>
     }
@@ -63,16 +63,16 @@
 <!-- Tag filter drawer: sits under the TCode drawer when both are open -->
 <div class="toolbar-drawer" [class.open]="!tagInputHidden">
   <div class="drawer-inner">
-    <div id="tagFilterOptions" class="tag-filter-content">
+    <div class="tag-filter-content">
       <div class="tag-filter-header">
-        <input type="text" class="tag-filter-search" placeholder="Filter tags..." [(ngModel)]="tagFilterText" />
+        <input type="text" class="tag-filter-search" placeholder="Filter tags..." [ngModel]="tagFilterText" (ngModelChange)="onTagFilterTextChange($event)" />
         <div class="system-tag-checkbox">
-          <input title="If checked, the selected tags will be inclusive." id="tagFilterORChk" type="checkbox" value="OR" (click)="onTagClick($event)" [ngModel]="isTagSelected('OR')" />
-          <label for="tagFilterORChk">OR</label>
+          <input title="If checked, the selected tags will be inclusive." type="checkbox" value="OR" (click)="onTagClick($event)" [ngModel]="isTagSelected('OR')" />
+          <label>OR</label>
         </div>
         <div class="segmented-control">
-          <button type="button" [class.active]="tagSelectMode === 'include'" (click)="tagSelectMode = 'include'">Include</button>
-          <button type="button" [class.active]="tagSelectMode === 'exclude'" (click)="tagSelectMode = 'exclude'">Exclude</button>
+          <button type="button" [class.active]="tagSelectMode === 'include'" (click)="setTagSelectMode('include')">Include</button>
+          <button type="button" [class.active]="tagSelectMode === 'exclude'" (click)="setTagSelectMode('exclude')">Exclude</button>
         </div>
       </div>
       <div class="pill-scroll">
@@ -137,7 +137,7 @@
 </div>
 
 @if (!scriptInputHidden) {
-  <div id="scriptStatusModal" class="script-status-model">
+  <div class="script-status-model">
     <div name="noScriptInput" style="align-self: center;">No script input</div>
     <div name="scriptStatusContainer"  class="script-status-container"></div>
   </div>
