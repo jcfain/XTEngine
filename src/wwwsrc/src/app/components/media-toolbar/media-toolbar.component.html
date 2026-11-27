@@ -18,12 +18,6 @@
         <svg class="buttonImage"><use href="#reload"></use></svg>
       </button>
     }
-    @if (activeFilterCount > 0) {
-      <button class="clear-filters-button icon-button icon-button--dark" title="Clear all filters" (click)="clearAllFilters()">
-        <svg class="buttonImage"><use href="#x"></use></svg>
-        <span class="button-badge">{{ activeFilterCount }}</span>
-      </button>
-    }
     <button title="Thumbnail size" class="thumb-size-button icon-button icon-button--dark" [class.button-down]="!thumbSizeInputHidden" (click)="toggleThumbSizeDrawer()">
       <svg class="buttonImage"><use href="#grid"></use></svg>
     </button>
@@ -35,7 +29,16 @@
     </button>
     <button title="Filter tags" class="tag-media-button icon-button icon-button--dark" [class.button-down]="!tagInputHidden" (click)="toggleTagDrawer()">
       <svg class="buttonImage"><use href="#tag"></use></svg>
+      @if (activeFilterTagsCount > 0) {
+        <span class="button-badge">{{ activeFilterTagsCount }}</span>
+      }
     </button>
+    @if (activeFilterCount > 0) {
+      <button class="clear-filters-button icon-button icon-button--dark" title="Clear all filters" (click)="clearAllFilters()">
+        <svg class="buttonImage"><use href="#x"></use></svg>
+        <span class="button-badge">{{ activeFilterCount }}</span>
+      </button>
+    }
     <div class="toolbar-search">
       <input class="toolbar-search-input" placeholder="Search" [ngModel]="filterText" (ngModelChange)="onFilterChange($event)" />
       <button class="side-action-filter-clear-button icon-button icon-button--small" (click)="clearFilterText()">

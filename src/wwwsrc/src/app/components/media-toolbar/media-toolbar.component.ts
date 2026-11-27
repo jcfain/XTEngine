@@ -272,10 +272,15 @@ export class MediaToolbarComponent implements OnInit, OnDestroy {
   }
 
   get activeFilterCount(): number {
-    let count = this.selectedTags.filter(tag => tag !== 'OR').length;
+    let count = this.activeFilterTagsCount;
     if (this.filterText.trim())
       count++;
     return count;
+  }
+
+  get activeFilterTagsCount(): number {
+    // Do not include the OR tag item in the list
+    return this.selectedTags.filter(tag => tag !== 'OR').length;
   }
 
   clearAllFilters() {
