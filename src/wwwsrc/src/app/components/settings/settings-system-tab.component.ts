@@ -202,6 +202,10 @@ export class SettingsSystemTabComponent implements OnInit {
         this.browserMajorVersion = majorVersion;
     }
 
+    openGuide(): void {
+        window.open('assets/XTP_and_VR_guide.pdf', '_blank');
+    }
+
     // DOM <option> values are always strings while the server sends enum
     // settings (e.g. mediaThumbObjectFit) as numbers, so bind the string form
     // to the select model for the options to match.
