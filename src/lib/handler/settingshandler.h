@@ -114,7 +114,7 @@ public:
     // effective decode mode for AV1. Cached (the probe + preference don't change
     // at runtime - the preference requires a restart). Exposed to the WebUI as a
     // "status" field on the useHardwareDecoding setting.
-    static QString hardwareDecodeStatus();
+    static QString hardwareDecodeStatus(const QString& pref);
 
     // The user's hardware-decode preference as a normalized string: "disabled",
     // "auto", or a specific backend name (e.g. "cuda"). Normalizes the legacy

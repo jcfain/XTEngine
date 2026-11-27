@@ -774,7 +774,8 @@ void HttpHandler::handleSettings(const QHttpServerRequest &request, QHttpServerR
         // true state next to the control.
         if (map.key == SettingKeys::useHardwareDecoding)
         {
-            settingsObj["value"] = SettingsHandler::hardwareDecodePreference();
+            QString hardwareDecodePreference = SettingsHandler::hardwareDecodePreference();
+            settingsObj["value"] = hardwareDecodePreference;
             QJsonArray options;
             foreach (const QString& opt, SettingsHandler::hardwareDecodeOptions())
             {
@@ -784,7 +785,7 @@ void HttpHandler::handleSettings(const QHttpServerRequest &request, QHttpServerR
                 options.append(option);
             }
             settingsObj["options"] = options;
-            settingsObj["status"] = SettingsHandler::hardwareDecodeStatus();
+            settingsObj["status"] = SettingsHandler::hardwareDecodeStatus(hardwareDecodePreference);
         }
         if (map.key == SettingKeys::mediaThumbObjectFit)
         {

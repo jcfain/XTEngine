@@ -1075,7 +1075,7 @@ QStringList SettingsHandler::hardwareDecodeOptions()
     return options;
 }
 
-QString SettingsHandler::hardwareDecodeStatus()
+QString SettingsHandler::hardwareDecodeStatus(const QString& pref)
 {
     // C++11 magic static: thread-safe one-time initialization (see
     // hardwareDecodeOptions). The preference is re-read each call so the status
@@ -1085,7 +1085,6 @@ QString SettingsHandler::hardwareDecodeStatus()
     if (!probe.ffmpegAvailable)
         return "FFmpeg backend not available";
 
-    const QString pref = hardwareDecodePreference();
     QStringList parts;
     bool av1Hw = false;
     for (const HwAccelBackend& b : probe.hwAccel)
@@ -1096,7 +1095,7 @@ QString SettingsHandler::hardwareDecodeStatus()
     }
     const QString backends = parts.isEmpty() ? "none" : parts.join(", ");
     if (pref == "disabled")
-        return "Software decoding (disabled) · backends: " + backends;
+        return "Software decoding only · backends: " + backends;
     if (pref == "auto")
         return QString(av1Hw ? "Hardware decoding (auto; backend depends on GPU)"
                              : "Software decoding (auto; no AV1-capable backend)")
