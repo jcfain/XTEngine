@@ -995,46 +995,43 @@ bool SettingsHandler::versionEqual(int major1, int minor1, int rev1, QString pha
     return major1 == major2 && minor1 == minor2 && rev1 == rev2 && phase1 == phase2;
 }
 
+// Phase rank for versions with equal major/minor/revision:
+// a (alpha) < b (beta) < rc (release candidate) < empty (release).
+// The phase only decides when the numeric parts are equal, so e.g. 0.7.0rc is
+// never considered less than 0.4.0b just because the phases differ.
+static int versionPhaseRank(const QString& phase)
+{
+    if(phase == QLatin1String("a"))
+        return 0;
+    if(phase == QLatin1String("b"))
+        return 1;
+    if(phase == QLatin1String("rc"))
+        return 2;
+    return 3;
+}
+
 bool SettingsHandler::versionGreater(int major1, int minor1, int rev1, QString phase1, int major2, int minor2, int rev2, QString phase2)
 {
-    if(versionEqual(major1, minor1, rev1, phase1, major2, minor2, rev2, phase2))
-        return false;
-    bool phasechanged = phase1 != phase2;
-    bool phaseUpgraded = false;
-    if(phasechanged)
-    {
-        phaseUpgraded = (phase1 == "a" && phase2 == "b") ||
-                        (phase1 == "a" && phase2 == "rc") ||
-                        (phase1 == "b" && phase2 == "rc") ||
-                        (phase1 == "a" && phase2.isEmpty()) ||
-                        (phase1 == "rc" && phase2.isEmpty()) ||
-                        (phase1 == "b" && phase2.isEmpty());
-    }
-    return major1 > major2 ||
-        (major1 == major2 && minor1 > minor2) ||
-        (major1 == major2 && minor1 == minor2 && rev1 > rev2) ||
-        phaseUpgraded;
+    if(major1 != major2)
+        return major1 > major2;
+    if(minor1 != minor2)
+        return minor1 > minor2;
+    if(rev1 != rev2)
+        return rev1 > rev2;
+    // Numeric parts are equal, so the phase decides.
+    return versionPhaseRank(phase1) > versionPhaseRank(phase2);
 }
 
 bool SettingsHandler::versionLess(int major1, int minor1, int rev1, QString phase1, int major2, int minor2, int rev2, QString phase2)
 {
-    if(versionEqual(major1, minor1, rev1, phase1, major2, minor2, rev2, phase2))
-        return false;
-    bool phasechanged = phase1 != phase2;
-    bool phaseDowngraded = false;
-    if(phasechanged)
-    {
-        phaseDowngraded = (phase1 == "b" && phase2 == "a") ||
-                          (phase1 == "rc" && phase2 == "a") ||
-                          (phase1 == "rc" && phase2 == "b") ||
-                          (phase1.isEmpty() && phase2 == "a") ||
-                          (phase1.isEmpty() && phase2 == "rc") ||
-                          (phase1.isEmpty() && phase2 == "b");
-    }
-    return major1 < major2 ||
-           (major1 == major2 && minor1 < minor2) ||
-           (major1 == major2 && minor1 == minor2 && rev1 < rev2) ||
-            phaseDowngraded;
+    if(major1 != major2)
+        return major1 < major2;
+    if(minor1 != minor2)
+        return minor1 < minor2;
+    if(rev1 != rev2)
+        return rev1 < rev2;
+    // Numeric parts are equal, so the phase decides.
+    return versionPhaseRank(phase1) < versionPhaseRank(phase2);
 }
 
 QVariant SettingsHandler::getSetting(const QString& settingName)
