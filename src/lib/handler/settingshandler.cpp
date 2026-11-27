@@ -200,7 +200,13 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         locker.relock();
     }
 
+#if !defined(Q_OS_LINUX)
     bool useSystemMediaBackend = getSetting(SettingKeys::useSystemMediaBackend, settingsToLoadFrom).toBool();
+#else
+    bool useSystemMediaBackend = false;
+#endif
+
+    const char* backend = "ffmpeg";
     if(useSystemMediaBackend)
     {
         // https://doc.qt.io/qt-6/qtmultimedia-index.html#changing-backends
@@ -209,9 +215,10 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
         LogHandler::Info("Load Settings: OS is Windows");
         putenv(const_cast<char *>("QT_MEDIA_BACKEND=windows"));
 #elif defined(Q_OS_LINUX)
-        const char* backend = "gstreamer";
-        LogHandler::Info("Load Settings: OS is Linux");
-        setenv("QT_MEDIA_BACKEND", backend, 1);
+        // Gstreamer isnt included in the appimage/flatpak build
+        // const char* backend = "gstreamer";
+        // LogHandler::Info("Load Settings: OS is Linux");
+        // setenv("QT_MEDIA_BACKEND", backend, 1);
 #else // defined(Q_OS_MAC) MAC_OS, IOS or ANDROID
         LogHandler::Info("Load Settings: OS is Other");
         const char* backend = "darwin";

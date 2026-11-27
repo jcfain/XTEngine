@@ -163,15 +163,6 @@ public:
             // settingGroup.insert(setting.group, settingKey);
             // SettingsGroupMap.insert(setting.profile, settingGroup);
         }
-#if defined(Q_OS_LINUX)
-        // The "Use the media backend of the OS" option (GStreamer) never worked
-        // in the Linux AppImage: the bundled GStreamer plugin is ABI-incompatible
-        // with the bundled glib and crashes at startup. The FFmpeg backend (with
-        // AV1) is the self-contained primary on Linux, so hide the option there.
-        // It stays available on Windows/macOS, where the OS backend works.
-        if (SettingsMap.contains(SettingKeys::useSystemMediaBackend))
-            SettingsMap[SettingKeys::useSystemMediaBackend].internal = true;
-#endif
     }
     const static inline QList<SettingMap> SettingsList =
     {
@@ -189,7 +180,17 @@ public:
         {SettingProfile::System, SettingGroups::media, SettingKeys::videoIncrement, FormControlTypes::Int, 10, "Video seek increment", "The number of seconds to seek forward (double click/tap the right side of the video) or backward (left side).", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::disableAutoThumbGeneration, FormControlTypes::Checkbox, false, "Disable automatic thumb generation", "If checked, when a new media item has been found, no thumb will be automattically generated. Manual generation will still be attemped..", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::enableMediaManagement, FormControlTypes::Checkbox, false, "Enable media management", "If checked, certain media management options like delete will become available", false, false},
+// The "Use the media backend of the OS" option (GStreamer) never worked
+// in the Linux AppImage: the bundled GStreamer plugin is ABI-incompatible
+// with the bundled glib and crashes at startup. The FFmpeg backend (with
+// AV1) is the self-contained primary on Linux, so hide the option there.
+// It stays available on Windows/macOS, where the OS backend works.
+// Needs to be confirmed in the flatpak
+#if defined(Q_OS_LINUX)
+        {SettingProfile::System, SettingGroups::media, SettingKeys::useSystemMediaBackend, FormControlTypes::Checkbox, false, "Use the media backend of the OS", "This cannot be used on linux as GStreamer is not supported", true, true},
+#else
         {SettingProfile::System, SettingGroups::media, SettingKeys::useSystemMediaBackend, FormControlTypes::Checkbox, false, "Use the media backend of the OS", "If checked, XTP will use the OS media backend. Requires restart...", false, true},
+#endif
         {SettingProfile::System, SettingGroups::media, SettingKeys::useHardwareDecoding, FormControlTypes::Combo, "disabled", "Hardware video decoding", "Specify the hardware video decoding API to use. 'disabled' = software decoding (dav1d for AV1) - always works. 'auto' = use a GPU decoder if one is compiled in and available; if the GPU cannot decode the codec (common for AV1), decoding fails with NO software fallback. Other options force a specific backend (only those compiled into FFmpeg are listed). Requires restart.", false, true},
         {SettingProfile::System, SettingGroups::media, SettingKeys::globalOffset, FormControlTypes::Int, 0, "Global offset", "Offest specified in milliseconds", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::globalOffsetWeb, FormControlTypes::Int, 0, "Global offset (web)", "Offset for scripts played from web ONLY. Offest specified in milliseconds", false, false},

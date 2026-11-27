@@ -417,7 +417,7 @@ void SyncHandler::syncOtherMediaFunscript(std::function<InputConnectionPacket()>
                     LogHandler::Debug("syncOtherMediaFunscript: change playback rate: " + QString::number(currentPacket.playbackSpeed));
                 }
                 //timer.start();
-                if(currentPacket.playing && !isPaused() && isLoaded() && !currentPacket.path.isEmpty() && currentPacket.duration > 0)
+                if(currentPacket.playing && isLoaded() && !currentPacket.path.isEmpty() && currentPacket.duration > 0)
                 {
                     qint64 currentTime = currentPacket.currentTime;
                     if(currentTime != lastTime)
@@ -496,7 +496,7 @@ void SyncHandler::syncInputDeviceFunscript(const LibraryListItem27 &libraryItem)
                     LogHandler::Debug("syncInputDeviceFunscript: change playback rate: " + QString::number(currentVRPacket.playbackSpeed));
                 }
                 //timer.start();
-                if(currentVRPacket.playing && !isPaused() && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0)
+                if(currentVRPacket.playing && isLoaded() && !currentVRPacket.path.isEmpty() && currentVRPacket.duration > 0)
                 {
                     if(videoPath.isEmpty())
                         videoPath = currentVRPacket.path;
