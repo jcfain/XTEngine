@@ -1003,12 +1003,12 @@ bool SettingsHandler::versionGreater(int major1, int minor1, int rev1, QString p
     bool phaseUpgraded = false;
     if(phasechanged)
     {
-        phaseUpgraded = phase1 == 'a' && phase2 == 'b' ||
-                        phase1 == 'a' && phase2 == "rc" ||
-                        phase1 == "rc" && phase2 == 'b' ||
-                        phase1 == 'a' && phase2.isEmpty() ||
-                        phase1 == "rc" && phase2.isEmpty() ||
-                        phase1 == 'b' && phase2.isEmpty();
+        phaseUpgraded = (phase1 == "a" && phase2 == "b") ||
+                        (phase1 == "a" && phase2 == "rc") ||
+                        (phase1 == "b" && phase2 == "rc") ||
+                        (phase1 == "a" && phase2.isEmpty()) ||
+                        (phase1 == "rc" && phase2.isEmpty()) ||
+                        (phase1 == "b" && phase2.isEmpty());
     }
     return major1 > major2 ||
         (major1 == major2 && minor1 > minor2) ||
@@ -1024,12 +1024,12 @@ bool SettingsHandler::versionLess(int major1, int minor1, int rev1, QString phas
     bool phaseDowngraded = false;
     if(phasechanged)
     {
-        phaseDowngraded = (phase1 == 'b' && phase2 == 'a') ||
-                          (phase1 == "rc" && phase2 == 'a') ||
-                          (phase1 == 'b' && phase2 == "rc") ||
-                          (phase1.isEmpty() && phase2 == 'a') ||
+        phaseDowngraded = (phase1 == "b" && phase2 == "a") ||
+                          (phase1 == "rc" && phase2 == "a") ||
+                          (phase1 == "rc" && phase2 == "b") ||
+                          (phase1.isEmpty() && phase2 == "a") ||
                           (phase1.isEmpty() && phase2 == "rc") ||
-                          (phase1.isEmpty() && phase2 == 'b');
+                          (phase1.isEmpty() && phase2 == "b");
     }
     return major1 < major2 ||
            (major1 == major2 && minor1 < minor2) ||
