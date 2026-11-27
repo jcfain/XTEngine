@@ -4,9 +4,9 @@
 #include <QtCore/qglobal.h>
 
 #define VERSION_MAJOR 0
-#define VERSION_MINOR 6
-#define VERSION_REVISION 11
-#define VERSION_PHASE b
+#define VERSION_MINOR 7
+#define VERSION_REVISION 0
+#define VERSION_PHASE rc
 
 #ifdef XTENGINE_LIBRARY
 #define XTENGINE_EXPORT Q_DECL_EXPORT

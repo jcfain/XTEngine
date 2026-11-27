@@ -14,7 +14,7 @@ import { WebsocketService } from '../../services/websocket.service';
 import { MessageHandlerService } from '../../services/message-handler.service';
 import { AuthService } from '../../services/auth.service';
 import { SelectHsComponent } from '../select-hs/select-hs.component';
-import { BUILD_VERSION } from '../../build-info';
+import { BUILD_VERSION, WEB_VERSION } from '../../build-info';
 
 interface SettingGroup {
     name: string;
@@ -43,7 +43,7 @@ export class SettingsSystemTabComponent implements OnInit {
 
     groups: SettingGroup[] = [];
     xteVersion = '';
-    webVersion = `v0.7.0b (${BUILD_VERSION})`;
+    webVersion = `${WEB_VERSION} (${BUILD_VERSION})`;
     userAgent = navigator.userAgent;
     userAgentIsDeo = false;
     userAgentIsHereSphere = false;

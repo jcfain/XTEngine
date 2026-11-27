@@ -193,15 +193,19 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    position: sticky;
-    position: -webkit-sticky;
-    top: 0;
-    /* No z-index: the container must NOT create a stacking context. The
-       settings modal (position: fixed, z-index 15) renders inside it and has
-       to cover the top toolbar row (z-index 10), while the toolbar's
-       hamburger dropdown (trapped in the toolbar's z-index 10 context) has to
-       paint over the video - both only work if the modal's z-index
-       participates in the root stacking context. */
+    /* position: relative (NOT sticky, no z-index): the container must NOT
+       create a stacking context. A sticky element establishes one, which
+       would trap the settings modal's z-index 15 inside it - then the media
+       list (later in the DOM, z-index auto) paints over the modal at the root
+       level. relative keeps the absolutely positioned children (the controls
+       and the full screen media sheet) anchored to the container without
+       creating a stacking context, so the modal's z-index 15 participates in
+       the root stacking context and covers the top toolbar row (z-index 10)
+       and the media list, while the toolbar's hamburger dropdown (trapped in
+       the toolbar's z-index 10 context) still paints over the video. The grid
+       is height:100svh with overflow:hidden (it never scrolls), so the old
+       sticky pinning had no effect. */
+    position: relative;
     visibility: hidden;
     overflow: hidden;  
     border-radius: 15px;
