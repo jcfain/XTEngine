@@ -2,4 +2,4 @@
 // BUILD_VERSION is stamped with the build time on every `ng build` so the
 // player UI can show which build is running (lets you verify the latest
 // deploy actually loaded).
-export const BUILD_VERSION = '2026-11-25 01:41';
+export const BUILD_VERSION = '2026-11-27 04:50';
