@@ -7,8 +7,8 @@
 }
 
 .disabled {
-    background-color: lightgray !important;
-    color: rdba(0,0,0,0.4) !important;
+    color: var(--control-disabled-text-color) !important;
+    background-color: var(--control-disabled-background) !important;
     pointer-events: none !important;
     cursor: not-allowed !important;
 }
@@ -382,6 +382,7 @@ input[type='range']::-moz-focus-outer {
        recolour. */
     color: var(--foreground-color);
 }
+
 .icon-button>img {
     width: 16px;
     height: 16px;

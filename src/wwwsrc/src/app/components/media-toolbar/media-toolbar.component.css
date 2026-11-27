@@ -33,6 +33,18 @@
     align-items: center;
     gap: 8px;
     min-width: 0;
+    flex-basis: 25%;
+    justify-content: start;
+}
+
+/* Left group: hamburger menu + compact brand mark */
+.toolbar-center {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex-basis: 50%;
+    justify-content: center;
 }
 
 .toolbar-brand {
@@ -50,6 +62,8 @@
     gap: 8px;
     margin-left: auto;
     min-width: 0;
+    flex-basis: 25%;  
+    justify-content: end;
 }
 
 .toolbar-search {
@@ -59,7 +73,7 @@
        min-width in the narrow full screen overlay (whose width is dynamic) */
     flex: 1 1 25vw;
     min-width: 80px;
-    max-width: 400px;
+    /* max-width: 400px; */
     height: var(--control-height);
     padding: 0 4px 0 14px;
     border: 1px solid var(--control-border-color);
