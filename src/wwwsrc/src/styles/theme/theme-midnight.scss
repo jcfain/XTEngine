@@ -108,4 +108,18 @@
     --media-item-glow-sfma: -1px 1px 5px 0px var(--media-item-mfs-hover-color), 1px -1px 5px 0px orange, 1px 1px 5px 0px red, -1px -1px 5px 0px var(--media-item-mfs-hover-color);
     --media-item-glow-playing: -1px 1px 5px 0px var(--media-item-playing-color), 1px -1px 5px 0px lightblue, 1px 1px 5px 0px lightblue, -1px -1px 5px 0px var(--media-item-playing-color);
     --media-item-glow-playing-scripted: -1px 1px 5px 0px var(--media-item-playing-color), 1px -1px 5px 0px chartreuse, 1px 1px 5px 0px var(--media-item-playing-color), -1px -1px 5px 0px var(--media-item-playing-color);
+
+    /* Z-index scale. The document is flat: in-flow content (media items, list,
+       video, footer) needs no z-index - paint order comes from DOM order. Only
+       floating layers use these, in ascending order. Values are spaced in bands
+       so a new layer can be inserted without renumbering. CDK's overlay
+       container is a fixed 1000; --z-cdk documents that band and the alerts
+       align to it. */
+    --z-sticky: 100;      /* in-flow sticky headers + in-player chrome (controls, panels) */
+    --z-sheet: 200;       /* full-screen media sheet */
+    --z-modal: 300;       /* settings / properties / alt-scripts modals */
+    --z-popover: 400;     /* popovers, dropdowns, context menu, app menu */
+    --z-cdk: 1000;        /* CDK overlay container band; alerts align to it */
+    --z-toast: 1100;      /* confirm dialog (above CDK / alerts) */
+    --z-fullscreen: 9999; /* iOS fake-fullscreen container */
 }

@@ -6,7 +6,7 @@
     width: 100%;
     max-height: 50vh;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: var(--z-cdk);
 }
 
 /* Sticky header stays at the top of the container while the list scrolls */

@@ -8,8 +8,9 @@
   color: var(--foreground-color);
 }
 
-/* Dropdown anchored to the hamburger. Sits above the media list (z-index
-   well above the toolbar's sticky row and the video controls). */
+/* Dropdown anchored to the hamburger. Sits above the media list and the
+   video controls (--z-popover). Trapped in the toolbar's stacking context,
+   so it stays below the modals. */
 .menu-dropdown {
   position: absolute;
   top: calc(100% + 6px);
@@ -19,7 +20,7 @@
   border: 1px solid var(--control-border-color);
   border-radius: var(--control-border-radius);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
-  z-index: 200;
+  z-index: var(--z-popover);
   padding: 4px;
   display: flex;
   flex-direction: column;

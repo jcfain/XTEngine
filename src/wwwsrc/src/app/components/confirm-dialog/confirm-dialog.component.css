@@ -1,6 +1,6 @@
-/* Sit above the toast overlay (z-index 1000) and the video player */
+/* Sit above the toast overlay (--z-cdk) and the video player */
 .confirm-dialog {
-    z-index: 1100;
+    z-index: var(--z-toast);
 }
 
 .confirm-dialog-message {

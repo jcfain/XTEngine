@@ -251,7 +251,7 @@ video {
     padding: 10px;
     position: absolute;
     bottom: 0;
-    z-index: 10;
+    z-index: var(--z-sticky);
     box-sizing: border-box;
     background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.8));
     opacity: 0;
@@ -298,7 +298,7 @@ video {
     bottom: var(--video-controls-height, 0px);
     left: 0;
     width: 100%;
-    z-index: 10;
+    z-index: var(--z-sticky);
     display: flex;
     flex-direction: column;
     max-height: calc(100% - var(--video-controls-height, 0px));
@@ -770,7 +770,7 @@ button.video-control.pinned {
     position: fixed;
     left: 2%;
     top: 2%;
-    z-index: 10;
+    z-index: var(--z-sticky);
     width: 45vw;
 }
 
@@ -782,7 +782,7 @@ button.video-control.pinned {
     inset: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 9999;
+    z-index: var(--z-fullscreen);
     background-color: #000;
 }
 
@@ -900,7 +900,7 @@ button.video-control.pinned {
     border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    z-index: 20;
+    z-index: var(--z-popover);
 }
 
 .media-popover-item {

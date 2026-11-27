@@ -4,4 +4,4 @@
 // player UI can show which build is running (lets you verify the latest
 // deploy actually loaded).
 export const WEB_VERSION = 'v0.7.0rc';
-export const BUILD_VERSION = '2026-11-27 21:16';
+export const BUILD_VERSION = '2026-11-27 22:02';

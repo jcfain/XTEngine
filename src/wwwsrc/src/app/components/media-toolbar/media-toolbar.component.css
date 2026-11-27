@@ -6,14 +6,18 @@
     flex-flow: column;
 }
 
-/* Horizontal toolbar that sits at the top of the media list.
-   Sticky so it stays pinned to the top of the list while scrolling.
-   z-index keeps the sticky bar (and the hamburger dropdown that hangs off it)
-   above the absolutely positioned media list thumbnails. */
+/* Horizontal toolbar. Two instances share this class:
+   - top of page (host has .app-toolbar): sits in its own non-scrolling grid
+     row, so it is NOT sticky (see the :host(.app-toolbar) override below).
+   - full screen media sheet header (host has .media-toolbar-in-sheet): sticky
+     so it stays pinned while the sheet's list scrolls.
+   z-index keeps the bar (and the hamburger dropdown that hangs off it) above
+   the media list; it also forms the stacking context that keeps that dropdown
+   below the modals. */
 .media-toolbar {
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: var(--z-sticky);
     display: flex;
     flex-flow: row;
     align-items: center;
@@ -25,6 +29,14 @@
     min-width: 0;
     background-color: var(--background-color);
     border-bottom: 1px solid var(--control-border-color);
+}
+
+/* Top-of-page instance: it is in its own (non-scrolling) grid row, so sticky
+   pins nothing. relative (not sticky) keeps the z-index active - the stacking
+   context that traps the hamburger dropdown below the modals - without
+   pinning the bar. The full screen sheet header keeps sticky. */
+:host(.app-toolbar) .media-toolbar {
+    position: relative;
 }
 
 /* Left group: hamburger menu + compact brand mark */

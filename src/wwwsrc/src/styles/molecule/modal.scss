@@ -2,7 +2,7 @@
 .x-modal {
     display: flex;
     position: fixed;
-    z-index: 15;
+    z-index: var(--z-modal);
     left: 0;
     top: 0;
     width: 100%;
@@ -15,11 +15,10 @@
     -webkit-transition: opacity 250ms, visibility 250ms linear;
     transition: opacity 250ms, visibility 250ms linear;
 }
-.x-modal--text {
-    z-index: 16;
-}
+/* --text / --alert are modal variants; all sit in the modal band */
+.x-modal--text,
 .x-modal--alert {
-    z-index: 17;
+    z-index: var(--z-modal);
 }
 
 /* Modal Content/Box */
