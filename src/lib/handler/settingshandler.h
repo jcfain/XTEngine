@@ -373,6 +373,7 @@ public:
     static QString getHttpServerRoot();
     static void setHttpServerRoot(QString value);
     static QString setHttpServerRootDefault();
+    static QString computeHttpServerRootDefault();
     static qint64 getHTTPChunkSize();
     static void setHTTPChunkSize(qint64 value);
     static double getHTTPChunkSizeMB();

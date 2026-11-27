@@ -849,7 +849,14 @@ void SettingsHandler::Save(QSettings* settingsToSaveTo)
         settingsToSaveTo->setValue("skipPlayingSTandAloneFunscriptsInLibrary", _skipPlayingSTandAloneFunscriptsInLibrary);
 
         settingsToSaveTo->setValue("enableHttpServer", _enableHttpServer);
-        settingsToSaveTo->setValue("httpServerRoot", _httpServerRoot);
+        // Only persist an explicitly-set custom root. The resolved default
+        // is recomputed at load, so persisting it would pin this app
+        // context's path (e.g. an old build tree) into settings that
+        // outlive the context it was computed in.
+        if(_httpServerRoot == computeHttpServerRootDefault())
+            settingsToSaveTo->remove("httpServerRoot");
+        else
+            settingsToSaveTo->setValue("httpServerRoot", _httpServerRoot);
         settingsToSaveTo->setValue("httpPort", _httpPort);
         settingsToSaveTo->setValue("webSocketPort", _webSocketPort);
         settingsToSaveTo->setValue("httpThumbQuality", _httpThumbQuality);
@@ -3289,19 +3296,24 @@ void SettingsHandler::setHttpServerRoot(QString value)
     settingsChangedEvent(true);
 }
 
-QString SettingsHandler::setHttpServerRootDefault()
+QString SettingsHandler::computeHttpServerRootDefault()
 {
 #if defined(Q_OS_WIN)
-    _httpServerRoot = "www";
+    return "www";
 #elif defined(Q_OS_MAC)
-    _httpServerRoot = _applicationDirPath + "/www";
+    return _applicationDirPath + "/www";
 #elif defined(Q_OS_LINUX)
     if(m_isAppImage) ///tmp/.mount_XTPlayMmaCGD/usr/bin/www/
-        _httpServerRoot = m_appimageMountDir + "/usr/bin/www";
+        return m_appimageMountDir + "/usr/bin/www";
     else
-        _httpServerRoot = _applicationDirPath + "/www";
+        return _applicationDirPath + "/www";
 
 #endif
+}
+
+QString SettingsHandler::setHttpServerRootDefault()
+{
+    _httpServerRoot = computeHttpServerRootDefault();
     settingsChangedEvent(true);
     return _httpServerRoot;
 }
