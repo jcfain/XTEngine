@@ -133,14 +133,20 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout, QAtomi
     {
         LogHandler::Debug("[ThumbExtractor::extract] File changed: " + currentFile);
         QUrl mediaUrl = QUrl::fromLocalFile(currentFile);
-        // QMediaPlayer lives on the GUI thread - route the call through a queued signal
+        // QMediaPlayer lives on the GUI thread - route the call through a queued signal.
+        // Arm m_pendingLoad BEFORE emitting so on_mediaStatusChanged() (GUI thread)
+        // latches the LoadedMedia for THIS new source. The player is reused across
+        // library items, so mediaStatus() is already LoadedMedia from the previous
+        // file; polling it would exit this loop early, read the old file's duration,
+        // and seek to a position beyond the new (shorter) file's duration -> "Seek timeout".
+        m_pendingLoad.storeRelease(1);
         emit setMediaSource(mediaUrl);
         m_lastDuration = -1;
         {
             QMutexLocker locker(&m_stateMutex);
             m_fileChanged = false;
         }
-        while(m_mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia)
+        while(m_pendingLoad.loadAcquire())
         {
             if(stopFlag && stopFlag->loadRelaxed())
             {
@@ -319,6 +325,9 @@ void ThumbExtractor::createMediaPlayer()
     m_mediaPlayer = new QMediaPlayer(this);
     m_mediaPlayer->setVideoSink(&m_videoSink);
     connect(m_mediaPlayer, &QMediaPlayer::errorOccurred, this, &ThumbExtractor::on_mediaError);
+    // Latch the LoadedMedia belonging to each newly requested source (see m_pendingLoad)
+    // so extract() waits for the NEW file instead of the previous (reused) file's state.
+    connect(m_mediaPlayer, &QMediaPlayer::mediaStatusChanged, this, &ThumbExtractor::on_mediaStatusChanged);
     // Explicit Qt::QueuedConnection: these signals are emitted from the worker thread
     // (extract()) and QMediaPlayer must only be touched from the GUI thread. With the
     // default AutoConnection both objects have GUI-thread affinity, which would make
@@ -477,4 +486,13 @@ void ThumbExtractor::on_mediaError(QMediaPlayer::Error error, const QString &err
     LogHandler::Error("[ThumbExtractor::on_mediaError] "+ m_file);
     QMutexLocker locker(&m_stateMutex);
     m_lastError = errorString;
+}
+
+void ThumbExtractor::on_mediaStatusChanged(QMediaPlayer::MediaStatus status)
+{
+    // Runs on the GUI thread. Clear the pending-load flag only when the media we
+    // requested in extract() has finished loading, so the worker proceeds with the
+    // NEW file's duration/position (not the previous, reused file's).
+    if(status == QMediaPlayer::LoadedMedia && m_pendingLoad.loadAcquire())
+        m_pendingLoad.storeRelease(0);
 }

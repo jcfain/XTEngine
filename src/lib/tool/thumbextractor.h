@@ -57,6 +57,12 @@ private:
     QMutex m_stateMutex;
     qint64 m_lastTimeout;
     qint64 m_lastDuration = -1;
+    // Set by the worker thread (extract) right before it queues a setSource for a
+    // NEW file, and cleared by on_mediaStatusChanged() (GUI thread) once that new
+    // file reaches LoadedMedia. The QMediaPlayer is reused across library items, so
+    // mediaStatus() is already LoadedMedia from the previous file; polling it would
+    // let extract() read the old file's duration and seek out of range ("Seek timeout").
+    QAtomicInt m_pendingLoad = 0;
     QTimer m_debouncer;
     MediaFormat* m_mediaFormat;
     void createMediaPlayer();
@@ -64,6 +70,9 @@ private:
     bool mediaHasError();
     void videoFrameChanged(const QVideoFrame &thumb);
     void on_mediaError(QMediaPlayer::Error error, const QString &errorString);
+    // GUI-thread slot: clears m_pendingLoad when the source requested in extract()
+    // reaches LoadedMedia, so the worker proceeds with the NEW file's state.
+    void on_mediaStatusChanged(QMediaPlayer::MediaStatus status);
     // Converts a YUV 4:2:0 QVideoFrame (8-bit or 10-bit, semi-planar or planar)
     // to an 8-bit RGB32 QImage. Handles NV12, NV21, YUV420P, P010, and
     // YUV420P10 with BT.601/BT.709 auto-detect by resolution.
