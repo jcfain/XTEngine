@@ -1809,8 +1809,18 @@ void SettingsHandler::SaveTCodeCommandMap(QSettings *settingsToSaveTo)
 //     settingsToSaveTo->setValue("tcodeCommands", tcodeCommands);
 // }
 
+void SettingsHandler::shutdown()
+{
+    _shuttingDown = true;
+}
+
 void SettingsHandler::storeMediaMetaDatas(QSettings* settingsToSaveTo)
 {
+    // Shutdown guard: this is called from background workers (thumb/metadata
+    // processes). If the engine is tearing down, the QSettings child may already
+    // be destroyed, so writing here would segfault in QSettings::setValue.
+    if(_shuttingDown)
+        return;
     if(!settingsToSaveTo)
         settingsToSaveTo = settings;
     QVariantHash libraryListItemMetaDatas;
@@ -2057,6 +2067,22 @@ void SettingsHandler::setUseDTRAndRTS(bool value)
 bool SettingsHandler::getUseDTRAndRTS()
 {
     return getSetting(SettingKeys::useDTRAndRTS).toBool();
+}
+
+int SettingsHandler::getThumbExtractionTimeoutMS()
+{
+    int ms = getSetting(SettingKeys::thumbExtractionTimeout).toInt() * 1000;
+    return ms > 0 ? ms : 5000;
+}
+
+int SettingsHandler::getThumbExtractionTimeout()
+{
+    return getSetting(SettingKeys::thumbExtractionTimeout).toInt();
+}
+
+void SettingsHandler::setThumbExtractionTimeout(int seconds)
+{
+    changeSetting(SettingKeys::thumbExtractionTimeout, seconds);
 }
 
 void SettingsHandler::changeSelectedTCodeVersion(TCodeVersion key)
@@ -3519,6 +3545,10 @@ void SettingsHandler::removeLibraryListItemMetaData(const QString key)
 
 void SettingsHandler::updateLibraryListItemMetaData(const LibraryListItem27& item, bool sync)
 {
+    // Shutdown guard: called from background workers. Don't write to the
+    // (possibly destroyed) QSettings while the engine is tearing down.
+    if(_shuttingDown)
+        return;
     QMutexLocker locker(&mutex);
     _libraryListItemMetaDatas.insert(item.nameNoExtension, item.metadata);
     if(sync)
@@ -3607,6 +3637,7 @@ QString SettingsHandler::whirligigPort;
 bool SettingsHandler::whirligigEnabled;
 bool SettingsHandler::_xtpWebSyncEnabled;
 bool SettingsHandler::_saveOnExit = true;
+bool SettingsHandler::_shuttingDown = false;
 bool SettingsHandler::disableSpeechToText;
 bool SettingsHandler::_disableVRScriptSelect;
 bool SettingsHandler::_disableNoScriptFound;

@@ -6,6 +6,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include <algorithm>
 #include <QImage>
+#include <QAtomicInt>
 
 #include "../struct/LibraryListItem27.h"
 #include "../struct/ScriptInfo.h"
@@ -104,11 +105,21 @@ public:
     void startMetadataProcess(bool fullProcess = false);
     void startMetadataCleanProcess();
     void startMetadata1024Cleanup();
+    // Stops every background sub-process (loading / thumbs / metadata / thumb
+    // cleanup) and blocks until each worker has fully exited. Exposed so
+    // XTEngine can drain the workers in its destructor body, i.e. BEFORE the
+    // QSettings child is destroyed, preventing a use-after-free on exit.
+    void stopAllSubProcesses();
 
 private:
     int _libraryItemIDTracker = 1;
     bool _thumbProcessIsRunning = false;
     int _thumbNailSearchIterator = 0;
+    // Set during shutdown (stopThumbProcess) so the in-flight thumb worker bails
+    // out of its blocking extract() loops quickly, guaranteeing the worker is
+    // dead before QSettings / QThreadPool are torn down (prevents a use-after-free
+    // in storeMediaMetaDatas -> QSettings::setValue on exit).
+    QAtomicInt m_thumbStopRequested = 0;
     MediaLibraryCache m_mediaLibraryCache;
     //QList<LibraryListItem27> _cachedVRItems;
     QFuture<void> _metadataFuture;
@@ -133,7 +144,6 @@ private:
     // void saveThumb(LibraryListItem27 &item, qint64 position = 0, bool vrMode = false);
     void assignID(LibraryListItem27 &item);
 
-    void stopAllSubProcesses();
     LibraryListItem27 createLibraryListItemFromFunscript(QString funscript);
     void stopThumbCleanupProcess();
     void processMetadata(LibraryListItem27 &item, bool &metadataChanged, QVector<int> &rolesChanged, bool fullProcess = false);

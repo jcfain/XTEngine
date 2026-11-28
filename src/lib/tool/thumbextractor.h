@@ -19,9 +19,10 @@ class XTENGINE_EXPORT ThumbExtractor : public QObject
     Q_OBJECT
 public:
     explicit ThumbExtractor(QObject *parent = nullptr);
+    ~ThumbExtractor();
 
-    QImage extract(QString videoPath, qint64 time = -1, qint64 timeout = m_defaultTimeout);
-    void extractDebounce(QString videoPath, qint64 time = -1, qint64 timeout = m_defaultTimeout);
+    QImage extract(QString videoPath, qint64 time = -1, qint64 timeout = -1, QAtomicInt* stopFlag = nullptr);
+    void extractDebounce(QString videoPath, qint64 time = -1, qint64 timeout = -1);
     QString lastError();
     void reset();
 
@@ -35,14 +36,14 @@ signals:
     void frameExtractionError(QString error);
 
 private:
-    // 60s: AV1 software decode on SBCs (Orange Pi 5 / RK3588S, no HW accel in
-    // the bundled FFmpeg) is slow enough that the default 5s times out during
-    // seek+decode. Non-AV1 formats extract in <1s so the longer timeout is
-    // harmless for them. The proper fix is RK3588S MPP hwaccel in FFmpeg,
-    // but the rkmpp hwaccel in FFmpeg 6.1 does not support AV1 on this kernel.
-    static constexpr int m_defaultTimeout = 15000;
     // Atomic: written by the worker thread (extract), read by the GUI thread (videoFrameChanged)
     QAtomicInt m_extracting = 0;
+    // Shutdown guard for the debounce pool jobs. The destructor arms this so an
+    // in-flight extract() bails out quickly, then waits on m_activeJobs so no
+    // pool job outlives this object (prevents a use-after-free when the owning
+    // XVideoPreviewWidget is destroyed mid-extraction).
+    QAtomicInt m_stopRequested = 0;
+    QAtomicInt m_activeJobs = 0;
     bool m_fileChanged = false;
     QString m_file;
     QMediaPlayer* m_mediaPlayer;

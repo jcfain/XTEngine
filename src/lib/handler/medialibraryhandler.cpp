@@ -887,8 +887,13 @@ void MediaLibraryHandler::stopThumbProcess()
     if(_thumbProcessIsRunning || m_thumbProcessFuture.isRunning())
     {
         LogHandler::Debug("[MediaLibraryHandler::stopThumbProcess] Stop thumb process");
+        // Arm the stop flag FIRST so an in-flight extract() (which can be blocked
+        // up to its full timeout, e.g. 15s on slow AV1) bails out within ~100ms
+        // instead of outliving this object and touching the destroyed QSettings.
+        m_thumbStopRequested.storeRelease(1);
         m_thumbProcessFuture.cancel();
         m_thumbProcessFuture.waitForFinished();
+        m_thumbStopRequested.storeRelease(0);
         _thumbNailSearchIterator = 0;
         _thumbProcessIsRunning = false;
         if(_thumbTimeoutTimer.isActive())
@@ -940,6 +945,7 @@ bool MediaLibraryHandler::thumbProcessRunning()
 void MediaLibraryHandler::processThumbs()
 {
     stopThumbProcess();
+    m_thumbStopRequested.storeRelease(0);
     emit thumbProcessBegin();
     emit backgroundProcessStateChange("Processing thumbs...", -1);
     QString thumbPath = SettingsHandler::getSelectedThumbsDir();
@@ -998,6 +1004,12 @@ void MediaLibraryHandler::processThumbs()
 ///
 void MediaLibraryHandler::processThumb(ThumbExtractor* extractor, LibraryListItem27 &item, qint64 position)
 {
+    // Shutdown guard: if a stop was requested (engine tearing down), bail out
+    // before touching the cache or SettingsHandler. The stop flag is armed in
+    // stopThumbProcess() before the worker is drained, and the XTEngine
+    // destructor drains the worker before the QSettings child is destroyed.
+    if(m_thumbStopRequested.loadRelaxed())
+        return;
     if((item.type == LibraryListItemType::Audio || item.type == LibraryListItemType::FunscriptType || item.thumbFile.contains(".lock.")))
     {
         // LogHandler::Debug("[MediaLibraryHandler::processThumb] Thimb is audio, funscript or locked");
@@ -1006,7 +1018,7 @@ void MediaLibraryHandler::processThumb(ThumbExtractor* extractor, LibraryListIte
     }
     setThumbState(ThumbState::Loading, item);
     emit saveNewThumbLoading(item);
-    auto image = extractor->extract(item.path, position);
+    auto image = extractor->extract(item.path, position, SettingsHandler::getThumbExtractionTimeoutMS(), &m_thumbStopRequested);
     if(image.isNull() || image.width() <= 0)
     {
         auto errorMessage = extractor->lastError();
@@ -1022,9 +1034,19 @@ void MediaLibraryHandler::processThumb(ThumbExtractor* extractor, LibraryListIte
     else
     {
         LogHandler::Debug("[MediaLibraryHandler::processThumb] Frame Extracted, saving to disk...");
+        // Ensure the target directory exists, and remove any pre-existing thumb
+        // before saving. On some network mounts (e.g. CIFS without noperm) the
+        // writer cannot overwrite an existing read-only file, but unlinking it
+        // only needs write permission on the directory, so the subsequent save
+        // creates a fresh file. Thumbs are regenerable (processThumbs() only
+        // runs when the file is missing), so a crash in the remove->save window
+        // just means a re-extract next pass -- no atomic temp+rename needed.
+        QDir().mkpath(QFileInfo(item.thumbFile).dir().path());
+        if(QFileInfo::exists(item.thumbFile) && !QFile::remove(item.thumbFile))
+            LogHandler::Error("[MediaLibraryHandler::processThumb] Remove thumb error: " + item.thumbFile);
         if (!image.save(item.thumbFile, nullptr, 15))
         {
-            LogHandler::Error("[MediaLibraryHandler::processThumb] Save thumb error");
+            LogHandler::Error("[MediaLibraryHandler::processThumb] Save thumb error: " + item.thumbFile);
             setThumbState(ThumbState::Error, item);
             emit saveThumbError(item, "Save thumb error");
             image = QImage();
@@ -1778,48 +1800,60 @@ void MediaLibraryHandler::cleanGlobalThumbDirectory() {
 
         // jpg to webp migration. Only meaningful when webp is the target format;
         // skip it entirely when we've fallen back to jpg (no webp writer plugin).
-        if(SettingsHandler::getThumbFormatExtension() == "webp") {
-        qint64 currentJpgFileCount = 0;
-        // Count the legacy jpg thumbs we're about to convert (recursively,
-        // matching the iterator below) so the progress percentage uses the
-        // correct total. (Previously this counted *.webp files, so the
-        // percentage blew past 100% when many jpgs were being converted.)
-        int jpgFileCount = 0;
+        if(SettingsHandler::getThumbFormatExtension() == "webp")
         {
-            QDirIterator countIter(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*.jpg", QDir::Files, QDirIterator::Subdirectories);
-            while (countIter.hasNext()) { countIter.next(); jpgFileCount++; }
-        }
-        QDirIterator jpgThumbs(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*.jpg", QDir::Files, QDirIterator::Subdirectories);
-        while (jpgThumbs.hasNext())
-        {
-            if(m_thumbCleanupFuture.isCanceled())
+            qint64 currentJpgFileCount = 0;
+            // Count the legacy jpg thumbs we're about to convert (recursively,
+            // matching the iterator below) so the progress percentage uses the
+            // correct total. (Previously this counted *.webp files, so the
+            // percentage blew past 100% when many jpgs were being converted.)
+            int jpgFileCount = 0;
             {
-                LogHandler::Debug("thumb cleanup stopped -1");
-                emit backgroundProcessStateChange(nullptr, -1);
-                emit cleanUpThumbsFailed();
-                return;
+                QDirIterator countIter(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*.jpg", QDir::Files, QDirIterator::Subdirectories);
+                while (countIter.hasNext()) { countIter.next(); jpgFileCount++; }
             }
-            QString filepath = jpgThumbs.next();
-            QString fileNoExtension = XFileUtil::getPathNoExtension(filepath);
-            // Rmove media extension in this migration.
-            QString fileNoNoExtension = XFileUtil::getPathNoExtension(fileNoExtension);
-            // QString nameNoExtension = XFileUtil::getNameNoExtension(filepath);
-            // LibraryListItem27* item = mediaLibraryHandler->findItemByNameNoExtension(nameNoExtension);
-            // item->thu
-            QImage image(filepath);
-            if (!image.save(fileNoNoExtension + ".webp", nullptr, 15))
+            QDirIterator jpgThumbs(SettingsHandler::getSelectedThumbsDir(), QStringList() << "*.jpg", QDir::Files, QDirIterator::Subdirectories);
+            while (jpgThumbs.hasNext())
             {
-                LogHandler::Error("[MediaLibraryHandler::cleanGlobalThumbDirectory] Save thumb webp error");
+                if(m_thumbCleanupFuture.isCanceled())
+                {
+                    LogHandler::Debug("thumb cleanup stopped -1");
+                    emit backgroundProcessStateChange(nullptr, -1);
+                    emit cleanUpThumbsFailed();
+                    return;
+                }
+                QString filepath = jpgThumbs.next();
+                QString fileNoExtension = XFileUtil::getPathNoExtension(filepath);
+                // Rmove media extension in this migration.
+                QString fileNoNoExtension = XFileUtil::getPathNoExtension(fileNoExtension);
+                // QString nameNoExtension = XFileUtil::getNameNoExtension(filepath);
+                // LibraryListItem27* item = mediaLibraryHandler->findItemByNameNoExtension(nameNoExtension);
+                // item->thu
+                QString webpPath = fileNoNoExtension + ".webp";
+                if(QFileInfo::exists(webpPath))
+                {
+                    // A webp already exists for this item (e.g. a previous run saved
+                    // the webp but stopped before removing the jpg). Nothing to
+                    // convert -- just drop the now-redundant legacy jpg.
+                    QFile::remove(filepath);
+                }
+                else
+                {
+                    QImage image(filepath);
+                    if (!image.save(webpPath, nullptr, 15))
+                    {
+                        LogHandler::Error("[MediaLibraryHandler::cleanGlobalThumbDirectory] Save thumb webp error");
+                    }
+                    else
+                    {
+                        QFile::remove(filepath);
+                    }
+                    image = QImage();
+                }
+                currentJpgFileCount++;
+                if (jpgFileCount > 0)
+                    emit backgroundProcessStateChange("Converting legacy thumbs", XMath::roundTwoDecimal(((float)currentJpgFileCount/(float)jpgFileCount)*100.0));
             }
-            else
-            {
-                QFile::remove(filepath);
-            }
-            image = QImage();
-            currentJpgFileCount++;
-            if (jpgFileCount > 0)
-                emit backgroundProcessStateChange("Converting legacy thumbs", XMath::roundTwoDecimal(((float)currentJpgFileCount/(float)jpgFileCount)*100.0));
-        }
         } // end webp migration
         ////////////////////////////
 

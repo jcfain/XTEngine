@@ -92,7 +92,24 @@ XTEngine::XTEngine(QString appName, QObject* parent) : QObject(parent)
     });
 }
 
-XTEngine::~XTEngine() {
+XTEngine::~XTEngine()
+{
+    // Drain all background workers (thumb / metadata / loading / cleanup)
+    // BEFORE the QObject children are destroyed. The QSettings child is created
+    // first (in SettingsHandler::init) and therefore destroyed last, but the
+    // thumb/metadata workers run on the global thread pool and can outlive this
+    // object. Without this, a worker racing shutdown calls
+    // SettingsHandler::updateLibraryListItemMetaData -> storeMediaMetaDatas ->
+    // QSettings::setValue on an already-destroyed QSettings and segfaults.
+    //
+    // Order matters:
+    //   1. Arm the SettingsHandler shutdown flag so any in-flight worker that is
+    //      about to write to settings bails out immediately (safety net).
+    //   2. Block until every worker has fully exited, guaranteeing none of them
+    //      is mid-write when the QSettings child is torn down below.
+    SettingsHandler::shutdown();
+    if(_mediaLibraryHandler)
+        _mediaLibraryHandler->stopAllSubProcesses();
 }
 
 void XTEngine::init()

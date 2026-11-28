@@ -86,6 +86,12 @@ public:
     static void Clear();
     static void Quit(bool restart);
     static void Restart();
+    // Marks the engine as shutting down. Called from XTEngine's destructor body
+    // (before the QSettings child is torn down) so any in-flight background
+    // worker that is about to write to the (about-to-be-destroyed) QSettings
+    // bails out instead of segfaulting in QSettings::setValue.
+    static void shutdown();
+    static bool isShuttingDown() { return _shuttingDown; }
     static bool Import(QString file, QSettings::Format format);
     static bool ImportQuick(QString file, QSettings::Format format = JSONSettingsFormatter::JsonFormat);
     static bool Export(QString file, QSettings::Format format, QSettings* settingsToExport = nullptr);
@@ -414,6 +420,9 @@ public:
     static bool getDisableHeartBeat();
     static void setUseDTRAndRTS(bool value);
     static bool getUseDTRAndRTS();
+    static int getThumbExtractionTimeoutMS();
+    static int getThumbExtractionTimeout();
+    static void setThumbExtractionTimeout(int seconds);
 
 
     static const QStringList& getVideoExtensions()
@@ -646,6 +655,10 @@ private:
     static inline const QString m_exportFileNamePrefix = "xsettings";
     static QMutex mutex;
     static inline bool m_initialized = false;
+    // Set to true in XTEngine's destructor body before the QSettings child is
+    // destroyed. Guards the settings-writing paths (storeMediaMetaDatas, etc.)
+    // so a background worker racing shutdown never touches a dead QSettings.
+    static bool _shuttingDown;
 };
 
 #endif // SETTINGSHANDLER_H

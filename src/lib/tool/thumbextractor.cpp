@@ -3,6 +3,7 @@
 #include <QThreadPool>
 
 #include "../handler/loghandler.h"
+#include "../handler/settingshandler.h"
 #include "xmath.h"
 
 ///
@@ -27,9 +28,12 @@ ThumbExtractor::ThumbExtractor(QObject *parent)
             time = m_lastTime;
             timeout = m_lastTimeout;
         }
+        // Track the job so the destructor can guarantee it has finished before
+        // this object is torn down (the job captures `this`).
+        m_activeJobs.storeRelease(m_activeJobs.loadRelaxed() + 1);
         QThreadPool::globalInstance()->start([this, file, time, timeout](){
             LogHandler::Debug("[ThumbExtractor::m_debouncer] Extract");
-            QImage image = extract(file, time, timeout);
+            QImage image = extract(file, time, timeout, &m_stopRequested);
             if(!image.isNull())
             {
                 emit frameExtracted(image.copy());
@@ -45,8 +49,19 @@ ThumbExtractor::ThumbExtractor(QObject *parent)
                 }
                 emit frameExtractionError(error);
             }
+            m_activeJobs.storeRelease(m_activeJobs.loadRelaxed() - 1);
         });
     });
+}
+
+ThumbExtractor::~ThumbExtractor()
+{
+    // Arm the stop flag so any in-flight extract() bails out of its blocking
+    // loops within ~100ms, then wait for every in-flight debounce job to finish
+    // so none of them touch this object (or its QMediaPlayer) after destruction.
+    m_stopRequested.storeRelease(1);
+    while(m_activeJobs.loadRelaxed() > 0)
+        QThread::msleep(10);
 }
 
 ///
@@ -60,6 +75,7 @@ void ThumbExtractor::extractDebounce(QString file, qint64 time, qint64 timeout)
     LogHandler::Debug("[ThumbExtractor::extractDebounce] at: " + QString::number(time) + " from: "+ file);
     {
         QMutexLocker locker(&m_stateMutex);
+        timeout = timeout > 0 ? timeout : SettingsHandler::getThumbExtractionTimeoutMS();
         if(!m_fileChanged)
             m_fileChanged = m_file != file;
         if(m_fileChanged)
@@ -77,7 +93,7 @@ void ThumbExtractor::extractDebounce(QString file, qint64 time, qint64 timeout)
 /// \param timeout
 /// \return
 ///
-QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
+QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout, QAtomicInt* stopFlag)
 {
     LogHandler::Debug("[ThumbExtractor::extract] at: " + QString::number(time) + " from: "+ file);
     auto currentTime = QTime::currentTime().msecsSinceStartOfDay();
@@ -99,6 +115,7 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
         return QImage();
     }
     bool fileChanged;
+    timeout = timeout > 0 ? timeout : SettingsHandler::getThumbExtractionTimeoutMS();
     QString currentFile;
     {
         QMutexLocker locker(&m_stateMutex);
@@ -125,6 +142,12 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
         }
         while(m_mediaPlayer->mediaStatus() != QMediaPlayer::LoadedMedia)
         {
+            if(stopFlag && stopFlag->loadRelaxed())
+            {
+                QMutexLocker locker(&m_stateMutex);
+                m_lastError = "Extraction cancelled";
+                return QImage();
+            }
             if(mediaHasError())
             {
                 stopAndWait();
@@ -158,6 +181,12 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
         while(m_lastDuration <= 0)
         {
             // LogHandler::Debug("[ThumbExtractor::extractSync] mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
+            if(stopFlag && stopFlag->loadRelaxed())
+            {
+                QMutexLocker locker(&m_stateMutex);
+                m_lastError = "Extraction cancelled";
+                return QImage();
+            }
             if(mediaHasError())
             {
                 stopAndWait();
@@ -184,6 +213,12 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
     while(m_mediaPlayer->position() < position)
     {
         // LogHandler::Debug("[ThumbExtractor::extract] Waiting for seek: " + QString::number(m_mediaPlayer->position()));
+        if(stopFlag && stopFlag->loadRelaxed())
+        {
+            QMutexLocker locker(&m_stateMutex);
+            m_lastError = "Extraction cancelled";
+            return QImage();
+        }
         if(!m_mediaPlayer->isSeekable())
         {
             {
@@ -226,6 +261,14 @@ QImage ThumbExtractor::extract(QString file, qint64 time, qint64 timeout)
             m_extracting.storeRelease(false);
             stopAndWait();
             return image;
+        }
+        if(stopFlag && stopFlag->loadRelaxed())
+        {
+            LogHandler::Debug("[ThumbExtractor::extractSync] Cancelled mediaStatus: " + QString::number(m_mediaPlayer->mediaStatus()));
+            QMutexLocker locker(&m_stateMutex);
+            m_lastError = "Extraction cancelled";
+            m_extracting.storeRelease(false);
+            return QImage();
         }
         if(mediaHasError())
         {

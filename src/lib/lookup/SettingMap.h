@@ -88,6 +88,7 @@ struct SettingKeys {
     static inline const QString settingsBackupDirectory = "settingsBackupDirectory";
     static inline const QString tcodeGradientEnabled = "tcodeGradientEnabled";
     static inline const QString mediaThumbObjectFit = "mediaThumbObjectFit";
+    static inline const QString thumbExtractionTimeout = "mediaThumbExtractionTimeout";
     // static inline const QString selectedTCodeVersion = "selectedTCodeVersion";
     // static inline const QString selectedChannelProfile = "selectedChannelProfile";
     // static inline const QString selectedThumbsDir = "selectedThumbsDir";
@@ -196,6 +197,7 @@ public:
         {SettingProfile::System, SettingGroups::media, SettingKeys::globalOffsetWeb, FormControlTypes::Int, 0, "Global offset (web)", "Offset for scripts played from web ONLY. Offest specified in milliseconds", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::viewedThreshold, FormControlTypes::Int, 90, "Auto mark viewed %", "When the current playing media reaches the percentage of time specified here\nThe metadata will automattically have the viewed tag appended and the unviewed tag removed.", false, false},
         {SettingProfile::System, SettingGroups::media, SettingKeys::mediaThumbObjectFit, FormControlTypes::Combo, (int)MediaThumbObjectFit::Cover, "Media thumb object fit", "How media list thumbnails are scaled to fit their frame. 'Cover' crops to fill, 'Scale down' never enlarges, 'Contain' shows the whole image.", false, false},
+        {SettingProfile::System, SettingGroups::media, SettingKeys::thumbExtractionTimeout, FormControlTypes::Int, 5, "Thumb extract timeout (sec)", "Time (in seconds) it takes a thumbnail extraction to timeout.", false, false},
         {SettingProfile::System, SettingGroups::settings, SettingKeys::settingsBackupDirectory, FormControlTypes::Text, "", "Quick export directory", "When a quick export happens, this is where the exported file will go.", false, false},
     };
     static inline QHash<QString, SettingMap> SettingsMap;
