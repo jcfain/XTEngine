@@ -61,6 +61,16 @@ public:
     void sendAddItem(QString itemJson, QString error = nullptr);
     void sendScriptPaused(bool isPaused);
 
+    // WebUI settings-import auto-restart guard. Set when a "settingsQuickImport"
+    // request is received; the HttpHandler's settingsImported handler consumes
+    // it to decide whether to schedule the post-import restart. This keeps the
+    // restart decision in the web-service layer so a desktop-UI import (which
+    // calls SettingsHandler::Import directly and has its own restart prompt)
+    // never triggers the WebUI's 500ms auto-restart.
+    void setPendingWebImportRestart(bool pending);
+    bool pendingWebImportRestart() const;
+    void clearPendingWebImportRestart();
+
 
 private:
     QList<QWebSocket *> m_clients;
@@ -68,6 +78,7 @@ private:
     ConnectionChangedSignal _inputDeviceStatus = {ConnectionDirection::Input, ConnectionInterface::None, ConnectionStatus::Disconnected, "Disconnected"};
     ConnectionChangedSignal _gamepadStatus = {ConnectionDirection::Input, ConnectionInterface::Gamepad, ConnectionStatus::Disconnected, "Disconnected"};
     bool scriptPaused = false;
+    bool m_pendingWebImportRestart = false;
 
     // Keep-alive: proxies/firewalls/NATs drop idle WebSockets after a couple of
     // minutes. A periodic ping frame (browser auto-pongs) keeps the socket active.

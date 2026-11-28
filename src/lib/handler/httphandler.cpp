@@ -97,10 +97,16 @@ HttpHandler::HttpHandler(MediaLibraryHandler* mediaLibraryHandler, QObject *pare
         obj["path"] = path;
         obj["success"] = success;
         _webSocketHandler->sendCommand("settingsImported", obj);
-        if(success)
+        // Only auto-restart for WebUI-initiated imports. The WebSocketHandler
+        // arms the guard when a "settingsQuickImport" request arrives; a
+        // desktop-UI import (Import) never sets it and relies on
+        // SettingsDialog's own restart prompt. Consume the guard here so a
+        // failed import (or a later desktop import) can't trigger a restart.
+        bool pendingRestart = _webSocketHandler->pendingWebImportRestart();
+        _webSocketHandler->clearPendingWebImportRestart();
+        if(success && pendingRestart)
         {
             QTimer::singleShot(500, [this]() {
-                SettingsHandler::setSaveOnExit(false);
                 SettingsHandler::Restart();
             });
         }

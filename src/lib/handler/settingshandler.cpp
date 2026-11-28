@@ -1589,6 +1589,12 @@ bool SettingsHandler::Import(QString file, QSettings::Format format)
     settings->clear();
     copy(&settingsImport, settings);
     settings->sync();
+    // The import updates the settings store on disk, but the in-memory state
+    // variables (playerVolume, selectedDevice, ...) are NOT refreshed. Without
+    // this, the exit-time Save() would write those stale values back over the
+    // freshly-imported ones and revert the import. Suppress the save-on-exit so
+    // the imported values persist. Applies to both desktop and WebUI imports.
+    setSaveOnExit(false);
     emit instance()->settingsImported("Settings Imported", file, true);
     return true;
 }

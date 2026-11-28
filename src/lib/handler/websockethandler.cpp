@@ -166,6 +166,9 @@ void WebSocketHandler::processTextMessage(QString message)
         QJsonObject obj = json["message"].toObject();
         QString file = obj["filename"].toString();
         QSettings::Format format = file.endsWith("ini") ? QSettings::Format::IniFormat : JSONSettingsFormatter::JsonFormat;
+        // Arm the auto-restart guard so the HttpHandler's settingsImported
+        // handler restarts the service after this WebUI import completes.
+        setPendingWebImportRestart(true);
         SettingsHandler::ImportQuick(file, format);
     } else if (command == "settingChange") {
         QJsonObject obj = json["message"].toObject();
@@ -359,4 +362,19 @@ void WebSocketHandler::sendScriptPaused(bool isPaused)
     obj["isPaused"] = isPaused;
     scriptPaused = isPaused;
     sendCommand("scriptTogglePaused", obj);
+}
+
+void WebSocketHandler::setPendingWebImportRestart(bool pending)
+{
+    m_pendingWebImportRestart = pending;
+}
+
+bool WebSocketHandler::pendingWebImportRestart() const
+{
+    return m_pendingWebImportRestart;
+}
+
+void WebSocketHandler::clearPendingWebImportRestart()
+{
+    m_pendingWebImportRestart = false;
 }
