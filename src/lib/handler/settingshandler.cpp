@@ -128,6 +128,18 @@ void SettingsHandler::Load(QSettings* settingsToLoadFrom)
             // Go ahead and set this so backups can occur if needed
             Migration::MigrateTo592(settingsToLoadFrom);
         }
+        // The legacy "version" float was the pre-0.6.1 versioning scheme. Version
+        // comparisons now use versionMajor/Minor/Revision/Phase, but the float was
+        // never removed during migration, so it lingers in old settings files and
+        // disagrees with the new fields (e.g. float 0.6 alongside 0.6.8b). That
+        // inconsistency made the startup version warnings re-fire across the
+        // recursive Load() passes during migration. MigrateTo592 (above) was the
+        // last consumer of the float, so it is safe to drop the orphaned key now
+        // that the new fields are valid.
+        if(settingsToLoadFrom->contains("version"))
+        {
+            settingsToLoadFrom->remove("version");
+        }
         QString exportDirectory = settingsToLoadFrom->value(SettingKeys::settingsBackupDirectory, _applicationDirPath).toString();
         //if(settingsVersion < XTEVersionNum)
         if(versionLess(settingsVersionMajor, settingsVersionMinor, settingsVersionRevision, settingsVersionPhase))
@@ -970,6 +982,20 @@ void SettingsHandler::addStartupMessage(XMessage message, QSettings* settingsToS
     if(!settingsToSaveTo)
         settingsToSaveTo = settings;
     QJsonArray startupMessagesObj = settingsToSaveTo->value("startupMessages").toJsonArray();
+    // Load() is invoked recursively during migration (each step does Save(); Load();),
+    // so a version/migration warning can be re-evaluated and re-queued once per pass.
+    // If the stored version fields are inconsistent this previously produced the same
+    // warning many times over. Deduplicate by message text + level so each warning is
+    // only shown once at startup.
+    for(const QJsonValue& existing : startupMessagesObj)
+    {
+        const QJsonObject existingObj = existing.toObject();
+        if(existingObj.value("message").toString() == message.message
+           && existingObj.value("loglevel").toInt() == (int)message.loglevel)
+        {
+            return;
+        }
+    }
     startupMessagesObj.append(message.toJson());
     settingsToSaveTo->setValue("startupMessages", startupMessagesObj);
     //settingsToSaveTo->sync();
